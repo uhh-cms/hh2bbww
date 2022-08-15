@@ -1,0 +1,3 @@
+[submodule "modules/columnflow"]
+    path = modules/columnflow
+    url = ../columnflow.git
