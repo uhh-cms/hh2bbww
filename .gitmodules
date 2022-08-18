@@ -1,3 +1,7 @@
 [submodule "modules/columnflow"]
     path = modules/columnflow
     url = ../columnflow.git
+
+[submodule "modules/cmsdb"]
+    path = modules/cmsdb
+    url = ../cmsdb.git
