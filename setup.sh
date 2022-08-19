@@ -66,7 +66,7 @@ setup_playground() {
     export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
     # proxy
-    export X509_USER_PROXY="{X509_USER_PROXY:-/tmp/x509up_u$( id -u )}"
+    export X509_USER_PROXY="${X509_USER_PROXY:-/tmp/x509up_u$( id -u )}"
 
     # start exporting variables
     export AP_BASE="${this_dir}"
