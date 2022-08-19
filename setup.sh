@@ -46,7 +46,8 @@ setup_playground() {
     # prepare local variables
     #
 
-    local this_file="$( [ ! -z "${ZSH_VERSION}" ] && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
+    local shell_is_zsh=$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )
+    local this_file="$( ${shell_is_zsh} && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
     local orig="${PWD}"
     local setup_name="${1:-default}"
@@ -60,12 +61,12 @@ setup_playground() {
     #
 
     # lang defaults
-    [ -z "$LANGUAGE" ] && export LANGUAGE="en_US.UTF-8"
-    [ -z "$LANG" ] && export LANG="en_US.UTF-8"
-    [ -z "$LC_ALL" ] && export LC_ALL="en_US.UTF-8"
+    export LANGUAGE="${LANGUAGE:-en_US.UTF-8}"
+    export LANG="${LANG:-en_US.UTF-8}"
+    export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
     # proxy
-    [ -z "$X509_USER_PROXY" ] && export X509_USER_PROXY="/tmp/x509up_u$( id -u )"
+    export X509_USER_PROXY="{X509_USER_PROXY:-/tmp/x509up_u$( id -u )}"
 
     # start exporting variables
     export AP_BASE="${this_dir}"
@@ -73,7 +74,7 @@ setup_playground() {
     export CF_SETUP_NAME="${setup_name}"
 
     # load cf setup helpers
-    CF_SKIP_SETUP="1" source "$CF_BASE/setup.sh" "" || return "$?"
+    CF_SKIP_SETUP="1" source "${CF_BASE}/setup.sh" "" || return "$?"
 
     # interactive setup
     cf_setup_interactive_body() {
@@ -162,12 +163,12 @@ main() {
         return "0"
     else
         local code="$?"
-        echo -e "\x1b[0;49;31mplayground setup failed with code $code\x1b[0m"
-        return "$code"
+        echo -e "\x1b[0;49;31mplayground setup failed with code ${code}\x1b[0m"
+        return "${code}"
     fi
 }
 
 # entry point
-if [ "$AP_SKIP_SETUP" != "1" ]; then
+if [ "${AP_SKIP_SETUP}" != "1" ]; then
     main "$@"
 fi
