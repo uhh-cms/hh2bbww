@@ -14,8 +14,8 @@ import cmsdb
 import cmsdb.campaigns.run2_2018
 
 from columnflow.util import DotDict, get_root_processes_from_campaign
-from ap.config.categories import add_categories
-from ap.config.variables import add_variables
+from hbw.config.categories import add_categories
+from hbw.config.variables import add_variables
 
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
@@ -25,23 +25,23 @@ thisdir = os.path.dirname(os.path.abspath(__file__))
 # the main analysis object
 #
 
-analysis_st = od.Analysis(
-    name="analysis_st",
+analysis_hbw = od.Analysis(
+    name="analysis_hbw",
     id=1,
 )
 
 # analysis-global versions
-analysis_st.set_aux("versions", {
+analysis_hbw.set_aux("versions", {
 })
 
 # cmssw sandboxes that should be bundled for remote jobs in case they are needed
-analysis_st.set_aux("cmssw_sandboxes", [
+analysis_hbw.set_aux("cmssw_sandboxes", [
     # "cmssw_default.sh",
 ])
 
 # config groups for conveniently looping over certain configs
 # (used in wrapper_factory)
-analysis_st.set_aux("config_groups", {})
+analysis_hbw.set_aux("config_groups", {})
 
 
 #
@@ -55,7 +55,7 @@ campaign_run2_2018 = cmsdb.campaigns.run2_2018.campaign_run2_2018.copy()
 procs = get_root_processes_from_campaign(campaign_run2_2018)
 
 # create a config by passing the campaign, so id and name will be identical
-config_2018 = analysis_st.add_config(campaign_run2_2018)
+config_2018 = analysis_hbw.add_config(campaign_run2_2018)
 
 # add processes we are interested in
 config_2018.add_process(procs.n.data)

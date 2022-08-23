@@ -8,8 +8,8 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
-from ap.production.weights import event_weights
-from ap.selection.test import jet_energy_shifts
+from hbw.production.weights import event_weights
+from hbw.selection.test import jet_energy_shifts
 
 ak = maybe_import("awkward")
 

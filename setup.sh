@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-setup_playground() {
+setup_hbw() {
     # Runs the project setup, leading to a collection of environment variables starting with either
     #   - "CF_", for controlling behavior implemented by columnflow, or
-    #   - "AP_", for features provided by the analysis playground itself.
+    #   - "HBW_", for features provided by the analysis repository itself.
     # Check the setup.sh in columnflow for documentation of the "CF_" variables. The purpose of all
-    # "AP_" variables is documented below.
+    # "HBW_" variables is documented below.
     #
     # The setup also handles the installation of the software stack via virtual environments, and
     # optionally an interactive setup where the user can configure certain variables.
@@ -21,9 +21,9 @@ setup_playground() {
     #   None yet.
     #
     #
-    # Variables defined by the setup and potentially required throughout the playground.
-    #   AP_BASE
-    #       The absolute playground base directory. Used to infer file locations relative to it.
+    # Variables defined by the setup and potentially required throughout the analysis.
+    #   HBW_BASE
+    #       The absolute analysis base directory. Used to infer file locations relative to it.
     #   PATH
     #       Ammended PATH variable.
     #   PYTHONPATH
@@ -38,9 +38,9 @@ setup_playground() {
     #   X509_USER_PROXY
     #       Set to "/tmp/x509up_u$( id -u )" if not already set.
     #   LAW_HOME
-    #       Set to $AP_BASE/.law.
+    #       Set to $HBW_BASE/.law.
     #   LAW_CONFIG_FILE
-    #       Set to $AP_BASE/law.cfg.
+    #       Set to $HBW_BASE/law.cfg.
 
     #
     # prepare local variables
@@ -57,7 +57,7 @@ setup_playground() {
 
     #
     # global variables
-    # (AP = analysis playground, CF = columnflow)
+    # (HBW = hh2bbww, CF = columnflow)
     #
 
     # lang defaults
@@ -69,7 +69,7 @@ setup_playground() {
     export X509_USER_PROXY="${X509_USER_PROXY:-/tmp/x509up_u$( id -u )}"
 
     # start exporting variables
-    export AP_BASE="${this_dir}"
+    export HBW_BASE="${this_dir}"
     export CF_BASE="${this_dir}/modules/columnflow"
     export CF_SETUP_NAME="${setup_name}"
 
@@ -81,8 +81,8 @@ setup_playground() {
         # start querying for variables
         query CF_CERN_USER "CERN username" "$( whoami )"
         export_and_save CF_CERN_USER_FIRSTCHAR "\${CF_CERN_USER:0:1}"
-        query CF_DATA "Local data directory" "\$AP_BASE/data" "./data"
-        query CF_STORE_NAME "Relative path used in store paths (see next queries)" "ap_store"
+        query CF_DATA "Local data directory" "\$HBW_BASE/data" "./data"
+        query CF_STORE_NAME "Relative path used in store paths (see next queries)" "hbw_store"
         query CF_STORE_LOCAL "Default local output store" "\$CF_DATA/\$CF_STORE_NAME"
         query CF_WLCG_CACHE_ROOT "Local directory for caching remote files" "" "''"
         export_and_save CF_WLCG_USE_CACHE "$( [ -z "${CF_WLCG_CACHE_ROOT}" ] && echo false || echo true )"
@@ -101,7 +101,7 @@ setup_playground() {
         query CF_VOMS "Virtual-organization" "cms:/cms/dcms"
         export_and_save CF_TASK_NAMESPACE "${CF_TASK_NAMESPACE:-cf}"
     }
-    cf_setup_interactive "${CF_SETUP_NAME}" "${AP_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
+    cf_setup_interactive "${CF_SETUP_NAME}" "${HBW_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
 
     # continue the fixed setup
     export CF_VENV_BASE="${CF_SOFTWARE_BASE}/venvs"
@@ -127,13 +127,13 @@ setup_playground() {
     cf_setup_software_stack "${CF_SETUP_NAME}" || return "$?"
 
     # ammend paths that are not covered by the central cf setup
-    export PATH="${AP_BASE}/bin:${PATH}"
-    export PYTHONPATH="${AP_BASE}:${AP_BASE}/modules/cmsdb:${PYTHONPATH}"
+    export PATH="${HBW_BASE}/bin:${PATH}"
+    export PYTHONPATH="${HBW_BASE}:${HBW_BASE}/modules/cmsdb:${PYTHONPATH}"
 
     # initialze submodules
-    if [ -d "${AP_BASE}/.git" ]; then
-        for m in $( ls -1q "${AP_BASE}/modules" ); do
-            cf_init_submodule "${AP_BASE}/modules/${m}"
+    if [ -d "${HBW_BASE}/.git" ]; then
+        for m in $( ls -1q "${HBW_BASE}/modules" ); do
+            cf_init_submodule "${HBW_BASE}/modules/${m}"
         done
     fi
 
@@ -142,8 +142,8 @@ setup_playground() {
     # law setup
     #
 
-    export LAW_HOME="${AP_BASE}/.law"
-    export LAW_CONFIG_FILE="${AP_BASE}/law.cfg"
+    export LAW_HOME="${HBW_BASE}/.law"
+    export LAW_CONFIG_FILE="${HBW_BASE}/law.cfg"
 
     if which law &> /dev/null; then
         # source law's bash completion scipt
@@ -158,17 +158,17 @@ main() {
     # Invokes the main action of this script, catches possible error codes and prints a message.
 
     # run the actual setup
-    if setup_playground "$@"; then
-        echo -e "\x1b[0;49;35mplayground successfully setup\x1b[0m"
+    if setup_hbw "$@"; then
+        echo -e "\x1b[0;49;35mHH -> bbWW successfully setup\x1b[0m"
         return "0"
     else
         local code="$?"
-        echo -e "\x1b[0;49;31mplayground setup failed with code ${code}\x1b[0m"
+        echo -e "\x1b[0;49;31mHH -> bbWW setup failed with code ${code}\x1b[0m"
         return "${code}"
     fi
 }
 
 # entry point
-if [ "${AP_SKIP_SETUP}" != "1" ]; then
+if [ "${HBW_SKIP_SETUP}" != "1" ]; then
     main "$@"
 fi
