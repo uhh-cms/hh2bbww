@@ -10,8 +10,8 @@ They might require a **valid voms proxy** for accessing input data.
 
 ```shell
 # clone the project
-git clone --recursive git@github.com:uhh-cms/analysis_playground.git
-cd analysis_playground
+git clone --recursive git@github.com:uhh-cms/hh2bbww.git
+cd hh2bbww
 
 # source the setup and store decisions in .setups/dev.sh (arbitrary name)
 source setup.sh dev
@@ -46,5 +46,5 @@ law run cf.CreateDatacards \
 
 ### Development
 
-- Source hosted at [GitHub](https://github.com/uhh-cms/analysis_playground)
-- Report issues, questions, feature requests on [GitHub Issues](https://github.com/uhh-cms/analysis_playground/issues)
+- Source hosted at [GitHub](https://github.com/uhh-cms/hh2bbww)
+- Report issues, questions, feature requests on [GitHub Issues](https://github.com/uhh-cms/hh2bbww/issues)
