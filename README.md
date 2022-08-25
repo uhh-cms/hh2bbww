@@ -1,6 +1,6 @@
-# Analysis playground
+# HH → bbWW
 
-Testing area for full-Python HEP analyses based on [columnflow](https://github.com/uhh-cms/columnflow), [law](https://github.com/riga/law) and [order](https://github.com/riga/order).
+Analysis based on [columnflow](https://github.com/uhh-cms/columnflow), [law](https://github.com/riga/law) and [order](https://github.com/riga/order).
 
 
 ### Quickstart
