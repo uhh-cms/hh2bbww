@@ -67,7 +67,7 @@ class TestModel(MLModel):
         task: law.Task,
         input: Any,
         output: law.LocalDirectoryTarget,
-    ) -> None:
+    ) -> ak.Array:
         # define a dummy NN
         x = tf.keras.Input(shape=(2,))
         a1 = tf.keras.layers.Dense(10, activation="elu")(x)
@@ -87,8 +87,10 @@ class TestModel(MLModel):
         events_used_in_training: bool = False,
     ) -> None:
         # fake evaluation
-        set_ak_column(events, f"{self.cls_name}.n_muon", 1)
-        set_ak_column(events, f"{self.cls_name}.n_electron", 1)
+        events = set_ak_column(events, f"{self.cls_name}.n_muon", 1)
+        events = set_ak_column(events, f"{self.cls_name}.n_electron", 1)
+
+        return events
 
 
 # usable derivations
