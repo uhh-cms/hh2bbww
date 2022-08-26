@@ -140,7 +140,7 @@ def default(
     events = self[process_ids](events, **kwargs)
 
     # add cutflow features
-    #events = self[cutflow_features](events, **kwargs)
+    events = self[cutflow_features](events, results=results, **kwargs)
 
     # increment stats
     self[increment_stats](events, event_sel, stats, **kwargs)

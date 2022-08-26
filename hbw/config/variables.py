@@ -27,18 +27,18 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_jet",
-        binning = (11, -0.5, 10.5),
-        x_title="Number of jets"
+        binning=(11, -0.5, 10.5),
+        x_title="Number of jets",
     )
     config.add_variable(
         name="n_electron",
-        binning = (11, -0.5, 10.5),
-        x_title="Number of electrons"
+        binning=(11, -0.5, 10.5),
+        x_title="Number of electrons",
     )
     config.add_variable(
         name="n_muon",
-        binning = (11, -0.5, 10.5),
-        x_title="Number of muons"
+        binning=(11, -0.5, 10.5),
+        x_title="Number of muons",
     )
 
     config.add_variable(
@@ -57,4 +57,22 @@ def add_variables(config: od.Config) -> None:
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"Jet 1 $p_{T}$",
+    )
+    config.add_variable(
+        name="cf_n_jets",
+        expression="cutflow.n_jet",
+        binning=(11, -0.5, 10.5),
+        x_title=r"Number of jets",
+    )
+    config.add_variable(
+        name="cf_n_electron",
+        expression="cutflow.n_electron",
+        binning=(11, -0.5, 10.5),
+        x_title=r"Number of electrons",
+    )
+    config.add_variable(
+        name="cf_n_muon",
+        expression="cutflow.n_muon",
+        binning=(11, -0.5, 10.5),
+        x_title=r"Number of muons",
     )

@@ -18,14 +18,14 @@ def add_categories(config: od.Config) -> None:
         label="inclusive",
     )
 
-    cat_e = config.add_category(
+    cat_e = config.add_category(  # noqa
         name="1e",
         id=100,
         selection="sel_1e",
         label="1 Electron",
     )
 
-    cat_mu = config.add_category(
+    cat_mu = config.add_category( # noqa
         name="1mu",
         id=200,
         selection="sel_1mu",
