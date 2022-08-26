@@ -26,6 +26,22 @@ def add_variables(config: od.Config) -> None:
         x_title="HT",
     )
     config.add_variable(
+        name="n_jet",
+        binning = (11, -0.5, 10.5),
+        x_title="Number of jets"
+    )
+    config.add_variable(
+        name="n_electron",
+        binning = (11, -0.5, 10.5),
+        x_title="Number of electrons"
+    )
+    config.add_variable(
+        name="n_muon",
+        binning = (11, -0.5, 10.5),
+        x_title="Number of muons"
+    )
+
+    config.add_variable(
         name="jet1_pt",
         expression="Jet.pt[:,0]",
         null_value=EMPTY_FLOAT,

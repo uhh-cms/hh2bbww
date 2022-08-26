@@ -20,7 +20,6 @@ from hbw.config.variables import add_variables
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
-
 #
 # the main analysis object
 #
@@ -86,7 +85,7 @@ for dataset_name in dataset_names:
 
 # default calibrator, selector, producer, ml model and inference model
 config_2018.set_aux("default_calibrator", "test")
-config_2018.set_aux("default_selector", "test")
+config_2018.set_aux("default_selector", "default")
 config_2018.set_aux("default_producer", "features")
 config_2018.set_aux("default_ml_model", None)
 config_2018.set_aux("default_inference_model", "test")

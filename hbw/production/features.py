@@ -9,7 +9,7 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
 from hbw.production.weights import event_weights
-from hbw.selection.test import jet_energy_shifts
+from hbw.selection.general import jet_energy_shifts
 
 ak = maybe_import("awkward")
 
