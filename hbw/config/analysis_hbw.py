@@ -44,10 +44,10 @@ analysis_hbw.set_aux("config_groups", {})
 
 
 # trailing imports for different configs
-import hbw.config.config_2017
+import hbw.config.config_2017  # noqa
 
 #
-# 2018 standard config
+# 2018 standard config (TODO: externalize into own file)
 #
 
 # copy the campaign, which in turn copies datasets and processes

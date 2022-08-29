@@ -38,7 +38,10 @@ config_2017 = analysis_hbw.add_config(campaign_run2_2017)
 config_2017.add_process(procs.n.data)
 config_2017.add_process(procs.n.st)
 config_2017.add_process(procs.n.tt)
+config_2017.add_process(procs.n.hh_ggf_kt_1_kl_0_bbww_sl)
 config_2017.add_process(procs.n.hh_ggf_kt_1_kl_1_bbww_sl)
+config_2017.add_process(procs.n.hh_ggf_kt_1_kl_2p45_bbww_sl)
+config_2017.add_process(procs.n.hh_ggf_kt_1_kl_5_bbww_sl)
 
 # add datasets we need to study
 dataset_names = [
@@ -68,6 +71,10 @@ dataset_names = [
 ]
 for dataset_name in dataset_names:
     dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
+    
+    # reduce n_files to 2 for testing purposes
+    for k in dataset.info.keys():
+        dataset[k].n_files = 2
 
     # add aux info to datasets
     if dataset.name.startswith(("st", "tt")):
@@ -75,7 +82,6 @@ for dataset_name in dataset_names:
     if dataset.name.startswith("tt"):
         dataset.x.is_ttbar = True
         dataset.x.event_weights = ["top_pt_weight"]
-
 
 # default calibrator, selector, producer, ml model and inference model
 config_2017.set_aux("default_calibrator", "test")
@@ -86,7 +92,12 @@ config_2017.set_aux("default_inference_model", "test")
 
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
-config_2017.set_aux("process_groups", {})
+config_2017.set_aux("process_groups", {
+    "default": ["st", "tt", "hh_ggf_kt_1_kl_1_bbww_sl"],
+    "signal": ["hh_ggf_kt_1_kl_0_bbww_sl", "hh_ggf_kt_1_kl_1_bbww_sl",
+               "hh_ggf_kt_1_kl_2p45_bbww_sl", "hh_ggf_kt_1_kl_5_bbww_sl"],
+    "bkg": ["st", "tt"],
+})
 
 # dataset groups for conveniently looping over certain datasets
 # (used in wrapper_factory and during plotting)
