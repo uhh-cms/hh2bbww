@@ -47,10 +47,15 @@ def jec_test(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @calibrator(
-    uses={mc_weight, jec_test, deterministic_seeds},
-    produces={mc_weight, jec_test, deterministic_seeds},
+    uses={mc_weight, jec_test, deterministic_seeds, "genWeight"},
+    produces={mc_weight, jec_test, deterministic_seeds, "LHEWeight.originalXWGTUP"},
 )
 def test(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+
+    # for HH samples: override LHEWeight with genWeight because weird weights (TODO investigate)
+    if getattr(self, "dataset_inst", None) and "bbww_sl_powheg" in self.dataset_inst.name:
+        events = set_ak_column(events, "LHEWeight.originalXWGTUP", events.genWeight)
+
     events = self[mc_weight](events, **kwargs)
     events = self[deterministic_seeds](events, **kwargs)
     events = self[jec_test](events, **kwargs)

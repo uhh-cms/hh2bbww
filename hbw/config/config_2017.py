@@ -61,7 +61,10 @@ dataset_names = [
     "st_twchannel_tbar_powheg",
     "st_schannel_lep_amcatnlo",
     "st_schannel_had_amcatnlo",
+    "hh_ggf_kt_1_kl_0_bbww_sl_powheg",
     "hh_ggf_kt_1_kl_1_bbww_sl_powheg",
+    "hh_ggf_kt_1_kl_2p45_bbww_sl_powheg",
+    "hh_ggf_kt_1_kl_5_bbww_sl_powheg",
 ]
 for dataset_name in dataset_names:
     dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
