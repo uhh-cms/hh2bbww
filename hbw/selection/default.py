@@ -92,11 +92,11 @@ def lepton_selection(
 @selector(
     uses={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats,
+        category_ids, process_ids, increment_stats, "mc_weight",
     },
     produces={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats,
+        category_ids, process_ids, increment_stats, "mc_weight",
     },
     shifts={
         jet_energy_shifts,

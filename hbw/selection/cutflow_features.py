@@ -11,7 +11,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 ak = maybe_import("awkward")
 
 
-@selector(uses={"Jet.pt"}, produces={"cutflow.jet1_pt"})
+@selector(uses={"Jet.pt"}, produces={"cutflow.jet1_pt", "cutflow.n_jet", "cutflow.n_electron", "cutflow.n_muon"})
 def cutflow_features(self: Selector, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
 
     # determine jet pt before applying jet pt cut (and ideally after applying eta cut?)

@@ -59,7 +59,7 @@ def add_variables(config: od.Config) -> None:
         x_title=r"Jet 1 $p_{T}$",
     )
     config.add_variable(
-        name="cf_n_jets",
+        name="cf_n_jet",
         expression="cutflow.n_jet",
         binning=(11, -0.5, 10.5),
         x_title=r"Number of jets",
