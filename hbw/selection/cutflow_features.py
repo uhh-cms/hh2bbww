@@ -24,7 +24,7 @@ def cutflow_features(self: Selector, events: ak.Array, results: SelectionResult,
     jet_indices = ak.argsort(events.Jet.pt, ascending=False)
     jets = events.Jet[jet_indices]
     for i in range(4):
-        events = set_ak_column(events, f"cutflow.jet{i}_pt", Route(f"pt[:, {i}]").apply(jets, EMPTY_FLOAT))
+        events = set_ak_column(events, f"cutflow.jet{i+1}_pt", Route(f"pt[:, {i}]").apply(jets, EMPTY_FLOAT))
 
     # Number of objects should be counted after appyling
     events = set_ak_column(events, "cutflow.n_jet", ak.num(results.objects.Jet.Jet, axis=1))

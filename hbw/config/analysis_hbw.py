@@ -116,7 +116,9 @@ config_2018.set_aux("shift_groups", {})
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
 config_2018.set_aux("selector_step_groups", {
-    "test": ["Jet"],
+    "default": ["Lepton", "VetoLepton", "Jet", "BJet", "Trigger"],
+    "test": ["Lepton", "Jet", "BJet"],
+
 })
 
 # 2018 luminosity with values in inverse pb and uncertainties taken from

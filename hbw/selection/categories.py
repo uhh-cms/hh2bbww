@@ -18,7 +18,7 @@ def sel_incl(self: Selector, events: ak.Array, results: SelectionResult, **kwarg
 
 @selector(uses={"event"})
 def sel_1e(self: Selector, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
-    return (ak.num(results.objects.Electron.Electron, axis=-1)) == 1 & (ak.num(results.objects.Muon.Muon, axis=-1) == 0)
+    return (ak.num(results.objects.Electron.Electron, axis=-1) == 1) & (ak.num(results.objects.Muon.Muon, axis=-1) == 0)
 
 
 @selector(uses={"event"})

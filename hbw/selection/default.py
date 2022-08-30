@@ -26,6 +26,12 @@ def req_jet(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return mask
 
 
+@selector(uses={req_jet, "Jet.deepjetbscore"})
+def req_bjet(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    mask = (self[req_jet](events)) & (events.Jet.deepjetbscore > 0.3)
+    return mask
+
+
 @selector(uses={"event"})
 def sel_incl(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     # select all
@@ -37,35 +43,49 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
     return indices[mask[indices]]
 
 
-@selector(uses={req_jet}, produces={"jet_high_multiplicity"}, exposed=True)
+@selector(
+    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB"},
+    produces={"jet_high_multiplicity"},
+    shifts={jet_energy_shifts},
+    exposed=True,
+)
 def jet_selection(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
-    # example cuts:
-    # - require at least 4 jets with pt>30, eta<2.4
-    # example columns:
-    # - high jet multiplicity region (>=6 selected jets)
+    # HH -> bbWW(qqlnu) jet selection
+    # - require at least 3 jets with pt>30, eta<2.4
+    # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3
 
-    jet_mask = self[req_jet](events)
+    # jets
+    jet_mask = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
     jet_sel = ak.sum(jet_mask, axis=1) >= 4
-
-    jet_high_multiplicity = ak.sum(jet_mask, axis=1) >= 6
-    events = set_ak_column(events, "jet_high_multiplicity", jet_high_multiplicity)
-
-    # determine the masked jet indices
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
+
+    # b-tagged jets
+    bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= 0.3)  # TODO use some well-defined working point
+    bjet_sel = ak.sum(bjet_mask, axis=1) >= 1
+    bjet_indices = masked_sorted_indices(bjet_mask, events.Jet.btagDeepFlavB)
+
+    # TODO define bjets as the two jets with leading b-score, lightjets as remaining jets?
+
+    # example column: high jet multiplicity region (>=6 jets)
+    events = set_ak_column(events, "jet_high_multiplicity", ak.sum(jet_mask, axis=1) >= 6)
 
     # build and return selection results plus new columns
     return events, SelectionResult(
-        steps={"Jet": jet_sel},
-        objects={"Jet": {"Jet": jet_indices}},
+        steps={"Jet": jet_sel, "BJet": bjet_sel},
+        objects={"Jet": {"Jet": jet_indices, "BJet": bjet_indices}},
     )
 
 
-@selector(uses={"Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta"})
+@selector(uses={
+    "Electron.pt", "Electron.eta", "Electron.cutBased",
+    "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId",
+    "HLT.Ele35_WPTight_Gsf", "HLT.IsoMu27",
+})
 def lepton_selection(
         self: Selector,
         events: ak.Array,
@@ -73,8 +93,18 @@ def lepton_selection(
         **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
 
-    e_mask = (events.Electron.pt) > 30 & (abs(events.Electron.eta) < 2.4)
-    mu_mask = (events.Muon.pt) > 30 & (abs(events.Muon.eta) < 2.4)
+    # Veto Lepton masks
+    e_mask_veto = (events.Electron.pt > 15) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
+    mu_mask_veto = (events.Muon.pt > 15) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
+
+    lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
+
+    # 2017 Trigger selection (TODO different triggers based on year of data-taking)
+    trigger_sel = (events.HLT.Ele35_WPTight_Gsf) | (events.HLT.IsoMu27)
+
+    # Lepton definition for this analysis
+    e_mask = (events.Electron.pt > 28) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
+    mu_mask = (events.Muon.pt > 25) & (abs(events.Muon.eta) < 2.4) & (events.Muon.tightId)
 
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
 
@@ -84,7 +114,7 @@ def lepton_selection(
 
     # build and return selection results plus new columns
     return events, SelectionResult(
-        steps={"Lepton": lep_sel},
+        steps={"Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel},
         objects={"Electron": {"Electron": e_indices}, "Muon": {"Muon": mu_indices}},
     )
 

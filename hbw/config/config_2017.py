@@ -110,7 +110,10 @@ config_2017.set_aux("category_groups", {})
 
 # variable groups for conveniently looping over certain variables
 # (used during plotting)
-config_2017.set_aux("variable_groups", {})
+config_2017.set_aux("variable_groups", {
+    "default": ["n_jet", "n_muon", "n_electron", "ht", "jet1_pt"]  # n_deepjet, mbb, ...
+    "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
+})
 
 # shift groups for conveniently looping over certain shifts
 # (used during plotting)
@@ -119,7 +122,9 @@ config_2017.set_aux("shift_groups", {})
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
 config_2017.set_aux("selector_step_groups", {
-    "default": ["Lepton", "Jet"],
+    "default": ["Lepton", "VetoLepton", "Jet", "BJet", "Trigger"],
+    "thesis": ["Lepton", "Jet", "BJet", "Trigger"],  # reproduce master thesis cuts to check if everything works
+    "test": ["Lepton", "Jet", "BJet"],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
