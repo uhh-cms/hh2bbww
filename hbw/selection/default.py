@@ -50,9 +50,9 @@ def jet_selection(
     # - high jet multiplicity region (>=6 selected jets)
 
     jet_mask = self[req_jet](events)
-    jet_sel = ak.num(jet_mask, axis=1) >= 4
+    jet_sel = ak.sum(jet_mask, axis=1) >= 4
 
-    jet_high_multiplicity = ak.num(jet_mask, axis=1) >= 6
+    jet_high_multiplicity = ak.sum(jet_mask, axis=1) >= 6
     events = set_ak_column(events, "jet_high_multiplicity", jet_high_multiplicity)
 
     # determine the masked jet indices
