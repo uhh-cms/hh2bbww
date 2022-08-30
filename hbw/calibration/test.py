@@ -47,8 +47,8 @@ def jec_test(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @calibrator(
-    uses={mc_weight, jec_test, deterministic_seeds},
-    produces={mc_weight, jec_test, deterministic_seeds},
+    uses={mc_weight, jec_test, deterministic_seeds, "genWeight"},
+    produces={mc_weight, jec_test, deterministic_seeds, "LHEWeight.originalXWGTUP"},
 )
 def test(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[mc_weight](events, **kwargs)

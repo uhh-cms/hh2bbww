@@ -50,9 +50,9 @@ def jet_selection(
     # - high jet multiplicity region (>=6 selected jets)
 
     jet_mask = self[req_jet](events)
-    jet_sel = ak.num(jet_mask, axis=1) >= 4
+    jet_sel = ak.sum(jet_mask, axis=1) >= 4
 
-    jet_high_multiplicity = ak.num(jet_mask, axis=1) >= 6
+    jet_high_multiplicity = ak.sum(jet_mask, axis=1) >= 6
     events = set_ak_column(events, "jet_high_multiplicity", jet_high_multiplicity)
 
     # determine the masked jet indices
@@ -92,11 +92,11 @@ def lepton_selection(
 @selector(
     uses={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats,
+        category_ids, process_ids, increment_stats, "mc_weight",
     },
     produces={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats,
+        category_ids, process_ids, increment_stats, "mc_weight",
     },
     shifts={
         jet_energy_shifts,
@@ -140,7 +140,7 @@ def default(
     events = self[process_ids](events, **kwargs)
 
     # add cutflow features
-    #events = self[cutflow_features](events, **kwargs)
+    events = self[cutflow_features](events, results=results, **kwargs)
 
     # increment stats
     self[increment_stats](events, event_sel, stats, **kwargs)
