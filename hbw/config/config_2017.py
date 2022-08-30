@@ -36,15 +36,32 @@ config_2017 = analysis_hbw.add_config(campaign_run2_2017)
 
 # add processes we are interested in
 config_2017.add_process(procs.n.data)
-config_2017.add_process(procs.n.st)
 config_2017.add_process(procs.n.tt)
+config_2017.add_process(procs.n.st)
+config_2017.add_process(procs.n.w_lnu)
+config_2017.add_process(procs.n.dy_lep)
+# config_2017.add_process(procs.n.qcd)
+# config_2017.add_process(procs.n.ttv)
+# config_2017.add_process(procs.n.vv)
+# config_2017.add_process(procs.n.vv)
 config_2017.add_process(procs.n.hh_ggf_kt_1_kl_0_bbww_sl)
 config_2017.add_process(procs.n.hh_ggf_kt_1_kl_1_bbww_sl)
 config_2017.add_process(procs.n.hh_ggf_kt_1_kl_2p45_bbww_sl)
 config_2017.add_process(procs.n.hh_ggf_kt_1_kl_5_bbww_sl)
 
+# set color of some processes
+colors = {
+    "tt": (205, 0, 9), # red (as in cmsdb)
+    "st": (255, 153, 51), # orange
+    "w_lnu": (0, 204, 0),  # green
+    "dy_lep": (255, 255, 0),  # yellow
+}
+for proc, color in colors.items():
+    config_2017.get_process(proc).color = color
+
 # add datasets we need to study
 dataset_names = [
+    # DATA
     "data_e_b",
     "data_e_c",
     "data_e_d",
@@ -55,15 +72,38 @@ dataset_names = [
     "data_mu_d",
     "data_mu_e",
     "data_mu_f",
+    # TTbar
     "tt_sl_powheg",
     "tt_dl_powheg",
     "tt_fh_powheg",
+    # SingleTop
     "st_tchannel_t_powheg",
     "st_tchannel_tbar_powheg",
     "st_twchannel_t_powheg",
     "st_twchannel_tbar_powheg",
     "st_schannel_lep_amcatnlo",
     "st_schannel_had_amcatnlo",
+    # WJets
+    "w_lnu_ht70To100_madgraph",
+    "w_lnu_ht100To200_madgraph",
+    "w_lnu_ht200To400_madgraph",
+    "w_lnu_ht400To600_madgraph",
+    "w_lnu_ht600To800_madgraph",
+    "w_lnu_ht800To1200_madgraph",
+    "w_lnu_ht1200To2500_madgraph",
+    "w_lnu_ht2500_madgraph",
+    # DY
+    "dy_lep_m50_ht70to100_madgraph",
+    "dy_lep_m50_ht100to200_madgraph",
+    "dy_lep_m50_ht200to400_madgraph",
+    "dy_lep_m50_ht400to600_madgraph",
+    "dy_lep_m50_ht600to800_madgraph",
+    "dy_lep_m50_ht800to1200_madgraph",
+    "dy_lep_m50_ht1200to2500_madgraph",
+    "dy_lep_m50_ht2500_madgraph",
+    # QCD (msc thesis samples not implemented)
+    # TTV, VV -> ignore; Higgs -> not used in Msc, but would be interesting
+    # Signal
     "hh_ggf_kt_1_kl_0_bbww_sl_powheg",
     "hh_ggf_kt_1_kl_1_bbww_sl_powheg",
     "hh_ggf_kt_1_kl_2p45_bbww_sl_powheg",
@@ -93,11 +133,12 @@ config_2017.set_aux("default_inference_model", "test")
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
 config_2017.set_aux("process_groups", {
+    "default": ["tt", "st", "w_lnu", "dy_lep", "hh_ggf_kt_1_kl_1_bbww_sl"],
     "test": ["tt_sl", "hh_ggf_kt_1_kl_1_bbww_sl"],
-    "default": ["st", "tt", "hh_ggf_kt_1_kl_1_bbww_sl"],
+    "small": ["tt", "st", "hh_ggf_kt_1_kl_1_bbww_sl"],
     "signal": ["hh_ggf_kt_1_kl_0_bbww_sl", "hh_ggf_kt_1_kl_1_bbww_sl",
                "hh_ggf_kt_1_kl_2p45_bbww_sl", "hh_ggf_kt_1_kl_5_bbww_sl"],
-    "bkg": ["st", "tt"],
+    "bkg": ["tt", "st"],
 })
 
 # dataset groups for conveniently looping over certain datasets
@@ -111,7 +152,7 @@ config_2017.set_aux("category_groups", {})
 # variable groups for conveniently looping over certain variables
 # (used during plotting)
 config_2017.set_aux("variable_groups", {
-    "default": ["n_jet", "n_muon", "n_electron", "ht", "jet1_pt"]  # n_deepjet, mbb, ...
+    "default": ["n_jet", "n_muon", "n_electron", "ht", "jet1_pt"],  # n_deepjet, mbb, ...
     "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
 })
 
@@ -123,7 +164,7 @@ config_2017.set_aux("shift_groups", {})
 # (used in cutflow tasks)
 config_2017.set_aux("selector_step_groups", {
     "default": ["Lepton", "VetoLepton", "Jet", "BJet", "Trigger"],
-    "thesis": ["Lepton", "Jet", "BJet", "Trigger"],  # reproduce master thesis cuts to check if everything works
+    "thesis": ["Lepton", "Jet", "Trigger", "BJet"],  # reproduce master thesis cuts to check if everything works
     "test": ["Lepton", "Jet", "BJet"],
 })
 
