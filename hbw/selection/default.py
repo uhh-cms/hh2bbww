@@ -20,18 +20,6 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-@selector(uses={"Jet.pt", "Jet.eta"})
-def req_jet(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    mask = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
-    return mask
-
-
-@selector(uses={req_jet, "Jet.deepjetbscore"})
-def req_bjet(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    mask = (self[req_jet](events)) & (events.Jet.deepjetbscore > 0.3)
-    return mask
-
-
 @selector(uses={"event"})
 def sel_incl(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     # select all
@@ -58,26 +46,29 @@ def jet_selection(
     # HH -> bbWW(qqlnu) jet selection
     # - require at least 3 jets with pt>30, eta<2.4
     # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3
-
+    print(events.Jet.type)
     # jets
     jet_mask = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
-    jet_sel = ak.sum(jet_mask, axis=1) >= 4
+    jet_sel = ak.sum(jet_mask, axis=1) >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
     # b-tagged jets
     bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= 0.3)  # TODO use some well-defined working point
     bjet_sel = ak.sum(bjet_mask, axis=1) >= 1
-    bjet_indices = masked_sorted_indices(bjet_mask, events.Jet.btagDeepFlavB)
 
-    # TODO define bjets as the two jets with leading b-score, lightjets as remaining jets?
+    # sort jets after b-score and define b-jets as the two b-score leading jets
+    bjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, :2]
+
+    # lightjets are the remaining jets (TODO: b-score sorted but should be pt-sorted?)
+    lightjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, 2:]
 
     # example column: high jet multiplicity region (>=6 jets)
     events = set_ak_column(events, "jet_high_multiplicity", ak.sum(jet_mask, axis=1) >= 6)
 
     # build and return selection results plus new columns
     return events, SelectionResult(
-        steps={"Jet": jet_sel, "BJet": bjet_sel},
-        objects={"Jet": {"Jet": jet_indices, "BJet": bjet_indices}},
+        steps={"Jet": jet_sel, "Bjet": bjet_sel},
+        objects={"Jet": {"Jet": jet_indices, "Bjet": bjet_indices, "Lightjet": lightjet_indices}},
     )
 
 
