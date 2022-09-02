@@ -21,7 +21,13 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="ht",
-        binning=[0, 80, 120, 160, 200, 240, 280, 320, 400, 500, 600, 800],
+        binning=(40, 0, 1500),
+        x_title="HT",
+    )
+    config.add_variable(
+        name="ht_rebin",
+        expression="ht",
+        binning=[0, 80, 120, 160, 200, 240, 280, 320, 400, 500, 600, 800, 1200],
         unit="GeV",
         x_title="HT",
     )
@@ -48,6 +54,17 @@ def add_variables(config: od.Config) -> None:
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"Jet 1 $p_{T}$",
+    )
+    config.add_variable(
+        name="m_bb",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$m_{bb}$",
+    )
+    config.add_variable(
+        name="deltaR_bb",
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(b,b)$"
     )
 
     # cutflow variables

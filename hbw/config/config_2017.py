@@ -51,8 +51,8 @@ config_2017.add_process(procs.n.hh_ggf_kt_1_kl_5_bbww_sl)
 
 # set color of some processes
 colors = {
-    "tt": (205, 0, 9), # red (as in cmsdb)
-    "st": (255, 153, 51), # orange
+    "tt": (205, 0, 9),  # red (as in cmsdb)
+    "st": (255, 153, 51),  # orange
     "w_lnu": (0, 204, 0),  # green
     "dy_lep": (255, 255, 0),  # yellow
 }
@@ -133,6 +133,7 @@ config_2017.set_aux("default_inference_model", "test")
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
 config_2017.set_aux("process_groups", {
+    "hh": ["hh_ggf_kt_1_kl_1_bbww_sl"],
     "default": ["tt", "st", "w_lnu", "dy_lep", "hh_ggf_kt_1_kl_1_bbww_sl"],
     "test": ["tt_sl", "hh_ggf_kt_1_kl_1_bbww_sl"],
     "small": ["tt", "st", "hh_ggf_kt_1_kl_1_bbww_sl"],
@@ -143,16 +144,22 @@ config_2017.set_aux("process_groups", {
 
 # dataset groups for conveniently looping over certain datasets
 # (used in wrapper_factory and during plotting)
-config_2017.set_aux("dataset_groups", {})
+config_2017.set_aux("dataset_groups", {
+    "hh": ["hh_ggf_kt_1_kl_1_bbww_sl_powheg"],
+})
 
 # category groups for conveniently looping over certain categories
 # (used during plotting)
-config_2017.set_aux("category_groups", {})
+config_2017.set_aux("category_groups", {
+    "default": ["incl", "1e", "1mu"],
+    "test": ["incl", "1e"],
+})
 
 # variable groups for conveniently looping over certain variables
 # (used during plotting)
 config_2017.set_aux("variable_groups", {
-    "default": ["n_jet", "n_muon", "n_electron", "ht", "jet1_pt"],  # n_deepjet, mbb, ...
+    "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "jet1_pt"],  # n_deepjet, ....
+    "test": ["n_jet", "n_electron", "jet1_pt"],
     "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
 })
 
@@ -163,9 +170,9 @@ config_2017.set_aux("shift_groups", {})
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
 config_2017.set_aux("selector_step_groups", {
-    "default": ["Lepton", "VetoLepton", "Jet", "BJet", "Trigger"],
-    "thesis": ["Lepton", "Jet", "Trigger", "BJet"],  # reproduce master thesis cuts to check if everything works
-    "test": ["Lepton", "Jet", "BJet"],
+    "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
+    "thesis": ["Lepton", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts to check if everything works
+    "test": ["Lepton", "Jet", "Bjet"],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
@@ -370,8 +377,8 @@ config_2017.set_aux("external_files", DotDict.wrap({
 config_2017.set_aux("keep_columns", DotDict.wrap({
     "cf.ReduceEvents": {
         "run", "luminosityBlock", "event",
-        "nJet", "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
-        "Deepjet.pt", "Deepjet.eta", "Deepjet.btagDeepFlavB",
+        "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
+        "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
         "nMuon", "Muon.pt", "Muon.eta",
         "nElectron", "Electron.pt", "Electron.eta",
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",

@@ -12,16 +12,40 @@ from hbw.production.weights import event_weights
 from hbw.selection.general import jet_energy_shifts
 
 ak = maybe_import("awkward")
+coffea = maybe_import("coffea")
+maybe_import("coffea.nanoevents.methods.nanoaod")
+# from coffea.nanoevents.methods.nanoaod import behavior
+
+
+@producer(
+    uses={"Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass"},
+    produces={"m_bb", "deltaR_bb"},
+)
+def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    # add 4-vector behavior to Bjet fields
+    events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
+    events["Bjet"] = ak.with_name(events.Bjet, "PtEtaPhiMLorentzVector")
+
+    if(ak.any(ak.num(events.Bjet, axis=-1) != 2)):
+        raise Exception("In features.py: there should be exactly 2 bjets in each event")
+
+    m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
+    events = set_ak_column(events, "m_bb", m_bb)
+
+    deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
+    events = set_ak_column(events, "deltaR_bb", deltaR_bb)
+
+    return events
 
 
 @producer(
     uses={
-        event_weights,
-        "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta", "Jet.pt", "Jet.eta",
-        "Jet.btagDeepFlavB",
+        event_weights, bb_features,
+        "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
+        "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
     },
     produces={
-        event_weights,
+        event_weights, bb_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet",
     },
     shifts={
@@ -34,6 +58,8 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_electron", ak.num(events.Electron.pt, axis=1))
     events = set_ak_column(events, "n_muon", ak.num(events.Muon.pt, axis=1))
     events = set_ak_column(events, "n_deepjet", ak.num(events.Jet.pt[events.Jet.btagDeepFlavB > 0.3], axis=1))
+
+    events = self[bb_features](events, **kwargs)
 
     # add event weights
     events = self[event_weights](events, **kwargs)
