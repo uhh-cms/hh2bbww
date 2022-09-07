@@ -9,6 +9,8 @@ from typing import Tuple
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
+from columnflow.production.util import attach_coffea_behavior
+
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
@@ -45,15 +47,16 @@ def jet_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
     # HH -> bbWW(qqlnu) jet selection
     # - require at least 3 jets with pt>30, eta<2.4
-    # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3
-    print(events.Jet.type)
+    # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3040 (Medium WP)
+
     # jets
     jet_mask = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
     jet_sel = ak.sum(jet_mask, axis=1) >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
-    # b-tagged jets
-    bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= 0.3)  # TODO use some well-defined working point
+    # b-tagged jets, medium working point
+    wp_med = self.config_inst.x.btag_working_points.deepcsv.medium
+    bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= wp_med)
     bjet_sel = ak.sum(bjet_mask, axis=1) >= 1
 
     # sort jets after b-score and define b-jets as the two b-score leading jets
@@ -74,7 +77,7 @@ def jet_selection(
 
 @selector(uses={
     "Electron.pt", "Electron.eta", "Electron.cutBased",
-    "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId",
+    "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
     "HLT.Ele35_WPTight_Gsf", "HLT.IsoMu27",
 })
 def lepton_selection(
@@ -83,6 +86,10 @@ def lepton_selection(
         stats: defaultdict,
         **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
+    # HH -> bbWW(qqlnu) lepton selection
+    # - require exactly 1 lepton (e or mu) with pt_e>28 / pt_mu>25, eta<2.4 and tight ID
+    # - veto additional leptons (TODO define exact cuts)
+    # - require that events are triggered by SingleMu or SingleEle trigger
 
     # Veto Lepton masks
     e_mask_veto = (events.Electron.pt > 15) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
@@ -95,7 +102,12 @@ def lepton_selection(
 
     # Lepton definition for this analysis
     e_mask = (events.Electron.pt > 28) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
-    mu_mask = (events.Muon.pt > 25) & (abs(events.Muon.eta) < 2.4) & (events.Muon.tightId)
+    mu_mask = (
+        (events.Muon.pt > 25) &
+        (abs(events.Muon.eta) < 2.4) &
+        (events.Muon.tightId) &
+        (events.Muon.pfRelIso04_all < 0.15)
+    )
 
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
 
@@ -113,11 +125,11 @@ def lepton_selection(
 @selector(
     uses={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats, "mc_weight",
+        category_ids, process_ids, increment_stats, attach_coffea_behavior,
     },
     produces={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats, "mc_weight",
+        category_ids, process_ids, increment_stats, attach_coffea_behavior,
     },
     shifts={
         jet_energy_shifts,
@@ -130,11 +142,8 @@ def default(
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
-    # example cuts:
-    # - jet_selection_test
-    # example stats:
-    # - number of events before and after selection
-    # - sum of mc weights before and after selection
+    # ensure coffea behavior
+    events = self[attach_coffea_behavior](events, **kwargs)
 
     # prepare the selection results that are updated at every step
     results = SelectionResult()
@@ -150,7 +159,10 @@ def default(
     # combined event selection after all steps
     event_sel = (
         jet_results.steps.Jet &
-        lepton_results.steps.Lepton
+        jet_results.steps.Bjet &
+        lepton_results.steps.Lepton &
+        # lepton_results.steps.VetoLepton &
+        lepton_results.steps.Trigger
     )
     results.main["event"] = event_sel
 

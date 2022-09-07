@@ -124,7 +124,7 @@ for dataset_name in dataset_names:
         dataset.x.event_weights = ["top_pt_weight"]
 
 # default calibrator, selector, producer, ml model and inference model
-config_2017.set_aux("default_calibrator", "test")
+config_2017.set_aux("default_calibrator", "default")
 config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
@@ -397,11 +397,16 @@ config_2017.set_aux("external_files", DotDict.wrap({
 # columns to keep after certain steps
 config_2017.set_aux("keep_columns", DotDict.wrap({
     "cf.ReduceEvents": {
+        # general event information
         "run", "luminosityBlock", "event",
+        # object properties
         "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
         "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
-        "nMuon", "Muon.pt", "Muon.eta",
-        "nElectron", "Electron.pt", "Electron.eta",
+        # "Muon.*", "Electron.*", "MET.*",
+        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+        "MET.pt", "MET.phi",
+        # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
     },
     "cf.MergeSelectionMasks": {
