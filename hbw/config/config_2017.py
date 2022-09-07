@@ -129,6 +129,7 @@ config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
 config_2017.set_aux("default_inference_model", "test")
+config_2017.set_aux("default_process_settings", [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
@@ -139,7 +140,7 @@ config_2017.set_aux("process_groups", {
     "small": ["tt", "st", "hh_ggf_kt_1_kl_1_bbww_sl"],
     "signal": ["hh_ggf_kt_1_kl_0_bbww_sl", "hh_ggf_kt_1_kl_1_bbww_sl",
                "hh_ggf_kt_1_kl_2p45_bbww_sl", "hh_ggf_kt_1_kl_5_bbww_sl"],
-    "bkg": ["tt", "st"],
+    "bkg": ["tt", "st", "w_lnu", "dy_lep"],
 })
 
 # dataset groups for conveniently looping over certain datasets
@@ -158,7 +159,7 @@ config_2017.set_aux("category_groups", {
 # variable groups for conveniently looping over certain variables
 # (used during plotting)
 config_2017.set_aux("variable_groups", {
-    "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "jet1_pt"],  # n_deepjet, ....
+    "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
     "test": ["n_jet", "n_electron", "jet1_pt"],
     "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
 })
@@ -175,6 +176,11 @@ config_2017.set_aux("selector_step_groups", {
     "test": ["Lepton", "Jet", "Bjet"],
 })
 
+# process settings groups to quickly define settings for ProcessPlots
+config_2017.set_aux("process_settings_groups", {
+    "default": [["tt_sl", "label=nice custom label"], ["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000,unstack"]],
+})
+
 # 2017 luminosity with values in inverse pb and uncertainties taken from
 # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=176#LumiComb
 config_2017.set_aux("luminosity", Number(41480, {
@@ -186,6 +192,21 @@ config_2017.set_aux("luminosity", Number(41480, {
 # 2017 minimum bias cross section in mb (milli) for creating PU weights, values from
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData?rev=44#Pileup_JSON_Files_For_Run_II
 config_2017.set_aux("minbiasxs", Number(69.2, (REL, 0.046)))
+
+# 2017 b-tag working points
+# https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
+config_2017.x.btag_working_points = DotDict.wrap({
+    "deepjet": {
+        "loose": 0.0532,
+        "medium": 0.3040,
+        "tight": 0.7476,
+    },
+    "deepcsv": {
+        "loose": 0.1355,
+        "medium": 0.4506,
+        "tight": 0.7738,
+    },
+})
 
 # location of JEC txt files
 config_2017.set_aux("jec", DotDict.wrap({

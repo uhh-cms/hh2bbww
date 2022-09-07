@@ -64,7 +64,7 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="deltaR_bb",
         binning=(40, 0, 5),
-        x_title=r"$\Delta R(b,b)$"
+        x_title=r"$\Delta R(b,b)$",
     )
 
     # cutflow variables
