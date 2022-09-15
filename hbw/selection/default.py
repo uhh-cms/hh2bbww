@@ -126,10 +126,12 @@ def lepton_selection(
     uses={
         jet_selection, lepton_selection, cutflow_features,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
+        "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     produces={
         jet_selection, lepton_selection, cutflow_features,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
+        "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     shifts={
         jet_energy_shifts,

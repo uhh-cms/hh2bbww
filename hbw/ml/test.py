@@ -42,12 +42,12 @@ class TestModel(MLModel):
             )
 
     def sandbox(self, task: law.Task) -> str:
-        return dev_sandbox("bash::$AP_BASE/sandboxes/venv_ml_tf.sh")
+        return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_tf.sh")
 
     def datasets(self) -> Set[od.Dataset]:
         return {
-            self.config_inst.get_dataset("st_tchannel_t"),
-            self.config_inst.get_dataset("tt_sl"),
+            self.config_inst.get_dataset("st_tchannel_t_powheg"),
+            self.config_inst.get_dataset("tt_sl_powheg"),
         }
 
     def uses(self) -> Set[Union[Route, str]]:

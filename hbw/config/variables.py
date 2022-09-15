@@ -64,28 +64,28 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"Jet %i $p_{T}$" % (i+1),
+            x_title=r"Jet %i $p_{T}$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_eta",
             expression=f"Jet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, 0., 5),
-            x_title=r"Jet %i $\eta$" % (i+1),
+            x_title=r"Jet %i $\eta$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_phi",
             expression=f"Jet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Jet %i $\phi$" % (i+1),
+            x_title=r"Jet %i $\phi$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_mass",
             expression=f"Jet.mass[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Jet %i mass" % (i+1),
+            x_title=r"Jet %i mass" % (i + 1),
         )
 
     # Bjets (2 b-score leading jets)
@@ -96,28 +96,28 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"Bjet %i $p_{T}$" % (i+1),
+            x_title=r"Bjet %i $p_{T}$" % (i + 1),
         )
         config.add_variable(
             name=f"bjet{i+1}_eta",
             expression=f"Bjet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, 0., 5),
-            x_title=r"Bjet %i $\eta$" % (i+1),
+            x_title=r"Bjet %i $\eta$" % (i + 1),
         )
         config.add_variable(
             name=f"bjet{i+1}_phi",
             expression=f"Jet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Bjet %i $\phi$" % (i+1),
+            x_title=r"Bjet %i $\phi$" % (i + 1),
         )
         config.add_variable(
             name=f"bjet{i+1}_mass",
             expression=f"Bjet.mass[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Bjet %i mass" % (i+1),
+            x_title=r"Bjet %i mass" % (i + 1),
         )
 
     # Leptons
@@ -154,16 +154,16 @@ def add_variables(config: od.Config) -> None:
 
     # MET
     config.add_variable(
-        name=f"met_pt",
-        expression=f"MET.pt[:,0]",
+        name="met_pt",
+        expression="MET.pt[:,0]",
         null_value=EMPTY_FLOAT,
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"MET $p_{T}$",
     )
     config.add_variable(
-        name=f"met_phi",
-        expression=f"MET.phi[:,0]",
+        name="met_phi",
+        expression="MET.phi[:,0]",
         null_value=EMPTY_FLOAT,
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",

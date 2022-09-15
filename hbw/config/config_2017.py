@@ -51,13 +51,24 @@ config_2017.add_process(procs.n.hh_ggf_kt_1_kl_5_bbww_sl)
 
 # set color of some processes
 colors = {
-    "tt": (205, 0, 9),  # red (as in cmsdb)
-    "st": (255, 153, 51),  # orange
-    "w_lnu": (0, 204, 0),  # green
-    "dy_lep": (255, 255, 0),  # yellow
+    "data": "#000000",  # black
+    "tt": "#e41a1c",  # red
+    "qcd": "#377eb8",  # blue
+    "w_lnu": "#4daf4a",  # green
+    "higgs": "#984ea3",  # purple
+    "st": "#ff7f00",  # orange
+    "dy_lep": "#ffff33",  # yellow
+    "ttV": "#a65628",  # brown
+    "VV": "#f781bf",  # pink
+    "other": "#999999",  # grey
+    "hh_ggf_kt_1_kl_1_bbww_sl": "#000000",  # black
+    "hh_ggf_kt_1_kl_0_bbww_sl": "#1b9e77",  # green2
+    "hh_ggf_kt_1_kl_2p45_bbww_sl": "#d95f02",  # orange2
+    "hh_ggf_kt_1_kl_5_bbww_sl": "#e7298a",  # pink2
 }
 for proc, color in colors.items():
-    config_2017.get_process(proc).color = color
+    if proc in config_2017.processes:
+        config_2017.get_process(proc).color = color
 
 # add datasets we need to study
 dataset_names = [
@@ -135,9 +146,10 @@ config_2017.set_aux("default_process_settings", [["hh_ggf_kt_1_kl_1_bbww_sl", "s
 # (used in wrapper_factory and during plotting)
 config_2017.set_aux("process_groups", {
     "hh": ["hh_ggf_kt_1_kl_1_bbww_sl"],
-    "default": ["tt", "st", "w_lnu", "dy_lep", "hh_ggf_kt_1_kl_1_bbww_sl"],
-    "test": ["tt_sl", "hh_ggf_kt_1_kl_1_bbww_sl"],
-    "small": ["tt", "st", "hh_ggf_kt_1_kl_1_bbww_sl"],
+    "default": ["hh_ggf_kt_1_kl_1_bbww_sl", "dy_lep", "w_lnu", "st", "tt"],
+    "working": ["hh_ggf_kt_1_kl_1_bbww_sl", "dy_lep", "st", "tt"],
+    "test": ["hh_ggf_kt_1_kl_1_bbww_sl", "tt_sl"],
+    "small": ["hh_ggf_kt_1_kl_1_bbww_sl", "st", "tt"],
     "signal": ["hh_ggf_kt_1_kl_0_bbww_sl", "hh_ggf_kt_1_kl_1_bbww_sl",
                "hh_ggf_kt_1_kl_2p45_bbww_sl", "hh_ggf_kt_1_kl_5_bbww_sl"],
     "bkg": ["tt", "st", "w_lnu", "dy_lep"],
@@ -176,9 +188,16 @@ config_2017.set_aux("selector_step_groups", {
     "test": ["Lepton", "Jet", "Bjet"],
 })
 
+config_2017.set_aux("selector_step_labels", {
+    "Jet": r"$N_{Jets} \geq 3$",
+    "Lepton": r"$N_{Lepton} = 1$",
+    "Bjet": r"$N_{Jets}^{BTag} \geq 1$",
+})
+
+
 # process settings groups to quickly define settings for ProcessPlots
 config_2017.set_aux("process_settings_groups", {
-    "default": [["tt_sl", "label=nice custom label"], ["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000,unstack"]],
+    "default": [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000,unstack"]],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
@@ -396,6 +415,7 @@ config_2017.set_aux("external_files", DotDict.wrap({
 
 # columns to keep after certain steps
 config_2017.set_aux("keep_columns", DotDict.wrap({
+    "cf.SelectEvents": {"mc_weight"},
     "cf.ReduceEvents": {
         # general event information
         "run", "luminosityBlock", "event",
