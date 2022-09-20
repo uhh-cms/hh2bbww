@@ -33,6 +33,21 @@ class SimpleDNN(MLModel):
         # define output classes (processes)
         self.processes = ["hh_ggf_kt_1_kl_1_bbww_sl", "tt", "st"]
 
+        # the custom process weight should be chosen such that individual eventweights are close to 1
+        # but can also be used to optimize
+        self.custom_procweights = {
+            "hh_ggf_kt_1_kl_1_bbww_sl": 1 / 1000,
+            "tt": 1 / 1000,
+            "st": 1 / 1000,
+        }
+
+        # DNN model parameters
+        self.layers = [32, 32, 32]
+        self.learningrate = 0.001
+        # self.batchsize = -1
+        self.epochs = 5
+        self.eqweight = True
+
         # dynamically add variables for the quantities produced by this model
         for proc in self.processes:
             if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
@@ -57,7 +72,10 @@ class SimpleDNN(MLModel):
         return {"ht", "m_bb", "deltaR_bb", "normalization_weight", "mc_weight"}
 
     def produces(self) -> Set[Union[Route, str]]:
-        return {f"{self.cls_name}.score"}
+        produced = set({})
+        for proc in self.processes:
+            produced.add(f"{self.cls_name}.score_{proc}")
+        return produced
 
     def output(self, task: law.Task) -> law.FileSystemDirectoryTarget:
         return task.target(f"mlmodel_f{task.fold}of{self.folds}", dir=True)
@@ -74,36 +92,34 @@ class SimpleDNN(MLModel):
         # np.random.seed(1337)  # for reproducibility
         from keras.layers import Dense
 
-        # parameters (TODO: as input parameters)
-        N_inputs = len(self.used_columns) - 2
-        layers = [32, 32, 32]  # [512, 512, 512]
-        N_outputs = 3  # number of processes
-        eqweight = False
-        learningrate = 0.001
-        # batchsize = -1
-        epochs = 5  # 200
+        N_inputs = len(self.used_columns) - 2  # don't count the weight columns
+        N_outputs = len(self.processes)
 
         process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
-        N_events_proc = len(self.processes) * [(self.folds - 1) * [0]]
+        N_events_proc = np.array(len(self.processes) * [(self.folds - 1) * [0]])
+        sum_eventweights_proc = np.array(len(self.processes) * [(self.folds - 1) * [0]])
         dataset_proc_idx = {}  # bookkeeping which process each dataset belongs to
 
-        # determine process of each dataset and count number of events for this process
+        # determine process of each dataset and count number of events & sum of eventweights for this process
         for dataset, infiletargets in input.items():
-            # print("dataset:", dataset)
             dataset_inst = self.config_inst.get_dataset(dataset)
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
 
             N_events = [len(ak.from_parquet(inp.fn)) for inp in infiletargets]
+            sum_eventweights = [ak.sum(ak.from_parquet(inp.fn).normalization_weight) for inp in infiletargets]
 
             for i, proc in enumerate(process_insts):
-                # print("process:", proc.name)
                 # NOTE: here are some assumptions made, should check if they hold true for each relevant process
                 leaf_procs = [proc] if proc.is_leaf_process else proc.get_leaf_processes()
                 if dataset_inst.processes.get_first() in leaf_procs:
+                    print(f"the dataset {dataset} counts as process {proc.name}")
                     dataset_proc_idx[dataset] = i
                     for j, N_evt in enumerate(N_events):
                         N_events_proc[i][j] += N_evt
+
+                    for j, sumw in enumerate(sum_eventweights):
+                        sum_eventweights_proc[i][j] += sumw
                     continue
             if dataset_proc_idx.get(dataset, -1) == -1:
                 raise Exception(f"dataset {dataset} is not matched to any of the given processes")
@@ -116,7 +132,7 @@ class SimpleDNN(MLModel):
         }
 
         for dataset, infiletargets in input.items():
-            # print("dataset:", dataset)
+            print("dataset:", dataset)
             this_proc_idx = dataset_proc_idx[dataset]
 
             event_folds = [ak.from_parquet(inp.fn) for inp in infiletargets]
@@ -124,21 +140,24 @@ class SimpleDNN(MLModel):
             for i, events in enumerate(event_folds):  # i is in [0, self.folds-2]
 
                 weights = events.normalization_weight
-                if eqweight:
-                    weights *= N_events_proc[this_proc_idx] / sum(N_events_proc)
+                if self.eqweight:
+                    weights = weights * sum(sum_eventweights_proc)[i] / sum_eventweights_proc[this_proc_idx][i]
+                    custom_procweight = self.custom_procweights[self.processes[this_proc_idx]]
+                    weights = weights * custom_procweight
 
                 weights = ak.to_numpy(weights)
-
+                print("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
                 events = remove_ak_column(events, "mc_weight")
                 events = remove_ak_column(events, "normalization_weight")
 
                 # bookkeep input feature names (order corresponds to order in the NN input)
-                features = events.fields
-                print("features:", features)
+                # features = events.fields
+                # print("features:", features)
 
                 # transform events into numpy array and transpose
                 events = np.transpose(ak.to_numpy(ak.Array(ak.unzip(events))))
 
+                # create the truth values for the output layer
                 target = np.zeros((len(events), len(self.processes)))
                 target[:, this_proc_idx] = 1
 
@@ -161,22 +180,22 @@ class SimpleDNN(MLModel):
         model = keras.models.Sequential()
 
         # first layer with input shape
-        model.add(Dense(layers[0], activation="relu", input_shape=(N_inputs,)))
+        model.add(Dense(self.layers[0], activation="relu", input_shape=(N_inputs,)))
 
         # following hidden layers
-        for layer in layers[1:]:
+        for layer in self.layers[1:]:
             model.add(Dense(layer, activation="relu"))
 
         # output layer
         model.add(Dense(N_outputs, activation="softmax"))
 
         # compile the network
-        optimizer = keras.optimizers.SGD(learning_rate=learningrate)
+        optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
         model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["categorical_accuracy"])
 
         # train the model (output history here maybe?)
         model.fit(
-            x=train["inputs"], y=train["target"], epochs=epochs, sample_weight=train["weights"],
+            x=train["inputs"], y=train["target"], epochs=self.epochs, sample_weight=train["weights"],
             validation_data=(validation["inputs"], validation["target"], validation["weights"]),
             shuffle=True, verbose=0,
         )
@@ -199,17 +218,33 @@ class SimpleDNN(MLModel):
 
         inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in features])))
 
-        outputs = -1
+        """
+        # use NN model that has not seen test set yet
+        outputs = np.array([[-1] * len(self.processes)] * len(inputs))
         for i in range(self.folds):
             print(f"Evaluation fold {i}")
-            outputs = np.where(fold_indices == i, models[i].predict_on_batch(inputs), outputs)
-
-        if len(outputs, 0) != len(self.processes):
+            idx = np.transpose(np.broadcast_to(ak.to_numpy(fold_indices == i), (len(self.processes), len(events))))
+            outputs = np.where(idx, models[i].predict_on_batch(inputs), outputs)
+        """
+        # to simplyfy (testing): use any model
+        outputs = models[0].predict_on_batch(inputs)
+        if len(outputs[0]) != len(self.processes):
             raise Exception("number of output nodes should be equal to number of processes")
 
-        for i, proc in enumerate(self.processes):
-            events = set_ak_column(events, f"{self.cls_name}.score", outputs[:, i])
+        # transform output to contiguous ak Array
+        outputs = ak.from_numpy(np.ascontiguousarray(outputs))
+        print("!!!")
+        print(outputs.type)
+        print(outputs)
 
+        for i, proc in enumerate(self.processes):
+            events = set_ak_column(events, f"{self.cls_name}.score_{proc}", outputs[:, i])
+        print("event fields:", events.fields)
+        for f in events.fields:
+            print(f, events[f].type)
+        print("produced", self.produces())
+        # TODO: for some reason, saving these columns does not work yet:
+        # ValueError: ndarray is not contiguous
         return events
 
 
