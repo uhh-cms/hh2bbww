@@ -181,6 +181,18 @@ def add_variables(config: od.Config) -> None:
         binning=(40, 0, 5),
         x_title=r"$\Delta R(b,b)$",
     )
+    # jj features
+    config.add_variable(
+        name="m_jj",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$m_{jj}$",
+    )
+    config.add_variable(
+        name="deltaR_jj",
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(j_{1},j_{2})$",
+    )
 
     # cutflow variables
     config.add_variable(
