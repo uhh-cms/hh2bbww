@@ -94,7 +94,7 @@ dataset_names = [
     "st_twchannel_tbar_powheg",
     "st_schannel_lep_amcatnlo",
     "st_schannel_had_amcatnlo",
-    # WJets
+    # WJets (TODO: fix wjet datasets)
     "w_lnu_ht70To100_madgraph",
     "w_lnu_ht100To200_madgraph",
     "w_lnu_ht200To400_madgraph",
@@ -113,7 +113,7 @@ dataset_names = [
     "dy_lep_m50_ht1200to2500_madgraph",
     "dy_lep_m50_ht2500_madgraph",
     # QCD (msc thesis samples not implemented)
-    # TTV, VV -> ignore; Higgs -> not used in Msc, but would be interesting
+    # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
     # Signal
     "hh_ggf_kt_1_kl_0_bbww_sl_powheg",
     "hh_ggf_kt_1_kl_1_bbww_sl_powheg",
@@ -123,7 +123,7 @@ dataset_names = [
 for dataset_name in dataset_names:
     dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
 
-    # reduce n_files to 2 for testing purposes
+    # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
         dataset[k].n_files = 2
 
@@ -197,7 +197,8 @@ config_2017.set_aux("selector_step_labels", {
 
 # process settings groups to quickly define settings for ProcessPlots
 config_2017.set_aux("process_settings_groups", {
-    "default": [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000,unstack"]],
+    "default": [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000", "unstack"]],
+    "unstack_all": [[proc, "unstack"] for proc in config_2017.processes],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
@@ -419,6 +420,9 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
     "cf.ReduceEvents": {
         # general event information
         "run", "luminosityBlock", "event",
+        # weights
+        "LHEWeight.*",
+        "LHEPdfWeight", "nLHEPdfWeight", "LHEScaleWeight", "nLHEScaleWeight",
         # object properties
         "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
         "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
