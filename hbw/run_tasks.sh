@@ -49,7 +49,7 @@ These parameters should be fixed in general, so it should be fine to just use th
 The input value of these parameters define which function is used in the calibration/selection/production etc.
 If you write a new file containing such a function, you need to include it in the 'law.cfg'
 "
-calibrator="default"
+calibrators="default"
 selector="default"
 producer="features"
 ml_model="simple"
@@ -83,12 +83,12 @@ shape_norm="False"
 ## (branch 0 means that only the 1st file of the NanoAOD is processed)
 : "
 law run cf.SelectEvents --version $version \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --dataset tt_sl_powheg \
     --branch 0
 
 law run cf.ReduceEvents --version $version \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --dataset tt_sl_powheg \
     --branch 0
 " 
@@ -101,7 +101,7 @@ relevant_shifts="nominal"
 relevant_configs="run2_2017"
 : "
 law run cf.ReduceEventsWrapper --version $version --workers $workers \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --configs $relevant_configs \
     --shifts $relevant_shifts \
     --datasets $relevant_datasets \
@@ -112,7 +112,7 @@ law run cf.ReduceEventsWrapper --version $version --workers $workers \
 
 law run cf.PlotCutflow --version $version \
     --workers $workers \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --shift $shift \
     --processes $processes \
     --categories $categories \
@@ -129,7 +129,7 @@ law run cf.PlotCutflow --version $version \
 
 law run cf.PlotCutflowVariables --version $version --per-plot steps \
     --workers $workers \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --shift $shift \
     --variables $cutflow_vars \
     --processes $processes \
@@ -143,7 +143,7 @@ law run cf.PlotCutflowVariables --version $version --per-plot steps \
 
 law run cf.PlotCutflowVariables --version $version --per-plot processes \
     --workers $workers \
-    --calibrator $calibrator --selector $selector \
+    --calibrators $calibrators --selector $selector \
     --shift $shift \
     --variables $cutflow_vars \
     --processes $processes \
@@ -159,7 +159,7 @@ law run cf.PlotCutflowVariables --version $version --per-plot processes \
 
 law run cf.PlotVariables --version $version \
     --workers $workers \
-    --calibrator $calibrator  --selector $selector --producer $producer \
+    --calibrators $calibrators  --selector $selector --producer $producer \
     --shift $shift \
     --variables $variables \
     --processes $processes \
@@ -177,7 +177,7 @@ law run cf.PlotVariables --version $version \
 : "
 law run cf.PlotShiftedVariables --version $version \
     --workers $workers \
-    --calibrator $calibrator --selector $selector --producer $producer \
+    --calibrators $calibrators --selector $selector --producer $producer \
     --shift-sources $shift_sources \
     --workers $workers \
     --variables $variables \
