@@ -24,7 +24,10 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 )
 def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    events["Bjet"] = ak.with_name(events.Bjet, "PtEtaPhiMLorentzVector")
+    events["Jet"] = ak.with_name(events.Jet, "PtEtaPhiMLorentzVector")
+
+    if(ak.any(ak.num(events.Jet, axis=-1) <= 2)):
+        raise Exception("In features.py: there should be at least 2 jets in each event")
 
     m_jj = (events.Jet[:, 0] + events.Jet[:, 1]).mass
     events = set_ak_column(events, "m_jj", m_jj)
@@ -59,13 +62,13 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         attach_coffea_behavior,
-        event_weights, bb_features,
+        event_weights, bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
     },
     produces={
         attach_coffea_behavior,
-        event_weights, bb_features,
+        event_weights, bb_features, jj_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet",
     },
     shifts={
