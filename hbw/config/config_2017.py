@@ -125,6 +125,8 @@ for dataset_name in dataset_names:
 
     # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
+        if dataset.name == "hh_ggf_kt_1_kl_1_bbww_sl_powheg":  # full stats for HH
+            continue
         dataset[k].n_files = 2
 
     # add aux info to datasets
@@ -329,16 +331,30 @@ config_2017.add_shift(name="top_pt_up", id=9, type="shape")
 config_2017.add_shift(name="top_pt_down", id=10, type="shape")
 add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
 
+config_2017.add_shift(name="mur_up", id=101, type="shape")
+config_2017.add_shift(name="mur_down", id=102, type="shape")
+config_2017.add_shift(name="muf_up", id=103, type="shape")
+config_2017.add_shift(name="muf_down", id=104, type="shape")
+config_2017.add_shift(name="scale_up", id=105, type="shape")
+config_2017.add_shift(name="scale_down", id=106, type="shape")
+config_2017.add_shift(name="pdf_up", id=107, type="shape")
+config_2017.add_shift(name="pdf_down", id=108, type="shape")
+config_2017.add_shift(name="alpha_up", id=109, type="shape")
+config_2017.add_shift(name="alpha_down", id=110, type="shape")
+
+for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
+    add_aliases(unc, {f"{unc}_weight": unc + "_weight_{direction}"})
+
 with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
     all_jec_sources = yaml.load(f, yaml.Loader)["names"]
 for jec_source in config_2017.x.jec["uncertainty_sources"]:
     idx = all_jec_sources.index(jec_source)
-    config_2017.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
-    config_2017.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
+    config_2017.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape", tags={"selection_dependent"})
+    config_2017.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape", tags={"selection_dependent"})
     add_aliases(f"jec_{jec_source}", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
 
-config_2017.add_shift(name="jer_up", id=6000, type="shape")
-config_2017.add_shift(name="jer_down", id=6001, type="shape")
+config_2017.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
+config_2017.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
 add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
 
 
@@ -439,7 +455,8 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
 }))
 
 # event weight columns
-config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight"])
+# config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight"])
+config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
 
 # versions per task family and optionally also dataset and shift
 # None can be used as a key to define a default value

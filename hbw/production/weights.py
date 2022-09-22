@@ -29,7 +29,6 @@ def pdf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     N_pdfweights = ak.num(events.LHEPdfWeight, axis=1)
     if ak.any(N_pdfweights != 103):
         raise Exception(f"Number of LHEPdfWeights is not as expected (103) in dataset {self.dataset_inst.name}")
-    print("Number of PdfWeights:", ak.num(events.LHEPdfWeight, axis=1))
 
     # LHEPdfWeight value 102: alpha down; value 103: alpha down
     events = set_ak_column(events, "alpha_weight", ak.ones_like(events.event))
@@ -74,6 +73,8 @@ def murmuf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         raise Exception(f"Number of LHEScaleWeights is not as expected (9) in dataset {self.dataset_inst.name}")
 
     # NOTE: nominal mur/muf weights should be always 1, so could maybe be removed?
+    # NOTE: it might also be smarter to not event save them as new columns but just
+    #       use the existing LHEScaleWeight columns via aliases
     events = set_ak_column(events, "mur_weight", events.LHEScaleWeight[:, 4])
     events = set_ak_column(events, "mur_weight_up", events.LHEScaleWeight[:, 7])
     events = set_ak_column(events, "mur_weight_down", events.LHEScaleWeight[:, 1])
@@ -99,14 +100,14 @@ def scale_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         raise Exception(f"Number of LHEScaleWeights is not as expected in dataset {self.dataset_inst.name}")
 
     # LHEScaleWeights[:, 4] is the nominal weight
-    events = set_ak_column(events, "pdf_weight", events.LHEScaleWeight[:, 4])
+    events = set_ak_column(events, "scale_weight", events.LHEScaleWeight[:, 4])
 
     # for the up/down variations, take the max/min value of all possible combinations
     # except mur=2, muf=0.5 (index 2) and mur=0.5, muf=2 (index 6) into account
     idx_mask = (ak.local_index(events.LHEScaleWeight) != 2) & (ak.local_index(events.LHEScaleWeight) != 6)
     considered_scale_weights = events.LHEScaleWeight[idx_mask]
-    events = set_ak_column(events, "pdf_weight_down", ak.min(considered_scale_weights, axis=1))
-    events = set_ak_column(events, "pdf_weight_up", ak.max(considered_scale_weights, axis=1))
+    events = set_ak_column(events, "scale_weight_down", ak.min(considered_scale_weights, axis=1))
+    events = set_ak_column(events, "scale_weight_up", ak.max(considered_scale_weights, axis=1))
 
     return events
 
@@ -133,9 +134,9 @@ def top_pt_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={normalization_weights, pu_weights, scale_weights, pdf_weights, top_pt_weights},
-    produces={normalization_weights, pu_weights, scale_weights, pdf_weights, top_pt_weights},
-    shifts={"minbias_xs_up", "minbias_xs_down"},
+    uses={normalization_weights, pu_weights, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
+    produces={normalization_weights, pu_weights, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
+    shifts={"minbias_xs_up", "minbias_xs_down", "scale_up", "scale_down", "pdf_up", "pdf_down"},
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -150,6 +151,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute scale weights
     events = self[scale_weights](events, **kwargs)
+
+    # read out mur and weights
+    events = self[murmuf_weights](events, **kwargs)
 
     # compute pdf weights
     events = self[pdf_weights](events, **kwargs)
