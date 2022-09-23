@@ -28,7 +28,8 @@ def pdf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     N_pdfweights = ak.num(events.LHEPdfWeight, axis=1)
     if ak.any(N_pdfweights != 103):
-        raise Exception(f"Number of LHEPdfWeights is not as expected (103) in dataset {self.dataset_inst.name}")
+        raise Exception(f"Number of LHEPdfWeights ({N_pdfweights}) is not " 
+                        f"as expected (103) in dataset {self.dataset_inst.name}")
 
     # LHEPdfWeight value 102: alpha down; value 103: alpha down
     events = set_ak_column(events, "alpha_weight", ak.ones_like(events.event))
@@ -68,9 +69,10 @@ def murmuf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html
     TODO: better documentation
     """
-
-    if ak.any(ak.num(events.LHEScaleWeight, axis=1) != 9):
-        raise Exception(f"Number of LHEScaleWeights is not as expected (9) in dataset {self.dataset_inst.name}")
+    N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
+    if ak.any(N_scaleweights != 9):
+        N_scaleweights = N_scaleweights[N_scaleweights != 9]
+        raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not as expected (9) in dataset {self.dataset_inst.name}")
 
     # NOTE: nominal mur/muf weights should be always 1, so could maybe be removed?
     # NOTE: it might also be smarter to not event save them as new columns but just
@@ -96,8 +98,11 @@ def scale_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     TODO: better documentation
     """
 
+    N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
     if ak.any(ak.num(events.LHEScaleWeight, axis=1) != 9):
-        raise Exception(f"Number of LHEScaleWeights is not as expected in dataset {self.dataset_inst.name}")
+        N_scaleweights = N_scaleweights[N_scaleweights != 9]
+        raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not "
+                        f"as expected (9) in dataset {self.dataset_inst.name}")
 
     # LHEScaleWeights[:, 4] is the nominal weight
     events = set_ak_column(events, "scale_weight", events.LHEScaleWeight[:, 4])
@@ -149,14 +154,14 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute pu weights
     events = self[pu_weights](events, **kwargs)
 
-    # compute scale weights
-    events = self[scale_weights](events, **kwargs)
+    # compute scale weights (TODO cases with != 9 weights)
+    # events = self[scale_weights](events, **kwargs)
 
-    # read out mur and weights
-    events = self[murmuf_weights](events, **kwargs)
+    # read out mur and weights (TODO cases with != 9 weights)
+    # events = self[murmuf_weights](events, **kwargs)
 
-    # compute pdf weights
-    events = self[pdf_weights](events, **kwargs)
+    # compute pdf weights (TODO: cases with != 103 weights)
+    # events = self[pdf_weights](events, **kwargs)
 
     # compute top pt weights
     events = self[top_pt_weights](events, **kwargs)
