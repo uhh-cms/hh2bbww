@@ -14,7 +14,7 @@ from columnflow.production.util import attach_coffea_behavior
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
-
+from hbw.production.gen_hbw_decay import gen_hbw_decay_products
 from hbw.selection.general import increment_stats, jet_energy_shifts
 from hbw.selection.cutflow_features import cutflow_features
 
@@ -179,5 +179,37 @@ def default(
 
     # increment stats
     self[increment_stats](events, event_sel, stats, **kwargs)
+
+    return events, results
+
+
+@selector(
+    uses={default, gen_hbw_decay_products},
+    produces={category_ids, process_ids, increment_stats, gen_hbw_decay_products},
+    exposed=True,
+)
+def hbw_gen(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    """
+    Selector that is used to perform GenLevel studies but also allow categorization and event selection
+    using the default reco-level selection.
+    Should only be used for HH samples
+    """
+
+    if not self.dataset_inst.x("is_hbw", False):
+        raise Exception("This selector is only usable for HH samples")
+
+    # run the default Selector
+    events, results = self[default](events, stats, **kwargs)
+
+    # extract relevant gen HH decay products (TODO)
+    events = self[gen_hbw_decay_products](events, **kwargs)
+
+    # produce relevant columns (TODO)
+    # events = self[gen_hbw_features](events, **kwargs)
 
     return events, results

@@ -164,6 +164,7 @@ config_2017.set_aux("process_groups", {
 # (used in wrapper_factory and during plotting)
 config_2017.set_aux("dataset_groups", {
     "all": ["*"],
+    "working": ["tt_*", "st_*", "dy_*"],
     "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu*"], "dy": ["dy_*"],
     "hh": ["hh_*"], "hhsm": ["hh_ggf_kt_1_kl_1_bbww_sl_powheg"],
 })
