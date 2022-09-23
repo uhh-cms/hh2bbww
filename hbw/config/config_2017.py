@@ -6,6 +6,7 @@ Configuration of the 2017 HH -> bbWW analysis.
 
 import os
 import re
+from typing import Set
 
 import yaml
 from scinum import Number, REL
@@ -94,7 +95,7 @@ dataset_names = [
     "st_twchannel_tbar_powheg",
     "st_schannel_lep_amcatnlo",
     "st_schannel_had_amcatnlo",
-    # WJets
+    # WJets (TODO: fix wjet datasets)
     "w_lnu_ht70To100_madgraph",
     "w_lnu_ht100To200_madgraph",
     "w_lnu_ht200To400_madgraph",
@@ -113,7 +114,7 @@ dataset_names = [
     "dy_lep_m50_ht1200to2500_madgraph",
     "dy_lep_m50_ht2500_madgraph",
     # QCD (msc thesis samples not implemented)
-    # TTV, VV -> ignore; Higgs -> not used in Msc, but would be interesting
+    # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
     # Signal
     "hh_ggf_kt_1_kl_0_bbww_sl_powheg",
     "hh_ggf_kt_1_kl_1_bbww_sl_powheg",
@@ -123,8 +124,10 @@ dataset_names = [
 for dataset_name in dataset_names:
     dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
 
-    # reduce n_files to 2 for testing purposes
+    # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
+        if dataset.name == "hh_ggf_kt_1_kl_1_bbww_sl_powheg":  # full stats for HH
+            continue
         dataset[k].n_files = 2
 
     # add aux info to datasets
@@ -133,6 +136,9 @@ for dataset_name in dataset_names:
     if dataset.name.startswith("tt"):
         dataset.x.is_ttbar = True
         dataset.x.event_weights = ["top_pt_weight"]
+    if "hh" in dataset.name and "bbww" in dataset.name:
+        dataset.x.is_hbw = True
+
 
 # default calibrator, selector, producer, ml model and inference model
 config_2017.set_aux("default_calibrator", "default")
@@ -158,7 +164,10 @@ config_2017.set_aux("process_groups", {
 # dataset groups for conveniently looping over certain datasets
 # (used in wrapper_factory and during plotting)
 config_2017.set_aux("dataset_groups", {
-    "hh": ["hh_ggf_kt_1_kl_1_bbww_sl_powheg"],
+    "all": ["*"],
+    "working": ["tt_*", "st_*", "dy_*"],
+    "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu*"], "dy": ["dy_*"],
+    "hh": ["hh_*"], "hhsm": ["hh_ggf_kt_1_kl_1_bbww_sl_powheg"],
 })
 
 # category groups for conveniently looping over certain categories
@@ -178,7 +187,9 @@ config_2017.set_aux("variable_groups", {
 
 # shift groups for conveniently looping over certain shifts
 # (used during plotting)
-config_2017.set_aux("shift_groups", {})
+config_2017.set_aux("shift_groups", {
+    "jer": ["nominal", "jer_up", "jer_down"],
+})
 
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
@@ -197,7 +208,8 @@ config_2017.set_aux("selector_step_labels", {
 
 # process settings groups to quickly define settings for ProcessPlots
 config_2017.set_aux("process_settings_groups", {
-    "default": [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000,unstack"]],
+    "default": [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000", "unstack"]],
+    "unstack_all": [[proc, "unstack"] for proc in config_2017.processes],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
@@ -305,28 +317,43 @@ config_2017.set_aux("jer", DotDict.wrap({
 
 
 # helper to add column aliases for both shifts of a source
-def add_aliases(shift_source, aliases):
+def add_aliases(shift_source: str, aliases: Set[str], selection_dependent: bool):
     for direction in ["up", "down"]:
         shift = config_2017.get_shift(od.Shift.join_name(shift_source, direction))
         # format keys and values
         inject_shift = lambda s: re.sub(r"\{([^_])", r"{_\1", s).format(**shift.__dict__)
         _aliases = {inject_shift(key): inject_shift(value) for key, value in aliases.items()}
+        alias_type = "column_aliases_selection_dependent" if selection_dependent else "column_aliases"
         # extend existing or register new column aliases
-        shift.set_aux("column_aliases", shift.get_aux("column_aliases", {})).update(_aliases)
+        shift.set_aux(alias_type, shift.get_aux(alias_type, {})).update(_aliases)
 
 
 # register shifts
 config_2017.add_shift(name="nominal", id=0)
-config_2017.add_shift(name="tune_up", id=1, type="shape", aux={"disjoint_from_nominal": True})
-config_2017.add_shift(name="tune_down", id=2, type="shape", aux={"disjoint_from_nominal": True})
-config_2017.add_shift(name="hdamp_up", id=3, type="shape", aux={"disjoint_from_nominal": True})
-config_2017.add_shift(name="hdamp_down", id=4, type="shape", aux={"disjoint_from_nominal": True})
+config_2017.add_shift(name="tune_up", id=1, type="shape", tags={"disjoint_from_nominal"})
+config_2017.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
+config_2017.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})
+config_2017.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
 config_2017.add_shift(name="minbias_xs_up", id=7, type="shape")
 config_2017.add_shift(name="minbias_xs_down", id=8, type="shape")
-add_aliases("minbias_xs", {"pu_weight": "pu_weight_{name}"})
+add_aliases("minbias_xs", {"pu_weight": "pu_weight_{name}"}, selection_dependent=False)
 config_2017.add_shift(name="top_pt_up", id=9, type="shape")
 config_2017.add_shift(name="top_pt_down", id=10, type="shape")
-add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
+add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
+
+config_2017.add_shift(name="mur_up", id=101, type="shape")
+config_2017.add_shift(name="mur_down", id=102, type="shape")
+config_2017.add_shift(name="muf_up", id=103, type="shape")
+config_2017.add_shift(name="muf_down", id=104, type="shape")
+config_2017.add_shift(name="scale_up", id=105, type="shape")
+config_2017.add_shift(name="scale_down", id=106, type="shape")
+config_2017.add_shift(name="pdf_up", id=107, type="shape")
+config_2017.add_shift(name="pdf_down", id=108, type="shape")
+config_2017.add_shift(name="alpha_up", id=109, type="shape")
+config_2017.add_shift(name="alpha_down", id=110, type="shape")
+
+for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
+    add_aliases(unc, {f"{unc}_weight": unc + "_weight_{direction}"}, selection_dependent=False)
 
 with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
     all_jec_sources = yaml.load(f, yaml.Loader)["names"]
@@ -334,11 +361,15 @@ for jec_source in config_2017.x.jec["uncertainty_sources"]:
     idx = all_jec_sources.index(jec_source)
     config_2017.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
     config_2017.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
-    add_aliases(f"jec_{jec_source}", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
+    add_aliases(
+        f"jec_{jec_source}",
+        {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
+        selection_dependent=True,
+    )
 
-config_2017.add_shift(name="jer_up", id=6000, type="shape")
-config_2017.add_shift(name="jer_down", id=6001, type="shape")
-add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
+config_2017.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
+config_2017.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
+add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
 
 
 def make_jme_filenames(jme_aux, sample_type, names, era=None):
@@ -419,6 +450,9 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
     "cf.ReduceEvents": {
         # general event information
         "run", "luminosityBlock", "event",
+        # weights
+        "LHEWeight.*",
+        "LHEPdfWeight", "nLHEPdfWeight", "LHEScaleWeight", "nLHEScaleWeight",
         # object properties
         "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
         "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
@@ -436,6 +470,8 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
 
 # event weight columns
 config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight"])
+# TODO: enable different cases for number of pdf/scale weights
+# config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
 
 # versions per task family and optionally also dataset and shift
 # None can be used as a key to define a default value

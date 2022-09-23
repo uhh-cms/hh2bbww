@@ -71,7 +71,7 @@ categories="incl"
 ## Plot styling
 # Note: process_settings and plot_suffix are only in feature/PlotBase CF branch ATM
 plot_suffix=""
-#process_settings="hh_ggf_kt_1_kl_1_bbww_sl,scale=2000,unstack,label=HH:dy_lep,color=#377eb8"
+#process_settings="hh_ggf_kt_1_kl_1_bbww_sl,scale=10000,unstack,label=HH:dy_lep,color=#377eb8"
 process_settings="hh_ggf_kt_1_kl_1_bbww_sl,unstack:dy_lep,color=#377eb8"
 yscale="linear"
 skip_cms="False"
@@ -169,12 +169,11 @@ law run cf.PlotVariables --version $version \
     --yscale linear \
     --skip-ratio False \
     --shape-norm True \
-    --skip-cms $skip_cms \
-    $redo
+    --skip-cms $skip_cms
 
 
 # create plots for nominal + up/down variations (TODO testing)
-: "
+
 law run cf.PlotShiftedVariables --version $version \
     --workers $workers \
     --calibrators $calibrators --selector $selector --producer $producer \
@@ -189,4 +188,4 @@ law run cf.PlotShiftedVariables --version $version \
     --skip-ratio False \
     --shape-norm False \
     --skip-cms $skip_cms
-"
+
