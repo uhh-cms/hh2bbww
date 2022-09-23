@@ -28,7 +28,7 @@ def pdf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     N_pdfweights = ak.num(events.LHEPdfWeight, axis=1)
     if ak.any(N_pdfweights != 103):
-        raise Exception(f"Number of LHEPdfWeights ({N_pdfweights}) is not " 
+        raise Exception(f"Number of LHEPdfWeights ({N_pdfweights}) is not "
                         f"as expected (103) in dataset {self.dataset_inst.name}")
 
     # LHEPdfWeight value 102: alpha down; value 103: alpha down
@@ -72,7 +72,8 @@ def murmuf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
     if ak.any(N_scaleweights != 9):
         N_scaleweights = N_scaleweights[N_scaleweights != 9]
-        raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not as expected (9) in dataset {self.dataset_inst.name}")
+        raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not "
+                        f"as expected (9) in dataset {self.dataset_inst.name}")
 
     # NOTE: nominal mur/muf weights should be always 1, so could maybe be removed?
     # NOTE: it might also be smarter to not event save them as new columns but just

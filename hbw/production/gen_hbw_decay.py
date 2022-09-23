@@ -43,8 +43,6 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     b = gp[abs_id == 5]
     b = b[(abs(b.distinctParent.pdgId) == 25)]
     nb = ak.num(b, axis=1)
-    from IPython import embed; embed()
-    
     all_or_raise(nb == 2, "number of bottom quarks from Higgs decay != 2")
 
     # Ws from H decay
@@ -74,9 +72,8 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     all_or_raise(ak.sum(sign(qs), axis=1) == 0, "sign-imbalance for quarks")
     all_or_raise(ak.sum(sign(ls), axis=1) == 0, "sign-imbalance for leptons")
 
-
     # TODO: sort decay products in a useful way
-    from IPython import embed; embed()
+    # from IPython import embed; embed()
 
     hhgen = ak.zip({
         "hbb": h[:, 0],
