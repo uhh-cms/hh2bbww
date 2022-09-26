@@ -144,7 +144,7 @@ for dataset_name in dataset_names:
 
 
 # default calibrator, selector, producer, ml model and inference model
-config_2017.set_aux("default_calibrator", "default")
+config_2017.set_aux("default_calibrator", "skip_jecunc")
 config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
@@ -452,7 +452,7 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
         "run", "luminosityBlock", "event",
         # weights
         "LHEWeight.*",
-        "LHEPdfWeight", "nLHEPdfWeight", "LHEScaleWeight", "nLHEScaleWeight",
+        "LHEPdfWeight", "LHEScaleWeight",
         # object properties
         "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
         "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",

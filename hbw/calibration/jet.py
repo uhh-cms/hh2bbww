@@ -35,7 +35,7 @@ def jet_energy(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 @jet_energy.init
 def jet_energy_init(self: Calibrator) -> None:
     # add standard jec and jer for mc, and only jec nominal for dta
-    if self.dataset_inst.is_mc:
+    if getattr(self, "dataset_inst", None) and self.dataset_inst.is_mc:
         # TODO: for testing purposes, only run jec_nominal for now
         self.uses |= {jec_nominal, jer}
         self.produces |= {jec_nominal, jer}
