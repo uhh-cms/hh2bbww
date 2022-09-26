@@ -148,7 +148,7 @@ config_2017.set_aux("default_calibrator", "skip_jecunc")
 config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
-config_2017.set_aux("default_inference_model", "test")
+config_2017.set_aux("default_inference_model", "default")
 config_2017.set_aux("default_process_settings", [["hh_ggf_kt_1_kl_1_bbww_sl", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs
