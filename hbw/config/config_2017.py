@@ -7,6 +7,7 @@ Configuration of the 2017 HH -> bbWW analysis.
 import os
 import re
 from typing import Set
+from collections import OrderedDict
 
 import yaml
 from scinum import Number, REL
@@ -126,9 +127,11 @@ for dataset_name in dataset_names:
 
     # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
-        if dataset.name == "hh_ggf_kt_1_kl_1_bbww_sl_powheg":  # full stats for HH
-            continue
         dataset[k].n_files = 2
+        if dataset.name == "hh_ggf_kt_1_kl_1_bbww_sl_powheg":
+            # full stats for HH except for last file (contains a very unphysical weight)
+            # TODO systematically remove unphysical weights
+            dataset[k].n_files = 22
 
     # add aux info to datasets
     if dataset.name.startswith(("st", "tt")):
@@ -166,7 +169,8 @@ config_2017.set_aux("process_groups", {
 config_2017.set_aux("dataset_groups", {
     "all": ["*"],
     "working": ["tt_*", "st_*", "dy_*"],
-    "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu*"], "dy": ["dy_*"],
+    "default": ["hh_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+    "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
     "hh": ["hh_*"], "hhsm": ["hh_ggf_kt_1_kl_1_bbww_sl_powheg"],
 })
 
@@ -246,7 +250,7 @@ config_2017.set_aux("jec", DotDict.wrap({
     "version": "V6",
     "jet_type": "AK4PFchs",
     "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
-    "data_eras": ["RunB", "RunC", "RunD", "RunE", "RunF"],
+    "data_eras": sorted(filter(None, {d.x("jec_era", None) for d in config_2017.datasets if d.is_data})),
     "uncertainty_sources": [
         # comment out most for now to prevent large file sizes
         # "AbsoluteStat",
@@ -372,25 +376,22 @@ config_2017.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_d
 add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
 
 
-def make_jme_filenames(jme_aux, sample_type, names, era=None):
-    """Convenience function to compute paths to JEC files."""
-
+def make_jme_filename(jme_aux, sample_type, name, era=None):
+    """
+    Convenience function to compute paths to JEC files.
+    """
     # normalize and validate sample type
     sample_type = sample_type.upper()
     if sample_type not in ("DATA", "MC"):
-        raise ValueError(f"Invalid sample type '{sample_type}'. Expected either 'DATA' or 'MC'.")
+        raise ValueError(f"invalid sample type '{sample_type}', expected either 'DATA' or 'MC'")
 
     jme_full_version = "_".join(s for s in (jme_aux.campaign, era, jme_aux.version, sample_type) if s)
 
-    return [
-        f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
-        for name in names
-    ]
+    return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
 
-# TODO check names
 # external files
-config_2017.set_aux("external_files", DotDict.wrap({
+config_2017.x.external_files = DotDict.wrap({
     # files from TODO
     "lumi": {
         "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
@@ -410,39 +411,38 @@ config_2017.set_aux("external_files", DotDict.wrap({
 
     # jet energy correction
     "jec": {
-        "mc": [
-            (fname, "v1")
-            for fname in make_jme_filenames(config_2017.x.jec, "mc", names=config_2017.x.jec.levels)
-        ],
+        "mc": OrderedDict([
+            (level, (make_jme_filename(config_2017.x.jec, "mc", name=level), "v1"))
+            for level in config_2017.x.jec.levels
+        ]),
         "data": {
-            era: [
-                (fname, "v1")
-                for fname in make_jme_filenames(config_2017.x.jec, "data", names=config_2017.x.jec.levels, era=era)
-            ]
+            era: OrderedDict([
+                (level, (make_jme_filename(config_2017.x.jec, "data", name=level, era=era), "v1"))
+                for level in config_2017.x.jec.levels
+            ])
             for era in config_2017.x.jec.data_eras
         },
     },
 
     # jec energy correction uncertainties
     "junc": {
-        "mc": [(make_jme_filenames(config_2017.x.jec, "mc", names=["UncertaintySources"])[0], "v1")],
+        "mc": [(make_jme_filename(config_2017.x.jec, "mc", name="UncertaintySources"), "v1")],
         "data": {
-            era: [(make_jme_filenames(config_2017.x.jec, "data", names=["UncertaintySources"], era=era)[0], "v1")]
+            era: [(make_jme_filename(config_2017.x.jec, "data", name="UncertaintySources", era=era), "v1")]
             for era in config_2017.x.jec.data_eras
         },
     },
 
     # jet energy resolution (pt resolution)
     "jer": {
-        "mc": [(make_jme_filenames(config_2017.x.jer, "mc", names=["PtResolution"])[0], "v1")],
+        "mc": [(make_jme_filename(config_2017.x.jer, "mc", name="PtResolution"), "v1")],
     },
 
     # jet energy resolution (data/mc scale factors)
     "jersf": {
-        "mc": [(make_jme_filenames(config_2017.x.jer, "mc", names=["SF"])[0], "v1")],
+        "mc": [(make_jme_filename(config_2017.x.jer, "mc", name="SF"), "v1")],
     },
-
-}))
+})
 
 # columns to keep after certain steps
 config_2017.set_aux("keep_columns", DotDict.wrap({
