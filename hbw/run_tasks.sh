@@ -49,11 +49,11 @@ These parameters should be fixed in general, so it should be fine to just use th
 The input value of these parameters define which function is used in the calibration/selection/production etc.
 If you write a new file containing such a function, you need to include it in the 'law.cfg'
 "
-calibrators="default"
+calibrators="skip_jecunc"
 selector="default"
 producer="features"
 ml_model="simple"
-inference_model="test"
+inference_model="default"
 
 ## config, dataset, processes, shifts
 config="run2_2017"
@@ -101,11 +101,12 @@ relevant_shifts="nominal"
 relevant_configs="run2_2017"
 : "
 law run cf.ReduceEventsWrapper --version $version --workers $workers \
-    --calibrators $calibrators --selector $selector \
+    --cf.ReduceEvents-calibrators $calibrators --cf.ReduceEvents-selector $selector \
     --configs $relevant_configs \
     --shifts $relevant_shifts \
     --datasets $relevant_datasets \
-    --workflow htcondor --pilot True --parallel-jobs 4000 --tasks-per-job 1
+    --cf.ReduceEvents-workflow htcondor --cf.ReduceEvents-pilot True \
+    --cf.ReduceEvents-parallel-jobs 4000 --cf.ReduceEvents-tasks-per-job 1
 "
 
 ## create a simple cutflow plot
@@ -124,8 +125,8 @@ law run cf.PlotCutflow --version $version \
 
 
 ## create cutflow variables plots
-# `per-plot steps` creates 1 plot per selectior step (all processes)
-# `per-plot processes` creates 1 plot per process (all steps)
+# 'per-plot steps' creates 1 plot per process (all steps)
+# 'per-plot processes' creates 1 plot per selector step (all processes)
 
 law run cf.PlotCutflowVariables --version $version --per-plot steps \
     --workers $workers \
@@ -164,7 +165,6 @@ law run cf.PlotVariables --version $version \
     --variables $variables \
     --processes $processes \
     --categories $categories \
-    --selector-steps $selector_steps \
     --process-settings $process_settings \
     --yscale linear \
     --skip-ratio False \
@@ -172,20 +172,24 @@ law run cf.PlotVariables --version $version \
     --skip-cms $skip_cms
 
 
-# create plots for nominal + up/down variations (TODO testing)
+# create plots for nominal + up/down variations
 
 law run cf.PlotShiftedVariables --version $version \
     --workers $workers \
     --calibrators $calibrators --selector $selector --producer $producer \
     --shift-sources $shift_sources \
-    --workers $workers \
     --variables $variables \
     --processes $processes \
     --categories $categories \
-    --selector-steps $selector_steps \
     --process-settings $process_settings \
     --yscale linear \
     --skip-ratio False \
     --shape-norm False \
     --skip-cms $skip_cms
 
+# create datacards
+
+law run cf.CreateDatacards --version $version \
+    --workers $workers \
+    --inference-model $inference_model \
+    --calibrators $calibrators --selector $selector --producers $producer
