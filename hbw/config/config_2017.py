@@ -127,11 +127,9 @@ for dataset_name in dataset_names:
 
     # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
-        dataset[k].n_files = 2
         if dataset.name == "hh_ggf_kt_1_kl_1_bbww_sl_powheg":
-            # full stats for HH except for last file (contains a very unphysical weight)
-            # TODO systematically remove unphysical weights
-            dataset[k].n_files = 22
+            continue
+        dataset[k].n_files = 2
 
     # add aux info to datasets
     if dataset.name.startswith(("st", "tt")):
