@@ -13,7 +13,7 @@ import yaml
 from scinum import Number, REL
 import order as od
 import cmsdb
-import cmsdb.campaigns.run2_2017
+import cmsdb.campaigns.run2_2017_nano_v9
 
 from columnflow.util import DotDict, get_root_processes_from_campaign
 from hbw.config.categories import add_categories
@@ -28,7 +28,7 @@ thisdir = os.path.dirname(os.path.abspath(__file__))
 #
 
 # copy the campaign, which in turn copies datasets and processes
-campaign_run2_2017 = cmsdb.campaigns.run2_2017.campaign_run2_2017.copy()
+campaign_run2_2017 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9.copy()
 
 # get all root processes
 procs = get_root_processes_from_campaign(campaign_run2_2017)
