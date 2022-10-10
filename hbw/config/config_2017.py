@@ -77,7 +77,7 @@ colors = {
 }
 for proc, color in colors.items():
     if proc in config_2017.processes:
-        config_2017.get_process(proc).color = color
+        config_2017.get_process(proc).color1 = color
 
 # add datasets we need to study
 dataset_names = [

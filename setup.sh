@@ -24,23 +24,6 @@ setup_hbw() {
     # Variables defined by the setup and potentially required throughout the analysis.
     #   HBW_BASE
     #       The absolute analysis base directory. Used to infer file locations relative to it.
-    #   PATH
-    #       Ammended PATH variable.
-    #   PYTHONPATH
-    #       Ammended PYTHONPATH variable.
-    #   PYTHONWARNINGS
-    #       Set to "ignore".
-    #   GLOBUS_THREAD_MODEL
-    #       Set to "none".
-    #   VIRTUAL_ENV_DISABLE_PROMPT
-    #       Set to "1" when not defined already, leading to virtual envs leaving the PS1 prompt
-    #       variable unaltered.
-    #   X509_USER_PROXY
-    #       Set to "/tmp/x509up_u$( id -u )" if not already set.
-    #   LAW_HOME
-    #       Set to $HBW_BASE/.law.
-    #   LAW_CONFIG_FILE
-    #       Set to $HBW_BASE/law.cfg.
 
     #
     # prepare local variables
@@ -107,7 +90,9 @@ setup_hbw() {
     fi
 
     # continue the fixed setup
+    export CF_CONDA_BASE="${CF_CONDA_BASE:-${CF_SOFTWARE_BASE}/conda}"
     export CF_VENV_BASE="${CF_VENV_BASE:-${CF_SOFTWARE_BASE}/venvs}"
+    export CF_CMSSW_BASE="${CF_CMSSW_BASE:-${CF_SOFTWARE_BASE}/cmssw}"
     export CF_CI_JOB="$( [ "${GITHUB_ACTIONS}" = "true" ] && echo 1 || echo 0 )"
 
     # overwrite some variables in remote and CI jobs
@@ -164,11 +149,11 @@ main() {
 
     # run the actual setup
     if setup_hbw "$@"; then
-        echo -e "\x1b[0;49;35mHH -> bbWW successfully setup\x1b[0m"
+        cf_color green "HH -> bbWW analysis successfully setup"
         return "0"
     else
         local code="$?"
-        echo -e "\x1b[0;49;31mHH -> bbWW setup failed with code ${code}\x1b[0m"
+        cf_color red "setup failed with code ${code}"
         return "${code}"
     fi
 }

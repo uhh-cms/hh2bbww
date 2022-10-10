@@ -26,7 +26,7 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
     events["Jet"] = ak.with_name(events.Jet, "PtEtaPhiMLorentzVector")
 
-    if(ak.any(ak.num(events.Jet, axis=-1) <= 2)):
+    if ak.any(ak.num(events.Jet, axis=-1) <= 2):
         raise Exception("In features.py: there should be at least 2 jets in each event")
 
     m_jj = (events.Jet[:, 0] + events.Jet[:, 1]).mass
@@ -47,7 +47,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
     events["Bjet"] = ak.with_name(events.Bjet, "PtEtaPhiMLorentzVector")
 
-    if(ak.any(ak.num(events.Bjet, axis=-1) != 2)):
+    if ak.any(ak.num(events.Bjet, axis=-1) != 2):
         raise Exception("In features.py: there should be exactly 2 bjets in each event")
 
     m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
