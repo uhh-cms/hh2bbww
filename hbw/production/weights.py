@@ -27,14 +27,19 @@ def pdf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     N_pdfweights = ak.num(events.LHEPdfWeight, axis=1)
-    if ak.any(N_pdfweights != 103):
+    if ak.all(N_pdfweights == 103):
+        # LHEPdfWeight value 102: alpha down; value 103: alpha down
+        events = set_ak_column(events, "alpha_weight", ak.ones_like(events.event))
+        events = set_ak_column(events, "alpha_weight_down", events.LHEPdfWeight[:, 101])
+        events = set_ak_column(events, "alpha_weight_up", events.LHEPdfWeight[:, 102])
+    elif ak.all(N_pdfweights == 101):
+        # dummy alpha weight (TODO)
+        events = set_ak_column(events, "alpha_weight", ak.ones_like(events.event))
+        events = set_ak_column(events, "alpha_weight_down", ak.ones_like(events.event))
+        events = set_ak_column(events, "alpha_weight_up", ak.ones_like(events.event))
+    else:
         raise Exception(f"Number of LHEPdfWeights ({N_pdfweights}) is not "
-                        f"as expected (103) in dataset {self.dataset_inst.name}")
-
-    # LHEPdfWeight value 102: alpha down; value 103: alpha down
-    events = set_ak_column(events, "alpha_weight", ak.ones_like(events.event))
-    events = set_ak_column(events, "alpha_weight_down", events.LHEPdfWeight[:, 101])
-    events = set_ak_column(events, "alpha_weight_up", events.LHEPdfWeight[:, 102])
+                        f"as expected (103 or 101) in dataset {self.dataset_inst.name}")
 
     # first 101 LHEPdfWeight values: pdf variations
     # NOTE: check if nominal weight is included --> change 83 to 84?
@@ -70,7 +75,8 @@ def murmuf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     TODO: better documentation
     """
     N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
-    if ak.any(N_scaleweights != 9):
+    # For now, make an exception for st_schannel_had dataset; should be fixed with NanoAODv10
+    if ak.any(N_scaleweights != 9) and self.dataset_inst.name != "st_schannel_had_amcatnlo":
         N_scaleweights = N_scaleweights[N_scaleweights != 9]
         raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not "
                         f"as expected (9) in dataset {self.dataset_inst.name}")
@@ -100,7 +106,8 @@ def scale_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
-    if ak.any(ak.num(events.LHEScaleWeight, axis=1) != 9):
+    # For now, make an exception for st_schannel_had dataset; should be fixed with NanoAODv10
+    if ak.any(N_scaleweights != 9) and self.dataset_inst.name != "st_schannel_had_amcatnlo":
         N_scaleweights = N_scaleweights[N_scaleweights != 9]
         raise Exception(f"Number of LHEScaleWeights ({N_scaleweights}) is not "
                         f"as expected (9) in dataset {self.dataset_inst.name}")
@@ -155,14 +162,14 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute pu weights
     events = self[pu_weights](events, **kwargs)
 
-    # compute scale weights (TODO cases with != 9 weights)
-    # events = self[scale_weights](events, **kwargs)
+    # compute scale weights (TODO testing)
+    events = self[scale_weights](events, **kwargs)
 
-    # read out mur and weights (TODO cases with != 9 weights)
-    # events = self[murmuf_weights](events, **kwargs)
+    # read out mur and weights (TODO testing)
+    events = self[murmuf_weights](events, **kwargs)
 
-    # compute pdf weights (TODO: cases with != 103 weights)
-    # events = self[pdf_weights](events, **kwargs)
+    # compute pdf weights (TODO: testing)
+    events = self[pdf_weights](events, **kwargs)
 
     # compute top pt weights
     events = self[top_pt_weights](events, **kwargs)

@@ -34,10 +34,10 @@ def default(self):
     #
 
     processes = [
-        "hh_ggf_kt_1_kl_0_bbww_sl",
-        "hh_ggf_kt_1_kl_1_bbww_sl",
-        "hh_ggf_kt_1_kl_2p45_bbww_sl",
-        "hh_ggf_kt_1_kl_5_bbww_sl",
+        "ggHH_kl_0_kt_1_sl_hbbhww",
+        "ggHH_kl_1_kt_1_sl_hbbhww",
+        "ggHH_kl_2p45_kt_1_sl_hbbhww",
+        "ggHH_kl_5_kt_1_sl_hbbhww",
         "tt",
         "st",
         # "dy_lep",
@@ -45,10 +45,6 @@ def default(self):
     ]
 
     inference_procnames = {
-        "hh_ggf_kt_1_kl_0_bbww_sl": "ggHH_kl_0_kt_1_hbbhww",
-        "hh_ggf_kt_1_kl_1_bbww_sl": "ggHH_kl_1_kt_1_hbbhww",
-        "hh_ggf_kt_1_kl_2p45_bbww_sl": "ggHH_kl_2p45_kt_1_hbbhww",
-        "hh_ggf_kt_1_kl_5_bbww_sl": "ggHH_kl_5_kt_1_hbbhww",
         "st": "ST",
         "tt": "TT",
     }
@@ -63,7 +59,7 @@ def default(self):
         self.add_process(
             inference_procnames.get(proc, proc),
             process=proc,
-            signal=("hh_ggf" in proc),
+            signal=("HH_" in proc),
             mc_datasets=datasets,
         )
 

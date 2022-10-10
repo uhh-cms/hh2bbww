@@ -31,12 +31,12 @@ class SimpleDNN(MLModel):
         self.folds = folds or self.folds
 
         # define output classes (processes)
-        self.processes = ["hh_ggf_kt_1_kl_1_bbww_sl", "tt", "st"]
+        self.processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"]
 
         # the custom process weight should be chosen such that individual eventweights are close to 1
-        # but can also be used to optimize
+        # but can also be used to optimize relative weights between processes
         self.custom_procweights = {
-            "hh_ggf_kt_1_kl_1_bbww_sl": 1 / 1000,
+            "ggHH_kl_1_kt_1_sl_hbbhww": 1 / 1000,
             "tt": 1 / 1000,
             "st": 1 / 1000,
         }
@@ -63,7 +63,7 @@ class SimpleDNN(MLModel):
 
     def datasets(self) -> Set[od.Dataset]:
         return {
-            self.config_inst.get_dataset("hh_ggf_kt_1_kl_1_bbww_sl_powheg"),
+            self.config_inst.get_dataset("ggHH_kl_1_kt_1_sl_hbbhww_powheg"),
             self.config_inst.get_dataset("st_tchannel_t_powheg"),
             self.config_inst.get_dataset("tt_sl_powheg"),
         }
