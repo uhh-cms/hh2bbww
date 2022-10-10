@@ -9,7 +9,7 @@ which is used when no parameter is given on the command line. (e.g. default_sele
 Also, for CSV input parameters, most of the times you can use a 'parameter_group' instead,
 which has to be defined in the config file. For example:
 config.set_aux(processes_groups={
-    'default': ['hh_ggf_kt_1_kl_1_bbww_sl', 'dy_lep', 'w_lnu', 'st', 'tt'], ...
+    'default': ['ggHH_kl_1_kt_1_sl_hbbhww', 'dy_lep', 'w_lnu', 'st', 'tt'], ...
 })
 
 
@@ -57,7 +57,7 @@ inference_model="default"
 
 ## config, dataset, processes, shifts
 config="run2_2017"
-dataset="hh_ggf_kt_1_kl_1_bbww_sl_powheg"
+dataset="ggHH_kl_1_kt_1_sl_hbbhww_powheg"
 processes="working"
 shift="nominal"
 shift_sources="jer"
@@ -71,8 +71,8 @@ categories="incl"
 ## Plot styling
 # Note: process_settings and plot_suffix are only in feature/PlotBase CF branch ATM
 plot_suffix=""
-#process_settings="hh_ggf_kt_1_kl_1_bbww_sl,scale=10000,unstack,label=HH:dy_lep,color=#377eb8"
-process_settings="hh_ggf_kt_1_kl_1_bbww_sl,unstack:dy_lep,color=#377eb8"
+#process_settings="ggHH_kl_1_kt_1_sl_hbbhww,scale=10000,unstack,label=HH:dy_lep,color=#377eb8"
+process_settings="ggHH_kl_1_kt_1_sl_hbbhww,unstack:dy_lep,color=#377eb8"
 yscale="linear"
 skip_cms="False"
 skip_ratio="False"
