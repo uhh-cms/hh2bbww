@@ -29,10 +29,19 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
             raise Exception(f"{msg} in {100 * ak.mean(~arr):.3f}% of cases")
 
     # only consider hard process genparticles
-    gp = events.GenPart[events.GenPart.hasFlags("isHardProcess")]
-    gp = gp[~ak.is_none(gp, axis=1)]
+    gp = events.GenPart
     gp["index"] = ak.local_index(gp, axis=1)
+    gp = gp[events.GenPart.hasFlags("isHardProcess")]
+    gp = gp[~ak.is_none(gp, axis=1)]
     abs_id = abs(gp.pdgId)
+
+    # find initial-state particles
+    isp = gp[ak.is_none(gp.parent.pdgId, axis=1)]
+    
+    # find all non-Higgs daughter particles from inital state 
+    # TODO: good naming choice for these particles (replace 'foo')
+    foo = ak.flatten(isp.children, axis=2)
+    foo = foo[abs(foo.pdgId) != 25]
 
     # find hard Higgs bosons
     h = gp[abs_id == 25]
@@ -42,26 +51,32 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # bottoms from H decay
     b = gp[abs_id == 5]
     b = b[(abs(b.distinctParent.pdgId) == 25)]
+    b = b[~ak.is_none(b, axis=1)]
     nb = ak.num(b, axis=1)
     all_or_raise(nb == 2, "number of bottom quarks from Higgs decay != 2")
 
     # Ws from H decay
     w = gp[abs_id == 24]
     w = w[(abs(w.distinctParent.pdgId) == 25)]
+    w = w[~ak.is_none(w, axis=1)]
     nw = ak.num(w, axis=1)
     all_or_raise(nw == 2, "number of Ws != 2")
 
     # non-top quarks from W decays
     qs = gp[(abs_id >= 1) & (abs_id <= 5)]
     qs = qs[(abs(qs.distinctParent.pdgId) == 24)]
+    qs = qs[~ak.is_none(qs, axis=1)]
     nqs = ak.num(qs, axis=1)
     all_or_raise((nqs % 2) == 0, "number of quarks from W decays is not dividable by 2")
+    all_or_raise(nqs == 2, "number of quarks from W decays != 2")
 
     # leptons from W decays
     ls = gp[(abs_id >= 11) & (abs_id <= 16)]
     ls = ls[(abs(ls.distinctParent.pdgId) == 24)]
+    ls = ls[~ak.is_none(ls, axis=1)]
     nls = ak.num(ls, axis=1)
     all_or_raise((nls % 2) == 0, "number of leptons from W decays is not dividable by 2")
+    all_or_raise(nls == 2, "number of leptons from W decays != 2")
 
     all_or_raise(nqs + nls == 2 * nw, "number of W decay products invalid")
 
@@ -72,25 +87,41 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     all_or_raise(ak.sum(sign(qs), axis=1) == 0, "sign-imbalance for quarks")
     all_or_raise(ak.sum(sign(ls), axis=1) == 0, "sign-imbalance for leptons")
 
-    # TODO: sort decay products in a useful way
-    # from IPython import embed; embed()
+    # identify decay products of W's
+    lepton = ls[abs(ls.pdgId) % 2 == 1][:, 0]
+    neutrino = ls[abs(ls.pdgId) % 2 == 0][:, 0]
+    q_dtype = qs[abs(qs.pdgId) % 2 == 1][:, 0]
+    q_utype = qs[abs(qs.pdgId) % 2 == 0][:, 0]
+    
+    # identify the leptonically and hadronically decaying W
+    wlep = w[sign(w) == sign(lepton)][:, 0]
+    whad = w[sign(w) != sign(lepton)][:, 0]
+
+    # identify b1 as particle, b2 as antiparticle
+    b1 = b[sign(b) == 1][:, 0]
+    b2 = b[sign(b) == -1][:, 0]
+
+    # TODO: identify H->bb and H->WW and switch from h1/h2 to hbb/hww
+    # TODO: most fields have type='len(events) * ?genParticle' -> get rid of the '?'
 
     hhgen = ak.zip({
-        "hbb": h[:, 0],
-        "hww": h[:, 1],
-        "b1": b[:, 0],
-        "b2": b[:, 1],
-        "wlep": w[:, 0],
-        "whad": w[:, 1],
-        "l": ls[:, 0],
-        "nu": ls[:, 1],
-        "q1": qs[:, 0],
-        "q2": qs[:, 1],
+        "h1": h[:, 0],
+        "h2": h[:, 1],
+        "b1": b1,
+        "b2": b2,
+        "wlep": wlep,
+        "whad": whad,
+        "l": lepton,
+        "nu": neutrino,
+        "q1": q_dtype,
+        "q2": q_utype,
+        "foo": foo,
     })
 
     # dummy return
-    events = set_ak_column(events, "hhgen", hhgen)
+    events = set_ak_column(events, "gen_hbw_decay", hhgen)
 
+    from IPython import embed; embed()
     return events
 
 

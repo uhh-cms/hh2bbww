@@ -141,8 +141,8 @@ for dataset_name in dataset_names:
 
     # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
-        if dataset.name == "ggHH_kl_1_kt_1_sl_hbbhww_powheg":
-            continue
+        # if dataset.name == "ggHH_kl_1_kt_1_sl_hbbhww_powheg":
+        #    continue
         dataset[k].n_files = 2
 
     # add aux info to datasets
@@ -151,7 +151,7 @@ for dataset_name in dataset_names:
     if dataset.name.startswith("tt"):
         dataset.x.is_ttbar = True
         dataset.x.event_weights = ["top_pt_weight"]
-    if "hh" in dataset.name and "hbbhww" in dataset.name:
+    if "HH" in dataset.name and "hbbhww" in dataset.name:
         dataset.x.is_hbw = True
 
 
