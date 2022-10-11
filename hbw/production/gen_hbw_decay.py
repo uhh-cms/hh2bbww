@@ -15,18 +15,20 @@ ak = maybe_import("awkward")
 @producer
 def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Creates column 'hhgen'
+    Creates column 'gen_hbw_decay', which includes the most relevant particles of a HH->bbWW(qqlnu) decay.
+    All sub-fields are individual GenParticles, except 'foo', which is an array of all non-Higgs 
+    GenParticles directly originating from the initial state.
     """
 
     if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbw", False):
         return events
 
-    abs_id = abs(events.GenPart.pdgId)
-
     # for quick checks
     def all_or_raise(arr, msg):
         if not ak.all(arr):
             raise Exception(f"{msg} in {100 * ak.mean(~arr):.3f}% of cases")
+
+    # TODO: for now, this only works for HH->bbWW(qqlnu), but could maybe be generalized to all HH->bbWW decays
 
     # only consider hard process genparticles
     gp = events.GenPart
