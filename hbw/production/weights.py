@@ -26,6 +26,10 @@ def pdf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Documentation: https://arxiv.org/pdf/1510.03865.pdf
     """
 
+    # stop here for data
+    if self.dataset_inst.is_data:
+        return events
+
     N_pdfweights = ak.num(events.LHEPdfWeight, axis=1)
     if ak.all(N_pdfweights == 103):
         # LHEPdfWeight value 102: alpha down; value 103: alpha down
@@ -74,6 +78,11 @@ def murmuf_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html
     TODO: better documentation
     """
+
+    # stop here for data
+    if self.dataset_inst.is_data:
+        return events
+
     N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
     # For now, make an exception for st_schannel_had dataset; should be fixed with NanoAODv10
     if ak.any(N_scaleweights != 9) and self.dataset_inst.name != "st_schannel_had_amcatnlo":
@@ -104,6 +113,10 @@ def scale_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html
     TODO: better documentation
     """
+
+    # stop here for data
+    if self.dataset_inst.is_data:
+        return events
 
     N_scaleweights = ak.num(events.LHEScaleWeight, axis=1)
     # For now, make an exception for st_schannel_had dataset; should be fixed with NanoAODv10
