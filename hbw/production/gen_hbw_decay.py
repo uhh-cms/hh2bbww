@@ -37,8 +37,8 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
 
     # find initial-state particles
     isp = gp[ak.is_none(gp.parent.pdgId, axis=1)]
-    
-    # find all non-Higgs daughter particles from inital state 
+
+    # find all non-Higgs daughter particles from inital state
     # TODO: good naming choice for these particles (replace 'foo')
     foo = ak.flatten(isp.children, axis=2)
     foo = foo[abs(foo.pdgId) != 25]
@@ -92,7 +92,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     neutrino = ls[abs(ls.pdgId) % 2 == 0][:, 0]
     q_dtype = qs[abs(qs.pdgId) % 2 == 1][:, 0]
     q_utype = qs[abs(qs.pdgId) % 2 == 0][:, 0]
-    
+
     # identify the leptonically and hadronically decaying W
     wlep = w[sign(w) == sign(lepton)][:, 0]
     whad = w[sign(w) != sign(lepton)][:, 0]
@@ -104,7 +104,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # TODO: identify H->bb and H->WW and switch from h1/h2 to hbb/hww
     # TODO: most fields have type='len(events) * ?genParticle' -> get rid of the '?'
 
-    hhgen = ak.zip({
+    gen_hbw_decay = ak.zip({
         "h1": h[:, 0],
         "h2": h[:, 1],
         "b1": b1,
@@ -118,10 +118,8 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "foo": foo,
     })
 
-    # dummy return
-    events = set_ak_column(events, "gen_hbw_decay", hhgen)
+    events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
 
-    from IPython import embed; embed()
     return events
 
 
