@@ -24,6 +24,14 @@ ak = maybe_import("awkward")
 )
 def gen_hbw_decay_features(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
+    for var in ["pt", "eta", "phi", "mass"]:
+        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+            events = set_ak_column(events, f"cutflow.{gp}_{var}", events.gen_hbw_decay[gp][var])
+        
+        events = set_ak_column(events, f"cutflow.foo1_{var}", events.gen_hbw_decay.foo[:, 0][var])
+        events = set_ak_column(events, f"cutflow.foo2_{var}", events.gen_hbw_decay.foo[:, 1][var])
+            
+    """
     events = set_ak_column(events, "cutflow.h1_pt", events.gen_hbw_decay.h1.pt)
     events = set_ak_column(events, "cutflow.h2_pt", events.gen_hbw_decay.h2.pt)
     events = set_ak_column(events, "cutflow.b1_pt", events.gen_hbw_decay.b1.pt)
@@ -35,7 +43,7 @@ def gen_hbw_decay_features(self: Selector, events: ak.Array, **kwargs) -> ak.Arr
     events = set_ak_column(events, "cutflow.q1_pt", events.gen_hbw_decay.q1.pt)
     events = set_ak_column(events, "cutflow.q2_pt", events.gen_hbw_decay.q2.pt)
     # events = set_ak_column(events, "cutflow.foo1_pt", events.gen_hbw_decay.foo.pt[: ,0])
-    
+    """
     return events
 
 

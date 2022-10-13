@@ -250,3 +250,13 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"p_{T}^{gen}",
     )
+
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+        config.add_variable(
+            name=f"cf_gen_{gp}_pt",
+            expression=f"cutflow.{gp}_gen_pt",
+            binning=(40, 0., 400.),
+            unit="GeV",
+            x_title=rf"p_{T}^{gen, {gp}}"
+        )
+
