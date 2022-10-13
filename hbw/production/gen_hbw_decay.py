@@ -106,7 +106,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # TODO: identify H->bb and H->WW and switch from h1/h2 to hbb/hww
     # TODO: most fields have type='len(events) * ?genParticle' -> get rid of the '?'
 
-    gen_hbw_decay = ak.zip({
+    hhgen = {
         "h1": h[:, 0],
         "h2": h[:, 1],
         "b1": b1,
@@ -118,7 +118,11 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "q1": q_dtype,
         "q2": q_utype,
         "foo": foo,
-    })
+    }
+
+    gen_hbw_decay = ak.to_regular(ak.zip({
+        gp: {f: hhgen[gp][f] for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
+    }))
 
     events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
 
