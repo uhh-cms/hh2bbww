@@ -17,6 +17,7 @@ from columnflow.production.processes import process_ids
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
 from hbw.selection.general import increment_stats, jet_energy_shifts
 from hbw.selection.cutflow_features import cutflow_features
+from hbw.selection.gen_hbw_features import gen_hbw_decay_features
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -184,11 +185,11 @@ def default(
 
 
 @selector(
-    uses={default, gen_hbw_decay_products},
-    produces={category_ids, process_ids, increment_stats, gen_hbw_decay_products},
+    uses={default, gen_hbw_decay_products, gen_hbw_decay_features},
+    produces={category_ids, process_ids, increment_stats, gen_hbw_decay_products, gen_hbw_decay_features},
     exposed=True,
 )
-def hbw_gen(
+def gen_hbw(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
@@ -210,6 +211,6 @@ def hbw_gen(
     events = self[gen_hbw_decay_products](events, **kwargs)
 
     # produce relevant columns (TODO)
-    # events = self[gen_hbw_features](events, **kwargs)
+    # events = self[gen_hbw_decay_features](events, **kwargs)
 
     return events, results
