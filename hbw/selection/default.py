@@ -91,7 +91,7 @@ def lepton_selection(
     # - veto additional leptons (TODO define exact cuts)
     # - require that events are triggered by SingleMu or SingleEle trigger
 
-    # Veto Lepton masks
+    # Veto Lepton masks (TODO define exact cuts)
     e_mask_veto = (events.Electron.pt > 15) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
     mu_mask_veto = (events.Muon.pt > 15) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
 
@@ -110,6 +110,8 @@ def lepton_selection(
     )
 
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
+    e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
+    mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
 
     # determine the masked lepton indices
     e_indices = masked_sorted_indices(e_mask, events.Electron.pt)
@@ -117,7 +119,10 @@ def lepton_selection(
 
     # build and return selection results plus new columns
     return events, SelectionResult(
-        steps={"Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel},
+        steps={
+            "Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel,
+            "Electron": e_sel, "Muon": mu_sel,  # for comparing results with Msc Analysis
+        },
         objects={"Electron": {"Electron": e_indices}, "Muon": {"Muon": mu_indices}},
     )
 

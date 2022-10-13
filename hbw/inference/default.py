@@ -192,7 +192,7 @@ def default(self):
             self.add_parameter(
                 f"{unc}_{proc}",
                 type=ParameterType.shape,
-                shift_source="{unc}_weight",
+                shift_source=f"{unc}",
             )
             self.add_parameter_to_group(f"{unc}_{proc}", "theory")
 

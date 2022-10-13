@@ -232,19 +232,18 @@ class SimpleDNN(MLModel):
             raise Exception("number of output nodes should be equal to number of processes")
 
         # transform output to contiguous ak Array
-        outputs = ak.from_numpy(np.ascontiguousarray(outputs))
-        print("!!!")
-        print(outputs.type)
-        print(outputs)
+        # outputs = ak.from_numpy(np.ascontiguousarray(outputs))
 
         for i, proc in enumerate(self.processes):
-            events = set_ak_column(events, f"{self.cls_name}.score_{proc}", outputs[:, i])
+            # events = set_ak_column(events, "dummy", outputs)
+            events = set_ak_column(events, f"{self.cls_name}.score_{proc}", ak.from_numpy(np.ascontiguousarray(outputs[:, i])))
         print("event fields:", events.fields)
         for f in events.fields:
             print(f, events[f].type)
         print("produced", self.produces())
         # TODO: for some reason, saving these columns does not work yet:
         # ValueError: ndarray is not contiguous
+        from IPython import embed; embed()
         return events
 
 
