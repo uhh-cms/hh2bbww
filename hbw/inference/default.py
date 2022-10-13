@@ -16,7 +16,7 @@ def default(self):
     #
     # categories
     #
-    from IPython import embed; embed()
+
     self.add_category(
         "cat1",
         category="1e",
@@ -40,10 +40,10 @@ def default(self):
         "ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_1_kt_1_sl_hbbhww",
         "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww",
     ]
-    signals_qqHH = [ 
-        'qqHH_CV_1_C2V_1_kl_1_sl_hbbhww', 'qqHH_CV_1_C2V_1_kl_0_sl_hbbhww', 'qqHH_CV_1_C2V_1_kl_2_sl_hbbhww',
-        'qqHH_CV_1_C2V_0_kl_1_sl_hbbhww', 'qqHH_CV_1_C2V_2_kl_1_sl_hbbhww',
-        'qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww', 'qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww',
+    signals_qqHH = [
+        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww",
+        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww",
+        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww",
     ]
 
     processes = [
@@ -56,7 +56,7 @@ def default(self):
         "st_schannel", "st_tchannel", "st_twchannel",
         # "dy_lep",
         # "w_lnu",
-        # "vv", 
+        # "vv",
         # "vvv",
         # "qcd",
         # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
@@ -117,10 +117,10 @@ def default(self):
     #       https://gitlab.cern.ch/hh/naming-conventions instead of taking the values from CMSDB
     for k, procs in proc_QCDscale.items():
         for proc in procs:
-            if not proc in processes:
+            if proc not in processes:
                 continue
             process_inst = self.config_inst.get_process(proc)
-            if not "scale" in process_inst.xsecs[ecm]:
+            if "scale" not in process_inst.xsecs[ecm]:
                 continue
             self.add_parameter(
                 f"QCDscale_{k}",
@@ -128,12 +128,12 @@ def default(self):
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
-                    process_inst.xsecs[ecm].get(names=("scale"), direction=("down","up"), factor=True),
-                ))
+                    process_inst.xsecs[ecm].get(names=("scale"), direction=("down", "up"), factor=True),
+                )),
             )
         self.add_parameter_to_group(f"QCDscale_{k}", "theory")
 
-    # add PDF rate uncertainties to inference model 
+    # add PDF rate uncertainties to inference model
     proc_pdf = {
         "gg": ["tt", "ttZ", "ggZZ"],
         "qqbar": ["st_schannel", "st_tchannel", "dy_lep", "w_lnu", "vvv", "qqZZ", "ttW"],
@@ -151,10 +151,10 @@ def default(self):
 
     for k, procs in proc_pdf.items():
         for proc in procs:
-            if not proc in processes:
+            if proc not in processes:
                 continue
             process_inst = self.config_inst.get_process(proc)
-            if not "pdf" in process_inst.xsecs[ecm]:
+            if "pdf" not in process_inst.xsecs[ecm]:
                 continue
             # from IPython import embed; embed()
             self.add_parameter(
@@ -163,8 +163,8 @@ def default(self):
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
-                    process_inst.xsecs[ecm].get(names=("pdf"), direction=("down","up"), factor=True),
-                ))
+                    process_inst.xsecs[ecm].get(names=("pdf"), direction=("down", "up"), factor=True),
+                )),
             )
         self.add_parameter_to_group(f"pdf_{k}", "theory")
 
@@ -185,6 +185,16 @@ def default(self):
         shift_source="minbias_xs",
     )
     self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
+
+    # scale + pdf
+    for proc in processes:
+        for unc in ("scale", "pdf"):
+            self.add_parameter(
+                f"{unc}_{proc}",
+                type=ParameterType.shape,
+                shift_source="{unc}_weight",
+            )
+            self.add_parameter_to_group(f"{unc}_{proc}", "theory")
 
     # Leftovers from test inference model, kept as an example for further implementations of uncertainties
     """

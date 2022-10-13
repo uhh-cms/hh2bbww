@@ -84,7 +84,7 @@ setup_hbw() {
 		        export_and_save CF_SCHEDULER_HOST "127.0.0.1"
 		        export_and_save CF_SCHEDULER_PORT "8082"
             fi
-            query HBT_BUNDLE_CMSSW "Install and bundle CMSSW sandboxes for job submission?" "True"
+            query HBW_BUNDLE_CMSSW "Install and bundle CMSSW sandboxes for job submission?" "True"
 	}
 	cf_setup_interactive "${CF_SETUP_NAME}" "${HBW_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
     fi
