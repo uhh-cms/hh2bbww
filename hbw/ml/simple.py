@@ -218,32 +218,24 @@ class SimpleDNN(MLModel):
 
         inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in features])))
 
-        """
         # use NN model that has not seen test set yet
         outputs = np.array([[-1] * len(self.processes)] * len(inputs))
         for i in range(self.folds):
             print(f"Evaluation fold {i}")
             idx = np.transpose(np.broadcast_to(ak.to_numpy(fold_indices == i), (len(self.processes), len(events))))
             outputs = np.where(idx, models[i].predict_on_batch(inputs), outputs)
-        """
-        # to simplyfy (testing): use any model
-        outputs = models[0].predict_on_batch(inputs)
+
+        # to simplify (testing): use any model
+        # outputs = models[0].predict_on_batch(inputs)
         if len(outputs[0]) != len(self.processes):
             raise Exception("number of output nodes should be equal to number of processes")
 
-        # transform output to contiguous ak Array
-        # outputs = ak.from_numpy(np.ascontiguousarray(outputs))
-
         for i, proc in enumerate(self.processes):
-            # events = set_ak_column(events, "dummy", outputs)
-            events = set_ak_column(events, f"{self.cls_name}.score_{proc}", ak.from_numpy(np.ascontiguousarray(outputs[:, i])))
-        print("event fields:", events.fields)
-        for f in events.fields:
-            print(f, events[f].type)
-        print("produced", self.produces())
-        # TODO: for some reason, saving these columns does not work yet:
-        # ValueError: ndarray is not contiguous
-        from IPython import embed; embed()
+            events = set_ak_column(
+                events, f"{self.cls_name}.score_{proc}",
+                ak.from_numpy(np.ascontiguousarray(outputs[:, i])),
+            )
+
         return events
 
 

@@ -78,11 +78,11 @@ setup_hbw() {
             export_and_save CF_TASK_NAMESPACE "${CF_TASK_NAMESPACE:-cf}"
             query CF_LOCAL_SCHEDULER "Use a local scheduler for law tasks" "True"
             if [ "${CF_LOCAL_SCHEDULER}" != "True" ]; then
-		        query CF_SCHEDULER_HOST "Address of a central scheduler for law tasks" "naf-cms15.desy.de"
-		        query CF_SCHEDULER_PORT "Port of a central scheduler for law tasks" "8082"
+		query CF_SCHEDULER_HOST "Address of a central scheduler for law tasks" "naf-cms15.desy.de"
+		query CF_SCHEDULER_PORT "Port of a central scheduler for law tasks" "8082"
             else
-		        export_and_save CF_SCHEDULER_HOST "127.0.0.1"
-		        export_and_save CF_SCHEDULER_PORT "8082"
+		export_and_save CF_SCHEDULER_HOST "127.0.0.1"
+		export_and_save CF_SCHEDULER_PORT "8082"
             fi
             query HBW_BUNDLE_CMSSW "Install and bundle CMSSW sandboxes for job submission?" "True"
 	}
