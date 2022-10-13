@@ -194,6 +194,16 @@ def add_variables(config: od.Config) -> None:
         x_title=r"$\Delta R(j_{1},j_{2})$",
     )
 
+    # Gen particles
+
+    config.add_variable(
+        name="pt_gen_h1",
+        expression="gen_hbw_decay.h1_pt",
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0., 400.),
+        x_title=r"p_{T}^{gen}",
+    )
+
     # cutflow variables
     config.add_variable(
         name="cf_jet1_pt",
