@@ -196,14 +196,6 @@ def add_variables(config: od.Config) -> None:
 
     # Gen particles
 
-    config.add_variable(
-        name="pt_gen_h1",
-        expression="gen_hbw_decay.h1_pt",
-        null_value=EMPTY_FLOAT,
-        binning=(40, 0., 400.),
-        x_title=r"p_{T}^{gen}",
-    )
-
     # cutflow variables
     config.add_variable(
         name="cf_jet1_pt",
@@ -250,4 +242,11 @@ def add_variables(config: od.Config) -> None:
         expression="cutflow.n_muon",
         binning=(11, -0.5, 10.5),
         x_title=r"Number of muons",
+    )
+    config.add_variable(
+        name="cf_gen_h1_pt",
+        expression="cutflow.h1_pt",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"p_{T}^{gen}",
     )
