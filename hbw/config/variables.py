@@ -243,6 +243,7 @@ def add_variables(config: od.Config) -> None:
         binning=(11, -0.5, 10.5),
         x_title=r"Number of muons",
     )
+    """
     config.add_variable(
         name="cf_gen_h1_pt",
         expression="cutflow.h1_pt",
@@ -250,13 +251,13 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"p_{T}^{gen}",
     )
-
+    """
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
         config.add_variable(
-            name=f"cf_gen_{gp}_pt",
-            expression=f"cutflow.{gp}_gen_pt",
+            name=f"cf_{gp}_pt",
+            expression=f"cutflow.{gp}_pt",
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=rf"p_{T}^{gen, {gp}}"
+            # x_title=rf"p_{T}^{gen, {gp}}"
+            x_title=gp + r" $p_{T}^{gen}$",
         )
-
