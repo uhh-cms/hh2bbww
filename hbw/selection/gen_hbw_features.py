@@ -5,58 +5,36 @@ Selectors to set ak columns for gen particles of hh2bbww
 """
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, Route, EMPTY_FLOAT
-from columnflow.selection import Selector, SelectionResult, selector
-from hbw.production.gen_hbw_decay import gen_hbw_decay_products
+from columnflow.columnar_util import set_ak_column  # , Route, EMPTY_FLOAT
+from columnflow.selection import Selector, selector
 
 ak = maybe_import("awkward")
 
 
 @selector(
     uses={
-        "gen_hbw_decay"
+        "gen_hbw_decay",
     },
-    produces={
-        "cutflow.h1_pt", "cutflow.h2_pt", "cutflow.b1_pt", "cutflow.b2_pt",
-        "cutflow.wlep_pt", "cutflow.whad_pt", "cutflow.l_pt", "cutflow.nu_pt",
-        "cutflow.q1_pt", "cutflow.q2_pt", "cutflow.foo_pt"
-    },
+    produces=set(
+        f"cutflow.{gp}_{var}"
+        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]  # , "foo1", "foo2"]
+        for var in ["pt", "eta", "phi", "mass"]
+    ),
 )
 def gen_hbw_decay_features(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-
+    print("features")
     for var in ["pt", "eta", "phi", "mass"]:
         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
             events = set_ak_column(events, f"cutflow.{gp}_{var}", events.gen_hbw_decay[gp][var])
-        
-        events = set_ak_column(events, f"cutflow.foo1_{var}", events.gen_hbw_decay.foo[:, 0][var])
-        events = set_ak_column(events, f"cutflow.foo2_{var}", events.gen_hbw_decay.foo[:, 1][var])
-            
-    """
-    events = set_ak_column(events, "cutflow.h1_pt", events.gen_hbw_decay.h1.pt)
-    events = set_ak_column(events, "cutflow.h2_pt", events.gen_hbw_decay.h2.pt)
-    events = set_ak_column(events, "cutflow.b1_pt", events.gen_hbw_decay.b1.pt)
-    events = set_ak_column(events, "cutflow.b2_pt", events.gen_hbw_decay.b2.pt)
-    events = set_ak_column(events, "cutflow.wlep_pt", events.gen_hbw_decay.wlep.pt)
-    events = set_ak_column(events, "cutflow.whad_pt", events.gen_hbw_decay.whad.pt)
-    events = set_ak_column(events, "cutflow.l_pt", events.gen_hbw_decay.l.pt)
-    events = set_ak_column(events, "cutflow.nu_pt", events.gen_hbw_decay.nu.pt)
-    events = set_ak_column(events, "cutflow.q1_pt", events.gen_hbw_decay.q1.pt)
-    events = set_ak_column(events, "cutflow.q2_pt", events.gen_hbw_decay.q2.pt)
-    # events = set_ak_column(events, "cutflow.foo1_pt", events.gen_hbw_decay.foo.pt[: ,0])
-    """
+
+        # events = set_ak_column(events, f"cutflow.foo1_{var}", events.gen_hbw_decay.foo[:, 0][var])
+        # events = set_ak_column(events, f"cutflow.foo2_{var}", events.gen_hbw_decay.foo[:, 1][var])
+        """
+        from IPython import embed; embed()
+        for i in range(2):
+            events = set_ak_column(
+                events, f"cutflow.foo{i}_{var}",
+                Route(f"foo[:, {i}, {var}]").apply(events.gen_hbw_decay, EMPTY_FLOAT),
+            )
+        """
     return events
-
-
-# gen_hbw_decay = ak.zip({
-#     "h1": h[:, 0],
-#     "h2": h[:, 1],
-#     "b1": b1,
-#     "b2": b2,
-#     "wlep": wlep,
-#     "whad": whad,
-#     "l": lepton,
-#     "nu": neutrino,
-#     "q1": q_dtype,
-#     "q2": q_utype,
-#     "foo": foo,
-# })
