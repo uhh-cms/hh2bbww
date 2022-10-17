@@ -16,7 +16,7 @@ ak = maybe_import("awkward")
 def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Creates column 'gen_hbw_decay', which includes the most relevant particles of a HH->bbWW(qqlnu) decay.
-    All sub-fields are individual GenParticles, except 'foo', which is an array of all non-Higgs 
+    All sub-fields are individual GenParticles, except 'foo', which is an array of all non-Higgs
     GenParticles directly originating from the initial state.
     """
 

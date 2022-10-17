@@ -30,7 +30,7 @@ analysis_hbw.set_aux("versions", {
 analysis_hbw.x.bash_sandboxes = [
     "$CF_BASE/sandboxes/cf_prod.sh",
     "$CF_BASE/sandboxes/venv_columnar.sh",
-    "$HBW_BASE/sandboxes/venv_columnar_tf.sh",
+    # "$HBW_BASE/sandboxes/venv_columnar_tf.sh",
 ]
 
 # cmssw sandboxes that should be bundled for remote jobs in case they are needed

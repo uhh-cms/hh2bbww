@@ -29,7 +29,7 @@ setup_hbw() {
     # prepare local variables
     #
 
-    local shell_is_zsh=$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )
+    local shell_is_zsh="$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )"
     local this_file="$( ${shell_is_zsh} && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
     local orig="${PWD}"
@@ -62,7 +62,7 @@ setup_hbw() {
 
     # interactive setup
     if [ "${CF_REMOTE_JOB}" != "1" ]; then
-	cf_setup_interactive_body() {
+    	cf_setup_interactive_body() {
             # start querying for variables
             query CF_CERN_USER "CERN username" "$( whoami )"
             export_and_save CF_CERN_USER_FIRSTCHAR "\${CF_CERN_USER:0:1}"
@@ -73,8 +73,9 @@ setup_hbw() {
             export_and_save CF_WLCG_USE_CACHE "$( [ -z "${CF_WLCG_CACHE_ROOT}" ] && echo false || echo true )"
             export_and_save CF_WLCG_CACHE_CLEANUP "${CF_WLCG_CACHE_CLEANUP:-false}"
             query CF_SOFTWARE_BASE "Local directory for installing software" "\$CF_DATA/software"
-            query CF_CMSSW_BASE "Local directory for installing CMSSW" "\$CF_DATA/cmssw"
             query CF_JOB_BASE "Local directory for storing job files" "\$CF_DATA/jobs"
+            query CF_VOMS "Virtual-organization" "cms:/cms/dcms"
+            export_and_save CF_TASK_NAMESPACE "${CF_TASK_NAMESPACE:-cf}"
             query CF_LOCAL_SCHEDULER "Use a local scheduler for law tasks" "True"
             if [ "${CF_LOCAL_SCHEDULER}" != "True" ]; then
 		query CF_SCHEDULER_HOST "Address of a central scheduler for law tasks" "naf-cms15.desy.de"
@@ -83,8 +84,7 @@ setup_hbw() {
 		export_and_save CF_SCHEDULER_HOST "127.0.0.1"
 		export_and_save CF_SCHEDULER_PORT "8082"
             fi
-            query CF_VOMS "Virtual-organization" "cms:/cms/dcms"
-            export_and_save CF_TASK_NAMESPACE "${CF_TASK_NAMESPACE:-cf}"
+            query HBW_BUNDLE_CMSSW "Install and bundle CMSSW sandboxes for job submission?" "True"
 	}
 	cf_setup_interactive "${CF_SETUP_NAME}" "${HBW_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
     fi
