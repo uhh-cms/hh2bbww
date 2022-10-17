@@ -259,5 +259,5 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0., 400.),
             unit="GeV",
             # x_title=rf"p_{T}^{gen, {gp}}"
-            x_title=r"p_{T}^{gen}" + gp,
+            x_title=gp + r" $p_{T}^{gen}$",
         )
