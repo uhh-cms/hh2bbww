@@ -246,34 +246,28 @@ def add_variables(config: od.Config) -> None:
 
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
-            name=f"cf_{gp}_pt",
+            name=f"gen_{gp}_pt",
             expression=f"cutflow.{gp}_pt",
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"$p_{T}^{gen,%s}$" % (gp),
+            x_title=r"$p_{T, %s}^{gen}$" % (gp),
         )
-
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
-            name=f"cf_{gp}_mass",
+            name=f"gen_{gp}_mass",
             expression=f"cutflow.{gp}_mass",
             binning=(40, 0., 400.),
             unit="GeV",
             x_title=r"$m_{%s}^{gen}$" % (gp),
         )
-
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
-            name=f"cf_{gp}_eta",
+            name=f"gen_{gp}_eta",
             expression=f"cutflow.{gp}_eta",
             binning=(12, -6., 6.),
             unit="GeV",
             x_title=r"$\eta_{%s}^{gen}$" % (gp),
         )
-
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
-            name=f"cf_{gp}_phi",
+            name=f"gen_{gp}_phi",
             expression=f"cutflow.{gp}_phi",
             binning=(8, -4, 4),
             unit="GeV",

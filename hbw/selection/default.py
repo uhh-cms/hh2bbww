@@ -190,8 +190,11 @@ def default(
 
 
 @selector(
-    uses={default, gen_hbw_decay_products, gen_hbw_decay_features, "mc_weight"},
-    produces={"mc_weight", category_ids, process_ids, increment_stats, gen_hbw_decay_products, gen_hbw_decay_features},
+    uses={default, "mc_weight"},  # mc_weight should be included from default
+    produces={
+        category_ids, process_ids, increment_stats, "mc_weight",
+        gen_hbw_decay_products, gen_hbw_decay_features,
+    },
     exposed=True,
 )
 def gen_hbw(
@@ -212,10 +215,10 @@ def gen_hbw(
     # run the default Selector
     events, results = self[default](events, stats, **kwargs)
 
-    # extract relevant gen HH decay products (TODO)
+    # extract relevant gen HH decay products
     events = self[gen_hbw_decay_products](events, **kwargs)
 
-    # produce relevant columns (TODO)
+    # produce relevant columns
     events = self[gen_hbw_decay_features](events, **kwargs)
 
     return events, results
