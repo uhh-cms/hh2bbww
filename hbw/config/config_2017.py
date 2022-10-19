@@ -139,11 +139,12 @@ dataset_names = [
 for dataset_name in dataset_names:
     dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
 
-    # reduce n_files to 2 for testing purposes (TODO switch to full dataset)
+    # reduce n_files to max. 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
         # if dataset.name == "ggHH_kl_1_kt_1_sl_hbbhww_powheg":
         #    continue
-        dataset[k].n_files = 2
+        if dataset[k].n_files > 2:
+            dataset[k].n_files = 2
 
     # add aux info to datasets
     if dataset.name.startswith(("st", "tt")):

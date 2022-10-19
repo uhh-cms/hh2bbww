@@ -190,7 +190,10 @@ def default(
 
 
 @selector(
-    uses={default, "mc_weight"},  # mc_weight should be included from default
+    uses={
+        default, "mc_weight",  # mc_weight should be included from default
+        gen_hbw_decay_products, gen_hbw_decay_features,
+    },
     produces={
         category_ids, process_ids, increment_stats, "mc_weight",
         gen_hbw_decay_products, gen_hbw_decay_features,
