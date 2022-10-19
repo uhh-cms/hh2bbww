@@ -6,7 +6,7 @@ Producers that determine the generator-level particles of a HH->bbWW decay.
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 
 ak = maybe_import("awkward")
@@ -42,8 +42,11 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
 
     # find all non-Higgs daughter particles from inital state
     # TODO: good naming choice for these particles (replace 'foo')
-    foo = ak.flatten(isp.children, axis=2)
-    foo = foo[abs(foo.pdgId) != 25]
+    sec = ak.flatten(isp.children, axis=2)
+    sec = sec[abs(sec.pdgId) != 25]
+    sec = ak.pad_none(sec, 1) # TODO: Not all initial particles are gluons
+    gp_ghost = ak.zip({f: -9999.0 for f in sec.fields},with_name='GenParticle') # TODO: avoid union type
+    sec = ak.fill_none(sec, gp_ghost, axis=1) # axis=1 necessary
 
     # find hard Higgs bosons
     h = gp[abs_id == 25]
@@ -106,7 +109,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # TODO: identify H->bb and H->WW and switch from h1/h2 to hbb/hww
     # TODO: most fields have type='len(events) * ?genParticle' -> get rid of the '?'
 
-    gen_hbw_decay = ak.zip({
+    hhgen = {
         "h1": h[:, 0],
         "h2": h[:, 1],
         "b1": b1,
@@ -117,9 +120,12 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "nu": neutrino,
         "q1": q_dtype,
         "q2": q_utype,
-        "foo": foo,
-    })
+        "sec": sec[:, 0], # TODO: curretnly only one secondary particle
+    }
 
+    gen_hbw_decay = ak.Array({
+        gp: {f: hhgen[gp][f] for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
+    })
     events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
 
     return events

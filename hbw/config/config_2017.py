@@ -472,6 +472,8 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
         "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
         "MET.pt", "MET.phi",
+        # Gen properties
+        "gen_hbw_decay.*",
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
     },

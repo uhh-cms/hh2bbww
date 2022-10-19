@@ -194,6 +194,8 @@ def add_variables(config: od.Config) -> None:
         x_title=r"$\Delta R(j_{1},j_{2})$",
     )
 
+    # Gen particles
+
     # cutflow variables
     config.add_variable(
         name="cf_jet1_pt",
@@ -241,3 +243,39 @@ def add_variables(config: od.Config) -> None:
         binning=(11, -0.5, 10.5),
         x_title=r"Number of muons",
     )
+
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+        config.add_variable(
+            name=f"cf_{gp}_pt",
+            expression=f"cutflow.{gp}_pt",
+            binning=(40, 0., 400.),
+            unit="GeV",
+            x_title=r'$p_{T}^{gen,%s}$'%(gp)
+        )
+
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+        config.add_variable(
+            name=f"cf_{gp}_mass",
+            expression=f"cutflow.{gp}_mass",
+            binning=(40, 0., 400.),
+            unit="GeV",
+            x_title=r'$m_{%s}^{gen}$'%(gp)
+        )
+
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+        config.add_variable(
+            name=f"cf_{gp}_eta",
+            expression=f"cutflow.{gp}_eta",
+            binning=(12, -6., 6.),
+            unit="GeV",
+            x_title=r'$\eta_{%s}^{gen}$'%(gp)
+        )
+
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+        config.add_variable(
+            name=f"cf_{gp}_phi",
+            expression=f"cutflow.{gp}_phi",
+            binning=(8, -4, 4),
+            unit="GeV",
+            x_title=r'$\phi_{%s}^{gen}$'%(gp)
+        )
