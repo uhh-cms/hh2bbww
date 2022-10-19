@@ -244,7 +244,7 @@ def add_variables(config: od.Config) -> None:
         x_title=r"Number of muons",
     )
 
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
             name=f"cf_{gp}_pt",
             expression=f"cutflow.{gp}_pt",
@@ -253,7 +253,7 @@ def add_variables(config: od.Config) -> None:
             x_title=r'$p_{T}^{gen,%s}$'%(gp)
         )
 
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
             name=f"cf_{gp}_mass",
             expression=f"cutflow.{gp}_mass",
@@ -262,7 +262,7 @@ def add_variables(config: od.Config) -> None:
             x_title=r'$m_{%s}^{gen}$'%(gp)
         )
 
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
             name=f"cf_{gp}_eta",
             expression=f"cutflow.{gp}_eta",
@@ -271,7 +271,7 @@ def add_variables(config: od.Config) -> None:
             x_title=r'$\eta_{%s}^{gen}$'%(gp)
         )
 
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2"]:
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
         config.add_variable(
             name=f"cf_{gp}_phi",
             expression=f"cutflow.{gp}_phi",
