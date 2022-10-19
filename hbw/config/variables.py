@@ -250,7 +250,7 @@ def add_variables(config: od.Config) -> None:
             expression=f"cutflow.{gp}_pt",
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r'$p_{T}^{gen,%s}$'%(gp)
+            x_title=r"$p_{T}^{gen,%s}$" % (gp),
         )
 
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
@@ -259,7 +259,7 @@ def add_variables(config: od.Config) -> None:
             expression=f"cutflow.{gp}_mass",
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r'$m_{%s}^{gen}$'%(gp)
+            x_title=r"$m_{%s}^{gen}$" % (gp),
         )
 
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
@@ -268,7 +268,7 @@ def add_variables(config: od.Config) -> None:
             expression=f"cutflow.{gp}_eta",
             binning=(12, -6., 6.),
             unit="GeV",
-            x_title=r'$\eta_{%s}^{gen}$'%(gp)
+            x_title=r"$\eta_{%s}^{gen}$" % (gp),
         )
 
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
@@ -277,5 +277,5 @@ def add_variables(config: od.Config) -> None:
             expression=f"cutflow.{gp}_phi",
             binning=(8, -4, 4),
             unit="GeV",
-            x_title=r'$\phi_{%s}^{gen}$'%(gp)
+            x_title=r"$\phi_{%s}^{gen}$" % (gp),
         )
