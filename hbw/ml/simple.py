@@ -42,10 +42,10 @@ class SimpleDNN(MLModel):
         }
 
         # DNN model parameters
-        self.layers = [32, 32, 32]
-        self.learningrate = 0.001
+        self.layers = [512, 512, 512]
+        self.learningrate = 0.00050
         # self.batchsize = -1
-        self.epochs = 5
+        self.epochs = 200
         self.eqweight = True
 
         # dynamically add variables for the quantities produced by this model
@@ -90,7 +90,10 @@ class SimpleDNN(MLModel):
         output: law.LocalDirectoryTarget,
     ) -> ak.Array:
         # np.random.seed(1337)  # for reproducibility
-        from keras.layers import Dense
+
+        #
+        # input preparation
+        #
 
         N_inputs = len(self.used_columns) - 2  # don't count the weight columns
         N_outputs = len(self.processes)
@@ -173,8 +176,15 @@ class SimpleDNN(MLModel):
 
         train, validation = {}, {}  # combine all except one input as train input, use last one for validation
         for k, vals in NN_inputs.items():
-            train[k] = np.concatenate(vals[:-1])
-            validation[k] = vals[-1]
+            validation[k] = vals.pop(self.fold)  # validation set always corresponds to (fold+1) in that way
+            print("Number of training folds:", len(vals))
+            train[k] = np.concatenate(vals)
+
+        #
+        # model preparation
+        #
+
+        from keras.layers import Dense
 
         # define the DNN model
         model = keras.models.Sequential()
@@ -193,11 +203,16 @@ class SimpleDNN(MLModel):
         optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
         model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["categorical_accuracy"])
 
+        #
+        # training
+        #
+
         # train the model (output history here maybe?)
+        print("Start training...")
         model.fit(
             x=train["inputs"], y=train["target"], epochs=self.epochs, sample_weight=train["weights"],
             validation_data=(validation["inputs"], validation["target"], validation["weights"]),
-            shuffle=True, verbose=0,
+            shuffle=True, verbose=1,
         )
 
         output.parent.touch()

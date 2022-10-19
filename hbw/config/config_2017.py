@@ -161,6 +161,7 @@ config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
 config_2017.set_aux("default_inference_model", "default")
+config_2017.set_aux("default_categories", ["incl"])
 config_2017.set_aux("default_process_settings", [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs

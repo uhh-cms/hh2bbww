@@ -122,7 +122,7 @@ def lepton_selection(
     return events, SelectionResult(
         steps={
             "Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel,
-            "Electron": e_sel, "Muon": mu_sel,  # for comparing results with Msc Analysis
+            "Muon": mu_sel,  # for comparing results with Msc Analysis
         },
         objects={"Electron": {"Electron": e_indices}, "Muon": {"Muon": mu_indices}},
     )
