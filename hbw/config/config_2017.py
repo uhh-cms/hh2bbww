@@ -161,6 +161,7 @@ config_2017.set_aux("default_selector", "default")
 config_2017.set_aux("default_producer", "features")
 config_2017.set_aux("default_ml_model", None)
 config_2017.set_aux("default_inference_model", "default")
+config_2017.set_aux("default_categories", ["incl"])
 config_2017.set_aux("default_process_settings", [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs
@@ -472,8 +473,6 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
         "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
         "MET.pt", "MET.phi",
-        # Gen properties
-        "gen_hbw_decay.*",
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
     },

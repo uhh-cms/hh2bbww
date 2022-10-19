@@ -16,8 +16,7 @@ ak = maybe_import("awkward")
 def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Creates column 'gen_hbw_decay', which includes the most relevant particles of a HH->bbWW(qqlnu) decay.
-    All sub-fields are individual GenParticles, except 'foo', which is an array of all non-Higgs
-    GenParticles directly originating from the initial state.
+    All sub-fields are individual GenParticles.
     """
 
     if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbw", False):
@@ -41,12 +40,11 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     isp = gp[ak.is_none(gp.parent.pdgId, axis=1)]
 
     # find all non-Higgs daughter particles from inital state
-    # TODO: good naming choice for these particles (replace 'foo')
     sec = ak.flatten(isp.children, axis=2)
     sec = sec[abs(sec.pdgId) != 25]
-    sec = ak.pad_none(sec, 1) # TODO: Not all initial particles are gluons
-    gp_ghost = ak.zip({f: -9999.0 for f in sec.fields},with_name='GenParticle') # TODO: avoid union type
-    sec = ak.fill_none(sec, gp_ghost, axis=1) # axis=1 necessary
+    sec = ak.pad_none(sec, 1)  # TODO: Not all initial particles are gluons
+    gp_ghost = ak.zip({f: EMPTY_FLOAT for f in sec.fields}, with_name="GenParticle")  # TODO: avoid union type
+    sec = ak.fill_none(sec, gp_ghost, axis=1)  # axis=1 necessary
 
     # find hard Higgs bosons
     h = gp[abs_id == 25]
@@ -120,7 +118,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "nu": neutrino,
         "q1": q_dtype,
         "q2": q_utype,
-        "sec": sec[:, 0], # TODO: curretnly only one secondary particle
+        "sec": sec[:, 0],  # TODO: currently only one secondary particle
     }
 
     gen_hbw_decay = ak.Array({

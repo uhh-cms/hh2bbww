@@ -8,8 +8,7 @@ import awkward as ak
 # awkward not in conda environment -> source sandbox before calling this file:
 # source $HBW_BASE/modules/columnflow/sandboxes/venv_columnar_dev.sh
 
-task = SelectEvents(version="v1", dataset="tt_sl_powheg", walltime="30sec")
-# task = SelectEvents(version="v1", dataset="ggHH_kl_1_kt_1_sl_hbbhww_powheg", selector="gen_hbw", walltime="30sec")
+task = SelectEvents(version="v1", dataset="tt_sl_powheg", walltime="1h")
 task.law_run()
 
 outp = task.output()["collection"]
@@ -29,4 +28,5 @@ for branch in outp.keys():
 
 
 # Debugger
-from IPython import embed; embed()
+from IPython import embed
+embed()

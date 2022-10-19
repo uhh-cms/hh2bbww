@@ -186,11 +186,12 @@ def default(self):
     )
     self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
 
-    # scale + pdf
+    # scale + pdf (shape)
     for proc in processes:
         for unc in ("scale", "pdf"):
             self.add_parameter(
                 f"{unc}_{proc}",
+                process=inference_procnames.get(proc, proc),
                 type=ParameterType.shape,
                 shift_source=f"{unc}",
             )

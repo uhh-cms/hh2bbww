@@ -111,7 +111,7 @@ def lepton_selection(
     )
 
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
-    e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
+    # e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
 
     # determine the masked lepton indices
@@ -122,7 +122,7 @@ def lepton_selection(
     return events, SelectionResult(
         steps={
             "Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel,
-            "Electron": e_sel, "Muon": mu_sel,  # for comparing results with Msc Analysis
+            "Muon": mu_sel,  # for comparing results with Msc Analysis
         },
         objects={"Electron": {"Electron": e_indices}, "Muon": {"Muon": mu_indices}},
     )
@@ -190,8 +190,11 @@ def default(
 
 
 @selector(
-    uses={default, gen_hbw_decay_products, gen_hbw_decay_features, "mc_weight"},
-    produces={"mc_weight", category_ids, process_ids, increment_stats, gen_hbw_decay_products, gen_hbw_decay_features},
+    uses={default, "mc_weight"},  # mc_weight should be included from default
+    produces={
+        category_ids, process_ids, increment_stats, "mc_weight",
+        gen_hbw_decay_products, gen_hbw_decay_features,
+    },
     exposed=True,
 )
 def gen_hbw(
@@ -212,10 +215,10 @@ def gen_hbw(
     # run the default Selector
     events, results = self[default](events, stats, **kwargs)
 
-    # extract relevant gen HH decay products (TODO)
+    # extract relevant gen HH decay products
     events = self[gen_hbw_decay_products](events, **kwargs)
 
-    # produce relevant columns (TODO)
+    # produce relevant columns
     events = self[gen_hbw_decay_features](events, **kwargs)
 
     return events, results
