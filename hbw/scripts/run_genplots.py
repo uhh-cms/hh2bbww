@@ -24,5 +24,6 @@ plot_cutflow_vars = PlotCutflowVariables(
     skip_ratio="True",
     shape_norm="True",
     skip_cms="False",
+    # remove_output="3ay",  # remove outputs starting from SelectEvents
 )
 plot_cutflow_vars.law_run()

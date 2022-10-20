@@ -17,22 +17,13 @@ ak = maybe_import("awkward")
     },
     produces=set(
         f"cutflow.{gp}_{var}"
-        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]  # , "foo1", "foo2"]
+        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]
         for var in ["pt", "eta", "phi", "mass"]
     ),
 )
 def gen_hbw_decay_features(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    print("features")
     for var in ["pt", "eta", "phi", "mass"]:
-        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+        for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
             events = set_ak_column(events, f"cutflow.{gp}_{var}", events.gen_hbw_decay[gp][var])
 
-        """
-        from IPython import embed; embed()
-        for i in range(2):
-            events = set_ak_column(
-                events, f"cutflow.foo{i}_{var}",
-                Route(f"foo[:, {i}, {var}]").apply(events.gen_hbw_decay, EMPTY_FLOAT),
-            )
-        """
     return events

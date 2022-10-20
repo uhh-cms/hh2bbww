@@ -244,7 +244,7 @@ def add_variables(config: od.Config) -> None:
         x_title=r"Number of muons",
     )
 
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec"]:
+    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
         config.add_variable(
             name=f"gen_{gp}_pt",
             expression=f"cutflow.{gp}_pt",

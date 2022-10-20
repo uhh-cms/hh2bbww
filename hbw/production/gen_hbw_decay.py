@@ -10,13 +10,14 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 
 ak = maybe_import("awkward")
+np = maybe_import("numpy")
 
 
 @producer
 def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Creates column 'gen_hbw_decay', which includes the most relevant particles of a HH->bbWW(qqlnu) decay.
-    All sub-fields are individual GenParticles.
+    All sub-fields correspond to individual GenParticles with fields pt, eta, phi, mass and pdgId.
     """
 
     if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbw", False):
@@ -42,7 +43,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     # find all non-Higgs daughter particles from inital state
     sec = ak.flatten(isp.children, axis=2)
     sec = sec[abs(sec.pdgId) != 25]
-    sec = ak.pad_none(sec, 1)  # TODO: Not all initial particles are gluons
+    sec = ak.pad_none(sec, 2)  # TODO: Not all initial particles are gluons
     gp_ghost = ak.zip({f: EMPTY_FLOAT for f in sec.fields}, with_name="GenParticle")  # TODO: avoid union type
     sec = ak.fill_none(sec, gp_ghost, axis=1)  # axis=1 necessary
 
@@ -118,11 +119,11 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         "nu": neutrino,
         "q1": q_dtype,
         "q2": q_utype,
-        "sec": sec[:, 0],  # TODO: currently only one secondary particle
+        "sec1": sec[:, 0],
+        "sec2": sec[:, 1],
     }
-
     gen_hbw_decay = ak.Array({
-        gp: {f: hhgen[gp][f] for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
+        gp: {f: np.float32(hhgen[gp][f]) for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
     })
     events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
 
