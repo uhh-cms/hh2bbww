@@ -482,8 +482,11 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
     },
 }))
 
-# event weight columns
-config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight"])
+# event weight columns as keys in an ordered dict, mapped to shift instances they depend on
+get_shifts = lambda *names: sum(([config_2017.get_shift(f"{name}_up"), config_2017.get_shift(f"{name}_down")] for name in names), [])
+config_2017.x.event_weights = DotDict()
+config_2017.x.event_weights["normalization_weight"] = []
+config_2017.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
 # TODO: enable different cases for number of pdf/scale weights
 # config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
 
