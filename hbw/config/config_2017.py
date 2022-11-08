@@ -34,29 +34,29 @@ campaign_run2_2017 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v
 procs = get_root_processes_from_campaign(campaign_run2_2017)
 
 # create a config by passing the campaign, so id and name will be identical
-config_2017 = analysis_hbw.add_config(campaign_run2_2017)
+config_2017 = cfg = analysis_hbw.add_config(campaign_run2_2017)
 
 # add processes we are interested in
-config_2017.add_process(procs.n.data)
-config_2017.add_process(procs.n.tt)
-config_2017.add_process(procs.n.st)
-config_2017.add_process(procs.n.w_lnu)
-config_2017.add_process(procs.n.dy_lep)
-# config_2017.add_process(procs.n.qcd)
-# config_2017.add_process(procs.n.ttv)
-# config_2017.add_process(procs.n.vv)
-# config_2017.add_process(procs.n.vv)
-config_2017.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
-config_2017.add_process(procs.n.ggHH_kl_1_kt_1_sl_hbbhww)
-config_2017.add_process(procs.n.ggHH_kl_2p45_kt_1_sl_hbbhww)
-config_2017.add_process(procs.n.ggHH_kl_5_kt_1_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
-config_2017.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
+cfg.add_process(procs.n.data)
+cfg.add_process(procs.n.tt)
+cfg.add_process(procs.n.st)
+cfg.add_process(procs.n.w_lnu)
+cfg.add_process(procs.n.dy_lep)
+# cfg.add_process(procs.n.qcd)
+# cfg.add_process(procs.n.ttv)
+# cfg.add_process(procs.n.vv)
+# cfg.add_process(procs.n.vv)
+cfg.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
+cfg.add_process(procs.n.ggHH_kl_1_kt_1_sl_hbbhww)
+cfg.add_process(procs.n.ggHH_kl_2p45_kt_1_sl_hbbhww)
+cfg.add_process(procs.n.ggHH_kl_5_kt_1_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
+cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
 
 # set color of some processes
 colors = {
@@ -76,8 +76,8 @@ colors = {
     "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
 }
 for proc, color in colors.items():
-    if proc in config_2017.processes:
-        config_2017.get_process(proc).color1 = color
+    if proc in cfg.processes:
+        cfg.get_process(proc).color1 = color
 
 # add datasets we need to study
 dataset_names = [
@@ -137,7 +137,7 @@ dataset_names = [
     "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
 ]
 for dataset_name in dataset_names:
-    dataset = config_2017.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
+    dataset = cfg.add_dataset(campaign_run2_2017.get_dataset(dataset_name))
 
     # reduce n_files to max. 2 for testing purposes (TODO switch to full dataset)
     for k in dataset.info.keys():
@@ -157,17 +157,17 @@ for dataset_name in dataset_names:
 
 
 # default calibrator, selector, producer, ml model and inference model
-config_2017.set_aux("default_calibrator", "skip_jecunc")
-config_2017.set_aux("default_selector", "default")
-config_2017.set_aux("default_producer", "features")
-config_2017.set_aux("default_ml_model", None)
-config_2017.set_aux("default_inference_model", "default")
-config_2017.set_aux("default_categories", ["incl"])
-config_2017.set_aux("default_process_settings", [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]])
+cfg.set_aux("default_calibrator", "skip_jecunc")
+cfg.set_aux("default_selector", "default")
+cfg.set_aux("default_producer", "features")
+cfg.set_aux("default_ml_model", None)
+cfg.set_aux("default_inference_model", "default")
+cfg.set_aux("default_categories", ["incl"])
+cfg.set_aux("default_process_settings", [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
-config_2017.set_aux("process_groups", {
+cfg.set_aux("process_groups", {
     "hh": ["ggHH_kl_1_kt_1_sl_hbbhww"],
     "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "w_lnu", "st", "tt"],
     "working": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "st", "tt"],
@@ -180,7 +180,7 @@ config_2017.set_aux("process_groups", {
 
 # dataset groups for conveniently looping over certain datasets
 # (used in wrapper_factory and during plotting)
-config_2017.set_aux("dataset_groups", {
+cfg.set_aux("dataset_groups", {
     "all": ["*"],
     "working": ["tt_*", "st_*", "dy_*"],
     "default": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
@@ -190,14 +190,14 @@ config_2017.set_aux("dataset_groups", {
 
 # category groups for conveniently looping over certain categories
 # (used during plotting)
-config_2017.set_aux("category_groups", {
+cfg.set_aux("category_groups", {
     "default": ["incl", "1e", "1mu"],
     "test": ["incl", "1e"],
 })
 
 # variable groups for conveniently looping over certain variables
 # (used during plotting)
-config_2017.set_aux("variable_groups", {
+cfg.set_aux("variable_groups", {
     "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
     "test": ["n_jet", "n_electron", "jet1_pt"],
     "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
@@ -205,19 +205,19 @@ config_2017.set_aux("variable_groups", {
 
 # shift groups for conveniently looping over certain shifts
 # (used during plotting)
-config_2017.set_aux("shift_groups", {
+cfg.set_aux("shift_groups", {
     "jer": ["nominal", "jer_up", "jer_down"],
 })
 
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
-config_2017.set_aux("selector_step_groups", {
+cfg.set_aux("selector_step_groups", {
     "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
     "thesis": ["Lepton", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts to check if everything works
     "test": ["Lepton", "Jet", "Bjet"],
 })
 
-config_2017.set_aux("selector_step_labels", {
+cfg.set_aux("selector_step_labels", {
     "Jet": r"$N_{Jets} \geq 3$",
     "Lepton": r"$N_{Lepton} = 1$",
     "Bjet": r"$N_{Jets}^{BTag} \geq 1$",
@@ -225,14 +225,14 @@ config_2017.set_aux("selector_step_labels", {
 
 
 # process settings groups to quickly define settings for ProcessPlots
-config_2017.set_aux("process_settings_groups", {
+cfg.set_aux("process_settings_groups", {
     "default": [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]],
-    "unstack_all": [[proc, "unstack"] for proc in config_2017.processes],
+    "unstack_all": [[proc, "unstack"] for proc in cfg.processes],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
 # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=176#LumiComb
-config_2017.set_aux("luminosity", Number(41480, {
+cfg.set_aux("luminosity", Number(41480, {
     "lumi_13TeV_2017": (REL, 0.02),
     "lumi_13TeV_1718": (REL, 0.006),
     "lumi_13TeV_correlated": (REL, 0.009),
@@ -240,11 +240,11 @@ config_2017.set_aux("luminosity", Number(41480, {
 
 # 2017 minimum bias cross section in mb (milli) for creating PU weights, values from
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData?rev=44#Pileup_JSON_Files_For_Run_II
-config_2017.set_aux("minbiasxs", Number(69.2, (REL, 0.046)))
+cfg.set_aux("minbiasxs", Number(69.2, (REL, 0.046)))
 
 # 2017 b-tag working points
 # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
-config_2017.x.btag_working_points = DotDict.wrap({
+cfg.x.btag_working_points = DotDict.wrap({
     "deepjet": {
         "loose": 0.0532,
         "medium": 0.3040,
@@ -258,13 +258,13 @@ config_2017.x.btag_working_points = DotDict.wrap({
 })
 
 # location of JEC txt files
-config_2017.set_aux("jec", DotDict.wrap({
+cfg.set_aux("jec", DotDict.wrap({
     "source": "https://raw.githubusercontent.com/cms-jet/JECDatabase/master/textFiles",
     "campaign": "Summer19UL17",
     "version": "V6",
     "jet_type": "AK4PFchs",
     "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
-    "data_eras": sorted(filter(None, {d.x("jec_era", None) for d in config_2017.datasets if d.is_data})),
+    "data_eras": sorted(filter(None, {d.x("jec_era", None) for d in cfg.datasets if d.is_data})),
     "uncertainty_sources": [
         # comment out most for now to prevent large file sizes
         # "AbsoluteStat",
@@ -326,7 +326,7 @@ config_2017.set_aux("jec", DotDict.wrap({
     ],
 }))
 
-config_2017.set_aux("jer", DotDict.wrap({
+cfg.set_aux("jer", DotDict.wrap({
     "source": "https://raw.githubusercontent.com/cms-jet/JRDatabase/master/textFiles",
     "campaign": "Summer19UL17",
     "version": "JRV2",
@@ -337,7 +337,7 @@ config_2017.set_aux("jer", DotDict.wrap({
 # helper to add column aliases for both shifts of a source
 def add_aliases(shift_source: str, aliases: Set[str], selection_dependent: bool):
     for direction in ["up", "down"]:
-        shift = config_2017.get_shift(od.Shift.join_name(shift_source, direction))
+        shift = cfg.get_shift(od.Shift.join_name(shift_source, direction))
         # format keys and values
         inject_shift = lambda s: re.sub(r"\{([^_])", r"{_\1", s).format(**shift.__dict__)
         _aliases = {inject_shift(key): inject_shift(value) for key, value in aliases.items()}
@@ -347,46 +347,46 @@ def add_aliases(shift_source: str, aliases: Set[str], selection_dependent: bool)
 
 
 # register shifts
-config_2017.add_shift(name="nominal", id=0)
-config_2017.add_shift(name="tune_up", id=1, type="shape", tags={"disjoint_from_nominal"})
-config_2017.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
-config_2017.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})
-config_2017.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
-config_2017.add_shift(name="minbias_xs_up", id=7, type="shape")
-config_2017.add_shift(name="minbias_xs_down", id=8, type="shape")
+cfg.add_shift(name="nominal", id=0)
+cfg.add_shift(name="tune_up", id=1, type="shape", tags={"disjoint_from_nominal"})
+cfg.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
+cfg.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})
+cfg.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
+cfg.add_shift(name="minbias_xs_up", id=7, type="shape")
+cfg.add_shift(name="minbias_xs_down", id=8, type="shape")
 add_aliases("minbias_xs", {"pu_weight": "pu_weight_{name}"}, selection_dependent=False)
-config_2017.add_shift(name="top_pt_up", id=9, type="shape")
-config_2017.add_shift(name="top_pt_down", id=10, type="shape")
+cfg.add_shift(name="top_pt_up", id=9, type="shape")
+cfg.add_shift(name="top_pt_down", id=10, type="shape")
 add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
 
-config_2017.add_shift(name="mur_up", id=101, type="shape")
-config_2017.add_shift(name="mur_down", id=102, type="shape")
-config_2017.add_shift(name="muf_up", id=103, type="shape")
-config_2017.add_shift(name="muf_down", id=104, type="shape")
-config_2017.add_shift(name="scale_up", id=105, type="shape")
-config_2017.add_shift(name="scale_down", id=106, type="shape")
-config_2017.add_shift(name="pdf_up", id=107, type="shape")
-config_2017.add_shift(name="pdf_down", id=108, type="shape")
-config_2017.add_shift(name="alpha_up", id=109, type="shape")
-config_2017.add_shift(name="alpha_down", id=110, type="shape")
+cfg.add_shift(name="mur_up", id=101, type="shape")
+cfg.add_shift(name="mur_down", id=102, type="shape")
+cfg.add_shift(name="muf_up", id=103, type="shape")
+cfg.add_shift(name="muf_down", id=104, type="shape")
+cfg.add_shift(name="scale_up", id=105, type="shape")
+cfg.add_shift(name="scale_down", id=106, type="shape")
+cfg.add_shift(name="pdf_up", id=107, type="shape")
+cfg.add_shift(name="pdf_down", id=108, type="shape")
+cfg.add_shift(name="alpha_up", id=109, type="shape")
+cfg.add_shift(name="alpha_down", id=110, type="shape")
 
 for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
     add_aliases(unc, {f"{unc}_weight": unc + "_weight_{direction}"}, selection_dependent=False)
 
 with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
     all_jec_sources = yaml.load(f, yaml.Loader)["names"]
-for jec_source in config_2017.x.jec["uncertainty_sources"]:
+for jec_source in cfg.x.jec["uncertainty_sources"]:
     idx = all_jec_sources.index(jec_source)
-    config_2017.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
-    config_2017.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
+    cfg.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
+    cfg.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
     add_aliases(
         f"jec_{jec_source}",
         {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
         selection_dependent=True,
     )
 
-config_2017.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
-config_2017.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
+cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
+cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
 add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
 
 
@@ -405,7 +405,7 @@ def make_jme_filename(jme_aux, sample_type, name, era=None):
 
 
 # external files
-config_2017.x.external_files = DotDict.wrap({
+cfg.x.external_files = DotDict.wrap({
     # files from TODO
     "lumi": {
         "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
@@ -426,40 +426,40 @@ config_2017.x.external_files = DotDict.wrap({
     # jet energy correction
     "jec": {
         "mc": OrderedDict([
-            (level, (make_jme_filename(config_2017.x.jec, "mc", name=level), "v1"))
-            for level in config_2017.x.jec.levels
+            (level, (make_jme_filename(cfg.x.jec, "mc", name=level), "v1"))
+            for level in cfg.x.jec.levels
         ]),
         "data": {
             era: OrderedDict([
-                (level, (make_jme_filename(config_2017.x.jec, "data", name=level, era=era), "v1"))
-                for level in config_2017.x.jec.levels
+                (level, (make_jme_filename(cfg.x.jec, "data", name=level, era=era), "v1"))
+                for level in cfg.x.jec.levels
             ])
-            for era in config_2017.x.jec.data_eras
+            for era in cfg.x.jec.data_eras
         },
     },
 
     # jec energy correction uncertainties
     "junc": {
-        "mc": [(make_jme_filename(config_2017.x.jec, "mc", name="UncertaintySources"), "v1")],
+        "mc": [(make_jme_filename(cfg.x.jec, "mc", name="UncertaintySources"), "v1")],
         "data": {
-            era: [(make_jme_filename(config_2017.x.jec, "data", name="UncertaintySources", era=era), "v1")]
-            for era in config_2017.x.jec.data_eras
+            era: [(make_jme_filename(cfg.x.jec, "data", name="UncertaintySources", era=era), "v1")]
+            for era in cfg.x.jec.data_eras
         },
     },
 
     # jet energy resolution (pt resolution)
     "jer": {
-        "mc": [(make_jme_filename(config_2017.x.jer, "mc", name="PtResolution"), "v1")],
+        "mc": [(make_jme_filename(cfg.x.jer, "mc", name="PtResolution"), "v1")],
     },
 
     # jet energy resolution (data/mc scale factors)
     "jersf": {
-        "mc": [(make_jme_filename(config_2017.x.jer, "mc", name="SF"), "v1")],
+        "mc": [(make_jme_filename(cfg.x.jer, "mc", name="SF"), "v1")],
     },
 })
 
 # columns to keep after certain steps
-config_2017.set_aux("keep_columns", DotDict.wrap({
+cfg.set_aux("keep_columns", DotDict.wrap({
     "cf.SelectEvents": {"mc_weight"},
     "cf.ReduceEvents": {
         # general event information
@@ -483,20 +483,20 @@ config_2017.set_aux("keep_columns", DotDict.wrap({
 }))
 
 # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
-get_shifts = lambda *names: sum(([config_2017.get_shift(f"{name}_up"), config_2017.get_shift(f"{name}_down")] for name in names), [])
-config_2017.x.event_weights = DotDict()
-config_2017.x.event_weights["normalization_weight"] = []
-config_2017.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+get_shifts = lambda *names: sum(([cfg.get_shift(f"{name}_up"), cfg.get_shift(f"{name}_down")] for name in names), [])
+cfg.x.event_weights = DotDict()
+cfg.x.event_weights["normalization_weight"] = []
+cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
 # TODO: enable different cases for number of pdf/scale weights
-# config_2017.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
+# cfg.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
 
 # versions per task family and optionally also dataset and shift
 # None can be used as a key to define a default value
-config_2017.set_aux("versions", {
+cfg.set_aux("versions", {
 })
 
 # add categories
-add_categories(config_2017)
+add_categories(cfg)
 
 # add variables
-add_variables(config_2017)
+add_variables(cfg)
