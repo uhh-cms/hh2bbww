@@ -359,6 +359,7 @@ cfg.add_shift(name="top_pt_up", id=9, type="shape")
 cfg.add_shift(name="top_pt_down", id=10, type="shape")
 add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
 
+
 cfg.add_shift(name="mur_up", id=101, type="shape")
 cfg.add_shift(name="mur_down", id=102, type="shape")
 cfg.add_shift(name="muf_up", id=103, type="shape")
@@ -486,9 +487,17 @@ cfg.set_aux("keep_columns", DotDict.wrap({
 get_shifts = lambda *names: sum(([cfg.get_shift(f"{name}_up"), cfg.get_shift(f"{name}_down")] for name in names), [])
 cfg.x.event_weights = DotDict()
 cfg.x.event_weights["normalization_weight"] = []
-cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-# TODO: enable different cases for number of pdf/scale weights
-# cfg.set_aux("event_weights", ["normalization_weight", "pu_weight", "scale_weight", "pdf_weight"])
+cfg.x.event_weights["pu_weight"] = get_shifts("minbias_xs")
+# TODO: check that pdf/scale weights work for all cases
+for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
+    cfg.x.event_weights[unc] = get_shifts(unc)
+
+# TODO: normalized pu, scale, pdf weights; this also requires saving sum_mc_weights for shift variations
+#       and producing the pdf/scale columns as part of the selection or calibration module
+
+# cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+# cfg.x.event_weights["normalized_scale_weight"] = get_shifts("scale")
+# cfg.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
 # versions per task family and optionally also dataset and shift
 # None can be used as a key to define a default value
