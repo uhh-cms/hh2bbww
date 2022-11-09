@@ -5,7 +5,7 @@ Column production methods related to generic event weights.
 """
 
 from columnflow.production import Producer, producer
-from columnflow.production.pileup import pu_weights
+from columnflow.production.pileup import pu_weight
 from columnflow.production.normalization import normalization_weights
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
@@ -160,8 +160,8 @@ def top_pt_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={normalization_weights, pu_weights, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
-    produces={normalization_weights, pu_weights, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
+    uses={normalization_weights, pu_weight, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
+    produces={normalization_weights, pu_weight, scale_weights, murmuf_weights, pdf_weights, top_pt_weights},
     shifts={"minbias_xs_up", "minbias_xs_down", "scale_up", "scale_down", "pdf_up", "pdf_down"},
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -173,7 +173,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[normalization_weights](events, **kwargs)
 
     # compute pu weights
-    events = self[pu_weights](events, **kwargs)
+    events = self[pu_weight](events, **kwargs)
 
     # compute scale weights (TODO testing)
     events = self[scale_weights](events, **kwargs)
