@@ -74,6 +74,14 @@ colors = {
     "ggHH_kl_0_kt_1_sl_hbbhww": "#1b9e77",  # green2
     "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
     "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
+    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
+    "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
+    "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green
+    "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": "#984ea3",  # purple
+    "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
+    "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
+    "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
+}
 }
 for proc, color in colors.items():
     if proc in cfg.processes:
@@ -173,8 +181,7 @@ cfg.set_aux("process_groups", {
     "working": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "st", "tt"],
     "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
     "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "st", "tt"],
-    "signal": ["ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_1_kt_1_sl_hbbhww",
-               "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww"],
+    "signal": ["ggHH_*"],
     "bkg": ["tt", "st", "w_lnu", "dy_lep"],
 })
 
@@ -227,7 +234,7 @@ cfg.set_aux("selector_step_labels", {
 # process settings groups to quickly define settings for ProcessPlots
 cfg.set_aux("process_settings_groups", {
     "default": [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]],
-    "unstack_all": [[proc, "unstack"] for proc in cfg.processes],
+    "unstack_all": [[proc.name, "unstack"] for proc in cfg.processes],
 })
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
@@ -256,6 +263,18 @@ cfg.x.btag_working_points = DotDict.wrap({
         "tight": 0.7738,
     },
 })
+
+## TODO: check e/mu/btag corrections and implement
+# name of the btag_sf correction set
+cfg.x.btag_sf_correction_set = "deepJet_shape"
+
+# names of electron correction sets and working points
+# (used in the electron_sf producer)
+cfg.x.electron_sf_names = ("UL-Electron-ID-SF", "2017", "wp80iso")
+
+# names of muon correction sets and working points
+# (used in the muon producer)
+cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", "2017_UL")
 
 # location of JEC txt files
 cfg.set_aux("jec", DotDict.wrap({
@@ -457,6 +476,15 @@ cfg.x.external_files = DotDict.wrap({
     "jersf": {
         "mc": [(make_jme_filename(cfg.x.jer, "mc", name="SF"), "v1")],
     },
+    
+    # btag scale factor
+    "btag_sf_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/BTV/2017_UL/btagging.json.gz", "v1"),  # noqa
+
+    # electron scale factors
+    "electron_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/EGM/2017_UL/electron.json.gz", "v1"),  # noqa
+
+    # muon scale factors
+    "muon_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/MUO/2017_UL/muon_Z.json.gz", "v1"),  # noqa
 })
 
 # columns to keep after certain steps
