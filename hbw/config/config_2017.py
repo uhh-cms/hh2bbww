@@ -82,7 +82,6 @@ colors = {
     "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
     "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
 }
-}
 for proc, color in colors.items():
     if proc in cfg.processes:
         cfg.get_process(proc).color1 = color
@@ -159,7 +158,6 @@ for dataset_name in dataset_names:
         dataset.x.has_top = True
     if dataset.name.startswith("tt"):
         dataset.x.is_ttbar = True
-        dataset.x.event_weights = ["top_pt_weight"]
     if "HH" in dataset.name and "hbbhww" in dataset.name:
         dataset.x.is_hbw = True
 
@@ -220,7 +218,7 @@ cfg.set_aux("shift_groups", {
 # (used in cutflow tasks)
 cfg.set_aux("selector_step_groups", {
     "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
-    "thesis": ["Lepton", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts to check if everything works
+    "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts to check if everything works
     "test": ["Lepton", "Jet", "Bjet"],
 })
 
@@ -264,7 +262,7 @@ cfg.x.btag_working_points = DotDict.wrap({
     },
 })
 
-## TODO: check e/mu/btag corrections and implement
+# TODO: check e/mu/btag corrections and implement
 # name of the btag_sf correction set
 cfg.x.btag_sf_correction_set = "deepJet_shape"
 
@@ -476,7 +474,7 @@ cfg.x.external_files = DotDict.wrap({
     "jersf": {
         "mc": [(make_jme_filename(cfg.x.jer, "mc", name="SF"), "v1")],
     },
-    
+
     # btag scale factor
     "btag_sf_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/BTV/2017_UL/btagging.json.gz", "v1"),  # noqa
 
@@ -516,9 +514,14 @@ get_shifts = lambda *names: sum(([cfg.get_shift(f"{name}_up"), cfg.get_shift(f"{
 cfg.x.event_weights = DotDict()
 cfg.x.event_weights["normalization_weight"] = []
 cfg.x.event_weights["pu_weight"] = get_shifts("minbias_xs")
+
+for dataset in cfg.datasets:
+    if dataset.x("is_ttbar", False):
+        dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
+
 # TODO: check that pdf/scale weights work for all cases
-for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
-    cfg.x.event_weights[unc] = get_shifts(unc)
+# for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
+#    cfg.x.event_weights[unc] = get_shifts(unc)
 
 # TODO: normalized pu, scale, pdf weights; this also requires saving sum_mc_weights for shift variations
 #       and producing the pdf/scale columns as part of the selection or calibration module
