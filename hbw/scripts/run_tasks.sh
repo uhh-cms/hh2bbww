@@ -128,7 +128,7 @@ law run cf.PlotCutflow --version $version \
 # 'per-plot steps' creates 1 plot per process (all steps)
 # 'per-plot processes' creates 1 plot per selector step (all processes)
 
-law run cf.PlotCutflowVariables --version $version --per-plot steps \
+law run cf.PlotCutflowVariables1d --version $version --per-plot steps \
     --workers $workers \
     --calibrators $calibrators --selector $selector \
     --shift $shift \
@@ -142,7 +142,7 @@ law run cf.PlotCutflowVariables --version $version --per-plot steps \
     --shape-norm False \
     --skip-cms $skip_cms
 
-law run cf.PlotCutflowVariables --version $version --per-plot processes \
+law run cf.PlotCutflowVariables1d --version $version --per-plot processes \
     --workers $workers \
     --calibrators $calibrators --selector $selector \
     --shift $shift \
@@ -158,7 +158,7 @@ law run cf.PlotCutflowVariables --version $version --per-plot processes \
 
 ## create plots after the full workflow (with full eventweights applied)
 
-law run cf.PlotVariables --version $version \
+law run cf.PlotVariables1d --version $version \
     --workers $workers \
     --calibrators $calibrators  --selector $selector --producer $producer \
     --shift $shift \
@@ -174,7 +174,7 @@ law run cf.PlotVariables --version $version \
 
 # create plots for nominal + up/down variations
 
-law run cf.PlotShiftedVariables --version $version \
+law run cf.PlotShiftedVariables1d --version $version \
     --workers $workers \
     --calibrators $calibrators --selector $selector --producer $producer \
     --shift-sources $shift_sources \

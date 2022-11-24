@@ -6,8 +6,8 @@ A python script to quickly run tasks for creating plots and datacards with an ex
 
 from columnflow.tasks.selection import SelectEvents
 from columnflow.tasks.reduction import ReduceEventsWrapper
-from columnflow.tasks.cutflow import PlotCutflow, PlotCutflowVariables
-from columnflow.tasks.plotting import PlotVariables, PlotShiftedVariables
+from columnflow.tasks.cutflow import PlotCutflow, PlotCutflowVariables1d
+from columnflow.tasks.plotting import PlotVariables1d, PlotShiftedVariables1d
 from columnflow.tasks.inference import CreateDatacards
 
 #
@@ -100,7 +100,7 @@ plot_cutflow = PlotCutflow(
 # create plots using cutflow variables
 #
 for per_plot in ["processes", "steps"]:
-    plot_cutflow_vars = PlotCutflowVariables(
+    plot_cutflow_vars = PlotCutflowVariables1d(
         version=version, walltime="5h", per_plot=per_plot,
         calibrators=calibrators, selector=selector,
         shift=shift,
@@ -117,7 +117,7 @@ for per_plot in ["processes", "steps"]:
     # plot_cutflow_vars.law_run()
 
 # create plots after the full workflow (with full eventweights applied)
-plot_variables = PlotVariables(
+plot_variables = PlotVariables1d(
     version=version, walltime="5h",
     calibrators=calibrators, selector=selector, producers=producers,
     shift=shift,
@@ -135,7 +135,7 @@ plot_variables = PlotVariables(
 #
 # create plots for nominal + up/down variations
 #
-plot_shifted_variables = PlotShiftedVariables(
+plot_shifted_variables = PlotShiftedVariables1d(
     version=version, walltime="5h",
     calibrators=calibrators, selector=selector, producers=producers,
     shift_sources=shift_sources,
