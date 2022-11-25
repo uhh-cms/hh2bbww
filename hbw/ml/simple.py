@@ -16,9 +16,8 @@ from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 tf = maybe_import("tensorflow")
-
+pickle = maybe_import("pickle")
 keras = maybe_import("tensorflow.keras")
-Dense = maybe_import("tensorflow.keras.layers.Dense")
 
 
 class SimpleDNN(MLModel):
@@ -44,9 +43,12 @@ class SimpleDNN(MLModel):
         # DNN model parameters
         self.layers = [512, 512, 512]
         self.learningrate = 0.00050
-        # self.batchsize = -1
-        self.epochs = 200
-        self.eqweight = True
+        self.batchsize = 2048
+        self.epochs = 6  # 200
+        self.eqweight = 0.50
+
+        # Dropout: either False (disable) or a value between 0 and 1 (dropout_rate)
+        self.dropout = False
 
         # dynamically add variables for the quantities produced by this model
         for proc in self.processes:
@@ -69,7 +71,7 @@ class SimpleDNN(MLModel):
         }
 
     def uses(self) -> Set[Union[Route, str]]:
-        return {"ht", "m_bb", "deltaR_bb", "normalization_weight", "mc_weight"}
+        return {"ht", "m_bb", "deltaR_bb", "normalization_weight"}
 
     def produces(self) -> Set[Union[Route, str]]:
         produced = set({})
@@ -81,7 +83,10 @@ class SimpleDNN(MLModel):
         return task.target(f"mlmodel_f{task.fold}of{self.folds}", dir=True)
 
     def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
-        return tf.keras.models.load_model(target.path)
+        with open(f"{target.path}/model_history.pkl", "rb") as f:
+            history = pickle.load(f)
+        model = tf.keras.models.load_model(target.path)
+        return model, history
 
     def train(
         self,
@@ -95,7 +100,7 @@ class SimpleDNN(MLModel):
         # input preparation
         #
 
-        N_inputs = len(self.used_columns) - 2  # don't count the weight columns
+        N_inputs = len(self.used_columns) - 1  # don't count the weight columns
         N_outputs = len(self.processes)
 
         process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
@@ -135,13 +140,15 @@ class SimpleDNN(MLModel):
         }
 
         for dataset, infiletargets in input.items():
-            print("dataset:", dataset)
             this_proc_idx = dataset_proc_idx[dataset]
+            print(f"dataset: {dataset}, \n  #Events: {sum(N_events_proc[this_proc_idx])}, "
+                  f"\n  Sum Normweights: {sum(sum_eventweights_proc[this_proc_idx])}")
 
             event_folds = [ak.from_parquet(inp.fn) for inp in infiletargets]
 
-            for i, events in enumerate(event_folds):  # i is in [0, self.folds-2]
+            sum_nnweights = 0
 
+            for i, events in enumerate(event_folds):  # i is in [0, self.folds-2]
                 weights = events.normalization_weight
                 if self.eqweight:
                     weights = weights * sum(sum_eventweights_proc)[i] / sum_eventweights_proc[this_proc_idx][i]
@@ -149,8 +156,9 @@ class SimpleDNN(MLModel):
                     weights = weights * custom_procweight
 
                 weights = ak.to_numpy(weights)
-                print("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
-                events = remove_ak_column(events, "mc_weight")
+                sum_nnweights += sum(weights)
+
+                # print("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
                 events = remove_ak_column(events, "normalization_weight")
 
                 # bookkeep input feature names (order corresponds to order in the NN input)
@@ -174,49 +182,67 @@ class SimpleDNN(MLModel):
                     NN_inputs["inputs"][i] = np.concatenate([NN_inputs["inputs"][i], events])
                     NN_inputs["target"][i] = np.concatenate([NN_inputs["target"][i], target])
 
+            print(f"  Sum NN weights: {sum_nnweights}")
         train, validation = {}, {}  # combine all except one input as train input, use last one for validation
         for k, vals in NN_inputs.items():
-            validation[k] = vals.pop(self.fold)  # validation set always corresponds to (fold+1) in that way
-            print("Number of training folds:", len(vals))
+            # validation set always corresponds to (eval_fold+1) in that way
+            validation[k] = vals.pop((task.fold) % (self.folds - 1))
+            # print("Number of training folds:", len(vals))
             train[k] = np.concatenate(vals)
 
         #
         # model preparation
         #
-
-        from keras.layers import Dense
+        from keras.models import Sequential
+        from keras.layers import Dense, BatchNormalization, Dropout
 
         # define the DNN model
-        model = keras.models.Sequential()
+        model = Sequential()
+
+        # BatchNormalization layer with input shape
+        model.add(BatchNormalization(input_shape=(N_inputs,)))
 
         # first layer with input shape
-        model.add(Dense(self.layers[0], activation="relu", input_shape=(N_inputs,)))
+        # model.add(Dense(self.layers[0], activation="relu", input_shape=(N_inputs,)))
 
         # following hidden layers
-        for layer in self.layers[1:]:
+        # for layer in self.layers[1:]:
+        for layer in self.layers:
             model.add(Dense(layer, activation="relu"))
+            # Potentially add dropout layer after each hidden layer
+            if self.dropout:
+                model.add(Dropout(self.dropout))
 
         # output layer
         model.add(Dense(N_outputs, activation="softmax"))
 
         # compile the network
-        optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
+        # optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
+        optimizer = keras.optimizers.Adam(
+            lr=self.learningrate, beta_1=0.9, beta_2=0.999,
+            epsilon=1e-6, decay=0.0, amsgrad=False,
+        )
         model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["categorical_accuracy"])
 
         #
         # training
         #
 
-        # train the model (output history here maybe?)
+        # TODO: early stopping to determine the 'best' model
+
+        # train the model
         print("Start training...")
         model.fit(
             x=train["inputs"], y=train["target"], epochs=self.epochs, sample_weight=train["weights"],
             validation_data=(validation["inputs"], validation["target"], validation["weights"]),
             shuffle=True, verbose=1,
+            batch_size=self.batchsize,
         )
-
+        # save the model and history
         output.parent.touch()
         model.save(output.path)
+        with open(f"{output.path}/model_history.pkl", "wb") as f:
+            pickle.dump(model.history.history, f)
 
     def evaluate(
         self,
@@ -227,28 +253,42 @@ class SimpleDNN(MLModel):
         events_used_in_training: bool = True,
     ) -> None:
         print(f"Evaluation of dataset {task.dataset}")
-        features = self.used_columns
-        features.remove("mc_weight")
-        features.remove("normalization_weight")
+        models, history = zip(*models)
+        # TODO: use history for loss+acc plotting
 
+        features = self.used_columns
+        features.discard("normalization_weight")
         inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in features])))
 
-        # use NN model that has not seen test set yet
-        outputs = np.array([[-1] * len(self.processes)] * len(inputs))
+        # do prediction for all models and all events
+        predictions = []
+        for i, model in enumerate(models):
+            pred = ak.from_numpy(model.predict_on_batch(inputs))
+            if len(pred[0]) != len(self.processes):
+                raise Exception("Number of output nodes should be equal to number of processes")
+            predictions.append(pred)
+
+            # Save predictions for each model
+            # TODO: create train/val/test plots (confusion, ROC, nodes) using these predictions?
+            for j, proc in enumerate(self.processes):
+                events = set_ak_column(
+                    events, f"{self.cls_name}.fold{i}_score_{proc}", pred[:, j],
+                )
+
+        # combine all models into 1 output score, using the model that has not seen test set yet
+        outputs = ak.where(ak.ones_like(predictions[0]), -1, -1)
         for i in range(self.folds):
             print(f"Evaluation fold {i}")
-            idx = np.transpose(np.broadcast_to(ak.to_numpy(fold_indices == i), (len(self.processes), len(events))))
-            outputs = np.where(idx, models[i].predict_on_batch(inputs), outputs)
+            # reshape mask from N*bool to N*k*bool (TODO: simpler way?)
+            idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == i)] * len(self.processes), axis=1))
+            outputs = ak.where(idx, predictions[i], outputs)
 
-        # to simplify (testing): use any model
-        # outputs = models[0].predict_on_batch(inputs)
         if len(outputs[0]) != len(self.processes):
-            raise Exception("number of output nodes should be equal to number of processes")
+            raise Exception("Number of output nodes should be equal to number of processes")
 
         for i, proc in enumerate(self.processes):
             events = set_ak_column(
-                events, f"{self.cls_name}.score_{proc}",
-                ak.from_numpy(np.ascontiguousarray(outputs[:, i])),
+                events, f"{self.cls_name}.score_{proc}", outputs[:, i],
             )
 
         return events
