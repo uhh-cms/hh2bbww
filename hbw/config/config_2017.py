@@ -188,6 +188,7 @@ cfg.set_aux("process_groups", {
 cfg.set_aux("dataset_groups", {
     "all": ["*"],
     "working": ["tt_*", "st_*", "dy_*"],
+    "small": ["ggHH_*", "tt_*", "st_*"],
     "default": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
     "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
     "hh": ["ggHH_*"], "hhsm": ["ggHH_kl_1_kt_1_sl_hbbhww_powheg"],
@@ -496,10 +497,10 @@ cfg.set_aux("keep_columns", DotDict.wrap({
         "LHEPdfWeight", "LHEScaleWeight",
         # object properties
         "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-        "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
+        # "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
         # "Muon.*", "Electron.*", "MET.*",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.charge", "Muon.pdgId",
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass", "Electron.charge", "Electron.pdgId",
         "MET.pt", "MET.phi",
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",

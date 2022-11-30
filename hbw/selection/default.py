@@ -56,7 +56,7 @@ def jet_selection(
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
     # b-tagged jets, medium working point
-    wp_med = self.config_inst.x.btag_working_points.deepcsv.medium
+    wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= wp_med)
     bjet_sel = ak.sum(bjet_mask, axis=1) >= 1
 
@@ -72,6 +72,8 @@ def jet_selection(
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={"Jet": jet_sel, "Bjet": bjet_sel},
+        # NOTE: we should probably not produce Bjet/Lightjet columns in ReduceEvents;
+        #       rather do this in ProduceColumns when needed
         objects={"Jet": {"Jet": jet_indices, "Bjet": bjet_indices, "Lightjet": lightjet_indices}},
     )
 
