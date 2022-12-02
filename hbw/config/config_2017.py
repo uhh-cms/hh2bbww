@@ -18,6 +18,7 @@ import cmsdb.campaigns.run2_2017_nano_v9
 from columnflow.util import DotDict, get_root_processes_from_campaign
 from hbw.config.categories import add_categories
 from hbw.config.variables import add_variables
+from hbw.config.ml_variables import add_ml_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
 
@@ -541,3 +542,4 @@ add_categories(cfg)
 
 # add variables
 add_variables(cfg)
+add_ml_variables(cfg)
