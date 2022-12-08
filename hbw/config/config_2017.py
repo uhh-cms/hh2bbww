@@ -7,7 +7,6 @@ Configuration of the 2017 HH -> bbWW analysis.
 import os
 import re
 from typing import Set
-from collections import OrderedDict
 
 import yaml
 from scinum import Number, REL
@@ -283,16 +282,14 @@ cfg.x.electron_sf_names = ("UL-Electron-ID-SF", "2017", "wp80iso")
 # (used in the muon producer)
 cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", "2017_UL")
 
-# location of JEC txt files
-cfg.set_aux("jec", DotDict.wrap({
-    "source": "https://raw.githubusercontent.com/cms-jet/JECDatabase/master/textFiles",
+# jec configuration
+cfg.x.jec = DotDict.wrap({
     "campaign": "Summer19UL17",
-    "version": "V6",
+    "version": "V5",
     "jet_type": "AK4PFchs",
     "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
-    "data_eras": sorted(filter(None, {d.x("jec_era", None) for d in cfg.datasets if d.is_data})),
+    "levels_for_type1_met": ["L1FastJet"],
     "uncertainty_sources": [
-        # comment out most for now to prevent large file sizes
         # "AbsoluteStat",
         # "AbsoluteScale",
         # "AbsoluteSample",
@@ -350,14 +347,55 @@ cfg.set_aux("jec", DotDict.wrap({
         "CorrelationGroupFlavor",
         "CorrelationGroupUncorrelated",
     ],
-}))
+})
 
-cfg.set_aux("jer", DotDict.wrap({
-    "source": "https://raw.githubusercontent.com/cms-jet/JRDatabase/master/textFiles",
+cfg.x.jer = DotDict.wrap({
     "campaign": "Summer19UL17",
     "version": "JRV2",
     "jet_type": "AK4PFchs",
-}))
+})
+
+# JEC uncertainty sources propagated to btag scale factors
+# (names derived from contents in BTV correctionlib file)
+cfg.x.btag_sf_jec_sources = [
+    "",  # total
+    "Absolute",
+    "AbsoluteMPFBias",
+    "AbsoluteScale",
+    "AbsoluteStat",
+    "Absolute_2017",
+    "BBEC1",
+    "BBEC1_2017",
+    "EC2",
+    "EC2_2017",
+    "FlavorQCD",
+    "Fragmentation",
+    "HF",
+    "HF_2017",
+    "PileUpDataMC",
+    "PileUpPtBB",
+    "PileUpPtEC1",
+    "PileUpPtEC2",
+    "PileUpPtHF",
+    "PileUpPtRef",
+    "RelativeBal",
+    "RelativeFSR",
+    "RelativeJEREC1",
+    "RelativeJEREC2",
+    "RelativeJERHF",
+    "RelativePtBB",
+    "RelativePtEC1",
+    "RelativePtEC2",
+    "RelativePtHF",
+    "RelativeSample",
+    "RelativeSample_2017",
+    "RelativeStatEC",
+    "RelativeStatFSR",
+    "RelativeStatHF",
+    "SinglePionECAL",
+    "SinglePionHCAL",
+    "TimePtEta",
+]
 
 
 # helper to add column aliases for both shifts of a source
@@ -386,16 +424,44 @@ cfg.add_shift(name="top_pt_down", id=10, type="shape")
 add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
 
 
-cfg.add_shift(name="mur_up", id=101, type="shape")
-cfg.add_shift(name="mur_down", id=102, type="shape")
-cfg.add_shift(name="muf_up", id=103, type="shape")
-cfg.add_shift(name="muf_down", id=104, type="shape")
-cfg.add_shift(name="scale_up", id=105, type="shape")
-cfg.add_shift(name="scale_down", id=106, type="shape")
-cfg.add_shift(name="pdf_up", id=107, type="shape")
-cfg.add_shift(name="pdf_down", id=108, type="shape")
-cfg.add_shift(name="alpha_up", id=109, type="shape")
-cfg.add_shift(name="alpha_down", id=110, type="shape")
+cfg.add_shift(name="e_sf_up", id=40, type="shape")
+cfg.add_shift(name="e_sf_down", id=41, type="shape")
+cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
+cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
+add_aliases("e_sf", {"electron_weight": "electron_weight_{direction}"}, selection_dependent=False)
+
+cfg.add_shift(name="mu_sf_up", id=50, type="shape")
+cfg.add_shift(name="mu_sf_down", id=51, type="shape")
+cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
+cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
+add_aliases("mu_sf", {"muon_weight": "muon_weight_{direction}"}, selection_dependent=False)
+
+btag_uncs = [
+    "hf", "lf", "hfstats1_2017", "hfstats2_2017", "lfstats1_2017", "lfstats2_2017", "cferr1",
+    "cferr2",
+]
+for i, unc in enumerate(btag_uncs):
+    cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
+    cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
+    add_aliases(
+        f"btag_{unc}",
+        {
+            "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
+            "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
+        },
+        selection_dependent=False,
+    )
+
+cfg.add_shift(name="mur_up", id=201, type="shape")
+cfg.add_shift(name="mur_down", id=202, type="shape")
+cfg.add_shift(name="muf_up", id=203, type="shape")
+cfg.add_shift(name="muf_down", id=204, type="shape")
+cfg.add_shift(name="scale_up", id=205, type="shape")
+cfg.add_shift(name="scale_down", id=206, type="shape")
+cfg.add_shift(name="pdf_up", id=207, type="shape")
+cfg.add_shift(name="pdf_down", id=208, type="shape")
+cfg.add_shift(name="alpha_up", id=209, type="shape")
+cfg.add_shift(name="alpha_down", id=210, type="shape")
 
 for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
     add_aliases(unc, {f"{unc}_weight": unc + "_weight_{direction}"}, selection_dependent=False)
@@ -451,38 +517,10 @@ cfg.x.external_files = DotDict.wrap({
     },
 
     # jet energy correction
-    "jec": {
-        "mc": OrderedDict([
-            (level, (make_jme_filename(cfg.x.jec, "mc", name=level), "v1"))
-            for level in cfg.x.jec.levels
-        ]),
-        "data": {
-            era: OrderedDict([
-                (level, (make_jme_filename(cfg.x.jec, "data", name=level, era=era), "v1"))
-                for level in cfg.x.jec.levels
-            ])
-            for era in cfg.x.jec.data_eras
-        },
-    },
+    "jet_jerc": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/JME/2017_UL/jet_jerc.json.gz", "v1"),  # noqa
 
-    # jec energy correction uncertainties
-    "junc": {
-        "mc": [(make_jme_filename(cfg.x.jec, "mc", name="UncertaintySources"), "v1")],
-        "data": {
-            era: [(make_jme_filename(cfg.x.jec, "data", name="UncertaintySources", era=era), "v1")]
-            for era in cfg.x.jec.data_eras
-        },
-    },
-
-    # jet energy resolution (pt resolution)
-    "jer": {
-        "mc": [(make_jme_filename(cfg.x.jer, "mc", name="PtResolution"), "v1")],
-    },
-
-    # jet energy resolution (data/mc scale factors)
-    "jersf": {
-        "mc": [(make_jme_filename(cfg.x.jer, "mc", name="SF"), "v1")],
-    },
+    # met phi corrector
+    "met_phi_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/JME/2017_UL/met.json.gz", "v1"),  # noqa
 
     # btag scale factor
     "btag_sf_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/BTV/2017_UL/btagging.json.gz", "v1"),  # noqa
@@ -494,25 +532,35 @@ cfg.x.external_files = DotDict.wrap({
     "muon_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/MUO/2017_UL/muon_Z.json.gz", "v1"),  # noqa
 })
 
-# columns to keep after certain steps
-cfg.set_aux("keep_columns", DotDict.wrap({
-    "cf.SelectEvents": {"mc_weight"},
-    "cf.ReduceEvents": {
+reduce_events_columns = (
+    {
         # general event information
         "run", "luminosityBlock", "event",
         # weights
         "LHEWeight.*",
         "LHEPdfWeight", "LHEScaleWeight",
-        # object properties
-        "nJet", "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-        # "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
-        # "Muon.*", "Electron.*", "MET.*",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.charge", "Muon.pdgId",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass", "Electron.charge", "Electron.pdgId",
-        "MET.pt", "MET.phi",
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
-    },
+        # weight-related columns
+        "pu_weight*", "btag_weight*", "scale_weight*", "pdf_weight*",
+    } | set(  # Jets
+        f"{jet_obj}.{field}"
+        for jet_obj in ["Jet", "Bjet", "Lightjet"]
+        for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB"]
+    ) | set(  # Leptons
+        f"{lep}.{field}"
+        for lep in ["Electron", "Muon"]
+        for field in ["pt", "eta", "phi", "mass", "charge", "pdgId"]
+    ) | set(  # MET
+        "MET.{field}"
+        for field in ["pt", "phi"]
+    )
+)
+
+# columns to keep after certain steps
+cfg.set_aux("keep_columns", DotDict.wrap({
+    "cf.SelectEvents": {"mc_weight"},
+    "cf.ReduceEvents": reduce_events_columns,
     "cf.MergeSelectionMasks": {
         "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
     },
@@ -523,6 +571,8 @@ get_shifts = lambda *names: sum(([cfg.get_shift(f"{name}_up"), cfg.get_shift(f"{
 cfg.x.event_weights = DotDict()
 cfg.x.event_weights["normalization_weight"] = []
 cfg.x.event_weights["pu_weight"] = get_shifts("minbias_xs")
+cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
+cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
 
 for dataset in cfg.datasets:
     if dataset.x("is_ttbar", False):
@@ -542,6 +592,8 @@ for dataset in cfg.datasets:
 # versions per task family and optionally also dataset and shift
 # None can be used as a key to define a default value
 cfg.set_aux("versions", {
+    # None: "dev1",
+    # "cf.SelectEvents": "dev1",
 })
 
 # add categories

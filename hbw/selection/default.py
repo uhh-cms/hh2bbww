@@ -14,8 +14,10 @@ from columnflow.production.util import attach_coffea_behavior
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
+from hbw.production.weights import event_weights_to_normalize
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
-from hbw.selection.general import increment_stats, jet_energy_shifts
+from hbw.selection.general import jet_energy_shifts  # , increment_stats
+from hbw.selection.stats import increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.selection.gen_hbw_features import gen_hbw_decay_features
 
@@ -23,13 +25,10 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-@selector(uses={"event"})
-def sel_incl(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    # select all
-    return ak.ones_like(events.event)
-
-
 def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = False) -> ak.Array:
+    """
+    Helper function to obtain the correct indices of an object mask
+    """
     indices = ak.argsort(sort_var, axis=-1, ascending=ascending)
     return indices[mask[indices]]
 
@@ -60,11 +59,12 @@ def jet_selection(
     bjet_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= wp_med)
     bjet_sel = ak.sum(bjet_mask, axis=1) >= 1
 
-    # sort jets after b-score and define b-jets as the two b-score leading jets
+    # define b-jets as the two b-score leading jets, b-score sorted
     bjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, :2]
 
-    # lightjets are the remaining jets (TODO: b-score sorted but should be pt-sorted?)
-    lightjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, 2:]
+    # define lightjets as all non b-jets, pt-sorted
+    b_idx = ak.fill_none(ak.pad_none(bjet_indices, 2), -1)
+    lightjet_indices = jet_indices[(jet_indices != b_idx[:, 0]) & (jet_indices != b_idx[:, 1])]
 
     # example column: high jet multiplicity region (>=6 jets)
     events = set_ak_column(events, "jet_high_multiplicity", ak.sum(jet_mask, axis=1) >= 6)
@@ -75,6 +75,10 @@ def jet_selection(
         # NOTE: we should probably not produce Bjet/Lightjet columns in ReduceEvents;
         #       rather do this in ProduceColumns when needed
         objects={"Jet": {"Jet": jet_indices, "Bjet": bjet_indices, "Lightjet": lightjet_indices}},
+        aux={
+            "jet_mask": jet_mask,
+            "n_central_jets": ak.num(jet_indices),
+        },
     )
 
 
@@ -133,12 +137,12 @@ def lepton_selection(
 @selector(
     uses={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats, attach_coffea_behavior,
+        category_ids, process_ids, event_weights_to_normalize, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     produces={
         jet_selection, lepton_selection, cutflow_features,
-        category_ids, process_ids, increment_stats, attach_coffea_behavior,
+        category_ids, process_ids, event_weights_to_normalize, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     shifts={
@@ -166,15 +170,17 @@ def default(
     events, lepton_results = self[lepton_selection](events, stats, **kwargs)
     results += lepton_results
 
-    # combined event selection after all steps
-    event_sel = (
-        jet_results.steps.Jet &
-        jet_results.steps.Bjet &
-        lepton_results.steps.Lepton &
-        # lepton_results.steps.VetoLepton &
-        lepton_results.steps.Trigger
+    # combined event selection after all steps except b-jet selection
+    results.steps["all_but_bjet"] = (
+        results.steps.Jet &
+        results.steps.Lepton &
+        results.steps.Trigger
     )
-    results.main["event"] = event_sel
+    # combined event selection after all steps
+    results.main["event"] = (
+        results.steps.all_but_bjet &
+        results.steps.Bjet
+    )
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
@@ -185,8 +191,11 @@ def default(
     # add cutflow features
     events = self[cutflow_features](events, results=results, **kwargs)
 
+    # produce event weights
+    events = self[event_weights_to_normalize](events, results=results, **kwargs)
+
     # increment stats
-    self[increment_stats](events, event_sel, stats, **kwargs)
+    self[increment_stats](events, results, stats, **kwargs)
 
     return events, results
 
