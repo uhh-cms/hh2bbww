@@ -170,7 +170,6 @@ cfg.set_aux("default_producer", "features")
 cfg.set_aux("default_ml_model", None)
 cfg.set_aux("default_inference_model", "default")
 cfg.set_aux("default_categories", ["incl"])
-cfg.set_aux("default_process_settings", [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]])
 
 # process groups for conveniently looping over certain processs
 # (used in wrapper_factory and during plotting)
@@ -230,12 +229,20 @@ cfg.set_aux("selector_step_labels", {
     "Bjet": r"$N_{Jets}^{BTag} \geq 1$",
 })
 
-
-# process settings groups to quickly define settings for ProcessPlots
-cfg.set_aux("process_settings_groups", {
+# plotting settings groups
+cfg.x.general_settings_groups = {
+    "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
+}
+cfg.x.process_settings_groups = {
     "default": [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]],
     "unstack_all": [[proc.name, "unstack"] for proc in cfg.processes],
-})
+}
+cfg.x.variable_settings_groups = {
+    "test": {
+        "mli_mbb": {"rebin": 2, "label": "test"},
+        "mli_mjj": {"rebin": 2},
+    },
+}
 
 # 2017 luminosity with values in inverse pb and uncertainties taken from
 # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=176#LumiComb

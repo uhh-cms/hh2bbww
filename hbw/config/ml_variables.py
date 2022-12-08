@@ -6,7 +6,7 @@ Definition of ML input variables.
 
 import order as od
 
-from columnflow.columnar_util import EMPTY_FLOAT
+# from columnflow.columnar_util import EMPTY_FLOAT
 
 
 def add_ml_variables(config: od.Config) -> None:
@@ -14,6 +14,7 @@ def add_ml_variables(config: od.Config) -> None:
     Adds ML input variables to a *config*.
     """
 
+    # reconstructed variables
     config.add_variable(
         name="mli_ht",
         expression="mli_ht",
