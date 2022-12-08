@@ -40,6 +40,18 @@ def add_ml_variables(config: od.Config) -> None:
         x_title="sum of deepjet scores",
     )
     config.add_variable(
+        name="mli_b_deepjetsum",
+        expression="mli_b_deepjetsum",
+        binning=(40, 0, 4),
+        x_title="sum of bjet deepjet scores",
+    )
+    config.add_variable(
+        name="mli_l_deepjetsum",
+        expression="mli_l_deepjetsum",
+        binning=(40, 0, 4),
+        x_title="sum of lightjet deepjet scores",
+    )
+    config.add_variable(
         name="mli_dr_bb",
         expression="mli_dr_bb",
         binning=(40, 0, 8),

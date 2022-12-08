@@ -80,10 +80,17 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
 
+    # all possible jet pairs
+    jet_pairs = ak.combinations(events.Jet, 2)
+    dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
+    events = set_ak_column(events, "mindr_jj", ak.min(dr, axis=1))
+
     # bjets in general
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     events = set_ak_column(events, "mli_n_deepjet", ak.num(events.Jet[events.Jet.btagDeepFlavB > wp_med], axis=1))
     events = set_ak_column(events, "mli_deepjetsum", ak.sum(events.Jet.btagDeepFlavB, axis=1))
+    events = set_ak_column(events, "mli_b_deepjetsum", ak.sum(events.Bjet.btagDeepFlavB, axis=1))
+    events = set_ak_column(events, "mli_l_deepjetsum", ak.sum(events.Lightjet.btagDeepFlavB, axis=1))
 
     # hbb features
     events = set_ak_column(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
@@ -156,7 +163,8 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_columns = {
-        "mli_ht", "mli_n_jet", "mli_n_deepjet", "mli_deepjetsum",
+        "mli_ht", "mli_n_jet", "mli_n_deepjet",
+        "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
