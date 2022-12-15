@@ -18,16 +18,16 @@ def add_cutflow_variables(config: od.Config) -> None:
             expression=f"cutflow.loose_jet{i+1}_pt",
             binning=(40, 0, 100),
             unit="GeV",
-            x_title=r"Jet %i $p_{T}$" % (i + 1),
+            x_title=r"Loose jet %i $p_{T}$" % (i + 1),
         )
     # veto leptons
     for i in range(3):
         config.add_variable(
             name=f"cf_veto_lepton{i+1}_pt",
             expression=f"cutflow.veto_lepton{i+1}_pt",
-            binning=(40, 0, 100),
+            binning=(40, 0, 50),
             unit="GeV",
-            x_title=r"Lepton %i $p_{T}$" % (i + 1),
+            x_title=r"Veto lepton %i $p_{T}$" % (i + 1),
         )
 
     # number of objects

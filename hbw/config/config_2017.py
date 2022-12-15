@@ -235,8 +235,8 @@ cfg.x.general_settings_groups = {
     "default_norm": {"shape_norm": True, "yscale": "log"},
 }
 cfg.x.process_settings_groups = {
-    "default": [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]],
-    "unstack_all": [[proc.name, "unstack"] for proc in cfg.processes],
+    "default": {"ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 2000, "unstack": True}},
+    "unstack_all": {proc.name: {"unstack": True} for proc in cfg.processes},
     "unstack_signal": {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
 }
 cfg.x.variable_settings_groups = {
