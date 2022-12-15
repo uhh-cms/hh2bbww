@@ -540,7 +540,16 @@ cfg.x.external_files = DotDict.wrap({
     "muon_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/MUO/2017_UL/muon_Z.json.gz", "v1"),  # noqa
 })
 
-reduce_events_columns = (
+
+# columns to keep after certain steps
+cfg.set_aux("keep_columns", DotDict.wrap({
+    "cf.SelectEvents": {"mc_weight"},
+    "cf.MergeSelectionMasks": {
+        "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
+    },
+}))
+
+cfg.x.keep_columns["cf.ReduceEvents"] = (
     {
         # general event information
         "run", "luminosityBlock", "event",
@@ -556,20 +565,13 @@ reduce_events_columns = (
         f"{lep}.{field}"
         for lep in ["Electron", "Muon"]
         for field in ["pt", "eta", "phi", "mass", "charge", "pdgId"]
-    ) | set(  # MET
-        "MET.{field}"
+    ) | {  # Electrons
+        "Electron.deltaEtaSC",  # for SF calculation
+    } | set(  # MET
+        f"MET.{field}"
         for field in ["pt", "phi"]
     )
 )
-
-# columns to keep after certain steps
-cfg.set_aux("keep_columns", DotDict.wrap({
-    "cf.SelectEvents": {"mc_weight"},
-    "cf.ReduceEvents": reduce_events_columns,
-    "cf.MergeSelectionMasks": {
-        "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-    },
-}))
 
 # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
 get_shifts = lambda *names: sum(([cfg.get_shift(f"{name}_up"), cfg.get_shift(f"{name}_down")] for name in names), [])

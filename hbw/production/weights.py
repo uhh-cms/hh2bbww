@@ -15,6 +15,7 @@ from columnflow.production.btag import btag_weights
 # TODO: move them to columnflow
 from hbw.production.scale_pdf_weights import pdf_weights, scale_weights, murmuf_weights
 from hbw.production.normalized_weights import normalized_weight_factory
+from hbw.production.normalized_btag import normalized_btag_weights
 
 ak = maybe_import("awkward")
 
@@ -46,21 +47,21 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     return events
 
 
-# TODO: get event_weights_to_normalze produced columns without being inside a producer (cant use self here)
 normweights = normalized_weight_factory(
     producer_name="normweights",
-    weight_names=set(
-        f"{w}{postfix}"
-        for w in ("pu", "scale", "pdf")
-        for postfix in ("", "_up", "_down")
-    ),
-    # weight_names={w for w in self[event_weights_to_normalize].produced_columns if "btag" not in w},
+    weight_producers={event_weights_to_normalize},
 )
 
 
 @producer(
-    uses={normalization_weights, electron_weights, muon_weights, event_weights_to_normalize.PRODUCES},
-    produces={normalization_weights, electron_weights, muon_weights},
+    uses={
+        normalization_weights, electron_weights, muon_weights,
+        normweights, normalized_btag_weights,
+    },
+    produces={
+        normalization_weights, electron_weights, muon_weights,
+        normweights, normalized_btag_weights,
+    },
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -69,11 +70,12 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
 
-    # compute electron and muon SF weights (TODO: debug)
-    # events = self[electron_weights](events, **kwargs)
-    # events = self[muon_weights](events, **kwargs)
+    # compute electron and muon SF weights
+    events = self[electron_weights](events, **kwargs)
+    events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
     events = self[normweights](events, **kwargs)
+    events = self[normalized_btag_weights](events, **kwargs)
 
     return events
