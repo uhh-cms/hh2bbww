@@ -14,8 +14,9 @@ for proc_inst in process_insts:
 print("================= Datasets =======================")
 dataset_insts = cfg.datasets
 for data_inst in dataset_insts:
-    print(data_inst.name)
-
+    print(f"{data_inst.name}; N_events: {data_inst.n_events:,}")
+print(f"Sum of all mc events: {sum([data_inst.n_events for data_inst in dataset_insts]):,}")
+raise Exception("")
 print("================= Categories =====================")
 category_insts = cfg.categories
 for cat_inst in category_insts:

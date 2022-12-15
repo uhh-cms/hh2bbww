@@ -18,6 +18,7 @@ from columnflow.util import DotDict, get_root_processes_from_campaign
 from hbw.config.categories import add_categories
 from hbw.config.variables import add_variables
 from hbw.config.ml_variables import add_ml_variables
+from hbw.config.cutflow_variables import add_cutflow_variables, add_gen_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
 
@@ -231,10 +232,12 @@ cfg.set_aux("selector_step_labels", {
 # plotting settings groups
 cfg.x.general_settings_groups = {
     "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
+    "default_norm": {"shape_norm": True, "yscale": "log"},
 }
 cfg.x.process_settings_groups = {
     "default": [["ggHH_kl_1_kt_1_sl_hbbhww", "scale=2000", "unstack"]],
     "unstack_all": [[proc.name, "unstack"] for proc in cfg.processes],
+    "unstack_signal": {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
 }
 cfg.x.variable_settings_groups = {
     "test": {
@@ -464,7 +467,12 @@ cfg.add_shift(name="alpha_up", id=209, type="shape")
 cfg.add_shift(name="alpha_down", id=210, type="shape")
 
 for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
-    add_aliases(unc, {f"{unc}_weight": unc + "_weight_{direction}"}, selection_dependent=False)
+    # add_aliases(unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"}, selection_dependent=False)
+    add_aliases(
+        unc,
+        {f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}"},
+        selection_dependent=False,
+    )
 
 with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
     all_jec_sources = yaml.load(f, yaml.Loader)["names"]
@@ -523,22 +531,19 @@ cfg.x.external_files = DotDict.wrap({
     "met_phi_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/JME/2017_UL/met.json.gz", "v1"),  # noqa
 
     # btag scale factor
-    "btag_sf_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/BTV/2017_UL/btagging.json.gz", "v1"),  # noqa
+    "btag_sf_corr": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/BTV/2017_UL/btagging.json.gz", "v1"),  # noqa
 
     # electron scale factors
-    "electron_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/EGM/2017_UL/electron.json.gz", "v1"),  # noqa
+    "electron_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/EGM/2017_UL/electron.json.gz", "v1"),  # noqa
 
     # muon scale factors
-    "muon_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-d0a522ea/POG/MUO/2017_UL/muon_Z.json.gz", "v1"),  # noqa
+    "muon_sf": ("/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-f018adfb/POG/MUO/2017_UL/muon_Z.json.gz", "v1"),  # noqa
 })
 
 reduce_events_columns = (
     {
         # general event information
         "run", "luminosityBlock", "event",
-        # weights
-        "LHEWeight.*",
-        "LHEPdfWeight", "LHEScaleWeight",
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
         # weight-related columns
@@ -602,3 +607,7 @@ add_categories(cfg)
 # add variables
 add_variables(cfg)
 add_ml_variables(cfg)
+
+# add cutflow variables
+add_cutflow_variables(cfg)
+add_gen_variables(cfg)

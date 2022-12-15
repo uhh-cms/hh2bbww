@@ -10,55 +10,11 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production.util import attach_coffea_behavior
 
 from hbw.production.weights import event_weights
+from hbw.production.prepare_objects import prepare_objects
 from hbw.selection.general import jet_energy_shifts
 
 ak = maybe_import("awkward")
-coffea = maybe_import("coffea")
 np = maybe_import("numpy")
-maybe_import("coffea.nanoevents.methods.nanoaod")
-
-
-@producer(
-    uses={
-        attach_coffea_behavior,  # TODO use
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",  # "Electron.charge", "Electron.pdgId",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",  # "Muon.charge", "Muon.pdgId",
-        "MET.pt", "MET.phi",
-    },
-    produces={"Bjet", "Lightjet", "Lepton", "MET"},
-    shifts={jet_energy_shifts},
-)
-def prepare_objects(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # test that the number of particles is as expected after selection
-    if ak.any(ak.num(events.Electron) + ak.num(events.Muon) != 1):
-        raise Exception("Number of Leptons not 1")
-    if ak.any(ak.num(events.Jet) < 3):
-        raise Exception("Number of Jets smaller 3")
-
-    # sort jets after b-score and define b-jets as the two b-score leading jets (bscore-sorted)
-    bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
-    events = set_ak_column(events, "Bjet", events.Jet[bjet_indices[:, :2]])
-
-    # define all remaining jets as lightjets (pt-sorted) and pad them to a minimum-length of 2
-    lightjets = events.Jet[bjet_indices[:, 2:]]
-    lightjets = lightjets[ak.argsort(lightjets.pt, axis=-1, ascending=False)]
-    events = set_ak_column(events, "Lightjet", ak.pad_none(lightjets, 2))
-
-    # combine Electron and Muon into a single object (Lepton)
-    lepton = ak.concatenate([events.Muon, events.Electron], axis=-1)[:, 0]
-    events = set_ak_column(events, "Lepton", lepton)
-
-    # transform MET into 4-vector
-    events["MET"] = set_ak_column(events.MET, "mass", 0)
-    events["MET"] = set_ak_column(events.MET, "eta", 0)
-
-    # 4-vector behavior
-    events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    for obj in ["Jet", "Bjet", "Lightjet", "Muon", "Electron", "Lepton", "MET"]:
-        events[obj] = ak.with_name(events[obj], "PtEtaPhiMLorentzVector")
-
-    return events
 
 
 @producer(
@@ -67,6 +23,8 @@ def prepare_objects(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     },
     produces={
         attach_coffea_behavior, event_weights,
+        # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
+        "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
     },
     shifts={
         jet_energy_shifts,
@@ -99,7 +57,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
     events = set_ak_column(events, "mli_mbb", hbb.mass)
 
-    mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton), axis=-1)
+    mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
     events = set_ak_column(events, "mli_mindr_lb", mindr_lb)
 
     # wjj features
@@ -109,17 +67,17 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     wjj = events.Lightjet[:, 0] + events.Lightjet[:, 1]
     events = set_ak_column(events, "mli_mjj", wjj.mass)
 
-    mindr_lj = ak.min(events.Lightjet.delta_r(events.Lepton), axis=-1)
+    mindr_lj = ak.min(events.Lightjet.delta_r(events.Lepton[:, 0]), axis=-1)
     events = set_ak_column(events, "mli_mindr_lj", mindr_lj)
 
     # wlnu features
-    wlnu = events.MET + events.Lepton
-    events = set_ak_column(events, "mli_dphi_lnu", abs(events.Lepton.delta_phi(events.MET)))
+    wlnu = events.MET + events.Lepton[:, 0]
+    events = set_ak_column(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
     events = set_ak_column(events, "mli_mlnu", wlnu.mass)
 
     # hww features
     hww = wlnu + wjj
-    hww_vis = events.Lepton + wjj
+    hww_vis = events.Lepton[:, 0] + wjj
 
     events = set_ak_column(events, "mli_mjjlnu", hww.mass)
     events = set_ak_column(events, "mli_mjjl", hww_vis.mass)
