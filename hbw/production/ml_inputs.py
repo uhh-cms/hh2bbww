@@ -11,7 +11,6 @@ from columnflow.production.util import attach_coffea_behavior
 
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
-from hbw.selection.general import jet_energy_shifts
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -25,9 +24,6 @@ np = maybe_import("numpy")
         attach_coffea_behavior, event_weights,
         # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
         "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
-    },
-    shifts={
-        jet_energy_shifts,
     },
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

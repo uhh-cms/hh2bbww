@@ -80,7 +80,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
             ak.zip({f: events.VetoMuon[f] for f in lepton_fields}),
             ak.zip({f: events.VetoElectron[f] for f in lepton_fields}),
         ], axis=-1)
-        events = set_ak_column(events, "VetoLepton", veto_lepton[ak.argsort(veto_lepton.pt)])
+        events = set_ak_column(events, "VetoLepton", veto_lepton[ak.argsort(veto_lepton.pt, ascending=False)])
 
     if "Lepton" not in events.fields and "Electron" in events.fields and "Muon" in events.fields:
         # combine Electron and Muon into a single object (Lepton)
@@ -89,7 +89,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
             ak.zip({f: events.Muon[f] for f in lepton_fields}),
             ak.zip({f: events.Electron[f] for f in lepton_fields}),
         ], axis=-1)
-        events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt)])
+        events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
 
     # transform MET into 4-vector
     events["MET"] = set_ak_column(events.MET, "mass", 0)

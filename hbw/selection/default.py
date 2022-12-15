@@ -16,7 +16,6 @@ from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 from hbw.production.weights import event_weights_to_normalize
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
-from hbw.selection.general import jet_energy_shifts  # , increment_stats
 from hbw.selection.stats import increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.selection.gen_hbw_features import gen_hbw_decay_features, gen_hbw_matching
@@ -35,7 +34,6 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
 
 @selector(
     uses={"Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB"},
-    shifts={jet_energy_shifts},
     exposed=True,
 )
 def forward_jet_selection(
@@ -71,7 +69,6 @@ def forward_jet_selection(
 @selector(
     uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB"},
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
-    shifts={jet_energy_shifts},
     exposed=True,
 )
 def jet_selection(
@@ -139,8 +136,8 @@ def lepton_selection(
     # - require that events are triggered by SingleMu or SingleEle trigger
 
     # Veto Lepton masks (TODO define exact cuts)
-    e_mask_veto = (events.Electron.pt > 10) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
-    mu_mask_veto = (events.Muon.pt > 10) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
+    e_mask_veto = (events.Electron.pt > 1) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
+    mu_mask_veto = (events.Muon.pt > 1) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
 
     lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
 
@@ -155,7 +152,6 @@ def lepton_selection(
         (events.Muon.tightId) &
         (events.Muon.pfRelIso04_all < 0.15)
     )
-
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
     # e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
@@ -189,9 +185,6 @@ def lepton_selection(
         jet_selection, forward_jet_selection, lepton_selection, cutflow_features,
         category_ids, process_ids, event_weights_to_normalize, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
-    },
-    shifts={
-        jet_energy_shifts,
     },
     exposed=True,
 )

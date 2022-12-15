@@ -46,5 +46,4 @@ def cutflow_features(self: Selector, events: ak.Array, results: SelectionResult,
             events, f"cutflow.veto_lepton{i+1}_pt",
             Route(f"pt[:, {i}]").apply(arr.VetoLepton, EMPTY_FLOAT),
         )
-
     return events
