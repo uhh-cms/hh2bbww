@@ -10,7 +10,6 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 
 from hbw.production.weights import event_weights
-from hbw.selection.general import jet_energy_shifts
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -70,9 +69,6 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         attach_coffea_behavior,
         event_weights, bb_features, jj_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet",
-    },
-    shifts={
-        jet_energy_shifts,
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
