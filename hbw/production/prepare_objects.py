@@ -40,13 +40,20 @@ def apply_object_results(events: ak.Array, results: SelectionResult = None):
 
 
 @producer(
-    uses={
-        # attach_coffea_behavior,  # TODO use
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass", "Electron.charge", "Electron.pdgId",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.charge", "Muon.pdgId",
-        "MET.pt", "MET.phi",
-    },
+    # This producer only requires 4-vector properties,
+    # but all columns required by the main Selector/Producer will be considered
+    uses=(
+        {
+            # attach_coffea_behavior,  # TODO use
+            "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
+            "MET.pt", "MET.phi",
+        } |
+        set(
+            f"{obj}.{var}"
+            for obj in ("Electron", "Muon")
+            for var in ("pt", "eta", "phi", "mass")
+        )
+    ),
     # no produces since we do not want to permanently produce columns
 )
 def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult = None, **kwargs) -> ak.Array:

@@ -6,29 +6,75 @@ Definition of variables that can be plotted via `PlotCutflowVariables` tasks.
 
 import order as od
 
-# from columnflow.columnar_util import EMPTY_FLOAT
+from columnflow.columnar_util import EMPTY_FLOAT
 
 
 # cutflow variables
 def add_cutflow_variables(config: od.Config) -> None:
-    # looose jets
+
+    # default xtitle formatting per variable
+    var_title_format = {
+        "pt": r"$p_{T}$",
+        "eta": r"$\eta$",
+        "phi": r"$\phi$",
+        "dxy": r"$d_{xy}$",
+        "dz": r"d_{z}",
+    }
+    # default binning per variable
+    var_binning = {
+        "pt": (40, 0, 100),
+        "eta": (40, -5, 5),
+        "phi": (40, 0, 3.2),
+        "mass": (40, 0, 200),
+        "dxy": (40, 0, 0.1),
+        "dz": (40, 0, 0.1),
+        "mvaTTH": (40, 0, 1),
+        "miniPFRelIso_all": (40, 0, 1),
+        "pfRelIso03_all": (40, 0, 1),
+        "pfRelIso04_all": (40, 0, 1),
+        "mvaFall17V2Iso": (40, 0, 1),
+        "mvaFall17V2noIso": (40, 0, 1),
+        "mvaLowPt": (40, 0, 1),
+    }
+    var_unit = {
+        "pt": "GeV",
+        "dxy": "cm",
+        "dz": "cm",
+    }
+
+    name = "cf_{obj}{i}_{var}"
+    expr = "cutflow.{obj}.{var}[:, {i}]"
+    x_title_base = r"{obj} {i} "
+    def quick_addvar(obj: str, i: int, var: str):
+        """
+        Helper to quickly generate generic variable instances
+        """
+        config.add_variable(
+            name=name.format(obj=obj, i=i + 1, var=var),
+            expression=expr.format(obj=obj, i=i, var=var),
+            null_value=EMPTY_FLOAT,
+            binning=var_binning[var],
+            unit=var_unit.get(var, "1"),
+            x_title=x_title_base.format(obj=obj, i=i + 1) + var_title_format.get(var, var),
+        )
+
+    # Jets
     for i in range(4):
-        config.add_variable(
-            name=f"cf_loose_jet{i+1}_pt",
-            expression=f"cutflow.loose_jet{i+1}_pt",
-            binning=(40, 0, 100),
-            unit="GeV",
-            x_title=r"Loose jet %i $p_{T}$" % (i + 1),
-        )
-    # veto leptons
+        # loose jets
+        for var in ("pt",):
+            quick_addvar("LooseJet", i, var)
+
+    # Leptons
     for i in range(3):
-        config.add_variable(
-            name=f"cf_veto_lepton{i+1}_pt",
-            expression=f"cutflow.veto_lepton{i+1}_pt",
-            binning=(40, 0, 50),
-            unit="GeV",
-            x_title=r"Veto lepton %i $p_{T}$" % (i + 1),
-        )
+        # veto leptons
+        for var in ("pt", "eta", "dxy", "dz", "mvaTTH", "miniPFRelIso_all"):
+            quick_addvar("VetoLepton", i, var)
+        # veto electrons
+        for var in ("mvaFall17V2Iso", "mvaFall17V2noIso", "pfRelIso03_all"):
+            quick_addvar("VetoElectron", i, var)
+        # veto muons
+        for var in ("pfRelIso04_all", "mvaLowPt"):
+            quick_addvar("VetoMuon", i, var)
 
     # number of objects
     for obj in ("jet", "deepjet_med", "electron", "muon", "lepton", "veto_electron", "veto_muon", "veto_lepton"):
