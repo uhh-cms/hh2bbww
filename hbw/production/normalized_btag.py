@@ -23,7 +23,7 @@ ak = maybe_import("awkward")
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     if self.dataset_inst.is_data:
-        return events
+        raise Exception("attempt to compute normalized btag weights in data")
 
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
@@ -56,7 +56,7 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
 @normalized_btag_weights.init
 def normalized_btag_weights_init(self: Producer) -> None:
-    if getattr(self, "dataset_inst", None) is None or self.dataset_inst.is_data:
+    if not getattr(self, "dataset_inst", None):
         return
 
     for weight_name in self[btag_weights].produces:
@@ -69,10 +69,6 @@ def normalized_btag_weights_init(self: Producer) -> None:
 
 @normalized_btag_weights.requires
 def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
-    # do nothing for data
-    if self.dataset_inst.is_data:
-        return
-
     from columnflow.tasks.selection import MergeSelectionStats
     reqs["selection_stats"] = MergeSelectionStats.req(
         self.task,
@@ -84,13 +80,6 @@ def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
 
 @normalized_btag_weights.setup
 def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict) -> None:
-    # set to None for data
-    if self.dataset_inst.is_data:
-        self.unique_process_ids = None
-        self.ratio_per_pid = None
-        self.ratio_per_pid_njet = None
-        return
-
     # load the selection stats
     stats = inputs["selection_stats"]["collection"][0].load(formatter="json")
 

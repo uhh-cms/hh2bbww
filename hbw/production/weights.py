@@ -29,6 +29,9 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     Wrapper of several event weight producers that are typically called as part of SelectEvents
     since it is required to normalize them before applying certain event selections.
     """
+    if self.dataset_inst.is_data:
+        raise Exception("attempt to compute event weights in data")
+
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
 
@@ -67,6 +70,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
+    if self.dataset_inst.is_data:
+        raise Exception("attempt to compute event weights in data")
+
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
 

@@ -91,15 +91,15 @@ for proc, color in colors.items():
 dataset_names = [
     # DATA
     "data_e_b",
-    "data_e_c",
-    "data_e_d",
-    "data_e_e",
-    "data_e_f",
+    # "data_e_c",
+    # "data_e_d",
+    # "data_e_e",
+    # "data_e_f",
     "data_mu_b",
-    "data_mu_c",
-    "data_mu_d",
-    "data_mu_e",
-    "data_mu_f",
+    # "data_mu_c",
+    # "data_mu_d",
+    # "data_mu_e",
+    # "data_mu_f",
     # TTbar
     "tt_sl_powheg",
     "tt_dl_powheg",
@@ -554,7 +554,7 @@ cfg.x.keep_columns["cf.ReduceEvents"] = (
         # general event information
         "run", "luminosityBlock", "event",
         # columns added during selection, required in general
-        "mc_weight", "PV.npvs", "category_ids", "deterministic_seed",
+        "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
         # weight-related columns
         "pu_weight*", "btag_weight*", "scale_weight*", "pdf_weight*",
     } | set(  # Jets
@@ -581,9 +581,9 @@ cfg.x.event_weights["pu_weight"] = get_shifts("minbias_xs")
 cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
 cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
 
-for dataset in cfg.datasets:
-    if dataset.x("is_ttbar", False):
-        dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
+# for dataset in cfg.datasets:
+#     if dataset.x("is_ttbar", False):
+#         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
 # TODO: check that pdf/scale weights work for all cases
 # for unc in ["mur", "muf", "scale", "pdf", "alpha"]:

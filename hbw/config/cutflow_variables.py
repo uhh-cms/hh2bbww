@@ -11,7 +11,9 @@ from columnflow.columnar_util import EMPTY_FLOAT
 
 # cutflow variables
 def add_cutflow_variables(config: od.Config) -> None:
-
+    """
+    defines reco-level cutflow variables
+    """
     # default xtitle formatting per variable
     var_title_format = {
         "pt": r"$p_{T}$",
@@ -86,8 +88,10 @@ def add_cutflow_variables(config: od.Config) -> None:
         )
 
 
-# Gen particles
 def add_gen_variables(config: od.Config) -> None:
+    """
+    defines gen-level cutflow variables
+    """
     for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
         config.add_variable(
             name=f"gen_{gp}_pt",

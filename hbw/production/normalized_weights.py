@@ -28,7 +28,7 @@ def normalized_weight_factory(
     )
     def normalized_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         if self.dataset_inst.is_data:
-            return events
+            raise Exception("attempt to compute normalized event weights in data")
 
         # check existence of requested weights to normalize and run producer if missing
         missing_weights = self.weight_names.difference(events.fields)
@@ -65,7 +65,7 @@ def normalized_weight_factory(
 
     @normalized_weight.init
     def normalized_weight_init(self: Producer) -> None:
-        if getattr(self, "dataset_inst", None) is None or self.dataset_inst.is_data:
+        if not getattr(self, "dataset_inst", None):
             return
 
         self.weight_producers = weight_producers
@@ -81,10 +81,6 @@ def normalized_weight_factory(
 
     @normalized_weight.requires
     def normalized_weight_requires(self: Producer, reqs: dict) -> None:
-        # do nothing for data
-        if self.dataset_inst.is_data:
-            return
-
         from columnflow.tasks.selection import MergeSelectionStats
         reqs["selection_stats"] = MergeSelectionStats.req(
             self.task,
@@ -95,12 +91,6 @@ def normalized_weight_factory(
 
     @normalized_weight.setup
     def normalized_weight_setup(self: Producer, reqs: dict, inputs: dict) -> None:
-        # set to None for data
-        if self.dataset_inst.is_data:
-            self.unique_process_ids = None
-            self.ratio_per_pid = None
-            return
-
         # load the selection stats
         stats = inputs["selection_stats"]["collection"][0].load(formatter="json")
 

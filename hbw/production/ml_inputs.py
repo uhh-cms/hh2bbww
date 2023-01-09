@@ -18,10 +18,10 @@ np = maybe_import("numpy")
 
 @producer(
     uses={
-        event_weights, prepare_objects.USES, prepare_objects.PRODUCES,
+        prepare_objects.USES, prepare_objects.PRODUCES,
     },
     produces={
-        attach_coffea_behavior, event_weights,
+        attach_coffea_behavior,
         # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
         "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
     },
@@ -108,7 +108,8 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
 
     # add event weights
-    events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
 
     return events
 
@@ -125,3 +126,9 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     }
     self.produces |= self.ml_columns
+
+    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+        return
+
+    self.uses |= {event_weights}
+    self.produces |= {event_weights}

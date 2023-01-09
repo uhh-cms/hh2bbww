@@ -61,13 +61,13 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         attach_coffea_behavior,
-        event_weights, bb_features, jj_features,
+        bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
     },
     produces={
         attach_coffea_behavior,
-        event_weights, bb_features, jj_features,
+        bb_features, jj_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet",
     },
 )
@@ -94,6 +94,16 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[jj_features](events, **kwargs)
 
     # add event weights
-    events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
 
     return events
+
+
+@features.init
+def features_init(self: Producer) -> None:
+    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+        return
+
+    self.uses |= {event_weights}
+    self.produces |= {event_weights}
