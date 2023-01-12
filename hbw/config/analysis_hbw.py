@@ -47,6 +47,28 @@ if not law.util.flag_to_bool(os.getenv("HBW_BUNDLE_CMSSW", "1")):
 # (used in wrapper_factory)
 analysis_hbw.set_aux("config_groups", {})
 
-# trailing imports for different configs
-import hbw.config.config_2017  # noqa
-# import hbw.config.config_2018  # noqa
+#
+# import campaigns and load configs
+#
+
+from hbw.config.config_run2 import add_config
+import cmsdb.campaigns.run2_2017_nano_v9
+
+campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
+
+# default config
+add_config(
+    analysis_hbw,
+    campaign_run2_2017_nano_v9.copy(),
+    config_name="config_2017",
+    config_id=2,
+)
+
+# config with limited number of files
+add_config(
+    analysis_hbw,
+    campaign_run2_2017_nano_v9.copy(),
+    config_name="config_2017_limited",
+    config_id=12,
+    limit_dataset_files=2,
+)
