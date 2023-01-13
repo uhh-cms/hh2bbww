@@ -20,14 +20,14 @@ def default(self):
     self.add_category(
         "cat1",
         category="1e",
-        variable="m_bb",
+        variable="jet1_pt",
         mc_stats=True,
         data_datasets=["data_e_b"],
     )
     self.add_category(
         "cat2",
         category="1mu",
-        variable="m_bb",
+        variable="jet1_pt",
         mc_stats=True,
         data_datasets=["data_mu_b"],
     )
