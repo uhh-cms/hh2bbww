@@ -86,7 +86,7 @@ for lep_ch in ["1e", "1mu"]:
             @selector(
                 uses=set(funcs.values()),
                 produces=set(funcs.values()),
-                cls_name=f"catid_{lep_ch}_{jet_ch}"
+                cls_name=f"catid_{lep_ch}_{jet_ch}",
             )
             def catid_leaf_mask(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
                 """

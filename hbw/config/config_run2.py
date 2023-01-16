@@ -319,7 +319,7 @@ def add_config(
 
     # names of muon correction sets and working points
     # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", "{year}{corr_postfix}_UL")
+    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}{corr_postfix}_UL")
 
     # jec configuration
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201

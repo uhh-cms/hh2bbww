@@ -6,10 +6,13 @@ Column production methods related to higher-level features.
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production.util import attach_coffea_behavior
+from columnflow.production.categories import category_ids
 
 from hbw.production.weights import event_weights
+from hbw.production.prepare_objects import prepare_objects
+from hbw.config.categories import add_categories_production
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -22,11 +25,6 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
     produces={"m_jj", "deltaR_jj"},
 )
 def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    events["Jet"] = ak.with_name(events.Jet, "PtEtaPhiMLorentzVector")
-
-    if ak.any(ak.num(events.Jet, axis=-1) <= 2):
-        raise Exception("In features.py: there should be at least 2 jets in each event")
 
     m_jj = (events.Jet[:, 0] + events.Jet[:, 1]).mass
     events = set_ak_column(events, "m_jj", m_jj)
@@ -34,6 +32,9 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     deltaR_jj = events.Jet[:, 0].delta_r(events.Jet[:, 1])
     events = set_ak_column(events, "deltaR_jj", deltaR_jj)
 
+    # fill none values
+    for col in self.produces:
+        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
     return events
 
 
@@ -42,12 +43,6 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     produces={"m_bb", "deltaR_bb"},
 )
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # add 4-vector behavior to Bjet fields
-    events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    events["Bjet"] = ak.with_name(events.Bjet, "PtEtaPhiMLorentzVector")
-
-    if ak.any(ak.num(events.Bjet, axis=-1) != 2):
-        raise Exception("In features.py: there should be exactly 2 bjets in each event")
 
     m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
     events = set_ak_column(events, "m_bb", m_bb)
@@ -55,20 +50,25 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
     events = set_ak_column(events, "deltaR_bb", deltaR_bb)
 
+    # fill none values
+    for col in self.produces:
+        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+
     return events
 
 
 @producer(
     uses={
-        attach_coffea_behavior,
+        attach_coffea_behavior, prepare_objects, category_ids,
         bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
+        "FatJet.pt",
     },
     produces={
-        attach_coffea_behavior,
+        attach_coffea_behavior, category_ids,
         bb_features, jj_features,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet",
+        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -84,11 +84,26 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events, collections=custom_collections, behavior=coffea.nanoevents.methods.nanoaod.behavior, **kwargs
     )
     """
+    # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
+    events = self[prepare_objects](events, **kwargs)
+
+    # object padding
+    events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
+    events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
+    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+
+    # produce (new) category ids
+    # TODO: make work
+    # self[category_ids](events, **kwargs)
+
+    # ht and number of objects (save for None entries)
     events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
-    events = set_ak_column(events, "n_jet", ak.num(events.Jet.pt, axis=1))
-    events = set_ak_column(events, "n_electron", ak.num(events.Electron.pt, axis=1))
-    events = set_ak_column(events, "n_muon", ak.num(events.Muon.pt, axis=1))
-    events = set_ak_column(events, "n_deepjet", ak.num(events.Jet.pt[events.Jet.btagDeepFlavB > 0.3], axis=1))
+    events = set_ak_column(events, "n_jet", ak.sum(events.Jet.pt > 0, axis=1))
+    events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
+    events = set_ak_column(events, "n_muon", ak.sum(events.Muon.pt > 0, axis=1))
+    events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > 0.3, axis=1))
+    events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
 
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)
@@ -102,6 +117,8 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
+    # add_categories_production(self.config_inst)
+
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
