@@ -15,7 +15,7 @@ from scinum import Number
 import order as od
 
 from columnflow.util import DotDict, get_root_processes_from_campaign
-from hbw.config.categories import add_categories
+from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.ml_variables import add_ml_variables
 from hbw.config.cutflow_variables import add_cutflow_variables, add_gen_variables
@@ -611,7 +611,7 @@ def add_config(
         ) | set(  # FatJet
             f"FatJet.{field}"
             for field in [
-                    "pt", "eta", "phi", "mass", "msoftdrop", "particleNet_HbbvsQCD",
+                "pt", "eta", "phi", "mass", "msoftdrop", "particleNet_HbbvsQCD",
             ]
         ) | set(  # Leptons
             f"{lep}.{field}"
@@ -656,7 +656,7 @@ def add_config(
     }
 
     # add categories
-    add_categories(cfg)
+    add_categories_selection(cfg)
 
     # TODO: move the initialization of variable insts into tasks that actually produce
     #       or use them
