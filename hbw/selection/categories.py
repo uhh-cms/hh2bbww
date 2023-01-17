@@ -59,17 +59,17 @@ def catid_resolved(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 @selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
 def catid_resolved_1b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
-    n_deepjet = ak.sum(events.Jet.btagDeepFlav >= self.config_inst.x.btag_working_points.deepjet.medium)
+    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium)
 
-    return catid_resolved & (n_deepjet == 1)
+    return self[catid_resolved](events, **kwargs) & (n_deepjet == 1)
 
 
 @selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
 def catid_resolved_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
-    n_deepjet = ak.sum(events.Jet.btagDeepFlav >= self.config_inst.x.btag_working_points.deepjet.medium)
+    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium)
 
-    return catid_resolved & (n_deepjet >= 2)
+    return self[catid_resolved](events, **kwargs) & (n_deepjet >= 2)
 
 
 for lep_ch in ["1e", "1mu"]:

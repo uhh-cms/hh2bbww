@@ -95,7 +95,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # produce (new) category ids
     # TODO: make work
-    # self[category_ids](events, **kwargs)
+    self[category_ids](events, **kwargs)
 
     # ht and number of objects (save for None entries)
     events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
@@ -117,7 +117,11 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
-    # add_categories_production(self.config_inst)
+
+    if self.config_inst.x("call_add_categories_production", True):
+        # add categories but only on first call
+        add_categories_production(self.config_inst)
+        self.config_inst.x.call_add_categories_production = False
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

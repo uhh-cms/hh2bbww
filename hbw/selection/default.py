@@ -68,7 +68,7 @@ def forward_jet_selection(
 
 @selector(
     uses={
-        "Jet.pt", "Jet.eta",
+        "Jet.pt", "Jet.eta", "Jet.jetId",
         "FatJet.pt", "FatJet.eta",
     },
     produces={"cutflow.n_fatjet"},
@@ -83,7 +83,7 @@ def boosted_jet_selection(
     # HH -> bbWW(qqlnu) boosted selection
 
     # jets
-    ak4_jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4)
+    ak4_jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId >= 2)
     ak4_jet_sel = ak.sum(ak4_jet_mask, axis=1) > 0
 
     # fatjet mask
@@ -110,7 +110,7 @@ def boosted_jet_selection(
 
 
 @selector(
-    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB"},
+    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.jetId"},
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
 )
@@ -126,7 +126,7 @@ def jet_selection(
 
     # jets
     jet_mask_loose = (events.Jet.pt > 5) & abs(events.Jet.eta < 2.4)
-    jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4)
+    jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId >= 2)
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
     jet_sel = events.cutflow.n_jet >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)

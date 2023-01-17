@@ -83,7 +83,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
-    events = self[normweights](events, **kwargs)
-    events = self[normalized_btag_weights](events, **kwargs)
+    # events = self[normweights](events, **kwargs)
+    # events = self[normalized_btag_weights](events, **kwargs)
 
     return events
