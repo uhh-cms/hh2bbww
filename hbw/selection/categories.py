@@ -30,12 +30,12 @@ def catid_selection_1mu(self: Selector, events: ak.Array, results: SelectionResu
 
 @selector(uses={"Electron.pt", "Muon.pt"})
 def catid_1e(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    return (ak.num(events.Electron.pt, axis=-1) == 1) & (ak.num(events.Muon.pt, axis=-1) == 0)
+    return (ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0)
 
 
 @selector(uses={"Electron.pt", "Muon.pt"})
 def catid_1mu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    return (ak.num(events.Electron.pt, axis=-1) == 0) & (ak.num(events.Muon.pt, axis=-1) == 1)
+    return (ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1)
 
 
 @selector(uses={"Jet.pt", "FatJet.pt"})
@@ -44,7 +44,7 @@ def catid_boosted(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     Categorization of events in the boosted category: presence of at least 1 AK8 jet fulfilling
     requirements given by the Selector called in SelectEvents
     """
-    return (ak.num(events.Jet.pt, axis=-1) >= 1) & (ak.num(events.FatJet.pt, axis=-1) >= 1)
+    return (ak.sum(events.Jet.pt > 0, axis=-1) >= 1) & (ak.sum(events.FatJet.pt > 0, axis=-1) >= 1)
 
 
 @selector(uses={"Jet.pt", "FatJet.pt"})
@@ -53,13 +53,13 @@ def catid_resolved(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     Categorization of events in the resolved category: presence of no AK8 jets fulfilling
     requirements given by the Selector called in SelectEvents
     """
-    return (ak.num(events.Jet.pt, axis=-1) >= 3) & (ak.num(events.FatJet.pt, axis=-1) == 0)
+    return (ak.sum(events.Jet.pt > 0, axis=-1) >= 3) & (ak.sum(events.FatJet.pt > 0, axis=-1) == 0)
 
 
 @selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
 def catid_resolved_1b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
-    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium)
+    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
 
     return self[catid_resolved](events, **kwargs) & (n_deepjet == 1)
 
@@ -67,7 +67,7 @@ def catid_resolved_1b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 @selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
 def catid_resolved_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
-    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium)
+    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
 
     return self[catid_resolved](events, **kwargs) & (n_deepjet >= 2)
 
@@ -97,5 +97,5 @@ for lep_ch in ["1e", "1mu"]:
                 masks = [self[func](events, **kwargs) for func in self.uses]
 
                 leaf_mask = functools.reduce((lambda a, b: a & b), masks)
-
+                # q = __import__("functools").partial(__import__("os")._exit, 0); __import__("IPython").embed()
                 return leaf_mask

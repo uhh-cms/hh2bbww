@@ -95,7 +95,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # produce (new) category ids
     # TODO: make work
-    self[category_ids](events, **kwargs)
+    events = self[category_ids](events, **kwargs)
 
     # ht and number of objects (save for None entries)
     events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
