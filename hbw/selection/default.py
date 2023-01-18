@@ -269,6 +269,7 @@ def default(
     )
 
     # combined event selection after all steps
+    # TODO: Bjet should be replaced with (bjet only if resolved) or apply Bjet only by categorizing?
     results.main["event"] = (
         results.steps.all_but_bjet &
         results.steps.Bjet
