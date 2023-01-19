@@ -603,11 +603,13 @@ def add_config(
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
             # weight-related columns
-            "pu_weight*", "btag_weight*", "scale_weight*", "pdf_weight*",
+            "pu_weight*", "pdf_weight*",
+            "murf_envelope_weight*", "mur_weight*", "muf_weight*",
+            "btag_weight*",
         } | set(  # Jets
             f"{jet_obj}.{field}"
-            for jet_obj in ["Jet", "Bjet", "Lightjet"]
-            for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB"]
+            for jet_obj in ["Jet", "Bjet", "Lightjet"]  # NOTE: if we run into storage troubles, skip Bjet and Lightjet
+            for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB", "hadronFlavour"]
         ) | set(  # FatJet
             f"FatJet.{field}"
             for field in [

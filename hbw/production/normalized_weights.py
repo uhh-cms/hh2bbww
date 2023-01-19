@@ -17,7 +17,6 @@ np = maybe_import("numpy")
 def normalized_weight_factory(
     producer_name: str,
     weight_producers: Iterable[Producer],
-    # weight_names: Iterable[str] = {},
     **kwargs,
 ) -> Callable:
 
@@ -76,8 +75,8 @@ def normalized_weight_factory(
             if "weight" in w and "normalized" not in w and "btag" not in w
         )
 
-        for weight_name in self.weight_names:
-            self.produces.add(f"normalized_{weight_name}")
+        self.uses |= self.weight_names
+        self.produces |= set(f"normalized_{weight_name}" for weight_name in self.weight_names)
 
     @normalized_weight.requires
     def normalized_weight_requires(self: Producer, reqs: dict) -> None:
