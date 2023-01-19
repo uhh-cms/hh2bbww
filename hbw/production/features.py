@@ -86,7 +86,6 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     )
     """
 
-    print(list(events.Jet.btagDeepFlavB)[:10])
     # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
     events = self[prepare_objects](events, **kwargs)
 
@@ -95,9 +94,8 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
-    print(list(events.Jet.btagDeepFlavB)[:10])
+
     # produce (new) category ids
-    # TODO: debug
     events = self[category_ids](events, **kwargs)
 
     # ht and number of objects (save for None entries)
