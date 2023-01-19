@@ -106,15 +106,15 @@ def add_config(
     dataset_names = [
         # DATA
         "data_e_b",
-        # "data_e_c",
-        # "data_e_d",
-        # "data_e_e",
-        # "data_e_f",
+        "data_e_c",
+        "data_e_d",
+        "data_e_e",
+        "data_e_f",
         "data_mu_b",
-        # "data_mu_c",
-        # "data_mu_d",
-        # "data_mu_e",
-        # "data_mu_f",
+        "data_mu_c",
+        "data_mu_d",
+        "data_mu_e",
+        "data_mu_f",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -125,7 +125,7 @@ def add_config(
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
-        "st_schannel_had_amcatnlo",
+        # "st_schannel_had_amcatnlo",  # NOTE: this dataset produces some weird errors, so skip it for now
         # WJets
         "w_lnu_ht70To100_madgraph",
         "w_lnu_ht100To200_madgraph",
@@ -183,32 +183,34 @@ def add_config(
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "default"
     cfg.x.default_categories = ["incl"]
-    cfg.set_aux(
-        "default_process_settings",
-        {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
-    )
+    cfg.x.default_process_settings = {
+        proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name
+    }
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
-        "hh": ["ggHH_kl_1_kt_1_sl_hbbhww"],
+        "all": ["*"],
         "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "w_lnu", "st", "tt"],
-        "working": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "st", "tt"],
+        "inference": ["ggHH_*", "dy_lep", "w_lnu", "st", "tt"],
         "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
         "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "st", "tt"],
-        "signal": ["ggHH_*"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
+        "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+
     }
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
     cfg.x.dataset_groups = {
         "all": ["*"],
-        "working": ["tt_*", "st_*", "dy_*"],
-        "small": ["ggHH_*", "tt_*", "st_*"],
-        "default": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "default": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "inference": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "test": ["ggHH_kl_1*", "tt_sl_powheg"],
+        "small": ["ggHH_kl_1*", "tt_*", "st_*"],
+        "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
-        "hh": ["ggHH_*"], "hhsm": ["ggHH_kl_1_kt_1_sl_hbbhww_powheg"],
+        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
 
     # category groups for conveniently looping over certain categories

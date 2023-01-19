@@ -4,7 +4,7 @@
 A dummy script to test config objects
 """
 
-from hbw.config.config_2017 import config_2017 as cfg
+from hbw import config_2017 as cfg
 
 print(" ================ Processes ======================")
 process_insts = cfg.processes
@@ -16,6 +16,8 @@ dataset_insts = cfg.datasets
 for data_inst in dataset_insts:
     print(f"{data_inst.name}; N_events: {data_inst.n_events:,}")
 print(f"Sum of all mc events: {sum([data_inst.n_events for data_inst in dataset_insts]):,}")
+print(f"Number of datasets: {len(dataset_insts)}")
+print(f"Number of dataset files: {sum([data_inst.n_files for data_inst in dataset_insts])}")
 
 print("================= Categories =====================")
 category_insts = cfg.categories

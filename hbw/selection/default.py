@@ -269,10 +269,11 @@ def default(
     )
 
     # combined event selection after all steps
-    # TODO: Bjet should be replaced with (bjet only if resolved) or apply Bjet only by categorizing?
+    # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
+    #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.main["event"] = (
         results.steps.all_but_bjet &
-        results.steps.Bjet
+        (results.steps.Bjet | results.steps.Boosted)
     )
 
     # build categories

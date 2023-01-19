@@ -47,10 +47,10 @@ def default(self):
     ]
 
     processes = [
-        # "ggHH_kl_0_kt_1_sl_hbbhww",
+        "ggHH_kl_0_kt_1_sl_hbbhww",
         "ggHH_kl_1_kt_1_sl_hbbhww",
-        # "ggHH_kl_2p45_kt_1_sl_hbbhww",
-        # "ggHH_kl_5_kt_1_sl_hbbhww",
+        "ggHH_kl_2p45_kt_1_sl_hbbhww",
+        "ggHH_kl_5_kt_1_sl_hbbhww",
         "tt",
         # "ttv", "ttvv",
         "st_schannel", "st_tchannel", "st_twchannel",
