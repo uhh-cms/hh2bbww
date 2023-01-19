@@ -82,7 +82,7 @@ def default(self):
         self.add_process(
             inference_procnames.get(proc, proc),
             config_process=proc,
-            signal=("HH_" in proc),
+            is_signal=("HH_" in proc),
             config_mc_datasets=datasets,
         )
 
@@ -124,7 +124,7 @@ def default(self):
                 continue
             self.add_parameter(
                 f"QCDscale_{k}",
-                config_process=inference_procnames.get(proc, proc),
+                process=inference_procnames.get(proc, proc),
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
@@ -159,7 +159,7 @@ def default(self):
             # from IPython import embed; embed()
             self.add_parameter(
                 f"pdf_{k}",
-                config_process=inference_procnames.get(proc, proc),
+                process=inference_procnames.get(proc, proc),
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
@@ -191,7 +191,7 @@ def default(self):
         for unc in ("scale", "pdf"):
             self.add_parameter(
                 f"{unc}_{proc}",
-                config_process=inference_procnames.get(proc, proc),
+                process=inference_procnames.get(proc, proc),
                 type=ParameterType.shape,
                 config_shift_source=f"{unc}",
             )
