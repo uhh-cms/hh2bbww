@@ -498,14 +498,12 @@ def add_config(
     cfg.add_shift(name="mur_down", id=202, type="shape")
     cfg.add_shift(name="muf_up", id=203, type="shape")
     cfg.add_shift(name="muf_down", id=204, type="shape")
-    cfg.add_shift(name="scale_up", id=205, type="shape")
-    cfg.add_shift(name="scale_down", id=206, type="shape")
+    cfg.add_shift(name="murf_envelope_up", id=205, type="shape")
+    cfg.add_shift(name="murf_envelope_down", id=206, type="shape")
     cfg.add_shift(name="pdf_up", id=207, type="shape")
     cfg.add_shift(name="pdf_down", id=208, type="shape")
-    cfg.add_shift(name="alpha_up", id=209, type="shape")
-    cfg.add_shift(name="alpha_down", id=210, type="shape")
 
-    for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
+    for unc in ["mur", "muf", "murf_envelope", "pdf"]:
         # add_aliases(unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"}, selection_dependent=False)
         add_aliases(
             unc,
@@ -639,16 +637,14 @@ def add_config(
     #     if dataset.x("is_ttbar", False):
     #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
-    # TODO: check that pdf/scale weights work for all cases
-    # for unc in ["mur", "muf", "scale", "pdf", "alpha"]:
-    #    cfg.x.event_weights[unc] = get_shifts(unc)
+    # NOTE: njet_btag_weight or btag_weight
+    cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
 
-    # TODO: normalized pu, scale, pdf weights; this also requires saving sum_mc_weights for shift variations
-    #       and producing the pdf/scale columns as part of the selection or calibration module
-
-    # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-    # cfg.x.event_weights["normalized_scale_weight"] = get_shifts("scale")
-    # cfg.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
+    cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+    cfg.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
+    cfg.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
+    cfg.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
+    cfg.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     # versions per task family and optionally also dataset and shift
     # None can be used as a key to define a default value
