@@ -15,7 +15,7 @@ from scinum import Number
 import order as od
 
 from columnflow.util import DotDict, get_root_processes_from_campaign
-from hbw.config.categories import add_categories
+from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.ml_variables import add_ml_variables
 from hbw.config.cutflow_variables import add_cutflow_variables, add_gen_variables
@@ -319,7 +319,7 @@ def add_config(
 
     # names of muon correction sets and working points
     # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", "{year}{corr_postfix}_UL")
+    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}{corr_postfix}_UL")
 
     # jec configuration
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
@@ -608,6 +608,11 @@ def add_config(
             f"{jet_obj}.{field}"
             for jet_obj in ["Jet", "Bjet", "Lightjet"]
             for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB"]
+        ) | set(  # FatJet
+            f"FatJet.{field}"
+            for field in [
+                "pt", "eta", "phi", "mass", "msoftdrop", "particleNet_HbbvsQCD",
+            ]
         ) | set(  # Leptons
             f"{lep}.{field}"
             for lep in ["Electron", "Muon"]
@@ -651,12 +656,21 @@ def add_config(
     }
 
     # add categories
-    add_categories(cfg)
+    add_categories_selection(cfg)
+
+    # TODO: move the initialization of variable insts into tasks that actually produce
+    #       or use them
 
     # add variables
     add_variables(cfg)
     add_ml_variables(cfg)
 
-    # add cutflow variables
-    add_cutflow_variables(cfg)
-    add_gen_variables(cfg)
+    # only produce cutflow features when number of dataset_files is limited
+    cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
+
+    if cfg.x.do_cutflow_features:
+        # add cutflow variables
+        add_cutflow_variables(cfg)
+        add_gen_variables(cfg)
+
+    return cfg

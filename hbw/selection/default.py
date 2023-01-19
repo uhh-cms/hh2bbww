@@ -67,7 +67,50 @@ def forward_jet_selection(
 
 
 @selector(
-    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB"},
+    uses={
+        "Jet.pt", "Jet.eta", "Jet.jetId",
+        "FatJet.pt", "FatJet.eta",
+    },
+    produces={"cutflow.n_fatjet"},
+    exposed=True,
+)
+def boosted_jet_selection(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    # HH -> bbWW(qqlnu) boosted selection
+
+    # jets
+    ak4_jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId >= 2)
+    ak4_jet_sel = ak.sum(ak4_jet_mask, axis=1) > 0
+
+    # fatjet mask
+    fatjet_mask = (events.FatJet.pt > 200) & (abs(events.FatJet.eta) < 2.4)
+    events = set_ak_column(events, "cutflow.n_fatjet", ak.sum(fatjet_mask, axis=1))
+
+    fatjet_sel = events.cutflow.n_fatjet >= 1
+
+    boosted_sel = ak4_jet_sel & fatjet_sel
+
+    fatjet_indices = masked_sorted_indices(fatjet_mask, events.FatJet.pt)
+
+    # build and return selection results plus new columns
+    return events, SelectionResult(
+        steps={
+            "Boosted": boosted_sel,
+        },
+        objects={
+            "FatJet": {
+                "FatJet": fatjet_indices,
+            },
+        },
+    )
+
+
+@selector(
+    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.jetId"},
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
 )
@@ -83,7 +126,7 @@ def jet_selection(
 
     # jets
     jet_mask_loose = (events.Jet.pt > 5) & abs(events.Jet.eta < 2.4)
-    jet_mask = (events.Jet.pt > 30) & (abs(events.Jet.eta) < 2.4)
+    jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId >= 2)
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
     jet_sel = events.cutflow.n_jet >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
@@ -177,11 +220,13 @@ def lepton_selection(
 
 @selector(
     uses={
+        boosted_jet_selection,
         jet_selection, forward_jet_selection, lepton_selection, cutflow_features,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     produces={
+        boosted_jet_selection,
         jet_selection, forward_jet_selection, lepton_selection, cutflow_features,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
@@ -204,6 +249,10 @@ def default(
     events, jet_results = self[jet_selection](events, stats, **kwargs)
     results += jet_results
 
+    # boosted selection
+    events, boosted_results = self[boosted_jet_selection](events, stats, **kwargs)
+    results += boosted_results
+
     # forward-jet selection
     events, forward_jet_results = self[forward_jet_selection](events, stats, **kwargs)
     results += forward_jet_results
@@ -214,11 +263,13 @@ def default(
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
-        results.steps.Jet &
+        (results.steps.Jet | results.steps.Boosted) &
         results.steps.Lepton &
         results.steps.Trigger
     )
+
     # combined event selection after all steps
+    # TODO: Bjet should be replaced with (bjet only if resolved) or apply Bjet only by categorizing?
     results.main["event"] = (
         results.steps.all_but_bjet &
         results.steps.Bjet
@@ -231,7 +282,8 @@ def default(
     events = self[process_ids](events, **kwargs)
 
     # add cutflow features
-    events = self[cutflow_features](events, results=results, **kwargs)
+    if self.config_inst.x("do_cutflow_features", False):
+        events = self[cutflow_features](events, results=results, **kwargs)
 
     # produce event weights
     if self.dataset_inst.is_mc:

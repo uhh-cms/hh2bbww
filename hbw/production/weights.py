@@ -38,6 +38,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute btag SF weights
     events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
 
+    # TODO: switch to columnflow producers
+
     # compute scale weights (TODO testing)
     events = self[scale_weights](events, **kwargs)
 
@@ -81,7 +83,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
-    events = self[normweights](events, **kwargs)
-    events = self[normalized_btag_weights](events, **kwargs)
+    # events = self[normweights](events, **kwargs)
+    # events = self[normalized_btag_weights](events, **kwargs)
 
     return events

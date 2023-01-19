@@ -57,7 +57,7 @@ import cmsdb.campaigns.run2_2017_nano_v9
 campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
 
 # default config
-add_config(
+config_2017 = add_config(
     analysis_hbw,
     campaign_run2_2017_nano_v9.copy(),
     config_name="config_2017",
@@ -65,7 +65,7 @@ add_config(
 )
 
 # config with limited number of files
-add_config(
+config_2017_limited = add_config(
     analysis_hbw,
     campaign_run2_2017_nano_v9.copy(),
     config_name="config_2017_limited",

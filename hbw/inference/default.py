@@ -19,17 +19,17 @@ def default(self):
 
     self.add_category(
         "cat1",
-        category="1e",
-        variable="m_bb",
+        config_category="1e",
+        config_variable="jet1_pt",
         mc_stats=True,
-        data_datasets=["data_e_b"],
+        config_data_datasets=["data_e_b"],
     )
     self.add_category(
         "cat2",
-        category="1mu",
-        variable="m_bb",
+        config_category="1mu",
+        config_variable="jet1_pt",
         mc_stats=True,
-        data_datasets=["data_mu_b"],
+        config_data_datasets=["data_mu_b"],
     )
 
     #
@@ -81,9 +81,9 @@ def default(self):
 
         self.add_process(
             inference_procnames.get(proc, proc),
-            process=proc,
+            config_process=proc,
             signal=("HH_" in proc),
-            mc_datasets=datasets,
+            config_mc_datasets=datasets,
         )
 
     #
@@ -124,7 +124,7 @@ def default(self):
                 continue
             self.add_parameter(
                 f"QCDscale_{k}",
-                process=inference_procnames.get(proc, proc),
+                config_process=inference_procnames.get(proc, proc),
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
@@ -159,7 +159,7 @@ def default(self):
             # from IPython import embed; embed()
             self.add_parameter(
                 f"pdf_{k}",
-                process=inference_procnames.get(proc, proc),
+                config_process=inference_procnames.get(proc, proc),
                 type=ParameterType.rate_gauss,
                 effect=tuple(map(
                     lambda f: round(f, 3),
@@ -182,7 +182,7 @@ def default(self):
     self.add_parameter(
         f"CMS_pileup_{year}",
         type=ParameterType.shape,
-        shift_source="minbias_xs",
+        config_shift_source="minbias_xs",
     )
     self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
 
@@ -191,9 +191,9 @@ def default(self):
         for unc in ("scale", "pdf"):
             self.add_parameter(
                 f"{unc}_{proc}",
-                process=inference_procnames.get(proc, proc),
+                config_process=inference_procnames.get(proc, proc),
                 type=ParameterType.shape,
-                shift_source=f"{unc}",
+                config_shift_source=f"{unc}",
             )
             self.add_parameter_to_group(f"{unc}_{proc}", "theory")
 
@@ -204,14 +204,14 @@ def default(self):
         "CMS_pileup2",
         type=ParameterType.rate_uniform,
         transformations=[ParameterTransformation.effect_from_shape, ParameterTransformation.symmetrize],
-        shift_source="minbias_xs",
+        config_shift_source="minbias_xs",
     )
     self.add_parameter_to_group("CMS_pileup2", "experiment")
 
     # a custom asymmetric uncertainty that is converted from rate to shape
     self.add_parameter(
         "QCDscale_ST",
-        process="ST",
+        config_process="ST",
         type=ParameterType.shape,
         transformations=[ParameterTransformation.effect_from_rate],
         effect=(0.5, 1.1),
@@ -220,14 +220,14 @@ def default(self):
     # test
     self.add_parameter(
         "QCDscale_ttbar",
-        category="cat1",
-        process="TT",
+        config_category="cat1",
+        config_process="TT",
         type=ParameterType.rate_uniform,
     )
     self.add_parameter(
         "QCDscale_ttbar_norm",
-        category="cat1",
-        process="TT",
+        config_category="cat1",
+        config_process="TT",
         type=ParameterType.rate_unconstrained,
     )
     """

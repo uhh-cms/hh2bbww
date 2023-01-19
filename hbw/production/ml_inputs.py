@@ -7,7 +7,6 @@ Column production methods related to higher-level features.
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
-from columnflow.production.util import attach_coffea_behavior
 
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
@@ -21,7 +20,6 @@ np = maybe_import("numpy")
         prepare_objects.USES, prepare_objects.PRODUCES,
     },
     produces={
-        attach_coffea_behavior,
         # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
         "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
     },
@@ -29,6 +27,10 @@ np = maybe_import("numpy")
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
     events = self[prepare_objects](events, **kwargs)
+
+    # object padding
+    events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
+    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
 
     # jets in general
     events = set_ak_column(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
