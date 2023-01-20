@@ -8,8 +8,11 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
+from columnflow.production.categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
+from hbw.config.ml_variables import add_ml_variables
+from hbw.config.categories import add_categories_production
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -17,14 +20,24 @@ np = maybe_import("numpy")
 
 @producer(
     uses={
+        category_ids,
         prepare_objects.USES, prepare_objects.PRODUCES,
     },
     produces={
+        category_ids,
         # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
         "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
     },
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    # add event weights
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
+
+    # produce (new) category ids
+    events = self[category_ids](events, **kwargs)
+
     # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
     events = self[prepare_objects](events, **kwargs)
 
@@ -109,10 +122,6 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
 
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
-
     return events
 
 
@@ -128,6 +137,16 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     }
     self.produces |= self.ml_columns
+
+    if self.config_inst.x("call_add_categories_production", True):
+        # add categories but only on first call
+        add_categories_production(self.config_inst)
+        self.config_inst.x.call_add_categories_production = False
+
+    if self.config_inst.x("add_ml_variables", True):
+        # add variable instances to config
+        add_ml_variables(self.config_inst)
+        self.config_inst.x.add_ml_variables = False
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

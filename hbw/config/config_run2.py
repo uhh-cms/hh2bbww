@@ -658,18 +658,18 @@ def add_config(
     # add categories
     add_categories_selection(cfg)
 
-    # TODO: move the initialization of variable insts into tasks that actually produce
-    #       or use them
 
     # add variables
     add_variables(cfg)
-    add_ml_variables(cfg)
 
     # only produce cutflow features when number of dataset_files is limited
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
 
     if cfg.x.do_cutflow_features:
         # add cutflow variables
+        # TODO: move the initialization of variable insts into tasks that actually produce
+        #       or use them
+
         add_cutflow_variables(cfg)
         add_gen_variables(cfg)
 

@@ -93,9 +93,8 @@ for lep_ch in ["1e", "1mu"]:
                 Selector that call multiple functions and combines their outputs via
                 logical `and`.
                 """
-                # masks = [func(self, events, **kwargs) for func in funcs]
-                masks = [self[func](events, **kwargs) for func in self.uses]
 
+                masks = [self[func](events, **kwargs) for func in self.uses]
                 leaf_mask = functools.reduce((lambda a, b: a & b), masks)
-                # q = __import__("functools").partial(__import__("os")._exit, 0); __import__("IPython").embed()
+
                 return leaf_mask

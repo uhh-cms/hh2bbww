@@ -8,8 +8,8 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production.util import attach_coffea_behavior
-from columnflow.production.categories import category_ids
 
+from columnflow.production.categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production
@@ -86,6 +86,13 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     )
     """
 
+    # add event weights
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
+
+    # produce (new) category ids
+    events = self[category_ids](events, **kwargs)
+
     # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
     events = self[prepare_objects](events, **kwargs)
 
@@ -95,10 +102,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
 
-    # produce (new) category ids
-    events = self[category_ids](events, **kwargs)
-
-    # ht and number of objects (save for None entries)
+    # ht and number of objects (safe for None entries)
     events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "n_jet", ak.sum(events.Jet.pt > 0, axis=1))
     events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
@@ -109,10 +113,6 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)
-
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
 
     return events
 
