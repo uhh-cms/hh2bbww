@@ -42,7 +42,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     # ugly hack for st_schannel_had_amcatnlo sample (nominal entry missing in LHEScaleWeights)
     # TODO: there is still some issue with that sample...
-    if ak.all(ak.num(events.LHEScaleWeight, axis=1)):
+    if ak.all(ak.num(events.LHEScaleWeight, axis=1) == 8):
         print(
             f"In dataset {self.dataset_inst.name}: number of LHEScaleWeights is always " +
             "8 instead of the expected 9. It is assumed, that the missing entry is the " +
@@ -50,7 +50,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
         )
         scale_tmp = ak.to_regular(events.LHEScaleWeight)
         events = set_ak_column(events, "LHEScaleWeight", ak.concatenate(
-            [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]], scale_tmp[:, 4:])], axis=1,
+            [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]]), scale_tmp[:, 4:]], axis=1,
         ))
 
     # compute scale weights
