@@ -631,18 +631,15 @@ def add_config(
     get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
     cfg.x.event_weights = DotDict()
     cfg.x.event_weights["normalization_weight"] = []
-    cfg.x.event_weights["pu_weight"] = get_shifts("minbias_xs")
-    cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
-    cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
 
     # for dataset in cfg.datasets:
     #     if dataset.x("is_ttbar", False):
     #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
-    # NOTE: njet_btag_weight or btag_weight
+    # NOTE: which to use, njet_btag_weight or btag_weight?
     cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
-
-    cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+    # TODO: fix pu_weight; takes way too large values (from 0 to 160)
+    # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
     cfg.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
     cfg.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
     cfg.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
