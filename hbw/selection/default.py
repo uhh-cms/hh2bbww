@@ -165,7 +165,6 @@ def jet_selection(
 @selector(uses={
     "Electron.pt", "Electron.eta", "Electron.cutBased",
     "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
-    "HLT.Ele35_WPTight_Gsf", "HLT.IsoMu27",
 })
 def lepton_selection(
         self: Selector,
@@ -184,13 +183,12 @@ def lepton_selection(
 
     lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
 
-    # 2017 Trigger selection (TODO different triggers based on year of data-taking)
-    trigger_sel = (events.HLT.Ele35_WPTight_Gsf) | (events.HLT.IsoMu27)
+    trigger_sel = (events.HLT[self.mu_trigger]) | (events.HLT[self.ele_trigger])
 
     # Lepton definition for this analysis
-    e_mask = (events.Electron.pt > 28) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
+    e_mask = (events.Electron.pt > self.ele_pt) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
     mu_mask = (
-        (events.Muon.pt > 25) &
+        (events.Muon.pt > self.muon_pt) &
         (abs(events.Muon.eta) < 2.4) &
         (events.Muon.tightId) &
         (events.Muon.pfRelIso04_all < 0.15)
@@ -216,6 +214,29 @@ def lepton_selection(
             },
         },
     )
+
+
+@lepton_selection.init
+def lepton_selection_init(self: Selector) -> None:
+    year = self.config_inst.campaign.x.year
+
+    # Trigger choice based on year of data-taking (for now: only single trigger)
+    mu_trigger = {
+        "2016": "IsoMu24",  # or "IsoTkMu27")
+        "2017": "IsoMu27",
+        "2018": "IsoMu24",
+    }[year]
+    ele_trigger = {
+        "2016": "HLT_Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
+        "2017": "HLT_Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+        "2018": "HLT_Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+    }[year]
+
+    self.uses |= {f"HLT.{mu_trigger}", f"HLT.{ele_trigger}"}
+
+    # Lepton pt thresholds based on year (1 pt above trigger threshold)
+    self.ele_pt = {"2016": 28, "2017": 36, "2018": 33}[year]
+    self.mu_pt = {"2016": 25, "2017": 28, "2018": 25}[year]
 
 
 @selector(
