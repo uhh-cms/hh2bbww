@@ -47,13 +47,13 @@ def default(self):
     ]
 
     processes = [
-        "ggHH_kl_0_kt_1_sl_hbbhww",
+        # "ggHH_kl_0_kt_1_sl_hbbhww",
         "ggHH_kl_1_kt_1_sl_hbbhww",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww",
-        "ggHH_kl_5_kt_1_sl_hbbhww",
-        "tt",
+        # "ggHH_kl_2p45_kt_1_sl_hbbhww",
+        # "ggHH_ kl_5_kt_1_sl_hbbhww",
+        "tt_sl", # "tt",
         # "ttv", "ttvv",
-        "st_schannel", "st_tchannel", "st_twchannel",
+        # "st_schannel", "st_tchannel", "st_twchannel",
         # "dy_lep",
         # "w_lnu",
         # "vv",
@@ -156,7 +156,7 @@ def default(self):
             process_inst = self.config_inst.get_process(proc)
             if "pdf" not in process_inst.xsecs[ecm]:
                 continue
-            # from IPython import embed; embed()
+
             self.add_parameter(
                 f"pdf_{k}",
                 process=inference_procnames.get(proc, proc),
@@ -178,17 +178,19 @@ def default(self):
             transformations=[ParameterTransformation.symmetrize],
         )
 
-    # minbias xs
+    # minbias xs (TODO: add back when PU weight behaves correctly)
+    """
     self.add_parameter(
         f"CMS_pileup_{year}",
         type=ParameterType.shape,
         config_shift_source="minbias_xs",
     )
     self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
+    """
 
     # scale + pdf (shape)
     for proc in processes:
-        for unc in ("scale", "pdf"):
+        for unc in ("murf_envelope", "pdf"):
             self.add_parameter(
                 f"{unc}_{proc}",
                 process=inference_procnames.get(proc, proc),
