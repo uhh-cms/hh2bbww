@@ -83,7 +83,7 @@ def boosted_jet_selection(
     # HH -> bbWW(qqlnu) boosted selection
 
     # jets
-    ak4_jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId >= 2)
+    ak4_jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId == 6)
     ak4_jet_sel = ak.sum(ak4_jet_mask, axis=1) > 0
 
     # fatjet mask
@@ -163,7 +163,7 @@ def jet_selection(
 
 
 @selector(uses={
-    "Electron.pt", "Electron.eta", "Electron.cutBased",
+    "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
     "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
 })
 def lepton_selection(
@@ -186,7 +186,12 @@ def lepton_selection(
     trigger_sel = (events.HLT[self.mu_trigger]) | (events.HLT[self.ele_trigger])
 
     # Lepton definition for this analysis
-    e_mask = (events.Electron.pt > self.ele_pt) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
+    e_mask = (
+        (events.Electron.pt > self.ele_pt) &
+        (abs(events.Electron.eta) < 2.4) &
+        (events.Electron.cutBased == 4) &
+        (events.Electron.mvaFall17V2Iso_WP80 == 1)
+    )
     mu_mask = (
         (events.Muon.pt > self.mu_pt) &
         (abs(events.Muon.eta) < 2.4) &
