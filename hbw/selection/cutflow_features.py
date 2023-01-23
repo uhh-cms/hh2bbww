@@ -6,12 +6,16 @@ Selectors to set ak columns for cutflow features
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.selection import SelectionResult
+from columnflow.production import Producer, producer
+
 from hbw.production.prepare_objects import prepare_objects
+from hbw.config.cutflow_variables import add_cutflow_variables
+
 ak = maybe_import("awkward")
 
 
-@selector(
+@producer(
     # used and produced columns per object are defined in init function
     uses=(prepare_objects),
     produces={
@@ -19,7 +23,7 @@ ak = maybe_import("awkward")
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",
     },
 )
-def cutflow_features(self: Selector, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
+def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
 
     # apply event results to objects and define objects in a convenient way for reconstructing variables
     # but create temporary ak.Array to not override objects in events
@@ -45,7 +49,12 @@ def cutflow_features(self: Selector, events: ak.Array, results: SelectionResult,
 
 
 @cutflow_features.init
-def cutflow_features_init(self: Selector) -> None:
+def cutflow_features_init(self: Producer) -> None:
+    if self.config_inst.x("call_add_cutflow_variables", True):
+        # add cutflow variables but only on first call
+        add_cutflow_variables(self.config_inst)
+        self.config_inst.x.call_add_cutflow_variables = False
+
     # define used and produced columns
     self.lepton_columns = {
         "pt", "eta",

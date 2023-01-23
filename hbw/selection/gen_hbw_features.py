@@ -9,6 +9,8 @@ from columnflow.columnar_util import set_ak_column  # , Route, EMPTY_FLOAT
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 
+from hbw.config.gen_variables import add_gen_variables
+
 ak = maybe_import("awkward")
 
 
@@ -37,6 +39,14 @@ def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
             events = set_ak_column(events, f"cutflow.{gp}_{var}", events.gen_hbw_decay[gp][var])
 
     return events
+
+
+@gen_hbw_decay_features.init
+def gen_hbw_decay_features_init(self: Producer) -> None:
+    if self.config_inst.x("call_add_gen_variables", True):
+        # add gen variables but only on first call
+        add_gen_variables(self.config_inst)
+        self.config_inst.x.call_add_gen_variables = False
 
 
 @producer(
