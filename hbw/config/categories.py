@@ -51,6 +51,9 @@ def add_categories_production(config: od.Config) -> None:
     # define additional categories
     #
 
+    # TODO: we might need a more systematic approach as soon as the number of
+    #       categories grows by the DNN categorization
+
     # Electrons
 
     cat_1e_resolved = cat_1e.add_category(
@@ -59,19 +62,19 @@ def add_categories_production(config: od.Config) -> None:
         selection="catid_1e_resolved",
         label="1 Electron, resolved",
     )
-    cat_1e_resolved.add_category(
+    cat_1e_resolved_1b = cat_1e_resolved.add_category(
         name="1e_resolved_1b",
         id=1110,
         selection="catid_1e_resolved_1b",
         label="1 Electron, resolved, 1b",
     )
-    cat_1e_resolved.add_category(
+    cat_1e_resolved_2b = cat_1e_resolved.add_category(
         name="1e_resolved_2b",
         id=1120,
         selection="catid_1e_resolved_2b",
         label="1 Electron, resolved, 2b",
     )
-    cat_1e.add_category(
+    cat_1e_boosted = cat_1e.add_category(
         name="1e_boosted",
         id=1500,
         selection="catid_1e_boosted",
@@ -86,21 +89,55 @@ def add_categories_production(config: od.Config) -> None:
         selection="catid_1mu_resolved",
         label="1 Muon, resolved",
     )
-    cat_1mu_resolved.add_category(
+    cat_1mu_resolved_1b = cat_1mu_resolved.add_category(
         name="1mu_resolved_1b",
         id=2110,
         selection="catid_1mu_resolved_1b",
         label="1 Muon, resolved, 1b",
     )
-    cat_1mu_resolved.add_category(
+    cat_1mu_resolved_2b = cat_1mu_resolved.add_category(
         name="1mu_resolved_2b",
         id=2120,
         selection="catid_1mu_resolved_2b",
         label="1 Muon, resolved, 2b",
     )
-    cat_1mu.add_category(
+    cat_1mu_boosted = cat_1mu.add_category(
         name="1mu_boosted",
         id=2500,
         selection="catid_1mu_boosted",
         label="1 Muon, boosted",
     )
+
+    # resolved and boosted as parent category
+    cat_resolved = config.add_category(
+        name="resolved",
+        id=3100,
+        selection="catid_resolved",
+        label="resolved",
+    )
+    cat_resolved_1b = cat_resolved.add_category(
+        name="resolved_1b",
+        id=2110,
+        selection="catid_resolved_1b",
+        label="resolved, 1b",
+    )
+    cat_resolved_2b = cat_resolved.add_category(
+        name="resolved_2b",
+        id=2120,
+        selection="catid_resolved_2b",
+        label="resolved, 2b",
+    )
+    cat_boosted = config.add_category(
+        name="boosted",
+        id=3500,
+        selection="catid_boosted",
+        label="boosted",
+    )
+
+    # add leaf categories to reduce number of leaf categories
+    cat_resolved_1b.add_category(cat_1mu_resolved_1b)
+    cat_resolved_1b.add_category(cat_1e_resolved_1b)
+    cat_resolved_2b.add_category(cat_1mu_resolved_2b)
+    cat_resolved_2b.add_category(cat_1e_resolved_2b)
+    cat_boosted.add_category(cat_1mu_boosted)
+    cat_boosted.add_category(cat_1e_boosted)
