@@ -9,7 +9,7 @@ from columnflow.columnar_util import set_ak_column  # , Route, EMPTY_FLOAT
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 
-from hbw.config.gen_variables import add_gen_variables
+from hbw.config.cutflow_variables import add_gen_variables
 
 ak = maybe_import("awkward")
 

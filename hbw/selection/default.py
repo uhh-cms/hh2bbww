@@ -188,7 +188,7 @@ def lepton_selection(
     # Lepton definition for this analysis
     e_mask = (events.Electron.pt > self.ele_pt) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased == 4)
     mu_mask = (
-        (events.Muon.pt > self.muon_pt) &
+        (events.Muon.pt > self.mu_pt) &
         (abs(events.Muon.eta) < 2.4) &
         (events.Muon.tightId) &
         (events.Muon.pfRelIso04_all < 0.15)
@@ -221,22 +221,22 @@ def lepton_selection_init(self: Selector) -> None:
     year = self.config_inst.campaign.x.year
 
     # Trigger choice based on year of data-taking (for now: only single trigger)
-    mu_trigger = {
-        "2016": "IsoMu24",  # or "IsoTkMu27")
-        "2017": "IsoMu27",
-        "2018": "IsoMu24",
+    self.mu_trigger = {
+        2016: "IsoMu24",  # or "IsoTkMu27")
+        2017: "IsoMu27",
+        2018: "IsoMu24",
     }[year]
-    ele_trigger = {
-        "2016": "HLT_Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
-        "2017": "HLT_Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-        "2018": "HLT_Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+    self.ele_trigger = {
+        2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
+        2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+        2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
     }[year]
 
-    self.uses |= {f"HLT.{mu_trigger}", f"HLT.{ele_trigger}"}
+    self.uses |= {f"HLT.{self.mu_trigger}", f"HLT.{self.ele_trigger}"}
 
     # Lepton pt thresholds based on year (1 pt above trigger threshold)
-    self.ele_pt = {"2016": 28, "2017": 36, "2018": 33}[year]
-    self.mu_pt = {"2016": 25, "2017": 28, "2018": 25}[year]
+    self.ele_pt = {2016: 28, 2017: 36, 2018: 33}[year]
+    self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
 
 
 @selector(
