@@ -6,6 +6,10 @@ Definition of variables.
 
 import order as od
 
+from columnflow.util import maybe_import
+
+np = maybe_import("numpy")
+
 from columnflow.columnar_util import EMPTY_FLOAT
 
 
@@ -18,6 +22,20 @@ def add_variables(config: od.Config) -> None:
         expression="mc_weight",
         binning=(200, -10, 10),
         x_title="MC weight",
+    )
+
+    config.add_variable(
+        name="pu_weight",
+        expression="pu_weight",
+        binning=(40, 0, 2),
+        x_title="PU weight",
+    )
+    config.add_variable(
+        name="pu_weight_log",
+        expression="pu_weight",
+        binning=list(np.logspace(-2, 2, 50)),
+        log_x=True,
+        x_title="PU weight",
     )
 
     # Event properties

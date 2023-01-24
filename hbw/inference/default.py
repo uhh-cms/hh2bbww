@@ -10,7 +10,7 @@ from columnflow.inference import inference_model, ParameterType, ParameterTransf
 @inference_model
 def default(self):
 
-    year = self.config_inst.campaign.x.year
+    year = self.config_inst.campaign.x.year  # noqa; not used right now
     ecm = self.config_inst.campaign.ecm
 
     #
@@ -47,11 +47,11 @@ def default(self):
     ]
 
     processes = [
-        # "ggHH_kl_0_kt_1_sl_hbbhww",
+        "ggHH_kl_0_kt_1_sl_hbbhww",
         "ggHH_kl_1_kt_1_sl_hbbhww",
-        # "ggHH_kl_2p45_kt_1_sl_hbbhww",
-        # "ggHH_ kl_5_kt_1_sl_hbbhww",
-        "tt_sl", # "tt",
+        "ggHH_kl_2p45_kt_1_sl_hbbhww",
+        "ggHH_kl_5_kt_1_sl_hbbhww",
+        "tt_sl",  # "tt",
         # "ttv", "ttvv",
         # "st_schannel", "st_tchannel", "st_twchannel",
         # "dy_lep",
