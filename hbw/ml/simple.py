@@ -1,10 +1,12 @@
 # coding: utf-8
 
 """
-First implementation of DNN for HH analysis
+First implementation of DNN for HH analysis, generalized (TODO)
 """
 
-from typing import List, Any, Set, Union, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import law
 import order as od
@@ -12,6 +14,8 @@ import order as od
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
+from columnflow.tasks.selection import MergeSelectionStatsWrapper
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -22,25 +26,30 @@ keras = maybe_import("tensorflow.keras")
 
 class SimpleDNN(MLModel):
 
-    def __init__(self, *args, folds: Optional[int] = None, **kwargs):
+    def __init__(
+            self,
+            *args,
+            folds: int | None = None,
+            # layers: list[int] | None = None,
+            # learningrate: float | None = None,
+            # batchsize: int | None = None,
+            # epochs: int | None = None,
+            # eqweight: bool | None = None,
+            # dropout: bool | None = None,
+            # processes: list[str] | None = None,  # TODO: processes might be needed to declare output variables
+            # custom_procweights: dict[str, float] | None = None,
+            # dataset_names: set[str] | None = None,  # TODO: might not work for input preparation
+            # input_features: tuple[str] | None = None,  # TODO: might not work for input preparation
+            **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         # class- to instance-level attributes
         # (before being set, self.folds refers to a class-level attribute)
         self.folds = folds or self.folds
 
-        # define output classes (processes)
-        self.processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"]
-
-        # the custom process weight should be chosen such that individual eventweights are close to 1
-        # but can also be used to optimize relative weights between processes
-        self.custom_procweights = {
-            "ggHH_kl_1_kt_1_sl_hbbhww": 1 / 1000,
-            "tt": 1 / 1000,
-            "st": 1 / 1000,
-        }
-
         # DNN model parameters
+        """
         self.layers = [512, 512, 512]
         self.learningrate = 0.00050
         self.batchsize = 2048
@@ -49,7 +58,7 @@ class SimpleDNN(MLModel):
 
         # Dropout: either False (disable) or a value between 0 and 1 (dropout_rate)
         self.dropout = False
-
+        """
         # dynamically add variables for the quantities produced by this model
         for proc in self.processes:
             if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
@@ -60,21 +69,26 @@ class SimpleDNN(MLModel):
                     x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
                 )
 
+    def requires(self, task: law.Task) -> str:
+        # add selection stats to requires; NOTE: not really used at the moment
+        return MergeSelectionStatsWrapper.req(
+            task,
+            shifts="nominal",
+            configs=self.config_inst.name,
+            datasets=self.dataset_names,
+        )
+
     def sandbox(self, task: law.Task) -> str:
         return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_tf.sh")
 
-    def datasets(self) -> Set[od.Dataset]:
-        return {
-            self.config_inst.get_dataset("ggHH_kl_1_kt_1_sl_hbbhww_powheg"),
-            self.config_inst.get_dataset("st_tchannel_t_powheg"),
-            self.config_inst.get_dataset("tt_sl_powheg"),
-        }
+    def datasets(self) -> set[od.Dataset]:
+        return {self.config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
-    def uses(self) -> Set[Union[Route, str]]:
-        return {"ht", "m_bb", "deltaR_bb", "normalization_weight"}
+    def uses(self) -> set[Route | str]:
+        return {"normalization_weight"} | set(self.input_features)
 
-    def produces(self) -> Set[Union[Route, str]]:
-        produced = set({})
+    def produces(self) -> set[Route | str]:
+        produced = set()
         for proc in self.processes:
             produced.add(f"{self.cls_name}.score_{proc}")
         return produced
@@ -100,7 +114,7 @@ class SimpleDNN(MLModel):
         # input preparation
         #
 
-        N_inputs = len(self.used_columns) - 1  # don't count the weight columns
+        N_inputs = len(self.input_features)
         N_outputs = len(self.processes)
 
         process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
@@ -109,19 +123,23 @@ class SimpleDNN(MLModel):
         dataset_proc_idx = {}  # bookkeeping which process each dataset belongs to
 
         # determine process of each dataset and count number of events & sum of eventweights for this process
-        for dataset, infiletargets in input.items():
+        for dataset, infiletargets in input["events"].items():
             dataset_inst = self.config_inst.get_dataset(dataset)
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
 
             N_events = [len(ak.from_parquet(inp.fn)) for inp in infiletargets]
+            # NOTE: this only works as long as each dataset only contains one process
             sum_eventweights = [ak.sum(ak.from_parquet(inp.fn).normalization_weight) for inp in infiletargets]
 
+            # alternatively: use stats (only the mc weight)
+            # stats = input["model"][(self.config_inst.name, "nominal", dataset_inst.name)].load(formatter="json")
+            # print(sum_eventweights, stats["sum_mc_weight_selected"])
+
             for i, proc in enumerate(process_insts):
-                # NOTE: here are some assumptions made, should check if they hold true for each relevant process
-                leaf_procs = [proc] if proc.is_leaf_process else proc.get_leaf_processes()
+                leaf_procs = [p for p, _, _ in self.config_inst.get_process(proc).walk_processes(include_self=True)]
                 if dataset_inst.processes.get_first() in leaf_procs:
-                    print(f"the dataset {dataset} counts as process {proc.name}")
+                    print(f"the dataset *{dataset}* used for training the *{proc.name}* output node")
                     dataset_proc_idx[dataset] = i
                     for j, N_evt in enumerate(N_events):
                         N_events_proc[i][j] += N_evt
@@ -133,13 +151,13 @@ class SimpleDNN(MLModel):
                 raise Exception(f"dataset {dataset} is not matched to any of the given processes")
 
         # set inputs, weights and targets for each datset and fold
-        NN_inputs = {
+        DNN_inputs = {
             "weights": [],
             "inputs": [],
             "target": [],
         }
 
-        for dataset, infiletargets in input.items():
+        for dataset, infiletargets in input["events"].items():
             this_proc_idx = dataset_proc_idx[dataset]
             print(f"dataset: {dataset}, \n  #Events: {sum(N_events_proc[this_proc_idx])}, "
                   f"\n  Sum Normweights: {sum(sum_eventweights_proc[this_proc_idx])}")
@@ -159,32 +177,28 @@ class SimpleDNN(MLModel):
                 sum_nnweights += sum(weights)
 
                 # print("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
-                events = remove_ak_column(events, "normalization_weight")
-
-                # bookkeep input feature names (order corresponds to order in the NN input)
-                # features = events.fields
-                # print("features:", features)
 
                 # transform events into numpy array and transpose
-                events = np.transpose(ak.to_numpy(ak.Array(ak.unzip(events))))
-
+                inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in self.input_features])))
                 # create the truth values for the output layer
                 target = np.zeros((len(events), len(self.processes)))
                 target[:, this_proc_idx] = 1
 
                 # add relevant collections to the NN inputs
-                if len(NN_inputs["weights"]) <= i:
-                    NN_inputs["weights"].append(weights)
-                    NN_inputs["inputs"].append(events)
-                    NN_inputs["target"].append(target)
+                if len(DNN_inputs["weights"]) <= i:
+                    DNN_inputs["weights"].append(weights)
+                    DNN_inputs["inputs"].append(inputs)
+                    DNN_inputs["target"].append(target)
                 else:
-                    NN_inputs["weights"][i] = np.concatenate([NN_inputs["weights"][i], weights])
-                    NN_inputs["inputs"][i] = np.concatenate([NN_inputs["inputs"][i], events])
-                    NN_inputs["target"][i] = np.concatenate([NN_inputs["target"][i], target])
+                    DNN_inputs["weights"][i] = np.concatenate([DNN_inputs["weights"][i], weights])
+                    DNN_inputs["inputs"][i] = np.concatenate([DNN_inputs["inputs"][i], inputs])
+                    DNN_inputs["target"][i] = np.concatenate([DNN_inputs["target"][i], target])
 
             print(f"  Sum NN weights: {sum_nnweights}")
+
         train, validation = {}, {}  # combine all except one input as train input, use last one for validation
-        for k, vals in NN_inputs.items():
+        # TODO: make this random
+        for k, vals in DNN_inputs.items():
             # validation set always corresponds to (eval_fold+1) in that way
             validation[k] = vals.pop((task.fold) % (self.folds - 1))
             # print("Number of training folds:", len(vals))
@@ -197,6 +211,7 @@ class SimpleDNN(MLModel):
         from keras.layers import Dense, BatchNormalization, Dropout
 
         # define the DNN model
+        # TODO: do this Funcional instead of Sequential
         model = Sequential()
 
         # BatchNormalization layer with input shape
@@ -238,7 +253,7 @@ class SimpleDNN(MLModel):
             shuffle=True, verbose=1,
             batch_size=self.batchsize,
         )
-        # save the model and history
+        # save the model and history; TODO: use formatter
         output.parent.touch()
         model.save(output.path)
         with open(f"{output.path}/model_history.pkl", "wb") as f:
@@ -248,7 +263,7 @@ class SimpleDNN(MLModel):
         self,
         task: law.Task,
         events: ak.Array,
-        models: List[Any],
+        models: list(Any),
         fold_indices: ak.Array,
         events_used_in_training: bool = True,
     ) -> None:
@@ -256,9 +271,7 @@ class SimpleDNN(MLModel):
         models, history = zip(*models)
         # TODO: use history for loss+acc plotting
 
-        features = self.used_columns
-        features.discard("normalization_weight")
-        inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in features])))
+        inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in self.input_features])))
 
         # do prediction for all models and all events
         predictions = []
@@ -292,7 +305,3 @@ class SimpleDNN(MLModel):
             )
 
         return events
-
-
-# usable derivations
-simple_dnn = SimpleDNN.derive("simple", cls_dict={"folds": 5})
