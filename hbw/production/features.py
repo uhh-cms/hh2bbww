@@ -64,12 +64,12 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
         "Bjet.btagDeepFlavB",
-        "FatJet.pt",
+        "FatJet.pt", "FatJet.tau1", "FatJet.tau2",
     },
     produces={
         attach_coffea_behavior, category_ids,
         bb_features, jj_features,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet",
+        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21"
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -111,8 +111,14 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > wp_med, axis=1))
     events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
 
+    # Subjettiness
+
+    events = set_ak_column(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
+
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)
+
+    events = set_ak_column(events, "FatJet", events.FatJet[~ak.is_none(events.FatJet, axis=1)])
 
     return events
 
