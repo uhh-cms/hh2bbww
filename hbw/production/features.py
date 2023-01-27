@@ -13,6 +13,7 @@ from columnflow.production.categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production
+from hbw.config.variables import add_feature_variables
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -69,7 +70,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     produces={
         attach_coffea_behavior, category_ids,
         bb_features, jj_features,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21"
+        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -130,6 +131,11 @@ def features_init(self: Producer) -> None:
         # add categories but only on first call
         add_categories_production(self.config_inst)
         self.config_inst.x.call_add_categories_production = False
+
+    if self.config_inst.x("call_add_feature_variables", True):
+        # add variable instances but only on first call
+        add_feature_variables(self.config_inst)
+        self.config_inst.x.call_add_feature_variables = False
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

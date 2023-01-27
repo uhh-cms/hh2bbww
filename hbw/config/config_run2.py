@@ -611,7 +611,8 @@ def add_config(
         ) | set(  # FatJet
             f"FatJet.{field}"
             for field in [
-                "pt", "eta", "phi", "mass", "msoftdrop", "particleNet_HbbvsQCD",
+                "pt", "eta", "phi", "mass", "msoftdrop", "tau1", "tau2", "tau3",
+                "btagHbb", "deepTagMD_HbbvsQCD", "particleNet_HbbvsQCD",
             ]
         ) | set(  # Leptons
             f"{lep}.{field}"
@@ -628,6 +629,7 @@ def add_config(
     # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
     get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
     cfg.x.event_weights = DotDict()
+
     cfg.x.event_weights["normalization_weight"] = []
 
     # for dataset in cfg.datasets:

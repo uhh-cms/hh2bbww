@@ -12,7 +12,10 @@ from columnflow.columnar_util import EMPTY_FLOAT
 # cutflow variables
 def add_cutflow_variables(config: od.Config) -> None:
     """
-    defines reco-level cutflow variables
+    defines reco-level cutflow variables in a convenient way; variables are lowercase and have
+    names in the format:
+    cf_{obj}{i}_{var}, where `obj` is the name of the given object, `i` is the index of the
+    object (starting at 1) and `var` is the variable of interest; example: cf_loosejet1_pt
     """
     # default xtitle formatting per variable
     var_title_format = {
@@ -52,7 +55,7 @@ def add_cutflow_variables(config: od.Config) -> None:
         Helper to quickly generate generic variable instances
         """
         config.add_variable(
-            name=name.format(obj=obj, i=i + 1, var=var),
+            name=name.format(obj=obj, i=i + 1, var=var).lower(),
             expression=expr.format(obj=obj, i=i, var=var),
             null_value=EMPTY_FLOAT,
             binning=var_binning[var],
