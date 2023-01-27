@@ -121,7 +121,7 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="npvs",
         expression="PV.npvs",
-        binning=(51, -.5 , 50.5),
+        binning=(51, -.5, 50.5),
         x_title="Number of primary vertices",
         discrete_x=True,
     )

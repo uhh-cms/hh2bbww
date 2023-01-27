@@ -194,7 +194,9 @@ def add_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_s_min",
         expression="mli_s_min",
-        binning=(50, 0, 10000),
-        # xscale="log",
+        binning=(50, 1, 10000),
+        log_x=True,
         x_title=r"$S_{min}$",
     )
+
+    # Lepton (TODO)

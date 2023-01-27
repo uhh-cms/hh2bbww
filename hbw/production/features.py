@@ -113,13 +113,14 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
 
     # Subjettiness
-
     events = set_ak_column(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
 
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)
 
-    events = set_ak_column(events, "FatJet", events.FatJet[~ak.is_none(events.FatJet, axis=1)])
+    # undo object padding (remove None entries)
+    for obj in ["Jet", "Lightjet", "Bjet", "FatJet"]:
+        events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
 
     return events
 
