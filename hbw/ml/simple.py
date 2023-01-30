@@ -79,7 +79,7 @@ class SimpleDNN(MLModel):
         )
 
     def sandbox(self, task: law.Task) -> str:
-        return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_tf.sh")
+        return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
 
     def datasets(self) -> set[od.Dataset]:
         return {self.config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}

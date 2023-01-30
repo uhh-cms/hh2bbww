@@ -62,12 +62,12 @@ input_features = (
     "deltaR_bb",
 )
 
-cls_dict = {
+default_cls_dict = {
     "folds": 5,
     "layers": [512, 512, 512],
     "learningrate": 0.00050,
     "batchsize": 2048,  # 131xxx
-    "epochs": 6,  # 200
+    "epochs": 200,
     "eqweight": True,
     "dropout": False,  # 0.50
     "processes": processes,
@@ -77,4 +77,10 @@ cls_dict = {
 }
 
 # derived model, usable on command line
-default_dnn = SimpleDNN.derive("default", cls_dict=cls_dict)
+default_dnn = SimpleDNN.derive("default", cls_dict=default_cls_dict)
+
+
+cls_dict = default_cls_dict
+cls_dict["epochs"] = 6
+
+test_dnn = SimpleDNN.derive("test", cls_dict=cls_dict)
