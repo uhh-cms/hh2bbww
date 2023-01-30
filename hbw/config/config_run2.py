@@ -606,7 +606,8 @@ def add_config(
             "btag_weight*",
         } | set(  # Jets
             f"{jet_obj}.{field}"
-            for jet_obj in ["Jet", "Bjet", "Lightjet"]  # NOTE: if we run into storage troubles, skip Bjet and Lightjet
+            for jet_obj in ["Jet", "Bjet", "Lightjet", "VBFJet"]
+            # NOTE: if we run into storage troubles, skip Bjet and Lightjet
             for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB", "hadronFlavour"]
         ) | set(  # FatJet
             f"FatJet.{field}"
