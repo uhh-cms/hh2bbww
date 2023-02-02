@@ -74,6 +74,7 @@ default_cls_dict = {
     "custom_procweights": custom_procweights,
     "dataset_names": dataset_names,
     "input_features": input_features,
+    "store_name": "inputs1",
 }
 
 # derived model, usable on command line

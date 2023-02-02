@@ -4,7 +4,7 @@
 Custom jet energy calibration methods that disable data uncertainties (for searches).
 """
 
-from columnflow.calibration.jets import jec
+from columnflow.calibration.cms.jets import jec
 
 
 # custom jec calibrator that only runs nominal correction

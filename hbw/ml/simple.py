@@ -13,7 +13,7 @@ import order as od
 
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
+from columnflow.columnar_util import Route, set_ak_column
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 
@@ -233,7 +233,8 @@ class SimpleDNN(MLModel):
 
         # compile the network
         # optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
-        optimizer = keras.optimizers.Adam(
+        # NOTE: decay is deprecated, therefore use legacy.Adam for now
+        optimizer = keras.optimizers.legacy.Adam(
             lr=self.learningrate, beta_1=0.9, beta_2=0.999,
             epsilon=1e-6, decay=0.0, amsgrad=False,
         )
