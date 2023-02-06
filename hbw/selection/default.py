@@ -126,11 +126,13 @@ def boosted_jet_selection(
         (events.FatJet.msoftdrop < 210) &
         (events.FatJet.subJetIdx1 >= 0) &
         (events.FatJet.subJetIdx2 >= 0) &
+        (events.FatJet.subJetIdx1 < ak.num(events.Jet)) &
+        (events.FatJet.subJetIdx2 < ak.num(events.Jet)) &
         (events.FatJet.tau2 / events.FatJet.tau1 < 0.75)
     )
+
     # create temporary object with fatjet mask applied and get the subjets
     fatjets = events.FatJet[fatjet_mask]
-
     subjet1 = events.Jet[fatjets.subJetIdx1]
     subjet2 = events.Jet[fatjets.subJetIdx2]
 
@@ -151,6 +153,8 @@ def boosted_jet_selection(
     # number of fatjets fulfilling all criteria
     events = set_ak_column(events, "cutflow.n_fatjet", ak.sum(fatjet_mask, axis=1))
     fatjet_sel = events.cutflow.n_fatjet >= 1
+
+    # TODO: we should not consider the subjets of the boosted Hbb jet as one of the AK4 jets
 
     # require at least one ak4 jet not included in the subjets of one of the fatjets
     ak4_jets = events.Jet[results.objects.Jet.Jet]
@@ -382,14 +386,14 @@ def default(
     # add cutflow features
     if self.config_inst.x("do_cutflow_features", False):
         events = self[cutflow_features](events, results=results, **kwargs)
-    """
+
     # produce event weights
     if self.dataset_inst.is_mc:
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
     self[increment_stats](events, results, stats, **kwargs)
-    """
+
     return events, results
 
 
