@@ -8,13 +8,13 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
-from columnflow.production.pileup import pu_weight
+from columnflow.production.cms.pileup import pu_weight
 from columnflow.production.normalization import normalization_weights
-from columnflow.production.electron import electron_weights
-from columnflow.production.muon import muon_weights
-from columnflow.production.btag import btag_weights
-from columnflow.production.scale import murmuf_weights, murmuf_envelope_weights
-from columnflow.production.pdf import pdf_weights
+from columnflow.production.cms.electron import electron_weights
+from columnflow.production.cms.muon import muon_weights
+from columnflow.production.cms.btag import btag_weights
+from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
+from columnflow.production.cms.pdf import pdf_weights
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 
@@ -67,7 +67,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 normweights = normalized_weight_factory(
     producer_name="normweights",
-    weight_producers={event_weights_to_normalize},
+    weight_producers={murmuf_envelope_weights, pdf_weights},
 )
 
 
@@ -77,7 +77,7 @@ normweights = normalized_weight_factory(
         normweights, normalized_btag_weights,
     },
     produces={
-        normalization_weights, electron_weights, muon_weights, btag_weights,
+        normalization_weights, electron_weights, muon_weights,
         normweights, normalized_btag_weights,
     },
 )

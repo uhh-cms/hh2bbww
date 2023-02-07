@@ -13,6 +13,7 @@ from columnflow.production.categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production
+from hbw.config.variables import add_feature_variables
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -69,7 +70,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     produces={
         attach_coffea_behavior, category_ids,
         bb_features, jj_features,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21"
+        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -112,13 +113,14 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
 
     # Subjettiness
-
     events = set_ak_column(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
 
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)
 
-    events = set_ak_column(events, "FatJet", events.FatJet[~ak.is_none(events.FatJet, axis=1)])
+    # undo object padding (remove None entries)
+    for obj in ["Jet", "Lightjet", "Bjet", "FatJet"]:
+        events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
 
     return events
 
@@ -130,6 +132,11 @@ def features_init(self: Producer) -> None:
         # add categories but only on first call
         add_categories_production(self.config_inst)
         self.config_inst.x.call_add_categories_production = False
+
+    if self.config_inst.x("call_add_feature_variables", True):
+        # add variable instances but only on first call
+        add_feature_variables(self.config_inst)
+        self.config_inst.x.call_add_feature_variables = False
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

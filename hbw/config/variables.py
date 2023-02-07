@@ -13,56 +13,41 @@ np = maybe_import("numpy")
 from columnflow.columnar_util import EMPTY_FLOAT
 
 
-def add_variables(config: od.Config) -> None:
+def add_feature_variables(config: od.Config) -> None:
     """
-    Adds all variables to a *config*.
+    Adds variables to a *config* that are produced as part of the `features` producer.
     """
-    config.add_variable(
-        name="mc_weight",
-        expression="mc_weight",
-        binning=(200, -10, 10),
-        x_title="MC weight",
-    )
-
-    config.add_variable(
-        name="pu_weight",
-        expression="pu_weight",
-        binning=(40, 0, 2),
-        x_title="PU weight",
-    )
-    config.add_variable(
-        name="pu_weight_log",
-        expression="pu_weight",
-        binning=list(np.logspace(-2, 2, 50)),
-        log_x=True,
-        x_title="PU weight",
-    )
 
     # Event properties
     config.add_variable(
         name="n_jet",
         binning=(12, -0.5, 11.5),
         x_title="Number of jets",
+        discrete_x=True,
     )
     config.add_variable(
         name="n_deepjet",
         binning=(11, -0.5, 10.5),
         x_title="Number of deepjets",
+        discrete_x=True,
     )
     config.add_variable(
         name="n_fatjet",
         binning=(7, -0.5, 6.5),
         x_title="Number of fatjets",
+        discrete_x=True,
     )
     config.add_variable(
         name="n_electron",
         binning=(3, -0.5, 2.5),
         x_title="Number of electrons",
+        discrete_x=True,
     )
     config.add_variable(
         name="n_muon",
         binning=(3, -0.5, 2.5),
         x_title="Number of muons",
+        discrete_x=True,
     )
     config.add_variable(
         name="ht",
@@ -77,7 +62,73 @@ def add_variables(config: od.Config) -> None:
         x_title="HT",
     )
 
+    # bb features
+    config.add_variable(
+        name="m_bb",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$m_{bb}$",
+    )
+    config.add_variable(
+        name="deltaR_bb",
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(b,b)$",
+    )
+    # jj features
+    config.add_variable(
+        name="m_jj",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$m_{jj}$",
+    )
+    config.add_variable(
+        name="deltaR_jj",
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(j_{1},j_{2})$",
+    )
+
+
+def add_variables(config: od.Config) -> None:
+    """
+    Adds all variables to a *config* that are present after `ReduceEvents`
+    without calling any producer
+    """
+    #
+    # Weights
+    #
+    config.add_variable(
+        name="mc_weight",
+        expression="mc_weight",
+        binning=(200, -10, 10),
+        x_title="MC weight",
+    )
+    for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
+        # NOTE: would be nice to not use the event weight for these variables
+        config.add_variable(
+            name=f"{weight}_weight",
+            expression=f"{weight}_weight",
+            binning=(40, -2, 2),
+            x_title=f"{weight} weight",
+        )
+    config.add_variable(
+        name="pu_weight_log",
+        expression=f"{weight}_weight",
+        binning=list(np.logspace(-2, 2, 50)),
+        log_x=True,
+        x_title="PU weight",
+    )
+
+    config.add_variable(
+        name="npvs",
+        expression="PV.npvs",
+        binning=(51, -.5, 50.5),
+        x_title="Number of primary vertices",
+        discrete_x=True,
+    )
+
+    #
     # Object properties
+    #
 
     # Jets (4 pt-leading jets)
     for i in range(4):
@@ -126,8 +177,41 @@ def add_variables(config: od.Config) -> None:
             x_title=r"Jet%i DeepFlavour b+bb+lepb tag" % (i + 1),
         )
 
-    # FatJets (4 pt-leading jets)
-    for i in range(4):
+    # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
+    for i in range(2):
+        for obj in ["Bjet", "Lightjet"]:
+            config.add_variable(
+                name=f"{obj}{i+1}_pt".lower(),
+                expression=f"{obj}.pt[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0., 300.),
+                unit="GeV",
+                x_title=obj + r"%i $p_{T}$" % (i + 1),
+            )
+            config.add_variable(
+                name=f"{obj}{i+1}_eta".lower(),
+                expression=f"{obj}.eta[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(50, -2.5, 2.5),
+                x_title=obj + r"%i $\eta$" % (i + 1),
+            )
+            config.add_variable(
+                name=f"{obj}{i+1}_phi".lower(),
+                expression=f"{obj}.phi[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, -3.2, 3.2),
+                x_title=obj + r"%i $\phi$" % (i + 1),
+            )
+            config.add_variable(
+                name=f"{obj}{i+1}_mass".lower(),
+                expression=f"{obj}.mass[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 200),
+                x_title=obj + r"%i mass" % (i + 1),
+            )
+
+    # FatJets (2 pt-leading fatjets)
+    for i in range(2):
         config.add_variable(
             name=f"fatjet{i+1}_pt",
             expression=f"FatJet.pt[:,{i}]",
@@ -195,38 +279,6 @@ def add_variables(config: od.Config) -> None:
             x_title=r"FatJet%i DeepCSV b+bb tag" % (i + 1),
         )
 
-    # Bjets (2 b-score leading jets)
-    for i in range(2):
-        config.add_variable(
-            name=f"bjet{i+1}_pt",
-            expression=f"Bjet.pt[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0., 300.),
-            unit="GeV",
-            x_title=r"Bjet %i $p_{T}$" % (i + 1),
-        )
-        config.add_variable(
-            name=f"bjet{i+1}_eta",
-            expression=f"Bjet.eta[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(50, -2.5, 2.5),
-            x_title=r"Bjet %i $\eta$" % (i + 1),
-        )
-        config.add_variable(
-            name=f"bjet{i+1}_phi",
-            expression=f"Jet.phi[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, -3.2, 3.2),
-            x_title=r"Bjet %i $\phi$" % (i + 1),
-        )
-        config.add_variable(
-            name=f"bjet{i+1}_mass",
-            expression=f"Bjet.mass[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 200),
-            x_title=r"Bjet %i mass" % (i + 1),
-        )
-
     # Leptons
     for obj in ["Electron", "Muon"]:
         config.add_variable(
@@ -274,29 +326,4 @@ def add_variables(config: od.Config) -> None:
         null_value=EMPTY_FLOAT,
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",
-    )
-
-    # bb features
-    config.add_variable(
-        name="m_bb",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$m_{bb}$",
-    )
-    config.add_variable(
-        name="deltaR_bb",
-        binning=(40, 0, 5),
-        x_title=r"$\Delta R(b,b)$",
-    )
-    # jj features
-    config.add_variable(
-        name="m_jj",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$m_{jj}$",
-    )
-    config.add_variable(
-        name="deltaR_jj",
-        binning=(40, 0, 5),
-        x_title=r"$\Delta R(j_{1},j_{2})$",
     )

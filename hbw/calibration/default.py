@@ -5,10 +5,10 @@ Calibration methods.
 """
 
 from columnflow.calibration import Calibrator, calibrator
-from columnflow.calibration.jets import jec, jer
+from columnflow.calibration.cms.jets import jec, jer
 from columnflow.production import producer
-from columnflow.production.mc_weight import mc_weight
-from columnflow.production.seeds import deterministic_seeds
+from columnflow.production.cms.mc_weight import mc_weight
+from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.columnar_util import set_ak_column
 from columnflow.util import maybe_import
 

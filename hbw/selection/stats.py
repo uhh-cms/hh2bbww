@@ -7,7 +7,7 @@ Stat-related methods.
 from collections import defaultdict, OrderedDict
 
 from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.production.btag import btag_weights
+from columnflow.production.cms.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
 from columnflow.util import maybe_import
 
