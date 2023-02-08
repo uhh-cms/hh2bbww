@@ -128,15 +128,15 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @features.init
 def features_init(self: Producer) -> None:
 
-    if self.config_inst.x("call_add_categories_production", True):
+    if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
         add_categories_production(self.config_inst)
-        self.config_inst.x.call_add_categories_production = False
+        self.config_inst.x.add_categories_production = False
 
-    if self.config_inst.x("call_add_feature_variables", True):
+    if self.config_inst.x("add_feature_variables", True):
         # add variable instances but only on first call
         add_feature_variables(self.config_inst)
-        self.config_inst.x.call_add_feature_variables = False
+        self.config_inst.x.add_feature_variables = False
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

@@ -67,7 +67,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 normweights = normalized_weight_factory(
     producer_name="normweights",
-    weight_producers={murmuf_envelope_weights, pdf_weights},
+    weight_producers={murmuf_envelope_weights, murmuf_weights, pdf_weights},
 )
 
 
