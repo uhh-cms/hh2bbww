@@ -17,10 +17,10 @@ import order as od
 from columnflow.util import DotDict
 from columnflow.config_util import get_root_processes_from_campaign
 from hbw.config.categories import add_categories_selection
-from hbw.config.variables import add_variables, add_feature_variables
+from hbw.config.variables import add_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
-from hbw.config.ml_variables import add_ml_variables
+
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -225,6 +225,7 @@ def add_config(
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
     }
 
     # category groups for conveniently looping over certain categories

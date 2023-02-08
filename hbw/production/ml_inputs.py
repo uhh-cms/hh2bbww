@@ -46,6 +46,16 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
 
+    # low-level features
+    for var in ["pt"]:
+        events = set_ak_column(events, f"mli_b1_{var}", events.Bjet[:, 0].pt)
+        events = set_ak_column(events, f"mli_b2_{var}", events.Bjet[:, 1].pt)
+        events = set_ak_column(events, f"mli_j1_{var}", events.Lightjet[:, 0].pt)
+        events = set_ak_column(events, f"mli_j2_{var}", events.Lightjet[:, 1].pt)
+        events = set_ak_column(events, f"mli_lep_{var}", events.Lepton[:, 0].pt)
+        events = set_ak_column(events, f"mli_met_{var}", events.MET.pt)
+
+
     # jets in general
     events = set_ak_column(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
@@ -136,7 +146,11 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-    }
+    } | set(
+        f"mli_{obj}_{var}"
+        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+        for var in ["pt"]
+    )
     self.produces |= self.ml_columns
 
     if self.config_inst.x("add_categories_production", True):

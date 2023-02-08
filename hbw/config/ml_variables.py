@@ -199,4 +199,14 @@ def add_ml_variables(config: od.Config) -> None:
         x_title=r"$S_{min}$",
     )
 
+    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
+        for var in ["pt"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=(40, 0, 400),
+                unit="GeV",
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
     # Lepton (TODO)

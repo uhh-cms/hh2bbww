@@ -97,10 +97,13 @@ class SimpleDNN(MLModel):
         return task.target(f"mlmodel_f{task.fold}of{self.folds}", dir=True)
 
     def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
+        # return target.load(formatter="keras_model")
+
         with open(f"{target.path}/model_history.pkl", "rb") as f:
             history = pickle.load(f)
         model = tf.keras.models.load_model(target.path)
         return model, history
+
 
     def train(
         self,
@@ -196,13 +199,21 @@ class SimpleDNN(MLModel):
 
             print(f"  Sum NN weights: {sum_nnweights}")
 
-        train, validation = {}, {}  # combine all except one input as train input, use last one for validation
-        # TODO: make this random
+        # merge event folds and shuffle
+        DNN_inputs = {k: np.concatenate(vals) for k, vals in DNN_inputs.items()}
+        shuffle_indices = np.array(range(len(DNN_inputs["weights"])))
+        np.random.shuffle(shuffle_indices)
+
+        validation_fraction = 0.25
+        N_validation_events = int(validation_fraction * len(DNN_inputs["weights"]))
+
+        train, validation = {}, {}
         for k, vals in DNN_inputs.items():
-            # validation set always corresponds to (eval_fold+1) in that way
-            validation[k] = vals.pop((task.fold) % (self.folds - 1))
-            # print("Number of training folds:", len(vals))
-            train[k] = np.concatenate(vals)
+            # shuffle inputs and split them into validation and train
+            vals = vals[shuffle_indices]
+
+            validation[k] = vals[:N_validation_events]
+            train[k] = vals[N_validation_events:]
 
         #
         # model preparation
@@ -255,6 +266,7 @@ class SimpleDNN(MLModel):
             batch_size=self.batchsize,
         )
         # save the model and history; TODO: use formatter
+        # output.dump(model, formatter="tf_keras_model")
         output.parent.touch()
         model.save(output.path)
         with open(f"{output.path}/model_history.pkl", "wb") as f:
@@ -269,6 +281,7 @@ class SimpleDNN(MLModel):
         events_used_in_training: bool = True,
     ) -> None:
         print(f"Evaluation of dataset {task.dataset}")
+
         models, history = zip(*models)
         # TODO: use history for loss+acc plotting
 

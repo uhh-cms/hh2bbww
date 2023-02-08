@@ -23,13 +23,34 @@ hbw_reduction(){
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
 	--cf.ReduceEvents-parallel-jobs 4000 \
-	--cf.ReduceEvents-htcondor-share-software True \
-	--cf.ReduceEvents-tasks-per-job 1
+	--cf.ReduceEvents-retries 1 \
+	--cf.ReduceEvents-tasks-per-job 1 \
+	--cf.ReduceEvents-job-workers 1
+	#--cf.ReduceEvents-htcondor-share-software True
+}
+
+producers="ml_inputs"
+ml_model="test"
+# ml_datasets="ggHH_kl_1_kt_1_sl_hbbhww_powheg,tt_sl_powheg,tt_fh_powheg,st_tchannel_t_powheg"
+ml_datasets="ml"
+
+hbw_ml_preparation(){
+    law run cf.MergeMLEventsWrapper --version $version --workers 10 \
+	--configs $config \
+	--cf.MergeMLEvents-producers $producers \
+	--cf.MergeMLEvents-ml-model $ml_model \
+	--datasets $ml_datasets \
+	--skip-datasets "qqHH*,data*" \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeMLEvents-parallel-jobs 4000 \
+	--cf.MergeMLEvents-retries 1 \
+	--cf.MergeMLEvents-tasks-per-job 1 \
+	--cf.MergeMLEvents-job-workers 1
 }
 
 processes="default"
 categories="resolved,boosted,inclusive"
-producers="ml_inputs"
 variables="mli_*"
 
 # NOTE: running this starts quite a lot of jobs, so only submit if everything is ready
@@ -46,5 +67,6 @@ hbw_plot_variables(){
 	--pilot True \
 	--parallel-jobs 4000 \
 	--htcondor-share-software True \
-	--tasks-per-job 1
+	--tasks-per-job 1 \
+	--job-workers 1
 }
