@@ -15,7 +15,7 @@ ak = maybe_import("awkward")
 
 @selector(uses={"event"})
 def catid_selection_incl(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-    return ak.ones_like(events.event)
+    return ak.ones_like(events.event) > 0
 
 
 @selector(uses={"event"})

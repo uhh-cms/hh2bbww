@@ -677,10 +677,10 @@ def add_config(
 
     # NOTE: this is only needed here since adding variable insts in producer inits does not work
     #       when submitting jobs; remove the following block as soon as this is fixed.
-    add_ml_variables(cfg)
-    cfg.x.add_ml_variables = False
-    add_feature_variables(cfg)
-    cfg.x.add_feature_variables = False
+    #  add_ml_variables(cfg)
+    # cfg.x.add_ml_variables = False
+    # add_feature_variables(cfg)
+    # cfg.x.add_feature_variables = False
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10

@@ -8,7 +8,8 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
-from columnflow.production.categories import category_ids
+# from columnflow.production.categories import category_ids
+from hbw.production.tmp_categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
