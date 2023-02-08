@@ -8,7 +8,8 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
-from columnflow.production.categories import category_ids
+# from columnflow.production.categories import category_ids
+from hbw.production.tmp_categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
@@ -138,10 +139,10 @@ def ml_inputs_init(self: Producer) -> None:
     }
     self.produces |= self.ml_columns
 
-    if self.config_inst.x("call_add_categories_production", True):
+    if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
         add_categories_production(self.config_inst)
-        self.config_inst.x.call_add_categories_production = False
+        self.config_inst.x.add_categories_production = False
 
     if self.config_inst.x("add_ml_variables", True):
         # add variable instances to config

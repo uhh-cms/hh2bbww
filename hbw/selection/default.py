@@ -12,7 +12,8 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.production.categories import category_ids
+# from columnflow.production.categories import category_ids
+from hbw.production.tmp_categories import category_ids
 from columnflow.production.processes import process_ids
 from hbw.production.weights import event_weights_to_normalize
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products

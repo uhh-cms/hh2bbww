@@ -14,12 +14,13 @@ import yaml
 from scinum import Number
 import order as od
 
-from columnflow.util import DotDict, get_root_processes_from_campaign
+from columnflow.util import DotDict
+from columnflow.config_util import get_root_processes_from_campaign
 from hbw.config.categories import add_categories_selection
-from hbw.config.variables import add_variables
+from hbw.config.variables import add_variables, add_feature_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
-
+from hbw.config.ml_variables import add_ml_variables
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -56,7 +57,9 @@ def add_config(
     cfg.add_process(procs.n.st)
     cfg.add_process(procs.n.w_lnu)
     cfg.add_process(procs.n.dy_lep)
-    # cfg.add_process(procs.n.qcd)
+    # cfg.add_process(procs.n.qcd_mu)
+    # cfg.add_process(procs.n.qcd_em)
+    # cfg.add_process(procs.n.qcd_bctoe)
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
@@ -142,7 +145,20 @@ def add_config(
         "dy_lep_m50_ht800to1200_madgraph",
         "dy_lep_m50_ht1200to2500_madgraph",
         "dy_lep_m50_ht2500_madgraph",
-        # QCD (msc thesis samples not implemented)
+        # QCD (no LHEScaleWeight)
+        # "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
+        # "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
+        # "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
+        # "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
+        # "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
+        # "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
+        # "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
+        # "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
+        # "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
+        # "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
+        # "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
+        # "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
+        # "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # Signal
         "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
@@ -658,6 +674,13 @@ def add_config(
 
     # add variables
     add_variables(cfg)
+
+    # NOTE: this is only needed here since adding variable insts in producer inits does not work
+    #       when submitting jobs; remove the following block as soon as this is fixed.
+    #  add_ml_variables(cfg)
+    # cfg.x.add_ml_variables = False
+    # add_feature_variables(cfg)
+    # cfg.x.add_feature_variables = False
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
