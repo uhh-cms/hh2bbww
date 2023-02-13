@@ -72,6 +72,12 @@ def catid_resolved_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return self[catid_resolved](events, **kwargs) & (n_deepjet >= 2)
 
 
+# TODO: not hard-coded -> use config!
+ml_model_name = "default"
+ml_processes = []
+# TODO ml categories
+# for pr
+
 for lep_ch in ["1e", "1mu"]:
     for jet_ch in ["resolved_1b", "resolved_2b", "boosted"]:
         for dnn_ch in ["dummy"]:

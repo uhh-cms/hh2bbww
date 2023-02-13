@@ -141,3 +141,32 @@ def add_categories_production(config: od.Config) -> None:
     cat_resolved_2b.add_category(cat_1e_resolved_2b)
     cat_boosted.add_category(cat_1mu_boosted)
     cat_boosted.add_category(cat_1e_boosted)
+
+
+def add_categories_ml(config, ml_model_inst):
+
+    all_categories = [cat_inst for cat_inst, _, _ in config.walk_categories()]
+    for i, proc in enumerate(ml_model_inst.processes):
+        for cat_inst in all_categories:
+            # TODO: not only categories but also leaf categories!
+            if cat_inst.name == "incl":
+                # don't add ml categorization to 'incl' but to config instead
+                # TODO: we might want to add leaf categories here to reduce
+                #       number of leaf categories
+                config.add_category(
+                    # NOTE: name and ID is unique as long as we don't use
+                    #       multiple ml_models simutaneously
+                    name=f"ml_{proc}",
+                    id=i * 10000,
+                    selection=f"catid_ml_{proc}",
+                    label=f"ml_{proc}",
+                )
+
+            cat_inst.add_category(
+                # NOTE: name and ID is unique as long as we don't use
+                #       multiple ml_models simutaneously
+                name=f"{cat_inst.name}_ml_{proc}",
+                id=cat_inst.id + i * 10000,
+                selection=f"{cat_inst.selection}_ml_{proc}",
+                label=f"{cat_inst.label} (ml {proc})",
+            )
