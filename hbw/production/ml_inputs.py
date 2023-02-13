@@ -55,7 +55,6 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column(events, f"mli_lep_{var}", events.Lepton[:, 0].pt)
         events = set_ak_column(events, f"mli_met_{var}", events.MET.pt)
 
-
     # jets in general
     events = set_ak_column(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))

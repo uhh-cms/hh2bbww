@@ -73,7 +73,7 @@ if not cat_inst.is_leaf_category:
     print("Leaf categories:", [leaf_cat.name for leaf_cat in cat_inst.get_leaf_categories()])
 
 # print some features of an exemplary variable inst
-var_inst = cfg.get_variable("ht")
+var_inst = cfg.get_variable("jet1_pt")
 print(f"================= Variable: {var_inst.name} =====================")
 print("Expression:", var_inst.expression)
 print("Binning", var_inst.binning)

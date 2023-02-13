@@ -94,7 +94,7 @@ class SimpleDNN(MLModel):
         return produced
 
     def output(self, task: law.Task) -> law.FileSystemDirectoryTarget:
-        return task.target(f"mlmodel_f{task.fold}of{self.folds}", dir=True)
+        return task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
 
     def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
         # return target.load(formatter="keras_model")
@@ -103,7 +103,6 @@ class SimpleDNN(MLModel):
             history = pickle.load(f)
         model = tf.keras.models.load_model(target.path)
         return model, history
-
 
     def train(
         self,

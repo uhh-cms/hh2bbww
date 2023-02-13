@@ -12,8 +12,8 @@ processes = [
     "ggHH_kl_1_kt_1_sl_hbbhww",
     "tt",
     "st",
-    # "w_lnu",
-    # "dy_lep"
+    "w_lnu",
+    "dy_lep",
     # "qcd",
 ]
 
@@ -21,6 +21,8 @@ custom_procweights = {
     "ggHH_kl_1_kt_1_sl_hbbhww": 1 / 1000,
     "tt": 1 / 1000,
     "st": 1 / 1000,
+    "w_lnu": 1 / 1000,
+    "dy_lep": 1 / 1000,
 }
 
 dataset_names = {
@@ -79,7 +81,7 @@ default_cls_dict = {
     "batchsize": 131072,
     "epochs": 200,
     "eqweight": True,
-    "dropout": False,  # 0.50
+    "dropout": 0.50,
     "processes": processes,
     "custom_procweights": custom_procweights,
     "dataset_names": dataset_names,
