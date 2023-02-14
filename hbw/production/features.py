@@ -4,6 +4,8 @@
 Column production methods related to higher-level features.
 """
 
+import functools
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
@@ -16,10 +18,14 @@ from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production
 from hbw.config.variables import add_feature_variables
 
+np = maybe_import("numpy")
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
 maybe_import("coffea.nanoevents.methods.nanoaod")
 # from coffea.nanoevents.methods.nanoaod import behavior
+
+# helper
+set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
@@ -29,14 +35,14 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     m_jj = (events.Jet[:, 0] + events.Jet[:, 1]).mass
-    events = set_ak_column(events, "m_jj", m_jj)
+    events = set_ak_column_f32(events, "m_jj", m_jj)
 
     deltaR_jj = events.Jet[:, 0].delta_r(events.Jet[:, 1])
-    events = set_ak_column(events, "deltaR_jj", deltaR_jj)
+    events = set_ak_column_f32(events, "deltaR_jj", deltaR_jj)
 
     # fill none values
     for col in self.produces:
-        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+        events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
     return events
 
 
@@ -47,14 +53,14 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
-    events = set_ak_column(events, "m_bb", m_bb)
+    events = set_ak_column_f32(events, "m_bb", m_bb)
 
     deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
-    events = set_ak_column(events, "deltaR_bb", deltaR_bb)
+    events = set_ak_column_f32(events, "deltaR_bb", deltaR_bb)
 
     # fill none values
     for col in self.produces:
-        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+        events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
 
     return events
 
@@ -105,7 +111,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
 
     # ht and number of objects (safe for None entries)
-    events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
+    events = set_ak_column_f32(events, "ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "n_jet", ak.sum(events.Jet.pt > 0, axis=1))
     events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
     events = set_ak_column(events, "n_muon", ak.sum(events.Muon.pt > 0, axis=1))
@@ -114,7 +120,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
 
     # Subjettiness
-    events = set_ak_column(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
+    events = set_ak_column_f32(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
 
     events = self[bb_features](events, **kwargs)
     events = self[jj_features](events, **kwargs)

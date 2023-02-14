@@ -77,6 +77,7 @@ normweights = normalized_weight_factory(
         normweights, normalized_btag_weights,
     },
     produces={
+        "mc_weight",  # might be needed for ML
         normalization_weights, electron_weights, muon_weights,
         normweights, normalized_btag_weights,
     },

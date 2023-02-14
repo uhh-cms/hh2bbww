@@ -14,15 +14,14 @@ processes = [
     "st",
     "w_lnu",
     "dy_lep",
-    # "qcd",
 ]
 
 custom_procweights = {
-    "ggHH_kl_1_kt_1_sl_hbbhww": 1 / 1000,
-    "tt": 1 / 1000,
-    "st": 1 / 1000,
-    "w_lnu": 1 / 1000,
-    "dy_lep": 1 / 1000,
+    "ggHH_kl_1_kt_1_sl_hbbhww": 1,
+    "tt": 8,
+    "st": 8,
+    "w_lnu": 8,
+    "dy_lep": 8,
 }
 
 dataset_names = {
@@ -76,6 +75,7 @@ input_features = [
 
 default_cls_dict = {
     "folds": 5,
+    "max_events": 10**6,  # per dataset
     "layers": [512, 512, 512],
     "learningrate": 0.00050,
     "batchsize": 131072,

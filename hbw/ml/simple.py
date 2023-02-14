@@ -7,13 +7,14 @@ First implementation of DNN for HH analysis, generalized (TODO)
 from __future__ import annotations
 
 from typing import Any
+import gc
 
 import law
 import order as od
 
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.columnar_util import Route, set_ak_column
+from columnflow.columnar_util import Route, set_ak_column  #, ChunkedIOHandler
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 
@@ -23,6 +24,7 @@ tf = maybe_import("tensorflow")
 pickle = maybe_import("pickle")
 keras = maybe_import("tensorflow.keras")
 
+logger = law.logger.get_logger(__name__)
 
 class SimpleDNN(MLModel):
 
@@ -104,102 +106,130 @@ class SimpleDNN(MLModel):
         model = tf.keras.models.load_model(target.path)
         return model, history
 
-    def train(
+    def prepare_inputs(
         self,
-        task: law.Task,
-        input: Any,
-        output: law.LocalDirectoryTarget,
-    ) -> ak.Array:
-        # np.random.seed(1337)  # for reproducibility
+        task,
+        input,
+    ) -> dict[str, np.array]:
 
-        #
-        # input preparation
-        #
-
-        N_inputs = len(self.input_features)
-        N_outputs = len(self.processes)
+        max_events_per_fold = int(self.max_events / (self.folds - 1))
 
         process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
-        N_events_proc = np.array(len(self.processes) * [(self.folds - 1) * [0]])
-        sum_eventweights_proc = np.array(len(self.processes) * [(self.folds - 1) * [0]])
+        N_events_processes = np.array(len(self.processes) * [0])
+        custom_procweights = np.array(len(self.processes) * [0])
+        sum_eventweights_processes = np.array(len(self.processes) * [0])
         dataset_proc_idx = {}  # bookkeeping which process each dataset belongs to
 
+        #
         # determine process of each dataset and count number of events & sum of eventweights for this process
+        #
+
         for dataset, infiletargets in input["events"].items():
             dataset_inst = self.config_inst.get_dataset(dataset)
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
 
-            N_events = [len(ak.from_parquet(inp.fn)) for inp in infiletargets]
+            N_events = sum([len(ak.from_parquet(inp.fn)[:max_events_per_fold]) for inp in infiletargets])
             # NOTE: this only works as long as each dataset only contains one process
-            sum_eventweights = [ak.sum(ak.from_parquet(inp.fn).normalization_weight) for inp in infiletargets]
-
-            # alternatively: use stats (only the mc weight)
-            # stats = input["model"][(self.config_inst.name, "nominal", dataset_inst.name)].load(formatter="json")
-            # print(sum_eventweights, stats["sum_mc_weight_selected"])
-
+            sum_eventweights = sum([
+                ak.sum(ak.from_parquet(inp.fn).normalization_weight[:max_events_per_fold])
+                for inp in infiletargets],
+            )
             for i, proc in enumerate(process_insts):
+                custom_procweights[i] = self.custom_procweights[proc.name]
                 leaf_procs = [p for p, _, _ in self.config_inst.get_process(proc).walk_processes(include_self=True)]
                 if dataset_inst.processes.get_first() in leaf_procs:
-                    print(f"the dataset *{dataset}* used for training the *{proc.name}* output node")
+                    logger.info(f"the dataset *{dataset}* is used for training the *{proc.name}* output node")
                     dataset_proc_idx[dataset] = i
-                    for j, N_evt in enumerate(N_events):
-                        N_events_proc[i][j] += N_evt
-
-                    for j, sumw in enumerate(sum_eventweights):
-                        sum_eventweights_proc[i][j] += sumw
+                    N_events_processes[i] += N_events
+                    sum_eventweights_processes[i] += sum_eventweights
                     continue
+
             if dataset_proc_idx.get(dataset, -1) == -1:
                 raise Exception(f"dataset {dataset} is not matched to any of the given processes")
 
+        # Number to scale weights such that the largest weights are at the order of 1
+        # (only implemented for eqweight = True)
+        weights_scaler = min(N_events_processes / custom_procweights)
+
+        #
         # set inputs, weights and targets for each datset and fold
+        #
+
         DNN_inputs = {
-            "weights": [],
-            "inputs": [],
-            "target": [],
+            "weights": None,
+            "inputs": None,
+            "target": None,
         }
+
+        sum_nnweights_processes = {}
 
         for dataset, infiletargets in input["events"].items():
             this_proc_idx = dataset_proc_idx[dataset]
-            print(f"dataset: {dataset}, \n  #Events: {sum(N_events_proc[this_proc_idx])}, "
-                  f"\n  Sum Normweights: {sum(sum_eventweights_proc[this_proc_idx])}")
+            proc_name = self.processes[this_proc_idx]
+            N_events_proc = N_events_processes[this_proc_idx]
+            sum_eventweights_proc = sum_eventweights_processes[this_proc_idx]
 
-            event_folds = [ak.from_parquet(inp.fn) for inp in infiletargets]
-
+            logger.info(
+                f"dataset: {dataset}, \n  #Events: {N_events_proc}, "
+                f"\n  Sum Eventweights: {sum_eventweights_proc}",
+            )
             sum_nnweights = 0
 
-            for i, events in enumerate(event_folds):  # i is in [0, self.folds-2]
-                weights = events.normalization_weight
-                if self.eqweight:
-                    weights = weights * sum(sum_eventweights_proc)[i] / sum_eventweights_proc[this_proc_idx][i]
-                    custom_procweight = self.custom_procweights[self.processes[this_proc_idx]]
-                    weights = weights * custom_procweight
+            # for inp in infiletargets:
+            #     with ChunkedIOHandler(
+            #             inp.path,
+            #             source_type="awkward_parquet",
+            #             # chunk_size=200000,
+            #     ) as handler:
+            #         for events, position in handler:
+            for inp in infiletargets:
+                if True:
+                    if True:
+                        events = ak.from_parquet(inp.path)[:max_events_per_fold]
+                        weights = events.normalization_weight
+                        if self.eqweight:
+                            weights = weights * weights_scaler / sum_eventweights_proc
+                            custom_procweight = self.custom_procweights[proc_name]
+                            weights = weights * custom_procweight
 
-                weights = ak.to_numpy(weights)
-                sum_nnweights += sum(weights)
+                        weights = ak.to_numpy(weights)
 
-                # print("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
+                        sum_nnweights += sum(weights)
+                        sum_nnweights_processes.setdefault(proc_name, 0)
+                        sum_nnweights_processes[proc_name] += sum(weights)
 
-                # transform events into numpy array and transpose
-                inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in self.input_features])))
-                # create the truth values for the output layer
-                target = np.zeros((len(events), len(self.processes)))
-                target[:, this_proc_idx] = 1
+                        # logger.info("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
 
-                # add relevant collections to the NN inputs
-                if len(DNN_inputs["weights"]) <= i:
-                    DNN_inputs["weights"].append(weights)
-                    DNN_inputs["inputs"].append(inputs)
-                    DNN_inputs["target"].append(target)
-                else:
-                    DNN_inputs["weights"][i] = np.concatenate([DNN_inputs["weights"][i], weights])
-                    DNN_inputs["inputs"][i] = np.concatenate([DNN_inputs["inputs"][i], inputs])
-                    DNN_inputs["target"][i] = np.concatenate([DNN_inputs["target"][i], target])
+                        # transform events into numpy array and transpose
+                        inputs = np.transpose(ak.to_numpy(ak.Array(
+                            [events[var] for var in self.input_features],
+                        ))).astype("float32")
+                        # create the truth values for the output layer
+                        target = np.zeros((len(events), len(self.processes)))
+                        target[:, this_proc_idx] = 1
 
-            print(f"  Sum NN weights: {sum_nnweights}")
+                        if DNN_inputs["weights"] is None:
+                            DNN_inputs["weights"] = weights
+                            DNN_inputs["inputs"] = inputs
+                            DNN_inputs["target"] = target
+                        else:
+                            DNN_inputs["weights"] = np.concatenate([DNN_inputs["weights"], weights])
+                            DNN_inputs["inputs"] = np.concatenate([DNN_inputs["inputs"], inputs])
+                            DNN_inputs["target"] = np.concatenate([DNN_inputs["target"], target])
 
-        # merge event folds and shuffle
-        DNN_inputs = {k: np.concatenate(vals) for k, vals in DNN_inputs.items()}
+            logger.info("   weights:", weights[:5])
+            logger.info(f"  Sum NN weights: {sum_nnweights}")
+
+        logger.info(sum_nnweights_processes)
+
+        #
+        # shuffle events and split into train and validation fold
+        #
+
+        inputs_size = sum([arr.size * arr.itemsize for arr in DNN_inputs.values()])
+        logger.info(f"inputs size is {inputs_size / 1024**3} GB")
+
         shuffle_indices = np.array(range(len(DNN_inputs["weights"])))
         np.random.shuffle(shuffle_indices)
 
@@ -214,9 +244,31 @@ class SimpleDNN(MLModel):
             validation[k] = vals[:N_validation_events]
             train[k] = vals[N_validation_events:]
 
+        return train, validation
+
+    def train(
+        self,
+        task: law.Task,
+        input: Any,
+        output: law.LocalDirectoryTarget,
+    ) -> ak.Array:
+        # np.random.seed(1337)  # for reproducibility
+
+        #
+        # input preparation
+        #
+
+        train, validation = self.prepare_inputs(task, input)
+        logger.info("garbage collected")
+        gc.collect()
+
         #
         # model preparation
         #
+
+        N_inputs = len(self.input_features)
+        N_outputs = len(self.processes)
+
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization, Dropout
 
@@ -257,7 +309,7 @@ class SimpleDNN(MLModel):
         # TODO: early stopping to determine the 'best' model
 
         # train the model
-        print("Start training...")
+        logger.info("Start training...")
         model.fit(
             x=train["inputs"], y=train["target"], epochs=self.epochs, sample_weight=train["weights"],
             validation_data=(validation["inputs"], validation["target"], validation["weights"]),
@@ -279,7 +331,7 @@ class SimpleDNN(MLModel):
         fold_indices: ak.Array,
         events_used_in_training: bool = True,
     ) -> None:
-        print(f"Evaluation of dataset {task.dataset}")
+        logger.info(f"Evaluation of dataset {task.dataset}")
 
         models, history = zip(*models)
         # TODO: use history for loss+acc plotting
@@ -304,7 +356,7 @@ class SimpleDNN(MLModel):
         # combine all models into 1 output score, using the model that has not seen test set yet
         outputs = ak.where(ak.ones_like(predictions[0]), -1, -1)
         for i in range(self.folds):
-            print(f"Evaluation fold {i}")
+            logger.info(f"Evaluation fold {i}")
             # reshape mask from N*bool to N*k*bool (TODO: simpler way?)
             idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == i)] * len(self.processes), axis=1))
             outputs = ak.where(idx, predictions[i], outputs)
