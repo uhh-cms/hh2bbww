@@ -112,7 +112,7 @@ class SimpleDNN(MLModel):
         input,
     ) -> dict[str, np.array]:
 
-        max_events_per_fold = int(self.max_events / (self.folds - 1))
+        # max_events_per_fold = int(self.max_events / (self.folds - 1))
 
         process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
         N_events_processes = np.array(len(self.processes) * [0])
@@ -129,10 +129,11 @@ class SimpleDNN(MLModel):
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
 
-            N_events = sum([len(ak.from_parquet(inp.fn)[:max_events_per_fold]) for inp in infiletargets])
+            # TODO: use stats here instead
+            N_events = sum([len(ak.from_parquet(inp.fn)) for inp in infiletargets])
             # NOTE: this only works as long as each dataset only contains one process
             sum_eventweights = sum([
-                ak.sum(ak.from_parquet(inp.fn).normalization_weight[:max_events_per_fold])
+                ak.sum(ak.from_parquet(inp.fn).normalization_weight)
                 for inp in infiletargets],
             )
             for i, proc in enumerate(process_insts):
@@ -186,7 +187,7 @@ class SimpleDNN(MLModel):
             for inp in infiletargets:
                 if True:
                     if True:
-                        events = ak.from_parquet(inp.path)[:max_events_per_fold]
+                        events = ak.from_parquet(inp.path)
                         weights = events.normalization_weight
                         if self.eqweight:
                             weights = weights * weights_scaler / sum_eventweights_proc

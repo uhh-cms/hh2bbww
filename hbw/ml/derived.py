@@ -75,7 +75,7 @@ input_features = [
 
 default_cls_dict = {
     "folds": 5,
-    "max_events": 10**6,  # per dataset
+    # "max_events": 10**6,  # TODO
     "layers": [512, 512, 512],
     "learningrate": 0.00050,
     "batchsize": 131072,
