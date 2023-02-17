@@ -16,7 +16,7 @@ from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import Route, set_ak_column  # , ChunkedIOHandler
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
-
+from hbw.config.categories import add_categories_ml
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -58,7 +58,7 @@ class SimpleDNN(MLModel):
         # Dropout: either False (disable) or a value between 0 and 1 (dropout_rate)
         self.dropout = False
         """
-        # dynamically add variables and categories for the quantities produced by this model
+        # dynamically add variables for the quantities produced by this model
         for proc in self.processes:
             if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
                 self.config_inst.add_variable(
@@ -67,6 +67,11 @@ class SimpleDNN(MLModel):
                     binning=(40, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
                 )
+
+        # dynamically add ml categories
+        if self.config_inst.x("add_categories_ml", True):
+            add_categories_ml(self.config_inst, ml_model_inst=self)
+            self.config_inst.x.add_categories_ml = False
 
     def requires(self, task: law.Task) -> str:
         # add selection stats to requires; NOTE: not really used at the moment
@@ -84,7 +89,7 @@ class SimpleDNN(MLModel):
         return {self.config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
     def uses(self) -> set[Route | str]:
-        return {"normalization_weight"} | set(self.input_features)
+        return {"normalization_weight", "category_ids"} | set(self.input_features)
 
     def produces(self) -> set[Route | str]:
         produced = set()
@@ -346,11 +351,12 @@ class SimpleDNN(MLModel):
 
             # Save predictions for each model
             # TODO: create train/val/test plots (confusion, ROC, nodes) using these predictions?
+            """
             for j, proc in enumerate(self.processes):
                 events = set_ak_column(
                     events, f"{self.cls_name}.fold{i}_score_{proc}", pred[:, j],
                 )
-
+            """
         # combine all models into 1 output score, using the model that has not seen test set yet
         outputs = ak.where(ak.ones_like(predictions[0]), -1, -1)
         for i in range(self.folds):
@@ -366,5 +372,26 @@ class SimpleDNN(MLModel):
             events = set_ak_column(
                 events, f"{self.cls_name}.score_{proc}", outputs[:, i],
             )
+
+        # ML categorization on top of existing categories
+        ml_categories = [cat for cat in self.config_inst.categories if "ml_" in cat.name]
+        ml_proc_to_id = {cat.name.replace("ml_", ""): cat.id for cat in ml_categories}
+
+        scores = ak.Array({
+            f.replace("score_", ""): events[self.cls_name, f]
+            for f in events[self.cls_name].fields if f.startswith("score_")
+        })
+
+        ml_category_ids = max_score = ak.zeros_like(events.deterministic_seed)
+        for proc in scores.fields:
+            ml_category_ids = ak.where(scores[proc] > max_score, ml_proc_to_id[proc], ml_category_ids)
+            max_score = ak.where(scores[proc] > max_score, scores[proc], max_score)
+
+        category_ids = ak.where(
+            events.category_ids != 1,  # Do not split Inclusive category into DNN sub-categories
+            events.category_ids + ak.values_astype(ml_category_ids, np.int32),
+            events.category_ids,
+        )
+        events = set_ak_column(events, "category_ids", category_ids)
 
         return events
