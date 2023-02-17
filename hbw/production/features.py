@@ -135,7 +135,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
-    if self.config_inst.x("count", 0) is 0:
+    if self.config_inst.x("count", 0) == 0:
         self.config_inst.x.count = 1
     self.config_inst.x.count += 1
 

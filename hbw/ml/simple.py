@@ -95,6 +95,9 @@ class SimpleDNN(MLModel):
         produced = set()
         for proc in self.processes:
             produced.add(f"{self.cls_name}.score_{proc}")
+
+        produced.add("category_ids")
+
         return produced
 
     def output(self, task: law.Task) -> law.FileSystemDirectoryTarget:
@@ -393,5 +396,4 @@ class SimpleDNN(MLModel):
             events.category_ids,
         )
         events = set_ak_column(events, "category_ids", category_ids)
-
         return events

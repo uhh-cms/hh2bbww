@@ -5,7 +5,6 @@ Definition of categories.
 """
 
 from collections import OrderedDict
-import functools
 
 from columnflow.config_util import create_category_combinations
 
@@ -119,7 +118,6 @@ def add_categories_production(config: od.Config) -> None:
 
 def add_categories_ml(config, ml_model_inst):
 
-
     # add ml categories directly to the config
     ml_categories = []
     for i, proc in enumerate(ml_model_inst.processes):
@@ -131,7 +129,6 @@ def add_categories_ml(config, ml_model_inst):
             selection=f"catid_ml_{proc}",
             label=f"ml_{proc}",
         ))
-
 
     category_blocks = OrderedDict({
         "lep": [config.get_category("1e"), config.get_category("1mu")],
