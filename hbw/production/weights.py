@@ -25,14 +25,13 @@ ak = maybe_import("awkward")
     uses={pu_weight, btag_weights, murmuf_envelope_weights, murmuf_weights, pdf_weights},
     # don't save btag_weights to save storage space, since we can reproduce them in ProduceColumns
     produces={pu_weight, murmuf_envelope_weights, murmuf_weights, pdf_weights},
+    mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called as part of SelectEvents
     since it is required to normalize them before applying certain event selections.
     """
-    if self.dataset_inst.is_data:
-        raise Exception("attempt to compute event weights in data")
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
@@ -81,13 +80,12 @@ normweights = normalized_weight_factory(
         normalization_weights, electron_weights, muon_weights,
         normweights, normalized_btag_weights,
     },
+    mc_only=True,
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
-    if self.dataset_inst.is_data:
-        raise Exception("attempt to compute event weights in data")
 
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)

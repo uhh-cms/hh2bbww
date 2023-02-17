@@ -31,6 +31,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 @producer(
     uses={"Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass"},
     produces={"m_jj", "deltaR_jj"},
+    mc_only=True,
 )
 def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
@@ -68,7 +69,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         attach_coffea_behavior, prepare_objects, category_ids,
-        bb_features, jj_features,
+        bb_features, jj_features, event_weights,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
         "Bjet.btagDeepFlavB",
@@ -76,7 +77,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     },
     produces={
         attach_coffea_behavior, category_ids,
-        bb_features, jj_features,
+        bb_features, jj_features, event_weights,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21",
     },
 )
@@ -134,7 +135,11 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
+    if self.config_inst.x("count", 0) is 0:
+        self.config_inst.x.count = 1
+    self.config_inst.x.count += 1
 
+    print("!!!! features init!", self.config_inst.x.count)
     if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
         add_categories_production(self.config_inst)
@@ -147,6 +152,3 @@ def features_init(self: Producer) -> None:
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
-
-    self.uses |= {event_weights}
-    self.produces |= {event_weights}

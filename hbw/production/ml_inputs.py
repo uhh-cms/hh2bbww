@@ -26,14 +26,15 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 @producer(
     uses={
-        category_ids,
+        category_ids, event_weights,
         prepare_objects.USES, prepare_objects.PRODUCES,
     },
     produces={
-        category_ids,
+        category_ids, event_weights,
         # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
         "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
     },
+    mc_only=True,
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
@@ -166,9 +167,3 @@ def ml_inputs_init(self: Producer) -> None:
         # add variable instances to config
         add_ml_variables(self.config_inst)
         self.config_inst.x.add_ml_variables = False
-
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses |= {event_weights}
-    self.produces |= {event_weights}

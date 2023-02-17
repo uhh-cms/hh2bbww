@@ -20,10 +20,9 @@ ak = maybe_import("awkward")
         btag_weights.PRODUCES, "process_id", "Jet.pt",
     },
     # produced columns are defined in the init function below
+    mc_only=True,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    if self.dataset_inst.is_data:
-        raise Exception("attempt to compute normalized btag weights in data")
 
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
