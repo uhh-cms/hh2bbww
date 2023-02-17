@@ -4,6 +4,9 @@
 Column production methods related defining categories.
 """
 
+import functools
+from collections.abc import Iterable
+
 import law
 
 from columnflow.selection import Selector
@@ -26,12 +29,15 @@ def category_ids(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     category_ids = []
 
     # TODO: we maybe don't want / need to loop through all leaf categories
-    for cat_inst in self.config_inst.get_leaf_categories():
+    for cat_inst in set(self.config_inst.get_leaf_categories()):
         # get the selector class
-        selector = self.category_to_selector[cat_inst]
+        selectors = self.category_to_selectors[cat_inst]
 
         # get the category mask
-        cat_mask = self[selector](events, **kwargs)
+        cat_mask = functools.reduce(
+            (lambda a, b: a & b),
+            (self[selector](events, **kwargs) for selector in selectors),
+        )
 
         # covert to nullable array with the category ids or none, then apply ak.singletons
         cat_ids = ak.singletons(ak.where(cat_mask, cat_inst.id, -999))
@@ -47,31 +53,42 @@ def category_ids(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @category_ids.init
 def category_ids_init(self: Producer) -> None:
     # store a mapping from leaf category to selector class for faster lookup
-    self.category_to_selector = {}
+    self.category_to_selectors = {}
 
     # add all selectors obtained from leaf category selection expressions to the used columns
-    for cat_inst in self.config_inst.get_leaf_categories():
-        sel = cat_inst.selection
-        if Selector.derived_by(sel):
-            selector = sel
-        elif Selector.has_cls(sel):
-            selector = Selector.get_cls(sel)
-        else:
-            raise Exception(
-                f"selection '{sel}' of category '{cat_inst.name}' cannot be resolved to a existing "
-                "Selector object",
-            )
+    for cat_inst in set(self.config_inst.get_leaf_categories()):
 
-        # variables should refer to unexposed selectors as they should usually not
-        # return SelectionResult's but a flat per-event mask
-        if selector.exposed:
-            logger.warning(
-                f"selection of category {cat_inst.name} seems to refer to an exposed selector "
-                "whose return value is most likely incompatible with category masks",
-            )
+        _selectors = []
 
-        # update dependency sets
-        self.uses.add(selector)
-        self.produces.add(selector)
+        sels = cat_inst.selection
+        if isinstance(sels, str):
+            sels = sels.split("&&")
+        elif not isinstance(sels, Iterable):
+            sels = [sels]
 
-        self.category_to_selector[cat_inst] = selector
+        for sel in sels:
+            if Selector.derived_by(sel):
+                selector = sel
+            elif Selector.has_cls(sel):
+                selector = Selector.get_cls(sel)
+            else:
+                raise Exception(
+                    f"selection '{sel}' of category '{cat_inst.name}' cannot be resolved to a existing "
+                    "Selector object",
+                )
+
+            # variables should refer to unexposed selectors as they should usually not
+            # return SelectionResult's but a flat per-event mask
+            if selector.exposed:
+                logger.warning(
+                    f"selection of category {cat_inst.name} seems to refer to an exposed selector "
+                    "whose return value is most likely incompatible with category masks",
+                )
+
+            # update dependency sets
+            self.uses.add(selector)
+            self.produces.add(selector)
+
+            _selectors.append(selector)
+
+        self.category_to_selectors[cat_inst] = _selectors

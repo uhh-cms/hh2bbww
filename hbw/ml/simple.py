@@ -14,7 +14,7 @@ import order as od
 
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.columnar_util import Route, set_ak_column  #, ChunkedIOHandler
+from columnflow.columnar_util import Route, set_ak_column  # , ChunkedIOHandler
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 
@@ -26,24 +26,21 @@ keras = maybe_import("tensorflow.keras")
 
 logger = law.logger.get_logger(__name__)
 
+
 class SimpleDNN(MLModel):
 
     def __init__(
             self,
             *args,
             folds: int | None = None,
-            # layers: list[int] | None = None,
-            # learningrate: float | None = None,
-            # batchsize: int | None = None,
-            # epochs: int | None = None,
-            # eqweight: bool | None = None,
-            # dropout: bool | None = None,
-            # processes: list[str] | None = None,  # TODO: processes might be needed to declare output variables
-            # custom_procweights: dict[str, float] | None = None,
-            # dataset_names: set[str] | None = None,  # TODO: might not work for input preparation
-            # input_features: tuple[str] | None = None,  # TODO: might not work for input preparation
             **kwargs,
     ):
+        """
+        Parameters that need to be set by derived model:
+        folds, layers, learningrate, batchsize, epochs, eqweight, dropout,
+        processes, custom_procweights, dataset_names, input_features, store_name,
+        """
+
         super().__init__(*args, **kwargs)
 
         # class- to instance-level attributes
@@ -61,7 +58,7 @@ class SimpleDNN(MLModel):
         # Dropout: either False (disable) or a value between 0 and 1 (dropout_rate)
         self.dropout = False
         """
-        # dynamically add variables for the quantities produced by this model
+        # dynamically add variables and categories for the quantities produced by this model
         for proc in self.processes:
             if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
                 self.config_inst.add_variable(
