@@ -28,11 +28,11 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     uses={
         category_ids, event_weights,
         prepare_objects.USES, prepare_objects.PRODUCES,
+        "FatJet.msoftdrop", "FatJet.deepTagMD_HbbvsQCD",
     },
     produces={
         category_ids, event_weights,
-        # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
-        "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
+        # other produced columns set in the init function
     },
     mc_only=True,
 )
@@ -51,15 +51,20 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
 
     # low-level features
-    for var in ["pt"]:
-        events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0].pt)
-        events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1].pt)
-        events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0].pt)
-        events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1].pt)
-        events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0].pt)
-        events = set_ak_column_f32(events, f"mli_met_{var}", events.MET.pt)
+    # TODO: this could be more generalized
+    for var in ["pt", "eta"]:
+        events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
+        events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
+        events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
+
+    for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+        events = set_ak_column(events, f"mli_fj_{var}", events.FatJet[:, 0][var])
 
     # jets in general
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
@@ -154,7 +159,11 @@ def ml_inputs_init(self: Producer) -> None:
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
-        for var in ["pt"]
+        for var in ["pt", "eta"]
+    ) | set(
+        f"mli_{obj}_{var}"
+        for obj in ["fj"]
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     )
     self.produces |= self.ml_columns
 

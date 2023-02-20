@@ -70,7 +70,11 @@ input_features = [
 ] + [
     f"mli_{obj}_{var}"
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
-    for var in ["pt"]
+    for var in ["pt", "eta"]
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["fj"]
+    for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
 ]
 
 default_cls_dict = {

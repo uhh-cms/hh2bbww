@@ -103,7 +103,6 @@ def add_categories_production(config: od.Config) -> None:
         "lep": [cat_1e, cat_1mu],
         "jet": [cat_resolved, cat_boosted],
         "b": [cat_1b, cat_2b],
-        # "dnn": [...],
     })
 
     n_cats = create_category_combinations(
