@@ -57,9 +57,9 @@ def add_config(
     cfg.add_process(procs.n.st)
     cfg.add_process(procs.n.w_lnu)
     cfg.add_process(procs.n.dy_lep)
-    # cfg.add_process(procs.n.qcd_mu)
-    # cfg.add_process(procs.n.qcd_em)
-    # cfg.add_process(procs.n.qcd_bctoe)
+    cfg.add_process(procs.n.qcd_mu)
+    cfg.add_process(procs.n.qcd_em)
+    cfg.add_process(procs.n.qcd_bctoe)
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
@@ -75,11 +75,23 @@ def add_config(
     cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
 
+    cfg.get_process("qcd_mu").label = "QCD Muon enriched"
+    qcd_ele = cfg.add_process(
+        name="qcd_ele",
+        id=31199,
+        xsecs={13: Number(0.1)},  # TODO
+        label="QCD Electron enriched",
+    )
+    qcd_ele.add_process(cfg.get_process("qcd_em"))
+    qcd_ele.add_process(cfg.get_process("qcd_bctoe"))
+
     # set color of some processes
     colors = {
         "data": "#000000",  # black
         "tt": "#e41a1c",  # red
         "qcd": "#377eb8",  # blue
+        "qcd_mu": "#377eb8",  # blue
+        "qcd_ele": "#377eb8",  # blue
         "w_lnu": "#4daf4a",  # green
         "higgs": "#984ea3",  # purple
         "st": "#ff7f00",  # orange
@@ -146,19 +158,19 @@ def add_config(
         "dy_lep_m50_ht1200to2500_madgraph",
         "dy_lep_m50_ht2500_madgraph",
         # QCD (no LHEScaleWeight)
-        # "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
-        # "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
-        # "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
-        # "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
-        # "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
-        # "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
-        # "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
-        # "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
-        # "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
-        # "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
-        # "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
-        # "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
-        # "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
+        "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
+        "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
+        "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
+        "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
+        "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
+        "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
+        "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
+        "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
+        "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
+        "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
+        "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # Signal
         "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
@@ -205,10 +217,12 @@ def add_config(
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "w_lnu", "st", "tt"],
-        "inference": ["ggHH_*", "dy_lep", "w_lnu", "st", "tt"],
+        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
+        "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
+        "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
+        "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
-        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "st", "tt"],
+        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
         "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
 
@@ -218,12 +232,13 @@ def add_config(
     # (used in wrapper_factory and during plotting)
     cfg.x.dataset_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "default": ["ggHH_kl_1*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
+        "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "test": ["ggHH_kl_1*", "tt_sl_powheg"],
         "small": ["ggHH_kl_1*", "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
+        "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
         "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
     }

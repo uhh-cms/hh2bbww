@@ -22,9 +22,31 @@ ak = maybe_import("awkward")
 
 
 @producer(
-    uses={pu_weight, btag_weights, murmuf_envelope_weights, murmuf_weights, pdf_weights},
+    uses={"LHEScaleWeight"},
+    produces={"LHEScaleWeight"},
+)
+def fix_missing_LHEScaleWeight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    ugly hack for st_schannel_had_amcatnlo sample
+    (nominal entry missing in LHEScaleWeights)
+    # TODO: there is still some issue with that sample...
+    """
+    if ak.all(ak.num(events.LHEScaleWeight, axis=1) == 8):
+        print(
+            f"In dataset {self.dataset_inst.name}: number of LHEScaleWeights is always " +
+            "8 instead of the expected 9. It is assumed, that the missing entry is the " +
+            "nominal one and all other entries are in correct order",
+        )
+        scale_tmp = ak.to_regular(events.LHEScaleWeight)
+        events = set_ak_column(events, "LHEScaleWeight", ak.concatenate(
+            [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]]), scale_tmp[:, 4:]], axis=1,
+        ))
+
+
+@producer(
+    uses={pu_weight, btag_weights},
     # don't save btag_weights to save storage space, since we can reproduce them in ProduceColumns
-    produces={pu_weight, murmuf_envelope_weights, murmuf_weights, pdf_weights},
+    produces={pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -39,33 +61,34 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute btag SF weights (for renormalization tasks)
     events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
 
-    # ugly hack for st_schannel_had_amcatnlo sample (nominal entry missing in LHEScaleWeights)
-    # TODO: there is still some issue with that sample...
-    if ak.all(ak.num(events.LHEScaleWeight, axis=1) == 8):
-        print(
-            f"In dataset {self.dataset_inst.name}: number of LHEScaleWeights is always " +
-            "8 instead of the expected 9. It is assumed, that the missing entry is the " +
-            "nominal one and all other entries are in correct order",
-        )
-        scale_tmp = ak.to_regular(events.LHEScaleWeight)
-        events = set_ak_column(events, "LHEScaleWeight", ak.concatenate(
-            [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]]), scale_tmp[:, 4:]], axis=1,
-        ))
+    # skip scale/pdf weights for qcd (missing columns)
+    if "qcd" not in self.dataset_inst.name:
+        # add column with ones if LHEScaleWeights has length 8 for all events
+        events = self[fix_missing_LHEScaleWeight](events, **kwargs)
 
-    # compute scale weights
-    events = self[murmuf_envelope_weights](events, **kwargs)
+        # compute scale weights
+        events = self[murmuf_envelope_weights](events, **kwargs)
 
-    # read out mur and weights
-    events = self[murmuf_weights](events, **kwargs)
+        # read out mur and weights
+        events = self[murmuf_weights](events, **kwargs)
 
-    # compute pdf weights
-    events = self[pdf_weights](events, **kwargs)
+        # compute pdf weights
+        events = self[pdf_weights](events, **kwargs)
 
     return events
 
 
-normweights = normalized_weight_factory(
-    producer_name="normweights",
+@event_weights_to_normalize.init
+def event_weights_to_normalize_init(self) -> None:
+    if getattr(self, "dataset_inst", None) and "qcd" in self.dataset_inst.name:
+        return
+
+    self.uses |= {murmuf_envelope_weights, murmuf_weights, pdf_weights, fix_missing_LHEScaleWeight}
+    self.produces |= {murmuf_envelope_weights, murmuf_weights, pdf_weights, fix_missing_LHEScaleWeight}
+
+
+normalized_scale_pdf_weights = normalized_weight_factory(
+    producer_name="normalized_scale_pdf_weights",
     weight_producers={murmuf_envelope_weights, murmuf_weights, pdf_weights},
 )
 
@@ -73,12 +96,12 @@ normweights = normalized_weight_factory(
 @producer(
     uses={
         normalization_weights, electron_weights, muon_weights, btag_weights,
-        normweights, normalized_btag_weights,
+        normalized_btag_weights,
     },
     produces={
         "mc_weight",  # might be needed for ML
         normalization_weights, electron_weights, muon_weights,
-        normweights, normalized_btag_weights,
+        normalized_btag_weights,
     },
     mc_only=True,
 )
@@ -98,7 +121,17 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
-    events = self[normweights](events, **kwargs)
     events = self[normalized_btag_weights](events, **kwargs)
+    if "qcd" not in self.dataset_inst.name:
+        events = self[normalized_scale_pdf_weights](events, **kwargs)
 
     return events
+
+
+@event_weights.init
+def event_weights_init(self: Producer) -> None:
+    if getattr(self, "dataset_inst", None) and "qcd" in self.dataset_inst.name:
+        return
+
+    self.uses |= {normalized_scale_pdf_weights}
+    self.produces |= {normalized_scale_pdf_weights}
