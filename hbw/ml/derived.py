@@ -81,6 +81,7 @@ default_cls_dict = {
     "folds": 5,
     # "max_events": 10**6,  # TODO
     "layers": [512, 512, 512],
+    "activation": "relu",  # Options: elu, relu, prelu, selu, tanh, softmax
     "learningrate": 0.00050,
     "batchsize": 131072,
     "epochs": 200,
@@ -96,9 +97,19 @@ default_cls_dict = {
 # derived model, usable on command line
 default_dnn = SimpleDNN.derive("default", cls_dict=default_cls_dict)
 
-
+# test model settings
 cls_dict = default_cls_dict
 cls_dict["epochs"] = 6
 cls_dict["batchsize"] = 2048
+cls_dict["processes"] = [
+    "ggHH_kl_1_kt_1_sl_hbbhww",
+    "st",
+    "w_lnu",
+]
+cls_dict["dataset_names"] = {
+    "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+    "st_tchannel_t_powheg",
+    "w_lnu_ht400To600_madgraph",
+}
 
 test_dnn = SimpleDNN.derive("test", cls_dict=cls_dict)

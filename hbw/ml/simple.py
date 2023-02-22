@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from typing import Any
 import gc
+from time import time
 
 import law
 import order as od
 
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.columnar_util import Route, set_ak_column  # , ChunkedIOHandler
+from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 from hbw.config.categories import add_categories_ml
 
@@ -130,6 +131,7 @@ class SimpleDNN(MLModel):
         #
 
         for dataset, infiletargets in input["events"].items():
+            t0 = time()
             dataset_inst = self.config_inst.get_dataset(dataset)
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
@@ -154,6 +156,8 @@ class SimpleDNN(MLModel):
             if dataset_proc_idx.get(dataset, -1) == -1:
                 raise Exception(f"dataset {dataset} is not matched to any of the given processes")
 
+            logger.info(f"Weights done for {dataset} in {(time() - t0):.3f}s")
+
         # Number to scale weights such that the largest weights are at the order of 1
         # (only implemented for eqweight = True)
         weights_scaler = min(N_events_processes / custom_procweights)
@@ -171,6 +175,7 @@ class SimpleDNN(MLModel):
         sum_nnweights_processes = {}
 
         for dataset, infiletargets in input["events"].items():
+            t0 = time()
             this_proc_idx = dataset_proc_idx[dataset]
             proc_name = self.processes[this_proc_idx]
             N_events_proc = N_events_processes[this_proc_idx]
@@ -182,52 +187,58 @@ class SimpleDNN(MLModel):
             )
             sum_nnweights = 0
 
-            # for inp in infiletargets:
-            #     with ChunkedIOHandler(
-            #             inp.path,
-            #             source_type="awkward_parquet",
-            #             # chunk_size=200000,
-            #     ) as handler:
-            #         for events, position in handler:
             for inp in infiletargets:
-                if True:
-                    if True:
-                        events = ak.from_parquet(inp.path)
-                        weights = events.normalization_weight
-                        if self.eqweight:
-                            weights = weights * weights_scaler / sum_eventweights_proc
-                            custom_procweight = self.custom_procweights[proc_name]
-                            weights = weights * custom_procweight
+                events = ak.from_parquet(inp.path)
+                weights = events.normalization_weight
+                if self.eqweight:
+                    weights = weights * weights_scaler / sum_eventweights_proc
+                    custom_procweight = self.custom_procweights[proc_name]
+                    weights = weights * custom_procweight
 
-                        weights = ak.to_numpy(weights)
+                weights = ak.to_numpy(weights)
 
-                        sum_nnweights += sum(weights)
-                        sum_nnweights_processes.setdefault(proc_name, 0)
-                        sum_nnweights_processes[proc_name] += sum(weights)
+                if np.any(~np.isfinite(weights)):
+                    raise Exception(f"Infinite values found in weights from dataset {dataset}")
 
-                        # logger.info("weights, min, max:", weights[:5], ak.min(weights), ak.max(weights))
+                sum_nnweights += sum(weights)
+                sum_nnweights_processes.setdefault(proc_name, 0)
+                sum_nnweights_processes[proc_name] += sum(weights)
 
-                        # transform events into numpy array and transpose
-                        inputs = np.transpose(ak.to_numpy(ak.Array(
-                            [events[var] for var in self.input_features],
-                        ))).astype("float32")
-                        # create the truth values for the output layer
-                        target = np.zeros((len(events), len(self.processes)))
-                        target[:, this_proc_idx] = 1
+                # remove columns not used in training
+                for var in events.fields:
+                    if var not in self.input_features:
+                        events = remove_ak_column(events, var)
 
-                        if DNN_inputs["weights"] is None:
-                            DNN_inputs["weights"] = weights
-                            DNN_inputs["inputs"] = inputs
-                            DNN_inputs["target"] = target
-                        else:
-                            DNN_inputs["weights"] = np.concatenate([DNN_inputs["weights"], weights])
-                            DNN_inputs["inputs"] = np.concatenate([DNN_inputs["inputs"], inputs])
-                            DNN_inputs["target"] = np.concatenate([DNN_inputs["target"], target])
+                # transform events into numpy ndarray
+                events = ak.to_numpy(events)
+                events = events.astype(
+                    [(name, np.float32) for name in events.dtype.names], copy=False,
+                ).view(np.float32).reshape((-1, len(events.dtype)))
 
-            logger.info("   weights:", weights[:5])
-            logger.info(f"  Sum NN weights: {sum_nnweights}")
+                if np.any(~np.isfinite(events)):
+                    raise Exception(f"Infinite values found in inputs from dataset {dataset}")
 
-        logger.info(sum_nnweights_processes)
+                # create the truth values for the output layer
+                target = np.zeros((len(events), len(self.processes)))
+                target[:, this_proc_idx] = 1
+
+                if np.any(~np.isfinite(target)):
+                    raise Exception(f"Infinite values found in target from dataset {dataset}")
+                if DNN_inputs["weights"] is None:
+                    DNN_inputs["weights"] = weights
+                    DNN_inputs["inputs"] = events
+                    DNN_inputs["target"] = target
+                else:
+                    DNN_inputs["weights"] = np.concatenate([DNN_inputs["weights"], weights])
+                    DNN_inputs["inputs"] = np.concatenate([DNN_inputs["inputs"], events])
+                    DNN_inputs["target"] = np.concatenate([DNN_inputs["target"], target])
+
+            logger.debug(f"   weights: {weights[:5]}")
+            logger.debug(f"   Sum NN weights: {sum_nnweights}")
+
+            logger.info(f"Inputs done for {dataset} in {(time() - t0):.3f}s")
+
+        logger.info(f"Sum of weights per process: {sum_nnweights_processes}")
 
         #
         # shuffle events and split into train and validation fold
@@ -243,12 +254,11 @@ class SimpleDNN(MLModel):
         N_validation_events = int(validation_fraction * len(DNN_inputs["weights"]))
 
         train, validation = {}, {}
-        for k, vals in DNN_inputs.items():
-            # shuffle inputs and split them into validation and train
-            vals = vals[shuffle_indices]
+        for k in DNN_inputs.keys():
+            DNN_inputs[k] = DNN_inputs[k][shuffle_indices]
 
-            validation[k] = vals[:N_validation_events]
-            train[k] = vals[N_validation_events:]
+            validation[k] = DNN_inputs[k][:N_validation_events]
+            train[k] = DNN_inputs[k][N_validation_events:]
 
         return train, validation
 
@@ -260,68 +270,122 @@ class SimpleDNN(MLModel):
     ) -> ak.Array:
         # np.random.seed(1337)  # for reproducibility
 
+        physical_devices = tf.config.list_physical_devices("GPU")
+        try:
+            tf.config.experimental.set_memory_growth(physical_devices[0], True)
+        except:
+            # Invalid device or cannot modify virtual devices once initialized.
+            pass
+
         #
         # input preparation
         #
 
         train, validation = self.prepare_inputs(task, input)
-        logger.info("garbage collected")
+
+        # check for infinite values
+        for key in train.keys():
+            if np.any(~np.isfinite(train[key])):
+                raise Exception(f"Infinite values found in training {key}")
+            if np.any(~np.isfinite(validation[key])):
+                raise Exception(f"Infinite values found in validation {key}")
+
         gc.collect()
+        logger.info("garbage collected")
 
         #
         # model preparation
         #
 
-        N_inputs = len(self.input_features)
-        N_outputs = len(self.processes)
+        n_inputs = len(self.input_features)
+        n_outputs = len(self.processes)
 
         from keras.models import Sequential
-        from keras.layers import Dense, BatchNormalization, Dropout
+        from keras.layers import Dense, BatchNormalization
 
         # define the DNN model
         # TODO: do this Funcional instead of Sequential
         model = Sequential()
 
         # BatchNormalization layer with input shape
-        model.add(BatchNormalization(input_shape=(N_inputs,)))
+        model.add(BatchNormalization(input_shape=(n_inputs,)))
 
-        # first layer with input shape
-        # model.add(Dense(self.layers[0], activation="relu", input_shape=(N_inputs,)))
+        activation_settings = {
+            "elu": ("ELU", "he_uniform", "Dropout"),
+            "relu": ("ReLU", "he_uniform", "Dropout"),
+            "prelu": ("PReLU", "he_normal", "Dropout"),
+            "selu": ("selu", "lecun_normal", "AlphaDropout"),
+            "tanh": ("tanh", "glorot_normal", "Dropout"),
+            "softmax": ("softmax", "glorot_normal", "Dropout"),
+        }
+        keras_act_name, init_name, dropout_layer = activation_settings[self.activation]
 
         # following hidden layers
-        # for layer in self.layers[1:]:
-        for layer in self.layers:
-            model.add(Dense(layer, activation="relu"))
+        for n_nodes in self.layers:
+            model.add(Dense(
+                units=n_nodes,
+                activation=keras_act_name,
+            ))
+
             # Potentially add dropout layer after each hidden layer
             if self.dropout:
+                Dropout = getattr(keras.layers, dropout_layer)
                 model.add(Dropout(self.dropout))
 
         # output layer
-        model.add(Dense(N_outputs, activation="softmax"))
+        model.add(Dense(n_outputs, activation="softmax"))
 
         # compile the network
-        # optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
-        # NOTE: decay is deprecated, therefore use legacy.Adam for now
-        optimizer = keras.optimizers.legacy.Adam(
-            lr=self.learningrate, beta_1=0.9, beta_2=0.999,
-            epsilon=1e-6, decay=0.0, amsgrad=False,
+        optimizer = keras.optimizers.Adam(
+            learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
+            epsilon=1e-6, amsgrad=False,
         )
-        model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["categorical_accuracy"])
+        model.compile(
+            loss="categorical_crossentropy",
+            optimizer=optimizer,
+            weighted_metrics=["categorical_accuracy"],
+        )
 
         #
         # training
         #
 
-        # TODO: early stopping to determine the 'best' model
+        # early stopping to determine the 'best' model
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            min_delta=0,
+            patience=int(self.epochs / 4),
+            verbose=0,
+            mode="auto",
+            baseline=None,
+            restore_best_weights=True,
+            start_from_epoch=0,
+        )
+
+        logger.info("input to tf Dataset")
+
+        with tf.device("CPU"):
+            tf_train = tf.data.Dataset.from_tensor_slices(
+                (train["inputs"], train["target"], train["weights"]),
+            ).batch(self.batchsize)
+            tf_validate = tf.data.Dataset.from_tensor_slices(
+                (validation["inputs"], validation["target"], validation["weights"]),
+            ).batch(self.batchsize)
+
+        fit_kwargs = {
+            "epochs": self.epochs,
+            "callbacks": [early_stopping],
+            "verbose": 2,
+        }
 
         # train the model
         logger.info("Start training...")
         model.fit(
-            x=train["inputs"], y=train["target"], epochs=self.epochs, sample_weight=train["weights"],
-            validation_data=(validation["inputs"], validation["target"], validation["weights"]),
-            shuffle=True, verbose=1,
-            batch_size=self.batchsize,
+            tf_train,
+            validation_data=tf_validate,
+            **fit_kwargs,
         )
+
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
         output.parent.touch()
@@ -342,12 +406,21 @@ class SimpleDNN(MLModel):
         models, history = zip(*models)
         # TODO: use history for loss+acc plotting
 
-        inputs = np.transpose(ak.to_numpy(ak.Array([events[var] for var in self.input_features])))
+        # remove columns not used in training
+        for var in events.fields:
+            if var not in self.input_features:
+                events = remove_ak_column(events, var)
+
+        # transform events into numpy ndarray
+        events = ak.to_numpy(events)
+        events = events.astype(
+            [(name, np.float32) for name in events.dtype.names], copy=False,
+        ).view(np.float32).reshape((-1, len(events.dtype)))
 
         # do prediction for all models and all events
         predictions = []
         for i, model in enumerate(models):
-            pred = ak.from_numpy(model.predict_on_batch(inputs))
+            pred = ak.from_numpy(model.predict_on_batch(events))
             if len(pred[0]) != len(self.processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
