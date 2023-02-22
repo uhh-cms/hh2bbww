@@ -42,6 +42,7 @@ def fix_missing_LHEScaleWeight(self: Producer, events: ak.Array, **kwargs) -> ak
             [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]]), scale_tmp[:, 4:]], axis=1,
         ))
 
+    return events
 
 @producer(
     uses={pu_weight, btag_weights},

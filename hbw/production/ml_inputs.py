@@ -105,6 +105,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # wlnu features
     wlnu = events.MET + events.Lepton[:, 0]
     events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
+    # NOTE: this column can be set to nan value
     events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
 
     # hww features
@@ -139,9 +140,9 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     ) ** 0.5
     events = set_ak_column_f32(events, "mli_s_min", s_min)
 
-    # fill none values of all produced columns
+    # fill nan/none values of all produced columns
     for col in self.ml_columns:
-        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
     return events
 

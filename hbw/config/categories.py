@@ -6,9 +6,13 @@ Definition of categories.
 
 from collections import OrderedDict
 
+import law
+
 from columnflow.config_util import create_category_combinations
 
 import order as od
+
+logger = law.logger.get_logger(__name__)
 
 
 def add_categories_selection(config: od.Config) -> None:
@@ -112,7 +116,7 @@ def add_categories_production(config: od.Config) -> None:
         kwargs_fn=kwargs_fn,
         skip_existing=False,  # there should be no existing sub-categories
     )
-    print(f"Number of produced category insts: {n_cats}")
+    logger.info(f"Number of produced category insts: {n_cats}")
 
 
 def add_categories_ml(config, ml_model_inst):
@@ -144,6 +148,6 @@ def add_categories_ml(config, ml_model_inst):
         kwargs_fn=kwargs_fn,
         skip_existing=True,
     )
-    print(f"Number of produced ml category insts: {n_cats}")
+    logger.info(f"Number of produced ml category insts: {n_cats}")
 
     # TODO unfinished
