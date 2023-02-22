@@ -16,11 +16,11 @@ import order as od
 
 from columnflow.util import DotDict
 from columnflow.config_util import get_root_processes_from_campaign
+from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
-
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -86,34 +86,7 @@ def add_config(
     qcd_ele.add_process(cfg.get_process("qcd_bctoe"))
 
     # set color of some processes
-    colors = {
-        "data": "#000000",  # black
-        "tt": "#e41a1c",  # red
-        "qcd": "#377eb8",  # blue
-        "qcd_mu": "#377eb8",  # blue
-        "qcd_ele": "#377eb8",  # blue
-        "w_lnu": "#4daf4a",  # green
-        "higgs": "#984ea3",  # purple
-        "st": "#ff7f00",  # orange
-        "dy_lep": "#ffff33",  # yellow
-        "ttV": "#a65628",  # brown
-        "VV": "#f781bf",  # pink
-        "other": "#999999",  # grey
-        "ggHH_kl_1_kt_1_sl_hbbhww": "#000000",  # black
-        "ggHH_kl_0_kt_1_sl_hbbhww": "#1b9e77",  # green2
-        "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
-        "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
-        "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
-        "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green
-        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": "#984ea3",  # purple
-        "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
-        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
-        "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
-    }
-    for proc, color in colors.items():
-        if proc in cfg.processes:
-            cfg.get_process(proc).color1 = color
+    stylize_processes(cfg)
 
     # add datasets we need to study
     dataset_names = [
@@ -205,7 +178,8 @@ def add_config(
     # default calibrator, selector, producer, ml model and inference model
     cfg.x.default_calibrator = "skip_jecunc"
     cfg.x.default_selector = "default"
-    cfg.x.default_producer = "features"
+    cfg.x.default_producer = "ml_inputs"
+    # cfg.x.default_ml_model = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "default"
     cfg.x.default_categories = ["incl"]
@@ -218,6 +192,7 @@ def add_config(
     cfg.x.process_groups = {
         "all": ["*"],
         "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
+        "with_qcd": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd", "st", "w_lnu", "dy_lep"],
         "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
         "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
         "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
@@ -225,7 +200,6 @@ def add_config(
         "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
         "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-
     }
 
     # dataset groups for conveniently looping over certain datasets
