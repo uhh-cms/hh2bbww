@@ -49,7 +49,6 @@ def name_fn(**root_cats):
 def kwargs_fn(root_cats):
     kwargs = {
         "id": sum([c.id for c in root_cats.values()]),
-        "selection": "&&".join([c.selection for c in root_cats.values()]),
         "label": ", ".join([c.name for c in root_cats.values()]),
     }
     return kwargs
