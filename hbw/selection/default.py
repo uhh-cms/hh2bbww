@@ -323,13 +323,13 @@ def lepton_selection_init(self: Selector) -> None:
 @selector(
     uses={
         boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection, cutflow_features,
+        jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     produces={
         boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection, cutflow_features,
+        jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
@@ -400,11 +400,15 @@ def default(
 
 @default.init
 def default_init(self: Selector) -> None:
+    if self.config_inst.x("do_cutflow_features", False):
+        self.uses.add(cutflow_features)
+        self.produces.add(cutflow_features)
+
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
-    self.uses |= {event_weights_to_normalize}
-    self.produces |= {event_weights_to_normalize}
+    self.uses.add(event_weights_to_normalize)
+    self.produces.add(event_weights_to_normalize)
 
 
 @selector(

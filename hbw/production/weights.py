@@ -24,6 +24,7 @@ ak = maybe_import("awkward")
 @producer(
     uses={"LHEScaleWeight"},
     produces={"LHEScaleWeight"},
+    mc_only=True,
 )
 def fix_missing_LHEScaleWeight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -43,6 +44,7 @@ def fix_missing_LHEScaleWeight(self: Producer, events: ak.Array, **kwargs) -> ak
         ))
 
     return events
+
 
 @producer(
     uses={pu_weight, btag_weights},

@@ -201,6 +201,8 @@ def add_config(
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
         "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
+    cfg.x.process_groups["dmuch"] = ["data_mu"] + cfg.x.process_groups["much"]
+    cfg.x.process_groups["dech"] = ["data_e"] + cfg.x.process_groups["ech"]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)

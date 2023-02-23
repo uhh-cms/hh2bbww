@@ -86,6 +86,15 @@ def add_feature_variables(config: od.Config) -> None:
         binning=(40, 0, 5),
         x_title=r"$\Delta R(j_{1},j_{2})$",
     )
+    # FatJet features
+    for i in range(2):
+        config.add_variable(
+            name=f"fatjet{i+1}_tau21",
+            expression=f"FatJet.tau21[:,{i}]",
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0, 1),
+            x_title=r"FatJet %i $\tau_{21}$" % (i + 1),
+        )
 
 
 def add_variables(config: od.Config) -> None:
@@ -96,12 +105,16 @@ def add_variables(config: od.Config) -> None:
     #
     # Weights
     #
+
+    """
+    # NOTE: mc_weight needed for cutflow plots, but can't be used with data :(
     config.add_variable(
         name="mc_weight",
         expression="mc_weight",
         binning=(200, -10, 10),
         x_title="MC weight",
     )
+
     for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
         # NOTE: would be nice to not use the event weight for these variables
         config.add_variable(
@@ -110,13 +123,14 @@ def add_variables(config: od.Config) -> None:
             binning=(40, -2, 2),
             x_title=f"{weight} weight",
         )
-    config.add_variable(
-        name="pu_weight_log",
-        expression=f"{weight}_weight",
-        binning=list(np.logspace(-2, 2, 50)),
-        log_x=True,
-        x_title="PU weight",
-    )
+        config.add_variable(
+            name="pu_weight_log",
+            expression=f"{weight}_weight",
+            binning=list(np.logspace(-2, 2, 50)),
+            log_x=True,
+            x_title="PU weight",
+        )
+    """
 
     config.add_variable(
         name="npvs",
@@ -138,21 +152,21 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"Jet%i $p_{T}$" % (i + 1),
+            x_title=r"Jet %i $p_{T}$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_eta",
             expression=f"Jet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, -2.5, 2.5),
-            x_title=r"Jet%i $\eta$" % (i + 1),
+            x_title=r"Jet %i $\eta$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_phi",
             expression=f"Jet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Jet%i $\phi$" % (i + 1),
+            x_title=r"Jet %i $\phi$" % (i + 1),
         )
         config.add_variable(
             name=f"jet{i+1}_mass",
@@ -160,21 +174,23 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 200),
             unit="GeV",
-            x_title=r"Jet%i mass" % (i + 1),
+            x_title=r"Jet %i mass" % (i + 1),
         )
+        """
         config.add_variable(
             name=f"jet{i+1}_btagDeepB",
             expression=f"Jet.btagDeepB[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"Jet%i DeepCSV b+bb tag" % (i + 1),
+            x_title=r"Jet %i DeepCSV b+bb tag" % (i + 1),
         )
+        """
         config.add_variable(
             name=f"jet{i+1}_btagDeepFlavB",
             expression=f"Jet.btagDeepFlavB[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"Jet%i DeepFlavour b+bb+lepb tag" % (i + 1),
+            x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % (i + 1),
         )
 
     # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
@@ -186,28 +202,28 @@ def add_variables(config: od.Config) -> None:
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0., 300.),
                 unit="GeV",
-                x_title=obj + r"%i $p_{T}$" % (i + 1),
+                x_title=obj + r" %i $p_{T}$" % (i + 1),
             )
             config.add_variable(
                 name=f"{obj}{i+1}_eta".lower(),
                 expression=f"{obj}.eta[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(50, -2.5, 2.5),
-                x_title=obj + r"%i $\eta$" % (i + 1),
+                x_title=obj + r" %i $\eta$" % (i + 1),
             )
             config.add_variable(
                 name=f"{obj}{i+1}_phi".lower(),
                 expression=f"{obj}.phi[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, -3.2, 3.2),
-                x_title=obj + r"%i $\phi$" % (i + 1),
+                x_title=obj + r" %i $\phi$" % (i + 1),
             )
             config.add_variable(
                 name=f"{obj}{i+1}_mass".lower(),
                 expression=f"{obj}.mass[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 200),
-                x_title=obj + r"%i mass" % (i + 1),
+                x_title=obj + r" %i mass" % (i + 1),
             )
 
     # FatJets (2 pt-leading fatjets)
@@ -218,21 +234,21 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 170., 500.),
             unit="GeV",
-            x_title=r"FatJet%i $p_{T}$" % (i + 1),
+            x_title=r"FatJet %i $p_{T}$" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_eta",
             expression=f"FatJet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, -2.5, 2.5),
-            x_title=r"FatJet%i $\eta$" % (i + 1),
+            x_title=r"FatJet %i $\eta$" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_phi",
             expression=f"FatJet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"FatJet%i $\phi$" % (i + 1),
+            x_title=r"FatJet %i $\phi$" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_mass",
@@ -240,7 +256,7 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 250),
             unit="GeV",
-            x_title=r"FatJet%i mass" % (i + 1),
+            x_title=r"FatJet %i mass" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_msoftdrop",
@@ -248,35 +264,35 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 250),
             unit="GeV",
-            x_title=r"FatJet%i softdrop mass" % (i + 1),
+            x_title=r"FatJet %i softdrop mass" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_tau1",
             expression=f"FatJet.tau1[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet%i $\tau_1$" % (i + 1),
+            x_title=r"FatJet %i $\tau_1$" % (i + 1),
         )
         config.add_variable(
             name=f"fatjet{i+1}_tau2",
             expression=f"FatJet.tau2[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet%i $\tau_2$" % (i + 1),
+            x_title=r"FatJet %i $\tau_2$" % (i + 1),
         )
         config.add_variable(
-            name=f"fatjet{i+1}_tau21",
-            expression=f"FatJet.tau21[:,{i}]",
+            name=f"fatjet{i+1}_btagHbb",
+            expression=f"FatJet.btagHbb[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet%i $\tau_{21}$" % (i + 1),
+            x_title=r"FatJet %i btagHbb" % (i + 1),
         )
         config.add_variable(
-            name=f"fatjet{i+1}_btagDeepB",
-            expression=f"FatJet.btagDeepB[:,{i}]",
+            name=f"fatjet{i+1}_deepTagMD_HbbvsQCD",
+            expression=f"FatJet.deepTagMD_HbbvsQCD[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet%i DeepCSV b+bb tag" % (i + 1),
+            x_title=r"FatJet %i deepTagMD_HbbvsQCD " % (i + 1),
         )
 
     # Leptons
@@ -314,16 +330,14 @@ def add_variables(config: od.Config) -> None:
     # MET
     config.add_variable(
         name="met_pt",
-        expression="MET.pt[:,0]",
-        null_value=EMPTY_FLOAT,
+        expression="MET.pt",
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"MET $p_{T}$",
     )
     config.add_variable(
         name="met_phi",
-        expression="MET.phi[:,0]",
-        null_value=EMPTY_FLOAT,
+        expression="MET.phi",
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",
     )
