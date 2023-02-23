@@ -142,9 +142,3 @@ def features_init(self: Producer) -> None:
         # add variable instances but only on first call
         add_feature_variables(self.config_inst)
         self.config_inst.x.add_feature_variables = False
-
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses.add(event_weights)
-    self.produces.add(event_weights)

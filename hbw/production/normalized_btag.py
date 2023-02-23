@@ -55,9 +55,6 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
 @normalized_btag_weights.init
 def normalized_btag_weights_init(self: Producer) -> None:
-    if not getattr(self, "dataset_inst", None):
-        return
-
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
             continue
