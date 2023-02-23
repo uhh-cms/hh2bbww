@@ -133,7 +133,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
-    if getattr(self, "dataset_inst", None) and "qcd" in self.dataset_inst.name:
+    if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_qcd", False):
         return
 
     self.uses |= {normalized_scale_pdf_weights}

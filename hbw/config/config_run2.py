@@ -172,6 +172,8 @@ def add_config(
             dataset.x.has_top = True
         if dataset.name.startswith("tt"):
             dataset.x.is_ttbar = True
+        if dataset.name.startswith("qcd"):
+            dataset.x.is_qcd = True
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             dataset.x.is_hbw = True
 
@@ -649,10 +651,14 @@ def add_config(
     cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
     # TODO: fix pu_weight; takes way too large values (from 0 to 160)
     # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-    cfg.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
-    cfg.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
-    cfg.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
-    cfg.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
+    for dataset in cfg.datasets:
+        dataset.x.event_weights = DotDict()
+        if not dataset.x("is_qcd", False):
+            # pdf/scale weights for all non-qcd datasets
+            dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
+            dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
+            dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
+            dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     # versions per task family and optionally also dataset and shift
     # None can be used as a key to define a default value
