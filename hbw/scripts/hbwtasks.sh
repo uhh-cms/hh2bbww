@@ -21,12 +21,24 @@ hbw_reduction(){
 	--datasets $datasets \
 	--skip-datasets "qqHH*" \
 	--cf.ReduceEvents-workflow htcondor \
-	--cf.ReduceEvents-pilot True \
+	--cf.ReduceEvents-pilot \
+	--cf.ReduceEvents-no-poll \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
 	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1
 	#--cf.ReduceEvents-htcondor-share-software True
+}
+
+hbw_cutflow(){
+    law run cf.PlotCutflow --version $version --workers 10 \
+	--config config_2017_limited \
+	--calibrators $calibrators \
+	--selector $selector \
+	--shift nominal \
+	--processes with_qcd \
+	--shape-norm True --yscale log \
+	--workflow htcondor --pilot True --retries 1
 }
 
 producers="ml_inputs"
@@ -35,22 +47,26 @@ ml_model="test"
 ml_datasets="ml"
 
 hbw_ml_preparation(){
-    law run cf.MergeMLEventsWrapper --version $version --workers 10 \
-	--configs $config \
-	--cf.MergeMLEvents-producers $producers \
-	--cf.MergeMLEvents-ml-model $ml_model \
-	--datasets $ml_datasets \
-	--skip-datasets "qqHH*,data*" \
-	--cf.MergeMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeMLEvents-parallel-jobs 4000 \
-	--cf.MergeMLEvents-retries 1 \
-	--cf.MergeMLEvents-tasks-per-job 1 \
-	--cf.MergeMLEvents-job-workers 1
+    for i in {0..4}
+    do
+	law run cf.MergeMLEventsWrapper --version $version --workers 10 \
+	    --configs $config \
+	    --cf.MergeMLEvents-producers $producers \
+	    --cf.MergeMLEvents-ml-model $ml_model \
+	    --cf.MergeMLEvents-fold $i \
+	    --datasets $ml_datasets \
+	    --skip-datasets "qqHH*,data*" \
+	    --cf.MergeMLEvents-workflow local \
+	    --cf.PrepareMLEvents-pilot True \
+	    --cf.MergeMLEvents-parallel-jobs 4000 \
+	    --cf.MergeMLEvents-retries 1 \
+	    --cf.MergeMLEvents-tasks-per-job 1 \
+	    --cf.MergeMLEvents-job-workers 1
+    done
 }
 
 processes="default"
-categories="resolved,boosted,inclusive"
+categories="resolved,boosted,incl"
 variables="mli_*"
 
 # NOTE: running this starts quite a lot of jobs, so only submit if everything is ready
@@ -62,11 +78,54 @@ hbw_plot_variables(){
 	--processes $processes \
 	--variables $variables \
 	--categories $categories \
-	--process-settings unstack_signal --shape-norm True --yscale log \
+	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw \
 	--workflow htcondor \
 	--pilot True \
 	--parallel-jobs 4000 \
 	--htcondor-share-software True \
 	--tasks-per-job 1 \
-	--job-workers 1
+	--job-workers 1 \
+	--remove-output 0,a,y
+}
+
+ml_model="default"
+ml_output_variables="default.*"
+ml_categories="resolved,boosted,incl,ml_ggHH_kl_1_kt_1_sl_hbbhww,ml_tt,ml_st,ml_w_lnu,ml_dy_lep"
+
+hbw_plot_ml_nodes(){
+    law run cf.PlotVariables1D --version $version --workers 50 \
+	--config $config \
+	--calibrators $calibrators --selector $selector \
+	--producers $producers \
+	--ml-models $ml_model \
+	--processes $processes \
+	--variables $ml_output_variables \
+	--categories $ml_categories \
+	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw \
+	--workflow htcondor \
+	--pilot True \
+	--retries 1 \
+    	--remove-output 0,a,y
+}
+
+hbw_control_plots_much(){
+    law run cf.PlotVariables1D --version $version --workers 50 \
+	--config $config \
+	--calibrators $calibrators --selector $selector \
+	--producers features \
+	--processes dmuch \
+	--variables "*" \
+	--categories "1mu,1mu__resolved,1mu__boosted" \
+	--yscale log --cms-label pw \
+	--workflow htcondor \
+	--remove-output 0,a,y
+}
+
+hbw_datacards(){
+    law run cf.CreateDatacards --version $version --workers 50 \
+	--config $config \
+	--calibrators $calibrators --selector $selector \
+	--producers ml_inputs --ml-models default \
+	--pilot --workflow htcondor \
+	--retries 1
 }
