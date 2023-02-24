@@ -68,6 +68,15 @@ class SimpleDNN(MLModel):
                     binning=(40, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
                 )
+                hh_bins = [0.0, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .92, 1.0]
+                bkg_bins = [0.0, 0.4, 0.7, 1.0]
+                self.config_inst.add_variable(
+                    name=f"{self.cls_name}.score_{proc}_rebin1",
+                    expression=f"{self.cls_name}.score_{proc}",
+                    null_value=-1,
+                    binning=hh_bins if "HH" in proc else bkg_bins,
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
+                )
 
         # dynamically add ml categories
         if self.config_inst.x("add_categories_ml", True):
@@ -406,21 +415,24 @@ class SimpleDNN(MLModel):
         models, history = zip(*models)
         # TODO: use history for loss+acc plotting
 
+        # create a copy of the inputs to use for evaluation
+        inputs = ak.copy(events)
+
         # remove columns not used in training
-        for var in events.fields:
+        for var in inputs.fields:
             if var not in self.input_features:
-                events = remove_ak_column(events, var)
+                inputs = remove_ak_column(inputs, var)
 
-        # transform events into numpy ndarray
-        events = ak.to_numpy(events)
-        events = events.astype(
-            [(name, np.float32) for name in events.dtype.names], copy=False,
-        ).view(np.float32).reshape((-1, len(events.dtype)))
+        # transform inputs into numpy ndarray
+        inputs = ak.to_numpy(inputs)
+        inputs = inputs.astype(
+            [(name, np.float32) for name in inputs.dtype.names], copy=False,
+        ).view(np.float32).reshape((-1, len(inputs.dtype)))
 
-        # do prediction for all models and all events
+        # do prediction for all models and all inputs
         predictions = []
         for i, model in enumerate(models):
-            pred = ak.from_numpy(model.predict_on_batch(events))
+            pred = ak.from_numpy(model.predict_on_batch(inputs))
             if len(pred[0]) != len(self.processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
@@ -458,7 +470,7 @@ class SimpleDNN(MLModel):
             for f in events[self.cls_name].fields if f.startswith("score_")
         })
 
-        ml_category_ids = max_score = ak.zeros_like(events.deterministic_seed)
+        ml_category_ids = max_score = ak.Array(np.zeros(len(events)))
         for proc in scores.fields:
             ml_category_ids = ak.where(scores[proc] > max_score, ml_proc_to_id[proc], ml_category_ids)
             max_score = ak.where(scores[proc] > max_score, scores[proc], max_score)

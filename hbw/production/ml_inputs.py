@@ -33,7 +33,6 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
         category_ids, event_weights,
         # other produced columns set in the init function
     },
-    mc_only=True,
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 

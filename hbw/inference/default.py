@@ -10,6 +10,8 @@ from columnflow.inference import inference_model, ParameterType, ParameterTransf
 @inference_model
 def default(self):
 
+    # TODO: smiliar to the DNN
+
     year = self.config_inst.campaign.x.year  # noqa; not used right now
     ecm = self.config_inst.campaign.ecm
 
@@ -17,20 +19,33 @@ def default(self):
     # categories
     #
 
-    self.add_category(
-        "cat1",
-        config_category="1e",
-        config_variable="jet1_pt",
-        mc_stats=True,
-        config_data_datasets=["data_e_b"],
-    )
-    self.add_category(
-        "cat2",
-        config_category="1mu",
-        config_variable="jet1_pt",
-        mc_stats=True,
-        config_data_datasets=["data_mu_b"],
-    )
+    e_categories, mu_categories = [], []
+
+    # NOTE: use ML model inst if possible
+    ml_model_name = "default"
+    ml_model_processes = {
+        "ggHH_kl_1_kt_1_sl_hbbhww",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_lep",
+    }
+
+    for proc in ml_model_processes:
+        e_categories.append(self.add_category(
+            f"1e_{proc}",
+            config_category=f"1e__ml_{proc}",
+            config_variable=f"{ml_model_name}.score_{proc}_rebin1",
+            mc_stats=True,
+            config_data_datasets=[f"data_e_{i}" for i in ["b", "c", "d", "e", "f"]],
+        ))
+        mu_categories.append(self.add_category(
+            f"1mu_{proc}",
+            config_category=f"1mu__ml_{proc}",
+            config_variable=f"{ml_model_name}.score_{proc}_rebin1",
+            mc_stats=True,
+            config_data_datasets=[f"data_mu_{i}" for i in ["b", "c", "d", "e", "f"]],
+        ))
 
     #
     # processes
@@ -51,11 +66,11 @@ def default(self):
         "ggHH_kl_1_kt_1_sl_hbbhww",
         "ggHH_kl_2p45_kt_1_sl_hbbhww",
         "ggHH_kl_5_kt_1_sl_hbbhww",
-        "tt_sl",  # "tt",
+        "tt",
         # "ttv", "ttvv",
-        # "st_schannel", "st_tchannel", "st_twchannel",
-        # "dy_lep",
-        # "w_lnu",
+        "st_schannel", "st_tchannel", "st_twchannel",
+        "dy_lep",
+        "w_lnu",
         # "vv",
         # "vvv",
         # "qcd",
@@ -199,40 +214,6 @@ def default(self):
             )
             self.add_parameter_to_group(f"{unc}_{proc}", "theory")
 
-    # Leftovers from test inference model, kept as an example for further implementations of uncertainties
-    """
-    # and again minbias xs, but encoded as symmetrized rate
-    self.add_parameter(
-        "CMS_pileup2",
-        type=ParameterType.rate_uniform,
-        transformations=[ParameterTransformation.effect_from_shape, ParameterTransformation.symmetrize],
-        config_shift_source="minbias_xs",
-    )
-    self.add_parameter_to_group("CMS_pileup2", "experiment")
-
-    # a custom asymmetric uncertainty that is converted from rate to shape
-    self.add_parameter(
-        "QCDscale_ST",
-        config_process="ST",
-        type=ParameterType.shape,
-        transformations=[ParameterTransformation.effect_from_rate],
-        effect=(0.5, 1.1),
-    )
-
-    # test
-    self.add_parameter(
-        "QCDscale_ttbar",
-        config_category="cat1",
-        config_process="TT",
-        type=ParameterType.rate_uniform,
-    )
-    self.add_parameter(
-        "QCDscale_ttbar_norm",
-        config_category="cat1",
-        config_process="TT",
-        type=ParameterType.rate_unconstrained,
-    )
-    """
     #
     # post-processing
     #
