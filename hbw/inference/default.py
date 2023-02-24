@@ -23,24 +23,24 @@ def default(self):
 
     # NOTE: use ML model inst if possible
     ml_model_name = "default"
-    ml_model_processes = {
+    ml_model_processes = [
         "ggHH_kl_1_kt_1_sl_hbbhww",
         "tt",
         "st",
         "w_lnu",
         "dy_lep",
-    }
+    ]
 
     for proc in ml_model_processes:
         e_categories.append(self.add_category(
-            f"1e_{proc}",
+            f"cat_1e_{proc}",
             config_category=f"1e__ml_{proc}",
             config_variable=f"{ml_model_name}.score_{proc}_rebin1",
             mc_stats=True,
             config_data_datasets=[f"data_e_{i}" for i in ["b", "c", "d", "e", "f"]],
         ))
         mu_categories.append(self.add_category(
-            f"1mu_{proc}",
+            f"cat_1mu_{proc}",
             config_category=f"1mu__ml_{proc}",
             config_variable=f"{ml_model_name}.score_{proc}_rebin1",
             mc_stats=True,
@@ -205,7 +205,13 @@ def default(self):
 
     # scale + pdf (shape)
     for proc in processes:
+        if proc == "qcd":
+            # no scale/pdf shape uncert. for qcd
+            continue
         for unc in ("murf_envelope", "pdf"):
+            if proc == "st_tchannel" and unc == "pdf":
+                # TODO: debugging (unphysically large/small pdf weights in process)
+                continue
             self.add_parameter(
                 f"{unc}_{proc}",
                 process=inference_procnames.get(proc, proc),
