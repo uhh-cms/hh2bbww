@@ -238,10 +238,14 @@ def jet_selection(
     )
 
 
-@selector(uses={
-    "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
-    "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
-})
+@selector(
+    uses={
+        "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
+        "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
+    },
+    ele_pt=None,
+    mu_pt=None,
+)
 def lepton_selection(
         self: Selector,
         events: ak.Array,
@@ -259,8 +263,6 @@ def lepton_selection(
 
     lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
 
-    trigger_sel = (events.HLT[self.mu_trigger]) | (events.HLT[self.ele_trigger])
-
     # Lepton definition for this analysis
     e_mask = (
         (events.Electron.pt > self.ele_pt) &
@@ -275,14 +277,23 @@ def lepton_selection(
         (events.Muon.pfRelIso04_all < 0.15)
     )
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
-    # e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
+    e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
+
+    trigger_sel = ak.ones_like(lep_sel)
+    if self.mu_trigger and self.ele_trigger:
+        # only apply triggers when both are defined
+        # NOTE: combination of lepton and trigger sel should be done in the inclusive mask
+        trigger_sel = (
+            (events.HLT[self.mu_trigger] & e_sel) |
+            (events.HLT[self.ele_trigger] & mu_sel)
+        )
 
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={
             "Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel,
-            "Muon": mu_sel,  # for comparing results with Msc Analysis
+            # "Muon": mu_sel,  # for comparing results with Msc Analysis
         },
         objects={
             "Electron": {
@@ -301,23 +312,30 @@ def lepton_selection(
 def lepton_selection_init(self: Selector) -> None:
     year = self.config_inst.campaign.x.year
 
-    # Trigger choice based on year of data-taking (for now: only single trigger)
-    self.mu_trigger = {
-        2016: "IsoMu24",  # or "IsoTkMu27")
-        2017: "IsoMu27",
-        2018: "IsoMu24",
-    }[year]
-    self.ele_trigger = {
-        2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
-        2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-        2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-    }[year]
+    # when lepton pt is manually set, don't use trigger
+    self.mu_trigger = self.ele_trigger = None
 
-    self.uses |= {f"HLT.{self.mu_trigger}", f"HLT.{self.ele_trigger}"}
+    # Lepton pt thresholds (if not set manually) based on year (1 pt above trigger threshold)
+    if not self.ele_pt:
+        self.ele_pt = {2016: 28, 2017: 36, 2018: 33}[year]
 
-    # Lepton pt thresholds based on year (1 pt above trigger threshold)
-    self.ele_pt = {2016: 28, 2017: 36, 2018: 33}[year]
-    self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
+        # Trigger choice based on year of data-taking (for now: only single trigger)
+        self.ele_trigger = {
+            2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
+            2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+            2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+        }[year]
+        self.uses.add(f"HLT.{self.ele_trigger}")
+    if not self.mu_pt:
+        self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
+
+        # Trigger choice based on year of data-taking (for now: only single trigger)
+        self.mu_trigger = {
+            2016: "IsoMu24",  # or "IsoTkMu27")
+            2017: "IsoMu27",
+            2018: "IsoMu24",
+        }[year]
+        self.uses.add(f"HLT.{self.mu_trigger}")
 
 
 @selector(
@@ -396,6 +414,10 @@ def default(
     self[increment_stats](events, results, stats, **kwargs)
 
     return events, results
+
+
+lep_15 = default.derive("lep_15", cls_dict={"ele_pt": 15, "mu_pt": 15})
+lep_27 = default.derive("lep_27", cls_dict={"ele_pt": 27, "mu_pt": 27})
 
 
 @default.init
