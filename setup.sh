@@ -47,6 +47,7 @@ setup_hbw() {
     export HBW_BASE="${this_dir}"
     export CF_BASE="${this_dir}/modules/columnflow"
     export CF_REPO_BASE="${HBW_BASE}"
+    export CF_REPO_BASE_ALIAS="HBW_BASE"
     export CF_SETUP_NAME="${setup_name}"
 
     # load cf setup helpers
