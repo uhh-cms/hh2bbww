@@ -40,6 +40,14 @@ default_process_colors = {
     "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
 }
 
+ml_labels = {
+    "tt": "$t\\bar{t}$",
+    "ggHH_kl_1_kt_1_sl_hbbhww": "HH",
+    "st": "st",
+    "w_lnu": "W",
+    "dy_lep": "DY",
+}
+
 
 def stylize_processes(config: od.Config) -> None:
     """
@@ -47,6 +55,7 @@ def stylize_processes(config: od.Config) -> None:
     For now: only colors and unstacking
     Could also include some more defaults (labels, unstack, ...)
     """
+
     for proc in config.processes:
         # set default colors
         if color := default_process_colors.get(proc.name, None):
@@ -54,6 +63,9 @@ def stylize_processes(config: od.Config) -> None:
         # unstack signal in plotting
         if "HH_" in proc.name:
             proc.x.unstack = True
+
+        # labels used for ML categories
+        proc.x.ml_label = ml_labels.get(proc.name, proc.name)
 
 
 #

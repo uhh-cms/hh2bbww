@@ -57,6 +57,7 @@ def add_config(
     cfg.add_process(procs.n.st)
     cfg.add_process(procs.n.w_lnu)
     cfg.add_process(procs.n.dy_lep)
+    cfg.add_process(procs.n.qcd)
     cfg.add_process(procs.n.qcd_mu)
     cfg.add_process(procs.n.qcd_em)
     cfg.add_process(procs.n.qcd_bctoe)
@@ -245,15 +246,19 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
+        "resolved": ["Trigger", "Lepton", "Jet", "Bjet"],
+        "boosted": ["Trigger", "Lepton", "FatJet", "Boosted"],
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
     }
 
     cfg.x.selector_step_labels = {
-        "Jet": r"$N_{Jets} \geq 3$",
-        "Lepton": r"$N_{Lepton} = 1$",
-        "Bjet": r"$N_{Jets}^{BTag} \geq 1$",
+        "Jet": r"$N_{jets}^{AK4} \geq 3$",
+        "Lepton": r"$N_{lepton} = 1$",
+        "Bjet": r"$N_{jets}^{BTag} \geq 1$",
+        "FatJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
+        "Boosted": r"$N_{jets}^{AK4} \geq 1$",
     }
 
     # plotting settings groups
@@ -265,7 +270,14 @@ def add_config(
         "default": {"ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 2000, "unstack": True}},
         "unstack_all": {proc.name: {"unstack": True} for proc in cfg.processes},
         "unstack_signal": {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
+        "scale_signal": {
+            proc.name: {"unstack": True, "scale": 10000}
+            for proc in cfg.processes if "HH" in proc.name
+        },
     }
+    # when drawing DY as a line, use a different type of yellow
+    cfg.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
+
     cfg.x.variable_settings_groups = {
         "test": {
             "mli_mbb": {"rebin": 2, "label": "test"},

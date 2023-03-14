@@ -66,7 +66,7 @@ class SimpleDNN(MLModel):
                     name=f"{self.cls_name}.score_{proc}",
                     null_value=-1,
                     binning=(40, 0., 1.),
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
                 hh_bins = [0.0, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .92, 1.0]
                 bkg_bins = [0.0, 0.4, 0.7, 1.0]
@@ -75,7 +75,7 @@ class SimpleDNN(MLModel):
                     expression=f"{self.cls_name}.score_{proc}",
                     null_value=-1,
                     binning=hh_bins if "HH" in proc else bkg_bins,
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).label}",
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
         # dynamically add ml categories
