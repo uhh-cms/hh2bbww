@@ -31,14 +31,20 @@ hbw_reduction(){
 }
 
 hbw_cutflow(){
-    law run cf.PlotCutflow --version $version --workers 10 \
-	--config config_2017_limited \
-	--calibrators $calibrators \
-	--selector $selector \
-	--shift nominal \
-	--processes with_qcd \
-	--shape-norm True --yscale log \
-	--workflow htcondor --pilot True --retries 1
+    for steps in "resolved" "boosted"
+    do
+	law run cf.PlotCutflow --version $version --workers 4 \
+	    --config config_2017_limited \
+	    --calibrators $calibrators \
+	    --selector $selector \
+	    --selector-steps $steps \
+	    --shift nominal \
+	    --processes with_qcd \
+	    --process-settings unstack_all \
+	    --shape-norm True --yscale log --cms-label simpw \
+	    --remove-output 0,a,y --view-cmd imgcat
+	    # --workflow htcondor --pilot True --retries 1
+    done
 }
 
 producers="ml_inputs"
@@ -78,7 +84,7 @@ hbw_plot_variables(){
 	--processes $processes \
 	--variables $variables \
 	--categories $categories \
-	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw \
+	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw --skip-ratio True \
 	--workflow htcondor \
 	--pilot True \
 	--parallel-jobs 4000 \
@@ -101,11 +107,25 @@ hbw_plot_ml_nodes(){
 	--processes $processes \
 	--variables $ml_output_variables \
 	--categories $ml_categories \
-	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw \
+	--process-settings unstack_signal --shape-norm True --yscale log --cms-label simpw --skip-ratio True \
 	--workflow htcondor \
 	--pilot True \
 	--retries 1 \
     	--remove-output 0,a,y
+}
+
+hbw_control_plots_noData_much(){
+    law run cf.PlotVariables1D --version $version --workers 50 \
+	--config $config \
+	--calibrators $calibrators --selector $selector \
+	--producers features \
+	--processes much \
+	--process-settings scale_signal \
+	--variables "*" \
+	--categories "1mu,1mu__resolved,1mu__boosted" \
+	--yscale log --skip-ratio True --cms-label simpw \
+	--workflow htcondor \
+	--remove-output 0,a,y
 }
 
 hbw_control_plots_much(){
@@ -114,6 +134,7 @@ hbw_control_plots_much(){
 	--calibrators $calibrators --selector $selector \
 	--producers features \
 	--processes dmuch \
+	--process-settings scale_signal \
 	--variables "*" \
 	--categories "1mu,1mu__resolved,1mu__boosted" \
 	--yscale log --cms-label pw \
