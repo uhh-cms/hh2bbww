@@ -16,11 +16,11 @@ import order as od
 
 from columnflow.util import DotDict
 from columnflow.config_util import get_root_processes_from_campaign
+from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
-from hbw.config.variables import add_variables, add_feature_variables
+from hbw.config.variables import add_variables
 
 from hbw.config.analysis_hbw import analysis_hbw
-from hbw.config.ml_variables import add_ml_variables
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,9 +57,10 @@ def add_config(
     cfg.add_process(procs.n.st)
     cfg.add_process(procs.n.w_lnu)
     cfg.add_process(procs.n.dy_lep)
-    # cfg.add_process(procs.n.qcd_mu)
-    # cfg.add_process(procs.n.qcd_em)
-    # cfg.add_process(procs.n.qcd_bctoe)
+    cfg.add_process(procs.n.qcd)
+    cfg.add_process(procs.n.qcd_mu)
+    cfg.add_process(procs.n.qcd_em)
+    cfg.add_process(procs.n.qcd_bctoe)
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
@@ -75,33 +76,18 @@ def add_config(
     cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
 
+    cfg.get_process("qcd_mu").label = "QCD Muon enriched"
+    qcd_ele = cfg.add_process(
+        name="qcd_ele",
+        id=31199,
+        xsecs={13: Number(0.1)},  # TODO
+        label="QCD Electron enriched",
+    )
+    qcd_ele.add_process(cfg.get_process("qcd_em"))
+    qcd_ele.add_process(cfg.get_process("qcd_bctoe"))
+
     # set color of some processes
-    colors = {
-        "data": "#000000",  # black
-        "tt": "#e41a1c",  # red
-        "qcd": "#377eb8",  # blue
-        "w_lnu": "#4daf4a",  # green
-        "higgs": "#984ea3",  # purple
-        "st": "#ff7f00",  # orange
-        "dy_lep": "#ffff33",  # yellow
-        "ttV": "#a65628",  # brown
-        "VV": "#f781bf",  # pink
-        "other": "#999999",  # grey
-        "ggHH_kl_1_kt_1_sl_hbbhww": "#000000",  # black
-        "ggHH_kl_0_kt_1_sl_hbbhww": "#1b9e77",  # green2
-        "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
-        "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
-        "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
-        "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green
-        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": "#984ea3",  # purple
-        "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
-        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
-        "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
-    }
-    for proc, color in colors.items():
-        if proc in cfg.processes:
-            cfg.get_process(proc).color1 = color
+    stylize_processes(cfg)
 
     # add datasets we need to study
     dataset_names = [
@@ -146,19 +132,19 @@ def add_config(
         "dy_lep_m50_ht1200to2500_madgraph",
         "dy_lep_m50_ht2500_madgraph",
         # QCD (no LHEScaleWeight)
-        # "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
-        # "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
-        # "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
-        # "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
-        # "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
-        # "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
-        # "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
-        # "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
-        # "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
-        # "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
-        # "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
-        # "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
-        # "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
+        "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
+        "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
+        "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
+        "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
+        "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
+        "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
+        "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
+        "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
+        "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
+        "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
+        "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # Signal
         "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
@@ -187,13 +173,16 @@ def add_config(
             dataset.x.has_top = True
         if dataset.name.startswith("tt"):
             dataset.x.is_ttbar = True
+        if dataset.name.startswith("qcd"):
+            dataset.x.is_qcd = True
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             dataset.x.is_hbw = True
 
     # default calibrator, selector, producer, ml model and inference model
     cfg.x.default_calibrator = "skip_jecunc"
     cfg.x.default_selector = "default"
-    cfg.x.default_producer = "features"
+    cfg.x.default_producer = "ml_inputs"
+    # cfg.x.default_ml_model = "default"
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "default"
     cfg.x.default_categories = ["incl"]
@@ -205,26 +194,32 @@ def add_config(
     # (used in wrapper_factory and during plotting)
     cfg.x.process_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "dy_lep", "w_lnu", "st", "tt"],
-        "inference": ["ggHH_*", "dy_lep", "w_lnu", "st", "tt"],
+        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
+        "with_qcd": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd", "st", "w_lnu", "dy_lep"],
+        "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
+        "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
+        "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
-        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "st", "tt"],
+        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
         "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-
     }
+    cfg.x.process_groups["dmuch"] = ["data_mu"] + cfg.x.process_groups["much"]
+    cfg.x.process_groups["dech"] = ["data_e"] + cfg.x.process_groups["ech"]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
     cfg.x.dataset_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["ggHH_*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "default": ["ggHH_kl_1*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
+        "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "test": ["ggHH_kl_1*", "tt_sl_powheg"],
         "small": ["ggHH_kl_1*", "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
+        "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
     }
 
     # category groups for conveniently looping over certain categories
@@ -251,15 +246,19 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
+        "resolved": ["Trigger", "Lepton", "Jet", "Bjet"],
+        "boosted": ["Trigger", "Lepton", "FatJet", "Boosted"],
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
     }
 
     cfg.x.selector_step_labels = {
-        "Jet": r"$N_{Jets} \geq 3$",
-        "Lepton": r"$N_{Lepton} = 1$",
-        "Bjet": r"$N_{Jets}^{BTag} \geq 1$",
+        "Jet": r"$N_{jets}^{AK4} \geq 3$",
+        "Lepton": r"$N_{lepton} = 1$",
+        "Bjet": r"$N_{jets}^{BTag} \geq 1$",
+        "FatJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
+        "Boosted": r"$N_{jets}^{AK4} \geq 1$",
     }
 
     # plotting settings groups
@@ -271,7 +270,14 @@ def add_config(
         "default": {"ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 2000, "unstack": True}},
         "unstack_all": {proc.name: {"unstack": True} for proc in cfg.processes},
         "unstack_signal": {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
+        "scale_signal": {
+            proc.name: {"unstack": True, "scale": 10000}
+            for proc in cfg.processes if "HH" in proc.name
+        },
     }
+    # when drawing DY as a line, use a different type of yellow
+    cfg.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
+
     cfg.x.variable_settings_groups = {
         "test": {
             "mli_mbb": {"rebin": 2, "label": "test"},
@@ -657,10 +663,14 @@ def add_config(
     cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
     # TODO: fix pu_weight; takes way too large values (from 0 to 160)
     # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-    cfg.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
-    cfg.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
-    cfg.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
-    cfg.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
+    for dataset in cfg.datasets:
+        dataset.x.event_weights = DotDict()
+        if not dataset.x("is_qcd", False):
+            # pdf/scale weights for all non-qcd datasets
+            dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
+            dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
+            dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
+            dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     # versions per task family and optionally also dataset and shift
     # None can be used as a key to define a default value

@@ -4,8 +4,6 @@
 Selection methods defining categories based on selection step results.
 """
 
-import functools
-
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
@@ -56,45 +54,35 @@ def catid_resolved(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return (ak.sum(events.Jet.pt > 0, axis=-1) >= 3) & (ak.sum(events.FatJet.pt > 0, axis=-1) == 0)
 
 
-@selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
-def catid_resolved_1b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+@selector(uses={"Jet.btagDeepFlavB"})
+def catid_1b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
     n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
 
-    return self[catid_resolved](events, **kwargs) & (n_deepjet == 1)
+    return (n_deepjet == 1)
 
 
-@selector(uses={catid_resolved, "Jet.btagDeepFlavB"})
-def catid_resolved_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+@selector(uses={"Jet.btagDeepFlavB"})
+def catid_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
     n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
 
-    return self[catid_resolved](events, **kwargs) & (n_deepjet >= 2)
+    return (n_deepjet >= 2)
 
 
-for lep_ch in ["1e", "1mu"]:
-    for jet_ch in ["resolved_1b", "resolved_2b", "boosted"]:
-        for dnn_ch in ["dummy"]:
+# TODO: not hard-coded -> use config!
+ml_model_name = "dev"
+ml_processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"]
+# TODO ml categories
+for proc in ml_processes:
+    @selector(
+        uses=set(f"{ml_model_name}.score_{proc1}" for proc1 in ml_processes),
+        cls_name=f"catid_ml_{proc}",
+    )
+    def dnn_mask(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+        """
+        dynamically built selector that categorizes events based on dnn scores
+        """
+        print("TODO: dnn_mask")
 
-            funcs = {
-                "lep_func": locals()[f"catid_{lep_ch}"],
-                "jet_func": locals()[f"catid_{jet_ch}"],
-                # "dnn_func": locals()[f"catid_{dnn_ch}"],
-            }
-
-            # @selector(name=f"catid_{lep_ch}_{jet_ch}")
-            @selector(
-                uses=set(funcs.values()),
-                produces=set(funcs.values()),
-                cls_name=f"catid_{lep_ch}_{jet_ch}",
-            )
-            def catid_leaf_mask(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
-                """
-                Selector that call multiple functions and combines their outputs via
-                logical `and`.
-                """
-
-                masks = [self[func](events, **kwargs) for func in self.uses]
-                leaf_mask = functools.reduce((lambda a, b: a & b), masks)
-
-                return leaf_mask
+        raise NotImplementedError("TODO: dnn_mask")

@@ -12,9 +12,9 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
-# from columnflow.production.categories import category_ids
-from hbw.production.tmp_categories import category_ids
+from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
+
 from hbw.production.weights import event_weights_to_normalize
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
 from hbw.selection.stats import increment_stats
@@ -238,10 +238,13 @@ def jet_selection(
     )
 
 
-@selector(uses={
-    "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
-    "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
-})
+@selector(
+    uses={
+        "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
+        "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
+    },
+    e_pt=None, mu_pt=None, e_trigger=None, mu_trigger=None,
+)
 def lepton_selection(
         self: Selector,
         events: ak.Array,
@@ -254,16 +257,14 @@ def lepton_selection(
     # - require that events are triggered by SingleMu or SingleEle trigger
 
     # Veto Lepton masks (TODO define exact cuts)
-    e_mask_veto = (events.Electron.pt > 1) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
-    mu_mask_veto = (events.Muon.pt > 1) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
+    e_mask_veto = (events.Electron.pt > 20) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
+    mu_mask_veto = (events.Muon.pt > 20) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
 
     lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
 
-    trigger_sel = (events.HLT[self.mu_trigger]) | (events.HLT[self.ele_trigger])
-
     # Lepton definition for this analysis
     e_mask = (
-        (events.Electron.pt > self.ele_pt) &
+        (events.Electron.pt > self.e_pt) &
         (abs(events.Electron.eta) < 2.4) &
         (events.Electron.cutBased == 4) &
         (events.Electron.mvaFall17V2Iso_WP80 == 1)
@@ -275,14 +276,33 @@ def lepton_selection(
         (events.Muon.pfRelIso04_all < 0.15)
     )
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
-    # e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
+    e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
+
+    # dummy mask
+    ones = ak.ones_like(lep_sel)
+
+    # individual trigger
+    mu_trigger_sel = ones if not self.mu_trigger else events.HLT[self.mu_trigger]
+    e_trigger_sel = ones if not self.mu_trigger else events.HLT[self.e_trigger]
+
+    # combined trigger
+    trigger_sel = mu_trigger_sel | e_trigger_sel
+
+    # combined trigger, removing events where trigger and lepton types do not match
+    # TODO: compare trigger object and lepton
+    trigger_lep_crosscheck = (
+        (e_trigger_sel & e_sel) |
+        (mu_trigger_sel & mu_sel)
+    )
 
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={
-            "Lepton": lep_sel, "VetoLepton": lep_veto_sel, "Trigger": trigger_sel,
-            "Muon": mu_sel,  # for comparing results with Msc Analysis
+            "Muon": mu_sel, "Electron": e_sel,
+            "Lepton": lep_sel, "VetoLepton": lep_veto_sel,
+            "MuTrigger": mu_trigger_sel, "EleTrigger": e_trigger_sel,
+            "Trigger": trigger_sel, "TriggerAndLep": trigger_lep_crosscheck,
         },
         objects={
             "Electron": {
@@ -301,35 +321,43 @@ def lepton_selection(
 def lepton_selection_init(self: Selector) -> None:
     year = self.config_inst.campaign.x.year
 
-    # Trigger choice based on year of data-taking (for now: only single trigger)
-    self.mu_trigger = {
-        2016: "IsoMu24",  # or "IsoTkMu27")
-        2017: "IsoMu27",
-        2018: "IsoMu24",
-    }[year]
-    self.ele_trigger = {
-        2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
-        2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-        2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-    }[year]
+    # NOTE: the none will not be overwritten later when doing this...
+    # self.mu_trigger = self.e_trigger = None
 
-    self.uses |= {f"HLT.{self.mu_trigger}", f"HLT.{self.ele_trigger}"}
+    # Lepton pt thresholds (if not set manually) based on year (1 pt above trigger threshold)
+    # When lepton pt thresholds are set manually, don't use any trigger
+    if not self.e_pt:
+        self.e_pt = {2016: 28, 2017: 36, 2018: 33}[year]
 
-    # Lepton pt thresholds based on year (1 pt above trigger threshold)
-    self.ele_pt = {2016: 28, 2017: 36, 2018: 33}[year]
-    self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
+        # Trigger choice based on year of data-taking (for now: only single trigger)
+        self.e_trigger = {
+            2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
+            2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+            2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+        }[year]
+        self.uses.add(f"HLT.{self.e_trigger}")
+    if not self.mu_pt:
+        self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
+
+        # Trigger choice based on year of data-taking (for now: only single trigger)
+        self.mu_trigger = {
+            2016: "IsoMu24",  # or "IsoTkMu27")
+            2017: "IsoMu27",
+            2018: "IsoMu24",
+        }[year]
+        self.uses.add(f"HLT.{self.mu_trigger}")
 
 
 @selector(
     uses={
         boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection, cutflow_features,
+        jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
     produces={
         boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection, cutflow_features,
+        jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
         "mc_weight",  # not opened per default but always required in Cutflow tasks
     },
@@ -363,11 +391,17 @@ def default(
     events, vbf_jet_results = self[vbf_jet_selection](events, results, stats, **kwargs)
     results += vbf_jet_results
 
+    results.steps["ResolvedOrBoosted"] = (
+        (results.steps.Jet & results.steps.Bjet) | results.steps.Boosted
+    )
+
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
+        # NOTE: the boosted selection actually includes a b-jet selection...
         (results.steps.Jet | results.steps.Boosted) &
         results.steps.Lepton &
-        results.steps.Trigger
+        results.steps.Trigger &
+        results.steps.TriggerAndLep
     )
 
     # combined event selection after all steps
@@ -398,13 +432,21 @@ def default(
     return events, results
 
 
+lep_15 = default.derive("lep_15", cls_dict={"ele_pt": 15, "mu_pt": 15})
+lep_27 = default.derive("lep_27", cls_dict={"ele_pt": 27, "mu_pt": 27})
+
+
 @default.init
 def default_init(self: Selector) -> None:
+    if self.config_inst.x("do_cutflow_features", False):
+        self.uses.add(cutflow_features)
+        self.produces.add(cutflow_features)
+
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
-    self.uses |= {event_weights_to_normalize}
-    self.produces |= {event_weights_to_normalize}
+    self.uses.add(event_weights_to_normalize)
+    self.produces.add(event_weights_to_normalize)
 
 
 @selector(

@@ -7,6 +7,7 @@ Definition of ML input variables.
 import order as od
 
 # from columnflow.columnar_util import EMPTY_FLOAT
+from hbw.config.styling import default_var_binning, default_var_unit
 
 
 def add_ml_variables(config: od.Config) -> None:
@@ -199,4 +200,22 @@ def add_ml_variables(config: od.Config) -> None:
         x_title=r"$S_{min}$",
     )
 
-    # Lepton (TODO)
+    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
+        for var in ["pt", "eta"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, var),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+    for obj in ["fj"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, var),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )

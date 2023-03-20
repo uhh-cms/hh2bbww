@@ -50,7 +50,7 @@ def apply_object_results(events: ak.Array, results: SelectionResult = None):
         } |
         set(
             f"{obj}.{var}"
-            for obj in ("Electron", "Muon")
+            for obj in ("Electron", "Muon", "FatJet")
             for var in ("pt", "eta", "phi", "mass")
         )
     ),
@@ -104,7 +104,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
 
     # 4-vector behavior for relevant objects
     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    for obj in ["Jet", "Bjet", "Lightjet", "Lepton", "VetoLepton", "MET"]:
+    for obj in ["Jet", "Bjet", "Lightjet", "FatJet", "Lepton", "VetoLepton", "MET"]:
         if obj in events.fields:
             events[obj] = ak.with_name(events[obj], "PtEtaPhiMLorentzVector")
 

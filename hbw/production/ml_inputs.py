@@ -4,12 +4,13 @@
 Column production methods related to higher-level features.
 """
 
+import functools
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
+from columnflow.production.categories import category_ids
 
-# from columnflow.production.categories import category_ids
-from hbw.production.tmp_categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
@@ -18,16 +19,19 @@ from hbw.config.categories import add_categories_production
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
+# helper
+set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+
 
 @producer(
     uses={
-        category_ids,
+        category_ids, event_weights,
         prepare_objects.USES, prepare_objects.PRODUCES,
+        "FatJet.msoftdrop", "FatJet.deepTagMD_HbbvsQCD",
     },
     produces={
-        category_ids,
-        # explicitly save Lepton fields for ML and plotting since they don't exist in ReduceEvents output
-        "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge", "Lepton.pdgId",
+        category_ids, event_weights,
+        # other produced columns set in the init function
     },
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -45,83 +49,98 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+
+    # low-level features
+    # TODO: this could be more generalized
+    for var in ["pt", "eta"]:
+        events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
+        events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
+        events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
+
+    for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+        events = set_ak_column(events, f"mli_fj_{var}", events.FatJet[:, 0][var])
 
     # jets in general
-    events = set_ak_column(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
 
     # all possible jet pairs
     jet_pairs = ak.combinations(events.Jet, 2)
     dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
-    events = set_ak_column(events, "mindr_jj", ak.min(dr, axis=1))
+    events = set_ak_column_f32(events, "mindr_jj", ak.min(dr, axis=1))
 
     # bjets in general
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     events = set_ak_column(events, "mli_n_deepjet", ak.num(events.Jet[events.Jet.btagDeepFlavB > wp_med], axis=1))
-    events = set_ak_column(events, "mli_deepjetsum", ak.sum(events.Jet.btagDeepFlavB, axis=1))
-    events = set_ak_column(events, "mli_b_deepjetsum", ak.sum(events.Bjet.btagDeepFlavB, axis=1))
-    events = set_ak_column(events, "mli_l_deepjetsum", ak.sum(events.Lightjet.btagDeepFlavB, axis=1))
+    events = set_ak_column_f32(events, "mli_deepjetsum", ak.sum(events.Jet.btagDeepFlavB, axis=1))
+    events = set_ak_column_f32(events, "mli_b_deepjetsum", ak.sum(events.Bjet.btagDeepFlavB, axis=1))
+    events = set_ak_column_f32(events, "mli_l_deepjetsum", ak.sum(events.Lightjet.btagDeepFlavB, axis=1))
 
     # hbb features
-    events = set_ak_column(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
-    events = set_ak_column(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
 
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
-    events = set_ak_column(events, "mli_mbb", hbb.mass)
+    events = set_ak_column_f32(events, "mli_mbb", hbb.mass)
 
     mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
-    events = set_ak_column(events, "mli_mindr_lb", mindr_lb)
+    events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
 
     # wjj features
-    events = set_ak_column(events, "mli_dr_jj", events.Lightjet[:, 0].delta_r(events.Lightjet[:, 1]))
-    events = set_ak_column(events, "mli_dphi_jj", abs(events.Lightjet[:, 0].delta_phi(events.Lightjet[:, 1])))
+    events = set_ak_column_f32(events, "mli_dr_jj", events.Lightjet[:, 0].delta_r(events.Lightjet[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_jj", abs(events.Lightjet[:, 0].delta_phi(events.Lightjet[:, 1])))
 
     wjj = events.Lightjet[:, 0] + events.Lightjet[:, 1]
-    events = set_ak_column(events, "mli_mjj", wjj.mass)
+    events = set_ak_column_f32(events, "mli_mjj", wjj.mass)
 
     mindr_lj = ak.min(events.Lightjet.delta_r(events.Lepton[:, 0]), axis=-1)
-    events = set_ak_column(events, "mli_mindr_lj", mindr_lj)
+    events = set_ak_column_f32(events, "mli_mindr_lj", mindr_lj)
 
     # wlnu features
     wlnu = events.MET + events.Lepton[:, 0]
-    events = set_ak_column(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
-    events = set_ak_column(events, "mli_mlnu", wlnu.mass)
+    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
+    # NOTE: this column can be set to nan value
+    events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
 
     # hww features
     hww = wlnu + wjj
     hww_vis = events.Lepton[:, 0] + wjj
 
-    events = set_ak_column(events, "mli_mjjlnu", hww.mass)
-    events = set_ak_column(events, "mli_mjjl", hww_vis.mass)
+    events = set_ak_column_f32(events, "mli_mjjlnu", hww.mass)
+    events = set_ak_column_f32(events, "mli_mjjl", hww_vis.mass)
 
     # angles
-    events = set_ak_column(events, "mli_dphi_bb_jjlnu", abs(hbb.delta_phi(hww)))
-    events = set_ak_column(events, "mli_dr_bb_jjlnu", hbb.delta_r(hww))
+    events = set_ak_column_f32(events, "mli_dphi_bb_jjlnu", abs(hbb.delta_phi(hww)))
+    events = set_ak_column_f32(events, "mli_dr_bb_jjlnu", hbb.delta_r(hww))
 
-    events = set_ak_column(events, "mli_dphi_bb_jjl", abs(hbb.delta_phi(hww_vis)))
-    events = set_ak_column(events, "mli_dr_bb_jjl", hbb.delta_r(hww_vis))
+    events = set_ak_column_f32(events, "mli_dphi_bb_jjl", abs(hbb.delta_phi(hww_vis)))
+    events = set_ak_column_f32(events, "mli_dr_bb_jjl", hbb.delta_r(hww_vis))
 
-    events = set_ak_column(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
-    events = set_ak_column(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events.MET)))
-    events = set_ak_column(events, "mli_dr_bb_l", hbb.delta_r(events.MET))
-    events = set_ak_column(events, "mli_dr_jj_l", hbb.delta_r(events.MET))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
+    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events.MET)))
+    events = set_ak_column_f32(events, "mli_dr_bb_l", hbb.delta_r(events.MET))
+    events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events.MET))
 
     # hh features
     hh = hbb + hww
     hh_vis = hbb + hww_vis
 
-    events = set_ak_column(events, "mli_mbbjjlnu", hh.mass)
-    events = set_ak_column(events, "mli_mbbjjl", hh_vis.mass)
+    events = set_ak_column_f32(events, "mli_mbbjjlnu", hh.mass)
+    events = set_ak_column_f32(events, "mli_mbbjjl", hh_vis.mass)
 
     s_min = (
         2 * events.MET.pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
         hh_vis.pt * np.cos(hh_vis.delta_phi(events.MET)) + hh_vis.mass ** 2)
     ) ** 0.5
-    events = set_ak_column(events, "mli_s_min", s_min)
+    events = set_ak_column_f32(events, "mli_s_min", s_min)
 
-    # fill none values of all produced columns
+    # fill nan/none values of all produced columns
     for col in self.ml_columns:
-        events = set_ak_column(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
     return events
 
@@ -136,7 +155,15 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-    }
+    } | set(
+        f"mli_{obj}_{var}"
+        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+        for var in ["pt", "eta"]
+    ) | set(
+        f"mli_{obj}_{var}"
+        for obj in ["fj"]
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+    )
     self.produces |= self.ml_columns
 
     if self.config_inst.x("add_categories_production", True):
@@ -148,9 +175,3 @@ def ml_inputs_init(self: Producer) -> None:
         # add variable instances to config
         add_ml_variables(self.config_inst)
         self.config_inst.x.add_ml_variables = False
-
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses |= {event_weights}
-    self.produces |= {event_weights}

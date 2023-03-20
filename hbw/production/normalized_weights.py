@@ -23,11 +23,10 @@ def normalized_weight_factory(
     @producer(
         uses=set(weight_producers) | set().union(*[w.produces for w in weight_producers]) | {"process_id"},
         name=producer_name,
+        mc_only=True,
         # remaining produced columns are defined in the init function below
     )
     def normalized_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-        if self.dataset_inst.is_data:
-            raise Exception("attempt to compute normalized event weights in data")
 
         # check existence of requested weights to normalize and run producer if missing
         missing_weights = self.weight_names.difference(events.fields)
@@ -64,9 +63,6 @@ def normalized_weight_factory(
 
     @normalized_weight.init
     def normalized_weight_init(self: Producer) -> None:
-        if not getattr(self, "dataset_inst", None):
-            return
-
         self.weight_producers = weight_producers
 
         # resolve weight names

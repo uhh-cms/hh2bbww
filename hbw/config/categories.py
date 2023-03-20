@@ -4,7 +4,15 @@
 Definition of categories.
 """
 
+from collections import OrderedDict
+
+import law
+
+from columnflow.config_util import create_category_combinations
+
 import order as od
+
+logger = law.logger.get_logger(__name__)
 
 
 def add_categories_selection(config: od.Config) -> None:
@@ -33,6 +41,19 @@ def add_categories_selection(config: od.Config) -> None:
     )
 
 
+def name_fn(**root_cats):
+    cat_name = "__".join(cat for cat in root_cats.values())
+    return cat_name
+
+
+def kwargs_fn(root_cats):
+    kwargs = {
+        "id": sum([c.id for c in root_cats.values()]),
+        "label": ", ".join([c.name for c in root_cats.values()]),
+    }
+    return kwargs
+
+
 def add_categories_production(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `ProduceColumns`.
@@ -48,96 +69,84 @@ def add_categories_production(config: od.Config) -> None:
     cat_1mu.selection = "catid_1mu"
 
     #
-    # define additional categories
+    # define additional 'main' categories
     #
 
-    # TODO: we might need a more systematic approach as soon as the number of
-    #       categories grows by the DNN categorization
-
-    # Electrons
-
-    cat_1e_resolved = cat_1e.add_category(
-        name="1e_resolved",
-        id=1100,
-        selection="catid_1e_resolved",
-        label="1 Electron, resolved",
-    )
-    cat_1e_resolved_1b = cat_1e_resolved.add_category(
-        name="1e_resolved_1b",
-        id=1110,
-        selection="catid_1e_resolved_1b",
-        label="1 Electron, resolved, 1b",
-    )
-    cat_1e_resolved_2b = cat_1e_resolved.add_category(
-        name="1e_resolved_2b",
-        id=1120,
-        selection="catid_1e_resolved_2b",
-        label="1 Electron, resolved, 2b",
-    )
-    cat_1e_boosted = cat_1e.add_category(
-        name="1e_boosted",
-        id=1500,
-        selection="catid_1e_boosted",
-        label="1 Electron, boosted",
-    )
-
-    # Muons
-
-    cat_1mu_resolved = cat_1mu.add_category(
-        name="1mu_resolved",
-        id=2100,
-        selection="catid_1mu_resolved",
-        label="1 Muon, resolved",
-    )
-    cat_1mu_resolved_1b = cat_1mu_resolved.add_category(
-        name="1mu_resolved_1b",
-        id=2110,
-        selection="catid_1mu_resolved_1b",
-        label="1 Muon, resolved, 1b",
-    )
-    cat_1mu_resolved_2b = cat_1mu_resolved.add_category(
-        name="1mu_resolved_2b",
-        id=2120,
-        selection="catid_1mu_resolved_2b",
-        label="1 Muon, resolved, 2b",
-    )
-    cat_1mu_boosted = cat_1mu.add_category(
-        name="1mu_boosted",
-        id=2500,
-        selection="catid_1mu_boosted",
-        label="1 Muon, boosted",
-    )
-
-    # resolved and boosted as parent category
     cat_resolved = config.add_category(
         name="resolved",
-        id=3100,
+        id=10,
         selection="catid_resolved",
         label="resolved",
     )
-    cat_resolved_1b = cat_resolved.add_category(
-        name="resolved_1b",
-        id=2110,
-        selection="catid_resolved_1b",
-        label="resolved, 1b",
-    )
-    cat_resolved_2b = cat_resolved.add_category(
-        name="resolved_2b",
-        id=2120,
-        selection="catid_resolved_2b",
-        label="resolved, 2b",
-    )
     cat_boosted = config.add_category(
         name="boosted",
-        id=3500,
+        id=20,
         selection="catid_boosted",
         label="boosted",
     )
 
-    # add leaf categories to reduce number of leaf categories
-    cat_resolved_1b.add_category(cat_1mu_resolved_1b)
-    cat_resolved_1b.add_category(cat_1e_resolved_1b)
-    cat_resolved_2b.add_category(cat_1mu_resolved_2b)
-    cat_resolved_2b.add_category(cat_1e_resolved_2b)
-    cat_boosted.add_category(cat_1mu_boosted)
-    cat_boosted.add_category(cat_1e_boosted)
+    cat_1b = config.add_category(
+        name="1b",
+        id=100,
+        selection="catid_1b",
+        label="1b",
+    )
+    cat_2b = config.add_category(
+        name="2b",
+        id=200,
+        selection="catid_2b",
+        label="2b",
+    )
+
+    #
+    # define all combinations of categories
+    #
+
+    category_blocks = OrderedDict({
+        "lep": [cat_1e, cat_1mu],
+        "jet": [cat_resolved, cat_boosted],
+        "b": [cat_1b, cat_2b],
+    })
+
+    n_cats = create_category_combinations(
+        config,
+        category_blocks,
+        name_fn=name_fn,
+        kwargs_fn=kwargs_fn,
+        skip_existing=False,  # there should be no existing sub-categories
+    )
+    logger.info(f"Number of produced category insts: {n_cats}")
+
+
+def add_categories_ml(config, ml_model_inst):
+
+    # add ml categories directly to the config
+    ml_categories = []
+    for i, proc in enumerate(ml_model_inst.processes):
+        ml_categories.append(config.add_category(
+            # NOTE: name and ID is unique as long as we don't use
+            #       multiple ml_models simutaneously
+            name=f"ml_{proc}",
+            id=(i + 1) * 10000,
+            selection=f"catid_ml_{proc}",
+            label=f"ml_{proc}",
+        ))
+
+    category_blocks = OrderedDict({
+        "lep": [config.get_category("1e"), config.get_category("1mu")],
+        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        "b": [config.get_category("1b"), config.get_category("2b")],
+        "dnn": ml_categories,
+    })
+
+    # create combination of categories
+    n_cats = create_category_combinations(
+        config,
+        category_blocks,
+        name_fn=name_fn,
+        kwargs_fn=kwargs_fn,
+        skip_existing=True,
+    )
+    logger.info(f"Number of produced ml category insts: {n_cats}")
+
+    # TODO unfinished
