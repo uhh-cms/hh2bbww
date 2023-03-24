@@ -110,7 +110,7 @@ def add_variables(config: od.Config) -> None:
         expression="event",
         binning=(1, 0.0, 1.0e9),
         x_title="Event number",
-    discrete_x=True,
+        discrete_x=True,
     )
     config.add_variable(
         name="run",

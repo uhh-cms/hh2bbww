@@ -430,7 +430,7 @@ def add_config(
         "SinglePionHCAL",
         "TimePtEta",
     ]
-    
+
     # b-tag working points
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16preVFP?rev=6
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
