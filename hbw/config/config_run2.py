@@ -225,6 +225,8 @@ def add_config(
     # category groups for conveniently looping over certain categories
     # (used during plotting)
     cfg.x.category_groups = {
+        "much": ["1mu", "1mu__resolved", "1mu__boosted"],
+        "ech": ["1e", "1e__resolved", "1e__boosted"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
     }
