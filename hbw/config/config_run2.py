@@ -634,11 +634,16 @@ def add_config(
             for jet_obj in ["Jet", "Bjet", "Lightjet", "VBFJet"]
             # NOTE: if we run into storage troubles, skip Bjet and Lightjet
             for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB", "hadronFlavour"]
-        ) | set(  # FatJet
-            f"FatJet.{field}"
+        ) | set(  # H->bb FatJet
+            f"HbbJet.{field}"
             for field in [
                 "pt", "eta", "phi", "mass", "msoftdrop", "tau1", "tau2", "tau3",
                 "btagHbb", "deepTagMD_HbbvsQCD", "particleNet_HbbvsQCD",
+            ]
+        ) | set(  # FatJet
+            f"FatJet.{field}"
+            for field in [
+                "pt",
             ]
         ) | set(  # Leptons
             f"{lep}.{field}"

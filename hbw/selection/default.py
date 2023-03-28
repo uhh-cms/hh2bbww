@@ -106,26 +106,31 @@ def vbf_jet_selection(
 def boosted_jet_selection(
     self: Selector,
     events: ak.Array,
-    results: SelectionResult,
+    lepton_results: SelectionResult,
+    jet_results: SelectionResult,
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     # HH -> bbWW(qqlnu) boosted selection
 
     # leptons (TODO: use fakeable leptons here)
-    electron = events.Electron[results.objects.Electron.Electron]
-    muon = events.Muon[results.objects.Muon.Muon]
+    electron = events.Electron[lepton_results.objects.Electron.Electron]
+    muon = events.Muon[lepton_results.objects.Muon.Muon]
 
     events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
 
-    # H->bb fatjet definition based on Aachen analysis
-    # TODO: we might want to have two FatJet definitions (FatJet and HbbJet)
+    # baseline fatjet selection
     fatjet_mask = (
         (events.FatJet.pt > 200) &
         (abs(events.FatJet.eta) < 2.4) &
         (events.FatJet.jetId == 6) &
         (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
-        (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2)) &
+        (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
+    )
+
+    # H->bb fatjet definition based on Aachen analysis
+    hbbJet_mask = (
+        fatjet_mask &
         (events.FatJet.msoftdrop > 30) &
         (events.FatJet.msoftdrop < 210) &
         (events.FatJet.subJetIdx1 >= 0) &
@@ -136,9 +141,9 @@ def boosted_jet_selection(
     )
 
     # create temporary object with fatjet mask applied and get the subjets
-    fatjets = events.FatJet[fatjet_mask]
-    subjet1 = events.Jet[fatjets.subJetIdx1]
-    subjet2 = events.Jet[fatjets.subJetIdx2]
+    hbbjets = events.FatJet[hbbJet_mask]
+    subjet1 = events.Jet[hbbjets.subJetIdx1]
+    subjet2 = events.Jet[hbbjets.subJetIdx2]
 
     # requirements on H->bb subjets
     # TODO: we might need to separate the b-tag requirement into it's own selection
@@ -152,47 +157,50 @@ def boosted_jet_selection(
             ((subjet2.pt > 30) & (subjet2.btagDeepFlavB > wp_med))
         )
     )
-    # apply subjets requirements on fatjets and pt-sort
-    fatjets = fatjets[subjets_mask]
-    fatjets = fatjets[ak.argsort(fatjets.pt, ascending=False)]
+    # apply subjets requirements on hbbjets and pt-sort
+    hbbjets = hbbjets[subjets_mask]
+    hbbjets = hbbjets[ak.argsort(hbbjets.pt, ascending=False)]
 
-    # number of fatjets fulfilling all criteria
-    events = set_ak_column(events, "cutflow.n_fatjet", ak.sum(fatjet_mask, axis=1))
-    fatjet_sel = events.cutflow.n_fatjet >= 1
+    # number of hbbjets fulfilling all criteria
+    events = set_ak_column(events, "cutflow.n_hbbjet", ak.sum(hbbJet_mask, axis=1))
+    hbbjet_sel = events.cutflow.n_hbbjet >= 1
 
-    # require at least one ak4 jet not included in the subjets of one of the fatjets
-    ak4_jets = events.Jet[results.objects.Jet.Jet]
-    ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(fatjets) > 1.2, axis=2)]
+    # require at least one ak4 jet not included in the subjets of one of the hbbjets
+    ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
+    ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(hbbjets) > 1.2, axis=2)]
 
     # NOTE: we might want to remove these ak4 jets from our list of jets
     ak4_jet_sel = ak.num(ak4_jets, axis=1) > 0
 
-    boosted_sel = ak4_jet_sel & fatjet_sel
+    boosted_sel = ak4_jet_sel & hbbjet_sel
 
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={
-            "FatJet": fatjet_sel,
+            "HbbJet": hbbjet_sel,
             "Boosted": boosted_sel,
+            "Boosted_no_btag": boosted_sel,  # TODO
         },
         objects={
             "FatJet": {
                 # NOTE: we might want to relax requirements here and only apply them later
                 #       to simplify optimization studies
-                "FatJet": fatjets.local_index,
+                "FatJet": masked_sorted_indices(fatjet_mask, events.FatJet.pt),
+                "HbbJet": hbbjets.local_index,
             },
         },
     )
 
 
 @selector(
-    uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.jetId"},
+    uses={"Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.jetId"},
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
 )
 def jet_selection(
     self: Selector,
     events: ak.Array,
+    lepton_results: SelectionResult,
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
@@ -205,7 +213,10 @@ def jet_selection(
 
     # jets
     jet_mask_loose = (events.Jet.pt > 5) & abs(events.Jet.eta < 2.4)
-    jet_mask = (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId == 6)
+    jet_mask = (
+        (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId == 6) &
+        ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
+    )
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
     jet_sel = events.cutflow.n_jet >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
@@ -243,8 +254,10 @@ def jet_selection(
 
 @selector(
     uses={
-        "Electron.pt", "Electron.eta", "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
-        "Muon.pt", "Muon.eta", "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+        "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
+        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
+        "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
     },
     e_pt=None, mu_pt=None, e_trigger=None, mu_trigger=None,
 )
@@ -299,6 +312,8 @@ def lepton_selection(
         (mu_trigger_sel & mu_sel)
     )
 
+    e_indices = masked_sorted_indices(e_mask, events.Electron.pt)
+    mu_indices = masked_sorted_indices(mu_mask, events.Muon.pt)
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={
@@ -310,12 +325,23 @@ def lepton_selection(
         objects={
             "Electron": {
                 "VetoElectron": masked_sorted_indices(e_mask_veto, events.Electron.pt),
-                "Electron": masked_sorted_indices(e_mask, events.Electron.pt),
+                "Electron": e_indices,
             },
             "Muon": {
                 "VetoMuon": masked_sorted_indices(mu_mask_veto, events.Muon.pt),
-                "Muon": masked_sorted_indices(mu_mask, events.Muon.pt),
+                "Muon": mu_indices,
             },
+        },
+        aux={
+            # save the selected lepton for the duration of the selection
+            # multiplication of a coffea particle with 1 yields the lorentz vector
+            "lepton": ak.concatenate(
+                [
+                    events.Electron[e_indices] * 1,
+                    events.Muon[mu_indices] * 1,
+                ],
+                axis=1,
+            ),
         },
     )
 
@@ -383,11 +409,11 @@ def default(
     results += lepton_results
 
     # jet selection
-    events, jet_results = self[jet_selection](events, stats, **kwargs)
+    events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
 
     # boosted selection
-    events, boosted_results = self[boosted_jet_selection](events, results, stats, **kwargs)
+    events, boosted_results = self[boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
 
     # vbf-jet selection
