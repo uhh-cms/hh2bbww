@@ -246,8 +246,8 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
-        "resolved": ["Trigger", "Lepton", "Jet", "Bjet"],
-        "boosted": ["Trigger", "Lepton", "FatJet", "Boosted"],
+        "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet"],
+        "boosted": ["Trigger", "Lepton", "VetoLepton", "FatJet", "Boosted"],
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
@@ -255,7 +255,8 @@ def add_config(
 
     cfg.x.selector_step_labels = {
         "Jet": r"$N_{jets}^{AK4} \geq 3$",
-        "Lepton": r"$N_{lepton} = 1$",
+        "Lepton": r"$N_{lepton} \geq 1$",
+        "VetoLepton": r"$N_{lepton}^{veto} \leq 1$",
         "Bjet": r"$N_{jets}^{BTag} \geq 1$",
         "FatJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
         "Boosted": r"$N_{jets}^{AK4} \geq 1$",
@@ -563,7 +564,7 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-849c6a6e"
+    json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-dfd90038"
     cfg.x.external_files = DotDict.wrap({
         # jet energy correction
         "jet_jerc": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/jet_jerc.json.gz", "v1"),

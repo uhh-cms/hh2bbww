@@ -94,6 +94,8 @@ def vbf_jet_selection(
     uses={
         # jet_selection, lepton_selection,
         "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.jetId",
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
         "FatJet.pt", "FatJet.eta", "FatJet.phi", "FatJet.mass",
         "FatJet.msoftdrop", "FatJet.jetId", "FatJet.subJetIdx1", "FatJet.subJetIdx2",
         "FatJet.tau1", "FatJet.tau2",
@@ -117,6 +119,7 @@ def boosted_jet_selection(
     events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
 
     # H->bb fatjet definition based on Aachen analysis
+    # TODO: we might want to have two FatJet definitions (FatJet and HbbJet)
     fatjet_mask = (
         (events.FatJet.pt > 200) &
         (abs(events.FatJet.eta) < 2.4) &
@@ -138,6 +141,8 @@ def boosted_jet_selection(
     subjet2 = events.Jet[fatjets.subJetIdx2]
 
     # requirements on H->bb subjets
+    # TODO: we might need to separate the b-tag requirement into it's own selection
+    #       to renormalize btag SFs correctly
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     subjets_mask = (
         (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
@@ -154,8 +159,6 @@ def boosted_jet_selection(
     # number of fatjets fulfilling all criteria
     events = set_ak_column(events, "cutflow.n_fatjet", ak.sum(fatjet_mask, axis=1))
     fatjet_sel = events.cutflow.n_fatjet >= 1
-
-    # TODO: we should not consider the subjets of the boosted Hbb jet as one of the AK4 jets
 
     # require at least one ak4 jet not included in the subjets of one of the fatjets
     ak4_jets = events.Jet[results.objects.Jet.Jet]
@@ -252,7 +255,7 @@ def lepton_selection(
         **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     # HH -> bbWW(qqlnu) lepton selection
-    # - require exactly 1 lepton (e or mu) with pt_e>28 / pt_mu>25, eta<2.4 and tight ID
+    # - require exactly 1 lepton (e or mu) with pt_e>36 / pt_mu>28, eta<2.4 and tight ID
     # - veto additional leptons (TODO define exact cuts)
     # - require that events are triggered by SingleMu or SingleEle trigger
 
@@ -275,7 +278,7 @@ def lepton_selection(
         (events.Muon.tightId) &
         (events.Muon.pfRelIso04_all < 0.15)
     )
-    lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) == 1
+    lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) >= 1
     e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
 
@@ -400,6 +403,7 @@ def default(
         # NOTE: the boosted selection actually includes a b-jet selection...
         (results.steps.Jet | results.steps.Boosted) &
         results.steps.Lepton &
+        results.steps.VetoLepton &
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )
