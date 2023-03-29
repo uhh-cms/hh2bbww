@@ -116,6 +116,7 @@ def boosted_jet_selection(
     # leptons (TODO: use fakeable leptons here)
     electron = events.Electron[lepton_results.objects.Electron.Electron]
     muon = events.Muon[lepton_results.objects.Muon.Muon]
+    ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
 
     events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
 
@@ -145,9 +146,20 @@ def boosted_jet_selection(
     subjet1 = events.Jet[hbbjets.subJetIdx1]
     subjet2 = events.Jet[hbbjets.subJetIdx2]
 
-    # requirements on H->bb subjets
-    # TODO: we might need to separate the b-tag requirement into it's own selection
-    #       to renormalize btag SFs correctly
+    # requirements on H->bb subjets (without b-tagging)
+    subjets_mask_no_bjet = (
+        (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
+        (subjet1.pt > 20) & (subjet2.pt > 20) &
+        ((subjet1.pt > 30) | (subjet2.pt > 30))
+    )
+    hbbjets_no_bjet = hbbjets[subjets_mask_no_bjet]
+
+    boosted_sel_no_bjet = (
+        (ak.num(hbbjets_no_bjet, axis=1) >= 1) &
+        (ak.sum(ak.any(ak4_jets.metric_table(hbbjets_no_bjet) > 1.2, axis=2), axis=1) > 0)
+    )
+
+    # requirements on H->bb subjets (with b-tagging)
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     subjets_mask = (
         (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
@@ -157,16 +169,16 @@ def boosted_jet_selection(
             ((subjet2.pt > 30) & (subjet2.btagDeepFlavB > wp_med))
         )
     )
+
     # apply subjets requirements on hbbjets and pt-sort
     hbbjets = hbbjets[subjets_mask]
     hbbjets = hbbjets[ak.argsort(hbbjets.pt, ascending=False)]
 
     # number of hbbjets fulfilling all criteria
-    events = set_ak_column(events, "cutflow.n_hbbjet", ak.sum(hbbJet_mask, axis=1))
+    events = set_ak_column(events, "cutflow.n_hbbjet", ak.num(hbbjets, axis=1))
     hbbjet_sel = events.cutflow.n_hbbjet >= 1
 
     # require at least one ak4 jet not included in the subjets of one of the hbbjets
-    ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
     ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(hbbjets) > 1.2, axis=2)]
 
     # NOTE: we might want to remove these ak4 jets from our list of jets
@@ -179,7 +191,7 @@ def boosted_jet_selection(
         steps={
             "HbbJet": hbbjet_sel,
             "Boosted": boosted_sel,
-            "Boosted_no_btag": boosted_sel,  # TODO
+            "Boosted_no_bjet": boosted_sel_no_bjet,  # TODO check if correct
         },
         objects={
             "FatJet": {
@@ -427,7 +439,7 @@ def default(
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         # NOTE: the boosted selection actually includes a b-jet selection...
-        (results.steps.Jet | results.steps.Boosted) &
+        (results.steps.Jet | results.steps.Boosted_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
         results.steps.Trigger &
@@ -439,7 +451,7 @@ def default(
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.main["event"] = (
         results.steps.all_but_bjet &
-        (results.steps.Bjet | results.steps.Boosted)
+        ((results.steps.Jet & results.steps.Bjet) | results.steps.Boosted)
     )
 
     # build categories
