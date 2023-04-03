@@ -225,6 +225,8 @@ def add_config(
     # category groups for conveniently looping over certain categories
     # (used during plotting)
     cfg.x.category_groups = {
+        "much": ["1mu", "1mu__resolved", "1mu__boosted"],
+        "ech": ["1e", "1e__resolved", "1e__boosted"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
     }
@@ -632,8 +634,9 @@ def add_config(
             for jet_obj in ["Jet", "Bjet", "Lightjet", "VBFJet"]
             # NOTE: if we run into storage troubles, skip Bjet and Lightjet
             for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB", "hadronFlavour"]
-        ) | set(  # FatJet
-            f"FatJet.{field}"
+        ) | set(  # H->bb FatJet
+            f"{jet_type}.{field}"
+            for jet_type in ["FatJet", "HbbJet"]
             for field in [
                 "pt", "eta", "phi", "mass", "msoftdrop", "tau1", "tau2", "tau3",
                 "btagHbb", "deepTagMD_HbbvsQCD", "particleNet_HbbvsQCD",

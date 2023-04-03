@@ -131,13 +131,29 @@ def add_variables(config: od.Config) -> None:
     # Weights
     #
 
+    # TODO: implement tags in columnflow; meanwhile leave these variables commented out (as they only work for mc)
     """
-    # NOTE: mc_weight needed for cutflow plots, but can't be used with data :(
     config.add_variable(
         name="mc_weight",
         expression="mc_weight",
-        binning=(200, -10, 10),
+        binning=list(np.logspace(1.2, 5, 200)),
+        log_x=True,
         x_title="MC weight",
+        tags={"mc_only"},
+    )
+    config.add_variable(
+        name="normalization_weight",
+        binning=list(np.logspace(0, 6, 100)),
+        log_x=True,
+        x_title="normalization weight",
+        tags={"mc_only"},
+    )
+    config.add_variable(
+        name="event_weight",
+        binning=list(np.logspace(0, 6, 100)),
+        log_x=True,
+        x_title="event weight",
+        tags={"mc_only"},
     )
 
     for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
@@ -147,16 +163,17 @@ def add_variables(config: od.Config) -> None:
             expression=f"{weight}_weight",
             binning=(40, -2, 2),
             x_title=f"{weight} weight",
+            tags={"mc_only"},
         )
         config.add_variable(
-            name="pu_weight_log",
+            name=f"{weight}_weight_log",
             expression=f"{weight}_weight",
-            binning=list(np.logspace(-2, 2, 50)),
+            binning=list(np.logspace(-2, 2, 100)),
             log_x=True,
-            x_title="PU weight",
+            x_title=f"{weight} weight",
+            tags={"mc_only"},
         )
     """
-
     config.add_variable(
         name="npvs",
         expression="PV.npvs",
