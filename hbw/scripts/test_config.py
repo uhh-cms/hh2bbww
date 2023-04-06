@@ -9,7 +9,14 @@ from hbw import config_2017 as cfg
 print(" ================ Processes ======================")
 process_insts = cfg.processes
 for proc_inst in process_insts:
-    print(proc_inst.name)
+    sub_process_insts = [p for p, _, _, in cfg.get_process(proc_inst).walk_processes(include_self=True)]
+    dataset_insts = [
+        dataset_inst for dataset_inst in cfg.datasets
+        if any(map(dataset_inst.has_process, sub_process_insts))
+    ]
+
+    sum_mc_events = sum([data_inst.n_events for data_inst in dataset_insts])
+    print(f"N_events for process {proc_inst.name}: {sum_mc_events:,}")
 
 print("================= Datasets =======================")
 dataset_insts = cfg.datasets
