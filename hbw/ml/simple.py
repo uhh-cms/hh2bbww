@@ -42,6 +42,8 @@ class SimpleDNN(MLModel):
         processes, custom_procweights, dataset_names, input_features, store_name,
         """
 
+        single_config = True  # noqa
+
         super().__init__(*args, **kwargs)
 
         # class- to instance-level attributes
@@ -59,6 +61,8 @@ class SimpleDNN(MLModel):
         # Dropout: either False (disable) or a value between 0 and 1 (dropout_rate)
         self.dropout = False
         """
+
+    def setup(self):
         # dynamically add variables for the quantities produced by this model
         for proc in self.processes:
             if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
@@ -78,10 +82,14 @@ class SimpleDNN(MLModel):
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
-        # dynamically add ml categories
-        if self.config_inst.x("add_categories_ml", True):
+        # dynamically add ml categories (but only if production categories have been added)
+        if (
+                self.config_inst.x("add_categories_ml", True) and
+                not self.config_inst.x("add_categories_production", True)
+        ):
             add_categories_ml(self.config_inst, ml_model_inst=self)
             self.config_inst.x.add_categories_ml = False
+            print("TODO in ML setup")
 
     def requires(self, task: law.Task) -> str:
         # add selection stats to requires; NOTE: not really used at the moment
@@ -95,13 +103,13 @@ class SimpleDNN(MLModel):
     def sandbox(self, task: law.Task) -> str:
         return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
 
-    def datasets(self) -> set[od.Dataset]:
-        return {self.config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
+    def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
+        return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
-    def uses(self) -> set[Route | str]:
+    def uses(self, config_inst: od.Config) -> set[Route | str]:
         return {"normalization_weight", "category_ids"} | set(self.input_features)
 
-    def produces(self) -> set[Route | str]:
+    def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
         for proc in self.processes:
             produced.add(f"{self.cls_name}.score_{proc}")
@@ -139,8 +147,9 @@ class SimpleDNN(MLModel):
         # determine process of each dataset and count number of events & sum of eventweights for this process
         #
 
-        for dataset, infiletargets in input["events"].items():
+        for dataset, infiletargets in input["events"][self.config_inst.name].items():
             t0 = time()
+
             dataset_inst = self.config_inst.get_dataset(dataset)
             if len(dataset_inst.processes) != 1:
                 raise Exception("only 1 process inst is expected for each dataset")
@@ -183,7 +192,7 @@ class SimpleDNN(MLModel):
 
         sum_nnweights_processes = {}
 
-        for dataset, infiletargets in input["events"].items():
+        for dataset, infiletargets in input["events"][self.config_inst.name].items():
             t0 = time()
             this_proc_idx = dataset_proc_idx[dataset]
             proc_name = self.processes[this_proc_idx]
