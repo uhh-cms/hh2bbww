@@ -83,13 +83,9 @@ class SimpleDNN(MLModel):
                 )
 
         # dynamically add ml categories (but only if production categories have been added)
-        if (
-                self.config_inst.x("add_categories_ml", True) and
-                not self.config_inst.x("add_categories_production", True)
-        ):
+        if self.config_inst.x("add_categories_ml", True):
             add_categories_ml(self.config_inst, ml_model_inst=self)
             self.config_inst.x.add_categories_ml = False
-            print("TODO in ML setup")
 
     def requires(self, task: law.Task) -> str:
         # add selection stats to requires; NOTE: not really used at the moment
@@ -147,7 +143,7 @@ class SimpleDNN(MLModel):
         # determine process of each dataset and count number of events & sum of eventweights for this process
         #
 
-        for dataset, infiletargets in input["events"][self.config_inst.name].items():
+        for dataset, files in input["events"][self.config_inst.name].items():
             t0 = time()
 
             dataset_inst = self.config_inst.get_dataset(dataset)
@@ -155,11 +151,11 @@ class SimpleDNN(MLModel):
                 raise Exception("only 1 process inst is expected for each dataset")
 
             # TODO: use stats here instead
-            N_events = sum([len(ak.from_parquet(inp.fn)) for inp in infiletargets])
+            N_events = sum([len(ak.from_parquet(inp["mlevents"].fn)) for inp in files])
             # NOTE: this only works as long as each dataset only contains one process
             sum_eventweights = sum([
-                ak.sum(ak.from_parquet(inp.fn).normalization_weight)
-                for inp in infiletargets],
+                ak.sum(ak.from_parquet(inp["mlevents"].fn).normalization_weight)
+                for inp in files],
             )
             for i, proc in enumerate(process_insts):
                 custom_procweights[i] = self.custom_procweights[proc.name]
@@ -192,7 +188,7 @@ class SimpleDNN(MLModel):
 
         sum_nnweights_processes = {}
 
-        for dataset, infiletargets in input["events"][self.config_inst.name].items():
+        for dataset, files in input["events"][self.config_inst.name].items():
             t0 = time()
             this_proc_idx = dataset_proc_idx[dataset]
             proc_name = self.processes[this_proc_idx]
@@ -205,8 +201,8 @@ class SimpleDNN(MLModel):
             )
             sum_nnweights = 0
 
-            for inp in infiletargets:
-                events = ak.from_parquet(inp.path)
+            for inp in files:
+                events = ak.from_parquet(inp["mlevents"].path)
                 weights = events.normalization_weight
                 if self.eqweight:
                     weights = weights * weights_scaler / sum_eventweights_proc

@@ -87,7 +87,7 @@ def normalized_weight_factory(
     @normalized_weight.setup
     def normalized_weight_setup(self: Producer, reqs: dict, inputs: dict) -> None:
         # load the selection stats
-        stats = inputs["selection_stats"]["collection"][0].load(formatter="json")
+        stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")
 
         # get the unique process ids in that dataset
         key = "sum_mc_weight_per_process"
