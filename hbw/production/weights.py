@@ -57,31 +57,6 @@ def event_weight_init(self: Producer) -> None:
 
 
 @producer(
-    uses={"LHEScaleWeight"},
-    produces={"LHEScaleWeight"},
-    mc_only=True,
-)
-def fix_missing_LHEScaleWeight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    ugly hack for st_schannel_had_amcatnlo sample
-    (nominal entry missing in LHEScaleWeights)
-    # TODO: there is still some issue with that sample...
-    """
-    if ak.all(ak.num(events.LHEScaleWeight, axis=1) == 8):
-        print(
-            f"In dataset {self.dataset_inst.name}: number of LHEScaleWeights is always " +
-            "8 instead of the expected 9. It is assumed, that the missing entry is the " +
-            "nominal one and all other entries are in correct order",
-        )
-        scale_tmp = ak.to_regular(events.LHEScaleWeight)
-        events = set_ak_column(events, "LHEScaleWeight", ak.concatenate(
-            [scale_tmp[:, :4], ak.ones_like(scale_tmp[:, [0]]), scale_tmp[:, 4:]], axis=1,
-        ))
-
-    return events
-
-
-@producer(
     uses={pu_weight, btag_weights},
     # don't save btag_weights to save storage space, since we can reproduce them in ProduceColumns
     produces={pu_weight},
@@ -101,9 +76,6 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     # skip scale/pdf weights for qcd (missing columns)
     if "qcd" not in self.dataset_inst.name:
-        # add column with ones if LHEScaleWeights has length 8 for all events
-        events = self[fix_missing_LHEScaleWeight](events, **kwargs)
-
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
@@ -121,8 +93,8 @@ def event_weights_to_normalize_init(self) -> None:
     if getattr(self, "dataset_inst", None) and "qcd" in self.dataset_inst.name:
         return
 
-    self.uses |= {murmuf_envelope_weights, murmuf_weights, pdf_weights, fix_missing_LHEScaleWeight}
-    self.produces |= {murmuf_envelope_weights, murmuf_weights, pdf_weights, fix_missing_LHEScaleWeight}
+    self.uses |= {murmuf_envelope_weights, murmuf_weights, pdf_weights}
+    self.produces |= {murmuf_envelope_weights, murmuf_weights, pdf_weights}
 
 
 normalized_scale_pdf_weights = normalized_weight_factory(
