@@ -21,6 +21,7 @@ ak = maybe_import("awkward")
     produces={
         "cutflow.n_electron", "cutflow.n_muon", "cutflow.n_lepton",
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",
+        "cutflow.n_veto_tau",
     },
 )
 def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -36,6 +37,7 @@ def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult,
     events = set_ak_column(events, "cutflow.n_veto_electron", ak.num(arr.VetoElectron, axis=1))
     events = set_ak_column(events, "cutflow.n_veto_muon", ak.num(arr.VetoMuon, axis=1))
     events = set_ak_column(events, "cutflow.n_veto_lepton", ak.num(arr.VetoLepton, axis=1))
+    events = set_ak_column(events, "cutflow.n_veto_tau", ak.num(arr.VetoTau, axis=1))
 
     # save up to 4 loose jets
     events = set_ak_column(events, "cutflow.LooseJet", arr.LooseJet[:, :3])

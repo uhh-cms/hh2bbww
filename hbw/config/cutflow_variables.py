@@ -82,7 +82,10 @@ def add_cutflow_variables(config: od.Config) -> None:
             quick_addvar("VetoMuon", i, var)
 
     # number of objects
-    for obj in ("jet", "deepjet_med", "electron", "muon", "lepton", "veto_electron", "veto_muon", "veto_lepton"):
+    for obj in (
+            "jet", "deepjet_med", "electron", "muon", "lepton",
+            "veto_electron", "veto_muon", "veto_lepton", "veto_tau",
+    ):
         config.add_variable(
             name=f"cf_n_{obj}",
             expression=f"cutflow.n_{obj}",

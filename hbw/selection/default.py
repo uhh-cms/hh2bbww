@@ -270,6 +270,8 @@ def jet_selection(
         "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
         "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
+        "Tau.pt", "Tau.eta", "Tau.idDeepTau2017v2p1VSe",
+        "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet",
     },
     e_pt=None, mu_pt=None, e_trigger=None, mu_trigger=None,
 )
@@ -287,8 +289,17 @@ def lepton_selection(
     # Veto Lepton masks (TODO define exact cuts)
     e_mask_veto = (events.Electron.pt > 20) & (abs(events.Electron.eta) < 2.4) & (events.Electron.cutBased >= 1)
     mu_mask_veto = (events.Muon.pt > 20) & (abs(events.Muon.eta) < 2.4) & (events.Muon.looseId)
+    tau_mask_veto = (
+        (abs(events.Tau.eta) < 2.3) &
+        # (abs(events.Tau.dz) < 0.2) &
+        (events.Tau.pt > 20.0) &
+        (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
+        (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
+        (events.Tau.idDeepTau2017v2p1VSjet >= 2)  # 2: VVLoose
+    )
 
     lep_veto_sel = ak.sum(e_mask_veto, axis=-1) + ak.sum(mu_mask_veto, axis=-1) <= 1
+    tau_veto_sel = ak.sum(tau_mask_veto, axis=-1) == 0
 
     # Lepton definition for this analysis
     e_mask = (
@@ -303,6 +314,7 @@ def lepton_selection(
         (events.Muon.tightId) &
         (events.Muon.pfRelIso04_all < 0.15)
     )
+
     lep_sel = ak.sum(e_mask, axis=-1) + ak.sum(mu_mask, axis=-1) >= 1
     e_sel = (ak.sum(e_mask, axis=-1) == 1) & (ak.sum(mu_mask, axis=-1) == 0)
     mu_sel = (ak.sum(e_mask, axis=-1) == 0) & (ak.sum(mu_mask, axis=-1) == 1)
@@ -331,6 +343,7 @@ def lepton_selection(
         steps={
             "Muon": mu_sel, "Electron": e_sel,
             "Lepton": lep_sel, "VetoLepton": lep_veto_sel,
+            "VetoTau": tau_veto_sel,
             "MuTrigger": mu_trigger_sel, "EleTrigger": e_trigger_sel,
             "Trigger": trigger_sel, "TriggerAndLep": trigger_lep_crosscheck,
         },
@@ -343,6 +356,7 @@ def lepton_selection(
                 "VetoMuon": masked_sorted_indices(mu_mask_veto, events.Muon.pt),
                 "Muon": mu_indices,
             },
+            "Tau": {"VetoTau": masked_sorted_indices(tau_mask_veto, events.Tau.pt)},
         },
         aux={
             # save the selected lepton for the duration of the selection
@@ -442,6 +456,7 @@ def default(
         (results.steps.Jet | results.steps.Boosted_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
+        results.steps.VetoTau &
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )

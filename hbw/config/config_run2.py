@@ -75,6 +75,7 @@ def add_config(
     cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
+    cfg.add_process(procs.n.hh_ggf_bbtautau)
 
     cfg.get_process("qcd_mu").label = "QCD Muon enriched"
     qcd_ele = cfg.add_process(
@@ -158,6 +159,8 @@ def add_config(
         "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
         "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
         "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+        # HH(bbtautau)
+        "hh_ggf_bbtautau_madgraph",
     ]
     for dataset_name in dataset_names:
         dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
@@ -186,9 +189,6 @@ def add_config(
     cfg.x.default_ml_model = None
     cfg.x.default_inference_model = "default"
     cfg.x.default_categories = ["incl"]
-    cfg.x.default_process_settings = {
-        proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name
-    }
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -248,7 +248,7 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
-        "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet"],
+        "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet", "VetoTau"],
         "boosted": ["Trigger", "Lepton", "VetoLepton", "FatJet", "Boosted"],
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks

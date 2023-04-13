@@ -38,6 +38,7 @@ default_process_colors = {
     "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
     "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
     "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
+    "hh_ggf_bbtautau": "#984ea3",  # purple
 }
 
 ml_labels = {
@@ -60,9 +61,10 @@ def stylize_processes(config: od.Config) -> None:
         # set default colors
         if color := default_process_colors.get(proc.name, None):
             proc.color1 = color
+
         # unstack signal in plotting
-        if "HH_" in proc.name:
-            proc.x.unstack = True
+        if "hh_" in proc.name.lower():
+            proc.unstack = True
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
