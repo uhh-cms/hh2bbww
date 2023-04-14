@@ -27,7 +27,7 @@ law run cf.ReduceEvents \
     --branch 0
 
 # create some plots
-law run cf.PlotVariables \
+law run cf.PlotVariables1D \
     --version v1 \
     --datasets st_tchannel_t_powheg \
     --producers features \
@@ -56,7 +56,7 @@ law run cf.SelectEvents --version v1 --config config_2017
 ### Selectors
 Modules that are used to define event selections are usually named `selectors` and can be found in [this](hbw/selection) folder.
 The main selector is called `default` and can be found [here](hbw/selection/default.py).
-You can call the `SelectEvents` task using this selector, e.g. via 
+You can call the `SelectEvents` task using this selector, e.g. via
 ```
 law run cf.SelectEvents --version v1 --selector default
 ```
@@ -90,7 +90,7 @@ Analysis-specific tasks are defined in [this](hbw/tasks) folder.
 
 ### Columnflow
 The analysis uses many functionalities of [columnflow](https://github.com/uhh-cms/columnflow).
-We rely on: 
+We rely on:
 - [tasks](https://github.com/uhh-cms/columnflow/tree/master/columnflow/tasks) defined from columnflow.
 -  columnflow modules for [calibration](https://github.com/uhh-cms/columnflow/tree/master/columnflow/calibration), [selection](https://github.com/uhh-cms/columnflow/tree/master/columnflow/selection) and [production](https://github.com/uhh-cms/columnflow/tree/master/columnflow/production)
 - convenience functions defined in columnflow ([util](https://github.com/uhh-cms/columnflow/blob/master/columnflow/util.py), [columnar_util](https://github.com/uhh-cms/columnflow/blob/master/columnflow/columnar_util.py), [config_util](https://github.com/uhh-cms/columnflow/blob/master/columnflow/config_util.py))

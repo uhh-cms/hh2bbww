@@ -83,7 +83,10 @@ class SimpleDNN(MLModel):
                 )
 
         # dynamically add ml categories (but only if production categories have been added)
-        if self.config_inst.x("add_categories_ml", True):
+        if (
+                self.config_inst.x("add_categories_ml", True) and
+                not self.config_inst.x("add_categories_production", True)
+        ):
             add_categories_ml(self.config_inst, ml_model_inst=self)
             self.config_inst.x.add_categories_ml = False
 

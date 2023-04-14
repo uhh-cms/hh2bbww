@@ -66,7 +66,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        attach_coffea_behavior, prepare_objects, category_ids,
+        attach_coffea_behavior, prepare_objects, category_ids, event_ewights
         bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
@@ -74,7 +74,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "FatJet.pt", "FatJet.tau1", "FatJet.tau2",
     },
     produces={
-        attach_coffea_behavior, category_ids,
+        attach_coffea_behavior, category_ids, event_weights
         bb_features, jj_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "FatJet.tau21",
     },
