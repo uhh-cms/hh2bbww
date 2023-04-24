@@ -26,6 +26,12 @@ print(f"Sum of all mc events: {sum([data_inst.n_events for data_inst in dataset_
 print(f"Number of datasets: {len(dataset_insts)}")
 print(f"Number of dataset files: {sum([data_inst.n_files for data_inst in dataset_insts])}")
 
+print("----- DAS keys -----")
+for data_inst in dataset_insts:
+    das_keys = data_inst.get_info("nominal").keys
+    for das_key in das_keys:
+        print(f"cms:{das_key}")
+
 print("================= Categories =====================")
 category_insts = cfg.categories
 for cat_inst in category_insts:

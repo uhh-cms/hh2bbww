@@ -9,6 +9,7 @@ import order as od
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
+ak = maybe_import("awkward")
 
 from columnflow.columnar_util import EMPTY_FLOAT
 
@@ -52,6 +53,13 @@ def add_feature_variables(config: od.Config) -> None:
     config.add_variable(
         name="ht",
         binning=(40, 0, 1500),
+        x_title="HT",
+    )
+    config.add_variable(
+        name="ht_test",
+        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
+        binning=(40, 0, 1500),
+        unit="GeV",
         x_title="HT",
     )
     config.add_variable(
@@ -185,6 +193,21 @@ def add_variables(config: od.Config) -> None:
     #
     # Object properties
     #
+
+    config.add_variable(
+        name="jets_pt",
+        expression="Jet.pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title="$p_{T}$ of all jets",
+    )
+    config.add_variable(
+        name="muons_pt",
+        expression="Muon.pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title="$p_{T}$ of all muons",
+    )
 
     # Jets (4 pt-leading jets)
     for i in range(4):

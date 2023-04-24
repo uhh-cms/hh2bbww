@@ -63,6 +63,14 @@ def add_cutflow_variables(config: od.Config) -> None:
             x_title=x_title_base.format(obj=obj, i=i + 1) + var_title_format.get(var, var),
         )
 
+    config.add_variable(
+        name="cf_loosejets_pt",
+        expression="cutflow.LooseJet.pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title="$p_{T}$ of all jets",
+    )
+
     # Jets
     for i in range(4):
         # loose jets
