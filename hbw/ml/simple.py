@@ -82,6 +82,16 @@ class SimpleDNN(MLModel):
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
+        # one variable to bookkeep truth labels
+        # TODO: still needs implementation
+        if f"{self.cls_name}.ml_label" not in self.config_inst.variables:
+            self.config_inst.add_variable(
+                name=f"{self.cls_name}.ml_label",
+                null_value=-1,
+                binning=(len(self.processes) + 1, -1.5, len(self.processes) -0.5),
+                x_title=f"DNN truth score",
+            )
+
         # dynamically add ml categories (but only if production categories have been added)
         if (
                 self.config_inst.x("add_categories_ml", True) and
@@ -127,6 +137,27 @@ class SimpleDNN(MLModel):
             history = pickle.load(f)
         model = tf.keras.models.load_model(target.path)
         return model, history
+
+    def training_configs(self, requested_configs: Sequence[str]) -> list[str]:
+        # default config
+        print(requested_configs)
+        if len(requested_configs) == 1:
+            return list(requested_configs)
+        else:
+            # TODO: change to "config_2017" when finished with testing phase
+            return ["config_2017_limited"]
+
+    def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        return ["skip_jecunc"]
+
+    def training_selector(self, config_inst: od.Config, requested_selector: str) -> str:
+        # fix MLTraining Phase Space
+        return "default"
+
+    def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        return ["ml_inputs"]
 
     def prepare_inputs(
         self,
@@ -227,6 +258,9 @@ class SimpleDNN(MLModel):
                         events = remove_ak_column(events, var)
 
                 # transform events into numpy ndarray
+                # TODO: at this point we should save the order of our input variables
+                #       to ensure that they will be loaded in the correct order when
+                #       doing the evaluation
                 events = ak.to_numpy(events)
                 events = events.astype(
                     [(name, np.float32) for name in events.dtype.names], copy=False,
@@ -380,7 +414,7 @@ class SimpleDNN(MLModel):
         )
 
         logger.info("input to tf Dataset")
-
+        # .shuffle(buffer_size=len(train["inputs"], reshuffle_each_iteration=True).repeat(self.epochs).batch(self.batchsize)
         with tf.device("CPU"):
             tf_train = tf.data.Dataset.from_tensor_slices(
                 (train["inputs"], train["target"], train["weights"]),

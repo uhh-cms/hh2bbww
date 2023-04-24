@@ -199,6 +199,8 @@ def add_config(
         "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
         "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
         "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
+        "ml": ["ggHH_kl_1_*", "tt", "st", "w_lnu", "dy_lep"],
+        "ml_test": ["ggHH_kl_1_*", "st", "w_lnu"],
         "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
         "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
