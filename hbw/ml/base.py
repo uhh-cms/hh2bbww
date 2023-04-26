@@ -43,11 +43,12 @@ class MLClassifierBase(MLModel):
 
         # set some defaults, can be overwritten (TODO) via cls_dict
         self.processes = ["tt", "st"]
-        self.ml_weights = {"st": 2}
         self.dataset_names = ["tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"]
         self.input_features = ["mli_ht", "mli_n_jet"]
         self.validation_fraction = 0.20  # percentage of the non-test events
         self.store_name = "inputs_base"
+        self.ml_process_weights = {"st": 2, "tt": 1}
+        self.eqweight = True
 
         super().__init__(*args, **kwargs)
 
@@ -86,7 +87,7 @@ class MLClassifierBase(MLModel):
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
         # for now: start with only input features, ignore event weights
-        return set(self.input_features)  # | {"event_weight"}
+        return set(self.input_features) | {"normalization_weight"}
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
@@ -119,7 +120,7 @@ class MLClassifierBase(MLModel):
         for i, proc in enumerate(self.processes):
             proc_inst = self.config_insts[0].get_process(proc)
             proc_inst.x.ml_id = i
-            proc_inst.x.ml_weight = self.ml_weights.get(proc, 1)
+            proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
 
             process_insts.append(proc_inst)
 
@@ -133,12 +134,6 @@ class MLClassifierBase(MLModel):
                 if len(dataset_inst.processes) != 1:
                     raise Exception("only 1 process inst is expected for each dataset")
 
-                # calculate some stats per dataset
-                filenames = [inp["mlevents"].path for inp in files]
-                proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
-                N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
-                sum_weights = 0  # TODO
-
                 # do the dataset-process assignment and raise Execption when unmatched
                 if not assign_dataset_to_process(dataset_inst, process_insts):
                     raise Exception(
@@ -147,15 +142,28 @@ class MLClassifierBase(MLModel):
                     )
                 proc_inst = dataset_inst.x.ml_process
 
-                # bookkeep stats per process
+                # calculate some stats per dataset
+                filenames = [inp["mlevents"].path for inp in files]
+
+                N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
+                sum_weights = sum([
+                    ak.sum(ak.from_parquet(inp["mlevents"].fn).normalization_weight)
+                    for inp in files
+                ])
+
+                # bookkeep filenames and stats per process
+                proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
                 proc_inst.x.N_events = proc_inst.x("N_events", 0) + N_events
                 proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
 
-                logger.info(f"Dataset {dataset} was assigned to process {proc_inst.name}; took {(time() - t0):.3f}s")
+                logger.info(
+                    f"Dataset {dataset} was assigned to process {proc_inst.name}; took {(time() - t0):.3f}s {chr(10)}"
+                    f"----- Number of events: {N_events} {chr(10)}"
+                    f"----- Sum of weights:   {sum_weights}",
+                )
 
         # Number to scale weights such that the largest weights are at the order of 1
-        # TODO: implement as part of the event weights
-        weights_scaler = min([(proc_inst.x.N_events / proc_inst.x.ml_weight) for proc_inst in process_insts])  # noqa
+        weights_scaler = min([(proc_inst.x.N_events / proc_inst.x.ml_process_weight) for proc_inst in process_insts])
 
         #
         # set inputs, weights and targets for each datset and fold
@@ -178,8 +186,16 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
 
-                # TODO: everything concerning weights
-                # weights = events.ml_event_weights
+                # determine the correct event weights
+                weights = events.normalization_weight
+                if self.eqweight:
+                    # determine weights such that sum of weights is equal for all processes
+                    weights = weights * weights_scaler / proc_inst.x.sum_weights
+
+                # weights customization per process
+                weights = weights * proc_inst.x.ml_process_weight
+                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(weights)
+                weights = ak.to_numpy(weights)
 
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
@@ -208,7 +224,7 @@ class MLClassifierBase(MLModel):
                 # shuffle events and weights
                 np.random.shuffle(shuffle_indices := np.array(range(len(events))))
                 events = events[shuffle_indices]
-                # weights = weights[shuffle_indices]
+                weights = weights[shuffle_indices]
 
                 # create truth values (no need to shuffle them)
                 target = np.zeros((len(events), len(self.processes)))
@@ -221,16 +237,24 @@ class MLClassifierBase(MLModel):
                     # initialize arrays on the first call
                     train.inputs = events[N_events_validation:]
                     train.target = target[N_events_validation:]
+                    train.weights = weights[N_events_validation:]
                     validation.inputs = events[:N_events_validation]
                     validation.target = target[:N_events_validation]
+                    validation.weights = weights[:N_events_validation]
                 else:
                     # concatenate arrays on all following calls
                     train.inputs = np.concatenate([train.inputs, events[N_events_validation:]])
                     train.target = np.concatenate([train.target, target[N_events_validation:]])
+                    train.weights = np.concatenate([train.weights, weights[N_events_validation:]])
                     validation.inputs = np.concatenate([validation.inputs, events[:N_events_validation]])
                     validation.target = np.concatenate([validation.target, target[:N_events_validation]])
+                    validation.weights = np.concatenate([validation.weights, weights[:N_events_validation]])
 
             logger.info(f"Input preparation done for process {proc_inst.name}; took {(time() - t0):.1f}s")
+
+        # check that weights are set as expected
+        for proc_inst in process_insts:
+            logger.info(f"{proc_inst.name} sum of ml weights: {proc_inst.x.sum_ml_weights:.1f}")
 
         # save tuple of input feature names for sanity checks in MLEvaluation
         output.child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
@@ -285,19 +309,22 @@ class MLClassifierBase(MLModel):
         Minimal implementation of training loop.
         """
 
+        epochs = 20
+        batchsize = 2 ** 14
+
         with tf.device("CPU"):
             tf_train = tf.data.Dataset.from_tensor_slices(
-                (train.inputs, train.target),
-            ).batch(2 ** 14)
+                (train.inputs, train.target, train.weights),
+            ).batch(batchsize)
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target),
-            ).batch(2 ** 14)
+                (validation.inputs, validation.target, validation.weights),
+            ).batch(batchsize)
 
         logger.info("Starting training...")
         model.fit(
             tf_train,
             validation_data=tf_validation,
-            epochs=5,
+            epochs=epochs,
             verbose=2,
         )
 
