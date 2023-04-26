@@ -13,9 +13,10 @@ ak = maybe_import("awkward")
 def assign_dataset_to_process(
         dataset_inst: od.Dataset,
         process_insts: list[od.Process],
-) -> None:
+) -> bool:
     """
-    Assigns the dataset to exactly one process from a list of processes
+    Assigns the dataset to exactly one process from a list of processes.
+    Returns True when the matching was successful and False if not
     """
 
     if len(dataset_inst.processes) != 1:
@@ -25,9 +26,9 @@ def assign_dataset_to_process(
         leaf_procs = [p.name for p, _, _ in proc_inst.walk_processes(include_self=True)]
         if dataset_inst.processes.get_first() in leaf_procs:
             dataset_inst.x.ml_process = proc_inst
-            return
+            return True
 
-    raise Exception(f"dataset {dataset_inst.name} is not matched to any of the given processes")
+    return False
 
 
 def strip_to_columns(
@@ -40,8 +41,8 @@ def strip_to_columns(
     # check that all relevant input features are present
     if not set(columns).issubset(set(events.fields)):
         raise Exception(
-            f"The columns {set(events.fields).difference(set(columns)) "
-            "are not present in the ML input events"
+            f"The columns {set(events.fields).difference(set(columns))} "
+            "are not present in the ML input events",
         )
 
     # remove columns that are not requested
