@@ -19,8 +19,9 @@ from columnflow.config_util import get_root_processes_from_campaign
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
-
+from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
 from hbw.config.analysis_hbw import analysis_hbw
+
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -45,11 +46,17 @@ def add_config(
     if year != 2017:
         raise NotImplementedError("For now, only 2017 campaign is fully implemented")
 
+    # load custom produced datasets into campaign
+    get_custom_hh_datasets(campaign)
+
     # get all root processes
     procs = get_root_processes_from_campaign(campaign)
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis_hbw.add_config(campaign, name=config_name, id=config_id)
+
+    # use custom get_dataset_lfns function
+    cfg.x.get_dataset_lfns = get_dataset_lfns
 
     # add processes we are interested in
     cfg.add_process(procs.n.data)
@@ -148,6 +155,10 @@ def add_config(
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # Signal
+        "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+        "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+        "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+        "ggHH_kl_5_kt_1_sl_hbbhww_custom",
         "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
         "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
