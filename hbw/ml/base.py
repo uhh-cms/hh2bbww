@@ -53,6 +53,8 @@ class MLClassifierBase(MLModel):
         self.store_name = "inputs_base"
         self.ml_process_weights = {"st": 2, "tt": 1}
         self.eqweight = True
+        self.epochs = 50
+        self.batchsize = 2 ** 14
 
         super().__init__(*args, **kwargs)
 
@@ -320,26 +322,23 @@ class MLClassifierBase(MLModel):
         Minimal implementation of training loop.
         """
 
-        epochs = 50
-        batchsize = 2 ** 14
-
         with tf.device("CPU"):
             tf_train = tf.data.Dataset.from_tensor_slices(
                 (train.inputs, train.target, train.weights),
-            ).shuffle(buffer_size=5 * len(train.inputs)).batch(batchsize)
+            ).shuffle(buffer_size=5 * len(train.inputs)).batch(self.batchsize)
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.weights),
-            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(batchsize)
+            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(self.batchsize)
 
         logger.info("Starting training...")
         model.fit(
             tf_train,
             validation_data=tf_validation,
-            epochs=epochs,
+            epochs=self.epochs,
             verbose=2,
         )
 
-    def plot_history(
+    def instant_evaluate(
         self,
         task: law.Task,
         model,
@@ -434,10 +433,10 @@ class MLClassifierBase(MLModel):
         model.save(output.path)
 
         #
-        # direct evaluation
+        # direct evaluation as part of MLTraining
         #
 
-        self.plot_history(task, model, train, validation, output)
+        self.instant_evaluate(task, model, train, validation, output)
 
         return
 
@@ -449,6 +448,10 @@ class MLClassifierBase(MLModel):
         fold_indices: ak.Array,
         events_used_in_training: bool = True,
     ) -> None:
+        """
+        Evaluation function that is run as part of the MLEvaluation task
+        """
+
         logger.info(f"Evaluation of dataset {task.dataset}")
 
         # determine truth label of the dataset (-1 if not used in training)
