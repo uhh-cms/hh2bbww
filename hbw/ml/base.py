@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 import gc
-from time import time
+import time
 
 import law
 import order as od
@@ -19,13 +19,17 @@ from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 from hbw.ml.helper import assign_dataset_to_process
-from hbw.ml.plotting import plot_loss, plot_accuracy
+from hbw.ml.plotting import (
+    plot_loss, plot_accuracy, plot_confusion, plot_roc_ovr, plot_output_nodes,
+)
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 tf = maybe_import("tensorflow")
 pickle = maybe_import("pickle")
 keras = maybe_import("tensorflow.keras")
+
 
 logger = law.logger.get_logger(__name__)
 
@@ -80,7 +84,9 @@ class MLClassifierBase(MLModel):
         )
 
     def sandbox(self, task: law.Task) -> str:
-        return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
+        # venv_ml_tf sandbox but with scikit-learn
+        return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
+        # return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
 
     def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
@@ -116,29 +122,29 @@ class MLClassifierBase(MLModel):
 
         # get process instances and assign relevant information to the process_insts
         # from the first config_inst (NOTE: this assumes that all config_insts use the same processes)
-        process_insts = []
+        self.process_insts = []
         for i, proc in enumerate(self.processes):
             proc_inst = self.config_insts[0].get_process(proc)
             proc_inst.x.ml_id = i
             proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
 
-            process_insts.append(proc_inst)
+            self.process_insts.append(proc_inst)
 
         # assign datasets to proceses and calculate some stats per process
         # TODO: testing with working multi-config analysis
         for config_inst in self.config_insts:
             for dataset, files in input["events"][config_inst.name].items():
-                t0 = time()
+                t0 = time.perf_counter()
 
                 dataset_inst = config_inst.get_dataset(dataset)
                 if len(dataset_inst.processes) != 1:
                     raise Exception("only 1 process inst is expected for each dataset")
 
                 # do the dataset-process assignment and raise Execption when unmatched
-                if not assign_dataset_to_process(dataset_inst, process_insts):
+                if not assign_dataset_to_process(dataset_inst, self.process_insts):
                     raise Exception(
                         f"The dataset {dataset_inst.name} is not matched to any"
-                        f"of the given processes {process_insts}",
+                        f"of the given processes {self.process_insts}",
                     )
                 proc_inst = dataset_inst.x.ml_process
 
@@ -157,13 +163,17 @@ class MLClassifierBase(MLModel):
                 proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
 
                 logger.info(
-                    f"Dataset {dataset} was assigned to process {proc_inst.name}; took {(time() - t0):.3f}s {chr(10)}"
+                    f"Dataset {dataset} was assigned to process {proc_inst.name}; "
+                    f"took {(time.perf_counter() - t0):.3f}s {chr(10)}"
                     f"----- Number of events: {N_events} {chr(10)}"
                     f"----- Sum of weights:   {sum_weights}",
                 )
 
         # Number to scale weights such that the largest weights are at the order of 1
-        weights_scaler = min([(proc_inst.x.N_events / proc_inst.x.ml_process_weight) for proc_inst in process_insts])
+        weights_scaler = min([
+            (proc_inst.x.N_events / proc_inst.x.ml_process_weight)
+            for proc_inst in self.process_insts
+        ])
 
         #
         # set inputs, weights and targets for each datset and fold
@@ -175,14 +185,14 @@ class MLClassifierBase(MLModel):
         # bookkeep that input features are always the same
         input_features = None
 
-        for proc_inst in process_insts:
+        for proc_inst in self.process_insts:
             logger.info(
                 f"Preparing inputs for process {proc_inst.name} {chr(10)}"
                 f"----- Number of files:  {len(proc_inst.x.filenames)} {chr(10)}"
                 f"----- Number of events: {proc_inst.x.N_events} {chr(10)}"
                 f"----- Sum of weights:   {proc_inst.x.sum_weights}",
             )
-            t0 = time()
+            t0 = time.perf_counter()
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
 
@@ -227,6 +237,7 @@ class MLClassifierBase(MLModel):
                 weights = weights[shuffle_indices]
 
                 # create truth values (no need to shuffle them)
+                # label = np.ones(len(events)) * proc_inst.x.ml_id
                 target = np.zeros((len(events), len(self.processes)))
                 target[:, proc_inst.x.ml_id] = 1
 
@@ -250,10 +261,10 @@ class MLClassifierBase(MLModel):
                     validation.target = np.concatenate([validation.target, target[:N_events_validation]])
                     validation.weights = np.concatenate([validation.weights, weights[:N_events_validation]])
 
-            logger.info(f"Input preparation done for process {proc_inst.name}; took {(time() - t0):.1f}s")
+            logger.info(f"Input preparation done for process {proc_inst.name}; took {(time.perf_counter() - t0):.1f}s")
 
         # check that weights are set as expected
-        for proc_inst in process_insts:
+        for proc_inst in self.process_insts:
             logger.info(f"{proc_inst.name} sum of ml weights: {proc_inst.x.sum_ml_weights:.1f}")
 
         # save tuple of input feature names for sanity checks in MLEvaluation
@@ -293,7 +304,7 @@ class MLClassifierBase(MLModel):
         model.compile(
             loss="categorical_crossentropy",
             optimizer=optimizer,
-            metrics=["categorical_accuracy"],
+            weighted_metrics=["categorical_accuracy"],
         )
 
         return model
@@ -309,16 +320,16 @@ class MLClassifierBase(MLModel):
         Minimal implementation of training loop.
         """
 
-        epochs = 20
+        epochs = 50
         batchsize = 2 ** 14
 
         with tf.device("CPU"):
             tf_train = tf.data.Dataset.from_tensor_slices(
                 (train.inputs, train.target, train.weights),
-            ).batch(batchsize)
+            ).shuffle(buffer_size=5 * len(train.inputs)).batch(batchsize)
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.weights),
-            ).batch(batchsize)
+            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(batchsize)
 
         logger.info("Starting training...")
         model.fit(
@@ -332,14 +343,46 @@ class MLClassifierBase(MLModel):
         self,
         task: law.Task,
         model,
+        train: tf.data.Dataset,
+        validation: tf.data.Dataset,
         output: law.LocalDirectoryTarget,
     ) -> None:
         # store the model history
         output.child("model_history.pkl", type="f").dump(model.history.history)
 
-        # make some plots
-        plot_accuracy(model.history.history, output)
-        plot_loss(model.history.history, output)
+        def call_func_safe(func, *args, **kwargs) -> Any:
+            """
+            Small helper to make sure that our training does not fail due to plotting
+            """
+            t0 = time.perf_counter()
+
+            try:
+                outp = func(*args, **kwargs)
+                logger.info(f"Function '{func.__name__}' done; took {(time.perf_counter() - t0):.2f} seconds")
+            except Exception as e:
+                logger.warning(f"Function '{func.__name__}' failed due to {type(e)}: {e}")
+                outp = None
+
+            return outp
+
+        # make some plots of the history
+        call_func_safe(plot_accuracy, model.history.history, output)
+        call_func_safe(plot_loss, model.history.history, output)
+
+        # evaluate training and validation sets
+        train.prediction = call_func_safe(model.predict_on_batch, train.inputs)
+        validation.prediction = call_func_safe(model.predict_on_batch, validation.inputs)
+
+        # create some confusion matrices
+        call_func_safe(plot_confusion, model, train, output, "train", self.process_insts)
+        call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts)
+
+        # create some ROC curves
+        call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts)
+        call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts)
+
+        # create plots for all output nodes
+        call_func_safe(plot_output_nodes, model, train, validation, output, self.process_insts)
 
         return
 
@@ -394,7 +437,7 @@ class MLClassifierBase(MLModel):
         # direct evaluation
         #
 
-        self.plot_history(task, model, output)
+        self.plot_history(task, model, train, validation, output)
 
         return
 
