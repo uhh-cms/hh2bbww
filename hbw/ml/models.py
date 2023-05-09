@@ -11,7 +11,7 @@ from typing import Sequence
 import law
 import order as od
 
-from columnflow.util import maybe_import, Derivable
+from columnflow.util import maybe_import
 
 from hbw.ml.base import MLClassifierBase
 from hbw.ml.mixins import DenseModelMixin  # , ModelFitMixin

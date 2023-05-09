@@ -7,7 +7,7 @@ Mixin classes to build ML models
 import law
 # import order as od
 
-from columnflow.util import maybe_import, DotDict, Derivable
+from columnflow.util import maybe_import, DotDict
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
