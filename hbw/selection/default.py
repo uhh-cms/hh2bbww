@@ -12,10 +12,11 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
-from hbw.production.weights import event_weights_to_normalize
+from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
 from hbw.selection.stats import increment_stats
 from hbw.selection.cutflow_features import cutflow_features
@@ -408,13 +409,13 @@ def lepton_selection_init(self: Selector) -> None:
         boosted_jet_selection,
         jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
-        "mc_weight",  # not opened per default but always required in Cutflow tasks
+        mc_weight, large_weights_killer,
     },
     produces={
         boosted_jet_selection,
         jet_selection, vbf_jet_selection, lepton_selection,
         category_ids, process_ids, increment_stats, attach_coffea_behavior,
-        "mc_weight",  # not opened per default but always required in Cutflow tasks
+        mc_weight, large_weights_killer,
     },
     exposed=True,
 )
@@ -424,6 +425,11 @@ def default(
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
+    # mc weight
+    if self.dataset_inst.is_mc:
+        events = self[mc_weight](events, **kwargs)
+        events = self[large_weights_killer](events, **kwargs)
+
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
 

@@ -148,3 +148,23 @@ def event_weights_init(self: Producer) -> None:
 
     self.uses |= {normalized_scale_pdf_weights}
     self.produces |= {normalized_scale_pdf_weights}
+
+
+@producer(
+    uses={"mc_weight"},
+    produces={"mc_weight"},
+    mc_only=True,
+)
+def large_weights_killer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Simple producer that sets eventweights to 0 when too large.
+    """
+    if self.dataset_inst.is_data:
+        raise Exception("large_weights_killer is only callable for MC")
+
+    # TODO: figure out a good threshold when events are considered unphysical
+    median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]
+    weight_too_large = abs(events.mc_weight) > 1000 * median_weight
+    events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+
+    return events
