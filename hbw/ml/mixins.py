@@ -17,19 +17,23 @@ keras = maybe_import("tensorflow.keras")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseModelMixin(Derivable):
+class DenseModelMixin():
     """
     Mixin that provides an implementation for `prepare_ml_model`
     """
+    def setdefault(self, name, value):
+        setattr(self, name, getattr(self, name, value))
+
     def __init__(
         self,
         *args,
         **kwargs,
     ):
-        self.activation = "relu"
-        self.layers = (64, 64, 64)
-        self.dropout = 0.50
-        self.learningrate = 2 ** 14
+
+        self.setdefault("activation", "relu")
+        self.setdefault("layers", (64, 64, 64))
+        self.setdefault("dropout", 0.50)
+        self.setdefault("learningrate", 2 ** 14)
 
         super().__init__(*args, **kwargs)
 
@@ -88,24 +92,25 @@ class DenseModelMixin(Derivable):
         return model
 
 
-class ModelFitMixin(Derivable):
-    """
-    Mixin that provides an implementation for `fit_ml_model`
-    """
+class ModelFitMixin():
     def __init__(
-        self,
-        *args,
-        **kwargs,
+            self,
+            *args,
+            **kwargs,
     ):
-        self.epochs = 50
-        self.batchsize = 2 ** 14
+
+        super().__init__(*args, **kwargs)
 
     def fit_ml_model(
         self,
         task: law.Task,
         model,
-        train: tf.data.Dataset,
-        validation: tf.data.Dataset,
+        train: DotDict[np.array],
+        validation: DotDict[np.array],
     ) -> None:
-        pass
+        """
+        Training loop but with custom dataset
+        """
+
         # TODO
+        pass

@@ -38,29 +38,28 @@ class MLClassifierBase(MLModel):
     """
     Provides a base structure to implement Multiclass Classifier in Columnflow
     """
+    def setdefault(self, name, value):
+        setattr(self, name, getattr(self, name, value))
+
     def __init__(
             self,
             *args,
-            folds: int | None = None,
             **kwargs,
     ):
 
-        # set some defaults, can be overwritten (TODO) via cls_dict
-        self.processes = ["tt", "st"]
-        self.dataset_names = ["tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"]
-        self.input_features = ["mli_ht", "mli_n_jet"]
-        self.validation_fraction = 0.20  # percentage of the non-test events
-        self.store_name = "inputs_base"
-        self.ml_process_weights = {"st": 2, "tt": 1}
-        self.eqweight = True
-        self.epochs = 50
-        self.batchsize = 2 ** 14
+        # set some defaults, can be overwritten by subclasses or via cls_dict
+        self.setdefault("processes", ["tt", "st"])
+        self.setdefault("dataset_names", ["tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"])
+        self.setdefault("input_features", ["mli_ht", "mli_n_jet"])
+        self.setdefault("validation_fraction", 0.20)  # percentage of the non-test events
+        self.setdefault("store_name", "inputs_base")
+        self.setdefault("ml_process_weights", {"st": 2, "tt": 1})
+        self.setdefault("eqweight", True)
+        self.setdefault("epochs", 50)
+        self.setdefault("batchsize", 2 ** 14)
+        self.setdefault("folds", 5)
 
         super().__init__(*args, **kwargs)
-
-        # class- to instance-level attributes
-        # (before being set, self.folds refers to a class-level attribute)
-        self.folds = folds or self.folds
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -86,7 +85,7 @@ class MLClassifierBase(MLModel):
         )
 
     def sandbox(self, task: law.Task) -> str:
-        # venv_ml_tf sandbox but with scikit-learn
+        # venv_ml_tf sandbox but with scikit-learn and restrictet to tf 2.11.0
         return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
         # return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
 
@@ -94,7 +93,6 @@ class MLClassifierBase(MLModel):
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        # for now: start with only input features, ignore event weights
         return set(self.input_features) | {"normalization_weight"}
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
@@ -271,7 +269,7 @@ class MLClassifierBase(MLModel):
 
         # save tuple of input feature names for sanity checks in MLEvaluation
         output.child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
-
+        # NOTE: at this stage, train and validation datasets are basically sorted per process -> need to shuffle!
         return train, validation
 
     def prepare_ml_model(
@@ -315,8 +313,8 @@ class MLClassifierBase(MLModel):
         self,
         task: law.Task,
         model,
-        train: tf.data.Dataset,
-        validation: tf.data.Dataset,
+        train: DotDict[np.array],
+        validation: DotDict[np.array],
     ) -> None:
         """
         Minimal implementation of training loop.
@@ -421,6 +419,7 @@ class MLClassifierBase(MLModel):
         #
 
         model = self.prepare_ml_model(task)
+        logger.info(model.summary())
 
         #
         # training
