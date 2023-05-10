@@ -38,27 +38,25 @@ class MLClassifierBase(MLModel):
     """
     Provides a base structure to implement Multiclass Classifier in Columnflow
     """
-    def setdefault(self, name, value):
-        setattr(self, name, getattr(self, name, value))
+
+    # set some defaults, can be overwritten by subclasses or via cls_dict
+    processes = ["tt", "st"]
+    dataset_names = ["tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"]
+    input_features = ["mli_ht", "mli_n_jet"]
+    validation_fraction = 0.20  # percentage of the non-test events
+    store_name = "inputs_base"
+    ml_process_weights = {"st": 2, "tt": 1}
+    eqweight = True
+    epochs = 50
+    batchsize = 2 ** 14
+    folds = 5
 
     def __init__(
             self,
             *args,
+            folds: int | None = None,
             **kwargs,
     ):
-
-        # set some defaults, can be overwritten by subclasses or via cls_dict
-        self.setdefault("processes", ["tt", "st"])
-        self.setdefault("dataset_names", ["tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"])
-        self.setdefault("input_features", ["mli_ht", "mli_n_jet"])
-        self.setdefault("validation_fraction", 0.20)  # percentage of the non-test events
-        self.setdefault("store_name", "inputs_base")
-        self.setdefault("ml_process_weights", {"st": 2, "tt": 1})
-        self.setdefault("eqweight", True)
-        self.setdefault("epochs", 50)
-        self.setdefault("batchsize", 2 ** 14)
-        self.setdefault("folds", 5)
-
         super().__init__(*args, **kwargs)
 
     def setup(self):

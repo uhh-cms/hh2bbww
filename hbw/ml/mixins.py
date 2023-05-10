@@ -21,20 +21,17 @@ class DenseModelMixin():
     """
     Mixin that provides an implementation for `prepare_ml_model`
     """
-    def setdefault(self, name, value):
-        setattr(self, name, getattr(self, name, value))
+
+    activation = "relu"
+    layers = (64, 64, 64)
+    dropout = 0.50
+    learningrate = 2 ** 14
 
     def __init__(
         self,
         *args,
         **kwargs,
     ):
-
-        self.setdefault("activation", "relu")
-        self.setdefault("layers", (64, 64, 64))
-        self.setdefault("dropout", 0.50)
-        self.setdefault("learningrate", 2 ** 14)
-
         super().__init__(*args, **kwargs)
 
     def prepare_ml_model(
