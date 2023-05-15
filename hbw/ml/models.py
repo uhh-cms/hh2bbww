@@ -14,7 +14,7 @@ import order as od
 from columnflow.util import maybe_import
 
 from hbw.ml.base import MLClassifierBase
-from hbw.ml.mixins import DenseModelMixin  # , ModelFitMixin
+from hbw.ml.mixins import DenseModelMixin, ModelFitMixin
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -22,7 +22,7 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseClassifier(DenseModelMixin, MLClassifierBase):
+class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
         "ggHH_kl_1_kt_1_sl_hbbhww",
@@ -114,8 +114,8 @@ class DenseClassifier(DenseModelMixin, MLClassifierBase):
         if len(requested_configs) == 1:
             return list(requested_configs)
         else:
-            # TODO: change to "config_2017" when finished with testing phase
-            return ["config_2017_limited"]
+            # use config_2017 per default
+            return ["config_2017"]
 
     def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space

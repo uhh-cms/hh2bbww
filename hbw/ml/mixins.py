@@ -90,6 +90,14 @@ class DenseModelMixin():
 
 
 class ModelFitMixin():
+
+    callbacks = [
+        "backup", "checkpoint", "early_stopping", "reduce_lr",
+    ]
+    remove_backup = False
+    epochs = 200
+    batchsize = 2 ** 14
+
     def __init__(
             self,
             *args,
@@ -104,10 +112,62 @@ class ModelFitMixin():
         model,
         train: DotDict[np.array],
         validation: DotDict[np.array],
+        output,
     ) -> None:
         """
         Training loop but with custom dataset
         """
+        with tf.device("CPU"):
+            tf_train = tf.data.Dataset.from_tensor_slices(
+                (train.inputs, train.target, train.weights),
+            ).shuffle(buffer_size=5 * len(train.inputs)).batch(self.batchsize)
+            tf_validation = tf.data.Dataset.from_tensor_slices(
+                (validation.inputs, validation.target, validation.weights),
+            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(self.batchsize)
 
-        # TODO
-        pass
+        # output used for BackupAndRestore callback (not deleted by --remove-output)
+        # NOTE: does that work when running remote?
+        backup_output=output.parent.child(f"backup_{output.basename}", type="d")
+        if self.remove_backup:
+            backup_output.remove()
+
+        callback_options = {
+            "backup": tf.keras.callbacks.BackupAndRestore(
+                backup_dir=backup_output.path,
+            ),
+            "checkpoint": tf.keras.callbacks.ModelCheckpoint(
+                filepath=f"{output.path}/checkpoint",
+                save_weights_only=False,
+                monitor="val_loss",
+                mode="auto",
+                save_best_only=True,
+            ),
+            "early_stopping": tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                min_delta=0,
+                patience=min(50, int(self.epochs / 4)),
+                verbose=1,
+                restore_best_weights=True,
+                start_from_epoch=min(50, int(self.epochs / 4)),
+            ),
+            "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
+                monitor="val_loss",
+                factor=0.1,
+                patience=min(10, int(self.epochs / 20)),
+                verbose=1,
+                mode="auto",
+                min_delta=0,
+                min_lr=0,
+            )
+        }
+        # allow the user to choose which callbacks to use
+        callbacks = [callback_options[key] for key in self.callbacks]
+
+        logger.info("Starting training...")
+        model.fit(
+            tf_train,
+            validation_data=tf_validation,
+            epochs=self.epochs,
+            callbacks=callbacks,
+            verbose=2,
+        )

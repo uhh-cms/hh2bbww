@@ -313,6 +313,7 @@ class MLClassifierBase(MLModel):
         model,
         train: DotDict[np.array],
         validation: DotDict[np.array],
+        output: law.LocalDirectoryTarget,
     ) -> None:
         """
         Minimal implementation of training loop.
@@ -423,7 +424,7 @@ class MLClassifierBase(MLModel):
         # training
         #
 
-        self.fit_ml_model(task, model, train, validation)
+        self.fit_ml_model(task, model, train, validation, output)
 
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
