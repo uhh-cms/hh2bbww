@@ -73,7 +73,7 @@ def ml_cats_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: Inse
 
 @ml_cats.init
 def ml_cats_init(self: Producer) -> None:
-    ml_model_name = "dense_test"
+    self.ml_model_name = "dense_test"
 
     if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
