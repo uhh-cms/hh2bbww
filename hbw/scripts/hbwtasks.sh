@@ -23,7 +23,7 @@ hbw_reduction(){
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-no-poll \
-	--cf.ReduceEvents-parallel-jobs 4000 \
+	--cf.ReduceEvents-parallel-jobs -1 \
 	--cf.ReduceEvents-retries 1 \
 	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1
@@ -51,6 +51,23 @@ producers="ml_inputs"
 ml_model="test"
 # ml_datasets="ggHH_kl_1_kt_1_sl_hbbhww_powheg,tt_sl_powheg,tt_fh_powheg,st_tchannel_t_powheg"
 ml_datasets="ml"
+
+hbw_ml_training(){
+    law run cf.MLTraining --version $version --workers 10 \
+	--configs $config \
+	--ml-model dense_default \
+	--workflow htcondor \
+	--htcondor-gpus 1 \
+	--htcondor-memory 40000 \
+	--max-runtime 48h \
+	--cf.MergeMLEvents-workflow local \
+	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-gpus 0 \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-pilot True \
+	--retries 1
+}
 
 hbw_ml_preparation(){
     for i in {0..4}
