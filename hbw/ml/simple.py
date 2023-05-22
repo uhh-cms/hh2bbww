@@ -6,7 +6,7 @@ First implementation of DNN for HH analysis, generalized (TODO)
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 import gc
 from time import time
 
@@ -88,8 +88,8 @@ class SimpleDNN(MLModel):
             self.config_inst.add_variable(
                 name=f"{self.cls_name}.ml_label",
                 null_value=-1,
-                binning=(len(self.processes) + 1, -1.5, len(self.processes) -0.5),
-                x_title=f"DNN truth score",
+                binning=(len(self.processes) + 1, -1.5, len(self.processes) - 0.5),
+                x_title="DNN truth score",
             )
 
         # dynamically add ml categories (but only if production categories have been added)
@@ -414,7 +414,6 @@ class SimpleDNN(MLModel):
         )
 
         logger.info("input to tf Dataset")
-        # .shuffle(buffer_size=len(train["inputs"], reshuffle_each_iteration=True).repeat(self.epochs).batch(self.batchsize)
         with tf.device("CPU"):
             tf_train = tf.data.Dataset.from_tensor_slices(
                 (train["inputs"], train["target"], train["weights"]),
