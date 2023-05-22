@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from columnflow.production import Producer, producer
 from columnflow.production.cms.btag import btag_weights
-from columnflow.util import maybe_import, safe_div
+from columnflow.util import maybe_import, safe_div, InsertableDict
 from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
@@ -75,7 +75,7 @@ def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
 
 
 @normalized_btag_weights.setup
-def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict) -> None:
+def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
     # load the selection stats
     stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")
 

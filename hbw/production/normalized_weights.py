@@ -7,7 +7,7 @@ Column production methods related to generic event weights.
 from typing import Iterable, Callable
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, safe_div
+from columnflow.util import maybe_import, safe_div, InsertableDict
 from columnflow.columnar_util import set_ak_column
 
 ak = maybe_import("awkward")
@@ -85,7 +85,7 @@ def normalized_weight_factory(
         )
 
     @normalized_weight.setup
-    def normalized_weight_setup(self: Producer, reqs: dict, inputs: dict) -> None:
+    def normalized_weight_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
         # load the selection stats
         stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")
 
