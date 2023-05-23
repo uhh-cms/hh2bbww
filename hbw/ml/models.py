@@ -97,7 +97,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     layers = [512, 512, 512]
     activation = "relu"
     learningrate = 0.00050
-    batchsize = 131072
+    batchsize = 2 ** 12
     epochs = 200
     epweight = True
     dropout = 0.50
@@ -132,10 +132,14 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 cls_dict_test = {
     "epochs": 6,
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "st", "w_lnu"],
-    "dataset_names": ["ggHH_kl_1_kt_1_sl_hbbhww_powheg", "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu"],
+    "dataset_names": [
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
+        "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
+    ],
 }
 
 
 dense_test = DenseClassifier.derive("dense_test", cls_dict=cls_dict_test)
 dense_default = DenseClassifier.derive("dense_default", cls_dict={})
+dense_short = DenseClassifier.derive("dense_short", cls_dict={"epochs": 5})

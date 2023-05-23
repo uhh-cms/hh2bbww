@@ -9,6 +9,8 @@ import law
 
 from columnflow.util import maybe_import, DotDict
 
+from hbw.util import memory_GB
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 tf = maybe_import("tensorflow")
@@ -25,7 +27,7 @@ class DenseModelMixin():
     activation = "relu"
     layers = (64, 64, 64)
     dropout = 0.50
-    learningrate = 2 ** 14
+    learningrate = 2 ** 10
 
     def __init__(
         self,
@@ -83,7 +85,7 @@ class DenseModelMixin():
         model.compile(
             loss="categorical_crossentropy",
             optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy"],
+            weighted_metrics=["categorical_accuracy", memory_GB],
         )
 
         return model
@@ -92,11 +94,11 @@ class DenseModelMixin():
 class ModelFitMixin():
 
     callbacks = [
-        "backup", "checkpoint", "early_stopping", "reduce_lr",
+        # "backup", "checkpoint", "early_stopping", "reduce_lr",
     ]
     remove_backup = False
     epochs = 200
-    batchsize = 2 ** 14
+    batchsize = 2 ** 12
 
     def __init__(
             self,
@@ -117,17 +119,17 @@ class ModelFitMixin():
         """
         Training loop but with custom dataset
         """
+        from hbw.ml.multi_dataset import MultiDataset
+
         with tf.device("CPU"):
-            tf_train = tf.data.Dataset.from_tensor_slices(
-                (train.inputs, train.target, train.weights),
-            ).shuffle(buffer_size=5 * len(train.inputs)).batch(self.batchsize)
+            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.weights),
-            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(self.batchsize)
+            ).batch(self.batchsize)
 
         # output used for BackupAndRestore callback (not deleted by --remove-output)
         # NOTE: does that work when running remote?
-        backup_output=output.parent.child(f"backup_{output.basename}", type="d")
+        backup_output = output.parent.child(f"backup_{output.basename}", type="d")
         if self.remove_backup:
             backup_output.remove()
 
@@ -145,28 +147,29 @@ class ModelFitMixin():
             "early_stopping": tf.keras.callbacks.EarlyStopping(
                 monitor="val_loss",
                 min_delta=0,
-                patience=min(50, int(self.epochs / 4)),
+                patience=max(10, min(50, int(self.epochs / 5))),
                 verbose=1,
                 restore_best_weights=True,
-                start_from_epoch=min(50, int(self.epochs / 4)),
+                start_from_epoch=max(10, min(50, int(self.epochs / 5))),
             ),
             "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
                 monitor="val_loss",
                 factor=0.1,
-                patience=min(10, int(self.epochs / 20)),
+                patience=max(5, min(10, int(self.epochs / 20))),
                 verbose=1,
                 mode="auto",
                 min_delta=0,
                 min_lr=0,
-            )
+            ),
         }
         # allow the user to choose which callbacks to use
         callbacks = [callback_options[key] for key in self.callbacks]
 
         logger.info("Starting training...")
         model.fit(
-            tf_train,
+            (x for x in tf_train),
             validation_data=tf_validation,
+            steps_per_epoch=tf_train.max_iter_valid,
             epochs=self.epochs,
             callbacks=callbacks,
             verbose=2,

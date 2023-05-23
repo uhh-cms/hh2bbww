@@ -18,6 +18,7 @@ from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
+from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process
 from hbw.ml.plotting import (
     plot_loss, plot_accuracy, plot_confusion, plot_roc_ovr, plot_output_nodes,
@@ -48,7 +49,7 @@ class MLClassifierBase(MLModel):
     ml_process_weights = {"st": 2, "tt": 1}
     eqweight = True
     epochs = 50
-    batchsize = 2 ** 14
+    batchsize = 2 ** 10
     folds = 5
 
     def __init__(
@@ -167,12 +168,6 @@ class MLClassifierBase(MLModel):
                     f"----- Sum of weights:   {sum_weights}",
                 )
 
-        # Number to scale weights such that the largest weights are at the order of 1
-        weights_scaler = min([
-            (proc_inst.x.N_events / proc_inst.x.ml_process_weight)
-            for proc_inst in self.process_insts
-        ])
-
         #
         # set inputs, weights and targets for each datset and fold
         #
@@ -184,6 +179,8 @@ class MLClassifierBase(MLModel):
         input_features = None
 
         for proc_inst in self.process_insts:
+            _train = DotDict()
+            _validation = DotDict()
             logger.info(
                 f"Preparing inputs for process {proc_inst.name} {chr(10)}"
                 f"----- Number of files:  {len(proc_inst.x.filenames)} {chr(10)}"
@@ -194,16 +191,12 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
 
-                # determine the correct event weights
-                weights = events.normalization_weight
-                if self.eqweight:
-                    # determine weights such that sum of weights is equal for all processes
-                    weights = weights * weights_scaler / proc_inst.x.sum_weights
-
-                # weights customization per process
-                weights = weights * proc_inst.x.ml_process_weight
+                # event weights per process, normalized to the sum of events
+                weights = events.normalization_weight / proc_inst.x.sum_weights * proc_inst.x.N_events
                 proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(weights)
-                weights = ak.to_numpy(weights)
+                weights = ak.to_numpy(weights).astype(np.float32)
+                # quick fix to remove negative weights: messes with sum of weights and sum of events
+                weights = np.where(weights < 0, 0, weights)
 
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
@@ -242,22 +235,25 @@ class MLClassifierBase(MLModel):
                 # split into train and validation dataset
                 N_events_validation = int(self.validation_fraction * len(events))
 
-                if not train.keys():
+                if not _train.keys():
                     # initialize arrays on the first call
-                    train.inputs = events[N_events_validation:]
-                    train.target = target[N_events_validation:]
-                    train.weights = weights[N_events_validation:]
-                    validation.inputs = events[:N_events_validation]
-                    validation.target = target[:N_events_validation]
-                    validation.weights = weights[:N_events_validation]
+                    _train.inputs = events[N_events_validation:]
+                    _train.target = target[N_events_validation:]
+                    _train.weights = weights[N_events_validation:]
+                    _validation.inputs = events[:N_events_validation]
+                    _validation.target = target[:N_events_validation]
+                    _validation.weights = weights[:N_events_validation]
                 else:
                     # concatenate arrays on all following calls
-                    train.inputs = np.concatenate([train.inputs, events[N_events_validation:]])
-                    train.target = np.concatenate([train.target, target[N_events_validation:]])
-                    train.weights = np.concatenate([train.weights, weights[N_events_validation:]])
-                    validation.inputs = np.concatenate([validation.inputs, events[:N_events_validation]])
-                    validation.target = np.concatenate([validation.target, target[:N_events_validation]])
-                    validation.weights = np.concatenate([validation.weights, weights[:N_events_validation]])
+                    _train.inputs = np.concatenate([_train.inputs, events[N_events_validation:]])
+                    _train.target = np.concatenate([_train.target, target[N_events_validation:]])
+                    _train.weights = np.concatenate([_train.weights, weights[N_events_validation:]])
+                    _validation.inputs = np.concatenate([_validation.inputs, events[:N_events_validation]])
+                    _validation.target = np.concatenate([_validation.target, target[:N_events_validation]])
+                    _validation.weights = np.concatenate([_validation.weights, weights[:N_events_validation]])
+
+            train[proc_inst] = _train
+            validation[proc_inst] = _validation
 
             logger.info(f"Input preparation done for process {proc_inst.name}; took {(time.perf_counter() - t0):.1f}s")
 
@@ -302,7 +298,7 @@ class MLClassifierBase(MLModel):
         model.compile(
             loss="categorical_crossentropy",
             optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy"],
+            weighted_metrics=["categorical_accuracy", "memory_GB"],
         )
 
         return model
@@ -318,24 +314,25 @@ class MLClassifierBase(MLModel):
         """
         Minimal implementation of training loop.
         """
+        from hbw.ml.multi_dataset import MultiDataset
 
         with tf.device("CPU"):
-            tf_train = tf.data.Dataset.from_tensor_slices(
-                (train.inputs, train.target, train.weights),
-            ).shuffle(buffer_size=5 * len(train.inputs)).batch(self.batchsize)
+            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.weights),
-            ).shuffle(buffer_size=5 * len(validation.inputs)).batch(self.batchsize)
+            ).batch(self.batchsize)
 
         logger.info("Starting training...")
         model.fit(
-            tf_train,
+            (x for x in tf_train),
             validation_data=tf_validation,
+            # steps_per_epoch=tf_train.max_iter_valid,
+            steps_per_epoch=tf_train.max_iter_smallest_process,
             epochs=self.epochs,
             verbose=2,
         )
 
-    def instant_evaluate(
+    def create_train_val_plots(
         self,
         task: law.Task,
         model,
@@ -400,41 +397,55 @@ class MLClassifierBase(MLModel):
         #
         # input preparation
         #
-
+        log_memory("start")
         train, validation = self.prepare_inputs(task, input, output)
-
+        log_memory("prepare_inputs")
         # check for infinite values
-        for key in train.keys():
-            if np.any(~np.isfinite(train[key])):
-                raise Exception(f"Infinite values found in training {key}")
-            if np.any(~np.isfinite(validation[key])):
-                raise Exception(f"Infinite values found in validation {key}")
+        for proc_inst in train.keys():
+            for key in train[proc_inst].keys():
+                if np.any(~np.isfinite(train[proc_inst][key])):
+                    raise Exception(f"Infinite values found in training {key}, process {proc_inst.name}")
+                if np.any(~np.isfinite(validation[proc_inst][key])):
+                    raise Exception(f"Infinite values found in validation {key}, process {proc_inst.name}")
 
         gc.collect()
         logger.info("garbage collected")
-
+        log_memory("garbage collected")
         #
         # model preparation
         #
 
         model = self.prepare_ml_model(task)
         logger.info(model.summary())
-
+        log_memory("prepare-model")
         #
         # training
         #
 
+        # merge validation data
+        validation = DotDict({
+            key: np.concatenate([validation[proc][key] for proc in validation.keys()])
+            for key in list(validation.values())[0].keys()
+        })
+        log_memory("val merged")
+        # train the model
         self.fit_ml_model(task, model, train, validation, output)
-
+        log_memory("training")
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
         model.save(output.path)
+
+        # merge train data
+        train = DotDict({
+            key: np.concatenate([train[proc][key] for proc in train.keys()])
+            for key in list(train.values())[0].keys()
+        })
 
         #
         # direct evaluation as part of MLTraining
         #
 
-        self.instant_evaluate(task, model, train, validation, output)
+        self.create_train_val_plots(task, model, train, validation, output)
 
         return
 

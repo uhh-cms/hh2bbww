@@ -10,7 +10,7 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import, InsertableDict
 from columnflow.production.categories import category_ids
 
-from hbw.production.weights import event_weights
+# from hbw.production.weights import event_weights
 # from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production, add_categories_ml
 from hbw.ml.models import dense_test
@@ -19,7 +19,6 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 logger = law.logger.get_logger(__name__)
-
 
 
 @producer(
@@ -70,6 +69,7 @@ def ml_cats_reqs(self: Producer, reqs: dict) -> None:
 @ml_cats.setup
 def ml_cats_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
     reader_targets["mlcolumns"] = inputs["ml"]["mlcolumns"]
+
 
 @ml_cats.init
 def ml_cats_init(self: Producer) -> None:
