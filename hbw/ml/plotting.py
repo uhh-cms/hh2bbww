@@ -77,15 +77,18 @@ def plot_confusion(
         sample_weight=inputs.weights,
         normalize="true",
     )
-
-    labels = [proc_inst.label for proc_inst in process_insts] if process_insts else None
+    # legend
+    labels = (
+        [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
+        if process_insts else None
+    )
 
     # Create a plot of the confusion matrix
     fig, ax = plt.subplots()
     ConfusionMatrixDisplay(confusion, display_labels=labels).plot(ax=ax)
 
-    ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20)
-    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=2)
+    ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
+    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=0)
 
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -127,7 +130,10 @@ def plot_roc_ovr(
     ax.set_ylabel("Signal selection efficiency (TPR)")
 
     # legend
-    labels = [proc_inst.label for proc_inst in process_insts] if process_insts else range(n_classes)
+    labels = (
+        [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
+        if process_insts else range(n_classes)
+    )
     ax.legend(
         [f"Signal: {labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
         loc="best",
@@ -143,6 +149,7 @@ def plot_output_nodes(
         validation: DotDict,
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
+        normalize: bool = True,
 ) -> None:
     """
     Function that creates a plot for each ML output node,
@@ -156,7 +163,7 @@ def plot_output_nodes(
     for i in range(n_classes):
         fig, ax = plt.subplots()
 
-        var_title = f"Output node {process_insts[i].label}"
+        var_title = f"{process_insts[i].x('ml_label', process_insts[i].label)} output node"
 
         h = (
             hist.Hist.new
@@ -185,10 +192,22 @@ def plot_output_nodes(
 
         # dummy legend entries
         plt.hist([], histtype="step", label="Training", color="black")
-        plt.hist([], histtype="step", label="Validation (scaled)", linestyle="dotted", color="black")
+        plt.hist([], histtype="step", label="Validation", linestyle="dotted", color="black")
+
+        # get the correct normalization factors
+        if normalize:
+            scale_train = np.array([
+                h[{"type": "train", "process": i}].sum().value for i in range(n_classes)
+            ])[:, np.newaxis]
+            scale_val = np.array([
+                h[{"type": "validation", "process": i}].sum().value for i in range(n_classes)
+            ])[:, np.newaxis]
+        else:
+            scale_train = 1
+            scale_val = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
 
         # plot training scores
-        h[{"type": "train"}].plot1d(**plot_kwargs)
+        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs)
 
         # legend
         ax.legend(loc="best")
@@ -200,8 +219,7 @@ def plot_output_nodes(
         })
 
         # plot validation scores, scaled to train dataset
-        scale = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
-        (h[{"type": "validation"}] * scale).plot1d(**plot_kwargs, linestyle="dotted")
+        (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
 
         mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=0)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
