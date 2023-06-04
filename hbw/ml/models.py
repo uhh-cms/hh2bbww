@@ -98,7 +98,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     activation = "relu"
     learningrate = 0.00050
     batchsize = 2 ** 12
-    epochs = 200
+    epochs = 500
     epweight = True
     dropout = 0.50
 
@@ -131,7 +131,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 
 cls_dict_test = {
-    "epochs": 6,
+    "epochs": 1,
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu"],
     "dataset_names": [
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",

@@ -9,7 +9,7 @@ import law
 
 from columnflow.util import maybe_import, DotDict
 
-from hbw.util import memory_GB
+from hbw.util import memory_GB, log_memory
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -17,6 +17,14 @@ tf = maybe_import("tensorflow")
 keras = maybe_import("tensorflow.keras")
 
 logger = law.logger.get_logger(__name__)
+
+
+def loop_dataset(data, max_count=10000):
+    for i, x in enumerate(data):
+        if i % int(max_count / 100) == 0:
+            print(i)
+        if i == max_count:
+            break
 
 
 class DenseModelMixin():
@@ -120,13 +128,14 @@ class ModelFitMixin():
         Training loop but with custom dataset
         """
         from hbw.ml.multi_dataset import MultiDataset
+        log_memory("start")
 
         with tf.device("CPU"):
-            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
+            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.weights),
             ).batch(self.batchsize)
-
+        log_memory("init")
         # output used for BackupAndRestore callback (not deleted by --remove-output)
         # NOTE: does that work when running remote?
         backup_output = output.parent.child(f"backup_{output.basename}", type="d")
@@ -164,13 +173,21 @@ class ModelFitMixin():
         }
         # allow the user to choose which callbacks to use
         callbacks = [callback_options[key] for key in self.callbacks]
+        iterator = (x for x in tf_train)
 
         logger.info("Starting training...")
         model.fit(
-            (x for x in tf_train),
+            iterator,
             validation_data=tf_validation,
-            steps_per_epoch=tf_train.max_iter_valid,
+            steps_per_epoch=tf_train.iter_smallest_process,
             epochs=self.epochs,
             callbacks=callbacks,
             verbose=2,
         )
+        log_memory("loop")
+
+        # delete tf datasets to clear memory
+        del tf_train
+        del iterator
+        del tf_validation
+        log_memory("del")

@@ -19,7 +19,7 @@ from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 from hbw.util import log_memory
-from hbw.ml.helper import assign_dataset_to_process
+from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
     plot_loss, plot_accuracy, plot_confusion, plot_roc_ovr, plot_output_nodes,
 )
@@ -196,6 +196,7 @@ class MLClassifierBase(MLModel):
                 proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(weights)
                 weights = ak.to_numpy(weights).astype(np.float32)
                 # quick fix to remove negative weights: messes with sum of weights and sum of events
+                # TODO: implement via changed output target (siehe DPG Talk Joern Bach)
                 weights = np.where(weights < 0, 0, weights)
 
                 # check that all relevant input features are present
@@ -263,7 +264,14 @@ class MLClassifierBase(MLModel):
 
         # save tuple of input feature names for sanity checks in MLEvaluation
         output.child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
-        # NOTE: at this stage, train and validation datasets are basically sorted per process -> need to shuffle!
+
+        # shuffle per process
+        for inp in (train, validation):
+            for proc_inst, _inp in inp.items():
+                np.random.shuffle(shuffle_indices := np.array(range(len(_inp.inputs))))
+                for key in _inp.keys():
+                    inp[proc_inst][key] = inp[proc_inst][key][shuffle_indices]
+
         return train, validation
 
     def prepare_ml_model(
@@ -357,25 +365,32 @@ class MLClassifierBase(MLModel):
                 outp = None
 
             return outp
-
+        log_memory("start plotting")
         # make some plots of the history
         call_func_safe(plot_accuracy, model.history.history, output)
         call_func_safe(plot_loss, model.history.history, output)
+        log_memory("acc, loss")
 
+        log_memory("gc")
         # evaluate training and validation sets
-        train.prediction = call_func_safe(model.predict_on_batch, train.inputs)
-        validation.prediction = call_func_safe(model.predict_on_batch, validation.inputs)
+        train.prediction = call_func_safe(predict_numpy_on_batch, model, train.inputs)
+        validation.prediction = call_func_safe(predict_numpy_on_batch, model, validation.inputs)
 
+        log_memory("pred")
         # create some confusion matrices
         call_func_safe(plot_confusion, model, train, output, "train", self.process_insts)
         call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts)
+        log_memory("conf")
 
         # create some ROC curves
         call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts)
         call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts)
-
+        log_memory("roc")
+        gc.collect()
         # create plots for all output nodes
         call_func_safe(plot_output_nodes, model, train, validation, output, self.process_insts)
+        log_memory("plot nodes")
+        gc.collect()
 
         return
 
@@ -440,6 +455,7 @@ class MLClassifierBase(MLModel):
             key: np.concatenate([train[proc][key] for proc in train.keys()])
             for key in list(train.values())[0].keys()
         })
+        log_memory("train merged")
 
         #
         # direct evaluation as part of MLTraining
