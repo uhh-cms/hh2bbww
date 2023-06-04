@@ -28,14 +28,16 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "ggHH_kl_1_kt_1_sl_hbbhww",
         "tt",
         "st",
-        "w_lnu",
-        "dy_lep",
+        "v_lep",
+        # "w_lnu",
+        # "dy_lep",
     ]
 
     ml_process_weights = {
         "ggHH_kl_1_kt_1_sl_hbbhww": 1,
         "tt": 8,
         "st": 8,
+        "v_lep": 8,
         "w_lnu": 8,
         "dy_lep": 8,
     }
@@ -132,7 +134,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 cls_dict_test = {
     "epochs": 1,
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
     "dataset_names": [
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
         "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
