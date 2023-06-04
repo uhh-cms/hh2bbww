@@ -20,12 +20,14 @@ class MultiDataset(object):
         batch_size: int = 128,
         kind: str = "train",
         seed: int | None = None,
+        buffersize: int = 0,  # buffersize=0 means no shuffle
     ):
-        # super().__init__()
+        super().__init__()
 
         assert kind in ["train", "valid"]
         self.kind = kind
         self.seed = seed
+        self.buffersize = buffersize
 
         # create datasets, store counts and relative weights
         self.datasets = []
@@ -33,10 +35,10 @@ class MultiDataset(object):
         self.weights = []
 
         for proc_inst, arrays in data.items():
-            # arrays = (arrays.inputs, arrays.target, arrays.weights)
-            self.tuple_length = len(arrays.inputs)
-            self.datasets.append(tf.data.Dataset.from_tensor_slices((arrays.inputs, arrays.target, arrays.weights)))
-            self.counts.append(len(arrays.inputs[0]))
+            arrays = (arrays.inputs, arrays.target, arrays.weights)
+            self.tuple_length = len(arrays)
+            self.datasets.append(tf.data.Dataset.from_tensor_slices(arrays))
+            self.counts.append(len(arrays[0]))
             self.weights.append(proc_inst.x.ml_process_weight)
 
         # state attributes
@@ -57,7 +59,7 @@ class MultiDataset(object):
             print(f"batch size is {sum(self.batch_sizes)} but should be {batch_size}")
 
         self.max_iter_valid = int(math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
-        self.max_iter_smallest_process = int(math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
+        self.iter_smallest_process = int(math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
         gc.collect()
 
     @property
@@ -69,10 +71,10 @@ class MultiDataset(object):
 
         datasets = self.datasets
 
-        if self.kind == "train":
+        if self.buffersize > 0 and self.kind == "train":
             # shuffling
             datasets = [
-                dataset.shuffle(10 * count, reshuffle_each_iteration=True, seed=self.seed)
+                dataset.shuffle(int(self.buffersize * count), reshuffle_each_iteration=False, seed=self.seed)
                 for dataset, count in zip(datasets, self.counts)
             ]
 
