@@ -93,7 +93,8 @@ class DenseModelMixin():
         model.compile(
             loss="categorical_crossentropy",
             optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy", memory_GB],
+            metrics=["categorical_accuracy", memory_GB],
+            weighted_metrics=["categorical_accuracy"],
         )
 
         return model
@@ -133,7 +134,7 @@ class ModelFitMixin():
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.weights),
+                (validation.inputs, validation.target, validation.ml_weights),
             ).batch(self.batchsize)
         log_memory("init")
         # output used for BackupAndRestore callback (not deleted by --remove-output)

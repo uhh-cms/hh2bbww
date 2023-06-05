@@ -117,6 +117,7 @@ class MLClassifierBase(MLModel):
         task,
         input,
         output: law.LocalDirectoryTarget,
+        per_process: bool = True,
     ) -> dict[str, np.array]:
 
         # get process instances and assign relevant information to the process_insts
@@ -151,15 +152,16 @@ class MLClassifierBase(MLModel):
                 filenames = [inp["mlevents"].path for inp in files]
 
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
-                sum_weights = sum([
-                    ak.sum(ak.from_parquet(inp["mlevents"].fn).normalization_weight)
-                    for inp in files
-                ])
+
+                weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
+                sum_weights = sum([ak.sum(w) for w in weights])
+                sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])
 
                 # bookkeep filenames and stats per process
                 proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
                 proc_inst.x.N_events = proc_inst.x("N_events", 0) + N_events
                 proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
+                proc_inst.x.sum_abs_weights = proc_inst.x("sum_abs_weights", 0) + sum_abs_weights
 
                 logger.info(
                     f"Dataset {dataset} was assigned to process {proc_inst.name}; "
@@ -191,13 +193,16 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
 
-                # event weights per process, normalized to the sum of events
-                weights = events.normalization_weight / proc_inst.x.sum_weights * proc_inst.x.N_events
+                # event weights, normalized to the sum of events per process
+                weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
+                ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
                 proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(weights)
-                weights = ak.to_numpy(weights).astype(np.float32)
-                # quick fix to remove negative weights: messes with sum of weights and sum of events
-                # TODO: implement via changed output target (siehe DPG Talk Joern Bach)
-                weights = np.where(weights < 0, 0, weights)
+
+                # transform ml weights to handle negative weights
+                m_negative_weights = ml_weights < 0
+                ml_weights[m_negative_weights] = (
+                    np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) + 1)
+                )
 
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
@@ -223,35 +228,50 @@ class MLClassifierBase(MLModel):
                     [(name, np.float32) for name in events.dtype.names], copy=False,
                 ).view(np.float32).reshape((-1, len(events.dtype)))
 
-                # shuffle events and weights
+                # create truth values
+                label = np.ones(len(events)) * proc_inst.x.ml_id
+                target = np.zeros((len(events), len(self.processes))).astype(np.int32)
+                target[:, proc_inst.x.ml_id] = 1
+
+                # transform target layer for events with negative weights (1 -> 0 and 0 -> 1)
+                target[m_negative_weights] = 1 - target[m_negative_weights]
+
+                # shuffle arrays
                 np.random.shuffle(shuffle_indices := np.array(range(len(events))))
                 events = events[shuffle_indices]
+                ml_weights = ml_weights[shuffle_indices]
                 weights = weights[shuffle_indices]
-
-                # create truth values (no need to shuffle them)
-                # label = np.ones(len(events)) * proc_inst.x.ml_id
-                target = np.zeros((len(events), len(self.processes)))
-                target[:, proc_inst.x.ml_id] = 1
+                target = target[shuffle_indices]
 
                 # split into train and validation dataset
                 N_events_validation = int(self.validation_fraction * len(events))
 
-                if not _train.keys():
-                    # initialize arrays on the first call
-                    _train.inputs = events[N_events_validation:]
-                    _train.target = target[N_events_validation:]
-                    _train.weights = weights[N_events_validation:]
-                    _validation.inputs = events[:N_events_validation]
-                    _validation.target = target[:N_events_validation]
-                    _validation.weights = weights[:N_events_validation]
-                else:
-                    # concatenate arrays on all following calls
-                    _train.inputs = np.concatenate([_train.inputs, events[N_events_validation:]])
-                    _train.target = np.concatenate([_train.target, target[N_events_validation:]])
-                    _train.weights = np.concatenate([_train.weights, weights[N_events_validation:]])
-                    _validation.inputs = np.concatenate([_validation.inputs, events[:N_events_validation]])
-                    _validation.target = np.concatenate([_validation.target, target[:N_events_validation]])
-                    _validation.weights = np.concatenate([_validation.weights, weights[:N_events_validation]])
+                def add_arrays(array: np.array, key: str):
+                    """
+                    Small helper to add arrays split into train and validation
+                    """
+                    if key not in _train.keys():
+                        # initialize list on first call
+                        _train[key] = [array[N_events_validation:]]
+                        _validation[key] = [array[:N_events_validation]]
+                    else:
+                        # append on all following calls
+                        _train[key].append(array[N_events_validation:])
+                        _validation[key].append(array[:N_events_validation])
+
+                for array, key in (
+                    (events, "inputs"),
+                    (target, "target"),
+                    (label, "label"),
+                    (weights, "weights"),
+                    (ml_weights, "ml_weights"),
+                ):
+                    add_arrays(array, key)
+
+            # concatenate arrays per process
+            for inp in (_train, _validation):
+                for key, arrays in inp.items():
+                    inp[key] = np.concatenate(arrays)
 
             train[proc_inst] = _train
             validation[proc_inst] = _validation
@@ -271,6 +291,23 @@ class MLClassifierBase(MLModel):
                 np.random.shuffle(shuffle_indices := np.array(range(len(_inp.inputs))))
                 for key in _inp.keys():
                     inp[proc_inst][key] = inp[proc_inst][key][shuffle_indices]
+
+        # if requested, merge per process
+        if not per_process:
+            def merge_processes(inputs: DotDict[any, DotDict[any: np.array]]):
+                return DotDict({
+                    key: np.concatenate([inputs[proc][key] for proc in inputs.keys()])
+                    for key in list(inputs.values())[0].keys()
+                })
+
+            validation = merge_processes(validation)
+            train = merge_processes(train)
+
+            # shuffle all events
+            for inp in (train, validation):
+                np.random.shuffle(shuffle_indices := np.array(range(len(inp.inputs))))
+                for key in _inp.keys():
+                    inp[key] = inp[key][shuffle_indices]
 
         return train, validation
 
@@ -327,7 +364,7 @@ class MLClassifierBase(MLModel):
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.weights),
+                (validation.inputs, validation.target, validation.ml_weights),
             ).batch(self.batchsize)
 
         logger.info("Starting training...")
@@ -335,7 +372,7 @@ class MLClassifierBase(MLModel):
             (x for x in tf_train),
             validation_data=tf_validation,
             # steps_per_epoch=tf_train.max_iter_valid,
-            steps_per_epoch=tf_train.max_iter_smallest_process,
+            steps_per_epoch=tf_train.iter_smallest_process,
             epochs=self.epochs,
             verbose=2,
         )
@@ -365,6 +402,7 @@ class MLClassifierBase(MLModel):
                 outp = None
 
             return outp
+
         log_memory("start plotting")
         # make some plots of the history
         call_func_safe(plot_accuracy, model.history.history, output)

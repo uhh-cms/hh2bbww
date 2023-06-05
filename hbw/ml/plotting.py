@@ -72,7 +72,7 @@ def plot_confusion(
 
     # Create confusion matrix and normalizes it over predicted (columns)
     confusion = confusion_matrix(
-        y_true=np.argmax(inputs.target, axis=1),
+        y_true=inputs.label,
         y_pred=np.argmax(inputs.prediction, axis=1),
         sample_weight=inputs.weights,
         normalize="true",
@@ -111,14 +111,16 @@ def plot_roc_ovr(
 
     fig, ax = plt.subplots()
     for i in range(n_classes):
+        y_true = (inputs.label == i)
         fpr, tpr, thresholds = roc_curve(
-            y_true=inputs.target[:, i],
+            y_true=y_true,
+            # y_true=inputs.target[:, i],
             y_score=inputs.prediction[:, i],
             sample_weight=inputs.weights,
         )
 
         auc_scores.append(roc_auc_score(
-            inputs.target[:, i], inputs.prediction[:, i],
+            y_true, inputs.prediction[:, i],
             average="macro", multi_class="ovr",
         ))
 
