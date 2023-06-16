@@ -21,7 +21,7 @@ from columnflow.tasks.selection import MergeSelectionStatsWrapper
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
-    plot_loss, plot_accuracy, plot_confusion, plot_roc_ovr, plot_output_nodes,
+    plot_history, plot_confusion, plot_roc_ovr, plot_output_nodes,
 )
 
 
@@ -59,6 +59,8 @@ class MLClassifierBase(MLModel):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
+
+        assert self.eqweight in (True, False)
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -196,13 +198,14 @@ class MLClassifierBase(MLModel):
                 # event weights, normalized to the sum of events per process
                 weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
                 ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
-                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(weights)
 
                 # transform ml weights to handle negative weights
                 m_negative_weights = ml_weights < 0
                 ml_weights[m_negative_weights] = (
-                    np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) + 1)
+                    np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) - 1)
                 )
+                ml_weights = ml_weights.astype(np.float32)
+                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(ml_weights)
 
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
@@ -230,11 +233,12 @@ class MLClassifierBase(MLModel):
 
                 # create truth values
                 label = np.ones(len(events)) * proc_inst.x.ml_id
-                target = np.zeros((len(events), len(self.processes))).astype(np.int32)
+                target = np.zeros((len(events), len(self.processes))).astype(np.float32)
                 target[:, proc_inst.x.ml_id] = 1
 
                 # transform target layer for events with negative weights (1 -> 0 and 0 -> 1)
-                target[m_negative_weights] = 1 - target[m_negative_weights]
+                # TODO: network classifies everything into 1 process when doing this. Needs to be fixed.
+                # target[m_negative_weights] = 1 - target[m_negative_weights]
 
                 # shuffle arrays
                 np.random.shuffle(shuffle_indices := np.array(range(len(events))))
@@ -392,22 +396,35 @@ class MLClassifierBase(MLModel):
             """
             Small helper to make sure that our training does not fail due to plotting
             """
+
+            # get the function name without the possibility of raising an error
+            try:
+                func_name = func.__name__
+            except Exception:
+                # default to empty name
+                func_name = ""
+
             t0 = time.perf_counter()
 
             try:
                 outp = func(*args, **kwargs)
-                logger.info(f"Function '{func.__name__}' done; took {(time.perf_counter() - t0):.2f} seconds")
+                logger.info(f"Function '{func_name}' done; took {(time.perf_counter() - t0):.2f} seconds")
             except Exception as e:
-                logger.warning(f"Function '{func.__name__}' failed due to {type(e)}: {e}")
+                logger.warning(f"Function '{func_name}' failed due to {type(e)}: {e}")
                 outp = None
 
             return outp
 
         log_memory("start plotting")
         # make some plots of the history
-        call_func_safe(plot_accuracy, model.history.history, output)
-        call_func_safe(plot_loss, model.history.history, output)
-        log_memory("acc, loss")
+        for metric, ylabel in (
+            ("loss", "Loss"),
+            ("categorical_accuracy", "Accuracy"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy"),
+        ):
+            call_func_safe(plot_history, model.history.history, output, metric, ylabel)
+
+        log_memory("history plots")
 
         log_memory("gc")
         # evaluate training and validation sets
@@ -452,6 +469,7 @@ class MLClassifierBase(MLModel):
         #
         log_memory("start")
         train, validation = self.prepare_inputs(task, input, output)
+
         log_memory("prepare_inputs")
         # check for infinite values
         for proc_inst in train.keys():
@@ -481,6 +499,7 @@ class MLClassifierBase(MLModel):
             for key in list(validation.values())[0].keys()
         })
         log_memory("val merged")
+
         # train the model
         self.fit_ml_model(task, model, train, validation, output)
         log_memory("training")

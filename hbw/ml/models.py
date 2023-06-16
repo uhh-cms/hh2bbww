@@ -133,7 +133,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 
 cls_dict_test = {
-    "epochs": 2,
+    "epochs": 5,
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
     "dataset_names": [
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",

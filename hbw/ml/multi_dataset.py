@@ -35,7 +35,7 @@ class MultiDataset(object):
         self.weights = []
 
         for proc_inst, arrays in data.items():
-            arrays = (arrays.inputs, arrays.target, arrays.weights)
+            arrays = (arrays.inputs, arrays.target, arrays.ml_weights)
             self.tuple_length = len(arrays)
             self.datasets.append(tf.data.Dataset.from_tensor_slices(arrays))
             self.counts.append(len(arrays[0]))

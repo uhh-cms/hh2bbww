@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import functools
+
 import law
 import order as od
 
@@ -15,44 +17,38 @@ hist = maybe_import("hist")
 tf = maybe_import("tensorflow")
 
 
-def plot_loss(history, output) -> None:
+def plot_history(
+    history,
+    output: law.FileSystemDirectoryTarget,
+    metric: str = "loss",
+    ylabel: str | None = None,
+    output_name: str | None = None,
+):
     """
-    Simple function to create and store a loss plot
+    Simple function to create and store a plot from history data
     """
+    # set default parameters if not assigned
+    ylabel = ylabel or metric
+    output_name = (output_name or ylabel).replace(" ", "")
+
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
 
     fig, ax = plt.subplots()
-    ax.plot(history["loss"])
-    ax.plot(history["val_loss"])
+    ax.plot(history[metric])
+    ax.plot(history[f"val_{metric}"])
     ax.set(**{
-        "ylabel": "Loss",
+        "ylabel": ylabel,
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
     mplhep.cms.label(ax=ax, llabel="Work in progress", data=False)
 
-    output.child("Loss.pdf", type="f").dump(fig, formatter="mpl")
+    output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
-def plot_accuracy(history, output) -> None:
-    """
-    Simple function to create and store an accuracy plot
-    """
-    # use CMS plotting style
-    plt.style.use(mplhep.style.CMS)
-
-    fig, ax = plt.subplots()
-    ax.plot(history["categorical_accuracy"])
-    ax.plot(history["val_categorical_accuracy"])
-    ax.set(**{
-        "ylabel": "Accuracy",
-        "xlabel": "Epoch",
-    })
-    ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False)
-
-    output.child("Accuracy.pdf", type="f").dump(fig, formatter="mpl")
+plot_loss = functools.partial(plot_history, metric="loss", ylabel="Loss")
+plot_accuracy = functools.partial(plot_history, metric="categorical_accuracy", ylabel="Accuracy")
 
 
 def plot_confusion(
@@ -138,7 +134,7 @@ def plot_roc_ovr(
     )
     ax.legend(
         [f"Signal: {labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
-        loc="best",
+        loc="lower right",
     )
     mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=2)
 

@@ -21,6 +21,7 @@ default_process_colors = {
     "qcd_mu": "#377eb8",  # blue
     "qcd_ele": "#377eb8",  # blue
     "w_lnu": "#4daf4a",  # green
+    "v_lep": "#4daf4a",  # green
     "higgs": "#984ea3",  # purple
     "st": "#ff7f00",  # orange
     "dy_lep": "#ffff33",  # yellow
@@ -47,6 +48,7 @@ ml_labels = {
     "st": "st",
     "w_lnu": "W",
     "dy_lep": "DY",
+    "v_lep": "W+DY",
 }
 
 
