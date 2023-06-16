@@ -21,7 +21,7 @@ from columnflow.tasks.selection import MergeSelectionStatsWrapper
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
-    plot_history, plot_confusion, plot_roc_ovr, plot_output_nodes,
+    plot_history, plot_confusion, plot_roc_ovr, plot_roc_ovo, plot_output_nodes,
 )
 
 
@@ -424,28 +424,22 @@ class MLClassifierBase(MLModel):
         ):
             call_func_safe(plot_history, model.history.history, output, metric, ylabel)
 
-        log_memory("history plots")
-
-        log_memory("gc")
         # evaluate training and validation sets
         train.prediction = call_func_safe(predict_numpy_on_batch, model, train.inputs)
         validation.prediction = call_func_safe(predict_numpy_on_batch, model, validation.inputs)
 
-        log_memory("pred")
         # create some confusion matrices
         call_func_safe(plot_confusion, model, train, output, "train", self.process_insts)
         call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts)
-        log_memory("conf")
 
         # create some ROC curves
         call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts)
         call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts)
-        log_memory("roc")
+        call_func_safe(plot_roc_ovo, model, train, output, "train", self.process_insts)
+        call_func_safe(plot_roc_ovo, model, validation, output, "validation", self.process_insts)
         gc.collect()
         # create plots for all output nodes
         call_func_safe(plot_output_nodes, model, train, validation, output, self.process_insts)
-        log_memory("plot nodes")
-        gc.collect()
 
         return
 
@@ -480,7 +474,6 @@ class MLClassifierBase(MLModel):
                     raise Exception(f"Infinite values found in validation {key}, process {proc_inst.name}")
 
         gc.collect()
-        logger.info("garbage collected")
         log_memory("garbage collected")
         #
         # model preparation

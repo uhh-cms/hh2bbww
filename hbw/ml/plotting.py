@@ -141,6 +141,67 @@ def plot_roc_ovr(
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
 
+def plot_roc_ovo(
+        model: tf.keras.models.Model,
+        inputs: DotDict,
+        output: law.FileSystemDirectoryTarget,
+        input_type: str,
+        process_insts: tuple[od.Process],
+) -> None:
+    """
+    Simple function to create and store some ROC plots;
+    mode: OvO (one versus one)
+    """
+    from sklearn.metrics import roc_curve, roc_auc_score
+
+    n_classes = len(inputs.target[0])
+
+    labels = {
+        proc_inst.x.ml_id: proc_inst.x("ml_label", proc_inst.label)
+        for proc_inst in process_insts
+    }
+
+    # loop over all classes, considering each as signal for one OvO ROC curve
+    for i in range(n_classes):
+        auc_scores = {}
+        fig, ax = plt.subplots()
+
+        for j in range(n_classes):
+            if i == j:
+                continue
+
+            event_mask = (inputs.label == i) | (inputs.label == j)
+            y_true = (inputs.label[event_mask] == i)
+            y_score = inputs.prediction[event_mask, i]
+
+            fpr, tpr, thresholds = roc_curve(
+                y_true=y_true,
+                y_score=y_score,
+                sample_weight=inputs.weights[event_mask],
+            )
+
+            auc_scores[j] = roc_auc_score(
+                y_true, y_score,
+                average="macro", multi_class="ovo",
+            )
+
+            # create the plot
+            ax.plot(fpr, tpr)
+
+        ax.set_title(f"ROC OvO, {input_type} set")
+        ax.set_xlabel("Background selection efficiency (FPR)")
+        ax.set_ylabel(f"{labels[i]} selection efficiency (TPR)")
+
+        # legend
+        ax.legend(
+            [f"Background: {labels[j]} (AUC: {auc_score:.4f})" for j, auc_score in auc_scores.items()],
+            loc="lower right",
+        )
+        mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=2)
+
+        output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
+
+
 def plot_output_nodes(
         model: tf.keras.models.Model,
         train: DotDict,
