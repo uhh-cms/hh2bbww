@@ -76,7 +76,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     input_features = [
-        "mli_ht", "mli_n_jet", "mli_n_deepjet",
+        "mli_mbb", "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
         "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
@@ -93,7 +93,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     ]
 
-    store_name = "inputs_dense"
+    store_name = "inputs_v1"
 
     folds = 5
     layers = [512, 512, 512]
@@ -133,7 +133,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 
 cls_dict_test = {
-    "epochs": 5,
+    "epochs": 10,
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
     "dataset_names": [
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
