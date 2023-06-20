@@ -22,6 +22,7 @@ from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
     plot_history, plot_confusion, plot_roc_ovr, plot_roc_ovo, plot_output_nodes,
+    get_input_weights,
 )
 
 
@@ -158,12 +159,14 @@ class MLClassifierBase(MLModel):
                 weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
                 sum_weights = sum([ak.sum(w) for w in weights])
                 sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])
+                sum_pos_weights = sum([ak.sum(w[w > 0]) for w in weights])
 
                 # bookkeep filenames and stats per process
                 proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
                 proc_inst.x.N_events = proc_inst.x("N_events", 0) + N_events
                 proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
                 proc_inst.x.sum_abs_weights = proc_inst.x("sum_abs_weights", 0) + sum_abs_weights
+                proc_inst.x.sum_pos_weights = proc_inst.x("sum_pos_weights", 0) + sum_pos_weights
 
                 logger.info(
                     f"Dataset {dataset} was assigned to process {proc_inst.name}; "
@@ -296,6 +299,17 @@ class MLClassifierBase(MLModel):
                 for key in _inp.keys():
                     inp[proc_inst][key] = inp[proc_inst][key][shuffle_indices]
 
+        # reweight validation events to match the number of events used in the training multi_dataset
+        weights_scaler = (
+            min([proc_inst.x.N_events / proc_inst.x.ml_process_weight for proc in self.process_insts]) *
+            sum([proc_inst.x.ml_process_weight for proc_inst in self.process_insts])
+        )
+        for proc_inst in validation.keys():
+            validation[proc_inst].ml_weights = (
+                validation[proc_inst].ml_weights * weights_scaler / proc_inst.x.N_events *
+                proc_inst.x.ml_process_weight
+            )
+
         # if requested, merge per process
         if not per_process:
             def merge_processes(inputs: DotDict[any, DotDict[any: np.array]]):
@@ -414,6 +428,8 @@ class MLClassifierBase(MLModel):
                 outp = None
 
             return outp
+
+        get_input_weights(model, output)
 
         log_memory("start plotting")
         # make some plots of the history

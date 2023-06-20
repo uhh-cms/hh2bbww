@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 
+# import tabulate
 import law
 import order as od
 
@@ -282,3 +283,35 @@ def plot_output_nodes(
 
         mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=0)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
+
+
+def get_input_weights(model, output, input_features: list | None = None):
+    """
+    Get weights of input layer and sort them by weight sum
+    """
+    if not input_features:
+        input_features = tuple(output.child("input_features.pkl", type="f").load(formatter="pickle"))
+
+    # get the weights from the first dense layer
+    for layer in model.layers:
+        if "Dense" in str(type(layer)):
+            weights = layer.get_weights()[0]
+            break
+
+    # check that the input shape is correct
+    if weights.shape[0] != len(input_features):
+        raise Exception(
+            f"The number of weights {weights.shape[0]} in the first denes layer should be equivalent "
+            f"to the numberof input features {len(input_features)}",
+        )
+
+    my_dict = {}
+    for out_weights, variable in zip(weights, input_features):
+        w_sum = np.sum(np.abs(out_weights))
+        my_dict[variable] = w_sum
+
+    variable_importance_sorted = dict(sorted(my_dict.items(), key=lambda item: item[1], reverse=True))
+    for var_name, score in variable_importance_sorted.items():
+        print(f"{var_name}: {score}")
+
+    output.child("weights_dense1.yaml", type="f").dump(variable_importance_sorted, formatter="yaml")
