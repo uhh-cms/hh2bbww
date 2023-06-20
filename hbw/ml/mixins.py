@@ -103,7 +103,8 @@ class DenseModelMixin():
 class ModelFitMixin():
 
     callbacks = [
-        # "backup", "checkpoint", "early_stopping", "reduce_lr",
+        "backup", "checkpoint", "reduce_lr",
+        # "early_stopping",
     ]
     remove_backup = False
     epochs = 200
