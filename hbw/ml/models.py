@@ -35,11 +35,11 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     ml_process_weights = {
         "ggHH_kl_1_kt_1_sl_hbbhww": 1,
-        "tt": 8,
-        "st": 8,
-        "v_lep": 8,
-        "w_lnu": 8,
-        "dy_lep": 8,
+        "tt": 2,
+        "st": 2,
+        "v_lep": 2,
+        "w_lnu": 2,
+        "dy_lep": 2,
     }
 
     dataset_names = {
@@ -76,7 +76,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     input_features = [
-        "mli_mbb", "mli_ht", "mli_n_jet", "mli_n_deepjet",
+        "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
         "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
@@ -100,7 +100,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     activation = "relu"
     learningrate = 0.00050
     batchsize = 2 ** 12
-    epochs = 500
+    epochs = 100
     epweight = True
     dropout = 0.50
 

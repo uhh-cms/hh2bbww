@@ -308,7 +308,7 @@ def get_input_weights(model, output, input_features: list | None = None):
     my_dict = {}
     for out_weights, variable in zip(weights, input_features):
         w_sum = np.sum(np.abs(out_weights))
-        my_dict[variable] = w_sum
+        my_dict[variable] = round(float(w_sum), ndigits=3)
 
     variable_importance_sorted = dict(sorted(my_dict.items(), key=lambda item: item[1], reverse=True))
     for var_name, score in variable_importance_sorted.items():

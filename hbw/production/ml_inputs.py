@@ -149,7 +149,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_columns = {
-        "mli_mbb", "mli_ht", "mli_n_jet", "mli_n_deepjet",
+        "mli_ht", "mli_n_jet", "mli_n_deepjet",
         "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
