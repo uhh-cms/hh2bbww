@@ -120,3 +120,34 @@ class MultiDataset(object):
     def map(self, *args, **kwargs):
         for key, dataset in list(self._datasets.items()):
             self._datasets[key] = dataset.map(*args, **kwargs)
+
+
+_cumulated_crossentropy_epsilon = 1e-7
+
+
+@tf.function
+def _cumulated_crossenropy_from_logits(y_true, y_pred, axis):
+    # implementation of the log-sum-exp trick that makes computing log of a sum of softmax outputs numerically stable
+    # paper: Muller & Smith, 2020: A Hierarchical Loss for Semantic Segmentation
+    target = tf.math.subtract(1., y_true)
+    b = tf.math.reduce_max(y_pred, axis=axis, keepdims=True)
+    b_C = tf.math.reduce_max(y_pred * target, axis=axis, keepdims=True)
+
+    numerator = b_C + tf.math.log(tf.math.reduce_sum(target * tf.math.exp(y_pred - b_C), axis=axis, keepdims=True))
+    denominator = b + tf.math.log(tf.math.reduce_sum(tf.math.exp(y_pred - b), axis=axis, keepdims=True))
+
+    return ((numerator - denominator) / tf.math.reduce_sum(target, axis=axis))[:, 0]
+
+
+@tf.function
+def cumulated_crossentropy(y_true, y_pred, from_logits=False, axis=-1):
+    if from_logits:
+        return _cumulated_crossenropy_from_logits(y_true, y_pred, axis=axis)
+
+    epsilon = tf.constant(_cumulated_crossentropy_epsilon, dtype=y_pred.dtype)
+    output = y_pred / (tf.reduce_sum(y_pred, axis, True) + epsilon)
+    output = tf.clip_by_value(output, epsilon, 1. - epsilon)
+    # target = tf.math.subtract(1., y_true)
+
+    # no minus such that we can still perturb in the gradient's direction -> less code changes
+    return -tf.math.log(tf.reduce_sum(y_true * output, axis)) / tf.reduce_sum(y_true, axis)

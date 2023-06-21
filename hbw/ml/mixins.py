@@ -50,8 +50,9 @@ class DenseModelMixin():
     ):
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
+        from hbw.ml.tf_util import cumulated_crossentropy
 
-        n_inputs = len(self.input_features)
+        n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
 
         # define the DNN model
@@ -90,8 +91,9 @@ class DenseModelMixin():
             learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
             epsilon=1e-6, amsgrad=False,
         )
+
         model.compile(
-            loss="categorical_crossentropy",
+            loss=cumulated_crossentropy,
             optimizer=optimizer,
             metrics=["categorical_accuracy", memory_GB],
             weighted_metrics=["categorical_accuracy"],
@@ -129,7 +131,7 @@ class ModelFitMixin():
         """
         Training loop but with custom dataset
         """
-        from hbw.ml.multi_dataset import MultiDataset
+        from hbw.ml.tf_util import MultiDataset
         log_memory("start")
 
         with tf.device("CPU"):

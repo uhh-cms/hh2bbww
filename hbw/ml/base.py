@@ -48,7 +48,7 @@ class MLClassifierBase(MLModel):
     validation_fraction = 0.20  # percentage of the non-test events
     store_name = "inputs_base"
     ml_process_weights = {"st": 2, "tt": 1}
-    eqweight = True
+    negative_weights = "handle"
     epochs = 50
     batchsize = 2 ** 10
     folds = 5
@@ -61,7 +61,8 @@ class MLClassifierBase(MLModel):
     ):
         super().__init__(*args, **kwargs)
 
-        assert self.eqweight in (True, False)
+        # TODO: find some appropriate names for the negative_weights modes
+        assert self.negative_weights in ("ignore", "abs", "handle")
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -198,24 +199,37 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
 
-                # event weights, normalized to the sum of events per process
-                weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
-                ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
-
-                # transform ml weights to handle negative weights
-                m_negative_weights = ml_weights < 0
-                ml_weights[m_negative_weights] = (
-                    np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) - 1)
-                )
-                ml_weights = ml_weights.astype(np.float32)
-                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(ml_weights)
-
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
                     raise Exception(
                         f"The columns {set(events.fields).difference(set(self.input_features))} "
                         "are not present in the ML input events",
                     )
+
+                # create truth values
+                label = np.ones(len(events)) * proc_inst.x.ml_id
+                target = np.zeros((len(events), len(self.processes))).astype(np.float32)
+                target[:, proc_inst.x.ml_id] = 1
+
+                # event weights, normalized to the sum of events per process
+                weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
+                ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
+
+                # transform ml weights to handle negative weights
+                m_negative_weights = ml_weights < 0
+                if self.negative_weights == "ignore":
+                    ml_weights[m_negative_weights] = 0
+                elif self.negative_weights == "abs":
+                    ml_weights = np.abs(ml_weights)
+                elif self.negative_weights == "handle":
+                    ml_weights[m_negative_weights] = (
+                        np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) - 1)
+                    )
+                    # transform target layer for events with negative weights (1 -> 0 and 0 -> 1)
+                    target[m_negative_weights] = 1 - target[m_negative_weights]
+
+                ml_weights = ml_weights.astype(np.float32)
+                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(ml_weights)
 
                 # remove columns that are not used as training features
                 for var in events.fields:
@@ -234,22 +248,6 @@ class MLClassifierBase(MLModel):
                     [(name, np.float32) for name in events.dtype.names], copy=False,
                 ).view(np.float32).reshape((-1, len(events.dtype)))
 
-                # create truth values
-                label = np.ones(len(events)) * proc_inst.x.ml_id
-                target = np.zeros((len(events), len(self.processes))).astype(np.float32)
-                target[:, proc_inst.x.ml_id] = 1
-
-                # transform target layer for events with negative weights (1 -> 0 and 0 -> 1)
-                # TODO: network classifies everything into 1 process when doing this. Needs to be fixed.
-                # target[m_negative_weights] = 1 - target[m_negative_weights]
-
-                # shuffle arrays
-                np.random.shuffle(shuffle_indices := np.array(range(len(events))))
-                events = events[shuffle_indices]
-                ml_weights = ml_weights[shuffle_indices]
-                weights = weights[shuffle_indices]
-                target = target[shuffle_indices]
-
                 # split into train and validation dataset
                 N_events_validation = int(self.validation_fraction * len(events))
 
@@ -266,6 +264,8 @@ class MLClassifierBase(MLModel):
                         _train[key].append(array[N_events_validation:])
                         _validation[key].append(array[:N_events_validation])
 
+                # shuffle arrays in-place and add them to train and validation dictionaries
+                np.random.shuffle(shuffle_indices := np.array(range(len(events))))
                 for array, key in (
                     (events, "inputs"),
                     (target, "target"),
@@ -273,6 +273,7 @@ class MLClassifierBase(MLModel):
                     (weights, "weights"),
                     (ml_weights, "ml_weights"),
                 ):
+                    array[...] = array[shuffle_indices]
                     add_arrays(array, key)
 
             # concatenate arrays per process
@@ -339,8 +340,9 @@ class MLClassifierBase(MLModel):
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
+        from hbw.ml.tf_util import cumulated_crossentropy
 
-        n_inputs = len(self.input_features)
+        n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
 
         model = Sequential()
@@ -359,7 +361,7 @@ class MLClassifierBase(MLModel):
         # compile the network
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
         model.compile(
-            loss="categorical_crossentropy",
+            loss=cumulated_crossentropy,
             optimizer=optimizer,
             weighted_metrics=["categorical_accuracy", "memory_GB"],
         )
@@ -377,7 +379,7 @@ class MLClassifierBase(MLModel):
         """
         Minimal implementation of training loop.
         """
-        from hbw.ml.multi_dataset import MultiDataset
+        from hbw.ml.tf_util import MultiDataset
 
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
@@ -429,7 +431,8 @@ class MLClassifierBase(MLModel):
 
             return outp
 
-        get_input_weights(model, output)
+        # get a simple ranking of input variables
+        call_func_safe(get_input_weights, model, output)
 
         log_memory("start plotting")
         # make some plots of the history
