@@ -363,7 +363,7 @@ class MLClassifierBase(MLModel):
         model.compile(
             loss=cumulated_crossentropy,
             optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy", "memory_GB"],
+            weighted_metrics=["categorical_accuracy"],
         )
 
         return model

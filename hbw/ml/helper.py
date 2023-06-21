@@ -1,7 +1,6 @@
 # coding: utf-8
 
 
-from typing import Sequence
 import order as od
 
 from columnflow.util import maybe_import
@@ -31,28 +30,6 @@ def assign_dataset_to_process(
             return True
 
     return False
-
-
-def strip_to_columns(
-        events: ak.Array,
-        columns: Sequence[str],
-) -> ak.Array:
-    from columnflow.columnar_util import remove_ak_column
-
-    # NOTE: we might want to use Routes here
-    # check that all relevant input features are present
-    if not set(columns).issubset(set(events.fields)):
-        raise Exception(
-            f"The columns {set(events.fields).difference(set(columns))} "
-            "are not present in the ML input events",
-        )
-
-    # remove columns that are not requested
-    for var in events.fields:
-        if var not in columns:
-            events = remove_ak_column(events, var)
-
-    return events
 
 
 def predict_numpy_on_batch(

@@ -9,7 +9,7 @@ import law
 
 from columnflow.util import maybe_import, DotDict
 
-from hbw.util import memory_GB, log_memory
+from hbw.util import log_memory
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -95,7 +95,7 @@ class DenseModelMixin():
         model.compile(
             loss=cumulated_crossentropy,
             optimizer=optimizer,
-            metrics=["categorical_accuracy", memory_GB],
+            metrics=["categorical_accuracy"],
             weighted_metrics=["categorical_accuracy"],
         )
 

@@ -13,7 +13,7 @@ from columnflow.production.categories import category_ids
 # from hbw.production.weights import event_weights
 # from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production, add_categories_ml
-from hbw.ml.models import dense_test
+from hbw.ml.dense_classifier import dense_test
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")

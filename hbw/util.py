@@ -35,16 +35,6 @@ def log_memory(
     logger.info(f"Memory after {message}: {current:.3f}{unit} (peak: {peak:.3f}{unit})")
 
 
-def memory_GB(y_true, y_pred):
-    """
-    Memory tracing as a keras metric
-    """
-    if not tracemalloc.is_tracing():
-        tracemalloc.start()
-
-    return tracemalloc.get_traced_memory()[0] / 1024 ** 3
-
-
 def debugger():
     """
     Small helper to give some more information when starting IPython.embed
