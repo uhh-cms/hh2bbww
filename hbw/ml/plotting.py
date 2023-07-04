@@ -43,7 +43,7 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False)
+    mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False)
 
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -85,7 +85,7 @@ def plot_confusion(
     ConfusionMatrixDisplay(confusion, display_labels=labels).plot(ax=ax)
 
     ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
-    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=0)
+    mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False, loc=0)
 
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -137,7 +137,7 @@ def plot_roc_ovr(
         [f"Signal: {labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
         loc="lower right",
     )
-    mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=2)
+    mplhep.cms.label(ax=ax, llabel="Simulation\nWork in progress", data=False, loc=2)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -198,7 +198,7 @@ def plot_roc_ovo(
             [f"Background: {labels[j]} (AUC: {auc_score:.4f})" for j, auc_score in auc_scores.items()],
             loc="lower right",
         )
-        mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=2)
+        mplhep.cms.label(ax=ax, llabel="Simulation\nWork in progress", data=False, loc=2)
 
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -281,7 +281,7 @@ def plot_output_nodes(
         # plot validation scores, scaled to train dataset
         (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
 
-        mplhep.cms.label(ax=ax, llabel="Work in progress", data=False, loc=0)
+        mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False, loc=0)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -305,13 +305,17 @@ def get_input_weights(model, output, input_features: list | None = None):
             f"to the numberof input features {len(input_features)}",
         )
 
+    # sum weights per variable and round
     my_dict = {}
     for out_weights, variable in zip(weights, input_features):
         w_sum = np.sum(np.abs(out_weights))
         my_dict[variable] = round(float(w_sum), ndigits=3)
 
+    # sort variables based on importance and print + dump
     variable_importance_sorted = dict(sorted(my_dict.items(), key=lambda item: item[1], reverse=True))
     for var_name, score in variable_importance_sorted.items():
         print(f"{var_name}: {score}")
 
-    output.child("weights_dense1.yaml", type="f").dump(variable_importance_sorted, formatter="yaml")
+    output.child("weights_first_layer.yaml", type="f").dump(
+        variable_importance_sorted, formatter="yaml", sort_keys=False,
+    )

@@ -97,13 +97,24 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     store_name = "inputs_v1"
 
     folds = 5
-    layers = [512, 512, 512]
+    layers = (512, 512, 512)
     activation = "relu"
     learningrate = 0.00050
     batchsize = 2 ** 12
     epochs = 100
     dropout = 0.50
     negative_weights = "handle"
+
+    # parameters to add into the `parameters` attribute and store in a yaml file
+    bookkeep_params = [
+        # base params
+        "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
+        "negative_weights", "epochs", "batchsize", "folds",
+        # DenseModelMixin
+        "activation", "layers", "dropout",
+        # ModelFitMixin
+        "callbacks",
+    ]
 
     def __init__(
             self,
@@ -134,12 +145,12 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 
 cls_dict_test = {
-    "epochs": 10,
+    "epochs": 4,
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
-    "dataset_names": [
+    "dataset_names": {
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
         "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
-    ],
+    },
 }
 
 # ML Model with reduced number of datasets
@@ -160,7 +171,7 @@ for negative_weights_mode in ("handle", "ignore", "abs"):
     )
 
 # for testing different learning rates
-for learningrate in (0.00500, 0.00050, 0.00005, 0.00001):
+for learningrate in (0.00500, 0.00050, 0.00010, 0.00005, 0.00001):
     _dnn = DenseClassifier.derive(
         f"dense_lr_{str(learningrate).replace('.', 'p')}",
         cls_dict={"learningrate": learningrate},

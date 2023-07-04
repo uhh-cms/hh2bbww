@@ -6,6 +6,8 @@ Collection of helpers
 
 from __future__ import annotations
 
+from typing import Hashable
+
 import tracemalloc
 
 import law
@@ -59,3 +61,29 @@ def debugger():
 
     # start the debugger
     __import__("IPython").embed(header=header, user_ns=namespace)
+
+
+def make_dict_hashable(d: dict, deep: bool = True):
+    """ small helper that converts dict into hashable dict"""
+    d_out = d.copy()
+    for key, value in d.items():
+        if isinstance(value, Hashable):
+            # skip values that are already hashable
+            continue
+        elif isinstance(value, dict):
+            # convert dictionary items to hashable and use items of resulting dict
+            if deep:
+                value = make_dict_hashable(value)
+            d_out[key] = tuple(value)
+        else:
+            # hopefully, everything else can be cast to a tuple
+            d_out[key] = law.util.make_tuple(value)
+
+    return d_out.items()
+
+
+def dict_diff(dict1: dict, dict2: dict):
+    set1 = set(make_dict_hashable(dict1))
+    set2 = set(make_dict_hashable(dict2))
+
+    return set1 ^ set2
