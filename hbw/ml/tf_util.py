@@ -129,14 +129,15 @@ _cumulated_crossentropy_epsilon = 1e-7
 def _cumulated_crossenropy_from_logits(y_true, y_pred, axis):
     # implementation of the log-sum-exp trick that makes computing log of a sum of softmax outputs numerically stable
     # paper: Muller & Smith, 2020: A Hierarchical Loss for Semantic Segmentation
-    target = tf.math.subtract(1., y_true)
-    b = tf.math.reduce_max(y_pred, axis=axis, keepdims=True)
-    b_C = tf.math.reduce_max(y_pred * target, axis=axis, keepdims=True)
+    # target = tf.math.subtract(1., y_true)
 
-    numerator = b_C + tf.math.log(tf.math.reduce_sum(target * tf.math.exp(y_pred - b_C), axis=axis, keepdims=True))
+    b = tf.math.reduce_max(y_pred, axis=axis, keepdims=True)
+    b_C = tf.math.reduce_max(y_pred * y_true, axis=axis, keepdims=True)
+
+    numerator = b_C + tf.math.log(tf.math.reduce_sum(y_true * tf.math.exp(y_pred - b_C), axis=axis, keepdims=True))
     denominator = b + tf.math.log(tf.math.reduce_sum(tf.math.exp(y_pred - b), axis=axis, keepdims=True))
 
-    return ((numerator - denominator) / tf.math.reduce_sum(target, axis=axis))[:, 0]
+    return ((numerator - denominator) / tf.math.reduce_sum(y_true, axis=axis))[:, 0]
 
 
 @tf.function

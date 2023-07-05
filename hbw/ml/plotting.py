@@ -290,7 +290,9 @@ def get_input_weights(model, output, input_features: list | None = None):
     Get weights of input layer and sort them by weight sum
     """
     if not input_features:
-        input_features = tuple(output.child("input_features.pkl", type="f").load(formatter="pickle"))
+        input_features = tuple(
+            output.sibling("mlmodel", type="d").child("input_features.pkl", type="f").load(formatter="pickle"),
+        )
 
     # get the weights from the first dense layer
     for layer in model.layers:

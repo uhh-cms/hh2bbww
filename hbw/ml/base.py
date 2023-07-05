@@ -79,9 +79,10 @@ class MLClassifierBase(MLModel):
         # NOTE: since these variables are only used in ConfigTasks,
         #       we do not need to add these variables to all configs
         for proc in self.processes:
-            if f"{self.cls_name}.score_{proc}" not in self.config_inst.variables:
+            if f"mlscore.{proc}" not in self.config_inst.variables:
                 self.config_inst.add_variable(
-                    name=f"{self.cls_name}.score_{proc}",
+                    # TODO: remove the self.cls_name from the score name (mlscore.{proc} instead?)
+                    name=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(40, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
@@ -111,7 +112,7 @@ class MLClassifierBase(MLModel):
     def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
         for proc in self.processes:
-            produced.add(f"{self.cls_name}.score_{proc}")
+            produced.add(f"mlscore.{proc}")
 
         return produced
 
@@ -126,7 +127,7 @@ class MLClassifierBase(MLModel):
             "plots": target.child("plots", type="d", optional=True),
             # "plots": target.sibling(f"plots_f{task.branch}of{self.folds}", type="d", optional=True),
             # TODO: fill the stats.yaml with scores like accuracy, AUC, etc.
-            "stats": target.child("stats.yaml", type="f", optional=True),
+            # "stats": target.child("stats.yaml", type="f", optional=True),
         }
 
         # define all files that need to be present
@@ -138,13 +139,13 @@ class MLClassifierBase(MLModel):
         return outp
 
     def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
-        input_features = tuple(target["parameters"].child(
+        input_features = tuple(target["mlmodel"].child(
             "input_features.pkl", type="f",
         ).load(formatter="pickle"))
 
         # NOTE: we cannot use the .load method here, because it's unable to read tuples etc.
         #       should check that this also works when running remote
-        with open(target["parameters"].child("parameters.yaml", type="f").fn) as f:
+        with open(target["mlmodel"].child("parameters.yaml", type="f").fn) as f:
             f_in = f.read()
         parameters = yaml.load(f_in, Loader=yaml.Loader)
 
@@ -674,7 +675,7 @@ class MLClassifierBase(MLModel):
             # store predictions for each model
             for j, proc in enumerate(self.processes):
                 events = set_ak_column(
-                    events, f"{self.cls_name}.fold{i}_score_{proc}", pred[:, j],
+                    events, f"fold{i}_mlscore.{proc}", pred[:, j],
                 )
 
         # combine all models into 1 output score, using the model that has not yet seen the test set
@@ -694,7 +695,7 @@ class MLClassifierBase(MLModel):
 
         for i, proc in enumerate(self.processes):
             events = set_ak_column(
-                events, f"{self.cls_name}.score_{proc}", outputs[:, i],
+                events, f"mlscore.{proc}", outputs[:, i],
             )
 
         return events
