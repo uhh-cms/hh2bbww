@@ -115,24 +115,43 @@ class MLClassifierBase(MLModel):
 
         return produced
 
-    def output(self, task: law.Task) -> law.FileSystemDirectoryTarget:
-        return task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
+    def output(self, task: law.Task) -> dict[law.FileSystemTarget]:
+
+        # declare the main target
+        target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
+
+        outp = {
+            "mlmodel": target,
+            # NOTE: do we want to keep plots in a nested directory or in a sibling directory?
+            "plots": target.child("plots", type="d", optional=True),
+            # "plots": target.sibling(f"plots_f{task.branch}of{self.folds}", type="d", optional=True),
+            # TODO: fill the stats.yaml with scores like accuracy, AUC, etc.
+            "stats": target.child("stats.yaml", type="f", optional=True),
+        }
+
+        # define all files that need to be present
+        outp["required_files"] = [
+            target.child(fname, type="f") for fname in
+            ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
+        ]
+
+        return outp
 
     def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
-        input_features = tuple(target.child(
+        input_features = tuple(target["parameters"].child(
             "input_features.pkl", type="f",
         ).load(formatter="pickle"))
 
         # NOTE: we cannot use the .load method here, because it's unable to read tuples etc.
         #       should check that this also works when running remote
-        with open(target.child("parameters.yaml", type="f").fn) as f:
+        with open(target["parameters"].child("parameters.yaml", type="f").fn) as f:
             f_in = f.read()
         parameters = yaml.load(f_in, Loader=yaml.Loader)
 
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
         model = tf.keras.models.load_model(
-            target.path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
         return model, input_features, parameters
 
@@ -310,7 +329,7 @@ class MLClassifierBase(MLModel):
             logger.info(f"{proc_inst.name} sum of ml weights: {proc_inst.x.sum_ml_weights:.1f}")
 
         # save tuple of input feature names for sanity checks in MLEvaluation
-        output.child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
+        output["mlmodel"].child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
 
         # shuffle per process
         for inp in (train, validation):
@@ -425,6 +444,9 @@ class MLClassifierBase(MLModel):
         validation: tf.data.Dataset,
         output: law.LocalDirectoryTarget,
     ) -> None:
+        # store all outputs from this function in the 'plots' directory
+        output = output["plots"]
+
         # store the model history
         output.child("model_history.pkl", type="f").dump(model.history.history)
 
@@ -500,7 +522,7 @@ class MLClassifierBase(MLModel):
             pass
 
         # hyperparameter bookkeeping
-        output.child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
+        output["mlmodel"].child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
 
         #
         # input preparation
@@ -542,7 +564,7 @@ class MLClassifierBase(MLModel):
         log_memory("training")
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
-        model.save(output.path)
+        model.save(output["mlmodel"].path)
 
         # merge train data
         train = DotDict({

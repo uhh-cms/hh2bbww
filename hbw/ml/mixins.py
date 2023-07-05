@@ -142,7 +142,9 @@ class ModelFitMixin():
         log_memory("init")
         # output used for BackupAndRestore callback (not deleted by --remove-output)
         # NOTE: does that work when running remote?
-        backup_output = output.parent.child(f"backup_{output.basename}", type="d")
+        # TODO: we should also save the parameters + input_features in the backup to ensure that they
+        #       are equivalent (delete backup if not)
+        backup_output = output["mlmodel"].sibling(f"backup_{output['mlmodel'].basename}", type="d")
         if self.remove_backup:
             backup_output.remove()
 
@@ -151,7 +153,7 @@ class ModelFitMixin():
                 backup_dir=backup_output.path,
             ),
             "checkpoint": tf.keras.callbacks.ModelCheckpoint(
-                filepath=f"{output.path}/checkpoint",
+                filepath=f"{output['mlmodel'].path}/checkpoint",
                 save_weights_only=False,
                 monitor="val_loss",
                 mode="auto",
