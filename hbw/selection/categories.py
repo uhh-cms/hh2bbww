@@ -5,7 +5,6 @@ Selection methods defining categories based on selection step results.
 """
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import RouteFilter
 from columnflow.selection import Selector, SelectionResult, selector
 
 np = maybe_import("numpy")
@@ -72,14 +71,14 @@ def catid_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 
 
 # TODO: not hard-coded -> use config!
+# TODO: remove the ml_model_name from the field names
 ml_model_name = "dense_test"
-ml_processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"]
-# TODO ml categories
+ml_processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep", "v_lep"]
 for proc in ml_processes:
     @selector(
-        uses=set(f"{ml_model_name}.score_{proc1}" for proc1 in ml_processes),
+        uses=set(f"mlscore.{proc1}" for proc1 in ml_processes),
         cls_name=f"catid_ml_{proc}",
-        proc_col_name=f"score_{proc}",
+        proc_col_name=f"{proc}",
     )
     def dnn_mask(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
         """
@@ -87,7 +86,7 @@ for proc in ml_processes:
         """
 
         # get all the ml scores
-        ml_scores = RouteFilter("score_*")(events[ml_model_name])
+        ml_scores = events["mlscore"]
 
         # categorize events if *this* score is larger than all other
         mask = ak.all(ak.Array([

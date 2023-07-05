@@ -46,10 +46,12 @@ def pre_ml_cats_init(self: Producer) -> None:
 @producer(
     uses={category_ids},
     produces={category_ids},
+    ml_model_name=None,
 )
 def ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Reproduces category ids after ML Training
+    Reproduces category ids after ML Training. Calling this producer also
+    automatically adds `MLEvaluation` to the requirements.
     """
     # category ids
     events = self[category_ids](events, **kwargs)
@@ -73,7 +75,8 @@ def ml_cats_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: Inse
 
 @ml_cats.init
 def ml_cats_init(self: Producer) -> None:
-    self.ml_model_name = "dense_test"
+    if not self.ml_model_name:
+        self.ml_model_name = "dense_default"
 
     if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
@@ -86,4 +89,9 @@ def ml_cats_init(self: Producer) -> None:
         self.config_inst.x.add_categories_ml = False
 
 
-# TODO: derive different `ml_cats` producer for all the available ml_models
+# get all the derived DenseClassifier models and instantiate a corresponding producer
+from hbw.ml.dense_classifier import DenseClassifier
+ml_model_names = [ml_model.cls_name for ml_model in DenseClassifier._subclasses.values()]
+
+for ml_model_name in ml_model_names:
+    ml_cats.derive(f"ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
