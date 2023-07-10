@@ -24,6 +24,8 @@ def normalized_weight_factory(
         uses=set(weight_producers) | set().union(*[w.produces for w in weight_producers]) | {"process_id"},
         name=producer_name,
         mc_only=True,
+        # skip the checking existence of used/produced columns because not all columns are there
+        check_columns_present=set(),
         # remaining produced columns are defined in the init function below
     )
     def normalized_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

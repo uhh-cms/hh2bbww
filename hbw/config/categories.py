@@ -41,8 +41,8 @@ def add_categories_selection(config: od.Config) -> None:
     )
 
 
-def name_fn(**root_cats):
-    cat_name = "__".join(cat for cat in root_cats.values())
+def name_fn(root_cats):
+    cat_name = "__".join(cat.name for cat in root_cats.values())
     return cat_name
 
 

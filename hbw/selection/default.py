@@ -101,7 +101,7 @@ def vbf_jet_selection(
         "FatJet.msoftdrop", "FatJet.jetId", "FatJet.subJetIdx1", "FatJet.subJetIdx2",
         "FatJet.tau1", "FatJet.tau2",
     },
-    produces={"cutflow.n_fatjet"},
+    produces={"cutflow.n_hbbjet"},
     exposed=True,
 )
 def boosted_jet_selection(
