@@ -123,6 +123,37 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ):
         super().__init__(*args, **kwargs)
 
+    def setup(self):
+        # dynamically add variables for the quantities produced by this model
+        # NOTE: since these variables are only used in ConfigTasks,
+        #       we do not need to add these variables to all configs
+        for proc in self.processes:
+            if f"mlscore.{proc}" not in self.config_inst.variables:
+                self.config_inst.add_variable(
+                    name=f"mlscore.{proc}",
+                    null_value=-1,
+                    binning=(40, 0., 1.),
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                )
+                self.config_inst.add_variable(
+                    # TODO: to be used for rebinning
+                    name=f"mlscore.{proc}_manybins",
+                    expression=f"mlscore.{proc}",
+                    null_value=-1,
+                    binning=(1000, 0., 1.),
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                )
+                hh_bins = [0.0, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .92, 1.0]
+                bkg_bins = [0.0, 0.4, 0.7, 1.0]
+                self.config_inst.add_variable(
+                    # used for inference as long as we don't have our rebin task in place
+                    name=f"mlscore.{proc}_rebin",
+                    expression=f"mlscore.{proc}",
+                    null_value=-1,
+                    binning=hh_bins if "HH" in proc else bkg_bins,
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                )
+
     def training_configs(self, requested_configs: Sequence[str]) -> list[str]:
         # default config
         if len(requested_configs) == 1:

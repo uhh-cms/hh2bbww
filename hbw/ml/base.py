@@ -81,7 +81,6 @@ class MLClassifierBase(MLModel):
         for proc in self.processes:
             if f"mlscore.{proc}" not in self.config_inst.variables:
                 self.config_inst.add_variable(
-                    # TODO: remove the self.cls_name from the score name (mlscore.{proc} instead?)
                     name=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(40, 0., 1.),
@@ -667,6 +666,7 @@ class MLClassifierBase(MLModel):
         # do prediction for all models and all inputs
         predictions = []
         for i, model in enumerate(models):
+            # NOTE: the next line triggers some warning concering tf.function retracing
             pred = ak.from_numpy(model.predict_on_batch(inputs))
             if len(pred[0]) != len(self.processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
