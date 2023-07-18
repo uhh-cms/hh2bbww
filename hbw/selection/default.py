@@ -18,7 +18,7 @@ from columnflow.production.processes import process_ids
 
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
-from hbw.selection.stats import increment_stats_old, hbw_increment_stats
+from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.selection.gen_hbw_features import gen_hbw_decay_features, gen_hbw_matching
 

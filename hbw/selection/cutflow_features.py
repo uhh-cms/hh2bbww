@@ -24,7 +24,9 @@ ak = maybe_import("awkward")
         "cutflow.n_veto_tau",
     },
     # skip the checking existence of used/produced columns for now because some columns are not there
-    check_columns_present=set(),
+    check_used_columns=False,
+    check_produced_columns=False,
+
 )
 def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
 

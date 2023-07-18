@@ -70,15 +70,15 @@ def catid_2b(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return (n_deepjet >= 2)
 
 
-# TODO: not hard-coded -> use config!
-# TODO: remove the ml_model_name from the field names
-ml_model_name = "dense_test"
+# TODO: not hard-coded -> use config?
 ml_processes = ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep", "v_lep"]
 for proc in ml_processes:
     @selector(
         uses=set(f"mlscore.{proc1}" for proc1 in ml_processes),
         cls_name=f"catid_ml_{proc}",
         proc_col_name=f"{proc}",
+        # skip check because we don't know which ML processes were used from the MLModel
+        check_used_columns=False,
     )
     def dnn_mask(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
         """

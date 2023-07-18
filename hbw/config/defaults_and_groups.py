@@ -1,24 +1,26 @@
 # coding: utf-8
 
+import law
+
 from columnflow.inference import InferenceModel
 
 
-def default_ml_model(container, **task_params):
+def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
     default_ml_model = None
 
     # the ml_model parameter is only used by `MLTraining` and `MLEvaluation`, therefore use some default
     # NOTE: default_ml_model does not work for the MLTraining task
-    if "ml_model" in task_params.keys():
+    if cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"):
         default_ml_model = "dense_default"
 
     # check if task is using an inference model; if that's the case, use the default set in the model
-    if "inference_model" in task_params.keys():
+    if cls.task_family == "cf.CreadeDatacards":
         inference_model = task_params.get("inference_model", None)
 
         # if inference model is not set, assume it's the container default
-        if inference_model in (None, "NO_STR"):
+        if inference_model in (None, law.NO_STR):
             inference_model = container.x.default_inference_model
 
         # get the default_ml_model from the inference_model_inst
@@ -28,7 +30,7 @@ def default_ml_model(container, **task_params):
     return default_ml_model
 
 
-def default_producers(container, **task_params):
+def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
@@ -43,10 +45,10 @@ def default_producers(container, **task_params):
 
     # try and get the default ml model if not set
     if ml_model in (None, "NO_STR"):
-        ml_model = default_ml_model(container, **task_params)
+        ml_model = default_ml_model(cls, container, task_params)
 
-    # "ml_model" is only in the parameters for MLTraining or MLEvaluation (otherwise it's "ml_models")
-    is_ml_task = "ml_model" in task_params
+    # check if task is directly using the MLModel or just requires some ML output
+    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"))
 
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer
@@ -163,4 +165,11 @@ def set_config_defaults_and_groups(config_inst):
             "mli_mbb": {"rebin": 2, "label": "test"},
             "mli_mjj": {"rebin": 2},
         },
+    }
+
+    # CSPs
+    config_inst.x.producer_groups = {
+        "mli": ["ml_inputs", "event_weights"],
+        "mlo": ["ml_dense_default", "event_weights"],
+        "cols": ["mli", "features"],
     }
