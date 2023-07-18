@@ -3,7 +3,7 @@
 import law
 
 from columnflow.inference import InferenceModel
-
+from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
@@ -16,11 +16,11 @@ def default_ml_model(cls, container, task_params):
         default_ml_model = "dense_default"
 
     # check if task is using an inference model; if that's the case, use the default set in the model
-    if cls.task_family == "cf.CreadeDatacards":
+    if cls.task_family == "cf.CreateDatacards":
         inference_model = task_params.get("inference_model", None)
 
         # if inference model is not set, assume it's the container default
-        if inference_model in (None, law.NO_STR):
+        if inference_model in (None, law.NO_STR, RESOLVE_DEFAULT):
             inference_model = container.x.default_inference_model
 
         # get the default_ml_model from the inference_model_inst
@@ -44,7 +44,7 @@ def default_producers(cls, container, task_params):
         ml_model = ml_model[0]
 
     # try and get the default ml model if not set
-    if ml_model in (None, "NO_STR"):
+    if ml_model in (None, law.NO_STR, RESOLVE_DEFAULT):
         ml_model = default_ml_model(cls, container, task_params)
 
     # check if task is directly using the MLModel or just requires some ML output
@@ -52,7 +52,7 @@ def default_producers(cls, container, task_params):
 
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer
-    if ml_model not in (None, "NO_STR", tuple()) and not is_ml_task:
+    if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()) and not is_ml_task:
         default_producers.insert(0, f"ml_{ml_model}")
 
     # if we're running the inference_model, we don't need the ml_inputs

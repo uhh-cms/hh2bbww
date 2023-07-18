@@ -6,12 +6,17 @@ Column production methods related to generic event weights.
 
 from typing import Iterable, Callable
 
+import law
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import, safe_div, InsertableDict
 from columnflow.columnar_util import set_ak_column
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
+
+
+logger = law.logger.get_logger(__name__)
 
 
 def normalized_weight_factory(
@@ -22,14 +27,14 @@ def normalized_weight_factory(
 
     @producer(
         uses=set(weight_producers) | set().union(*[w.produces for w in weight_producers]) | {"process_id"},
-        name=producer_name,
+        cls_name=producer_name,
         mc_only=True,
         # skip the checking existence of used/produced columns because not all columns are there
-        check_columns_present=set(),
+        check_used_columns=False,
+        check_produced_columns=False,
         # remaining produced columns are defined in the init function below
     )
     def normalized_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
         # check existence of requested weights to normalize and run producer if missing
         missing_weights = self.weight_names.difference(events.fields)
 
@@ -44,7 +49,9 @@ def normalized_weight_factory(
                     events = self[prod](events, **kwargs)
 
         # Create normalized weight columns if possible
-        print(f"Weight columns {missing_weights.difference(events.fields)} could not be reproduced")
+        if not_reproduced := missing_weights.difference(events.fields):
+            logger.info(f"Weight columns {not_reproduced} could not be reproduced")
+
         for weight_name in self.weight_names.intersection(events.fields):
             # create a weight vector starting with ones
             norm_weight_per_pid = np.ones(len(events), dtype=np.float32)
@@ -68,12 +75,12 @@ def normalized_weight_factory(
         self.weight_producers = weight_producers
 
         # resolve weight names
-        self.weight_names = set(
-            w for w in set().union(*[self[w].produced_columns for w in weight_producers])
-            if "weight" in w and "normalized" not in w and "btag" not in w
-        )
+        self.weight_names = set()
+        for col in self.used_columns:
+            col = col.string_nano_column
+            if "weight" in col and "normalized" not in col and "btag" not in col:
+                self.weight_names.add(col)
 
-        self.uses |= self.weight_names
         self.produces |= set(f"normalized_{weight_name}" for weight_name in self.weight_names)
 
     @normalized_weight.requires

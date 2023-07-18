@@ -50,7 +50,7 @@ def event_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weight.init
 def event_weight_init(self: Producer) -> None:
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+    if not getattr(self, "dataset_inst", None):
         return
 
     self.uses |= set(self.config_inst.x.event_weights.keys())
@@ -92,6 +92,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
+    if not getattr(self, "dataset_inst", None):
+        return
 
     if not self.dataset_inst.x("skip_scale", False):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
@@ -157,7 +159,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
-    if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_qcd", False):
+    if not getattr(self, "dataset_inst", None):
         return
 
     if not self.dataset_inst.x("skip_scale", False):
