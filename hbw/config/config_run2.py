@@ -204,6 +204,10 @@ def add_config(
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             dataset.x.is_hbw = True
 
+        if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
+            dataset.x.skip_scale = True
+            dataset.x.skip_pdf = True
+
     cfg.x.selector_step_labels = {
         "Jet": r"$N_{jets}^{AK4} \geq 3$",
         "Lepton": r"$N_{lepton} \geq 1$",
@@ -569,7 +573,7 @@ def add_config(
         ) | set(  # Leptons
             f"{lep}.{field}"
             for lep in ["Electron", "Muon"]
-            for field in ["pt", "eta", "phi", "mass", "charge", "pdgId"]
+            for field in ["pt", "eta", "phi", "mass"]
         ) | {  # Electrons
             "Electron.deltaEtaSC",  # for SF calculation
         } | set(  # MET
@@ -594,11 +598,13 @@ def add_config(
     # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()
-        if not dataset.x("is_qcd", False):
+        if not dataset.x("skip_scale", False):
             # pdf/scale weights for all non-qcd datasets
             dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
             dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
             dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
+
+        if not dataset.x("skip_pdf", False):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     # versions per task family and optionally also dataset and shift

@@ -24,6 +24,7 @@ ak = maybe_import("awkward")
 
 @producer(
     produces={"event_weight"},
+    mc_only=True,
 )
 def event_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -74,14 +75,15 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute btag SF weights (for renormalization tasks)
     events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
 
-    # skip scale/pdf weights for qcd (missing columns)
-    if "qcd" not in self.dataset_inst.name:
+    # skip scale/pdf weights for some datasets (missing columns)
+    if not self.dataset_inst.x("skip_scale", False):
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
         # read out mur and weights
         events = self[murmuf_weights](events, **kwargs)
 
+    if not self.dataset_inst.x("skip_pdf", False):
         # compute pdf weights
         events = self[pdf_weights](events, **kwargs)
 
@@ -90,16 +92,24 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
-    if getattr(self, "dataset_inst", None) and "qcd" in self.dataset_inst.name:
-        return
 
-    self.uses |= {murmuf_envelope_weights, murmuf_weights, pdf_weights}
-    self.produces |= {murmuf_envelope_weights, murmuf_weights, pdf_weights}
+    if not self.dataset_inst.x("skip_scale", False):
+        self.uses |= {murmuf_envelope_weights, murmuf_weights}
+        self.produces |= {murmuf_envelope_weights, murmuf_weights}
+
+    if not self.dataset_inst.x("skip_pdf", False):
+        self.uses |= {pdf_weights}
+        self.produces |= {pdf_weights}
 
 
-normalized_scale_pdf_weights = normalized_weight_factory(
-    producer_name="normalized_scale_pdf_weights",
-    weight_producers={murmuf_envelope_weights, murmuf_weights, pdf_weights},
+normalized_scale_weights = normalized_weight_factory(
+    producer_name="normalized_scale_weights",
+    weight_producers={murmuf_envelope_weights, murmuf_weights},
+)
+
+normalized_pdf_weights = normalized_weight_factory(
+    producer_name="normalized_pdf_weights",
+    weight_producers={pdf_weights},
 )
 
 
@@ -132,8 +142,12 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # normalize event weights using stats
     events = self[normalized_btag_weights](events, **kwargs)
-    if "qcd" not in self.dataset_inst.name:
-        events = self[normalized_scale_pdf_weights](events, **kwargs)
+
+    if not self.dataset_inst.x("skip_scale", False):
+        events = self[normalized_scale_weights](events, **kwargs)
+
+    if not self.dataset_inst.x("skip_pdf", False):
+        events = self[normalized_pdf_weights](events, **kwargs)
 
     # calculate the full event weight for plotting purposes
     events = self[event_weight](events, **kwargs)
@@ -146,8 +160,13 @@ def event_weights_init(self: Producer) -> None:
     if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_qcd", False):
         return
 
-    self.uses |= {normalized_scale_pdf_weights}
-    self.produces |= {normalized_scale_pdf_weights}
+    if not self.dataset_inst.x("skip_scale", False):
+        self.uses |= {normalized_scale_weights}
+        self.produces |= {normalized_scale_weights}
+
+    if not self.dataset_inst.x("skip_pdf", False):
+        self.uses |= {normalized_pdf_weights}
+        self.produces |= {normalized_pdf_weights}
 
 
 @producer(
