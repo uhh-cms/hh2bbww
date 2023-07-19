@@ -84,15 +84,26 @@ def add_config(
     cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.hh_ggf_bbtautau)
 
+    # QCD process customization
     cfg.get_process("qcd_mu").label = "QCD Muon enriched"
     qcd_ele = cfg.add_process(
         name="qcd_ele",
         id=31199,
-        xsecs={13: Number(0.1)},  # TODO
+        xsecs={13: cfg.get_process("qcd_em").get_xsec(13) + cfg.get_process("qcd_bctoe").get_xsec(13)},
         label="QCD Electron enriched",
     )
     qcd_ele.add_process(cfg.get_process("qcd_em"))
     qcd_ele.add_process(cfg.get_process("qcd_bctoe"))
+
+    # Custom v_lep process for ML Training, combining W+DY
+    v_lep = cfg.add_process(
+        name="v_lep",
+        id=64575573,  # random number
+        xsecs={13: cfg.get_process("w_lnu").get_xsec(13) + cfg.get_process("dy_lep").get_xsec(13)},
+        label="W and DY",
+    )
+    v_lep.add_process(cfg.get_process("w_lnu"))
+    v_lep.add_process(cfg.get_process("dy_lep"))
 
     # set color of some processes
     stylize_processes(cfg)

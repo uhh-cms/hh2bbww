@@ -23,6 +23,8 @@ ak = maybe_import("awkward")
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",
         "cutflow.n_veto_tau",
     },
+    # skip the checking existence of used/produced columns for now because some columns are not there
+    check_columns_present=set(),
 )
 def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
 

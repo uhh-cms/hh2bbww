@@ -12,12 +12,13 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
-from hbw.production.weights import event_weights_to_normalize
+from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.production.gen_hbw_decay import gen_hbw_decay_products
-from hbw.selection.stats import increment_stats
+from hbw.selection.stats import increment_stats_old, hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.selection.gen_hbw_features import gen_hbw_decay_features, gen_hbw_matching
 
@@ -100,7 +101,7 @@ def vbf_jet_selection(
         "FatJet.msoftdrop", "FatJet.jetId", "FatJet.subJetIdx1", "FatJet.subJetIdx2",
         "FatJet.tau1", "FatJet.tau2",
     },
-    produces={"cutflow.n_fatjet"},
+    produces={"cutflow.n_hbbjet"},
     exposed=True,
 )
 def boosted_jet_selection(
@@ -407,14 +408,14 @@ def lepton_selection_init(self: Selector) -> None:
     uses={
         boosted_jet_selection,
         jet_selection, vbf_jet_selection, lepton_selection,
-        category_ids, process_ids, increment_stats, attach_coffea_behavior,
-        "mc_weight",  # not opened per default but always required in Cutflow tasks
+        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
+        mc_weight, large_weights_killer,
     },
     produces={
         boosted_jet_selection,
         jet_selection, vbf_jet_selection, lepton_selection,
-        category_ids, process_ids, increment_stats, attach_coffea_behavior,
-        "mc_weight",  # not opened per default but always required in Cutflow tasks
+        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
+        mc_weight, large_weights_killer,
     },
     exposed=True,
 )
@@ -424,6 +425,11 @@ def default(
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
+    # mc weight
+    if self.dataset_inst.is_mc:
+        events = self[mc_weight](events, **kwargs)
+        events = self[large_weights_killer](events, **kwargs)
+
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
 
@@ -484,7 +490,7 @@ def default(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
-    self[increment_stats](events, results, stats, **kwargs)
+    self[hbw_increment_stats](events, results, stats, **kwargs)
 
     return events, results
 
@@ -512,7 +518,7 @@ def default_init(self: Selector) -> None:
         gen_hbw_decay_products, gen_hbw_decay_features, gen_hbw_matching,
     },
     produces={
-        category_ids, process_ids, increment_stats, "mc_weight",
+        category_ids, process_ids, hbw_increment_stats, "mc_weight",
         gen_hbw_decay_products, gen_hbw_decay_features, gen_hbw_matching,
     },
     exposed=True,

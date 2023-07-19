@@ -7,6 +7,7 @@ Stat-related methods.
 from collections import defaultdict, OrderedDict
 
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.selection.stats import increment_stats
 from columnflow.production.cms.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
 from columnflow.util import maybe_import
@@ -16,9 +17,85 @@ ak = maybe_import("awkward")
 
 
 @selector(
+    uses={increment_stats, btag_weights, event_weights_to_normalize},
+)
+def hbw_increment_stats(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    stats: dict,
+    **kwargs,
+) -> ak.Array:
+    # collect important information from the results
+    event_mask = results.main.event
+    event_mask_no_bjet = results.steps.all_but_bjet
+    n_jets = results.x.n_central_jets
+
+    # weight map definition
+    weight_map = {
+        # "num" operations
+        "num_events": Ellipsis,  # all events
+        "num_events_selected": event_mask,  # selected events only
+        "num_events_selected_no_bjet": event_mask_no_bjet,
+        # "sum" operations
+        "sum_mc_weight": events.mc_weight,  # weights of all events
+        "sum_mc_weight_selected": (events.mc_weight, event_mask),  # weights of selected events
+        "sum_mc_weight_no_bjet": (events.mc_weight, event_mask_no_bjet),
+        "sum_mc_weight_selected_no_bjet": (events.mc_weight, event_mask_no_bjet),
+    }
+
+    weight_columns = sorted(list(
+        set(self[event_weights_to_normalize].produced_columns) |
+        set(self[btag_weights].produces),
+    ))
+
+    # mc weight times correction weight (with variations) without any selection
+    for name in weight_columns:
+        if "weight" not in name:
+            # skip non-weight columns here
+            continue
+
+        weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], Ellipsis)
+
+        # weights for selected events
+        weight_map[f"sum_mc_weight_{name}_selected"] = (events.mc_weight * events[name], event_mask)
+
+        if name.startswith("btag_weight"):
+            # weights for selected events, excluding the bjet selection
+            weight_map[f"sum_mc_weight_{name}_selected_no_bjet"] = (
+                (events.mc_weight * events[name], event_mask_no_bjet)
+            )
+
+    group_map = {
+        "process": {
+            "values": events.process_id,
+            "mask_fn": (lambda v: events.process_id == v),
+        },
+        "njet": {
+            "values": results.x.n_central_jets,
+            "mask_fn": (lambda v: n_jets == v),
+        },
+    }
+
+    group_combinations = [("process", "njet")]
+
+    self[increment_stats](
+        events,
+        results,
+        stats,
+        weight_map=weight_map,
+        group_map=group_map,
+        group_combinations=group_combinations,
+        **kwargs,
+    )
+
+    return events
+
+
+@selector(
     uses={btag_weights, event_weights_to_normalize},
 )
-def increment_stats(
+def increment_stats_old(
     self: Selector,
     events: ak.Array,
     results: SelectionResult,
@@ -34,8 +111,8 @@ def increment_stats(
     event_mask_no_bjet = results.steps.all_but_bjet
 
     # increment plain counts
-    stats["n_events"] += len(events)
-    stats["n_events_selected"] += ak.sum(event_mask, axis=0)
+    stats["num_events"] += len(events)
+    stats["num_events_selected"] += ak.sum(event_mask, axis=0)
 
     # get a list of unique jet multiplicities present in the chunk
     unique_process_ids = np.unique(events.process_id)

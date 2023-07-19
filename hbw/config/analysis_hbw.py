@@ -31,6 +31,7 @@ analysis_hbw.x.bash_sandboxes = [
     "$CF_BASE/sandboxes/cf_prod.sh",
     "$CF_BASE/sandboxes/venv_columnar.sh",
     "$CF_BASE/sandboxes/venv_ml_tf.sh",
+    "$HBW_BASE/sandboxes/venv_ml_plotting.sh",
     # "$HBW_BASE/sandboxes/venv_columnar_tf.sh",
 ]
 

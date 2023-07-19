@@ -54,15 +54,15 @@ class DefaultPlots(
             )
 
             # ML output nodes
-            ml_model = "default"
+            ml_model = "dense_default"
             reqs[f"ml_outputs_{channel}"] = PlotVariables1D.req(
                 self,
                 config="config_2017",
-                producers=("ml_inputs",),
+                producers=(f"ml_{ml_model}",),
                 ml_models=(ml_model,),
                 processes=(f"{channel}ch",),
                 # process_settings=[["scale_signal"]],
-                variables=[f"{ml_model}.*"],
+                variables=["mlscore.*"],
                 categories=(f"{channel}ch",),
                 yscale="log",
                 cms_label="simpw",

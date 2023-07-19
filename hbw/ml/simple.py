@@ -140,7 +140,6 @@ class SimpleDNN(MLModel):
 
     def training_configs(self, requested_configs: Sequence[str]) -> list[str]:
         # default config
-        print(requested_configs)
         if len(requested_configs) == 1:
             return list(requested_configs)
         else:
