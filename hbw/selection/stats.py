@@ -37,6 +37,7 @@ def hbw_increment_stats(
         "num_events": Ellipsis,  # all events
         "num_events_selected": event_mask,  # selected events only
         "num_events_selected_no_bjet": event_mask_no_bjet,
+        "num_negative_weights": (events.mc_weight < 0),
         # "sum" operations
         "sum_mc_weight": events.mc_weight,  # weights of all events
         "sum_mc_weight_selected": (events.mc_weight, event_mask),  # weights of selected events

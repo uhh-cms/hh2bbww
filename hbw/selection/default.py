@@ -55,7 +55,11 @@ def vbf_jet_selection(
     # default requirements for vbf jets (pt, eta and no H->bb jet)
     # NOTE: we might also want to remove the two H->jj jet candidates
     # TODO: how to get the object mask from the object indices in a more convenient way?
-    b_indices = ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1)
+    b_indices = ak.where(
+        results.steps.Boosted,
+        ak.fill_none(ak.pad_none(results.objects.Jet.HbbSubJet, 2), -1),
+        ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1),
+    )
     vbf_jets = events.Jet[(events.Jet.local_index != b_indices[:, 0]) & (events.Jet.local_index != b_indices[:, 1])]
     vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta < 4.7))]
 
@@ -119,6 +123,8 @@ def boosted_jet_selection(
     muon = events.Muon[lepton_results.objects.Muon.Muon]
     ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
 
+    # assign local index to all Jets
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
     events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
 
     # baseline fatjet selection
@@ -179,6 +185,9 @@ def boosted_jet_selection(
     events = set_ak_column(events, "cutflow.n_hbbjet", ak.num(hbbjets, axis=1))
     hbbjet_sel = events.cutflow.n_hbbjet >= 1
 
+    # define HbbSubJet collection (TODO: pt-sort or b-score sort)
+    hbbSubJet_indices = ak.concatenate([hbbjets.subJetIdx1, hbbjets.subJetIdx2], axis=1)
+
     # require at least one ak4 jet not included in the subjets of one of the hbbjets
     ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(hbbjets) > 1.2, axis=2)]
 
@@ -201,6 +210,7 @@ def boosted_jet_selection(
                 "FatJet": masked_sorted_indices(fatjet_mask, events.FatJet.pt),
                 "HbbJet": hbbjets.local_index,
             },
+            "Jet": {"HbbSubJet": hbbSubJet_indices},
         },
     )
 
@@ -491,6 +501,8 @@ def default(
 
     # increment stats
     self[hbw_increment_stats](events, results, stats, **kwargs)
+
+    print(f"Fraction of negative weights: {(100 * stats['num_negative_weights'] / stats['num_events']):.2f}%")
 
     return events, results
 
