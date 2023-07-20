@@ -6,7 +6,7 @@ Collection of helpers
 
 from __future__ import annotations
 
-from typing import Hashable
+from typing import Hashable, Iterable
 
 import tracemalloc
 
@@ -87,3 +87,31 @@ def dict_diff(dict1: dict, dict2: dict):
     set2 = set(make_dict_hashable(dict2))
 
     return set1 ^ set2
+
+
+def four_vec(
+    collections: str | Iterable[str],
+    columns: Iterable[str] | None = None,
+) -> set[str]:
+    """
+    Helper to quickly get a set of 4-vector component string for all collections in *collections*.
+    Additional columns can be added wih the optional *columns* parameter
+    """
+    # make sure *collections* is a set
+    collections = law.util.make_set(collections)
+
+    # transform *columns* to a set and add the default 4-vector components
+    columns = law.util.make_set(columns) if columns else set()
+    default_columns = {"pt", "eta", "phi", "mass"}
+    columns |= default_columns
+
+    outp = set(
+        f"{obj}.{var}"
+        for obj in collections
+        for var in columns
+    )
+
+    # manually remove MET eta and mass
+    outp = outp.difference({"MET.eta", "MET.mass"})
+
+    return outp

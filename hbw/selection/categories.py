@@ -36,13 +36,14 @@ def catid_1mu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return (ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1)
 
 
-@selector(uses={"Jet.pt", "FatJet.pt"})
+@selector(uses={"Jet.pt", "HbbJet.pt"})
 def catid_boosted(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet fulfilling
     requirements given by the Selector called in SelectEvents
     """
-    return (ak.sum(events.Jet.pt > 0, axis=-1) >= 1) & (ak.sum(events.FatJet.pt > 0, axis=-1) >= 1)
+    # TODO: this categorization skips the dR requirement between the HbbJet and the AK4 jet
+    return (ak.sum(events.Jet.pt > 0, axis=-1) >= 1) & (ak.sum(events.HbbJet.pt > 0, axis=-1) >= 1)
 
 
 @selector(uses={"Jet.pt", "FatJet.pt"})
