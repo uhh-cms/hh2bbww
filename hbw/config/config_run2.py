@@ -573,7 +573,7 @@ def add_config(
         ) | set(  # Leptons
             f"{lep}.{field}"
             for lep in ["Electron", "Muon"]
-            for field in ["pt", "eta", "phi", "mass"]
+            for field in ["pt", "eta", "phi", "mass", "charge", "pdgId"]
         ) | {  # Electrons
             "Electron.deltaEtaSC",  # for SF calculation
         } | set(  # MET
@@ -607,11 +607,25 @@ def add_config(
         if not dataset.x("skip_pdf", False):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
-    # versions per task family and optionally also dataset and shift
-    # None can be used as a key to define a default value
+    dev_version = "dev1"
+    prod_version = "prod1"
+
+    def reduce_version(cls, inst, params):
+        version = dev_version
+        if params.get("selector") == "default":
+            version = prod_version
+
+        return version
+
+    # Version of required tasks
     cfg.x.versions = {
-        # None: "dev1",
-        # "cf.SelectEvents": "dev1",
+        "cf.CalibrateEvents": "common1",
+        "cf.SelectEvents": reduce_version,
+        # "cf.MergeSelectionStats": reduce_version,
+        # "cf.MergeSelectionMasks": reduce_version,
+        # "cf.ReduceEvents": reduce_version,
+        # "cf.MergeReductionStats": reduce_version,
+        # "cf.MergeReducedEvents": reduce_version,
     }
 
     # add categories
