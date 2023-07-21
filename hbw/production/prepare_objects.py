@@ -4,16 +4,61 @@
 Column production method
 """
 
+import law
+
 from columnflow.production import Producer, producer
 from columnflow.selection import SelectionResult
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, optional_column
+from columnflow.production.util import attach_coffea_behavior
 # from columnflow.production.util import attach_coffea_behavior
+
+from hbw.util import four_vec
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
 np = maybe_import("numpy")
 maybe_import("coffea.nanoevents.methods.nanoaod")
+
+logger = law.logger.get_logger(__name__)
+
+custom_collections = {
+    "Bjet": {
+        "type_name": "Jet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "Lightjet": {
+        "type_name": "Jet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "VBFJet": {
+        "type_name": "Jet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "HbbSubJet": {
+        "type_name": "Jet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "HbbJet": {
+        "type_name": "FatJet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "Lepton": {
+        "type_name": "Muon",  # is there some other collection?
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+    "VetoLepton": {
+        "type_name": "Muon",  # is there some other collection?
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
+}
 
 
 def apply_object_results(events: ak.Array, results: SelectionResult = None):
@@ -43,16 +88,8 @@ def apply_object_results(events: ak.Array, results: SelectionResult = None):
     # This producer only requires 4-vector properties,
     # but all columns required by the main Selector/Producer will be considered
     uses=(
-        {
-            # attach_coffea_behavior,  # TODO use
-            "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-            "MET.pt", "MET.phi",
-        } |
-        set(
-            f"{obj}.{var}"
-            for obj in ("Electron", "Muon", "FatJet")
-            for var in ("pt", "eta", "phi", "mass")
-        )
+        {attach_coffea_behavior} | four_vec({"Electron", "Muon", "MET"}) |
+        optional_column(four_vec("Jet", "btagDeepFlavB"))
     ),
     # no produces since we do not want to permanently produce columns
 )
@@ -64,16 +101,14 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # apply results if given to create new collections
     events = apply_object_results(events, results)
 
-    # check that main objects are present
-    if not {"Jet", "Muon", "Electron", "MET"}.intersection(events.fields):
-        raise Exception(f"Missing object in event fields {events.fields}")
-
-    if "Bjet" not in events.fields:
+    if "Bjet" not in events.fields and "Jet" in events.fields:
+        logger.warning("Bjet collection is missing: will be defined using the Jet collection")
         # define b-jets as the two b-score leading jets, b-score sorted
         bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
         events = set_ak_column(events, "Bjet", events.Jet[bjet_indices[:, :2]])
 
-    if "Lightjet" not in events.fields:
+    if "Lightjet" not in events.fields and "Jet" in events.fields:
+        logger.warning("Lightjet collection is missing: will be defined using the Jet collection")
         # define lightjets as all non b-jets, pt-sorted
         bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
         lightjets = events.Jet[bjet_indices[:, 2:]]
@@ -98,14 +133,12 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         ], axis=-1)
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
 
+    # coffea behavior for relevant objects
+    events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
+
     # transform MET into 4-vector
     events["MET"] = set_ak_column(events.MET, "mass", 0)
     events["MET"] = set_ak_column(events.MET, "eta", 0)
-
-    # 4-vector behavior for relevant objects
-    events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    for obj in ["Jet", "Bjet", "Lightjet", "FatJet", "Lepton", "VetoLepton", "MET"]:
-        if obj in events.fields:
-            events[obj] = ak.with_name(events[obj], "PtEtaPhiMLorentzVector")
+    events["MET"] = ak.with_name(events["MET"], "PtEtaPhiMLorentzVector")
 
     return events

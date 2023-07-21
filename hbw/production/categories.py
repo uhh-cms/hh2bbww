@@ -10,8 +10,6 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import, InsertableDict
 from columnflow.production.categories import category_ids
 
-# from hbw.production.weights import event_weights
-# from hbw.production.prepare_objects import prepare_objects
 from hbw.config.categories import add_categories_production, add_categories_ml
 from hbw.ml.dense_classifier import dense_test
 

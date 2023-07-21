@@ -15,7 +15,7 @@ from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
 from hbw.config.categories import add_categories_production
-
+from hbw.util import four_vec
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
@@ -26,30 +26,33 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 @producer(
     uses={
         category_ids, event_weights,
-        prepare_objects.USES, prepare_objects.PRODUCES,
-        "FatJet.msoftdrop", "FatJet.deepTagMD_HbbvsQCD",
-    },
+        prepare_objects,
+        "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
+        "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
+    } | four_vec(
+        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet"},
+    ),
     produces={
         category_ids, event_weights,
         # other produced columns set in the init function
     },
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
     # add event weights
     if self.dataset_inst.is_mc:
         events = self[event_weights](events, **kwargs)
 
+    # add behavior and define new collections (e.g. Lepton)
+    events = self[prepare_objects](events, **kwargs)
+
     # produce (new) category ids
     events = self[category_ids](events, **kwargs)
-
-    # use Jets, Electrons and Muons to define Bjets, Lightjets and Lepton
-    events = self[prepare_objects](events, **kwargs)
 
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
-    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+    # events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+    events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
 
     # low-level features
     # TODO: this could be more generalized
@@ -61,8 +64,9 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
         events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
 
+    # H->bb FatJet
     for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
-        events = set_ak_column_f32(events, f"mli_fj_{var}", events.FatJet[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_fj_{var}", events.HbbJet[:, 0][var])
 
     # jets in general
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))

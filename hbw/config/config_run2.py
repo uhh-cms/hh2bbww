@@ -17,6 +17,7 @@ import order as od
 from columnflow.util import DotDict
 from columnflow.config_util import get_root_processes_from_campaign
 from hbw.config.styling import stylize_processes
+from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
@@ -166,10 +167,10 @@ def add_config(
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # Signal
-        "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-        "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-        "ggHH_kl_5_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
         "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
         "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
@@ -203,81 +204,9 @@ def add_config(
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             dataset.x.is_hbw = True
 
-    # default calibrator, selector, producer, ml model and inference model
-    cfg.x.default_calibrator = "skip_jecunc"
-    cfg.x.default_selector = "default"
-    cfg.x.default_producer = "ml_inputs"
-    # cfg.x.default_ml_model = "default"
-    cfg.x.default_ml_model = None
-    cfg.x.default_inference_model = "default"
-    cfg.x.default_categories = ["incl"]
-
-    # process groups for conveniently looping over certain processs
-    # (used in wrapper_factory and during plotting)
-    cfg.x.process_groups = {
-        "all": ["*"],
-        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
-        "with_qcd": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd", "st", "w_lnu", "dy_lep"],
-        "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
-        "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
-        "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "ml": ["ggHH_kl_1_*", "tt", "st", "w_lnu", "dy_lep"],
-        "ml_test": ["ggHH_kl_1_*", "st", "w_lnu"],
-        "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
-        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
-        "bkg": ["tt", "st", "w_lnu", "dy_lep"],
-        "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-    }
-    cfg.x.process_groups["dmuch"] = ["data_mu"] + cfg.x.process_groups["much"]
-    cfg.x.process_groups["dech"] = ["data_e"] + cfg.x.process_groups["ech"]
-
-    # dataset groups for conveniently looping over certain datasets
-    # (used in wrapper_factory and during plotting)
-    cfg.x.dataset_groups = {
-        "all": ["*"],
-        "default": ["ggHH_kl_1*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "test": ["ggHH_kl_1*", "tt_sl_powheg"],
-        "small": ["ggHH_kl_1*", "tt_*", "st_*"],
-        "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
-        "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
-        "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-        "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-    }
-
-    # category groups for conveniently looping over certain categories
-    # (used during plotting)
-    cfg.x.category_groups = {
-        "much": ["1mu", "1mu__resolved", "1mu__boosted"],
-        "ech": ["1e", "1e__resolved", "1e__boosted"],
-        "default": ["incl", "1e", "1mu"],
-        "test": ["incl", "1e"],
-    }
-
-    # variable groups for conveniently looping over certain variables
-    # (used during plotting)
-    cfg.x.variable_groups = {
-        "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
-        "test": ["n_jet", "n_electron", "jet1_pt"],
-        "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
-    }
-
-    # shift groups for conveniently looping over certain shifts
-    # (used during plotting)
-    cfg.x.shift_groups = {
-        "jer": ["nominal", "jer_up", "jer_down"],
-    }
-
-    # selector step groups for conveniently looping over certain steps
-    # (used in cutflow tasks)
-    cfg.x.selector_step_groups = {
-        "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet", "VetoTau"],
-        "boosted": ["Trigger", "Lepton", "VetoLepton", "FatJet", "Boosted"],
-        "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
-        "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
-        "test": ["Lepton", "Jet", "Bjet"],
-    }
+        if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
+            dataset.x.skip_scale = True
+            dataset.x.skip_pdf = True
 
     cfg.x.selector_step_labels = {
         "Jet": r"$N_{jets}^{AK4} \geq 3$",
@@ -286,30 +215,6 @@ def add_config(
         "Bjet": r"$N_{jets}^{BTag} \geq 1$",
         "FatJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
         "Boosted": r"$N_{jets}^{AK4} \geq 1$",
-    }
-
-    # plotting settings groups
-    cfg.x.general_settings_groups = {
-        "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
-        "default_norm": {"shape_norm": True, "yscale": "log"},
-    }
-    cfg.x.process_settings_groups = {
-        "default": {"ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 2000, "unstack": True}},
-        "unstack_all": {proc.name: {"unstack": True} for proc in cfg.processes},
-        "unstack_signal": {proc.name: {"unstack": True} for proc in cfg.processes if "HH" in proc.name},
-        "scale_signal": {
-            proc.name: {"unstack": True, "scale": 10000}
-            for proc in cfg.processes if "HH" in proc.name
-        },
-    }
-    # when drawing DY as a line, use a different type of yellow
-    cfg.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
-
-    cfg.x.variable_settings_groups = {
-        "test": {
-            "mli_mbb": {"rebin": 2, "label": "test"},
-            "mli_mjj": {"rebin": 2},
-        },
     }
 
     # lumi values in inverse pb
@@ -693,18 +598,34 @@ def add_config(
     # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()
-        if not dataset.x("is_qcd", False):
+        if not dataset.x("skip_scale", False):
             # pdf/scale weights for all non-qcd datasets
             dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
             dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
             dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
+
+        if not dataset.x("skip_pdf", False):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
-    # versions per task family and optionally also dataset and shift
-    # None can be used as a key to define a default value
+    dev_version = "dev1"
+    prod_version = "prod1"
+
+    def reduce_version(cls, inst, params):
+        version = dev_version
+        if params.get("selector") == "default":
+            version = prod_version
+
+        return version
+
+    # Version of required tasks
     cfg.x.versions = {
-        # None: "dev1",
-        # "cf.SelectEvents": "dev1",
+        "cf.CalibrateEvents": "common1",
+        "cf.SelectEvents": reduce_version,
+        # "cf.MergeSelectionStats": reduce_version,
+        # "cf.MergeSelectionMasks": reduce_version,
+        # "cf.ReduceEvents": reduce_version,
+        # "cf.MergeReductionStats": reduce_version,
+        # "cf.MergeReducedEvents": reduce_version,
     }
 
     # add categories
@@ -713,12 +634,8 @@ def add_config(
     # add variables
     add_variables(cfg)
 
-    # NOTE: this is only needed here since adding variable insts in producer inits does not work
-    #       when submitting jobs; remove the following block as soon as this is fixed.
-    #  add_ml_variables(cfg)
-    # cfg.x.add_ml_variables = False
-    # add_feature_variables(cfg)
-    # cfg.x.add_feature_variables = False
+    # set some config defaults and groups
+    set_config_defaults_and_groups(cfg)
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10

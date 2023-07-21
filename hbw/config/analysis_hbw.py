@@ -74,3 +74,7 @@ config_2017_limited = add_config(
     config_id=12,
     limit_dataset_files=2,
 )
+
+# new configs but with shorter names
+c17 = config_2017.copy(name="c17", id=102)
+l17 = config_2017_limited.copy(name="l17", id=112)

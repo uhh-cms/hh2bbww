@@ -37,6 +37,7 @@ def hbw_increment_stats(
         "num_events": Ellipsis,  # all events
         "num_events_selected": event_mask,  # selected events only
         "num_events_selected_no_bjet": event_mask_no_bjet,
+        "num_negative_weights": (events.mc_weight < 0),
         # "sum" operations
         "sum_mc_weight": events.mc_weight,  # weights of all events
         "sum_mc_weight_selected": (events.mc_weight, event_mask),  # weights of selected events
@@ -44,10 +45,11 @@ def hbw_increment_stats(
         "sum_mc_weight_selected_no_bjet": (events.mc_weight, event_mask_no_bjet),
     }
 
-    weight_columns = sorted(list(
+    weight_columns = list(
         set(self[event_weights_to_normalize].produced_columns) |
-        set(self[btag_weights].produces),
-    ))
+        set(self[btag_weights].produced_columns),
+    )
+    weight_columns = sorted([col.string_nano_column for col in weight_columns])
 
     # mc weight times correction weight (with variations) without any selection
     for name in weight_columns:
