@@ -5,6 +5,7 @@ import law
 from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
+
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model

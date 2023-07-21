@@ -45,8 +45,7 @@ channels = [
     "cat_1mu_v_lep",
 ]
 
-# All systematics to be included in the final datacard
-systematics = [
+rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
     "lumi_13TeV_2016"
     "lumi_13TeV_2017"
@@ -79,6 +78,9 @@ systematics = [
     "pdf_qqHH",
     "pdf_VHH",
     "pdf_ttHH",
+]
+
+shape_systematics = [
     # Shape Scale uncertainties
     # "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww",
     "murf_envelope_tt",
@@ -99,7 +101,24 @@ systematics = [
     "pdf_shape_ttV",
     "pdf_shape_VV",
     # Scale Factors (TODO)
+    "btag_hf",
+    "btag_lf",
+    "btag_hfstats1_2017",
+    "btag_hfstats2_2017"
+    "btag_lfstats1_2017"
+    "btag_lfstats2_2017"
+    "btag_cferr1",
+    "btag_cferr2",
+    "mu_sf",
+    # "mu_trig",
+    "e_sf",
+    # "e_trig",
+    # "minbias_xs",
+    # "top_pt",
 ]
+
+# All systematics to be included in the final datacard
+systematics = rate_systematics + shape_systematics
 
 
 default_cls_dict = {
@@ -213,13 +232,13 @@ def default(self):
     # TODO: some scale/pdf uncertainties should be rounded to 3 digits, others to 4 digits
     # NOTE: it might be easier to just take the recommended uncertainty values from HH conventions at
     #       https://gitlab.cern.ch/hh/naming-conventions instead of taking the values from CMSDB
-    for k, procs in const.QCDScale_mapping.items():
+    for k, procs in const.processes_per_QCDScale.items():
         syst_name = f"QCDscale_{k}"
         if syst_name not in self.systematics:
             continue
 
         for proc in procs:
-            if proc not in processes:
+            if proc not in self.processes:
                 continue
             process_inst = self.config_inst.get_process(proc)
             if "scale" not in process_inst.xsecs[ecm]:
@@ -236,13 +255,13 @@ def default(self):
         self.add_parameter_to_group(f"QCDscale_{k}", "theory")
 
     # add PDF rate uncertainties to inference model
-    for k, procs in const.pdf_mapping.items():
+    for k, procs in const.processes_per_pdf_rate.items():
         syst_name = f"pdf_{k}"
         if syst_name not in self.systematics:
             continue
 
         for proc in procs:
-            if proc not in processes:
+            if proc not in self.processes:
                 continue
             process_inst = self.config_inst.get_process(proc)
             if "pdf" not in process_inst.xsecs[ecm]:
@@ -268,26 +287,52 @@ def default(self):
     # )
     # self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
 
-    # scale + pdf (shape)
-    for proc in processes:
-        if proc == "qcd":
-            # no scale/pdf shape uncert. for qcd
+    # shape uncertainties
+    # up_shifts = [s for s in self.config_inst.shifts if "up" in s.name]
+    # shift_sources = [s.source for s in up_shifts]
+
+    for shape_uncertainty, shape_processes in const.processes_per_shape.items():
+        if shape_uncertainty not in self.systematics:
             continue
-        for shift_source, unc in (
-            ("murf_envelope", "murf_envelope"),
-            ("pdf", "pdf_shape"),
-        ):
-            syst_name = f"{unc}_{proc}"
-            if proc == "st_tchannel" and unc == "pdf":
-                # TODO: debugging (unphysically large/small pdf weights in process)
-                continue
-            self.add_parameter(
-                syst_name,
-                process=inference_procnames.get(proc, proc),
-                type=ParameterType.shape,
-                config_shift_source=f"{shift_source}",
-            )
+
+        # If "all" is included, takes all processes except for the ones specified (starting with !)
+        if "all" in shape_processes:
+            _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
+            shape_processes = set(self.processes) - _remove_processes
+
+        self.add_parameter(
+            shape_uncertainty,
+            process=shape_processes,
+            type=ParameterType.shape,
+            config_shift_source=const.source_per_shape[shape_uncertainty],
+        )
+
+        is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
+        if is_theory:
             self.add_parameter_to_group(syst_name, "theory")
+        else:
+            self.add_parameter_to_group(syst_name, "experiment")
+
+    # # scale + pdf (shape)
+    # for proc in self.processes:
+    #     if proc == "qcd":
+    #         # no scale/pdf shape uncert. for qcd
+    #         continue
+    #     for shift_source, unc in (
+    #         ("murf_envelope", "murf_envelope"),
+    #         ("pdf", "pdf_shape"),
+    #     ):
+    #         syst_name = f"{unc}_{proc}"
+    #         if proc == "st_tchannel" and unc == "pdf":
+    #             # TODO: debugging (unphysically large/small pdf weights in process)
+    #             continue
+    #         self.add_parameter(
+    #             syst_name,
+    #             process=inference_procnames.get(proc, proc),
+    #             type=ParameterType.shape,
+    #             config_shift_source=f"{shift_source}",
+    #         )
+    #         self.add_parameter_to_group(syst_name, "theory")
 
     #
     # post-processing
@@ -302,6 +347,11 @@ def default(self):
 
 cls_dict = default_cls_dict.copy()
 
+cls_dict["systematics"] = rate_systematics
+
+# inference model with only rate uncertainties
+rates_only = default.derive("rates_only", cls_dict=cls_dict)
+
 cls_dict["processes"] = [
     "ggHH_kl_0_kt_1_sl_hbbhww",
     "ggHH_kl_1_kt_1_sl_hbbhww",
@@ -309,7 +359,6 @@ cls_dict["processes"] = [
     "ggHH_kl_5_kt_1_sl_hbbhww",
     "st_schannel",
 ]
-
 
 cls_dict["channels"] = [
     "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
@@ -319,5 +368,5 @@ cls_dict["systematics"] = [
     "lumi_13TeV_2017",
 ]
 
-
+# minimal model for quick test purposes
 test = default.derive("test", cls_dict=cls_dict)
