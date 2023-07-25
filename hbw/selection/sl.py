@@ -9,10 +9,8 @@ from typing import Tuple
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
@@ -20,7 +18,7 @@ from hbw.selection.common import (
     masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
     pre_selection, post_selection,
 )
-from hbw.production.weights import event_weights_to_normalize, large_weights_killer
+from hbw.production.weights import event_weights_to_normalize
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 
