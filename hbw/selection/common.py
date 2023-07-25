@@ -21,6 +21,7 @@ from columnflow.production.processes import process_ids
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
+from hbw.util import four_vec
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -37,10 +38,7 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
 
 
 @selector(
-    uses={
-        # jet_selection,
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-    },
+    uses=four_vec("Jet", {"btagDeepFlavB"}),
     exposed=False,
 )
 def vbf_jet_selection(
@@ -98,19 +96,26 @@ def vbf_jet_selection(
 
 
 @selector(
-    uses={
-        # jet_selection, lepton_selection,
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.jetId",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
-        "FatJet.pt", "FatJet.eta", "FatJet.phi", "FatJet.mass",
-        "FatJet.msoftdrop", "FatJet.jetId", "FatJet.subJetIdx1", "FatJet.subJetIdx2",
-        "FatJet.tau1", "FatJet.tau2",
-    },
-    produces={"cutflow.n_hbbjet"},
+    uses=(
+        four_vec(
+            {"Jet", "Electron", "Muon"},
+        ) | {"Jet.jetId"} |
+        four_vec(
+            "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subjetIdx2", "tau1", "tau2"},
+        )
+    ),
+    produces=(
+        {"cutflow.n_fatjet", "cutflow.n_hbbjet"} |
+        four_vec(
+            {"FatJet", "HbbJet"},
+            {"n_subjets", "n_separated_jets", "max_dr_ak4"},
+            skip_defaults=True,
+        )
+    ),
     exposed=False,
+    single_lepton_selector=True,
 )
-def boosted_jet_selection(
+def sl_boosted_jet_selection(
     self: Selector,
     events: ak.Array,
     lepton_results: SelectionResult,
@@ -122,15 +127,20 @@ def boosted_jet_selection(
     HH -> bbWW(qqlnu) boosted selection
     TODO: separate common parts from SL dependant
     """
+    # assign local index to all Jets
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
+    events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
 
-    # leptons (TODO: use fakeable leptons here)
+    # get leptons and jets with object masks applied
     electron = events.Electron[lepton_results.objects.Electron.Electron]
     muon = events.Muon[lepton_results.objects.Muon.Muon]
     ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
 
-    # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
-    events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
+    # get separation info between FatJets and AK4 Jets
+    dr_fatjet_ak4 = events.FatJet.metric_table(ak4_jets)
+    events = set_ak_column(events, "FatJet.n_subjets", ak.sum(dr_fatjet_ak4 < 0.8, axis=2))
+    events = set_ak_column(events, "FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
+    events = set_ak_column(events, "FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
 
     # baseline fatjet selection
     fatjet_mask = (
@@ -140,6 +150,7 @@ def boosted_jet_selection(
         (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
         (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
     )
+    events = set_ak_column(events, "cutflow.n_fatjet", ak.sum(fatjet_mask, axis=1))
 
     # H->bb fatjet definition based on Aachen analysis
     hbbJet_mask = (
@@ -152,6 +163,13 @@ def boosted_jet_selection(
         (events.FatJet.subJetIdx2 < ak.num(events.Jet)) &
         (events.FatJet.tau2 / events.FatJet.tau1 < 0.75)
     )
+    # for the SL analysis, we additionally require one AK4 jet that is separated with dR > 1.2
+    # (as part of the HbbJet definition)
+    if self.single_lepton_selector:
+        hbbJet_mask = (
+            hbbJet_mask &
+            (events.FatJet.n_separated_jets >= 1)
+        )
 
     # create temporary object with fatjet mask applied and get the subjets
     hbbjets = events.FatJet[hbbJet_mask]
@@ -165,11 +183,7 @@ def boosted_jet_selection(
         ((subjet1.pt > 30) | (subjet2.pt > 30))
     )
     hbbjets_no_bjet = hbbjets[subjets_mask_no_bjet]
-
-    boosted_sel_no_bjet = (
-        (ak.num(hbbjets_no_bjet, axis=1) >= 1) &
-        (ak.sum(ak.any(ak4_jets.metric_table(hbbjets_no_bjet) > 1.2, axis=2), axis=1) > 0)
-    )
+    hbbjet_sel_no_bjet = ak.num(hbbjets_no_bjet, axis=1) >= 1
 
     # requirements on H->bb subjets (with b-tagging)
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
@@ -185,29 +199,21 @@ def boosted_jet_selection(
     # apply subjets requirements on hbbjets and pt-sort
     hbbjets = hbbjets[subjets_mask]
     hbbjets = hbbjets[ak.argsort(hbbjets.pt, ascending=False)]
+    events = set_ak_column(events, "HbbJet", hbbjets)
 
     # number of hbbjets fulfilling all criteria
     events = set_ak_column(events, "cutflow.n_hbbjet", ak.num(hbbjets, axis=1))
     hbbjet_sel = events.cutflow.n_hbbjet >= 1
 
     # define HbbSubJet collection (TODO: pt-sort or b-score sort)
+    # TODO: when we get multiple HbbJets, we also define more than 2 hbbSubJets
     hbbSubJet_indices = ak.concatenate([hbbjets.subJetIdx1, hbbjets.subJetIdx2], axis=1)
-
-    # require at least one ak4 jet not included in the subjets of one of the hbbjets
-    # TODO: this should be part of the Jet selection, no?
-    ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(hbbjets) > 1.2, axis=2)]
-
-    # NOTE: we might want to remove these ak4 jets from our list of jets (or have a separate collection for them?)
-    ak4_jet_sel = ak.num(ak4_jets, axis=1) > 0
-
-    boosted_sel = ak4_jet_sel & hbbjet_sel
 
     # build and return selection results plus new columns
     return events, SelectionResult(
         steps={
+            "HbbJet_no_bjet": hbbjet_sel_no_bjet,
             "HbbJet": hbbjet_sel,
-            "Boosted": boosted_sel,
-            "Boosted_no_bjet": boosted_sel_no_bjet,  # TODO check if correct
         },
         objects={
             "FatJet": {
@@ -217,6 +223,10 @@ def boosted_jet_selection(
             "Jet": {"HbbSubJet": hbbSubJet_indices},
         },
     )
+
+
+# boosted selection for the DL channel (only one parameter needs to be changed)
+dl_boosted_jet_selection = sl_boosted_jet_selection.derive("dl_boosted_jet_selection", cls_dict={""})
 
 
 @selector(

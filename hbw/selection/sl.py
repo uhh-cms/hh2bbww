@@ -16,7 +16,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
-from hbw.selection.common import masked_sorted_indices, boosted_jet_selection, vbf_jet_selection
+from hbw.selection.common import masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
@@ -226,13 +226,13 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        boosted_jet_selection,
+        sl_boosted_jet_selection,
         sl_jet_selection, vbf_jet_selection, sl_lepton_selection,
         category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     produces={
-        boosted_jet_selection,
+        sl_boosted_jet_selection,
         sl_jet_selection, vbf_jet_selection, sl_lepton_selection,
         category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
         mc_weight, large_weights_killer,
@@ -265,7 +265,7 @@ def sl(
     results += jet_results
 
     # boosted selection
-    events, boosted_results = self[boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
+    events, boosted_results = self[sl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
 
     # vbf-jet selection
@@ -273,13 +273,13 @@ def sl(
     results += vbf_jet_results
 
     results.steps["ResolvedOrBoosted"] = (
-        (results.steps.Jet & results.steps.Bjet) | results.steps.Boosted
+        (results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet
     )
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         # NOTE: the boosted selection actually includes a b-jet selection...
-        (results.steps.Jet | results.steps.Boosted_no_bjet) &
+        (results.steps.Jet | results.steps.HbbJet_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
         results.steps.VetoTau &
@@ -292,7 +292,7 @@ def sl(
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.main["event"] = (
         results.steps.all_but_bjet &
-        ((results.steps.Jet & results.steps.Bjet) | results.steps.Boosted)
+        ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )
 
     # build categories
