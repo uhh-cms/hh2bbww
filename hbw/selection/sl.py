@@ -16,7 +16,10 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
-from hbw.selection.common import masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.common import (
+    masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
+    pre_selection, post_selection,
+)
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
@@ -226,16 +229,14 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        sl_boosted_jet_selection,
-        sl_jet_selection, vbf_jet_selection, sl_lepton_selection,
-        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
-        mc_weight, large_weights_killer,
+        pre_selection, post_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        sl_jet_selection, sl_lepton_selection,
     },
     produces={
-        sl_boosted_jet_selection,
-        sl_jet_selection, vbf_jet_selection, sl_lepton_selection,
-        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
-        mc_weight, large_weights_killer,
+        pre_selection, post_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        sl_jet_selection, sl_lepton_selection,
     },
     exposed=True,
 )
@@ -245,16 +246,8 @@ def sl(
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
-    # mc weight
-    if self.dataset_inst.is_mc:
-        events = self[mc_weight](events, **kwargs)
-        events = self[large_weights_killer](events, **kwargs)
-
-    # ensure coffea behavior
-    events = self[attach_coffea_behavior](events, **kwargs)
-
-    # prepare the selection results that are updated at every step
-    results = SelectionResult()
+    # prepare events
+    events, results = self[pre_selection](events, stats, **kwargs)
 
     # lepton selection
     events, lepton_results = self[sl_lepton_selection](events, stats, **kwargs)
@@ -296,23 +289,7 @@ def sl(
     )
 
     # build categories
-    events = self[category_ids](events, results=results, **kwargs)
-
-    # create process ids
-    events = self[process_ids](events, **kwargs)
-
-    # add cutflow features
-    if self.config_inst.x("do_cutflow_features", False):
-        events = self[cutflow_features](events, results=results, **kwargs)
-
-    # produce event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights_to_normalize](events, results=results, **kwargs)
-
-    # increment stats
-    self[hbw_increment_stats](events, results, stats, **kwargs)
-
-    print(f"Fraction of negative weights: {(100 * stats['num_negative_weights'] / stats['num_events']):.2f}%")
+    events, results = self[post_selection](events, results, stats, **kwargs)
 
     return events, results
 
