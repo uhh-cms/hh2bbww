@@ -22,6 +22,7 @@ from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
 from hbw.config.analysis_hbw import analysis_hbw
+from hbw.util import four_vec
 
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
@@ -542,9 +543,9 @@ def add_config(
 
     # columns to keep after certain steps
     cfg.x.keep_columns = DotDict.wrap({
-        "cf.SelectEvents": {"mc_weight"},
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
         },
     })
 
@@ -558,28 +559,19 @@ def add_config(
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
-        } | set(  # Jets
-            f"{jet_obj}.{field}"
-            for jet_obj in ["Jet", "Bjet", "Lightjet", "VBFJet"]
-            # NOTE: if we run into storage troubles, skip Bjet and Lightjet
-            for field in ["pt", "eta", "phi", "mass", "btagDeepFlavB", "hadronFlavour"]
-        ) | set(  # H->bb FatJet
-            f"{jet_type}.{field}"
-            for jet_type in ["FatJet", "HbbJet"]
-            for field in [
-                "pt", "eta", "phi", "mass", "msoftdrop", "tau1", "tau2", "tau3",
+        } | four_vec(  # Jets
+            {"Jet", "Bjet", "Lightjet", "VBFJet"},
+            {"btagDeepFlavB", "hadronFlavour"},
+        ) | four_vec(  # FatJets
+            {"FatJet", "HbbJet"},
+            {
+                "msoftdrop", "tau1", "tau2", "tau3",
                 "btagHbb", "deepTagMD_HbbvsQCD", "particleNet_HbbvsQCD",
-            ]
-        ) | set(  # Leptons
-            f"{lep}.{field}"
-            for lep in ["Electron", "Muon"]
-            for field in ["pt", "eta", "phi", "mass", "charge", "pdgId"]
-        ) | {  # Electrons
-            "Electron.deltaEtaSC",  # for SF calculation
-        } | set(  # MET
-            f"MET.{field}"
-            for field in ["pt", "phi"]
-        )
+            },
+        ) | four_vec(  # Leptons
+            {"Electron", "Muon"},
+            {"charge", "pdgId"},
+        ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
 
     # event weight columns as keys in an ordered dict, mapped to shift instances they depend on

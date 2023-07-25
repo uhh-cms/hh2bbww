@@ -56,7 +56,7 @@ def vbf_jet_selection(
     # NOTE: we might also want to remove the two H->jj jet candidates
     # TODO: how to get the object mask from the object indices in a more convenient way?
     b_indices = ak.where(
-        results.steps.Boosted,
+        results.steps.HbbJet,
         ak.fill_none(ak.pad_none(results.objects.Jet.HbbSubJet, 2), -1),
         ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1),
     )
@@ -101,7 +101,7 @@ def vbf_jet_selection(
             {"Jet", "Electron", "Muon"},
         ) | {"Jet.jetId"} |
         four_vec(
-            "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subjetIdx2", "tau1", "tau2"},
+            "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subJetIdx2", "tau1", "tau2"},
         )
     ),
     produces=(
@@ -226,7 +226,10 @@ def sl_boosted_jet_selection(
 
 
 # boosted selection for the DL channel (only one parameter needs to be changed)
-dl_boosted_jet_selection = sl_boosted_jet_selection.derive("dl_boosted_jet_selection", cls_dict={""})
+dl_boosted_jet_selection = sl_boosted_jet_selection.derive(
+    "dl_boosted_jet_selection",
+    cls_dict={"single_lepton_selector": False},
+)
 
 
 @selector(

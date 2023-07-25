@@ -69,10 +69,9 @@ def set_config_defaults_and_groups(config_inst):
 
     # default calibrator, selector, producer, ml model and inference model
     config_inst.x.default_calibrator = "skip_jecunc"
-    config_inst.x.default_selector = "default"
-    # config_inst.x.default_producer = "ml_inputs"
+    # TODO: make configurable via law.cfg?
+    config_inst.x.default_selector = "sl"
     config_inst.x.default_producer = default_producers
-    # config_inst.x.default_ml_model = "default"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default"
     config_inst.x.default_categories = ["incl"]
