@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Configuration of the 2017 HH -> bbWW analysis.
+Configuration of the Run 2 HH -> bbWW analysis.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from typing import Set
 
 import yaml
 from scinum import Number
+import law
 import order as od
 
 from columnflow.util import DotDict
@@ -21,11 +22,12 @@ from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
-from hbw.config.analysis_hbw import analysis_hbw
 from hbw.util import four_vec
 
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
+
+logger = law.logger.get_logger(__name__)
 
 
 def add_config(
@@ -39,7 +41,6 @@ def add_config(
     assert campaign.x.year in [2016, 2017, 2018]
     if campaign.x.year == 2016:
         assert campaign.x.vfp in ["pre", "post"]
-
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
@@ -55,7 +56,7 @@ def add_config(
     procs = get_root_processes_from_campaign(campaign)
 
     # create a config by passing the campaign, so id and name will be identical
-    cfg = analysis_hbw.add_config(campaign, name=config_name, id=config_id)
+    cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
 
     # use custom get_dataset_lfns function
     cfg.x.get_dataset_lfns = get_dataset_lfns
@@ -73,18 +74,33 @@ def add_config(
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
-    cfg.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
-    cfg.add_process(procs.n.ggHH_kl_1_kt_1_sl_hbbhww)
-    cfg.add_process(procs.n.ggHH_kl_2p45_kt_1_sl_hbbhww)
-    cfg.add_process(procs.n.ggHH_kl_5_kt_1_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
-    cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
     cfg.add_process(procs.n.hh_ggf_bbtautau)
+
+    if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
+        cfg.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_1_kt_1_sl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_2p45_kt_1_sl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_5_kt_1_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
+
+    if cfg.has_tag("is_dl") and cfg.has_tag("is_nonresonant"):
+        cfg.add_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww)
+        cfg.add_process(procs.n.ggHH_kl_5_kt_1_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww)
+        cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww)
 
     # QCD process customization
     cfg.get_process("qcd_mu").label = "QCD Muon enriched"
@@ -167,25 +183,49 @@ def add_config(
         "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
-        # Signal
-        # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
-        "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
         # HH(bbtautau)
         "hh_ggf_bbtautau_madgraph",
     ]
+
+    if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
+        # non-resonant HH -> bbWW(qqlnu) Signal
+        dataset_names += [
+            "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
+            "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+            "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
+            "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
+            # custom samples (TODO: should we include a parameter to switch between custom/offical samples?)
+            # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+            # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+            # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+            # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
+            "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
+            "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+            "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+        ]
+
+    if cfg.has_tag("is_dl") and cfg.has_tag("is_nonresonant"):
+        # non-resonant HH -> bbWW(lnulnu) Signal
+        dataset_names += [
+            "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+            "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+            "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+            "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+            "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww_madgraph",
+            "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww_madgraph",
+            "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+            "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+        ]
+    if cfg.has_tag("is_resonant"):
+        logger.warning(f"For analysis {analysis.name}: resonant samples still needs to be implemented")
+
     for dataset_name in dataset_names:
         dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
 
@@ -196,6 +236,7 @@ def add_config(
                     info.n_files = limit_dataset_files
 
         # add aux info to datasets
+        # NOTE: we should maybe change them to tags
         if dataset.name.startswith(("st", "tt")):
             dataset.x.has_top = True
         if dataset.name.startswith("tt"):
@@ -203,12 +244,14 @@ def add_config(
         if dataset.name.startswith("qcd"):
             dataset.x.is_qcd = True
         if "HH" in dataset.name and "hbbhww" in dataset.name:
+            # TODO: the is_hbw tag is used at times were we should ask for is_hbw_sl
             dataset.x.is_hbw = True
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
             dataset.x.skip_scale = True
             dataset.x.skip_pdf = True
 
+    # TODO: this should be configured as part of the Selector inst
     cfg.x.selector_step_labels = {
         "Jet": r"$N_{jets}^{AK4} \geq 3$",
         "Lepton": r"$N_{lepton} \geq 1$",
@@ -512,9 +555,6 @@ def add_config(
 
         # met phi corrector
         "met_phi_corr": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/met.json.gz", "v1"),
-
-        # hh-btag repository (lightweight) with TF saved model directories
-        "hh_btag_repo": ("https://github.com/hh-italian-group/HHbtag/archive/1dc426053418e1cab2aec021802faf31ddf3c5cd.tar.gz", "v1"),  # noqa
     })
 
     # external files with more complex year dependence
@@ -542,6 +582,8 @@ def add_config(
     }))
 
     # columns to keep after certain steps
+    # TODO: selector-dependent columns should either use the is_sl / is_dl tag or
+    #       be implemented as part of the selectors itself (e.g. only SL needs the Lightjet column)
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
@@ -599,25 +641,25 @@ def add_config(
         if not dataset.x("skip_pdf", False):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
-    dev_version = "dev1"
-    prod_version = "prod1"
-
     def reduce_version(cls, inst, params):
-        version = dev_version
-        if params.get("selector") == "default":
-            version = prod_version
+        # per default, use the version set on the command line
+        version = inst.version  # same as params.get("version") ?
+
+        if params.get("selector") == "sl_v1":
+            # use a fixed version for the sl_v1 selector
+            version = "sl_v1"
 
         return version
 
     # Version of required tasks
     cfg.x.versions = {
         "cf.CalibrateEvents": "common1",
-        # "cf.SelectEvents": reduce_version,
-        # "cf.MergeSelectionStats": reduce_version,
-        # "cf.MergeSelectionMasks": reduce_version,
-        # "cf.ReduceEvents": reduce_version,
-        # "cf.MergeReductionStats": reduce_version,
-        # "cf.MergeReducedEvents": reduce_version,
+        "cf.SelectEvents": reduce_version,
+        "cf.MergeSelectionStats": reduce_version,
+        "cf.MergeSelectionMasks": reduce_version,
+        "cf.ReduceEvents": reduce_version,
+        "cf.MergeReductionStats": reduce_version,
+        "cf.MergeReducedEvents": reduce_version,
     }
 
     # add categories
