@@ -620,7 +620,7 @@ def add_config(
     # Version of required tasks
     cfg.x.versions = {
         "cf.CalibrateEvents": "common1",
-        "cf.SelectEvents": reduce_version,
+        # "cf.SelectEvents": reduce_version,
         # "cf.MergeSelectionStats": reduce_version,
         # "cf.MergeSelectionMasks": reduce_version,
         # "cf.ReduceEvents": reduce_version,
