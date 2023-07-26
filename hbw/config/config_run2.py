@@ -251,16 +251,6 @@ def add_config(
             dataset.x.skip_scale = True
             dataset.x.skip_pdf = True
 
-    # TODO: this should be configured as part of the Selector inst
-    cfg.x.selector_step_labels = {
-        "Jet": r"$N_{jets}^{AK4} \geq 3$",
-        "Lepton": r"$N_{lepton} \geq 1$",
-        "VetoLepton": r"$N_{lepton}^{veto} \leq 1$",
-        "Bjet": r"$N_{jets}^{BTag} \geq 1$",
-        "FatJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
-        "Boosted": r"$N_{jets}^{AK4} \geq 1$",
-    }
-
     # lumi values in inverse pb
     # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
     if year == 2016:
