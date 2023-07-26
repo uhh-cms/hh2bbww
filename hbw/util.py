@@ -91,11 +91,25 @@ def dict_diff(dict1: dict, dict2: dict):
 
 def four_vec(
     collections: str | Iterable[str],
-    columns: Iterable[str] | None = None,
+    columns: str | Iterable[str] | None = None,
+    skip_defaults: bool = False,
 ) -> set[str]:
     """
     Helper to quickly get a set of 4-vector component string for all collections in *collections*.
-    Additional columns can be added wih the optional *columns* parameter
+    Additional columns can be added wih the optional *columns* parameter.
+
+    Example:
+
+    .. code-block:: python
+
+    four_vec("Jet", "jetId")
+    # -> {"Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.jetId"}
+
+    four_vec({"Electron", "Muon"})
+    # -> {
+            "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+            "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
+        }
     """
     # make sure *collections* is a set
     collections = law.util.make_set(collections)
@@ -103,7 +117,8 @@ def four_vec(
     # transform *columns* to a set and add the default 4-vector components
     columns = law.util.make_set(columns) if columns else set()
     default_columns = {"pt", "eta", "phi", "mass"}
-    columns |= default_columns
+    if not skip_defaults:
+        columns |= default_columns
 
     outp = set(
         f"{obj}.{var}"

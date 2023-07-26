@@ -91,7 +91,7 @@ def add_cutflow_variables(config: od.Config) -> None:
 
     # number of objects
     for obj in (
-            "jet", "deepjet_med", "electron", "muon", "lepton",
+            "jet", "deepjet_med", "fatjet", "hbbjet", "electron", "muon", "lepton",
             "veto_electron", "veto_muon", "veto_lepton", "veto_tau",
     ):
         config.add_variable(
@@ -100,6 +100,26 @@ def add_cutflow_variables(config: od.Config) -> None:
             binning=(11, -0.5, 10.5),
             x_title=f"Number of {obj}s",
         )
+
+    # FatJet cutflow variables
+    config.add_variable(
+        name="cf_HbbJet1_n_subjets".lower(),
+        expression="HbbJet.n_subjets[:, 0]",
+        binning=(5, -0.5, 4.5),
+        x_title="HbbJet 1 number of subjets",
+    )
+    config.add_variable(
+        name="cf_HbbJet1_n_separated_jets".lower(),
+        expression="HbbJet.n_separated_jets[:, 0]",
+        binning=(5, -0.5, 4.5),
+        x_title=r"HbbJet 1 number of jets with $\Delta R > 1.2$",
+    )
+    config.add_variable(
+        name="cf_HbbJet1_max_dr_ak4".lower(),
+        expression="HbbJet.max_dr_ak4[:, 0]",
+        binning=(40, 0, 4),
+        x_title=r"max($\Delta R$ (HbbJet 1, AK4 jets))",
+    )
 
 
 def add_gen_variables(config: od.Config) -> None:

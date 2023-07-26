@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Selection methods for HHtobbWW.
+Selection modules for HH -> bbWW(qqlnu).
 """
 
 from collections import defaultdict
@@ -9,210 +9,21 @@ from typing import Tuple
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
-from hbw.production.weights import event_weights_to_normalize, large_weights_killer
-from hbw.production.gen_hbw_decay import gen_hbw_decay_products
+from hbw.selection.common import (
+    masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
+    pre_selection, post_selection,
+)
+from hbw.production.weights import event_weights_to_normalize
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
-from hbw.selection.gen_hbw_features import gen_hbw_decay_features, gen_hbw_matching
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-
-
-def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = False) -> ak.Array:
-    """
-    Helper function to obtain the correct indices of an object mask
-    """
-    indices = ak.argsort(sort_var, axis=-1, ascending=ascending)
-    return indices[mask[indices]]
-
-
-@selector(
-    uses={
-        # jet_selection,
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-    },
-    exposed=True,
-)
-def vbf_jet_selection(
-    self: Selector,
-    events: ak.Array,
-    results: SelectionResult,
-    stats: defaultdict,
-    **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
-
-    # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
-
-    # default requirements for vbf jets (pt, eta and no H->bb jet)
-    # NOTE: we might also want to remove the two H->jj jet candidates
-    # TODO: how to get the object mask from the object indices in a more convenient way?
-    b_indices = ak.where(
-        results.steps.Boosted,
-        ak.fill_none(ak.pad_none(results.objects.Jet.HbbSubJet, 2), -1),
-        ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1),
-    )
-    vbf_jets = events.Jet[(events.Jet.local_index != b_indices[:, 0]) & (events.Jet.local_index != b_indices[:, 1])]
-    vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta < 4.7))]
-
-    # build all possible pairs of jets fulfilling the `vbf_jet_mask` requirement
-    vbf_pairs = ak.combinations(vbf_jets, 2)
-    vbf1, vbf2 = ak.unzip(vbf_pairs)
-
-    # define requirements for vbf pair candidates
-    vbf_pairs["deta"] = abs(vbf1.eta - vbf2.eta)
-    vbf_pairs["invmass"] = (vbf1 + vbf2).mass
-    vbf_mask = (vbf_pairs.deta > 3) & (vbf_pairs.invmass > 500)
-
-    # event selection: at least one vbf pair present (TODO: use it for categorization)
-    vbf_selection = ak.sum(vbf_mask >= 1, axis=-1) >= 1
-
-    # apply requirements to vbf pairs
-    vbf_pairs = vbf_pairs[vbf_mask]
-
-    # choose the vbf pair based on maximum delta eta
-    chosen_vbf_pair = vbf_pairs[ak.singletons(ak.argmax(vbf_pairs.deta, axis=1))]
-
-    # get the local indices (pt sorted)
-    vbf1, vbf2 = [chosen_vbf_pair[i] for i in ["0", "1"]]
-    vbf_jets = ak.concatenate([vbf1, vbf2], axis=1)
-    vbf_jets = vbf_jets[ak.argsort(vbf_jets.pt, ascending=False)]
-
-    # build and return selection results plus new columns
-    return events, SelectionResult(
-        steps={"VBFJetPair": vbf_selection},
-        objects={"Jet": {
-            "VBFJet": vbf_jets.local_index,
-        }},
-    )
-
-
-@selector(
-    uses={
-        # jet_selection, lepton_selection,
-        "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.jetId",
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
-        "FatJet.pt", "FatJet.eta", "FatJet.phi", "FatJet.mass",
-        "FatJet.msoftdrop", "FatJet.jetId", "FatJet.subJetIdx1", "FatJet.subJetIdx2",
-        "FatJet.tau1", "FatJet.tau2",
-    },
-    produces={"cutflow.n_hbbjet"},
-    exposed=True,
-)
-def boosted_jet_selection(
-    self: Selector,
-    events: ak.Array,
-    lepton_results: SelectionResult,
-    jet_results: SelectionResult,
-    stats: defaultdict,
-    **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
-    # HH -> bbWW(qqlnu) boosted selection
-
-    # leptons (TODO: use fakeable leptons here)
-    electron = events.Electron[lepton_results.objects.Electron.Electron]
-    muon = events.Muon[lepton_results.objects.Muon.Muon]
-    ak4_jets = events.Jet[jet_results.objects.Jet.Jet]
-
-    # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
-    events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
-
-    # baseline fatjet selection
-    fatjet_mask = (
-        (events.FatJet.pt > 200) &
-        (abs(events.FatJet.eta) < 2.4) &
-        (events.FatJet.jetId == 6) &
-        (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
-        (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
-    )
-
-    # H->bb fatjet definition based on Aachen analysis
-    hbbJet_mask = (
-        fatjet_mask &
-        (events.FatJet.msoftdrop > 30) &
-        (events.FatJet.msoftdrop < 210) &
-        (events.FatJet.subJetIdx1 >= 0) &
-        (events.FatJet.subJetIdx2 >= 0) &
-        (events.FatJet.subJetIdx1 < ak.num(events.Jet)) &
-        (events.FatJet.subJetIdx2 < ak.num(events.Jet)) &
-        (events.FatJet.tau2 / events.FatJet.tau1 < 0.75)
-    )
-
-    # create temporary object with fatjet mask applied and get the subjets
-    hbbjets = events.FatJet[hbbJet_mask]
-    subjet1 = events.Jet[hbbjets.subJetIdx1]
-    subjet2 = events.Jet[hbbjets.subJetIdx2]
-
-    # requirements on H->bb subjets (without b-tagging)
-    subjets_mask_no_bjet = (
-        (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
-        (subjet1.pt > 20) & (subjet2.pt > 20) &
-        ((subjet1.pt > 30) | (subjet2.pt > 30))
-    )
-    hbbjets_no_bjet = hbbjets[subjets_mask_no_bjet]
-
-    boosted_sel_no_bjet = (
-        (ak.num(hbbjets_no_bjet, axis=1) >= 1) &
-        (ak.sum(ak.any(ak4_jets.metric_table(hbbjets_no_bjet) > 1.2, axis=2), axis=1) > 0)
-    )
-
-    # requirements on H->bb subjets (with b-tagging)
-    wp_med = self.config_inst.x.btag_working_points.deepjet.medium
-    subjets_mask = (
-        (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
-        (subjet1.pt > 20) & (subjet2.pt > 20) &
-        (
-            ((subjet1.pt > 30) & (subjet1.btagDeepFlavB > wp_med)) |
-            ((subjet2.pt > 30) & (subjet2.btagDeepFlavB > wp_med))
-        )
-    )
-
-    # apply subjets requirements on hbbjets and pt-sort
-    hbbjets = hbbjets[subjets_mask]
-    hbbjets = hbbjets[ak.argsort(hbbjets.pt, ascending=False)]
-
-    # number of hbbjets fulfilling all criteria
-    events = set_ak_column(events, "cutflow.n_hbbjet", ak.num(hbbjets, axis=1))
-    hbbjet_sel = events.cutflow.n_hbbjet >= 1
-
-    # define HbbSubJet collection (TODO: pt-sort or b-score sort)
-    hbbSubJet_indices = ak.concatenate([hbbjets.subJetIdx1, hbbjets.subJetIdx2], axis=1)
-
-    # require at least one ak4 jet not included in the subjets of one of the hbbjets
-    ak4_jets = ak4_jets[ak.any(ak4_jets.metric_table(hbbjets) > 1.2, axis=2)]
-
-    # NOTE: we might want to remove these ak4 jets from our list of jets
-    ak4_jet_sel = ak.num(ak4_jets, axis=1) > 0
-
-    boosted_sel = ak4_jet_sel & hbbjet_sel
-
-    # build and return selection results plus new columns
-    return events, SelectionResult(
-        steps={
-            "HbbJet": hbbjet_sel,
-            "Boosted": boosted_sel,
-            "Boosted_no_bjet": boosted_sel_no_bjet,  # TODO check if correct
-        },
-        objects={
-            "FatJet": {
-                # NOTE: we might want to relax requirements here and only apply them later
-                #       to simplify optimization studies
-                "FatJet": masked_sorted_indices(fatjet_mask, events.FatJet.pt),
-                "HbbJet": hbbjets.local_index,
-            },
-            "Jet": {"HbbSubJet": hbbSubJet_indices},
-        },
-    )
 
 
 @selector(
@@ -220,7 +31,7 @@ def boosted_jet_selection(
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
 )
-def jet_selection(
+def sl_jet_selection(
     self: Selector,
     events: ak.Array,
     lepton_results: SelectionResult,
@@ -286,7 +97,7 @@ def jet_selection(
     },
     e_pt=None, mu_pt=None, e_trigger=None, mu_trigger=None,
 )
-def lepton_selection(
+def sl_lepton_selection(
         self: Selector,
         events: ak.Array,
         stats: defaultdict,
@@ -383,8 +194,8 @@ def lepton_selection(
     )
 
 
-@lepton_selection.init
-def lepton_selection_init(self: Selector) -> None:
+@sl_lepton_selection.init
+def sl_lepton_selection_init(self: Selector) -> None:
     year = self.config_inst.campaign.x.year
 
     # NOTE: the none will not be overwritten later when doing this...
@@ -416,46 +227,36 @@ def lepton_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection,
-        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
-        mc_weight, large_weights_killer,
+        pre_selection, post_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        sl_jet_selection, sl_lepton_selection,
     },
     produces={
-        boosted_jet_selection,
-        jet_selection, vbf_jet_selection, lepton_selection,
-        category_ids, process_ids, hbw_increment_stats, attach_coffea_behavior,
-        mc_weight, large_weights_killer,
+        pre_selection, post_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        sl_jet_selection, sl_lepton_selection,
     },
     exposed=True,
 )
-def default(
+def sl(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
-    # mc weight
-    if self.dataset_inst.is_mc:
-        events = self[mc_weight](events, **kwargs)
-        events = self[large_weights_killer](events, **kwargs)
-
-    # ensure coffea behavior
-    events = self[attach_coffea_behavior](events, **kwargs)
-
-    # prepare the selection results that are updated at every step
-    results = SelectionResult()
+    # prepare events
+    events, results = self[pre_selection](events, stats, **kwargs)
 
     # lepton selection
-    events, lepton_results = self[lepton_selection](events, stats, **kwargs)
+    events, lepton_results = self[sl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
 
     # jet selection
-    events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
+    events, jet_results = self[sl_jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
 
     # boosted selection
-    events, boosted_results = self[boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
+    events, boosted_results = self[sl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
 
     # vbf-jet selection
@@ -463,13 +264,13 @@ def default(
     results += vbf_jet_results
 
     results.steps["ResolvedOrBoosted"] = (
-        (results.steps.Jet & results.steps.Bjet) | results.steps.Boosted
+        (results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet
     )
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         # NOTE: the boosted selection actually includes a b-jet selection...
-        (results.steps.Jet | results.steps.Boosted_no_bjet) &
+        (results.steps.Jet | results.steps.HbbJet_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
         results.steps.VetoTau &
@@ -482,37 +283,21 @@ def default(
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.main["event"] = (
         results.steps.all_but_bjet &
-        ((results.steps.Jet & results.steps.Bjet) | results.steps.Boosted)
+        ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )
 
     # build categories
-    events = self[category_ids](events, results=results, **kwargs)
-
-    # create process ids
-    events = self[process_ids](events, **kwargs)
-
-    # add cutflow features
-    if self.config_inst.x("do_cutflow_features", False):
-        events = self[cutflow_features](events, results=results, **kwargs)
-
-    # produce event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights_to_normalize](events, results=results, **kwargs)
-
-    # increment stats
-    self[hbw_increment_stats](events, results, stats, **kwargs)
-
-    print(f"Fraction of negative weights: {(100 * stats['num_negative_weights'] / stats['num_events']):.2f}%")
+    events, results = self[post_selection](events, results, stats, **kwargs)
 
     return events, results
 
 
-lep_15 = default.derive("lep_15", cls_dict={"ele_pt": 15, "mu_pt": 15})
-lep_27 = default.derive("lep_27", cls_dict={"ele_pt": 27, "mu_pt": 27})
+lep_15 = sl.derive("sl_lep_15", cls_dict={"ele_pt": 15, "mu_pt": 15})
+lep_27 = sl.derive("sl_lep_27", cls_dict={"ele_pt": 27, "mu_pt": 27})
 
 
-@default.init
-def default_init(self: Selector) -> None:
+@sl.init
+def sl_init(self: Selector) -> None:
     if self.config_inst.x("do_cutflow_features", False):
         self.uses.add(cutflow_features)
         self.produces.add(cutflow_features)
@@ -524,9 +309,14 @@ def default_init(self: Selector) -> None:
     self.produces.add(event_weights_to_normalize)
 
 
+from hbw.production.gen_hbw_decay import gen_hbw_decay_products
+from hbw.selection.gen_hbw_features import gen_hbw_decay_features, gen_hbw_matching
+
+
+# TODO: implement the gen modules in sl (or one of the common modules)
 @selector(
     uses={
-        default, "mc_weight",  # mc_weight should be included from default
+        sl, "mc_weight",  # mc_weight should be included from default
         gen_hbw_decay_products, gen_hbw_decay_features, gen_hbw_matching,
     },
     produces={
@@ -551,7 +341,7 @@ def gen_hbw(
         raise Exception("This selector is only usable for HH samples")
 
     # run the default Selector
-    events, results = self[default](events, stats, **kwargs)
+    events, results = self[sl](events, stats, **kwargs)
 
     # extract relevant gen HH decay products
     events = self[gen_hbw_decay_products](events, **kwargs)

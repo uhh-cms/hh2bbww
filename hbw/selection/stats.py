@@ -37,36 +37,38 @@ def hbw_increment_stats(
         "num_events": Ellipsis,  # all events
         "num_events_selected": event_mask,  # selected events only
         "num_events_selected_no_bjet": event_mask_no_bjet,
-        "num_negative_weights": (events.mc_weight < 0),
-        # "sum" operations
-        "sum_mc_weight": events.mc_weight,  # weights of all events
-        "sum_mc_weight_selected": (events.mc_weight, event_mask),  # weights of selected events
-        "sum_mc_weight_no_bjet": (events.mc_weight, event_mask_no_bjet),
-        "sum_mc_weight_selected_no_bjet": (events.mc_weight, event_mask_no_bjet),
     }
 
-    weight_columns = list(
-        set(self[event_weights_to_normalize].produced_columns) |
-        set(self[btag_weights].produced_columns),
-    )
-    weight_columns = sorted([col.string_nano_column for col in weight_columns])
+    if self.dataset_inst.is_mc:
+        weight_map["num_negative_weights"] = (events.mc_weight < 0)
+        # "sum" operations
+        weight_map["sum_mc_weight"] = events.mc_weight  # weights of all events
+        weight_map["sum_mc_weight_selected"] = (events.mc_weight, event_mask)  # weights of selected events
+        weight_map["sum_mc_weight_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
+        weight_map["sum_mc_weight_selected_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
 
-    # mc weight times correction weight (with variations) without any selection
-    for name in weight_columns:
-        if "weight" not in name:
-            # skip non-weight columns here
-            continue
+        weight_columns = list(
+            set(self[event_weights_to_normalize].produced_columns) |
+            set(self[btag_weights].produced_columns),
+        )
+        weight_columns = sorted([col.string_nano_column for col in weight_columns])
 
-        weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], Ellipsis)
+        # mc weight times correction weight (with variations) without any selection
+        for name in weight_columns:
+            if "weight" not in name:
+                # skip non-weight columns here
+                continue
 
-        # weights for selected events
-        weight_map[f"sum_mc_weight_{name}_selected"] = (events.mc_weight * events[name], event_mask)
+            weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], Ellipsis)
 
-        if name.startswith("btag_weight"):
-            # weights for selected events, excluding the bjet selection
-            weight_map[f"sum_mc_weight_{name}_selected_no_bjet"] = (
-                (events.mc_weight * events[name], event_mask_no_bjet)
-            )
+            # weights for selected events
+            weight_map[f"sum_mc_weight_{name}_selected"] = (events.mc_weight * events[name], event_mask)
+
+            if name.startswith("btag_weight"):
+                # weights for selected events, excluding the bjet selection
+                weight_map[f"sum_mc_weight_{name}_selected_no_bjet"] = (
+                    (events.mc_weight * events[name], event_mask_no_bjet)
+                )
 
     group_map = {
         "process": {
@@ -92,6 +94,15 @@ def hbw_increment_stats(
     )
 
     return events
+
+
+@hbw_increment_stats.init
+def hbw_increment_stats_init(self: Selector) -> None:
+    if not getattr(self, "dataset_inst", None):
+        return
+
+    if self.dataset_inst.is_mc:
+        self.uses |= {"mc_weight"}
 
 
 @selector(
