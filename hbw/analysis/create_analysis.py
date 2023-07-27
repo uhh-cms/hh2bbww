@@ -86,12 +86,3 @@ def create_hbw_analysis(
     l17 = config_2017_limited.copy(name="l17", id=112)  # noqa
 
     return analysis_inst
-
-
-# create all relevant analysis instances
-analysis_hbw = create_hbw_analysis("analysis_hbw", 1, tags={"is_sl", "is_dl", "is_resonant", "is_nonresonant"})
-hbw_sl = create_hbw_analysis("hbw_sl", 2, tags={"is_sl", "is_nonresonant"})
-# TODO: commented out for now because otherwise configs are built multiple times
-#       should I move each analysis into a separate file to prevent this?
-# hbw_dl = create_hbw_analysis("hbw_dl", 3, tags={"is_dl", "is_nonresonant"})
-# hbw_res_sl = create_hbw_analysis("hbw_res_sl", 4, tags={"is_sl", "is_resonant"})
