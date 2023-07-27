@@ -42,7 +42,6 @@ def catid_boosted(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     Categorization of events in the boosted category: presence of at least 1 AK8 jet fulfilling
     requirements given by the Selector called in SelectEvents
     """
-    # TODO: this categorization skips the dR requirement between the HbbJet and the AK4 jet
     return (ak.sum(events.Jet.pt > 0, axis=-1) >= 1) & (ak.sum(events.HbbJet.pt > 0, axis=-1) >= 1)
 
 
