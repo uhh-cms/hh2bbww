@@ -299,20 +299,23 @@ lep_27 = sl.derive("sl_lep_27", cls_dict={"ele_pt": 27, "mu_pt": 27})
 @sl.init
 def sl_init(self: Selector) -> None:
     # define mapping from selector step to labels used in cutflow plots
-    self.config_inst.x("selector_step_labels", {}).update({
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        # NOTE: many of these labels are too long for the cf.PlotCutflow task
         "Lepton": r"$N_{lepton} \geq 1$",
         "VetoLepton": r"$N_{lepton}^{veto} \leq 1$",
         "VetoTau": r"$N_{\tau}^{veto} = 0$",
         "Muon": r"$N_{\mu} \geq 1$ and $N_{e} \geq 0$",  # NOTE: Muon and Electron steps
         "Electron": r"$N_{\mu} \geq 0$ and $N_{e} \geq 1$",  # shouldn't be used together
-        "TriggerAndLep": r"($N_{e} \geq 1$ and e-trigger) or ($N_{\mu} \geq 1$ and \mu-trigger) ",
+        "TriggerAndLep": "Trigger matches Lepton Channel",
         "Jet": r"$N_{jets}^{AK4} \geq 3$",
         "Bjet": r"$N_{jets}^{BTag} \geq 1$",
         "Resolved": r"$N_{jets}^{AK4} \geq 3$ and $N_{jets}^{BTag} \geq 1$",
         "HbbJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
         "VBFJetPair": r"$N_{VBFJetPair}^{AK4} \geq 1$",
         "ResolvedOrBoosted": (
-            r"($N_{jets}^{AK4} \geq 3$ and $N_{jets}^{BTag} \geq 1$) or $N_{H \rightarrow bb}^{AK8} \geq 1$",
+            r"($N_{jets}^{AK4} \geq 3$ and $N_{jets}^{BTag} \geq 1$) "
+            r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
         ),
     })
 
