@@ -65,24 +65,20 @@ def create_hbw_analysis(
     campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
 
     # default config
-    config_2017 = add_config(
+    c17 = add_config(
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
-        config_name="config_2017",
+        config_name="c17",
         config_id=2,
     )
 
     # config with limited number of files
-    config_2017_limited = add_config(
+    l17 = add_config(
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
-        config_name="config_2017_limited",
+        config_name="l17",
         config_id=12,
         limit_dataset_files=2,
     )
-
-    # new configs but with shorter names
-    c17 = config_2017.copy(name="c17", id=102)  # noqa
-    l17 = config_2017_limited.copy(name="l17", id=112)  # noqa
 
     return analysis_inst
