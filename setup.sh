@@ -78,6 +78,7 @@ setup_hbw() {
 		export_and_save CF_SCHEDULER_PORT "8082"
             fi
             query HBW_BUNDLE_CMSSW "Install and bundle CMSSW sandboxes for job submission?" "True"
+	    query HBW_LAW_CONFIG "Name of the file to be used as law config (must be located in $HBW_BASE)" "law.sl.nocert.cfg"
 	}
 	cf_setup_interactive "${CF_SETUP_NAME}" "${HBW_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
     fi
@@ -87,7 +88,7 @@ setup_hbw() {
     export CF_VENV_BASE="${CF_VENV_BASE:-${CF_SOFTWARE_BASE}/venvs}"
     export CF_CMSSW_BASE="${CF_CMSSW_BASE:-${CF_SOFTWARE_BASE}/cmssw}"
     export CF_CI_JOB="$( [ "${GITHUB_ACTIONS}" = "true" ] && echo 1 || echo 0 )"
-
+    export HBW_LAW_CONFIG="${HBW_LAW_CONFIG:-law.sl.nocert.cfg}"
 
     #
     # common variables
@@ -119,7 +120,7 @@ setup_hbw() {
     #
 
     export LAW_HOME="${HBW_BASE}/.law"
-    export LAW_CONFIG_FILE="${HBW_BASE}/law.cfg"
+    export LAW_CONFIG_FILE="${HBW_BASE}/${HBW_LAW_CONFIG}"
     # export LAW_CONFIG_FILE="${HBW_BASE}/law.nocert.cfg"
 
     if which law &> /dev/null; then
