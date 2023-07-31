@@ -14,6 +14,7 @@ def default_ml_model(cls, container, task_params):
     # the ml_model parameter is only used by `MLTraining` and `MLEvaluation`, therefore use some default
     # NOTE: default_ml_model does not work for the MLTraining task
     if cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"):
+        # TODO: we might want to distinguish between two default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
     # check if task is using an inference model; if that's the case, use the default set in the model
@@ -35,6 +36,7 @@ def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
+    # TODO: we might need two ml_inputs producers in the future (sl vs dl)
     default_producers = ["ml_inputs", "event_weights"]
 
     # check if a ml_model has been set
@@ -67,30 +69,50 @@ def default_producers(cls, container, task_params):
 def set_config_defaults_and_groups(config_inst):
     """ Configuration function that sets all the defaults and groups in the config_inst """
 
-    # default calibrator, selector, producer, ml model and inference model
+    # define the default dataset and process based on the analysis tags
+    signal_tag = "sl" if config_inst.has_tag("is_sl") else "dl"
+    default_signal_process = f"ggHH_kl_1_kt_1_{signal_tag}_hbbhww"
+    signal_generator = "powheg"
+
+    if config_inst.has_tag("resonant"):
+        signal_tag = f"res_{signal_tag}"
+        # for resonant, rely on the law.cfg to define the default signal process (NOTE: might change in the future)
+        default_signal_process = law.config.get_expanded("analysis", "default_dataset")
+        signal_generator = "madgraph"
+
+    #
+    # Defaults
+    #
+
+    # TODO: the default dataset is currently still being set up by the law.cfg
+    config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
     config_inst.x.default_calibrator = "skip_jecunc"
-    # TODO: make configurable via law.cfg?
-    config_inst.x.default_selector = "sl"
+    config_inst.x.default_selector = f"{signal_tag}"
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default"
     config_inst.x.default_categories = ["incl"]
 
+    #
+    # Groups
+    #
+
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
-        "with_qcd": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd", "st", "w_lnu", "dy_lep"],
-        "much": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
-        "ech": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
+        "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
+        "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
+        "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
         "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "ml": ["ggHH_kl_1_*", "tt", "st", "w_lnu", "dy_lep"],
-        "ml_test": ["ggHH_kl_1_*", "st", "w_lnu"],
-        "test": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt_sl"],
-        "small": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st"],
+        "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
+        "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "ml_test": [default_signal_process, "st", "w_lnu"],
+        "test": [default_signal_process, "tt_sl"],
+        "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
-        "signal": ["ggHH_*", "qqHH"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["dech"] = ["data_e"] + config_inst.x.process_groups["ech"]
@@ -99,10 +121,10 @@ def set_config_defaults_and_groups(config_inst):
     # (used in wrapper_factory and during plotting)
     config_inst.x.dataset_groups = {
         "all": ["*"],
-        "default": ["ggHH_kl_1*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
+        "default": [default_signal_dataset, "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "test": ["ggHH_kl_1*", "tt_sl_powheg"],
-        "small": ["ggHH_kl_1*", "tt_*", "st_*"],
+        "test": [default_signal_dataset, "tt_sl_powheg"],
+        "small": [default_signal_dataset, "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
@@ -145,6 +167,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
+    # NOTE: this could be added as part of the selector init itself
     config_inst.x.selector_step_groups = {
         "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet", "VetoTau"],
         "boosted": ["Trigger", "Lepton", "VetoLepton", "FatJet", "Boosted"],
@@ -155,12 +178,13 @@ def set_config_defaults_and_groups(config_inst):
     }
 
     # plotting settings groups
+    # (used in plotting)
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
     }
     config_inst.x.process_settings_groups = {
-        "default": {"ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 2000, "unstack": True}},
+        "default": {default_signal_process: {"scale": 2000, "unstack": True}},
         "unstack_all": {proc.name: {"unstack": True} for proc in config_inst.processes},
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
@@ -185,7 +209,7 @@ def set_config_defaults_and_groups(config_inst):
         },
     }
 
-    # CSPs
+    # CSP (calibrator, selector, producer) groups
     config_inst.x.producer_groups = {
         "mli": ["ml_inputs", "event_weights"],
         "mlo": ["ml_dense_default", "event_weights"],

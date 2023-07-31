@@ -107,14 +107,6 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
         events = set_ak_column(events, "Bjet", events.Jet[bjet_indices[:, :2]])
 
-    if "Lightjet" not in events.fields and "Jet" in events.fields:
-        logger.warning("Lightjet collection is missing: will be defined using the Jet collection")
-        # define lightjets as all non b-jets, pt-sorted
-        bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
-        lightjets = events.Jet[bjet_indices[:, 2:]]
-        lightjets = lightjets[ak.argsort(lightjets.pt, axis=-1, ascending=False)]
-        events = set_ak_column(events, "Lightjet", lightjets)
-
     if "VetoLepton" not in events.fields and "VetoElectron" in events.fields and "VetoMuon" in events.fields:
         # combine VetoElectron and VetoMuon into a single object (VetoLepton)
         lepton_fields = set(events.VetoMuon.fields).intersection(events.VetoElectron.fields)
