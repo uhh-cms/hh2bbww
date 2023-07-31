@@ -38,7 +38,7 @@ def invariant_mass(events:ak.Array):
     where = ak.num(events, axis=1) == 2
     events_with_2 = ak.where(where, events, empty_events)
     mass = ak.fill_none(ak.firsts((TetraVec(events_with_2[:,:1]) + TetraVec(events_with_2[:,1:2])).mass),0)
-    return mass(electron.mvaFall17V2Iso_WP80 == 1) 
+    return mass 
 
 
 @selector(
@@ -359,7 +359,7 @@ def dl(
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         # NOTE: the boosted selection actually includes a b-jet selection...
-        (results.steps.Jet | results.steps.HbbJet_no_bjet) &
+        (results.steps.Jet) &  #| results.steps.HbbJet_no_bjet) &
         results.steps.Lepton &
         results.steps.Trigger &
         results.steps.TriggerAndLep
