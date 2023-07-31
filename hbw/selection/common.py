@@ -10,7 +10,7 @@ from typing import Tuple
 import law
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -250,6 +250,11 @@ def pre_selection(
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL before calling the selection modules """
+
+    # temporary fix for optional types from Calibration (e.g. events.Jet.pt --> ?float32)
+    # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
+    events = ak.fill_none(events, EMPTY_FLOAT)
+
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
