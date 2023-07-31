@@ -35,6 +35,30 @@ def catid_1e(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
 def catid_1mu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
     return (ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1)
 
+# dl categories 
+@selector(uses={"event"})
+def catid_selection_ee(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    return (events.channel_id == 2)
+
+@selector(uses={"event"})
+def catid_selection_2mu(self:Selector, events:ak.Array, **kwargs) -> ak.Array:
+    return(events.channel_id == 1)
+
+@selector(uses={"event"})
+def catid_selection_emu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    return (events.channel_id == 3)
+
+@selector(uses={"Electron.pt", "Muon.pt"})
+def catid_ee(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    return (ak.sum(events.Electron.pt > 0, axis=-1) == 2) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0)
+
+@selector(uses={"Electron.pt", "Muon.pt"})
+def catid_2mu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    return (ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 2)
+
+@selector(uses={"Electron.pt", "Muon.pt"})
+def catid_emu(self: Selector, events: ak.Array, **kwargs) -> ak.Array:
+    return (ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1)
 
 @selector(uses={"Jet.pt", "HbbJet.pt"})
 def catid_boosted(self: Selector, events: ak.Array, **kwargs) -> ak.Array:

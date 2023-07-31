@@ -555,6 +555,8 @@ def add_config(
             "run", "luminosityBlock", "event",
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+            # columns added durign dl_selection 
+            "m_ll", "channel_id",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
