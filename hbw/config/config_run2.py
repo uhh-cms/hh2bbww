@@ -183,6 +183,19 @@ def add_config(
         "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
         "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
         "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+        # HH -> lnu lnu 
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        #No LHe Scale weights
+        "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
         # HH(bbtautau)
         "hh_ggf_bbtautau_madgraph",
     ]

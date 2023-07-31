@@ -108,6 +108,10 @@ def set_config_defaults_and_groups(config_inst):
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
         "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "dilep": ["tt_*", "st_*", "dy_*",  "w_lnu_*",
+            "ggHH_kl_0_kt_1_dl_hbbhww_powheg", "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+            "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg", "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        ],
     }
 
     # category groups for conveniently looping over certain categories
@@ -117,6 +121,7 @@ def set_config_defaults_and_groups(config_inst):
         "ech": ["1e", "1e__resolved", "1e__boosted"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
+        "dilep": ["incl", "ee", "2mu","emu"],
     }
 
     # variable groups for conveniently looping over certain variables
@@ -125,6 +130,11 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
+        "dilep": [
+            "n_jet", "n_muon", "n_electron", "ht", "m_bb", "m_ll", "deltaR_bb", "deltaR_ll",
+            "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj", "lep1_pt", "lep2_pt"
+            "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
+        ],
     }
 
     # shift groups for conveniently looping over certain shifts
@@ -141,6 +151,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
+        "dilep": ["Jet","Bjet","Lepton","Trigger","TriggerAndLep"],
     }
 
     # plotting settings groups
@@ -155,6 +166,13 @@ def set_config_defaults_and_groups(config_inst):
         "scale_signal": {
             proc.name: {"unstack": True, "scale": 10000}
             for proc in config_inst.processes if "HH" in proc.name
+        },
+        "dilep": {
+            "ggHH_kl_0_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True}, "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "ggHH_kl_2p45_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True}, "ggHH_kl_5_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True}
+        },
+        "dileptest": {
+            "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
         },
     }
     # when drawing DY as a line, use a different type of yellow
