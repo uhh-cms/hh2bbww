@@ -188,7 +188,6 @@ def add_config(
         # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
         # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
         # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
-        "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
         # HH(bbtautau)
         "hh_ggf_bbtautau_madgraph",
     ]
