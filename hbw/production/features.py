@@ -65,8 +65,64 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
+        "Lepton.pt", "Lepton.eta", "Lepton.phi", "Lepton.mass", "Lepton.charge",
+        "Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "Bjet.btagDeepFlavB",
+        "MET.pt", "MET.eta", "MET.phi", "MET.mass",
+        },
+    produces={
+        "deltaR_ll", "ll_pt", "m_bb", "deltaR_bb", "bb_pt",
+        "MT", "min_dr_lljj", "delta_Phi", "m_lljjMET",
+        "lep1_pt", "lep2_pt", "m_ll_check",
+        "m_ll", "n_bjet", "wp_score", "charge", "E_miss",
+        },
+)
+def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    events = set_ak_column(events, "lep1_pt", events.Lepton[:,0].pt)
+    events = set_ak_column(events, "lep2_pt", events.Lepton[:,1].pt)
+
+    bb = (events.Bjet[:, 0] + events.Bjet[:, 1])
+    #m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
+    deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
+    events = set_ak_column_f32(events, "m_bb", bb.mass)
+    events = set_ak_column_f32(events, "bb_pt", bb.pt)
+    events = set_ak_column_f32(events, "deltaR_bb", deltaR_bb)
+
+    ll = (events.Lepton[:, 0] + events.Lepton[:, 1])
+    deltaR_ll = events.Lepton[:, 0].delta_r(events.Lepton[:, 1])
+    #events = set_ak_column_f32(events, "m_ll", ll.mass)
+    events = set_ak_column_f32(events, "ll_pt", ll.pt)
+    events = set_ak_column_f32(events, "m_ll_check", ll.mass)
+    events = set_ak_column_f32(events, "deltaR_ll", deltaR_ll)
+
+    lljj_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
+    lep,jet = ak.unzip(lljj_pairs)
+    min_dr_lljj = (ak.min(lep.delta_r(jet), axis=-1))
+    #min_dr_lljj = ak.min(events.Bjet.delta_r(events.Lepton), axis=-1)
+    events = set_ak_column_f32(events, "min_dr_lljj", min_dr_lljj)
+    MT = (2 * events.MET.pt * ll.pt * (1 - np.cos(ll.delta_phi(events.MET)))) ** 0.5
+    events = set_ak_column_f32(events, "MT", MT)
+    events = set_ak_column_f32(events, "delta_Phi", abs(ll.delta_phi(bb)))
+    #events = set_ak_column_f32(events, "m_lljjMET", (ll + bb + 1*events.MET).mass)
+
+    events = set_ak_column(events, "n_bjet", ak.sum(events.Bjet.pt > 0, axis=1))
+    events = set_ak_column(events, "wp_score", events.Bjet.btagDeepFlavB)
+    events = set_ak_column(events, "m_ll", events.m_ll)
+    events = set_ak_column(events, "charge", (events.Lepton.charge))
+    events = set_ak_column(events, "lep1_pt", events.Lepton[:,0].pt)
+    events = set_ak_column(events, "lep2_pt", events.Lepton[:,1].pt)
+    events = set_ak_column(events, "E_miss", events.MET[:].pt)
+    events = set_ak_column(events, "m_lljjMET",(events.Bjet[:,0] + events.Bjet[:,1] + events.Lepton[:,0] + events.Lepton[:,1] + events.MET[:]).mass)
+
+    # fill none values
+    for col in self.produces:
+        events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
+
+
+@producer(
+    uses={
         prepare_objects, category_ids, event_weights,
-        bb_features, jj_features,
+        bb_features, jj_features, dl_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
         "Lightjet.pt",
@@ -76,7 +132,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     },
     produces={
         category_ids, event_weights,
-        bb_features, jj_features,
+        bb_features, jj_features, dl_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet", "FatJet.tau21",
     },
 )
