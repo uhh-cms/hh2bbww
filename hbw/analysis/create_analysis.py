@@ -65,7 +65,7 @@ def create_hbw_analysis(
     campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
 
     # default config
-    c17 = add_config(
+    c17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="c17",
@@ -73,7 +73,7 @@ def create_hbw_analysis(
     )
 
     # config with limited number of files
-    l17 = add_config(
+    l17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="l17",
