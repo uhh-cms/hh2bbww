@@ -40,10 +40,10 @@ def add_categories_selection(config: od.Config) -> None:
         label="1 Muon",
     )
     # dl categories
-    cat_ee = config.add_category(  # noqa
+    cat_2e = config.add_category(  # noqa
         name="ee",
         id=3000,
-        selection="catid_selection_ee",
+        selection="catid_selection_2e",
         label="2 Electron",
     )
 
@@ -89,8 +89,8 @@ def add_categories_production(config: od.Config) -> None:
     cat_1mu = config.get_category("1mu")
     cat_1mu.selection = "catid_1mu"
 
-    cat_ee = config.get_category("ee")
-    cat_ee.selection = "catid_ee"
+    cat_2e = config.get_category("2e")
+    cat_2e.selection = "catid_2e"
 
     cat_2mu = config.get_category("2mu")
     cat_2mu.selection = "catid_2mu"

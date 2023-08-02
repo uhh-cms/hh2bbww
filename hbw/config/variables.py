@@ -94,7 +94,7 @@ def add_feature_variables(config: od.Config) -> None:
         binning=(40, 0, 5),
         x_title=r"$\Delta R(j_{1},j_{2})$",
     )
-    # dl features 
+    # bjet features
     config.add_variable(
         name="n_bjet",
         binning=(4, -0.5, 3.5),
@@ -106,7 +106,7 @@ def add_feature_variables(config: od.Config) -> None:
         binning=(40, -0.5, 1.5),
         x_title="wp score",
     )
- # dilep features 
+    # dl features
     config.add_variable(
         name="m_ll",
         binning=(40, 0., 80.),
@@ -154,7 +154,6 @@ def add_feature_variables(config: od.Config) -> None:
         binning=(3, -1.5, 1.5),
         x_title=r"$Charge$",
         discrete_x=True,
-     #   unit="GeV",
     )
     config.add_variable(
         name="bb_pt",

@@ -582,7 +582,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4","m_ll", "channle_id",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "m_ll", "channle_id",
         },
     })
 
@@ -592,7 +592,7 @@ def add_config(
             "run", "luminosityBlock", "event",
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
-            # columns added durign dl_selection 
+            # columns added durign dl_selection
             "m_ll", "channel_id",
             # weight-related columns
             "pu_weight*", "pdf_weight*",

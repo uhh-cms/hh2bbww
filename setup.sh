@@ -120,8 +120,8 @@ setup_hbw() {
     #
 
     export LAW_HOME="${HBW_BASE}/.law"
-    # export LAW_CONFIG_FILE="${HBW_BASE}/${HBW_LAW_CONFIG}"
-    export LAW_CONFIG_FILE="${HBW_BASE}/law.dl.nocert.cfg"
+    export LAW_CONFIG_FILE="${HBW_BASE}/${HBW_LAW_CONFIG}"
+    # export LAW_CONFIG_FILE="${HBW_BASE}/law.dl.nocert.cfg"
 
     if which law &> /dev/null; then
         # source law's bash completion scipt
