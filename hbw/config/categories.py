@@ -41,7 +41,7 @@ def add_categories_selection(config: od.Config) -> None:
     )
     # dl categories
     cat_2e = config.add_category(  # noqa
-        name="ee",
+        name="2e",
         id=3000,
         selection="catid_selection_2e",
         label="2 Electron",

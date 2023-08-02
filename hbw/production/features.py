@@ -202,8 +202,8 @@ def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-@dl_features.init
-def dl_features_init(self: Producer) -> None:
+@features.init
+def features_init(self: Producer) -> None:
     if self.config_inst.x("add_categories_production", True):
         # add categories but only on first call
         add_categories_production(self.config_inst)
