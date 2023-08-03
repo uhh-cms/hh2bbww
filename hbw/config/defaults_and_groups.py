@@ -6,6 +6,15 @@ from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
+def default_selector(cls, container, task_params):
+    if container.has_tag("is_sl"):
+        selector = "sl"
+    elif container.has_tag("is_dl"):
+        selector = "dl"
+
+    return selector
+
+
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
@@ -13,7 +22,7 @@ def default_ml_model(cls, container, task_params):
 
     # the ml_model parameter is only used by `MLTraining` and `MLEvaluation`, therefore use some default
     # NOTE: default_ml_model does not work for the MLTraining task
-    if cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"):
+    if cls.task_family in ("cf.MLTraining", "cf.MLEvaulation", "cf.MergeMLEvents", "cf.PrepareMLEvents"):
         # TODO: we might want to distinguish between two default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
@@ -37,7 +46,10 @@ def default_producers(cls, container, task_params):
 
     # per default, use the ml_inputs and event_weights
     # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    default_producers = ["ml_inputs", "event_weights"]
+    default_producers = ["ml_inputs"]
+    if task_params["dataset_inst"].is_mc:
+        # run event weights producer only if it's a MC dataset
+        default_producers.add("event_weights")
 
     # check if a ml_model has been set
     ml_model = task_params.get("mlmodel", None) or task_params.get("mlmodels", None)
@@ -87,7 +99,7 @@ def set_config_defaults_and_groups(config_inst):
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
     config_inst.x.default_calibrator = "skip_jecunc"
-    config_inst.x.default_selector = f"{signal_tag}"
+    config_inst.x.default_selector = default_selector
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default"
