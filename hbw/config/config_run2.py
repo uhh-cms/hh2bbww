@@ -74,7 +74,7 @@ def add_config(
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
-    cfg.add_process(procs.n.hh_ggf_bbtautau)
+    # cfg.add_process(procs.n.hh_ggf_bbtautau)
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
         cfg.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
@@ -189,7 +189,7 @@ def add_config(
         # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
         # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
         # HH(bbtautau)
-        "hh_ggf_bbtautau_madgraph",
+        # "hh_ggf_bbtautau_madgraph",
     ]
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
