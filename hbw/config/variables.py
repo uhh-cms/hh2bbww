@@ -12,8 +12,10 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 from columnflow.columnar_util import EMPTY_FLOAT
+from hbw.util import call_once_on_config
 
 
+@call_once_on_config()
 def add_feature_variables(config: od.Config) -> None:
     """
     Adds variables to a *config* that are produced as part of the `features` producer.
@@ -130,6 +132,7 @@ def add_feature_variables(config: od.Config) -> None:
         )
 
 
+@call_once_on_config()
 def add_variables(config: od.Config) -> None:
     """
     Adds all variables to a *config* that are present after `ReduceEvents`

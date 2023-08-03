@@ -56,10 +56,8 @@ def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult,
 
 @cutflow_features.init
 def cutflow_features_init(self: Producer) -> None:
-    if self.config_inst.x("call_add_cutflow_variables", True):
-        # add cutflow variables but only on first call
-        add_cutflow_variables(self.config_inst)
-        self.config_inst.x.call_add_cutflow_variables = False
+    # add cutflow variable instances to config
+    add_cutflow_variables(self.config_inst)
 
     # define used and produced columns
     self.lepton_columns = {

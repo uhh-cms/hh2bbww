@@ -127,14 +127,11 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
-    if not self.config_inst.has_tag("features_init_called"):
-        self.config_inst.add_tag("features_init_called")
+    # add categories to config
+    add_categories_production(self.config_inst)
 
-        # add categories but only on first call
-        add_categories_production(self.config_inst)
-
-        # add variable instances but only on first call
-        add_feature_variables(self.config_inst)
+    # add variable instances to config
+    add_feature_variables(self.config_inst)
 
 
 @producer(
@@ -190,17 +187,10 @@ def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for var in dl_variable_list:
         events = set_ak_column_f32(events, var, ak.fill_none(events[var], EMPTY_FLOAT))
 
-    # fill none values
-    # for col in self.produces:
-    #    events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
-
     return events
 
 
 @dl_features.init
 def dl_features_init(self: Producer) -> None:
-    if not self.config_inst.has_tag("dl_features_init_called"):
-        self.config_inst.add_tag("dl_features_init_called")
-
-        # add variable instances but only on first call
-        add_dl_variables(self.config_inst)
+    # add variable instances to config
+    add_dl_variables(self.config_inst)

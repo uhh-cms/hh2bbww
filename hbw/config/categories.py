@@ -9,16 +9,19 @@ from collections import OrderedDict
 import law
 
 from columnflow.config_util import create_category_combinations
+from hbw.util import call_once_on_config
 
 import order as od
 
 logger = law.logger.get_logger(__name__)
 
 
+@call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
     """
+
     config.add_category(
         name="incl",
         id=1,
@@ -75,6 +78,7 @@ def kwargs_fn(root_cats):
     return kwargs
 
 
+@call_once_on_config()
 def add_categories_production(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `ProduceColumns`.
@@ -148,6 +152,7 @@ def add_categories_production(config: od.Config) -> None:
     logger.info(f"Number of produced category insts: {n_cats}")
 
 
+@call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
 
     # add ml categories directly to the config

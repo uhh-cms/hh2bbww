@@ -7,9 +7,10 @@ Definition of variables that can be plotted via `PlotCutflowVariables` tasks.
 import order as od
 
 from columnflow.columnar_util import EMPTY_FLOAT
+from hbw.util import call_once_on_config
 
 
-# cutflow variables
+@call_once_on_config()
 def add_cutflow_variables(config: od.Config) -> None:
     """
     defines reco-level cutflow variables in a convenient way; variables are lowercase and have
@@ -122,6 +123,7 @@ def add_cutflow_variables(config: od.Config) -> None:
     )
 
 
+@call_once_on_config()
 def add_gen_variables(config: od.Config) -> None:
     """
     defines gen-level cutflow variables
