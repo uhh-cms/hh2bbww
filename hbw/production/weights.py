@@ -76,14 +76,14 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
 
     # skip scale/pdf weights for some datasets (missing columns)
-    if not self.dataset_inst.x("skip_scale", False):
+    if not self.dataset_inst.has_tag("skip_scale"):
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
         # read out mur and weights
         events = self[murmuf_weights](events, **kwargs)
 
-    if not self.dataset_inst.x("skip_pdf", False):
+    if not self.dataset_inst.has_tag("skip_pdf"):
         # compute pdf weights
         events = self[pdf_weights](events, **kwargs)
 
@@ -95,11 +95,11 @@ def event_weights_to_normalize_init(self) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    if not self.dataset_inst.x("skip_scale", False):
+    if not self.dataset_inst.has_tag("skip_scale"):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
         self.produces |= {murmuf_envelope_weights, murmuf_weights}
 
-    if not self.dataset_inst.x("skip_pdf", False):
+    if not self.dataset_inst.has_tag("skip_pdf"):
         self.uses |= {pdf_weights}
         self.produces |= {pdf_weights}
 
@@ -145,10 +145,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # normalize event weights using stats
     events = self[normalized_btag_weights](events, **kwargs)
 
-    if not self.dataset_inst.x("skip_scale", False):
+    if not self.dataset_inst.has_tag("skip_scale"):
         events = self[normalized_scale_weights](events, **kwargs)
 
-    if not self.dataset_inst.x("skip_pdf", False):
+    if not self.dataset_inst.has_tag("skip_pdf"):
         events = self[normalized_pdf_weights](events, **kwargs)
 
     # calculate the full event weight for plotting purposes
@@ -162,11 +162,11 @@ def event_weights_init(self: Producer) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    if not self.dataset_inst.x("skip_scale", False):
+    if not self.dataset_inst.has_tag("skip_scale"):
         self.uses |= {normalized_scale_weights}
         self.produces |= {normalized_scale_weights}
 
-    if not self.dataset_inst.x("skip_pdf", False):
+    if not self.dataset_inst.has_tag("skip_pdf"):
         self.uses |= {normalized_pdf_weights}
         self.produces |= {normalized_pdf_weights}
 
