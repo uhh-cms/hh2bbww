@@ -183,6 +183,11 @@ def add_config(
         "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
+        # Signal
+        # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+        # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
         # HH(bbtautau)
         "hh_ggf_bbtautau_madgraph",
     ]
@@ -577,7 +582,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "m_ll", "channle_id",
         },
     })
 
@@ -587,6 +592,8 @@ def add_config(
             "run", "luminosityBlock", "event",
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+            # columns added durign dl_selection
+            "m_ll", "channel_id",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
