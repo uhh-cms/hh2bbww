@@ -130,3 +130,22 @@ def four_vec(
     outp = outp.difference({"MET.eta", "MET.mass"})
 
     return outp
+
+
+def call_once_on_config(include_hash=False):
+    """
+    Parametrized decorator to ensure that function *func* is only called once for the config *config*
+    """
+    def outer(func):
+        def inner(config, *args, **kwargs):
+            tag = f"{func.__name__}_called"
+            if include_hash:
+                tag += f"_{func.__hash__()}"
+
+            if config.has_tag(tag):
+                return
+
+            config.add_tag(tag)
+            return func(config, *args, **kwargs)
+        return inner
+    return outer

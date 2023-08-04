@@ -18,10 +18,10 @@ import order as od
 from columnflow.util import DotDict
 from columnflow.config_util import get_root_processes_from_campaign
 from hbw.config.styling import stylize_processes
-from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
+from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.util import four_vec
 
 
@@ -74,7 +74,7 @@ def add_config(
     # cfg.add_process(procs.n.ttv)
     # cfg.add_process(procs.n.vv)
     # cfg.add_process(procs.n.vv)
-    cfg.add_process(procs.n.hh_ggf_bbtautau)
+    # cfg.add_process(procs.n.hh_ggf_bbtautau)
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
         cfg.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
@@ -183,13 +183,8 @@ def add_config(
         "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
-        # Signal
-        # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-        # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
         # HH(bbtautau)
-        "hh_ggf_bbtautau_madgraph",
+        # "hh_ggf_bbtautau_madgraph",
     ]
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
@@ -241,20 +236,30 @@ def add_config(
                     info.n_files = limit_dataset_files
 
         # add aux info to datasets
-        # NOTE: we should maybe change them to tags
+        # TODO: switch from aux to tags for booleans
         if dataset.name.startswith(("st", "tt")):
             dataset.x.has_top = True
+            dataset.add_tag("has_top")
         if dataset.name.startswith("tt"):
             dataset.x.is_ttbar = True
+            dataset.add_tag("is_ttbar")
         if dataset.name.startswith("qcd"):
             dataset.x.is_qcd = True
+            dataset.add_tag("is_qcd")
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             # TODO: the is_hbw tag is used at times were we should ask for is_hbw_sl
+            dataset.add_tag("is_hbw")
             dataset.x.is_hbw = True
+            if "_sl_" in dataset.name:
+                dataset.add_tag("is_hbw_sl")
+            elif "_dl_" in dataset.name:
+                dataset.add_tag("is_hbw_dl")
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
             dataset.x.skip_scale = True
             dataset.x.skip_pdf = True
+            dataset.add_tag("skip_scale")
+            dataset.add_tag("skip_pdf")
 
     # lumi values in inverse pb
     # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
@@ -582,7 +587,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "m_ll", "channle_id",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
         },
     })
 
@@ -592,14 +597,12 @@ def add_config(
             "run", "luminosityBlock", "event",
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
-            # columns added durign dl_selection
-            "m_ll", "channel_id",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
-            {"Jet", "Bjet", "Lightjet", "VBFJet"},
+            {"Jet", "Bjet", "VBFJet"},
             {"btagDeepFlavB", "hadronFlavour"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
@@ -629,13 +632,13 @@ def add_config(
     # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()
-        if not dataset.x("skip_scale", False):
+        if not dataset.has_tag("skip_scale"):
             # pdf/scale weights for all non-qcd datasets
             dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
             dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
             dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
 
-        if not dataset.x("skip_pdf", False):
+        if not dataset.has_tag("skip_pdf"):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     def reduce_version(cls, inst, params):
@@ -643,7 +646,7 @@ def add_config(
         version = inst.version  # same as params.get("version") ?
 
         if params.get("selector") == "sl_v1":
-            # use a fixed version for the sl_v1 selector
+            # use a fixed version for the sl_v1 selector (NOTE: does not yet exist)
             version = "sl_v1"
 
         return version
@@ -666,9 +669,26 @@ def add_config(
     add_variables(cfg)
 
     # set some config defaults and groups
+    # TODO: it might make sense to completely separate this for SL/DL
     set_config_defaults_and_groups(cfg)
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
 
+    # customization based on the type of sub-analysis
+    if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
+        from hbw.config.sl import configure_sl
+        configure_sl(cfg)
+    if cfg.has_tag("is_dl") and cfg.has_tag("is_nonresonant"):
+        from hbw.config.dl import configure_dl
+        configure_dl(cfg)
+    if cfg.has_tag("is_resonant"):
+        # from hbw.config.resonant import configure_resonant
+        configure_resonant(cfg)
+
     return cfg
+
+
+def configure_resonant(config: od.Config):
+    # TODO?
+    return

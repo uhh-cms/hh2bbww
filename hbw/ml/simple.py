@@ -143,8 +143,7 @@ class SimpleDNN(MLModel):
         if len(requested_configs) == 1:
             return list(requested_configs)
         else:
-            # TODO: change to "config_2017" when finished with testing phase
-            return ["config_2017_limited"]
+            return ["c17"]
 
     def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
@@ -152,7 +151,7 @@ class SimpleDNN(MLModel):
 
     def training_selector(self, config_inst: od.Config, requested_selector: str) -> str:
         # fix MLTraining Phase Space
-        return "default"
+        return "sl"
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space

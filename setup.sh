@@ -88,7 +88,7 @@ setup_hbw() {
     export CF_VENV_BASE="${CF_VENV_BASE:-${CF_SOFTWARE_BASE}/venvs}"
     export CF_CMSSW_BASE="${CF_CMSSW_BASE:-${CF_SOFTWARE_BASE}/cmssw}"
     export CF_CI_JOB="$( [ "${GITHUB_ACTIONS}" = "true" ] && echo 1 || echo 0 )"
-    export HBW_LAW_CONFIG="${HBW_LAW_CONFIG:-law.dl.nocert.cfg}"
+    export HBW_LAW_CONFIG="${HBW_LAW_CONFIG:-law.sl.nocert.cfg}"
 
     #
     # common variables
@@ -121,7 +121,6 @@ setup_hbw() {
 
     export LAW_HOME="${HBW_BASE}/.law"
     export LAW_CONFIG_FILE="${HBW_BASE}/${HBW_LAW_CONFIG}"
-    # export LAW_CONFIG_FILE="${HBW_BASE}/law.dl.nocert.cfg"
 
     if which law &> /dev/null; then
         # source law's bash completion scipt

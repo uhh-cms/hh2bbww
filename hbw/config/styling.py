@@ -39,6 +39,17 @@ default_process_colors = {
     "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
     "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
     "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
+    "ggHH_kl_1_kt_1_dl_hbbhww": "#000000",  # black
+    "ggHH_kl_0_kt_1_dl_hbbhww": "#1b9e77",  # green2
+    "ggHH_kl_2p45_kt_1_dl_hbbhww": "#d95f02",  # orange2
+    "ggHH_kl_5_kt_1_dl_hbbhww": "#e7298a",  # pink2
+    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#e41a1c",  # red
+    "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww": "#377eb8",  # blue
+    "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww": "#4daf4a",  # green
+    "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww": "#984ea3",  # purple
+    "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww": "#ff7f00",  # orange
+    "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww": "#a65628",  # brown
+    "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww": "#f781bf",  # pink
     "hh_ggf_bbtautau": "#984ea3",  # purple
 }
 

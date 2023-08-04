@@ -170,12 +170,8 @@ def ml_inputs_init(self: Producer) -> None:
     )
     self.produces |= self.ml_columns
 
-    if self.config_inst.x("add_categories_production", True):
-        # add categories but only on first call
-        add_categories_production(self.config_inst)
-        self.config_inst.x.add_categories_production = False
+    # add categories to config
+    add_categories_production(self.config_inst)
 
-    if self.config_inst.x("add_ml_variables", True):
-        # add variable instances to config
-        add_ml_variables(self.config_inst)
-        self.config_inst.x.add_ml_variables = False
+    # add variable instances to config
+    add_ml_variables(self.config_inst)

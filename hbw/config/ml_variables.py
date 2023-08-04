@@ -8,8 +8,10 @@ import order as od
 
 # from columnflow.columnar_util import EMPTY_FLOAT
 from hbw.config.styling import default_var_binning, default_var_unit
+from hbw.util import call_once_on_config
 
 
+@call_once_on_config()
 def add_ml_variables(config: od.Config) -> None:
     """
     Adds ML input variables to a *config*.
