@@ -160,7 +160,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
             return list(requested_configs)
         else:
             # use config_2017 per default
-            return ["config_2017"]
+            return ["c17"]
 
     def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
@@ -168,7 +168,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     def training_selector(self, config_inst: od.Config, requested_selector: str) -> str:
         # fix MLTraining Phase Space
-        return "default"
+        return "sl" if self.config_inst.has_tag("is_sl") else "dl"
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
