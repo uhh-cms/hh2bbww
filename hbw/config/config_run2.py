@@ -679,7 +679,7 @@ def add_config(
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
         from hbw.config.sl import configure_sl
         configure_sl(cfg)
-    if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
+    if cfg.has_tag("is_dl") and cfg.has_tag("is_nonresonant"):
         from hbw.config.dl import configure_dl
         configure_dl(cfg)
     if cfg.has_tag("is_resonant"):
