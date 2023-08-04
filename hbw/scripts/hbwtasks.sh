@@ -41,11 +41,12 @@ hbw_cutflow(){
     done
 }
 
-ml_model="test"
+ml_model="dense_default"
 ml_datasets="ml"
 
 hbw_ml_training(){
     law run cf.MLTraining --version $version --workers 10 \
+	--configs $config \
 	--ml-model $ml_model \
 	--workflow htcondor \
 	--htcondor-gpus 1 \
@@ -72,10 +73,11 @@ hbw_ml_preparation(){
 	    --skip-datasets "qqHH*,data*" \
 	    --cf.MergeMLEvents-workflow local \
 	    --cf.PrepareMLEvents-pilot True \
-	    --cf.MergeMLEvents-parallel-jobs 4000 \
-	    --cf.MergeMLEvents-retries 1 \
-	    --cf.MergeMLEvents-tasks-per-job 1 \
-	    --cf.MergeMLEvents-job-workers 1 \
+	    --cf.PrepareMLEvents-workflow htcondor \
+	    --cf.PrepareMLEvents-parallel-jobs 4000 \
+	    --cf.PrepareMLEvents-retries 1 \
+	    --cf.PrepareMLEvents-tasks-per-job 1 \
+	    --cf.PrepareMLEvents-job-workers 1 \
 	    $@
     done
 }
@@ -101,7 +103,7 @@ hbw_plot_variables(){
 	$@
 }
 
-ml_model="default"
+ml_model="dense_default"
 ml_output_variables="mlscore.*"
 ml_categories="resolved,boosted,incl,ml_ggHH_kl_1_kt_1_sl_hbbhww,ml_tt,ml_st,ml_w_lnu,ml_dy_lep"
 
@@ -148,8 +150,18 @@ hbw_control_plots_much(){
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 50 \
 	--config $config \
-	--producers ml_inputs --ml-models $ml_model \
+	--ml-models $ml_model \
 	--pilot --workflow htcondor \
 	--retries 1 \
+	--cf.MLTraining-htcondor-gpus 1 \
+	--cf.MLTraining-htcondor-memory 40000 \
+	--cf.MLTraining-max-runtime 48h \
+	--cf.MergeMLEvents-workflow local \
+	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-gpus 0 \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.ReduceEvents-workflow htcondor
 	$@
 }
