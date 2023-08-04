@@ -4,7 +4,7 @@
 A python script to quickly plot generator-level variables.
 """
 
-from columnflow.tasks.cutflow import PlotCutflowVariables1d
+from columnflow.tasks.cutflow import PlotCutflowVariables1D
 version = "v1"
 # workers = 6
 variables = ["gen_*"]
@@ -12,7 +12,7 @@ processes = ["ggHH_*", "qqHH*"]
 categories = ["incl"]
 selector_steps = ["Lepton"]
 
-plot_cutflow_vars = PlotCutflowVariables1d(
+plot_cutflow_vars = PlotCutflowVariables1D(
     version=version, walltime="5h", per_plot="processes",
     selector="gen_hbw",
     variables=variables,

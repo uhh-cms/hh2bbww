@@ -5,11 +5,13 @@ Convenience wrapper tasks to simplify producing results and fetching & deleting 
 e.g. default sets of plots or datacards
 """
 
+import law
+
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin,  # SelectorStepsMixin, ProducersMixin, MLModelsMixin,
 )
 from columnflow.tasks.plotting import PlotVariables1D
-# from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.framework.remote import RemoteWorkflow
 
 from columnflow.util import dev_sandbox
 
@@ -19,8 +21,14 @@ class DefaultPlots(
     # ProducersMixin,
     # SelectorStepsMixin,
     CalibratorsMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
     sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
+
+    def create_branch_map(self):
+        # create a dummy branch map so that this task could as a job
+        return {0: None}
 
     def requires(self):
         reqs = {}
@@ -30,7 +38,6 @@ class DefaultPlots(
             # control plots with data
             reqs[f"control_plots_{channel}"] = PlotVariables1D.req(
                 self,
-                config="config_2017",
                 producers=("features",),
                 processes=(f"d{channel}ch",),
                 process_settings=[["scale_signal"]],
@@ -43,7 +50,6 @@ class DefaultPlots(
             # ML input features
             reqs[f"ml_inputs_{channel}"] = PlotVariables1D.req(
                 self,
-                config="config_2017",
                 producers=("ml_inputs",),
                 processes=(f"{channel}ch",),
                 # process_settings=[["scale_signal"]],
@@ -57,7 +63,6 @@ class DefaultPlots(
             ml_model = "dense_default"
             reqs[f"ml_outputs_{channel}"] = PlotVariables1D.req(
                 self,
-                config="config_2017",
                 producers=(f"ml_{ml_model}",),
                 ml_models=(ml_model,),
                 processes=(f"{channel}ch",),
