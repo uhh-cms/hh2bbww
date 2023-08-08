@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Set
 
 import yaml
 from scinum import Number
