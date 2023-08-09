@@ -22,8 +22,8 @@ def get_custom_hh_datasets(
         keys=[
             "chhh0",
         ],
-        n_files=26,
-        n_events=392598,
+        n_files=2,
+        n_events=493996,
         aux={"custom": True},
     )
 
@@ -34,8 +34,8 @@ def get_custom_hh_datasets(
         keys=[
             "chhh1",
         ],
-        n_files=24,
-        n_events=399994,
+        n_files=2,
+        n_events=498499,
         aux={"custom": True},
     )
 
@@ -46,8 +46,8 @@ def get_custom_hh_datasets(
         keys=[
             "chhh2p45",
         ],
-        n_files=40,
-        n_events=399996,
+        n_files=2,
+        n_events=498496,
         aux={"custom": True},
     )
 
@@ -58,8 +58,8 @@ def get_custom_hh_datasets(
         keys=[
             "chhh5",
         ],
-        n_files=28,
-        n_events=395996,
+        n_files=2,
+        n_events=496495,
         aux={"custom": True},
     )
 

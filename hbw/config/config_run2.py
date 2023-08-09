@@ -188,16 +188,22 @@ def add_config(
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
         # non-resonant HH -> bbWW(qqlnu) Signal
+        if cfg.has_tag("custom_signals"):
+            dataset_names += [
+                "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_5_kt_1_sl_hbbhww_custom",
+            ]
+        else:
+            dataset_names += [
+                "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
+            ]
+
         dataset_names += [
-            "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
-            # custom samples (TODO: should we include a parameter to switch between custom/offical samples?)
-            # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
             "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
             "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
             "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
@@ -255,6 +261,13 @@ def add_config(
                 dataset.add_tag("is_hbw_dl")
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
+            dataset.x.skip_scale = True
+            dataset.x.skip_pdf = True
+            dataset.add_tag("skip_scale")
+            dataset.add_tag("skip_pdf")
+
+        if dataset.has_tag("is_hbw") and "custom" in dataset.name:
+            # No PDF weights and 6 scale weights in custom HH samples
             dataset.x.skip_scale = True
             dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
