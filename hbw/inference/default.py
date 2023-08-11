@@ -47,10 +47,10 @@ channels = [
 
 rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
-    "lumi_13TeV_2016"
-    "lumi_13TeV_2017"
-    "lumi_13TeV_1718"
-    "lumi_13TeV_correlated"
+    "lumi_13TeV_2016",
+    "lumi_13TeV_2017",
+    "lumi_13TeV_1718",
+    "lumi_13TeV_correlated",
     # Rate QCDScale uncertainties
     "QCDScale_ttbar",
     "QCDScale_V",
@@ -233,7 +233,7 @@ def default(self):
     # NOTE: it might be easier to just take the recommended uncertainty values from HH conventions at
     #       https://gitlab.cern.ch/hh/naming-conventions instead of taking the values from CMSDB
     for k, procs in const.processes_per_QCDScale.items():
-        syst_name = f"QCDscale_{k}"
+        syst_name = f"QCDScale_{k}"
         if syst_name not in self.systematics:
             continue
 
