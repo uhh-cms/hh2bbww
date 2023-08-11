@@ -252,7 +252,7 @@ def default(self):
                     process_inst.xsecs[ecm].get(names=("scale"), direction=("down", "up"), factor=True),
                 )),
             )
-        self.add_parameter_to_group(f"QCDscale_{k}", "theory")
+        self.add_parameter_to_group(syst_name, "theory")
 
     # add PDF rate uncertainties to inference model
     for k, procs in const.processes_per_pdf_rate.items():
@@ -276,20 +276,7 @@ def default(self):
                     process_inst.xsecs[ecm].get(names=("pdf"), direction=("down", "up"), factor=True),
                 )),
             )
-        self.add_parameter_to_group(f"pdf_{k}", "theory")
-
-    # minbias xs (TODO: add back when PU weight behaves correctly)
-
-    # self.add_parameter(
-    #     f"CMS_pileup_{year}",
-    #     type=ParameterType.shape,
-    #     config_shift_source="minbias_xs",
-    # )
-    # self.add_parameter_to_group(f"CMS_pileup_{year}", "experiment")
-
-    # shape uncertainties
-    # up_shifts = [s for s in self.config_inst.shifts if "up" in s.name]
-    # shift_sources = [s.source for s in up_shifts]
+        self.add_parameter_to_group(syst_name, "theory")
 
     for shape_uncertainty, shape_processes in const.processes_per_shape.items():
         if shape_uncertainty not in self.systematics:
@@ -312,27 +299,6 @@ def default(self):
             self.add_parameter_to_group(syst_name, "theory")
         else:
             self.add_parameter_to_group(syst_name, "experiment")
-
-    # # scale + pdf (shape)
-    # for proc in self.processes:
-    #     if proc == "qcd":
-    #         # no scale/pdf shape uncert. for qcd
-    #         continue
-    #     for shift_source, unc in (
-    #         ("murf_envelope", "murf_envelope"),
-    #         ("pdf", "pdf_shape"),
-    #     ):
-    #         syst_name = f"{unc}_{proc}"
-    #         if proc == "st_tchannel" and unc == "pdf":
-    #             # TODO: debugging (unphysically large/small pdf weights in process)
-    #             continue
-    #         self.add_parameter(
-    #             syst_name,
-    #             process=inference_procnames.get(proc, proc),
-    #             type=ParameterType.shape,
-    #             config_shift_source=f"{shift_source}",
-    #         )
-    #         self.add_parameter_to_group(syst_name, "theory")
 
     #
     # post-processing
