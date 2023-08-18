@@ -69,7 +69,8 @@ def default_producers(cls, container, task_params):
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer
     if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()) and not is_ml_task:
-        default_producers.insert(0, f"ml_{ml_model}")
+        # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
+        default_producers.append(f"ml_{ml_model}")
 
     # if we're running the inference_model, we don't need the ml_inputs
     # NOTE: we cannot skip ml_inputs, because it is needed for cf.MLEvaluation
