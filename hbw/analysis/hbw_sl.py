@@ -6,4 +6,11 @@ Main analysis object for the nonresonant HH -> bbWW(SL) analysis
 
 from hbw.analysis.create_analysis import create_hbw_analysis
 
-hbw_sl = create_hbw_analysis("hbw_sl", 3, tags={"is_sl", "is_nonresonant"})
+hbw_sl = create_hbw_analysis(
+    "hbw_sl", 3,
+    tags={
+        "is_sl",
+        "is_nonresonant",
+        # "custom_signals",
+    },
+)

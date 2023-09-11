@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Set
 
 import yaml
 from scinum import Number
@@ -189,16 +188,22 @@ def add_config(
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):
         # non-resonant HH -> bbWW(qqlnu) Signal
+        if cfg.has_tag("custom_signals"):
+            dataset_names += [
+                "ggHH_kl_0_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_1_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+                "ggHH_kl_5_kt_1_sl_hbbhww_custom",
+            ]
+        else:
+            dataset_names += [
+                "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
+                "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
+            ]
+
         dataset_names += [
-            "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
-            "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
-            # custom samples (TODO: should we include a parameter to switch between custom/offical samples?)
-            # "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-            # "ggHH_kl_5_kt_1_sl_hbbhww_custom",
             "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
             "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
             "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
@@ -256,6 +261,13 @@ def add_config(
                 dataset.add_tag("is_hbw_dl")
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
+            dataset.x.skip_scale = True
+            dataset.x.skip_pdf = True
+            dataset.add_tag("skip_scale")
+            dataset.add_tag("skip_pdf")
+
+        if dataset.has_tag("is_hbw") and "custom" in dataset.name:
+            # No PDF weights and 6 scale weights in custom HH samples
             dataset.x.skip_scale = True
             dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
@@ -439,7 +451,8 @@ def add_config(
     cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}{corr_postfix}_UL")
 
     # helper to add column aliases for both shifts of a source
-    def add_aliases(shift_source: str, aliases: Set[str], selection_dependent: bool):
+    # TODO: switch to the columnflow function (but what happened to *selection_dependent*?)
+    def add_shift_aliases(shift_source: str, aliases: dict[str], selection_dependent: bool):
 
         for direction in ["up", "down"]:
             shift = cfg.get_shift(od.Shift.join_name(shift_source, direction))
@@ -459,22 +472,28 @@ def add_config(
     cfg.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="minbias_xs_up", id=7, type="shape")
     cfg.add_shift(name="minbias_xs_down", id=8, type="shape")
-    add_aliases("minbias_xs", {"pu_weight": "pu_weight_{name}"}, selection_dependent=False)
+    add_shift_aliases(
+        "minbias_xs",
+        {
+            "pu_weight": "pu_weight_{name}",
+            "normalized_pu_weight": "normalized_pu_weight_{name}",
+        },
+        selection_dependent=False)
     cfg.add_shift(name="top_pt_up", id=9, type="shape")
     cfg.add_shift(name="top_pt_down", id=10, type="shape")
-    add_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
 
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
-    add_aliases("e_sf", {"electron_weight": "electron_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases("e_sf", {"electron_weight": "electron_weight_{direction}"}, selection_dependent=False)
 
     cfg.add_shift(name="mu_sf_up", id=50, type="shape")
     cfg.add_shift(name="mu_sf_down", id=51, type="shape")
     cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
     cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
-    add_aliases("mu_sf", {"muon_weight": "muon_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases("mu_sf", {"muon_weight": "muon_weight_{direction}"}, selection_dependent=False)
 
     btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
@@ -483,7 +502,7 @@ def add_config(
     for i, unc in enumerate(btag_uncs):
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
         cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
-        add_aliases(
+        add_shift_aliases(
             f"btag_{unc}",
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
@@ -502,8 +521,8 @@ def add_config(
     cfg.add_shift(name="pdf_down", id=208, type="shape")
 
     for unc in ["mur", "muf", "murf_envelope", "pdf"]:
-        # add_aliases(unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"}, selection_dependent=False)
-        add_aliases(
+        # add_shift_aliases(unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"}, selection_dependent=False)
+        add_shift_aliases(
             unc,
             {f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}"},
             selection_dependent=False,
@@ -515,7 +534,7 @@ def add_config(
         idx = all_jec_sources.index(jec_source)
         cfg.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
         cfg.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
-        add_aliases(
+        add_shift_aliases(
             f"jec_{jec_source}",
             {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
             selection_dependent=True,
@@ -523,7 +542,7 @@ def add_config(
 
     cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
-    add_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
+    add_shift_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
 
     def make_jme_filename(jme_aux, sample_type, name, era=None):
         """
@@ -628,8 +647,10 @@ def add_config(
 
     # NOTE: which to use, njet_btag_weight or btag_weight?
     cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
-    # TODO: fix pu_weight; takes way too large values (from 0 to 160)
-    # cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+    cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+    cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
+    cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
+
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()
         if not dataset.has_tag("skip_scale"):

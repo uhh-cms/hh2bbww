@@ -17,7 +17,6 @@ import order as od
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
-from columnflow.tasks.selection import MergeSelectionStatsWrapper
 
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
@@ -88,19 +87,12 @@ class MLClassifierBase(MLModel):
                 )
 
     def requires(self, task: law.Task) -> str:
-        # TODO: either remove or include some MLStats task
-        # add selection stats to requires; NOTE: not really used at the moment
-        return MergeSelectionStatsWrapper.req(
-            task,
-            shifts="nominal",
-            configs=self.config_inst.name,
-            datasets=self.dataset_names,
-        )
+        # Custom requirements (none currently)
+        return {}
 
     def sandbox(self, task: law.Task) -> str:
-        # venv_ml_tf sandbox but with scikit-learn and restrictet to tf 2.11.0
+        # venv_ml_tf sandbox but with scikit-learn and restricted to tf 2.11.0
         return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
-        # return dev_sandbox("bash::$CF_BASE/sandboxes/venv_ml_tf.sh")
 
     def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}

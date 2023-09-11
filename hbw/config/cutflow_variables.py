@@ -122,6 +122,26 @@ def add_cutflow_variables(config: od.Config) -> None:
         x_title=r"max($\Delta R$ (HbbJet 1, AK4 jets))",
     )
 
+    # Pileup variables
+    config.add_variable(
+        name="cf_npvs",
+        expression="cutflow.npvs",
+        binning=(101, -.5, 100.5),
+        x_title="Number of reconstructed primary vertices",
+    )
+    config.add_variable(
+        name="cf_npu",
+        expression="cutflow.npu",
+        binning=(101, -.5, 100.5),
+        x_title="Number of pileup interactions",
+    )
+    config.add_variable(
+        name="cf_npu_true",
+        expression="cutflow.npu_true",
+        binning=(101, -.5, 100.5),
+        x_title="True mean number of poisson distribution from which number of interactions has been sampled",
+    )
+
 
 @call_once_on_config()
 def add_gen_variables(config: od.Config) -> None:
