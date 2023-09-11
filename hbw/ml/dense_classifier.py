@@ -26,16 +26,16 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
+        "ggHH_kl_1_kt_1_dl_hbbhww",
         "tt",
         "st",
-        "v_lep",
-        # "w_lnu",
-        # "dy_lep",
+        # "v_lep",
+        "w_lnu",
+        "dy_lep",
     ]
 
     ml_process_weights = {
-        "ggHH_kl_1_kt_1_sl_hbbhww": 1,
+        "ggHH_kl_1_kt_1_dl_hbbhww": 1,
         "tt": 2,
         "st": 2,
         "v_lep": 2,
@@ -44,7 +44,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     dataset_names = {
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -77,6 +77,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     input_features = [
+        "mli_mll", "mli_min_dr_llbb", "mli_dr_ll", "mli_bb_pt",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
@@ -96,10 +97,10 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     store_name = "inputs_v1"
 
-    folds = 5
-    layers = (512, 512, 512)
+    folds = 2
+    layers = (64, 64, 64)
     activation = "relu"
-    learningrate = 0.00050
+    learningrate = 0.001
     batchsize = 2 ** 12
     epochs = 100
     dropout = 0.50
@@ -177,9 +178,9 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 cls_dict_test = {
     "epochs": 4,
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep", "w_lnu"],
     "dataset_names": {
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
         "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
     },
 }

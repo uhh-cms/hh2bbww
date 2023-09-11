@@ -142,6 +142,22 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     ) ** 0.5
     events = set_ak_column_f32(events, "mli_s_min", s_min)
 
+    # create ll object and ll variables
+    ll = (events.Lepton[:, 0] + events.Lepton[:, 1])
+    deltaR_ll = events.Lepton[:, 0].delta_r(events.Lepton[:, 1])
+    # events = set_ak_column_f32(events, "mli_ll_pt", ll.pt)
+    events = set_ak_column_f32(events, "mli_mll", ll.mass)
+    events = set_ak_column_f32(events, "mli_dr_ll", deltaR_ll)
+
+    # minimum deltaR between lep and jet
+    lljj_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
+    lep, jet = ak.unzip(lljj_pairs)
+    min_dr_lljj = (ak.min(lep.delta_r(jet), axis=-1))
+    events = set_ak_column_f32(events, "mli_min_dr_llbb", min_dr_lljj)
+
+    # bb pt 
+    events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
+    
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
@@ -153,6 +169,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_columns = {
+        "mli_mll", "mli_dr_ll", "mli_min_dr_llbb", "mli_bb_pt",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
