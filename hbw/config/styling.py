@@ -31,7 +31,8 @@ default_process_colors = {
     "ggHH_kl_1_kt_1_sl_hbbhww": "#000000",  # black
     "ggHH_kl_0_kt_1_sl_hbbhww": "#1b9e77",  # green2
     "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
-    "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
+    #"ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
+    "ggHH_kl_5_kt_1_sl_hbbhww": "#000080",  # navy
     "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
     "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
     "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green

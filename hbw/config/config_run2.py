@@ -184,7 +184,7 @@ def add_config(
         "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
         # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
         # HH(bbtautau)
-        "hh_ggf_bbtautau_madgraph",
+        #"hh_ggf_bbtautau_madgraph",
     ]
 
     if cfg.has_tag("is_sl") and cfg.has_tag("is_nonresonant"):

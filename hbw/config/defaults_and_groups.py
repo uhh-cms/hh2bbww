@@ -37,7 +37,7 @@ def default_producers(cls, container, task_params):
 
     # per default, use the ml_inputs and event_weights
     # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    default_producers = ["ml_inputs", "event_weights"]
+    default_producers = ["ml_inputs"] #"event_weights"]
 
     # check if a ml_model has been set
     ml_model = task_params.get("mlmodel", None) or task_params.get("mlmodels", None)
@@ -148,6 +148,16 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
+        "control": ["n_jet", "n_fatjet", "n_electron", "n_muon",
+        "jet1_pt", "jet1_eta", "jet1_phi", "jet1_btagDeepFlavB", #"jet1_btagDeepB", 
+        "jet2_pt", "jet2_eta", "jet2_phi", "jet2_btagDeepFlavB", #"jet2_btagDeepB", 
+        "jet3_pt", "jet3_eta", "jet3_phi", "jet3_btagDeepFlavB", #"jet3_btagDeepB", 
+        "jet4_pt", "jet4_eta", "jet4_phi", "jet4_btagDeepFlavB", #"jet4_btagDeepB", 
+        "fatjet1_pt", "fatjet1_eta", "fatjet1_phi", "fatjet1_btagHbb", "fatjet1_deepTagMD_HbbvsQCD", "fatjet1_mass", "fatjet1_msoftdrop",
+        "fatjet1_tau1", "fatjet1_tau2", "fatjet1_tau21",
+        "fatjet2_pt", "fatjet2_eta", "fatjet2_phi", "fatjet2_btagHbb", "fatjet2_deepTagMD_HbbvsQCD", "fatjet2_mass", "fatjet2_msoftdrop",
+        "fatjet2_tau1", "fatjet2_tau2", "fatjet2_tau21",
+        "electron_pt", "electron_eta", "electron_phi", "muon_pt", "muon_eta", "muon_phi"],
     }
 
     # shift groups for conveniently looping over certain shifts
@@ -181,6 +191,8 @@ def set_config_defaults_and_groups(config_inst):
             proc.name: {"unstack": True, "scale": 10000}
             for proc in config_inst.processes if "HH" in proc.name
         },
+        "control": {"ggHH_kl_0_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True}, "ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+        "ggHH_kl_2p45_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True}, "ggHH_kl_5_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True}},
     }
     # when drawing DY as a line, use a different type of yellow
     config_inst.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
