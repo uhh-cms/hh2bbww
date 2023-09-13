@@ -186,6 +186,10 @@ class MLClassifierBase(MLModel):
                 filenames = [inp["mlevents"].path for inp in files]
 
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
+                if N_events == 0:
+                    # skip empty datasets
+                    logger.warning(f"Dataset {dataset_inst.name} is empty and will be ignored")
+                    continue
 
                 weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
                 sum_weights = sum([ak.sum(w) for w in weights])
@@ -583,6 +587,9 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
+        if len(events) == 0:
+            logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
+            return events
 
         logger.info(f"Evaluation of dataset {task.dataset}")
 
