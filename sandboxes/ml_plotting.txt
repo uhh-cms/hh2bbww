@@ -1,6 +1,6 @@
 # version 3
 
--r columnar.txt
+-r ../modules/sandboxes/columnar.txt
 
 tensorflow==2.11.0
 scikit-learn~=1.2
