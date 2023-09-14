@@ -45,12 +45,14 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={"Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass"},
+    #uses={"Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass"},
+    uses={"Bjet.pt", "Bjet.eta", "Bjet.phi", "Bjet.mass", "HbbJet.msoftdrop"},
     produces={"m_bb", "deltaR_bb"},
 )
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
+    m_bb = ak.where(ak.num(events.HbbJet) > 0, events.HbbJet[:,0].msoftdrop, m_bb)
     events = set_ak_column_f32(events, "m_bb", m_bb)
 
     deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
@@ -65,7 +67,8 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        prepare_objects, category_ids, event_weights,
+        prepare_objects, category_ids, 
+        event_weights,
         bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
@@ -75,7 +78,8 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "HbbJet.pt",
     },
     produces={
-        category_ids, event_weights,
+        category_ids, 
+        event_weights,
         bb_features, jj_features,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet", "FatJet.tau21",
     },
