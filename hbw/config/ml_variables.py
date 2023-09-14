@@ -199,6 +199,25 @@ def add_ml_variables(config: od.Config) -> None:
         log_x=True,
         x_title=r"$S_{min}$",
     )
+    config.add_variable(
+        name="mli_vbf_deta",
+        expression="mli_vbf_deta",
+        binning=(50, 2, 9.5),
+        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
+    )
+    config.add_variable(
+        name="mli_vbf_invmass",
+        expression="mli_vbf_invmass",
+        binning=(50, 400, 4000),
+        unit="GeV",
+        x_title="invarint mass of two vbf jets",
+    )
+    config.add_variable(
+        name="mli_vbf_tag",
+        expression="mli_vbf_tag",
+        binning=(2, -0.5, 1.5),
+        x_title="existence of at least two vbf jets = 1, else 0",
+    )
 
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta"]:

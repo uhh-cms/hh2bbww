@@ -30,7 +30,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
         "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
-        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet"},
+        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
     produces={
         category_ids, event_weights,
@@ -53,6 +53,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     # events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
+    events = set_ak_column_f32(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
     # low-level features
     # TODO: this could be more generalized
@@ -76,6 +77,13 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     jet_pairs = ak.combinations(events.Jet, 2)
     dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
     events = set_ak_column_f32(events, "mindr_jj", ak.min(dr, axis=1))
+
+    # vbf jet pair features
+
+    events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:,0].eta - events.VBFJet[:,1].eta))
+    events = set_ak_column_f32(events, "mli_vbf_invmass", (events.VBFJet[:,0] + events.VBFJet[:,1]).mass)
+    vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2
+    events = set_ak_column_f32(events, "mli_vbf_tag", vbf_tag)
 
     # bjets in general
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
@@ -159,6 +167,7 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
+        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2", "lep", "met"]

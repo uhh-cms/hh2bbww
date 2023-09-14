@@ -594,6 +594,9 @@ class MLClassifierBase(MLModel):
 
         logger.info(f"Evaluation of dataset {task.dataset}")
 
+        if len(events) == 0:
+            return events
+
         # determine truth label of the dataset (-1 if not used in training)
         ml_truth_label = -1
         if events_used_in_training:
