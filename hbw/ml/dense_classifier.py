@@ -27,6 +27,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
         "ggHH_kl_1_kt_1_sl_hbbhww",
+        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
         "tt",
         "st",
         "v_lep",
@@ -36,6 +37,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     ml_process_weights = {
         "ggHH_kl_1_kt_1_sl_hbbhww": 1,
+        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": 1,
         "tt": 2,
         "st": 2,
         "v_lep": 2,
@@ -45,6 +47,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     dataset_names = {
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -177,9 +180,9 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 cls_dict_test = {
     "epochs": 4,
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "tt", "st", "v_lep"],
     "dataset_names": {
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_dl_powheg",
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph", "tt_dl_powheg",
         "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
     },
 }
