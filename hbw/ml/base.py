@@ -194,7 +194,6 @@ class MLClassifierBase(MLModel):
                 filenames = [inp["mlevents"].path for inp in files]
 
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
-
                 weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
                 sum_weights = sum([ak.sum(w) for w in weights])
                 sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])

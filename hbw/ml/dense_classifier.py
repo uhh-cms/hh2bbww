@@ -30,7 +30,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "tt",
         "st",
         # "v_lep",
-        "w_lnu",
+        #"w_lnu",
         "dy_lep",
     ]
 
@@ -56,15 +56,15 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
         # "st_schannel_had_amcatnlo",
-        # WJets
-        "w_lnu_ht70To100_madgraph",
-        "w_lnu_ht100To200_madgraph",
-        "w_lnu_ht200To400_madgraph",
-        "w_lnu_ht400To600_madgraph",
-        "w_lnu_ht600To800_madgraph",
-        "w_lnu_ht800To1200_madgraph",
-        "w_lnu_ht1200To2500_madgraph",
-        "w_lnu_ht2500_madgraph",
+        # WJets commented out because no events avaible and hence no nomralization weights 
+        #"w_lnu_ht70To100_madgraph",
+        #"w_lnu_ht100To200_madgraph",
+        #"w_lnu_ht200To400_madgraph",
+        #"w_lnu_ht400To600_madgraph",
+        #"w_lnu_ht600To800_madgraph",
+        #"w_lnu_ht800To1200_madgraph",
+        #"w_lnu_ht1200To2500_madgraph",
+        #"w_lnu_ht2500_madgraph",
         # DY
         "dy_lep_m50_ht70to100_madgraph",
         "dy_lep_m50_ht100to200_madgraph",
@@ -178,10 +178,11 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 cls_dict_test = {
     "epochs": 4,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep", "w_lnu"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
     "dataset_names": {
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
-        "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
+        "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
+        "dy_lep_m50_ht400to600_madgraph",
     },
 }
 

@@ -27,6 +27,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     uses={
         category_ids, event_weights,
         prepare_objects,
+        "Electron.charge", "Muon.charge",
         "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
