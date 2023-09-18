@@ -81,19 +81,22 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
-        "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
-        "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
-        "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
-        "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
+        #"mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
+        #"mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
+        #"mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
+        #"mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     ] + [
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+        for obj in ["b1", "b2", "lep", "lep2", "met"]
         for var in ["pt", "eta"]
-    ] + [
+    ] 
+    """
+      + [
         f"mli_{obj}_{var}"
         for obj in ["fj"]
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     ]
+    """
 
     store_name = "inputs_v1"
 
@@ -173,15 +176,16 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return ["ml_inputs"]
+        return ["dl_ml_inputs"]
 
 
 cls_dict_test = {
-    "epochs": 4,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+    "folds": 5,
+    "epochs": 100,
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "dy_lep"],
     "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
-        "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", # "tt_dl_powheg",
+        #"st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
         "dy_lep_m50_ht400to600_madgraph",
     },
 }

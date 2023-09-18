@@ -54,6 +54,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     # events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
+    events = set_ak_column(events, "Lepton", ak.pad_none(events.Lepton, 2))
 
     # low-level features
     # TODO: this could be more generalized
@@ -63,6 +64,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
         events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
+        events = set_ak_column_f32(events, f"mli_lep2_{var}", events.Lepton[:, 1][var])
         events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
 
     # H->bb FatJet
@@ -179,7 +181,7 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     } | set(
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+        for obj in ["b1", "b2", "j1", "j2", "lep", "lep2", "met"]
         for var in ["pt", "eta"]
     ) | set(
         f"mli_{obj}_{var}"

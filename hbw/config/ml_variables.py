@@ -227,7 +227,7 @@ def add_ml_variables(config: od.Config) -> None:
         x_title=r"$bb_p_T$",
     )
 
-    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
+    for obj in ["b1", "b2", "j1", "j2", "lep", "lep2", "met"]:
         for var in ["pt", "eta"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
