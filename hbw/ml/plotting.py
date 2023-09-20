@@ -45,6 +45,7 @@ def plot_history(
     ax.legend(["train", "validation"], loc="best")
     mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False)
 
+    plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -87,6 +88,7 @@ def plot_confusion(
     ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
     mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False, loc=0)
 
+    plt.tight_layout()
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -209,7 +211,8 @@ def plot_output_nodes(
         validation: DotDict,
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
-        normalize: bool = True,
+        shape_norm: bool = True,
+        y_log: bool = False,
 ) -> None:
     """
     Function that creates a plot for each ML output node,
@@ -235,7 +238,8 @@ def plot_output_nodes(
 
         for input_type, inputs in (("train", train), ("validation", validation)):
             for j in range(n_classes):
-                mask = (np.argmax(inputs.target, axis=1) == j)
+                mask = (inputs.label == j)
+                # mask = (np.argmax(inputs.target, axis=1) == j)
                 fill_kwargs = {
                     "type": input_type,
                     "process": j,
@@ -255,7 +259,7 @@ def plot_output_nodes(
         plt.hist([], histtype="step", label="Validation", linestyle="dotted", color="black")
 
         # get the correct normalization factors
-        if normalize:
+        if shape_norm:
             scale_train = np.array([
                 h[{"type": "train", "process": i}].sum().value for i in range(n_classes)
             ])[:, np.newaxis]
@@ -272,11 +276,20 @@ def plot_output_nodes(
         # legend
         ax.legend(loc="best")
 
-        ax.set(**{
+        # axis styling
+        ax_kwargs = {
             "ylabel": "Entries",
-            "ylim": (0.00001, ax.get_ylim()[1]),
             "xlim": (0, 1),
-        })
+            "yscale": "log" if y_log else "linear",
+        }
+        # set y_lim to appropriate ranges based on the yscale
+        y_max = ax.get_ylim()[1]
+        if y_log:
+            ax_kwargs["ylim"] = (y_max * 1e-4, y_max * 2)
+        else:
+            ax_kwargs["ylim"] = (0.00001, y_max)
+
+        ax.set(**ax_kwargs)
 
         # plot validation scores, scaled to train dataset
         (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
