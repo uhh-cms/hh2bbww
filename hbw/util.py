@@ -15,6 +15,12 @@ import law
 _logger = law.logger.get_logger(__name__)
 
 
+def round_sig(x, sig=4):
+    """ helper function to round number *x* on *sig* significant digits"""
+    from math import floor, log10
+    return round(x, sig - int(floor(log10(abs(x)))) - 1)
+
+
 def log_memory(
     message: str = "",
     unit: str = "MB",
