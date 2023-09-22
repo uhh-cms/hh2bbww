@@ -68,16 +68,16 @@ def gather_confusion_stats(
         proc_name = process_insts[i].name
 
         # diagonal events are True Positives (TP) or Signal (S)
-        TP = S = float(confusion[i, i])
+        TP = S = confusion[i, i]
 
         # offdiagonal entries are either False Positives (FP or B) or False Negatives (FN) based on axis
-        FP = B = float(np.sum(confusion[:, i]) - S)
-        FN = float(np.sum(confusion[i]) - S)
+        FP = B = np.sum(confusion[:, i]) - S
+        FN = np.sum(confusion[i]) - S
 
-        stats[f"precision_{input_type}_{proc_name}"] = round_sig(TP / (TP + FP), 4)
-        stats[f"recall_{input_type}_{proc_name}"] = round_sig(TP / (TP + FN), 4)
-        stats[f"S_over_B_{input_type}_{proc_name}"] = round_sig(S / B, 4)
-        stats[f"S_over_sqrtB_{input_type}_{proc_name}"] = round_sig(S / sqrt(B), 4)
+        stats[f"precision_{input_type}_{proc_name}"] = round_sig(TP / (TP + FP), 4, float)
+        stats[f"recall_{input_type}_{proc_name}"] = round_sig(TP / (TP + FN), 4, float)
+        stats[f"S_over_B_{input_type}_{proc_name}"] = round_sig(S / B, 4, float)
+        stats[f"S_over_sqrtB_{input_type}_{proc_name}"] = round_sig(S / sqrt(B), 4, float)
 
 
 def plot_confusion(
@@ -191,7 +191,7 @@ def plot_roc_ovr(
     if isinstance(stats, dict):
         # append AUC scores to stats dict
         for i, auc_score in enumerate(auc_scores):
-            stats[f"AUC_{input_type}_{process_insts[i].name}"] = round_sig(float(auc_score), 4)
+            stats[f"AUC_{input_type}_{process_insts[i].name}"] = round_sig(auc_score, 4, float)
 
 
 def plot_roc_ovo(
@@ -262,7 +262,7 @@ def plot_output_nodes(
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
         shape_norm: bool = True,
-        y_log: bool = False,
+        y_log: bool = True,
 ) -> None:
     """
     Function that creates a plot for each ML output node,
