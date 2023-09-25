@@ -226,6 +226,45 @@ def add_ml_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$bb_p_T$",
     )
+    config.add_variable(
+        name="mli_mllMET",
+        expression="mli_mllMET",
+        binning=(40, 0, 200),
+        x_title=r"$m_{llMET}$",
+    )
+    config.add_variable(
+        name="mli_dr_bb_llMET",
+        expression="mli_dr_bb_llMET",
+        binning=(40, 0, 8),
+        x_title=r"$\Delta R(bb,llMET)$",
+    )
+    config.add_variable(
+        name="mli_dphi_bb_llMET",
+        expression="mli_dphi_bb_llMET",
+        binning=(40, 0, 8),
+        x_title=r"$\Delta \phi(bb,llMET)$",
+    )
+    config.add_variable(
+        name="mli_mbbllMET",
+        expression="mli_mbbllMET",
+        binning=(40, 0, 500),
+        unit="GeV",
+        x_title=r"$m_{bbllMET}$",
+    )
+    config.add_variable(
+        name="mli_dphi_ll",
+        expression="mli_dphi_ll",
+        binning=(40, 0, 8),
+        unit="GeV",
+        x_title=r"$\Delta \phi_{ll}$",
+    )
+    config.add_variable(
+        name="mli_ll_pt",
+        expression="mli_ll_pt",
+        binning=(40, 0, 200),
+        unit="GeV",
+        x_title=r"$ll p_T$",
+    )
 
     for obj in ["b1", "b2", "j1", "j2", "lep", "lep2", "met"]:
         for var in ["pt", "eta"]:

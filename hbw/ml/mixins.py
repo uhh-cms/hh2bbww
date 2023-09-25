@@ -108,7 +108,7 @@ class ModelFitMixin():
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
-    remove_backup = False
+    remove_backup = False 
     epochs = 200
     batchsize = 2 ** 12
 
@@ -169,7 +169,7 @@ class ModelFitMixin():
             ),
             "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
                 monitor="val_loss",
-                factor=0.1,
+                factor=0.7,
                 patience=max(5, min(10, int(self.epochs / 20))),
                 verbose=1,
                 mode="auto",

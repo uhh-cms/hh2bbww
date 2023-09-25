@@ -31,7 +31,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
         "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
-        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet"},
+        {"Electron", "Muon", "MET", "Jet", "Lightjet",  "Bjet", "HbbJet"},
     ),
     produces={
         category_ids, event_weights,
@@ -202,7 +202,7 @@ def ml_inputs_init(self: Producer) -> None:
         ml_inputs,
         "Electron.charge", "Muon.charge",
     } | four_vec(
-        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet"},
+        {"Electron", "Muon", "MET", "Jet", "Bjet", "HbbJet"},
     ),
     produces={
         ml_inputs,
@@ -214,12 +214,15 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[ml_inputs](events, **kwargs)
 
+
     # create ll object and ll variables
     ll = (events.Lepton[:, 0] + events.Lepton[:, 1])
     deltaR_ll = events.Lepton[:, 0].delta_r(events.Lepton[:, 1])
-    # events = set_ak_column_f32(events, "mli_ll_pt", ll.pt)
+    events = set_ak_column_f32(events, "mli_ll_pt", ll.pt)
     events = set_ak_column_f32(events, "mli_mll", ll.mass)
+    events = set_ak_column_f32(events, "mli_mllMET", (ll+events.MET[:]).mass)
     events = set_ak_column_f32(events, "mli_dr_ll", deltaR_ll)
+    events = set_ak_column_f32(events, "mli_dphi_ll", events.Lepton[:, 0].delta_phi(events.Lepton[:,1]))
 
     # minimum deltaR between lep and jet
     lljj_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
@@ -230,7 +233,10 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # bb pt 
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
     events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
-    
+    events = set_ak_column_f32(events, "mli_mbbllMET", (ll+hbb+events.MET[:]).mass)
+    events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(ll + events.MET[:]))
+    events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(ll + events.MET[:]))
+
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
@@ -242,6 +248,8 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_columns = {
         "mli_mll", "mli_dr_ll", "mli_min_dr_llbb", "mli_bb_pt",
+        "mli_mllMET", "mli_dr_bb_llMET", "mli_dphi_bb_llMET", "mli_dphi_ll",
+        "mli_mbbllMET", "mli_ll_pt",
     }
     self.produces |= self.ml_columns
 
@@ -250,5 +258,4 @@ def dl_ml_inputs_init(self: Producer) -> None:
 
     # add variable instances to config
     add_ml_variables(self.config_inst)
-
 

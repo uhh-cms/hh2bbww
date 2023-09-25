@@ -28,7 +28,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     processes = [
         "ggHH_kl_1_kt_1_dl_hbbhww",
         "tt",
-        "st",
+        #"st",
         # "v_lep",
         #"w_lnu",
         "dy_lep",
@@ -36,11 +36,11 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     ml_process_weights = {
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
-        "tt": 2,
-        "st": 2,
+        "tt": 1,
+        "st": 1,
         "v_lep": 2,
         "w_lnu": 2,
-        "dy_lep": 2,
+        "dy_lep": 1,
     }
 
     dataset_names = {
@@ -48,13 +48,13 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
-        "tt_fh_powheg",
+        #"tt_fh_powheg",
         # SingleTop
-        "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
-        "st_twchannel_t_powheg",
-        "st_twchannel_tbar_powheg",
-        "st_schannel_lep_amcatnlo",
+        #"st_tchannel_t_powheg",
+        #"st_tchannel_tbar_powheg",
+        #"st_twchannel_t_powheg",
+        #"st_twchannel_tbar_powheg",
+        #"st_schannel_lep_amcatnlo", problem with normalizatino weights.. 
         # "st_schannel_had_amcatnlo",
         # WJets commented out because no events avaible and hence no nomralization weights 
         #"w_lnu_ht70To100_madgraph",
@@ -79,8 +79,11 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     input_features = [
         "mli_mll", "mli_min_dr_llbb", "mli_dr_ll", "mli_bb_pt",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
-        # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
+        "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
+        "mli_dphi_ll", "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
+        "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt",
+        #"mli_met_eta", "meli_met_pt", 
         #"mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         #"mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         #"mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
@@ -100,14 +103,14 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     store_name = "inputs_v1"
 
-    folds = 2
-    layers = (64, 64, 64)
+    folds = 5
+    layers = (164, 164, 164)
     activation = "relu"
-    learningrate = 0.001
-    batchsize = 2 ** 12
-    epochs = 100
+    learningrate = 0.0005
+    batchsize = 10000 #2 ** 12
+    epochs = 150
     dropout = 0.50
-    negative_weights = "handle"
+    negative_weights = "abs"
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params = [
