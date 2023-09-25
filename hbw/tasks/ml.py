@@ -10,7 +10,7 @@ law run cf.MLModelOptimizer--version prod1 --ml-folds 0  --ml-models model_1,mod
 """
 
 import law
-import luigi
+# import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
@@ -33,8 +33,8 @@ class MLModelOptimizer(
     # sandbox = dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    ml_folds = luigi.Parameter(
-        default=[0],  # NOTE: for some reason, the default is not working as intended
+    ml_folds = law.CSVParameter(
+        default=(0,),  # NOTE: for some reason, the default is not working as intended
         description="Fold of which ML model is supposed to be run",
     )
 
