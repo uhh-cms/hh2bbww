@@ -108,7 +108,7 @@ class ModelFitMixin():
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
-    remove_backup = False 
+    remove_backup = True 
     epochs = 200
     batchsize = 2 ** 12
 

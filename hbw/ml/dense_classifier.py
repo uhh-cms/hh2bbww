@@ -31,7 +31,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         #"st",
         # "v_lep",
         #"w_lnu",
-        "dy_lep",
+        #"dy_lep",
     ]
 
     ml_process_weights = {
@@ -66,14 +66,14 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         #"w_lnu_ht1200To2500_madgraph",
         #"w_lnu_ht2500_madgraph",
         # DY
-        "dy_lep_m50_ht70to100_madgraph",
-        "dy_lep_m50_ht100to200_madgraph",
-        "dy_lep_m50_ht200to400_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-        "dy_lep_m50_ht600to800_madgraph",
-        "dy_lep_m50_ht800to1200_madgraph",
-        "dy_lep_m50_ht1200to2500_madgraph",
-        "dy_lep_m50_ht2500_madgraph",
+        #"dy_lep_m50_ht70to100_madgraph",
+        #"dy_lep_m50_ht100to200_madgraph",
+        #"dy_lep_m50_ht200to400_madgraph",
+        #"dy_lep_m50_ht400to600_madgraph",
+        #"dy_lep_m50_ht600to800_madgraph",
+        #"dy_lep_m50_ht800to1200_madgraph",
+        #"dy_lep_m50_ht1200to2500_madgraph",
+        #"dy_lep_m50_ht2500_madgraph",
     }
 
     input_features = [
@@ -107,8 +107,8 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     layers = (164, 164, 164)
     activation = "relu"
     learningrate = 0.0005
-    batchsize = 10000 #2 ** 12
-    epochs = 150
+    batchsize = 2 ** 12
+    epochs = 250
     dropout = 0.50
     negative_weights = "abs"
 

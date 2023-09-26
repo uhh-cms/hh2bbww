@@ -151,7 +151,7 @@ class MLClassifierBase(MLModel):
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
         model = tf.keras.models.load_model(
-            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["mlmodel"].path #, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
         return model, input_features, parameters
 
@@ -378,6 +378,7 @@ class MLClassifierBase(MLModel):
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
         from hbw.ml.tf_util import cumulated_crossentropy
+        import tensorflow as tf
 
         n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
@@ -398,8 +399,9 @@ class MLClassifierBase(MLModel):
         # compile the network
         # NOTE: the custom loss needed due to output layer changes for negative weights
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
+        categorical_crossentropy = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
         model.compile(
-            loss=cumulated_crossentropy,
+            loss=categorical_crossentropy, #cumulated_crossentropy,
             optimizer=optimizer,
             weighted_metrics=["categorical_accuracy"],
         )
