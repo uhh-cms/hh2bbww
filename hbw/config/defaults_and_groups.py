@@ -27,7 +27,7 @@ def default_ml_model(cls, container, task_params):
         default_ml_model = "dense_default"
 
     # check if task is using an inference model; if that's the case, use the default set in the model
-    if cls.task_family == "cf.CreateDatacards":
+    if cls.task_family in ("cf.CreateDatacards", "cf.ModifyDatacards"):
         inference_model = task_params.get("inference_model", None)
 
         # if inference model is not set, assume it's the container default

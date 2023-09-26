@@ -172,7 +172,8 @@ def default(self):
 
             cat_kwargs = {
                 "config_category": f"1{lep}__ml_{proc}",
-                "config_variable": f"mlscore.{proc}_rebin",
+                # "config_variable": f"mlscore.{proc}_rebin",
+                "config_variable": f"mlscore.{proc}_manybins",
                 "mc_stats": self.mc_stats,
             }
             if self.skip_data:
