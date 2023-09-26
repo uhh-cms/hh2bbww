@@ -109,7 +109,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     layers = (164, 164, 164)
     activation = "relu"
     learningrate = 0.0005
-    batchsize = 2 ** 12
+    batchsize = 8000 #2 ** 12
     epochs = 250
     dropout = 0.50
     negative_weights = "abs"

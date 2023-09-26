@@ -192,8 +192,13 @@ class MLClassifierBase(MLModel):
 
                 # calculate some stats per dataset
                 filenames = [inp["mlevents"].path for inp in files]
-                __import__("IPython").embed()
+                
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
+                if N_events == 0:
+                    # skip empty datasets
+                    logger.warning(f"Dataset {dataset_inst.name} is empty and will be ignored")
+                    continue
+
                 weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
                 sum_weights = sum([ak.sum(w) for w in weights])
                 sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])
@@ -310,7 +315,8 @@ class MLClassifierBase(MLModel):
                     (weights, "weights"),
                     (ml_weights, "ml_weights"),
                 ):
-                    array[...] = array[shuffle_indices]
+                    if len(events) != 0:
+                        array[...] = array[shuffle_indices]
                     add_arrays(array, key)
 
             # concatenate arrays per process
