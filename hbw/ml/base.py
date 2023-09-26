@@ -192,7 +192,7 @@ class MLClassifierBase(MLModel):
 
                 # calculate some stats per dataset
                 filenames = [inp["mlevents"].path for inp in files]
-
+                __import__("IPython").embed()
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
                 weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
                 sum_weights = sum([ak.sum(w) for w in weights])

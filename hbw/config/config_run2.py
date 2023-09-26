@@ -116,12 +116,22 @@ def add_config(
     # Custom v_lep process for ML Training, combining W+DY
     v_lep = cfg.add_process(
         name="v_lep",
-        id=64575573,  # random number
+        id=81575573,  # random number
         xsecs={13: cfg.get_process("w_lnu").get_xsec(13) + cfg.get_process("dy_lep").get_xsec(13)},
         label="W and DY",
     )
     v_lep.add_process(cfg.get_process("w_lnu"))
     v_lep.add_process(cfg.get_process("dy_lep"))
+
+    # Custom t_bkg process for ML Training, combining W+DY
+    t_bkg = cfg.add_process(
+        name="t_bkg",
+        id=64575573,  # random number
+        xsecs={13: cfg.get_process("tt").get_xsec(13) + cfg.get_process("st").get_xsec(13)},
+        label="tt and st",
+    )
+    t_bkg.add_process(cfg.get_process("tt"))
+    t_bkg.add_process(cfg.get_process("st"))
 
     # set color of some processes
     stylize_processes(cfg)
