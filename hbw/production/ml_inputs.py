@@ -53,7 +53,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     # events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
-    events = set_ak_column_f32(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
+    events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
     # low-level features
     # TODO: this could be more generalized
@@ -79,7 +79,6 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mindr_jj", ak.min(dr, axis=1))
 
     # vbf jet pair features
-
     events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta))
     events = set_ak_column_f32(events, "mli_vbf_invmass", (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass)
     vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2

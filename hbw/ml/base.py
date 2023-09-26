@@ -232,6 +232,9 @@ class MLClassifierBase(MLModel):
             t0 = time.perf_counter()
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
+                if len(events) == 0:
+                    logger.warning("File {fn} of process {proc_inst.name} is empty and will be skipped")
+                    continue
 
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
@@ -592,9 +595,6 @@ class MLClassifierBase(MLModel):
             return events
 
         logger.info(f"Evaluation of dataset {task.dataset}")
-
-        if len(events) == 0:
-            return events
 
         # determine truth label of the dataset (-1 if not used in training)
         ml_truth_label = -1

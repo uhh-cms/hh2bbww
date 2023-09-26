@@ -92,6 +92,12 @@ def add_feature_variables(config: od.Config) -> None:
         x_title=r"$m_{bb}$",
     )
     config.add_variable(
+        name="m_bb_combined",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$m_{bb}$ combined",
+    )
+    config.add_variable(
         name="bb_pt",
         binning=(40, 0., 350),
         x_title=r"$p_T^{bb}$",

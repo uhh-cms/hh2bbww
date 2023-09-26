@@ -50,17 +50,20 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     uses={
         "HbbJet.msoftdrop",
     } | four_vec("Jet"),
-    produces={"m_bb", "bb_pt", "deltaR_bb"},
+    produces={"m_bb", "bb_pt", "deltaR_bb", "m_bb_combined"},
 )
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # create bb features
     bb = (events.Bjet[:, 0] + events.Bjet[:, 1])
-    m_bb = (events.Bjet[:, 0] + events.Bjet[:, 1]).mass
-    m_bb = ak.where(ak.num(events.HbbJet) > 0, events.HbbJet[:, 0].msoftdrop, m_bb)
-    deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
-    events = set_ak_column_f32(events, "m_bb", m_bb)
+    events = set_ak_column_f32(events, "m_bb", bb.mass)
     events = set_ak_column_f32(events, "bb_pt", bb.pt)
+
+    deltaR_bb = events.Bjet[:, 0].delta_r(events.Bjet[:, 1])
     events = set_ak_column_f32(events, "deltaR_bb", deltaR_bb)
+
+    # combination of resolved and boosted bb mass
+    m_bb_combined = ak.where(ak.num(events.HbbJet) > 0, events.HbbJet[:, 0].msoftdrop, bb.mass)
+    events = set_ak_column_f32(events, "m_bb_combined", m_bb_combined)
 
     # fill none values
     for col in self.produces:
