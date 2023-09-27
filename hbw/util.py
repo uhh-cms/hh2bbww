@@ -19,6 +19,32 @@ np = maybe_import("numpy")
 _logger = law.logger.get_logger(__name__)
 
 
+def build_param_product(params: dict[str, list], output_keys: Callable = lambda i: i):
+    """
+    Helper that builds the product of all *param* values and returns a dictionary of
+    all the resulting parameter combinations.
+
+    Example:
+
+    .. code-block:: python
+        build_param_product({"A": ["a", "b"], "B": [1, 2]})
+        # -> {
+            0: {"A": "a", "B": 1},
+            1: {"A": "a", "B": 2},
+            2: {"A": "b", "B": 1},
+            3: {"A": "b", "B": 2},
+        }
+    """
+    from itertools import product
+    param_product = {}
+    keys, values = zip(*params.items())
+    for i, bundle in enumerate(product(*values)):
+        d = dict(zip(keys, bundle))
+        param_product[output_keys(i)] = d
+
+    return param_product
+
+
 def round_sig(
     value: int | float | np.number,
     sig: int = 4,

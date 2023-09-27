@@ -8,7 +8,7 @@ import unittest
 
 from columnflow.util import maybe_import
 
-from hbw.util import round_sig, dict_diff, four_vec, call_once_on_config
+from hbw.util import build_param_product, round_sig, dict_diff, four_vec, call_once_on_config
 
 import order as od
 
@@ -22,6 +22,26 @@ class HbwUtilTest(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         self.config_inst = od.Config(name="test_config", id=123456)
+
+    def test_build_param_product(self):
+        params = {
+            "A": ["a", "b"],
+            "B": [1, 2],
+            "C": [{"x": 1}, {"x": 2}],
+        }
+        param_product = build_param_product(params)
+
+        expected_param_product = {
+            0: {"A": "a", "B": 1, "C": {"x": 1}},
+            1: {"A": "a", "B": 1, "C": {"x": 2}},
+            2: {"A": "a", "B": 2, "C": {"x": 1}},
+            3: {"A": "a", "B": 2, "C": {"x": 2}},
+            4: {"A": "b", "B": 1, "C": {"x": 1}},
+            5: {"A": "b", "B": 1, "C": {"x": 2}},
+            6: {"A": "b", "B": 2, "C": {"x": 1}},
+            7: {"A": "b", "B": 2, "C": {"x": 2}},
+        }
+        self.assertEqual(param_product, expected_param_product)
 
     def test_round_sig(self):
         self.assertEqual(round_sig(0.15, 1), 0.1)
