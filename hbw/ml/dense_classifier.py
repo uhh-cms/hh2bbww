@@ -213,6 +213,10 @@ dense_default = DenseClassifier.derive("dense_default", cls_dict={})
 for n_epochs in (5, 10, 20, 50, 100, 200, 500):
     _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
 
+# for testing different number of nodes per layer
+for n_nodes in (64, 128, 256, 512):
+    _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
+
 # for testing different modes of handling negative weights
 for negative_weights_mode in ("handle", "ignore", "abs"):
     _dnn = DenseClassifier.derive(
