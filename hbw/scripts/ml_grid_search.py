@@ -1,7 +1,7 @@
 # coding: utf-8
 
-from hbw.ml.dense_classifier import DenseClassifier, dense_test  # noqa
-from hbw.tasks.ml import MLModelOptimizer
+from hbw.ml.dense_classifier import DenseClassifier
+from hbw.tasks.ml import MLOptimizer
 from hbw.util import build_param_product
 
 
@@ -17,12 +17,12 @@ weights = lambda bkg_weight: {
     "dy_lep": bkg_weight,
 }
 
-example_grid_search = {  # 4*3*3*1*4*3 = 432 trainings --> overkill?
+example_grid_search = {  # 4*2*2*1*3*3*1 = 144 trainings
     "layers": [(64, 64, 64), (128, 128, 128), (256, 256, 256), (512, 512, 512)],
-    "learningrate": [0.01000, 0.00500, 0.00050],
-    "negative_weights": ["ignore", "abs", "handle"],
+    "learningrate": [0.00500, 0.00050],
+    "negative_weights": ["abs", "handle"],
     "epochs": [300],
-    "batchsize": [1024, 2048, 4096, 8192],
+    "batchsize": [1024, 2048, 4096],
     "dropout": [0.1, 0.3, 0.5],
     "ml_process_weights": [weights(1)],  # weighting should not change AUCs, so optimize it separately
 }
@@ -35,7 +35,7 @@ for model_name, params in param_product.items():
 
 # TODO: this only stats the training for one workflow (so 1 MLTraining) at the time
 #       would be nice, if we could cram the N MLTraining workflows into one workflow
-task = MLModelOptimizer(
+task = MLOptimizer(
     version="prod1",
     ml_models=param_product.keys(),
 )
