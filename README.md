@@ -37,13 +37,13 @@ law run cf.PlotVariables1D \
 # create a (test) datacard (CMS-style)
 law run cf.CreateDatacards \
     --version v1 \
-    --producers features \
-    --inference-model test \
+    --inference-model default \
     --workers 3
 ```
 
 ## Most important files
 (Note: please tell me, if a link or task does not work. I did not test all of them)
+
 
 ### Config
 Files relevant for the configuration of an analysis are mainly to be found in [this](hbw/config) folder. The main analysis object is defined [here](hbw/config/analysis_hbw.py). The analysis object contains multiple configs (at least one config per campaign). Most of the configuration takes place [here](hbw/config/config_run2.py) and defines meta-data like the used datasets, processes, shifts, categories, variables and much more.
@@ -61,6 +61,7 @@ You can call the `SelectEvents` task using this selector, e.g. via
 law run cf.SelectEvents --version v1 --selector default
 ```
 
+
 ### Producers
 Modules that are used to produce new columns are usually named `producers` and can be found in [this](hbw/production) folder.
 A producer can be used as a part of another calibrator/selector/producer.
@@ -69,20 +70,32 @@ You can also call a producer on it's own as part of the `ProduceColumns` task, e
 law run cf.ProduceColumns --version v1 --producer example
 ```
 
+
 ### Machine learning
 Modules for machine learning are located in [this](hbw/ml) folder.
-At the moment, there is only one class to define simple feed-forward NN's (located [here](hbw/ml/simple.py)). This class can be used to derive ML models of this type with different sets of parameters (which takes place [here](hbw/ml/derived.py)). These derived models can be used as part of law tasks, e.g. with
+Our base ML Model ist defined [here](hbw/ml/base.py) and parameters are defined as class parameters.
+From the base class, new ML Models can be built via class inheritance. Our default ML Model is the [DenseClassifier](hbw/ml/dense_classifier.py), which uses the base model and some [mixins](hbw/ml/mixins.py) for additional functionality and overwrites their class parameters. From each ML Model, new models can be derived with different parameters using the `derive` method:
 ```
-law run cf.MLTraining --version v1 --ml-model default
+DenseClassifier.derive("dense_default", cls_dict={"folds": 5})
 ```
+All ML Models can be used as part of law tasks, e.g. with
+```
+law run cf.MLTraining --version v1 --ml-model dense_default --branches 0
+```
+NOTE: the `DenseClasifier` already defines, which config, selector and producers are required, so you don't need to add them on the command line.
+
 
 ### Inference
 Modules to prepare datacards are located in [this](hbw/inference) folder.
 At the moment, there is only the 'default' inference model ([here](hbw/inference/default.py)).
 Datacard are produced via calling
 ```
-law run cf.CreateDatacards --version v1 --inference-model default --ml-models default
+law run cf.CreateDatacards --version v1 --inference-model default
 ```
+Similar to the ML Models, we can also derive additional inference models using the `derive` method.
+
+NOTE: our inference model already defines, which ml_model is required and based on that,  producer requirements are resolved automatically per default. It is therefore better to not add them to the task parameters since the dependencies are already a bit complicated.
+
 
 ### Tasks
 Analysis-specific tasks are defined in [this](hbw/tasks) folder.

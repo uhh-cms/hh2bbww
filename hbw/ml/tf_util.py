@@ -148,7 +148,5 @@ def cumulated_crossentropy(y_true, y_pred, from_logits=False, axis=-1):
     epsilon = tf.constant(_cumulated_crossentropy_epsilon, dtype=y_pred.dtype)
     output = y_pred / (tf.reduce_sum(y_pred, axis, True) + epsilon)
     output = tf.clip_by_value(output, epsilon, 1. - epsilon)
-    # target = tf.math.subtract(1., y_true)
 
-    # no minus such that we can still perturb in the gradient's direction -> less code changes
-    return -tf.math.log(tf.reduce_sum(y_true * output, axis)) / tf.reduce_sum(y_true, axis)
+    return -tf.reduce_sum(y_true * tf.math.log(output), axis=axis)

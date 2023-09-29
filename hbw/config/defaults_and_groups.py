@@ -69,7 +69,8 @@ def default_producers(cls, container, task_params):
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer
     if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()) and not is_ml_task:
-        default_producers.insert(0, f"ml_{ml_model}")
+        # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
+        default_producers.append(f"ml_{ml_model}")
 
     # if we're running the inference_model, we don't need the ml_inputs
     # NOTE: we cannot skip ml_inputs, because it is needed for cf.MLEvaluation
@@ -167,6 +168,18 @@ def set_config_defaults_and_groups(config_inst):
             "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj",
             "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
         ],
+        "control": [
+            "n_jet", "n_fatjet", "n_electron", "n_muon",
+            "jet1_pt", "jet1_eta", "jet1_phi", "jet1_btagDeepFlavB",   # "jet1_btagDeepB",
+            "jet2_pt", "jet2_eta", "jet2_phi", "jet2_btagDeepFlavB",   # "jet2_btagDeepB",
+            "jet3_pt", "jet3_eta", "jet3_phi", "jet3_btagDeepFlavB",   # "jet3_btagDeepB",
+            "jet4_pt", "jet4_eta", "jet4_phi", "jet4_btagDeepFlavB",   # "jet4_btagDeepB",
+            "fatjet1_pt", "fatjet1_eta", "fatjet1_phi", "fatjet1_btagHbb", "fatjet1_deepTagMD_HbbvsQCD",
+            "fatjet1_mass", "fatjet1_msoftdrop", "fatjet1_tau1", "fatjet1_tau2", "fatjet1_tau21",
+            "fatjet2_pt", "fatjet2_eta", "fatjet2_phi", "fatjet2_btagHbb", "fatjet2_deepTagMD_HbbvsQCD",
+            "fatjet2_mass", "fatjet2_msoftdrop", "fatjet2_tau1", "fatjet2_tau2", "fatjet2_tau21",
+            "electron_pt", "electron_eta", "electron_phi", "muon_pt", "muon_eta", "muon_phi",
+        ],
     }
 
     # shift groups for conveniently looping over certain shifts
@@ -209,6 +222,12 @@ def set_config_defaults_and_groups(config_inst):
         },
         "dileptest": {
             "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+        },
+        "control": {
+            "ggHH_kl_0_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+            "ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+            "ggHH_kl_2p45_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+            "ggHH_kl_5_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
         },
     }
     # when drawing DY as a line, use a different type of yellow

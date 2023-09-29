@@ -5,7 +5,7 @@ Selectors to set ak columns for cutflow features
 """
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_INT, optional_column as optional
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 
@@ -17,11 +17,12 @@ ak = maybe_import("awkward")
 
 @producer(
     # used and produced columns per object are defined in init function
-    uses=(prepare_objects),
+    uses={prepare_objects, "PV.npvs", optional("Pileup.nTrueInt"), optional("Pileup.nPU")},
     produces={
         "cutflow.n_electron", "cutflow.n_muon", "cutflow.n_lepton",
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",
         "cutflow.n_veto_tau",
+        "cutflow.npvs", "cutflow.npu_true", "cutflow.npu",
     },
     # skip the checking existence of used/produced columns for now because some columns are not there
     check_used_columns=False,
@@ -42,6 +43,15 @@ def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult,
     events = set_ak_column(events, "cutflow.n_veto_muon", ak.num(arr.VetoMuon, axis=1))
     events = set_ak_column(events, "cutflow.n_veto_lepton", ak.num(arr.VetoLepton, axis=1))
     events = set_ak_column(events, "cutflow.n_veto_tau", ak.num(arr.VetoTau, axis=1))
+
+    # Primary vertices
+    events = set_ak_column(events, "cutflow.npvs", events.PV.npvs)
+    if "Pileup" in events.fields:
+        events = set_ak_column(events, "cutflow.npu_true", events.Pileup.nTrueInt)
+        events = set_ak_column(events, "cutflow.npu", events.Pileup.nPU)
+    else:
+        events = set_ak_column(events, "cutflow.npu_true", EMPTY_INT)
+        events = set_ak_column(events, "cutflow.npu", EMPTY_INT)
 
     # save up to 4 loose jets
     events = set_ak_column(events, "cutflow.LooseJet", arr.LooseJet[:, :3])

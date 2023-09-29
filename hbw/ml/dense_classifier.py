@@ -56,7 +56,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "st_tchannel_tbar_powheg",
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
-        "st_schannel_lep_amcatnlo", #problem with normalizatino weights.. 
+        #"st_schannel_lep_amcatnlo", #problem with normalizatino weights.. 
         # "st_schannel_had_amcatnlo",
         # WJets commented out because no events avaible and hence no nomralization weights 
         "w_lnu_ht70To100_madgraph",

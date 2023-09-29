@@ -35,10 +35,8 @@ def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @pre_ml_cats.init
 def pre_ml_cats_init(self: Producer) -> None:
-    if self.config_inst.x("add_categories_production", True):
-        # add categories but only on first call
-        add_categories_production(self.config_inst)
-        self.config_inst.x.add_categories_production = False
+    # add categories to config inst
+    add_categories_production(self.config_inst)
 
 
 @producer(
@@ -76,8 +74,9 @@ def ml_cats_init(self: Producer) -> None:
     if not self.ml_model_name:
         self.ml_model_name = "dense_default"
 
-        add_categories_production(self.config_inst)
-        add_categories_ml(self.config_inst, dense_default) #ask mathis
+    # add categories to config inst
+    add_categories_production(self.config_inst)
+    add_categories_ml(self.config_inst, dense_test)
 
 
 # get all the derived DenseClassifier models and instantiate a corresponding producer

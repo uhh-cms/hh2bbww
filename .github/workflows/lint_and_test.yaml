@@ -27,3 +27,26 @@ jobs:
         run: |
           source setup.sh ""
           ./tests/run_linting
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ⬇️
+        uses: actions/checkout@master
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup python 🐍
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies ☕️
+        run: |
+          source setup.sh ""
+
+      - name: Test 🎢
+        run: |
+          source setup.sh ""
+          ./tests/run_tests
