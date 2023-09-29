@@ -18,10 +18,10 @@ ml_model_name = "dense_default"
 
 # All processes to be included in the final datacard
 processes = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
+    "ggHH_kl_0_kt_1_dl_hbbhww",
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    "ggHH_kl_2p45_kt_1_dl_hbbhww",
+    "ggHH_kl_5_kt_1_dl_hbbhww",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -35,14 +35,14 @@ processes = [
 
 # All inference channels to be included in the final datacard
 channels = [
-    "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
-    "cat_1e_tt",
-    "cat_1e_st",
-    "cat_1e_v_lep",
-    "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww",
-    "cat_1mu_tt",
-    "cat_1mu_st",
-    "cat_1mu_v_lep",
+    "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
+    "cat_2e_t_bkg",
+    # "cat_1e_st",
+    "cat_2e_v_lep",
+    "cat_2mu_ggHH_kl_1_kt_1_dl_hbbhww",
+    "cat_2mu_t_bkg",
+    # "cat_1mu_st",
+    "cat_2mu_v_lep",
 ]
 
 rate_systematics = [
@@ -74,8 +74,8 @@ rate_systematics = [
     "pdf_Higgs_qg",  # none so far
     "pdf_Higgs_ttH",
     "pdf_Higgs_bbH",  # removed
-    "pdf_ggHH",
-    "pdf_qqHH",
+    "pdf_Higgs_ggHH",
+    "pdf_Higgs_qqHH",
     "pdf_VHH",
     "pdf_ttHH",
 ]
@@ -118,7 +118,7 @@ shape_systematics = [
 ]
 
 # All systematics to be included in the final datacard
-systematics = rate_systematics + shape_systematics
+systematics = rate_systematics #+ shape_systematics
 
 
 default_cls_dict = {
@@ -149,9 +149,9 @@ def default(self):
 
     # TODO: use ML model inst if possible
     ml_model_processes = [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
-        "tt",
-        "st",
+        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "t_bkg",
+        # "st",
         "v_lep",
         # "w_lnu",
         # "dy_lep",
@@ -166,12 +166,12 @@ def default(self):
 
     for proc in ml_model_processes:
         for lep in ("e", "mu"):
-            cat_name = f"cat_1{lep}_{proc}"
+            cat_name = f"cat_2{lep}_{proc}"
             if cat_name not in self.channels:
                 continue
 
             cat_kwargs = {
-                "config_category": f"1{lep}__ml_{proc}",
+                "config_category": f"2{lep}__ml_{proc}",
                 "config_variable": f"mlscore.{proc}_rebin",
                 "mc_stats": self.mc_stats,
             }
@@ -319,15 +319,15 @@ cls_dict["systematics"] = rate_systematics
 rates_only = default.derive("rates_only", cls_dict=cls_dict)
 
 cls_dict["processes"] = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
-    "st_schannel",
+    "ggHH_kl_0_kt_1_dl_hbbhww",
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    "ggHH_kl_2p45_kt_1_dl_hbbhww",
+    "ggHH_kl_5_kt_1_dl_hbbhww",
+    "tt",
 ]
 
 cls_dict["channels"] = [
-    "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
+    "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
 ]
 
 cls_dict["systematics"] = [

@@ -137,7 +137,7 @@ def add_categories_production(config: od.Config) -> None:
     #
 
     category_blocks = OrderedDict({
-        "lep": [cat_1e, cat_1mu],
+        "lep": [cat_2e, cat_2mu],
         "jet": [cat_resolved, cat_boosted],
         "b": [cat_1b, cat_2b],
     })
@@ -168,7 +168,7 @@ def add_categories_ml(config, ml_model_inst):
         ))
 
     category_blocks = OrderedDict({
-        "lep": [config.get_category("1e"), config.get_category("1mu")],
+        "lep": [config.get_category("2e"), config.get_category("2mu")],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
         "b": [config.get_category("1b"), config.get_category("2b")],
         "dnn": ml_categories,

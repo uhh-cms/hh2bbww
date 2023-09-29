@@ -151,7 +151,7 @@ class MLClassifierBase(MLModel):
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
         model = tf.keras.models.load_model(
-            target["mlmodel"].path #, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
         return model, input_features, parameters
 
@@ -383,7 +383,7 @@ class MLClassifierBase(MLModel):
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
-        from hbw.ml.tf_util import cumulated_crossentropy
+        # from hbw.ml.tf_util import cumulated_crossentropy
         import tensorflow as tf
 
         n_inputs = len(set(self.input_features))
@@ -598,6 +598,9 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
+        if len(events) == 0:
+            logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
+            return events
 
         logger.info(f"Evaluation of dataset {task.dataset}")
 
