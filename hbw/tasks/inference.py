@@ -63,9 +63,15 @@ def get_rebin_values(hist, N_bins_final: int = 10):
     """
     N_bins_input = hist.GetNbinsX()
 
+    # replace empty bin values (TODO: remove as soon as we can disable the empty bin filling)
+    EMPTY_BIN_VALUE = 1e-5
+    for i in range(1, N_bins_input + 1):
+        if hist.GetBinContent(i) == EMPTY_BIN_VALUE:
+            hist.SetBinContent(i, 0)
+
     # determine events per bin the final histogram should have
     events_per_bin = hist.Integral() / N_bins_final
-    print(f" ============ {round(events_per_bin, 3)} events per bin")
+    print(f"============ {round(events_per_bin, 3)} events per bin")
 
     # bookkeeping number of bins and number of events
     bin_count = 1
@@ -81,10 +87,10 @@ def get_rebin_values(hist, N_bins_final: int = 10):
 
         N_events += hist.GetBinContent(i)
         if i % 100 == 0:
-            print(f" ========== Bin {i} of {N_bins_input}, {N_events} events")
+            print(f"========== Bin {i} of {N_bins_input}, {N_events} events")
         if N_events >= events_per_bin * bin_count:
             # when *N_events* surpasses threshold, append the corresponding bin edge and count
-            print(f" ++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
+            print(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
             rebin_values.append(hist.GetBinLowEdge(i + 1))
             bin_count += 1
 
@@ -108,7 +114,7 @@ def check_empty_bins(hist, fill_empty: float = 1e-5, required_entries: int = 3) 
     Checks for empty bins, negative bin content, or bins with less than *required_entires* entries.
     When set to a value >= 0, empty or negative bin contents and errors are replaced with *fill_empty*.
     """
-    print(f" ============ Checking histogram {hist.GetName()}")
+    print(f"============ Checking histogram {hist.GetName()}")
     import math
     max_error = lambda value: math.inf
     if required_entries > 0:
