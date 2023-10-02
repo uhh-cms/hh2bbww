@@ -53,7 +53,7 @@ def default_producers(cls, container, task_params):
         default_producers.append("event_weights")
 
     # check if a ml_model has been set
-    ml_model = task_params.get("mlmodel", None) or task_params.get("mlmodels", None)
+    ml_model = task_params.get("ml_model", None) or task_params.get("ml_models", None)
 
     # only consider 1 ml_model
     if isinstance(ml_model, (list, tuple)):
