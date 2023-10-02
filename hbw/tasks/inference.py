@@ -19,6 +19,7 @@ from columnflow.tasks.framework.mixins import (
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.cms.inference import CreateDatacards
 from columnflow.util import dev_sandbox, maybe_import
+from hbw.tasks.base import HBWTask
 
 array = maybe_import("array")
 
@@ -152,6 +153,7 @@ def print_hist(hist, max_bins: int = 20):
 
 
 class ModifyDatacardsFlatRebin(
+    HBWTask,
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import Sequence
 
-import math
 import law
 import order as od
 
@@ -100,23 +99,36 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     store_name = "inputs_v1"
 
     folds = 5
-    layers = (512, 512, 512)
-    activation = "relu"
+    validation_fraction = 0.20
     learningrate = 0.00050
-    batchsize = 2 ** 12
-    epochs = 100
-    dropout = 0.50
     negative_weights = "handle"
+
+    # overwriting DenseModelMixin parameters
+    activation = "relu"
+    layers = (512, 512, 512)
+    dropout = 0.20
+
+    # overwriting ModelFitMixin parameters
+    callbacks = {
+        "backup", "checkpoint", "reduce_lr",
+        # "early_stopping",
+    }
+    remove_backup = True
+    reduce_lr_factor = 0.8
+    reduce_lr_patience = 3
+    epochs = 100
+    batchsize = 2 ** 12
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params = [
         # base params
         "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
-        "negative_weights", "epochs", "batchsize", "folds",
+        "negative_weights", "folds",
         # DenseModelMixin
         "activation", "layers", "dropout",
         # ModelFitMixin
-        "callbacks",
+        "callbacks", "reduce_r_factor", "reduce_lr_patience",
+        "epochs", "batchsize",
     ]
 
     def __init__(
@@ -178,6 +190,10 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         return ["ml_inputs"]
 
 
+# copies of the default DenseClassifier for testing hard-coded changes
+for i in range(10):
+    dense_copy = DenseClassifier.derive(f"dense_{i}")
+
 cls_dict_test = {
     "epochs": 4,
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "tt", "st", "v_lep"],
@@ -197,6 +213,10 @@ dense_default = DenseClassifier.derive("dense_default", cls_dict={})
 for n_epochs in (5, 10, 20, 50, 100, 200, 500):
     _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
 
+# for testing different number of nodes per layer
+for n_nodes in (64, 128, 256, 512):
+    _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
+
 # for testing different modes of handling negative weights
 for negative_weights_mode in ("handle", "ignore", "abs"):
     _dnn = DenseClassifier.derive(
@@ -205,17 +225,17 @@ for negative_weights_mode in ("handle", "ignore", "abs"):
     )
 
 # for testing different learning rates
-for learningrate in (0.00500, 0.00050, 0.00010, 0.00005, 0.00001):
+for learningrate in (0.05000, .00500, 0.00050, 0.00010, 0.00005, 0.00001):
     _dnn = DenseClassifier.derive(
         f"dense_lr_{str(learningrate).replace('.', 'p')}",
         cls_dict={"learningrate": learningrate},
     )
 
 # for testing different batchsizes
-for batchsize in (2**11, 2**12, 2**13, 2**14, 2**15, 2**16, 2**17):
+for batchsize in (11, 12, 13, 14, 15, 16, 17):
     _dnn = DenseClassifier.derive(
-        f"dense_bs_{str(math.log(batchsize, 2))}",
-        cls_dict={"batchsize": batchsize},
+        f"dense_bs_2pow{batchsize}",
+        cls_dict={"batchsize": 2 ** batchsize},
     )
 
 # for testing different dropout rates

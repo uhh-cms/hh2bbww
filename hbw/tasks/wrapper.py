@@ -12,11 +12,13 @@ from columnflow.tasks.framework.mixins import (
 )
 from columnflow.tasks.plotting import PlotVariables1D
 from columnflow.tasks.framework.remote import RemoteWorkflow
+from hbw.tasks.base import HBWTask
 
 from columnflow.util import dev_sandbox
 
 
 class DefaultPlots(
+    HBWTask,
     # MLModelsMixin,
     # ProducersMixin,
     # SelectorStepsMixin,

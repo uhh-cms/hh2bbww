@@ -56,8 +56,10 @@ default_process_colors = {
 
 ml_labels = {
     "tt": "$t\\bar{t}$",
-    "ggHH_kl_1_kt_1_sl_hbbhww": "HH (sl)",
-    "ggHH_kl_1_kt_1_dl_hbbhww": "HH (dl)",
+    "ggHH_kl_1_kt_1_sl_hbbhww": "ggHH (sl)",
+    "ggHH_kl_1_kt_1_dl_hbbhww": "ggHH (dl)",
+    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "qqHH (sl)",
+    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "qqHH (dl)",
     "st": "st",
     "w_lnu": "W",
     "dy_lep": "DY",

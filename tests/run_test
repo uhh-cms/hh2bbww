@@ -6,7 +6,7 @@ action() {
     local shell_is_zsh=$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )
     local this_file="$( ${shell_is_zsh} && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
-    local cf_dir="$( dirname "${this_dir}/../modules/columnflow" )"
+    local cf_dir="${this_dir}/../modules/columnflow"
 
     # get and check arguments
     local mod="$1"

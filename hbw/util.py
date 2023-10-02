@@ -6,13 +6,87 @@ Collection of helpers
 
 from __future__ import annotations
 
-from typing import Hashable, Iterable
+from typing import Hashable, Iterable, Callable
 
 import tracemalloc
 
 import law
 
+from columnflow.util import maybe_import
+
+np = maybe_import("numpy")
+
 _logger = law.logger.get_logger(__name__)
+
+
+def build_param_product(params: dict[str, list], output_keys: Callable = lambda i: i):
+    """
+    Helper that builds the product of all *param* values and returns a dictionary of
+    all the resulting parameter combinations.
+
+    Example:
+
+    .. code-block:: python
+        build_param_product({"A": ["a", "b"], "B": [1, 2]})
+        # -> {
+            0: {"A": "a", "B": 1},
+            1: {"A": "a", "B": 2},
+            2: {"A": "b", "B": 1},
+            3: {"A": "b", "B": 2},
+        }
+    """
+    from itertools import product
+    param_product = {}
+    keys, values = zip(*params.items())
+    for i, bundle in enumerate(product(*values)):
+        d = dict(zip(keys, bundle))
+        param_product[output_keys(i)] = d
+
+    return param_product
+
+
+def round_sig(
+    value: int | float | np.number,
+    sig: int = 4,
+    convert: Callable | None = None,
+) -> int | float | np.number:
+    """
+    Helper function to round number *value* on *sig* significant digits and
+    optionally transform output to type *convert*
+    """
+    if not np.isfinite(value):
+        # cannot round infinite
+        _logger.warning("cannot round infinite number")
+        return value
+
+    from math import floor, log10
+
+    def try_rounding(_value):
+        try:
+            n_digits = sig - int(floor(log10(abs(_value)))) - 1
+            if convert in (int, np.int8, np.int16, np.int32, np.int64):
+                # do not round on decimals when converting to integer
+                n_digits = min(n_digits, 0)
+            return round(_value, n_digits)
+        except Exception:
+            _logger.warning(f"Cannot round number {value} to {sig} significant digits. Number will not be rounded")
+            return value
+
+    # round first to not lose information from type conversion
+    rounded_value = try_rounding(value)
+
+    # convert number if "convert" is given
+    if convert not in (None, False):
+        try:
+            rounded_value = convert(rounded_value)
+        except Exception:
+            _logger.warning(f"Cannot convert {rounded_value} to {convert.__name__}")
+            return rounded_value
+
+        # some types need rounding again after converting (e.g. np.float32 to float)
+        rounded_value = try_rounding(rounded_value)
+
+    return rounded_value
 
 
 def log_memory(
