@@ -6,10 +6,13 @@ Tasks related to the creation and modification of datacards for inference purpos
 
 from __future__ import annotations
 
-import luigi
+from typing import Callable
+
+# import luigi
 import law
 
-from columnflow.tasks.framework.base import Requirements
+from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT
+from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
 )
@@ -62,7 +65,7 @@ def get_rebin_values(hist, N_bins_final: int = 10):
 
     # determine events per bin the final histogram should have
     events_per_bin = hist.Integral() / N_bins_final
-    print(f" ==== {events_per_bin} events per bin")
+    print(f" ============ {round(events_per_bin, 3)} events per bin")
 
     # bookkeeping number of bins and number of events
     bin_count = 1
@@ -82,7 +85,7 @@ def get_rebin_values(hist, N_bins_final: int = 10):
         if N_events >= events_per_bin * bin_count:
             # when *N_events* surpasses threshold, append the corresponding bin edge and count
             print(f" ++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
-            rebin_values.append(hist.GetBinLowEdge(i))
+            rebin_values.append(hist.GetBinLowEdge(i + 1))
             bin_count += 1
 
     # final bin is x_max
@@ -100,19 +103,36 @@ def apply_binning(hist, rebin_values: list):
     return h_out
 
 
-def check_empty_bins(hist) -> int:
-    """ Checks for empty bins, negative bin content, or bins with less than 3 entries """
-    print(f"Checking histogram {hist.GetName()}")
+def check_empty_bins(hist, fill_empty: float = 1e-5, required_entries: int = 3) -> int:
+    """
+    Checks for empty bins, negative bin content, or bins with less than *required_entires* entries.
+    When set to a value >= 0, empty or negative bin contents and errors are replaced with *fill_empty*.
+    """
+    print(f" ============ Checking histogram {hist.GetName()}")
+    import math
+    max_error = lambda value: math.inf
+    if required_entries > 0:
+        # error above sqrt(N)/N means that we have less than N MC events
+        # (assuming each MC event has the same weight)
+        max_error = lambda value: value * math.sqrt(required_entries) / required_entries
+
     count = 0
     for i in range(1, hist.GetNbinsX() + 1):
         value = hist.GetBinContent(i)
         error = hist.GetBinError(i)
-        if value <= 0 or error > 0.57 * value:
-            # error above 57% means that we have less than 3 MC events
-            # (assuming each MC event has the same weight)
+        if value <= 0:
+            print(f"==== Found empty or negative bin {i}, (value: {value}, error: {error})")
             count += 1
-            print(f"==== Found issue with bin {i}, (value: {value}, error: {error})")
+            if fill_empty >= 0:
+                print(f"     Bin {i} value + error will be filled with {fill_empty}")
+                hist.SetBinContent(i, fill_empty)
+                hist.SetBinError(i, fill_empty)
 
+        if error > max_error(value):
+            print(
+                f"==== Bin {i} has less than {required_entries} entries (value: {value}, error: {error}); "
+                f"Rebinning procedure might have to be restarted with less bins than {hist.GetNbinsX()}",
+            )
     return count
 
 
@@ -125,7 +145,7 @@ def print_hist(hist, max_bins: int = 20):
         print(f"{i} \t {hist.GetBinLowEdge(i)} \t {hist.GetBinContent(i)}")
 
 
-class ModifyDatacards(
+class ModifyDatacardsFlatRebin(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
@@ -134,21 +154,17 @@ class ModifyDatacards(
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
-    # NOTE: probably needs PyRoot
-    # sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
     sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cmssw_default.sh")
 
-    n_bins_sr = luigi.IntParameter(
-        default=10,
-        description="Number of bins in the Signal Region histograms",
+    bins_per_category = SettingsParameter(
+        default=(RESOLVE_DEFAULT,),
+        description="Number of bins per category in the format `cat_name=n_bins,...`; ",
     )
-    n_bins_vbfsr = luigi.IntParameter(
-        default=5,
-        description="Number of bins in the VBF Signal Region histograms",
-    )
-    n_bins_br = luigi.IntParameter(
-        default=3,
-        description="Number of bins in the Background Region histograms",
+
+    inference_category_rebin_processes = SettingsParameter(
+        default=(RESOLVE_DEFAULT,),
+        significant=False,
+        description="Dummy Parameter; only used via config_inst default",
     )
 
     # upstream requirements
@@ -157,26 +173,65 @@ class ModifyDatacards(
         CreateDatacards=CreateDatacards,
     )
 
-    def get_category_type(self):
+    @classmethod
+    def resolve_param_values(cls, params):
+        params = super().resolve_param_values(params)
+
+        if config_inst := params.get("config_inst"):
+            def resolve_category_groups(param, group_str):
+                for cat_name in list(param.keys()):
+                    if resolved_cats := config_inst.x(group_str, {}).get(cat_name, None):
+                        for resolved_cat in law.util.make_tuple(resolved_cats):
+                            param[resolved_cat] = param[cat_name]
+
+            # resolve default and groups for `bins_per_category`
+            params["bins_per_category"] = cls.resolve_config_default(
+                params,
+                params.get("bins_per_category"),
+                container=config_inst,
+                default_str="default_bins_per_category",
+            )
+            resolve_category_groups(params["bins_per_category"], "inference_category_groups")
+
+            # set `inference_category_rebin_processes` as parameter and resolve groups
+            params["inference_category_rebin_processes"] = cls.resolve_config_default(
+                params,
+                RESOLVE_DEFAULT,
+                container=config_inst,
+                default_str="inference_category_rebin_processes",
+            )
+            resolve_category_groups(params["inference_category_rebin_processes"], "inference_category_groups")
+
+        return params
+
+    def get_n_bins(self, DEFAULT_N_BINS=8):
+        """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
         cat_name = self.branch_data.name
+        return int(self.bins_per_category.get(cat_name, DEFAULT_N_BINS))
 
-        if "ggHH" in cat_name:
-            return "SR"
-        elif "qqHH" in cat_name:
-            return "vbfSR"
-        else:
-            return "BR"
+    def get_rebin_processes(self):
+        """
+        Method to resolve the requested processes on which to flatten the histograms of the current category.
+        Defaults to all processes of the current category.
+        """
+        cat_name = self.branch_data.name
+        proc_names = [proc.name for proc in self.branch_data.processes]
 
-    def n_bins(self):
-        """ Helper to determine the requested number of bins for the current category """
-        cat_type = self.get_category_type()
+        rebin_process_condition = self.inference_category_rebin_processes.get(cat_name, None)
+        if not rebin_process_condition:
+            return proc_names
 
-        n_bins = {
-            "SR": self.n_bins_sr,
-            "vbfSR": self.n_bins_vbfsr,
-            "BR": self.n_bins_br,
-        }[cat_type]
-        return n_bins
+        # transform `rebin_process_condition` into Callable if required
+        if not isinstance(rebin_process_condition, Callable):
+            _rebin_processes = law.util.make_tuple(rebin_process_condition)
+            rebin_process_condition = lambda _proc_name: _proc_name in _rebin_processes
+
+        for proc_name in proc_names.copy():
+            # check for each process if the *rebin_process_condition*  is fulfilled
+            if not rebin_process_condition(proc_name):
+                proc_names.remove(proc_name)
+
+        return proc_names
 
     def create_branch_map(self):
         return list(self.inference_model_inst.categories)
@@ -198,8 +253,7 @@ class ModifyDatacards(
     def output(self):
         cat_obj = self.branch_data
         basename = lambda name, ext: f"{name}__cat_{cat_obj.config_category}__var_{cat_obj.config_variable}.{ext}"
-
-        n_bins = self.n_bins()
+        n_bins = self.get_n_bins()
         return {
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
             "shapes": self.target(basename(f"shapes_rebin_{n_bins}", "root")),
@@ -208,6 +262,9 @@ class ModifyDatacards(
     def run(self):
         import uproot
         from ROOT import TH1
+
+        # config_inst = self.config_inst
+        # inference_model = self.inference_model_inst
 
         inputs = self.input()
         outputs = self.output()
@@ -235,30 +292,27 @@ class ModifyDatacards(
                     f"datacard category name {self.branch_data.name}",
                 )
 
-            # get all histograms relevant for determining the rebin values
+            # get all nominal histograms
             nominal_hists = {
-                proc_name: file[f"{cat_name}/{proc_name}"].to_pyroot()
+                proc_name: file[get_hist_name(cat_name, proc_name)].to_pyroot()
                 for proc_name in proc_names
             }
 
-            cat_type = self.get_category_type()
+            # determine all processes required for the category *cat_name* to determine the rebin values
+            rebin_processes = self.get_rebin_processes()
 
-            if "SR" in cat_type:
-                # HH signal region --> flat in signal
-                hist = nominal_hists["ggHH_kl_1_kt_1_sl_hbbhww"]
-            else:
-                # background region --> flat in all backgrounds
-                hists = [
-                    nominal_hists[proc_name]
-                    for proc_name in nominal_hists.keys()
-                    if "ggHH" not in proc_name
-                ]
-                hist = hists[0]
-                for h in hists[1:]:
-                    hist += h
+            if diff := set(rebin_processes).difference(nominal_hists.keys()):
+                raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
+                "nominal histograms found")
 
-            print(f"Finding rebin values for category {cat_name}")
-            rebin_values = get_rebin_values(hist, self.n_bins())
+            hists = [nominal_hists[proc_name] for proc_name in rebin_processes]
+
+            hist = hists[0]
+            for h in hists[1:]:
+                hist += h
+
+            print(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
+            rebin_values = get_rebin_values(hist, self.get_n_bins())
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)
@@ -273,7 +327,6 @@ class ModifyDatacards(
                     raise Exception(f"{h} is not a TH1 histogram")
 
                 h_rebin = apply_binning(h, rebin_values)
-
                 problematic_bin_count = check_empty_bins(h_rebin)  # noqa
 
                 out_file[key] = uproot.from_pyroot(h_rebin)

@@ -329,6 +329,7 @@ cls_dict["processes"] = [
 
 cls_dict["channels"] = [
     "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
+    "cat_1e_st",
 ]
 
 cls_dict["systematics"] = [
