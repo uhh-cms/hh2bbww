@@ -93,12 +93,11 @@ setup_hbw() {
     export PYTHONPATH="${HBW_BASE}:${HBW_BASE}/modules/cmsdb:${PYTHONPATH}"
 
     # initialze submodules
-    if [ -d "${HBW_BASE}/.git" ]; then
+    if [ -e "${HBW_BASE}/.git" ]; then
         for m in $( ls -1q "${HBW_BASE}/modules" ); do
-            cf_init_submodule "${HBW_BASE}/modules/${m}"
+            cf_init_submodule "${HBW_BASE}" "modules/${m}"
         done
     fi
-
 
     #
     # law setup
