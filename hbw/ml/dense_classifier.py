@@ -269,3 +269,7 @@ dense_max_iter = DenseClassifier.derive(
 #         f"dense_bkgw_{str(bkg_weight)}",
 #         cls_dict={"ml_process_weights": ml_process_weights},
 #     )
+
+# make sure that all ml_models are initialized early enough
+from hbw.ml.derived import grid_search_models  # noqa
+logger.info(f"Number of derived DenseClassifiers: {len(DenseClassifier._subclasses)}")
