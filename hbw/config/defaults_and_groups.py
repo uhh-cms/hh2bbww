@@ -42,16 +42,19 @@ def default_ml_model(cls, container, task_params):
     return default_ml_model
 
 
+def ml_inputs_producer(cls, container, task_params):
+    if container.has_tag("is_sl"):
+        ml_inputs = "ml_inputs"
+    elif container.has_tag("is_dl"):
+        ml_inputs = "dl_ml_inputs"
+    return ml_inputs
+
+
 def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
-    dataset_inst = task_params.get("dataset_inst", None)
 
     # per default, use the ml_inputs and event_weights
-    # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    default_producers = ["ml_inputs"]
-    if dataset_inst and dataset_inst.is_mc:
-        # run event weights producer only if it's a MC dataset
-        default_producers.append("event_weights")
+    default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
 
     # check if a ml_model has been set
     ml_model = task_params.get("ml_model", None) or task_params.get("ml_models", None)
@@ -65,7 +68,7 @@ def default_producers(cls, container, task_params):
         ml_model = default_ml_model(cls, container, task_params)
 
     # check if task is directly using the MLModel or just requires some ML output
-    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"))
+    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaluation"))
 
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer

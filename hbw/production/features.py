@@ -49,7 +49,7 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         "HbbJet.msoftdrop",
-    } | four_vec("Jet"),
+    } | four_vec("Bjet"),
     produces={"m_bb", "bb_pt", "deltaR_bb", "m_bb_combined"},
 )
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

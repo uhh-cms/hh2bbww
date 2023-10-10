@@ -127,7 +127,6 @@ normalized_pu_weights = normalized_weight_factory(
         event_weight,
     },
     produces={
-        "mc_weight",  # might be needed for ML
         normalization_weights, electron_weights, muon_weights,
         normalized_btag_weights, normalized_pu_weights,
         event_weight,
