@@ -9,6 +9,7 @@ from collections import OrderedDict
 import law
 
 from columnflow.config_util import create_category_combinations
+from columnflow.ml import MLModel
 from hbw.util import call_once_on_config
 
 import order as od
@@ -154,6 +155,9 @@ def add_categories_production(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
+    # if not already done, get the ml_model instance
+    if isinstance(ml_model_inst, str):
+        ml_model_inst = MLModel.get_cls(ml_model_inst)(config)
 
     # add ml categories directly to the config
     ml_categories = []
