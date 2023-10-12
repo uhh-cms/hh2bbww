@@ -23,7 +23,6 @@ from hbw.config.datasets import get_dataset_lfns, get_custom_hh_datasets
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.util import four_vec
 
-
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
@@ -56,6 +55,12 @@ def add_config(
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    if cfg.has_tag("is_sl"):
+        cfg.x.lepton_tag = "sl"
+    elif cfg.has_tag("is_dl"):
+        cfg.x.lepton_tag = "dl"
+    else:
+        raise Exception(f"config {cfg.name} needs either the 'is_sl' or 'is_dl' tag")
 
     # use custom get_dataset_lfns function
     cfg.x.get_dataset_lfns = get_dataset_lfns
