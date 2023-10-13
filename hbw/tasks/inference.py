@@ -115,14 +115,13 @@ def check_empty_bins(hist, fill_empty: float = 1e-5, required_entries: int = 3) 
     Checks for empty bins, negative bin content, or bins with less than *required_entires* entries.
     When set to a value >= 0, empty or negative bin contents and errors are replaced with *fill_empty*.
     """
-    print(f"============ Checking histogram {hist.GetName()}")
+    print(f"============ Checking histogram {hist.GetName()} with {hist.GetNbinsX()} bins")
     import math
     max_error = lambda value: math.inf
     if required_entries > 0:
         # error above sqrt(N)/N means that we have less than N MC events
         # (assuming each MC event has the same weight)
         max_error = lambda value: value * math.sqrt(required_entries) / required_entries
-
     count = 0
     for i in range(1, hist.GetNbinsX() + 1):
         value = hist.GetBinContent(i)
@@ -325,6 +324,8 @@ class ModifyDatacardsFlatRebin(
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)
             for key, h in file.items():
+                # remove ";1" appendix
+                key = key.split(";")[0]
                 try:
                     # convert histograms to pyroot
                     h = h.to_pyroot()
@@ -336,5 +337,5 @@ class ModifyDatacardsFlatRebin(
 
                 h_rebin = apply_binning(h, rebin_values)
                 problematic_bin_count = check_empty_bins(h_rebin)  # noqa
-
+                print(f"Inserting histogram with name {key}")
                 out_file[key] = uproot.from_pyroot(h_rebin)
