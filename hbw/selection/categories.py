@@ -150,13 +150,11 @@ for proc in ml_processes:
         """
         dynamically built Categorizer that categorizes events based on dnn scores
         """
+        # start with true mask
+        outp_mask = np.ones(len(events), dtype=bool)
+        for col_name in events.mlscore.fields:
+            # check for each mlscore if *this* score is larger and combine all masks
+            mask = events.mlscore[self.proc_col_name] >= events.mlscore[col_name]
+            outp_mask = outp_mask & mask
 
-        # get all the ml scores
-        ml_scores = events["mlscore"]
-
-        # categorize events if *this* score is larger than all other
-        mask = ak.all(ak.Array([
-            ml_scores[self.proc_col_name] >= ml_scores[i] for i in ml_scores.fields
-        ]), axis=0)
-
-        return events, mask
+        return events, outp_mask
