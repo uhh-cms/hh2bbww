@@ -4,12 +4,9 @@
 hbw inference model.
 """
 
-from columnflow.inference import InferenceModel, inference_model
 import hbw.inference.constants as const  # noqa
+from hbw.inference.base import HBWInferenceModelBase
 
-from hbw.inference.functions import (
-    add_inference_categories, add_inference_processes, add_inference_parameters,
-)
 
 #
 # Defaults for all the Inference Model parameters
@@ -39,10 +36,12 @@ processes = [
 # All inference channels to be included in the final datacard
 channels = [
     "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
+    "cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
     "cat_1e_tt",
     "cat_1e_st",
     "cat_1e_v_lep",
     "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww",
+    "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
     "cat_1mu_tt",
     "cat_1mu_st",
     "cat_1mu_v_lep",
@@ -77,8 +76,8 @@ rate_systematics = [
     "pdf_Higgs_qg",  # none so far
     "pdf_Higgs_ttH",
     "pdf_Higgs_bbH",  # removed
-    "pdf_ggHH",
-    "pdf_qqHH",
+    "pdf_Higgs_ggHH",
+    "pdf_Higgs_qqHH",
     "pdf_VHH",
     "pdf_ttHH",
 ]
@@ -123,7 +122,6 @@ shape_systematics = [
 # All systematics to be included in the final datacard
 systematics = rate_systematics + shape_systematics
 
-
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes,
@@ -133,28 +131,7 @@ default_cls_dict = {
     "skip_data": True,
 }
 
-
-@inference_model(
-    **default_cls_dict,
-)
-def default(self: InferenceModel):
-    """
-    This is the default Inference model.
-    Idea: first build an inclusive Inference Model with all Channels/Processes/Systematics,
-    then remove anything not listed in the attributes.
-    """
-    year = self.config_inst.campaign.x.year  # noqa; not used right now
-
-    add_inference_categories(self)
-    add_inference_processes(self)
-    add_inference_parameters(self)
-
-    #
-    # post-processing
-    #
-
-    self.cleanup()
-
+default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
 
 #
 # derive some additional Inference Models
@@ -165,7 +142,7 @@ cls_dict = default_cls_dict.copy()
 cls_dict["systematics"] = rate_systematics
 
 # inference model with only rate uncertainties
-rates_only = default.derive("rates_only", cls_dict=cls_dict)
+sl_rates_only = default.derive("rates_only", cls_dict=cls_dict)
 
 cls_dict["processes"] = [
     "ggHH_kl_0_kt_1_sl_hbbhww",
