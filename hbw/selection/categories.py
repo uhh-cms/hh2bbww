@@ -136,7 +136,7 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 
 
 # TODO: not hard-coded -> use config?
-ml_processes = ["sg", "v_lep", "t_bkg"]
+ml_processes = ["ggHH_kl_5_kt_dl_hbbhww", "v_lep", "t_bkg"]
 for proc in ml_processes:
     @categorizer(
         uses=set(f"mlscore.{proc1}" for proc1 in ml_processes),

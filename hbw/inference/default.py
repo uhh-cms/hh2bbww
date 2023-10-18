@@ -35,13 +35,13 @@ processes = [
 
 # All inference channels to be included in the final datacard
 channels = [
-    "cat_2e_sg",
-    #"cat_2e_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"cat_2e_sg",
+    "cat_2e_ggHH_kl_5_kt_1_dl_hbbhww",
     "cat_2e_t_bkg",
     # "cat_1e_st",
     "cat_2e_v_lep",
-    "cat_2mu_sg",
-    #"cat_2mu_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"cat_2mu_sg",
+    "cat_2mu_ggHH_kl_5_kt_1_dl_hbbhww",
     "cat_2mu_t_bkg",
     # "cat_1mu_st",
     "cat_2mu_v_lep",
@@ -151,8 +151,8 @@ def default(self):
 
     # TODO: use ML model inst if possible
     ml_model_processes = [
-        #"ggHH_kl_2p45_kt_1_dl_hbbhww",
-        "sg",
+        "ggHH_kl_5_kt_1_dl_hbbhww",
+        #"sg",
         "t_bkg",
         # "st",
         "v_lep",

@@ -25,8 +25,8 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        "sg",
-        #"ggHH_kl_2p45_kt_1_dl_hbbhww",
+        #"sg",
+        "ggHH_kl_5_kt_1_dl_hbbhww",
         #"tt",
         #"st",
         "v_lep",
@@ -38,7 +38,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
-        "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
         "sg": 1,
         "tt": 1,
         "st": 1,
@@ -51,7 +51,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     dataset_names = {
         "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -214,9 +214,9 @@ for i in range(10):
 cls_dict_test = {
     "folds": 5,
     "epochs": 100,
-    "processes": ["ggHH_kl_2p45_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
+    "processes": ["ggHH_kl_5_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
     "dataset_names": {
-        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg", # "tt_dl_powheg",
+        "ggHH_kl_5_kt_1_dl_hbbhww_powheg", # "tt_dl_powheg",
         #"st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
         "dy_lep_m50_ht400to600_madgraph",
     },

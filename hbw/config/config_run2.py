@@ -140,9 +140,9 @@ def add_config(
         xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
         label="HH",
     )
-    sg.add_process(cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww))
-    sg.add_process(cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww))
-    sg.add_process(cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww))
+    sg.add_process(cfg.get_process("w_lnu"))
+    sg.add_process(cfg.get_process("st"))
+    #sg.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
     
     '''
     # Custom all_sg process for ML Training, combining signal processes with different kl 
