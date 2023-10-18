@@ -26,8 +26,9 @@ def default_ml_model(cls, container, task_params):
         # TODO: we might want to distinguish between two default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
-    # check if task is using an inference model; if that's the case, use the default set in the model
-    if cls.task_family == "cf.CreateDatacards":
+    # check if task is using an inference model
+    # if that is the case, use the default ml_model set in the inference model
+    if getattr(cls, "inference_model", None):
         inference_model = task_params.get("inference_model", None)
 
         # if inference model is not set, assume it's the container default
@@ -41,19 +42,27 @@ def default_ml_model(cls, container, task_params):
     return default_ml_model
 
 
+def ml_inputs_producer(cls, container, task_params):
+    if container.has_tag("is_sl"):
+        ml_inputs = "ml_inputs"
+    elif container.has_tag("is_dl"):
+        ml_inputs = "dl_ml_inputs"
+    return ml_inputs
+
+
 def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
-    dataset_inst = task_params.get("dataset_inst", None)
 
-    # per default, use the ml_inputs and event_weights
+    # how it was before merge default, use the ml_inputs and event_weights
     # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    default_producers = ["dl_ml_inputs"]
-    if dataset_inst and dataset_inst.is_mc:
+    #default_producers = ["dl_ml_inputs"]
+    #if dataset_inst and dataset_inst.is_mc:
         # run event weights producer only if it's a MC dataset
-        default_producers.append("event_weights")
+    #    default_producers.append("event_weights")
+    default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
 
     # check if a ml_model has been set
-    ml_model = task_params.get("mlmodel", None) or task_params.get("mlmodels", None)
+    ml_model = task_params.get("ml_model", None) or task_params.get("ml_models", None)
 
     # only consider 1 ml_model
     if isinstance(ml_model, (list, tuple)):
@@ -64,7 +73,7 @@ def default_producers(cls, container, task_params):
         ml_model = default_ml_model(cls, container, task_params)
 
     # check if task is directly using the MLModel or just requires some ML output
-    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaulation"))
+    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaluation"))
 
     # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
     # use the ml categorization producer
@@ -245,4 +254,39 @@ def set_config_defaults_and_groups(config_inst):
         "mli": ["ml_inputs", "event_weights"],
         "mlo": ["ml_dense_default", "event_weights"],
         "cols": ["mli", "features"],
+    }
+
+    # configuration regarding rebinning
+    config_inst.x.inference_category_groups = {
+        "SR": ("cat_1e_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "vbfSR": ("cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "BR": ("cat_1e_tt", "cat_1e_st", "cat_1e_v_lep", "cat_1mu_tt", "cat_1mu_st", "cat_1mu_v_lep"),
+    }
+
+    config_inst.x.default_bins_per_category = {
+        "SR": 10,
+        "vbfSR": 5,
+        "BR": 3,
+        # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": 10,
+        # "cat_1e_tt": 3,
+        # "cat_1e_st": 3,
+        # "cat_1e_v_lep": 3,
+        # "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww": 10,
+        # "cat_1mu_tt": 3,
+        # "cat_1mu_st": 3,
+        # "cat_1mu_v_lep": 3,
+    }
+
+    config_inst.x.inference_category_rebin_processes = {
+        "SR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "BR": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        # "cat_1e_tt": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1e_st": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1e_v_lep": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww":  ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        # "cat_1mu_tt": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1mu_st": lambda proc_name: "hbbhww" not in proc_name,
+        # "cat_1mu_v_lep": lambda proc_name: "hbbhww" not in proc_name,
     }

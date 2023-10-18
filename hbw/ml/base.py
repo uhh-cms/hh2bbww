@@ -21,8 +21,8 @@ from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
-    plot_history, plot_confusion, plot_roc_ovr, plot_roc_ovo, plot_output_nodes,
-    get_input_weights,
+    plot_history, plot_confusion, plot_roc_ovr,  # plot_roc_ovo,
+    plot_output_nodes, get_input_weights,
 )
 
 
@@ -118,7 +118,7 @@ class MLClassifierBase(MLModel):
             "plots": target.child("plots", type="d", optional=True),
             # "plots": target.sibling(f"plots_f{task.branch}of{self.folds}", type="d", optional=True),
             # TODO: fill the stats.yaml with scores like accuracy, AUC, etc.
-            # "stats": target.child("stats.yaml", type="f", optional=True),
+            "stats": target.child("stats.yaml", type="f", optional=True),
         }
 
         # define all files that need to be present
@@ -446,6 +446,9 @@ class MLClassifierBase(MLModel):
         validation: tf.data.Dataset,
         output: law.LocalDirectoryTarget,
     ) -> None:
+        output_stats = output["stats"]
+        stats = {}
+
         # store all outputs from this function in the 'plots' directory
         output = output["plots"]
 
@@ -492,19 +495,22 @@ class MLClassifierBase(MLModel):
         validation.prediction = call_func_safe(predict_numpy_on_batch, model, validation.inputs)
 
         # create some confusion matrices
-        call_func_safe(plot_confusion, model, train, output, "train", self.process_insts)
-        call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts)
+        call_func_safe(plot_confusion, model, train, output, "train", self.process_insts, stats=stats)
+        call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts, stats=stats)
         gc.collect()
 
         # create some ROC curves
-        call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts)
-        call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts)
-        call_func_safe(plot_roc_ovo, model, train, output, "train", self.process_insts)
-        call_func_safe(plot_roc_ovo, model, validation, output, "validation", self.process_insts)
+        call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts, stats=stats)
+        call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts, stats=stats)
+        # call_func_safe(plot_roc_ovo, model, train, output, "train", self.process_insts)
+        # call_func_safe(plot_roc_ovo, model, validation, output, "validation", self.process_insts)
         gc.collect()
 
         # create plots for all output nodes
         call_func_safe(plot_output_nodes, model, train, validation, output, self.process_insts)
+
+        # dump all stats into yaml file
+        output_stats.dump(stats, formatter="yaml")
 
         return
 

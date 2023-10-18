@@ -94,6 +94,10 @@ class DenseModelMixin():
 
         model.compile(
             loss=cumulated_crossentropy,
+            # NOTE: we'd preferrably use the Keras CCE, but it does not work when assigning one event
+            #       to multiple classes (target with multiple entries != 0)
+            # loss ="categorical_crossentropy",
+            # loss=tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE),
             optimizer=optimizer,
             metrics=["categorical_accuracy"],
             weighted_metrics=["categorical_accuracy"],
@@ -108,7 +112,9 @@ class ModelFitMixin():
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
-    remove_backup = True 
+    remove_backup = True
+    reduce_lr_factor = 0.8
+    reduce_lr_patience = 3
     epochs = 200
     batchsize = 2 ** 12
 
@@ -139,6 +145,7 @@ class ModelFitMixin():
             tf_validation = tf.data.Dataset.from_tensor_slices(
                 (validation.inputs, validation.target, validation.ml_weights),
             ).batch(self.batchsize)
+
         log_memory("init")
         # output used for BackupAndRestore callback (not deleted by --remove-output)
         # NOTE: does that work when running remote?
@@ -162,15 +169,15 @@ class ModelFitMixin():
             "early_stopping": tf.keras.callbacks.EarlyStopping(
                 monitor="val_loss",
                 min_delta=0,
-                patience=max(10, min(50, int(self.epochs / 5))),
+                patience=max(min(50, int(self.epochs / 5)), 10),
                 verbose=1,
                 restore_best_weights=True,
-                start_from_epoch=max(10, min(50, int(self.epochs / 5))),
+                start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
             ),
             "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
                 monitor="val_loss",
-                factor=0.7,
-                patience=max(5, min(10, int(self.epochs / 20))),
+                factor=self.reduce_lr_factor,
+                patience=self.reduce_lr_patience,
                 verbose=1,
                 mode="auto",
                 min_delta=0,

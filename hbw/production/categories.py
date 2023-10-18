@@ -11,7 +11,6 @@ from columnflow.util import maybe_import, InsertableDict
 from columnflow.production.categories import category_ids
 
 from hbw.config.categories import add_categories_production, add_categories_ml
-from hbw.ml.dense_classifier import dense_test
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -76,7 +75,7 @@ def ml_cats_init(self: Producer) -> None:
 
     # add categories to config inst
     add_categories_production(self.config_inst)
-    add_categories_ml(self.config_inst, dense_test)
+    add_categories_ml(self.config_inst, self.ml_model_name)
 
 
 # get all the derived DenseClassifier models and instantiate a corresponding producer

@@ -85,7 +85,12 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     if not self.dataset_inst.has_tag("skip_pdf"):
         # compute pdf weights
-        events = self[pdf_weights](events, **kwargs)
+        events = self[pdf_weights](
+            events,
+            outlier_action="remove",
+            outlier_log_mode="warning",
+            **kwargs,
+        )
 
     return events
 
@@ -127,7 +132,6 @@ normalized_pu_weights = normalized_weight_factory(
         event_weight,
     },
     produces={
-        "mc_weight",  # might be needed for ML
         normalization_weights, electron_weights, muon_weights,
         normalized_btag_weights, normalized_pu_weights,
         event_weight,
