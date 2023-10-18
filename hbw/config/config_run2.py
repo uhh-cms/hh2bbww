@@ -53,7 +53,7 @@ def add_config(
 
     # get all root processes
     procs = get_root_processes_from_campaign(campaign)
-
+    # __import__("IPython").embed()
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
 
@@ -100,6 +100,20 @@ def add_config(
         cfg.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_dl_hbbhww)
         cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww)
         cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww)
+        # Custom sg process for ML Training, combining all ggHH signal samples
+        # my_sig = cfg.add_process(
+        #    name="sg",
+        #    id=12901290,  # random number
+        #    xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) 
+        #        + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
+        #    label="HH merged (dl)",
+        #)
+        my_sig = od.Process(name = "new_sig", id = 1290129, label="HH merged (dl)", xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},)
+
+        # my_sig.add_process(cfg.get_process("st"))
+        # sg.add_process(cfg.get_process("tt"))
+        my_sig.add_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww)
+        #sg.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
 
     # QCD process customization
     cfg.get_process("qcd_mu").label = "QCD Muon enriched"
@@ -132,31 +146,6 @@ def add_config(
     t_bkg.add_process(cfg.get_process("tt"))
     t_bkg.add_process(cfg.get_process("st"))
     
-    
-    # Custom t_bkg process for ML Training, combining tt + st
-    sg = cfg.add_process(
-        name="sg",
-        id=99975573,  # random number
-        xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
-        label="HH",
-    )
-    sg.add_process(cfg.get_process("w_lnu"))
-    sg.add_process(cfg.get_process("st"))
-    #sg.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
-    
-    '''
-    # Custom all_sg process for ML Training, combining signal processes with different kl 
-    all_kl = cfg.add_process(
-        name="all_kl",
-        id=91588473,  # random number
-        xsecs={13: cfg.get_process("ggHH_kl_0_kt_1_dl_hbbhww").get_xsec(13) + cfg.get_process("ggHH_kl_1_kt_1_dl_hbbhww").get_xsec(13) + cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww").get_xsec(13)},
-        label="HH (dl)",
-    )
-    all_kl.add_process(cfg.get_process("ggHH_kl_0_kt_1_dl_hbbhww"))
-    all_kl.add_process(cfg.get_process("ggHH_kl_1_kt_1_dl_hbbhww"))
-    all_kl.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
-    '''
-
     # set color of some processes
     stylize_processes(cfg)
 

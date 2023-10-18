@@ -51,7 +51,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     dataset_names = {
         "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
