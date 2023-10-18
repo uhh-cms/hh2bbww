@@ -26,7 +26,8 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "sg",
+        #"ggHH_kl_2p45_kt_1_dl_hbbhww",
         #"tt",
         #"st",
         "v_lep",
@@ -36,7 +37,10 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ]
 
     ml_process_weights = {
+        "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
+        "sg": 1,
         "tt": 1,
         "st": 1,
         "v_lep": 1,
@@ -46,14 +50,16 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     dataset_names = {
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
         "tt_fh_powheg",
         # SingleTop
         "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
+        # "st_tchannel_tbar_powheg", #problem in previous task for production
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
         #"st_schannel_lep_amcatnlo", #problem with normalizatino weights.. 
@@ -84,7 +90,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
         "mli_dphi_ll", "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
-        "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt",
+        "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt", "mli_met_pt",
         #"mli_met_eta", "meli_met_pt", 
         #"mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         #"mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
@@ -92,7 +98,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         #"mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     ] + [
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "lep", "lep2", "met"]
+        for obj in ["b1", "b2", "lep", "lep2"]
         for var in ["pt", "eta"]
     ] 
     """
@@ -105,12 +111,12 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     store_name = "inputs_v1"
 
-    folds = 5
+    folds = 3
     layers = (164, 164, 164)
     activation = "relu"
     learningrate = 0.0005
     batchsize = 8000 #2 ** 12
-    epochs = 250
+    epochs = 150
     dropout = 0.50
     negative_weights = "abs"
 
@@ -187,9 +193,9 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 cls_dict_test = {
     "folds": 5,
     "epochs": 100,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "dy_lep"],
+    "processes": ["ggHH_kl_2p45_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
     "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", # "tt_dl_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg", # "tt_dl_powheg",
         #"st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
         "dy_lep_m50_ht400to600_madgraph",
     },

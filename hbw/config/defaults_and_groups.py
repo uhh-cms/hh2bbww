@@ -47,7 +47,7 @@ def default_producers(cls, container, task_params):
 
     # per default, use the ml_inputs and event_weights
     # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    default_producers = ["ml_inputs"]
+    default_producers = ["dl_ml_inputs"]
     if dataset_inst and dataset_inst.is_mc:
         # run event weights producer only if it's a MC dataset
         default_producers.append("event_weights")
@@ -197,7 +197,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
-        "dilep": ["Jet", "Bjet", "Lepton", "Trigger", "TriggerAndLep"],
+        "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
     }
 
     # plotting settings groups

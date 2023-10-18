@@ -14,7 +14,8 @@ from columnflow.production.categories import category_ids
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
-from hbw.config.categories import add_categories_production
+from hbw.config.categories import add_categories_production, add_categories_ml
+from hbw.production.categories import ml_cats
 from hbw.util import four_vec
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -81,10 +82,10 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mindr_jj", ak.min(dr, axis=1))
 
     # vbf jet pair features
-    events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta))
-    events = set_ak_column_f32(events, "mli_vbf_invmass", (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass)
-    vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2
-    events = set_ak_column_f32(events, "mli_vbf_tag", vbf_tag)
+    # events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta))
+    # events = set_ak_column_f32(events, "mli_vbf_invmass", (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass)
+    # vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2
+    # events = set_ak_column_f32(events, "mli_vbf_tag", vbf_tag)
 
     # bjets in general
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
@@ -185,7 +186,7 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2", "lep", "lep2", "met"]
@@ -262,7 +263,8 @@ def dl_ml_inputs_init(self: Producer) -> None:
 
     # add categories to config
     add_categories_production(self.config_inst)
-
+    #add_categories_ml(self.config_inst, dense_test)
+    #ml_cats 
     # add variable instances to config
     add_ml_variables(self.config_inst)
 

@@ -115,22 +115,47 @@ def add_config(
     # Custom v_lep process for ML Training, combining W+DY
     v_lep = cfg.add_process(
         name="v_lep",
-        id=81575573,  # random number
+        id=64575573,  # random number
         xsecs={13: cfg.get_process("w_lnu").get_xsec(13) + cfg.get_process("dy_lep").get_xsec(13)},
         label="W and DY",
     )
     v_lep.add_process(cfg.get_process("w_lnu"))
     v_lep.add_process(cfg.get_process("dy_lep"))
-
-    # Custom t_bkg process for ML Training, combining W+DY
+    
+    # Custom t_bkg process for ML Training, combining tt + st
     t_bkg = cfg.add_process(
         name="t_bkg",
-        id=64575573,  # random number
+        id=81575573,  # random number
         xsecs={13: cfg.get_process("tt").get_xsec(13) + cfg.get_process("st").get_xsec(13)},
         label="tt and st",
     )
     t_bkg.add_process(cfg.get_process("tt"))
     t_bkg.add_process(cfg.get_process("st"))
+    
+    
+    # Custom t_bkg process for ML Training, combining tt + st
+    sg = cfg.add_process(
+        name="sg",
+        id=99975573,  # random number
+        xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
+        label="HH",
+    )
+    sg.add_process(cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww))
+    sg.add_process(cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww))
+    sg.add_process(cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww))
+    
+    '''
+    # Custom all_sg process for ML Training, combining signal processes with different kl 
+    all_kl = cfg.add_process(
+        name="all_kl",
+        id=91588473,  # random number
+        xsecs={13: cfg.get_process("ggHH_kl_0_kt_1_dl_hbbhww").get_xsec(13) + cfg.get_process("ggHH_kl_1_kt_1_dl_hbbhww").get_xsec(13) + cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww").get_xsec(13)},
+        label="HH (dl)",
+    )
+    all_kl.add_process(cfg.get_process("ggHH_kl_0_kt_1_dl_hbbhww"))
+    all_kl.add_process(cfg.get_process("ggHH_kl_1_kt_1_dl_hbbhww"))
+    all_kl.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
+    '''
 
     # set color of some processes
     stylize_processes(cfg)
@@ -154,7 +179,7 @@ def add_config(
         "tt_fh_powheg",
         # SingleTop
         "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
+        # "st_tchannel_tbar_powheg", # problems with weights in dproduce columns
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
