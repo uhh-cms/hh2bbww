@@ -6,7 +6,7 @@ e.g. default sets of plots or datacards
 """
 
 import law
-# import luigi
+import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
@@ -44,8 +44,14 @@ class InferencePlots(
     # disable some parameters
     datasets = None
     processes = None
-    variables = ()
     categories = None
+
+    inference_variables = law.CSVParameter(
+        default=("config_variable", "plot_variables"),
+        description="Inference category attributes to use to determine which variables to plot",
+    )
+    skip_variables = luigi.BoolParameter(default=False)
+    # skip_data = luigi.BoolParameter(default=False)
 
     # def create_branch_map(self):
     #     # create a dummy branch map so that this task could run as a job
@@ -57,13 +63,8 @@ class InferencePlots(
         PlotVariables1D=PlotVariables1D,
     )
 
-    # skip_data = luigi.BoolParameter(default=False)
-
     # def workflow_requires(self):
     #     reqs = super().workflow_requires()
-
-    #     from hbw.util import debugger; debugger()
-
     #     return reqs
 
     def requires(self):
@@ -75,8 +76,13 @@ class InferencePlots(
         ml_model_name = inference_model.ml_model_name
 
         for inference_category in inference_model.categories:
-            # create one plot for each
-            variable = inference_category.config_variable
+            # decide which variables to plot based on the inference model and the variables parameter
+            variables = []
+            for attr in self.inference_variables:
+                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
+            if not self.skip_variables:
+                variables.extend(self.variables)
+
             category = inference_category.config_category
             processes = inference_category.data_from_processes
 
@@ -84,7 +90,7 @@ class InferencePlots(
 
             reqs[inference_category.name] = self.reqs.PlotVariables1D.req(
                 self,
-                variables=(variable,),
+                variables=variables,
                 categories=(category,),
                 processes=processes,
                 ml_models=(ml_model_name,),
