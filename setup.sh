@@ -63,7 +63,7 @@ setup_hbw() {
             cf_setup_interactive_common_variables
 
             # query specific variables
-            query HBW_LAW_CONFIG "Name ofthe file to be used as law config (must be located in $HBW_BASE)" "law.sl.nocert.cfg"
+            query HBW_LAW_CONFIG "Name of the file to be used as law config (must be located in $HBW_BASE)" "law.sl.cfg"
 	}
 	cf_setup_interactive "${CF_SETUP_NAME}" "${HBW_BASE}/.setups/${CF_SETUP_NAME}.sh" || return "$?"
     fi
