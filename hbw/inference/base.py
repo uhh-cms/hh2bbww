@@ -82,7 +82,12 @@ class HBWInferenceModelBase(InferenceModel):
                 else:
                     cat_kwargs["config_data_datasets"] = const.data_datasets[lep]
 
-                self.add_category(cat_name, **cat_kwargs)  # noqa
+                self.add_category(cat_name, **cat_kwargs)
+
+                # get the inference category to do some customization
+                cat = self.get_category(cat_name)
+                # variables that are plotting via hbw.InferencePlots for this category
+                cat.plot_variables = [f"mlscore.{proc}", "jet1_pt"]
 
     def add_inference_processes(self: InferenceModel):
         """
