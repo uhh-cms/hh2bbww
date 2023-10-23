@@ -86,11 +86,11 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     input_features = [
         "mli_mll", "mli_min_dr_llbb", "mli_dr_ll", "mli_bb_pt",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
-        "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
+        "mli_deepjetsum", "mli_b_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
         "mli_dphi_ll", "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt", "mli_met_pt",
-        # "mli_met_eta", "meli_met_pt",
+        # "mli_met_eta",
         # "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         # "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         # "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
@@ -205,6 +205,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         return ["ml_inputs"] if self.config_ist.has_tag("is_sl") else ["dl_ml_inputs"]
+
 
 cls_dict_test = {
     "folds": 5,

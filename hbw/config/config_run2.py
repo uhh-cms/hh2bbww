@@ -36,7 +36,6 @@ def add_config(
     limit_dataset_files: int | None = None,
 ) -> od.Config:
     # validations
-    print("add", analysis, config_name, config_id)
     assert campaign.x.year in [2016, 2017, 2018]
     if campaign.x.year == 2016:
         assert campaign.x.vfp in ["pre", "post"]

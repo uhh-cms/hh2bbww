@@ -6,7 +6,6 @@ Definition of ML input variables.
 
 import order as od
 
-# from columnflow.columnar_util import EMPTY_FLOAT
 from hbw.config.styling import default_var_binning, default_var_unit
 from hbw.util import call_once_on_config
 

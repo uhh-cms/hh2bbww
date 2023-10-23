@@ -53,12 +53,7 @@ def ml_inputs_producer(cls, container, task_params):
 def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
-    # how it was before merge default, use the ml_inputs and event_weights
-    # TODO: we might need two ml_inputs producers in the future (sl vs dl)
-    #default_producers = ["dl_ml_inputs"]
-    #if dataset_inst and dataset_inst.is_mc:
-        # run event weights producer only if it's a MC dataset
-    #    default_producers.append("event_weights")
+    # per default, use the ml_inputs and event_weights
     default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
 
     # check if a ml_model has been set

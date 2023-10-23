@@ -184,7 +184,7 @@ class MLClassifierBase(MLModel):
 
                 # calculate some stats per dataset
                 filenames = [inp["mlevents"].path for inp in files]
-                
+
                 N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
                 if N_events == 0:
                     # skip empty datasets
@@ -378,8 +378,7 @@ class MLClassifierBase(MLModel):
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
-        # from hbw.ml.tf_util import cumulated_crossentropy
-        import tensorflow as tf
+        from hbw.ml.tf_util import cumulated_crossentropy
 
         n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
@@ -400,9 +399,8 @@ class MLClassifierBase(MLModel):
         # compile the network
         # NOTE: the custom loss needed due to output layer changes for negative weights
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
-        categorical_crossentropy = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
         model.compile(
-            loss=categorical_crossentropy, #cumulated_crossentropy,
+            loss=cumulated_crossentropy,
             optimizer=optimizer,
             weighted_metrics=["categorical_accuracy"],
         )
