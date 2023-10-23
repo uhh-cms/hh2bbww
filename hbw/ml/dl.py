@@ -22,17 +22,17 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
+class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        #"sg",
+        # "sg",
         "ggHH_kl_5_kt_1_dl_hbbhww",
-        #"tt",
-        #"st",
+        # "tt",
+        # "st",
         "v_lep",
         "t_bkg",
-        #"w_lnu",
-        #"dy_lep",
+        # "w_lnu",
+        # "dy_lep",
     ]
 
     ml_process_weights = {
@@ -49,8 +49,8 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     dataset_names = {
-        #"ggHH_kl_0_kt_1_dl_hbbhww_powheg",
-        #"ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        # "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        # "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
@@ -61,9 +61,9 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "st_tchannel_tbar_powheg", #problem in previous task for production
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
-        #"st_schannel_lep_amcatnlo", #problem with normalizatino weights.. 
+        # "st_schannel_lep_amcatnlo", #problem with normalizatino weights..
         # "st_schannel_had_amcatnlo",
-        # WJets commented out because no events avaible and hence no nomralization weights 
+        # WJets commented out because no events avaible and hence no nomralization weights
         "w_lnu_ht70To100_madgraph",
         "w_lnu_ht100To200_madgraph",
         "w_lnu_ht200To400_madgraph",
@@ -90,16 +90,16 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
         "mli_dphi_ll", "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt", "mli_met_pt",
-        #"mli_met_eta", "meli_met_pt", 
-        #"mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
-        #"mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
-        #"mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
-        #"mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
+        # "mli_met_eta", "meli_met_pt",
+        # "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
+        # "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
+        # "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
+        # "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "lep", "lep2"]
         for var in ["pt", "eta"]
-    ] 
+    ]
     """
       + [
         f"mli_{obj}_{var}"
@@ -114,7 +114,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     layers = (164, 164, 164)
     activation = "relu"
     learningrate = 0.0005
-    batchsize = 8000 #2 ** 12
+    batchsize = 8000  # 2 ** 12
     epochs = 150
     dropout = 0.50
     negative_weights = "abs"
@@ -204,12 +204,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return ["dl_ml_inputs"] if self.config_ist.has_tag("is_sl") else [""]
-
-
-# copies of the default DenseClassifier for testing hard-coded changes
-for i in range(10):
-    dense_copy = DenseClassifier.derive(f"dense_{i}")
+        return ["ml_inputs"] if self.config_ist.has_tag("is_sl") else ["dl_ml_inputs"]
 
 cls_dict_test = {
     "folds": 5,
@@ -223,52 +218,7 @@ cls_dict_test = {
 }
 
 # ML Model with reduced number of datasets
-dense_test = DenseClassifier.derive("dense_test", cls_dict=cls_dict_test)
+dense_test = DenseClassifierDL.derive("dense_test", cls_dict=cls_dict_test)
 
 # our default MLModel
-dense_default = DenseClassifier.derive("dense_default", cls_dict={})
-
-# for running the default setup with different numbers of epochs
-for n_epochs in (5, 10, 20, 50, 100, 200, 500):
-    _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
-
-# for testing different number of nodes per layer
-for n_nodes in (64, 128, 256, 512):
-    _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
-
-# for testing different modes of handling negative weights
-for negative_weights_mode in ("handle", "ignore", "abs"):
-    _dnn = DenseClassifier.derive(
-        f"dense_w_{negative_weights_mode}",
-        cls_dict={"negative_weights": negative_weights_mode},
-    )
-
-# for testing different learning rates
-for learningrate in (0.05000, .00500, 0.00050, 0.00010, 0.00005, 0.00001):
-    _dnn = DenseClassifier.derive(
-        f"dense_lr_{str(learningrate).replace('.', 'p')}",
-        cls_dict={"learningrate": learningrate},
-    )
-
-# for testing different batchsizes
-for batchsize in (11, 12, 13, 14, 15, 16, 17):
-    _dnn = DenseClassifier.derive(
-        f"dense_bs_2pow{batchsize}",
-        cls_dict={"batchsize": 2 ** batchsize},
-    )
-
-# for testing different dropout rates
-for dropout in (0, 0.1, 0.2, 0.3, 0.4, 0.5):
-    _dnn = DenseClassifier.derive(
-        f"dense_dropout_{str(dropout).replace('.', 'p')}",
-        cls_dict={"dropout": dropout},
-    )
-
-# for testing different weights between signal and backgrounds
-for bkg_weight in (1, 2, 4, 8, 16):
-    ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifier.processes}
-    ml_process_weights["ggHH_kl_1_kt_1_sl_hbbhww"] = 1
-    _dnn = DenseClassifier.derive(
-        f"dense_bkgw_{str(bkg_weight)}",
-        cls_dict={"ml_process_weights": ml_process_weights},
-    )
+dense_default_dl = DenseClassifierDL.derive("dense_default_dl", cls_dict={})
