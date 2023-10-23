@@ -37,6 +37,7 @@ def add_config(
     limit_dataset_files: int | None = None,
 ) -> od.Config:
     # validations
+    print("add", analysis, config_name, config_id)
     assert campaign.x.year in [2016, 2017, 2018]
     if campaign.x.year == 2016:
         assert campaign.x.vfp in ["pre", "post"]
@@ -101,19 +102,30 @@ def add_config(
         cfg.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww)
         cfg.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww)
         # Custom sg process for ML Training, combining all ggHH signal samples
-        # my_sig = cfg.add_process(
-        #    name="sg",
-        #    id=12901290,  # random number
-        #    xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) 
-        #        + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
-        #    label="HH merged (dl)",
-        #)
-        my_sig = od.Process(name = "new_sig", id = 1290129, label="HH merged (dl)", xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},)
+        '''
+        my_sig = cfg.add_process(
+            name="sg",
+            id=12901290,  # random number
+            xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) 
+                + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},
+            label="HH merged (dl)",
+        )
+        #my_sig = od.Process(name = "new_sig", id = 1290129, label="HH merged (dl)", xsecs={13: cfg.get_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww).get_xsec(13) + cfg.get_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww).get_xsec(13)},)
 
         # my_sig.add_process(cfg.get_process("st"))
         # sg.add_process(cfg.get_process("tt"))
-        my_sig.add_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww)
+        try:
+           print(1,analysis,my_sig.processes.names(), cfg.get_process("dy_lep").parent_processes.names())
+           my_sig.add_process(cfg.get_process("dy_lep"))
+           print(2,analysis,my_sig.processes.names(), cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww").parent_processes.names())
+           my_sig.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
+           print(3,analysis,my_sig.processes.names(), cfg.get_process("tt").parent_processes.names())
+           my_sig.add_process(cfg.get_process("tt"))
+        except:
+           import traceback; traceback.print_exc()
+           from IPython import embed; embed()
         #sg.add_process(cfg.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
+    '''
 
     # QCD process customization
     cfg.get_process("qcd_mu").label = "QCD Muon enriched"

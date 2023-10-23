@@ -174,7 +174,7 @@ def default(self):
                 continue
 
             cat_kwargs = {
-                "config_category": f"1{lep}__ml_{proc}",
+                "config_category": f"2{lep}__ml_{proc}",
                 # "config_variable": f"mlscore.{proc}_rebin", what is was before merge 
                 "config_variable": f"mlscore.{proc}_manybins",
                 "mc_stats": self.mc_stats,
