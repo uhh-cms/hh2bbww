@@ -57,16 +57,18 @@ hbw_ml_training(){
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $checksum \
-	--retries 1 \
+	--retries 2 \
 	$@
 }
+
+inference_model="rates_only"
 
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
 	--config $config \
-	--ml-models $ml_model \
+	--inference-model $inference_model \
 	--pilot --workflow htcondor \
-	--retries 1 \
+	--retries 2 \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
@@ -75,8 +77,11 @@ hbw_datacards(){
 	--cf.PrepareMLEvents-htcondor-gpus 0 \
 	--cf.PrepareMLEvents-htcondor-memory 4000 \
 	--cf.PrepareMLEvents-max-runtime 3h \
+	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
+	--cf.SelectEvents-workflow htcondor \
 	--cf.BundleRepo-custom-checksum $checksum \
 	$@
 }

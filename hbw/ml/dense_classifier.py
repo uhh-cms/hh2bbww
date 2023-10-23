@@ -204,7 +204,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return ["dl_ml_inputs"]
+        return ["ml_inputs"] if self.config_ist.has_tag("is_sl") else ["dl_ml_inputs"]
 
 
 # copies of the default DenseClassifier for testing hard-coded changes

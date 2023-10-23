@@ -22,7 +22,7 @@ def default_ml_model(cls, container, task_params):
 
     # the ml_model parameter is only used by `MLTraining` and `MLEvaluation`, therefore use some default
     # NOTE: default_ml_model does not work for the MLTraining task
-    if cls.task_family in ("cf.MLTraining", "cf.MLEvaulation", "cf.MergeMLEvents", "cf.PrepareMLEvents"):
+    if cls.task_family in ("cf.MLTraining", "cf.MLEvaluation", "cf.MergeMLEvents", "cf.PrepareMLEvents"):
         # TODO: we might want to distinguish between two default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
@@ -115,6 +115,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default"
     config_inst.x.default_categories = ["incl"]
+    config_inst.x.default_variables = ["jet1_pt"]
 
     #
     # Groups

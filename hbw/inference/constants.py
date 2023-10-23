@@ -16,10 +16,23 @@ signals_qqHH = {
 }
 signals = {*signals_ggHH, *signals_qqHH}
 
-# collection of all datasets (only 2017 ATM)
-e_datasets = {f"data_e_{i}" for i in ["b", "c", "d", "e", "f"]}
-mu_datasets = {f"data_mu_{i}" for i in ["b", "c", "d", "e", "f"]}
-datasets = {*e_datasets, *mu_datasets}
+# mapping between lepton categories and datasets (only 2017 ATM)
+data_datasets = {
+    "1e": {f"data_e_{i}" for i in ["b", "c", "d", "e", "f"]},
+    "1mu": {f"data_mu_{i}" for i in ["b", "c", "d", "e", "f"]},
+    "2e": {"data_e_b"},  # TODO: 2 lep datasets in cmsdb + config
+    "2mu": {"data_mu_b"},  # TODO
+    "emu": {"data_mu_b"},  # TODO
+}
+merged_datasets = set().union(*data_datasets.values())
+
+# mapping between process names in the config and inference model
+inference_procnames = {
+    # key: config process name, value: inference model process name
+    "foo": "bar",
+    # "st": "ST",
+    # "tt": "TT",
+}
 
 # mapping, which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
