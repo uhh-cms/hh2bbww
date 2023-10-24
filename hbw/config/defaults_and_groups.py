@@ -60,7 +60,7 @@ def default_producers(cls, container, task_params):
     ml_model = task_params.get("ml_model", None) or task_params.get("ml_models", None)
 
     # only consider 1 ml_model
-    if isinstance(ml_model, (list, tuple)):
+    if ml_model and isinstance(ml_model, (list, tuple)):
         ml_model = ml_model[0]
 
     # try and get the default ml model if not set
