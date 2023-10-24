@@ -26,11 +26,11 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
         # "sg",
-        "ggHH_kl_5_kt_1_dl_hbbhww",
-        # "tt",
+        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "tt",
         # "st",
         "v_lep",
-        "t_bkg",
+        # "t_bkg",
         # "w_lnu",
         # "dy_lep",
     ]
@@ -204,22 +204,22 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return ["ml_inputs"] if self.config_ist.has_tag("is_sl") else ["dl_ml_inputs"]
+        return ["ml_inputs"] if self.config_inst.has_tag("is_sl") else ["dl_ml_inputs"]
 
 
 cls_dict_test = {
-    "folds": 5,
-    "epochs": 100,
-    "processes": ["ggHH_kl_5_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
+    "folds": 2,
+    "epochs": 90,
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "tt"],
     "dataset_names": {
-        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",  # "tt_dl_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",  "tt_dl_powheg",
         # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
         "dy_lep_m50_ht400to600_madgraph",
     },
 }
 
 # ML Model with reduced number of datasets
-dense_test = DenseClassifierDL.derive("dense_test", cls_dict=cls_dict_test)
+dense_test_dl = DenseClassifierDL.derive("dense_test_dl", cls_dict=cls_dict_test)
 
 # our default MLModel
 dense_default_dl = DenseClassifierDL.derive("dense_default_dl", cls_dict={})

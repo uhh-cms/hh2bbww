@@ -13,7 +13,7 @@ from hbw.inference.base import HBWInferenceModelBase
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dense_dl"
+ml_model_name = "dense_default_dl"
 # default_producers = [f"ml_{ml_model_name}", "event_weights"]
 
 # All processes to be included in the final datacard
@@ -38,11 +38,13 @@ channels = [
     "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
     "cat_2e_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
     "cat_2e_tt",
+    "cat_2e_t_bkg",
     "cat_2e_st",
     "cat_2e_v_lep",
     "cat_2mu_ggHH_kl_1_kt_1_dl_hbbhww",
     "cat_2mu_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
     "cat_2mu_tt",
+    "cat_2mu_tt_bkg",
     "cat_2mu_st",
     "cat_2mu_v_lep",
 ]
@@ -132,3 +134,27 @@ default_cls_dict = {
 }
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["processes"] = [
+    # "ggHH_kl_0_kt_1_dl_hbbhww",
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    # "ggHH_kl_2p45_kt_1_dl_hbbhww",
+    # "ggHH_kl_5_kt_1_dl_hbbhww",
+    "tt",
+]
+
+cls_dict["channels"] = [
+    "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
+    "cat_2e_tt",
+]
+
+cls_dict["systematics"] = [
+    "lumi_13TeV_2017",
+]
+
+cls_dict["ml_model_name"] = "dense_test_dl"
+
+# minimal model for quick test purposes
+dl_test = dl.derive("dl_test", cls_dict=cls_dict)

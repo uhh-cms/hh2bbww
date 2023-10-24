@@ -13,7 +13,8 @@ from columnflow.production.categories import category_ids
 
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
-from hbw.config.ml_variables import add_ml_variables, add_dl_ml_variables
+from hbw.config.ml_variables import add_ml_variables
+from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.categories import add_categories_production
 from hbw.util import four_vec
 ak = maybe_import("awkward")

@@ -80,7 +80,10 @@ def ml_cats_init(self: Producer) -> None:
 
 # get all the derived DenseClassifier models and instantiate a corresponding producer
 from hbw.ml.dense_classifier import DenseClassifier
+from hbw.ml.dl import DenseClassifierDL
 ml_model_names = [ml_model.cls_name for ml_model in DenseClassifier._subclasses.values()]
+dl_ml_model_names = [ml_model.cls_name for ml_model in DenseClassifierDL._subclasses.values()]
+ml_model_names = ml_model_names + dl_ml_model_names
 
 for ml_model_name in ml_model_names:
     ml_cats.derive(f"ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
