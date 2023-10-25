@@ -40,12 +40,14 @@ channels = [
     "cat_2e_tt",
     "cat_2e_t_bkg",
     "cat_2e_st",
+    "cat_2e_sig",
     "cat_2e_v_lep",
     "cat_2mu_ggHH_kl_1_kt_1_dl_hbbhww",
     "cat_2mu_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
     "cat_2mu_tt",
     "cat_2mu_tt_bkg",
     "cat_2mu_st",
+    "cat_2mu_sig",
     "cat_2mu_v_lep",
 ]
 

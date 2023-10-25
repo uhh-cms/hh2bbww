@@ -28,11 +28,10 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     uses={
         category_ids, event_weights,
         prepare_objects,
-        # "Electron.charge", "Muon.charge",
         "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
-        {"Electron", "Muon", "MET", "Jet", "Lightjet", "Bjet", "HbbJet"},
+        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
     produces={
         category_ids, event_weights,
@@ -55,7 +54,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     # events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
-    events = set_ak_column(events, "Lepton", ak.pad_none(events.Lepton, 2))
+    events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
     # low-level features
     # TODO: this could be more generalized
@@ -65,7 +64,6 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
         events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
-        events = set_ak_column_f32(events, f"mli_lep2_{var}", events.Lepton[:, 1][var])
         events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
 
     # H->bb FatJet
@@ -163,17 +161,16 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_columns = {
-        # "mli_mll", "mli_dr_ll", "mli_min_dr_llbb", "mli_bb_pt",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-        # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
     } | set(
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep", "lep2", "met"]
+        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
         for var in ["pt", "eta"]
     ) | set(
         f"mli_{obj}_{var}"
@@ -261,11 +258,17 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # bb pt
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
+    events = set_ak_column_f32(events, "mli_mbb", hbb.pt)
+    events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
+    events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
+
     events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
     events = set_ak_column_f32(events, "mli_mbbllMET", (ll + hbb + events.MET[:]).mass)
     events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(ll + events.MET[:]))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
     events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(ll + events.MET[:]))
-
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))

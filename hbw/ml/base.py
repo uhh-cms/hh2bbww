@@ -235,7 +235,6 @@ class MLClassifierBase(MLModel):
                 if len(events) == 0:
                     logger.warning("File {fn} of process {proc_inst.name} is empty and will be skipped")
                     continue
-
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
                     raise Exception(
@@ -310,8 +309,7 @@ class MLClassifierBase(MLModel):
                     (weights, "weights"),
                     (ml_weights, "ml_weights"),
                 ):
-                    if len(events) != 0:
-                        array[...] = array[shuffle_indices]
+                    array[...] = array[shuffle_indices]
                     add_arrays(array, key)
 
             # concatenate arrays per process
