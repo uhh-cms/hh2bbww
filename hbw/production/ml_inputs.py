@@ -261,11 +261,17 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # bb pt
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
+    events = set_ak_column_f32(events, "mli_mbb", hbb.pt)
+    events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
+    events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
+
     events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
     events = set_ak_column_f32(events, "mli_mbbllMET", (ll + hbb + events.MET[:]).mass)
     events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(ll + events.MET[:]))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
     events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(ll + events.MET[:]))
-
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))

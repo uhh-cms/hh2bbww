@@ -25,12 +25,12 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        # "sg",
-        "ggHH_kl_1_kt_1_dl_hbbhww",
-        "tt",
+        "sig",
+        # "ggHH_kl_1_kt_1_dl_hbbhww",
+        # "tt",
         # "st",
         "v_lep",
-        # "t_bkg",
+        "t_bkg",
         # "w_lnu",
         # "dy_lep",
     ]
@@ -38,7 +38,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
-        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
         "sg": 1,
         "tt": 1,
         "st": 1,
@@ -49,9 +49,9 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     dataset_names = {
-        # "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
-        # "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -115,7 +115,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     activation = "relu"
     learningrate = 0.0005
     batchsize = 8000  # 2 ** 12
-    epochs = 150
+    epochs = 100
     dropout = 0.50
     negative_weights = "abs"
     validation_fraction = 0.20
@@ -212,7 +212,7 @@ cls_dict_test = {
     "epochs": 90,
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "tt"],
     "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",  "tt_dl_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
         # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
         "dy_lep_m50_ht400to600_madgraph",
     },

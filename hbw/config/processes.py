@@ -84,7 +84,7 @@ def add_hbw_processes(config: od.Config, campaign: od.Campaign):
     )
     v_lep.add_process(config.get_process("w_lnu"))
     v_lep.add_process(config.get_process("dy_lep"))
-    
+
     # Custom t_bkg process for ML Training, combining tt+st
     t_bkg = config.add_process(
         name="t_bkg",
@@ -94,14 +94,19 @@ def add_hbw_processes(config: od.Config, campaign: od.Campaign):
     )
     t_bkg.add_process(config.get_process("tt"))
     t_bkg.add_process(config.get_process("st"))
-    ''' 
-    # Custom signal  process for ML Training, combining all kl signal samples 
+
+    # Custom signal  process for ML Training, combining all kl signal samples
+    xsec_sig = config.get_process("ggHH_kl_0_kt_1_dl_hbbhww").get_xsec(13)
+    xsec_sig = xsec_sig + config.get_process("ggHH_kl_1_kt_1_dl_hbbhww").get_xsec(13)
+    xsec_sig = xsec_sig + config.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww").get_xsec(13)
     sig = config.add_process(
         name="sig",
-        id=97842611,  # random number
-        xsecs={13: config.get_process("ggHH_kl_0_kt_1_dl_hbbhww").get_xsec(13) + config.get_process("ggHH_kl_1_kt_1_dl_hbbhww").get_xsec(13)},
+        id=75835213,  # random number
+        xsecs={
+            13: xsec_sig,
+        },
         label="signal",
     )
     sig.add_process(config.get_process("ggHH_kl_0_kt_1_dl_hbbhww"))
     sig.add_process(config.get_process("ggHH_kl_1_kt_1_dl_hbbhww"))
-    '''
+    sig.add_process(config.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
