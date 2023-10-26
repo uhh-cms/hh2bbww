@@ -14,7 +14,7 @@ from columnflow.tasks.reduction import MergeReducedEventsUser
 from columnflow.util import maybe_import
 from columnflow.columnar_util import get_ak_routes, update_ak_array
 
-from hbw.tasks.base import HBWTask, ColumnsBaseTask
+from hbw.tasks.base import HBWTask, ColumnsBaseTask, HistogramsBaseTask
 
 ak = maybe_import("awkward")
 
@@ -117,5 +117,32 @@ class CheckColumns(
             events = ak.from_parquet(files["events"])
             events = update_ak_array(events, *[ak.from_parquet(fname) for fname in files.values()])
             self.publish_message("starting debugger ....")
+            from hbw.util import debugger
+            debugger()
+
+
+class CheckHistograms(
+    HistogramsBaseTask,
+):
+    """
+    Task to inspect histograms after Reduction, Production and MLEvaluation.
+    """
+
+    debugger = luigi.BoolParameter(
+        default=False,
+        description="Whether to start a ipython debugger session or not; default: True",
+    )
+
+    def output(self):
+        return {"always_incomplete_dummy": self.target("dummy.txt")}
+
+    def run(self):
+        for dataset in self.datasets:
+            for variable in self.variables:
+                h_in = self.load_histogram(dataset, variable)
+
+                h = self.reduce_histogram(h_in, self.processes, self.categories, self.shift)
+
+        if self.debugger:
             from hbw.util import debugger
             debugger()
