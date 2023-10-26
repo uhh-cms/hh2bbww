@@ -73,8 +73,8 @@ class HBWInferenceModelBase(InferenceModel):
 
                 cat_kwargs = {
                     "config_category": f"{lep}__ml_{proc}",
-                    "config_variable": f"mlscore.{proc}_rebin",
-                    # "config_variable": f"mlscore.{proc}_manybins",
+                    # "config_variable": f"mlscore.{proc}_rebin",
+                    "config_variable": f"mlscore.{proc}_manybins",
                     "mc_stats": self.mc_stats,
                 }
                 if self.skip_data:
