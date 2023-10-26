@@ -24,6 +24,7 @@ default_process_colors = {
     "v_lep": "#4daf4a",  # green
     "higgs": "#984ea3",  # purple
     "st": "#ff7f00",  # orange
+    "t_bkg": "#e41a1c",  # orange
     "dy_lep": "#ffff33",  # yellow
     "ttV": "#a65628",  # brown
     "VV": "#f781bf",  # pink
@@ -64,6 +65,7 @@ ml_labels = {
     "w_lnu": "W",
     "dy_lep": "DY",
     "v_lep": "W+DY",
+    "t_bkg": "tt+st",
 }
 
 
