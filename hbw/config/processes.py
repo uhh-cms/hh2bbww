@@ -95,18 +95,19 @@ def add_hbw_processes(config: od.Config, campaign: od.Campaign):
     t_bkg.add_process(config.get_process("tt"))
     t_bkg.add_process(config.get_process("st"))
 
-    # Custom signal  process for ML Training, combining all kl signal samples
-    xsec_sig = config.get_process("ggHH_kl_0_kt_1_dl_hbbhww").get_xsec(13)
-    xsec_sig = xsec_sig + config.get_process("ggHH_kl_1_kt_1_dl_hbbhww").get_xsec(13)
-    xsec_sig = xsec_sig + config.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww").get_xsec(13)
-    sig = config.add_process(
-        name="sig",
-        id=75835213,  # random number
-        xsecs={
-            13: xsec_sig,
-        },
-        label="signal",
-    )
-    sig.add_process(config.get_process("ggHH_kl_0_kt_1_dl_hbbhww"))
-    sig.add_process(config.get_process("ggHH_kl_1_kt_1_dl_hbbhww"))
-    sig.add_process(config.get_process("ggHH_kl_2p45_kt_1_dl_hbbhww"))
+    if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
+        # Custom signal  process for ML Training, combining multiple kl signal samples
+        signal_processes = [
+            config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
+            for kl in [0, 1, "2p45"]
+        ]
+        sig = config.add_process(
+            name="sig",
+            id=75835213,  # random number
+            xsecs={
+                13: sum([proc.get_xsec(13) for proc in signal_processes]),
+            },
+            label="signal",
+        )
+        for proc in signal_processes:
+            sig.add_process(proc)
