@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# USAGE: run on a fresh shell. If necessary, customize some variables such as the CF_SETUP_NAME,
+# USAGE: run on a fresh shell to create jupyter kernel with name VENV_NAME.
+# If necessary, customize some variables such as the CF_SETUP_NAME,
 # VENV_NAME or which packages are supposed to be installed
 
 action () {
@@ -15,7 +16,7 @@ action () {
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
 
     # set some other paths
-    local HBW_BASE="$this_dir/../.."
+    local HBW_BASE="$this_dir/.."
     local CF_BASE="$HBW_BASE/modules/columnflow"
     source $HBW_BASE/.setups/${CF_SETUP_NAME}.sh
 
