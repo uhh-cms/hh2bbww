@@ -42,19 +42,21 @@ class MLClassifierBase(MLModel):
     """
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
-    processes = ["tt", "st"]
-    dataset_names = {"tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"}
-    input_features = ["mli_ht", "mli_n_jet"]
-    validation_fraction = 0.20  # percentage of the non-test events
-    store_name = "inputs_base"
-    ml_process_weights = {"st": 2, "tt": 1}
-    negative_weights = "handle"
-    epochs = 50
-    batchsize = 2 ** 10
-    folds = 5
+    processes: list = ["tt", "st"]
+    dataset_names: set = {"tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"}
+    input_features: list = ["mli_ht", "mli_n_jet"]
+    validation_fraction: float = 0.20  # percentage of the non-test events
+    store_name: str = "inputs_base"
+    ml_process_weights: dict = {"st": 2, "tt": 1}
+    negative_weights: str = "handle"
+    epochs: int = 50
+    batchsize: int = 2 ** 10
+    folds: int = 5
+
+    dump_arrays: bool = False
 
     # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params = [
+    bookkeep_params: int = [
         "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
         "negative_weights", "epochs", "batchsize", "folds",
     ]
@@ -114,11 +116,9 @@ class MLClassifierBase(MLModel):
 
         outp = {
             "mlmodel": target,
-            # NOTE: do we want to keep plots in a nested directory or in a sibling directory?
             "plots": target.child("plots", type="d", optional=True),
-            # "plots": target.sibling(f"plots_f{task.branch}of{self.folds}", type="d", optional=True),
-            # TODO: fill the stats.yaml with scores like accuracy, AUC, etc.
             "stats": target.child("stats.yaml", type="f", optional=True),
+            "arrays": target.child("arrays", type="d", optionla=True),
         }
 
         # define all files that need to be present
@@ -548,6 +548,19 @@ class MLClassifierBase(MLModel):
         #
         # model preparation
         #
+
+        if self.dump_arrays:
+            def dump_arrays(inputs: DotDict[any, DotDict[any, np.array]], output, type: str):
+                for proc_inst, arrays in inputs.items():
+                    outp = output.child(f"{type}_{proc_inst.name}.npz", type="f")
+                    outp.touch()
+                    np.savez(outp.fn, **arrays)
+
+            dump_arrays(train, output["arrays"], "train")
+            dump_arrays(validation, output["arrays"], "validation")
+
+            # return without training
+            return
 
         model = self.prepare_ml_model(task)
         logger.info(model.summary())

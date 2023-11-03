@@ -7,9 +7,13 @@ import math
 import numpy as np
 import tensorflow as tf
 
+import law
+
 from columnflow.util import DotDict
 
 import order as od
+
+logger = law.logger.get_logger(__name__)
 
 
 class MultiDataset(object):
@@ -18,6 +22,7 @@ class MultiDataset(object):
         self,
         data: DotDict[od.Process, DotDict[str, np.array]],
         batch_size: int = 128,
+        correct_batch_size: bool | str = "down",
         kind: str = "train",
         seed: int | None = None,
         buffersize: int = 0,  # buffersize=0 means no shuffle
@@ -48,6 +53,20 @@ class MultiDataset(object):
         self.batch_sizes = []
         sum_weights = sum(self.weights)
 
+        # check if requested batch size and weights are compatible
+        if remainder := batch_size % sum_weights:
+            msg = (
+                f"batch_size ({batch_size}) should be dividable by sum of process weights ({sum_weights}) "
+                "to correctly weight processes as requested. "
+            )
+            if correct_batch_size:
+                if isinstance(correct_batch_size, str) and correct_batch_size.lower() == "down":
+                    batch_size -= remainder
+                else:
+                    batch_size += sum_weights - remainder
+                msg += f"batch_size has been corrected to {batch_size}"
+            logger.warning(msg)
+
         carry = 0.0
         for weight in self.weights:
             bs = weight / sum_weights * batch_size - carry
@@ -56,7 +75,7 @@ class MultiDataset(object):
             self.batch_sizes.append(bs_int)
 
         if batch_size != sum(self.batch_sizes):
-            print(f"batch size is {sum(self.batch_sizes)} but should be {batch_size}")
+            print(f"batch_size is {sum(self.batch_sizes)} but should be {batch_size}")
 
         self.max_iter_valid = int(math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
         self.iter_smallest_process = int(math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
