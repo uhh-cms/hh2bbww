@@ -7,6 +7,7 @@ Mixin classes to build ML models
 import law
 # import order as od
 
+from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
 
 from hbw.util import log_memory
@@ -32,10 +33,10 @@ class DenseModelMixin():
     Mixin that provides an implementation for `prepare_ml_model`
     """
 
-    activation = "relu"
-    layers = (64, 64, 64)
-    dropout = 0.50
-    learningrate = 2 ** 10
+    activation: str = "relu"
+    layers: tuple = (64, 64, 64)
+    dropout: float = 0.50
+    learningrate: int = 0.00050
 
     def __init__(
         self,
@@ -108,15 +109,17 @@ class DenseModelMixin():
 
 class ModelFitMixin():
 
-    callbacks = {
+    callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
-    remove_backup = True
-    reduce_lr_factor = 0.8
-    reduce_lr_patience = 3
-    epochs = 200
-    batchsize = 2 ** 12
+    remove_backup: bool = True
+    reduce_lr_factor: float = 0.8
+    reduce_lr_patience: int = 3
+    epochs: int = 200
+    batchsize: int = 2 ** 12
+    # either set steps directly or use attribute from the MultiDataset
+    steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
     def __init__(
             self,
@@ -184,18 +187,33 @@ class ModelFitMixin():
                 min_lr=0,
             ),
         }
-        # allow the user to choose which callbacks to use
-        callbacks = [callback_options[key] for key in self.callbacks]
-        iterator = (x for x in tf_train)
 
+        # determine the requested steps_per_epoch
+        if isinstance(self.steps_per_epoch, str):
+            steps_per_epoch = getattr(tf_train, self.steps_per_epoch)
+        else:
+            steps_per_epoch = int(self.steps_per_epoch)
+        if not isinstance(steps_per_epoch, int):
+            raise Exception(
+                f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
+                "a string corresponding to an integer attribute of the MultiDataset",
+            )
+
+        # set the kwargs used for training
+        model_fit_kwargs = {
+            "validation_data": tf_validation,
+            "epochs": self.epochs,
+            "verbose": 2,
+            "steps_per_epoch": steps_per_epoch,
+            "callbacks": [callback_options[key] for key in self.callbacks],
+        }
+
+        # start training by iterating over the MultiDataset
+        iterator = (x for x in tf_train)
         logger.info("Starting training...")
         model.fit(
             iterator,
-            validation_data=tf_validation,
-            steps_per_epoch=tf_train.iter_smallest_process,
-            epochs=self.epochs,
-            callbacks=callbacks,
-            verbose=2,
+            **model_fit_kwargs,
         )
         log_memory("loop")
 

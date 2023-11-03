@@ -6,7 +6,7 @@ ML models using the MLClassifierBase and Mixins
 
 from __future__ import annotations
 
-from typing import Sequence
+from columnflow.types import Sequence, Union
 
 import law
 import order as od
@@ -24,7 +24,7 @@ logger = law.logger.get_logger(__name__)
 
 class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
-    processes = [
+    processes: list = [
         "ggHH_kl_1_kt_1_sl_hbbhww",
         "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
         "tt",
@@ -34,7 +34,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "dy_lep",
     ]
 
-    ml_process_weights = {
+    ml_process_weights: dict = {
         "ggHH_kl_1_kt_1_sl_hbbhww": 1,
         "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": 1,
         "tt": 2,
@@ -44,7 +44,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "dy_lep": 2,
     }
 
-    dataset_names = {
+    dataset_names: set = {
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
         "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
         # TTbar
@@ -78,7 +78,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "dy_lep_m50_ht2500_madgraph",
     }
 
-    input_features = [
+    input_features: list = [
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
@@ -96,31 +96,33 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     ]
 
-    store_name = "inputs_v1"
+    store_name: str = "inputs_v1"
+    dump_arrays: bool = False
 
-    folds = 5
-    validation_fraction = 0.20
-    learningrate = 0.00050
-    negative_weights = "handle"
+    folds: int = 5
+    validation_fraction: float = 0.20
+    negative_weights: str = "handle"
 
     # overwriting DenseModelMixin parameters
-    activation = "relu"
-    layers = (512, 512, 512)
-    dropout = 0.20
+    activation: str = "relu"
+    layers: tuple = (512, 512, 512)
+    dropout: float = 0.20
+    learningrate: float = 0.00050
 
     # overwriting ModelFitMixin parameters
-    callbacks = {
+    callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
-    remove_backup = True
-    reduce_lr_factor = 0.8
-    reduce_lr_patience = 3
-    epochs = 100
-    batchsize = 2 ** 12
+    remove_backup: bool = True
+    reduce_lr_factor: float = 0.8
+    reduce_lr_patience: int = 3
+    epochs: int = 100
+    batchsize: int = 2 ** 12
+    steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
     # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params = [
+    bookkeep_params: list = [
         # base params
         "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
         "negative_weights", "folds",
@@ -201,6 +203,7 @@ cls_dict_test = {
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph", "tt_dl_powheg",
         "st_tchannel_t_powheg", "w_lnu_ht400To600_madgraph",
     },
+    "steps_per_epoch": "max_iter_valid",
 }
 
 # ML Model with reduced number of datasets
@@ -208,6 +211,13 @@ dense_test = DenseClassifier.derive("dense_test", cls_dict=cls_dict_test)
 
 # our default MLModel
 dense_default = DenseClassifier.derive("dense_default", cls_dict={})
+
+dense_max_iter_bs12 = DenseClassifier.derive(
+    "dense_max_iter_bs12", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 12},
+)
+dense_max_iter_bs14 = DenseClassifier.derive(
+    "dense_max_iter_bs14", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14},
+)
 
 # for running the default setup with different numbers of epochs
 for n_epochs in (5, 10, 20, 50, 100, 200, 500):
