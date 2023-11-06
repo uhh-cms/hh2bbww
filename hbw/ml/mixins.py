@@ -108,22 +108,32 @@ class DenseModelMixin():
 
 
 class CallbacksBase():
-
+    """ Base class that handles parametrization of callbacks """
     callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
+
+    # NOTE: we could remove these parameters since they can be implemented via reduce_lr_kwargs
     reduce_lr_factor: float = 0.8
     reduce_lr_patience: int = 3
 
-    # custom callback kwargs (TODO: allow overwriting defaults)
+    # custom callback kwargs
     checkpoint_kwargs: dict = {}
     backup_kwargs: dict = {}
     early_stopping_kwargs: dict = {}
     reduce_lr_kwargs: dict = {}
 
     def get_callbacks(self, output):
+        # check that only valid options have been requested
+        callback_options = {"backup", "checkpoint", "reduce_lr", "early_stopping"}
+        if diff := self.callbacks.difference(callback_options):
+            logger.warning(f"Callbacks '{diff}' have been requested but are not properly implemented")
+
+        # list of callbacks to be returned at the end
+        callbacks = []
+
         # output used for BackupAndRestore callback (not deleted by --remove-output)
         # NOTE: does that work when running remote?
         # TODO: we should also save the parameters + input_features in the backup to ensure that they
@@ -132,29 +142,43 @@ class CallbacksBase():
         if self.remove_backup:
             backup_output.remove()
 
-        callback_options = {
-            "backup": tf.keras.callbacks.BackupAndRestore(
+        #
+        # for each requested callback, merge default kwargs with custom callback kwargs
+        # and add callback to the
+        #
+
+        if "backup" in self.callbacks:
+            backup_kwargs = dict(
                 backup_dir=backup_output.path,
-                **self.backup_kwargs,
-            ),
-            "checkpoint": tf.keras.callbacks.ModelCheckpoint(
-                filepath=f"{output['mlmodel'].path}/checkpoint",
+            )
+            backup_kwargs.update(self.backup_kwargs)
+            callbacks.append(tf.keras.callbacks.BackupAndRestore(**backup_kwargs))
+
+        if "checkpoint" in self.callbacks:
+            checkpoint_kwargs = dict(
+                filepath=output["checkpoint"].path,
                 save_weights_only=False,
                 monitor="val_loss",
                 mode="auto",
                 save_best_only=True,
-                **self.checkpoint_kwargs,
-            ),
-            "early_stopping": tf.keras.callbacks.EarlyStopping(
+            )
+            checkpoint_kwargs.update(self.checkpoint_kwargs)
+            callbacks.append(tf.keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
+
+        if "early_stopping" in self.callbacks:
+            early_stopping_kwargs = dict(
                 monitor="val_loss",
                 min_delta=0,
                 patience=max(min(50, int(self.epochs / 5)), 10),
                 verbose=1,
                 restore_best_weights=True,
                 start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
-                **self.early_stopping_kwargs,
-            ),
-            "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
+            )
+            early_stopping_kwargs.update(self.early_stopping_kwargs)
+            callbacks.append(tf.keras.callbacks.EarlyStopping(**early_stopping_kwargs))
+
+        if "reduce_lr" in self.callbacks:
+            reduce_lr_kwargs = dict(
                 monitor="val_loss",
                 factor=self.reduce_lr_factor,
                 patience=self.reduce_lr_patience,
@@ -162,11 +186,16 @@ class CallbacksBase():
                 mode="auto",
                 min_delta=0,
                 min_lr=0,
-                **self.reduce_lr_kwargs,
-            ),
-        }
+            )
+            reduce_lr_kwargs.update(self.reduce_lr_kwargs)
+            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
 
-        return [callback_options[key] for key in self.callbacks]
+        if len(callbacks) != len(self.callbacks):
+            logger.warning(
+                f"{len(self.callbacks)} callbacks have been requested but only {len(callbacks)} are returned",
+            )
+
+        return callbacks
 
 
 class ClassicModelFitMixin(CallbacksBase):
@@ -234,7 +263,7 @@ class ClassicModelFitMixin(CallbacksBase):
         log_memory("del")
 
 
-class ModelFitMixin():
+class ModelFitMixin(CallbacksBase):
     # parameters related to callbacks
     callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
