@@ -11,6 +11,7 @@ from columnflow.util import maybe_import, InsertableDict
 from columnflow.production.categories import category_ids
 
 from hbw.config.categories import add_categories_production, add_categories_ml
+from hbw.util import get_subclasses_deep
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -78,12 +79,10 @@ def ml_cats_init(self: Producer) -> None:
     add_categories_ml(self.config_inst, self.ml_model_name)
 
 
-# get all the derived DenseClassifier models and instantiate a corresponding producer
-from hbw.ml.dense_classifier import DenseClassifier
-from hbw.ml.dl import DenseClassifierDL
-ml_model_names = [ml_model.cls_name for ml_model in DenseClassifier._subclasses.values()]
-dl_ml_model_names = [ml_model.cls_name for ml_model in DenseClassifierDL._subclasses.values()]
-ml_model_names = ml_model_names + dl_ml_model_names
+# get all the derived MLModels and instantiate a corresponding producer for each one
+from hbw.ml.base import MLClassifierBase
+ml_model_names = get_subclasses_deep(MLClassifierBase)
+logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
 for ml_model_name in ml_model_names:
     ml_cats.derive(f"ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})

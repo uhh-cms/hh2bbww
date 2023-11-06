@@ -19,6 +19,21 @@ np = maybe_import("numpy")
 _logger = law.logger.get_logger(__name__)
 
 
+def get_subclasses_deep(*classes):
+    """
+    Helper that gets all subclasses from input classes based on the '_subclasses' attribute.
+    """
+    classes = {_cls.__name__: _cls for _cls in classes}
+    all_classes = {}
+
+    while classes:
+        for key, _cls in classes.copy().items():
+            classes.update(getattr(_cls, "_subclasses", {}))
+            all_classes[key] = classes.pop(key)
+
+    return all_classes
+
+
 def build_param_product(params: dict[str, list], output_keys: Callable = lambda i: i):
     """
     Helper that builds the product of all *param* values and returns a dictionary of

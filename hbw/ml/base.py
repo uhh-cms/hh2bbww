@@ -765,3 +765,10 @@ class ExampleDNN(MLClassifierBase):
 
 # dervive another model from the ExampleDNN class with different class attributes
 example_test = ExampleDNN.derive("example_test", cls_dict={"epochs": 5})
+
+
+# load all ml modules here
+if law.config.has_option("analysis", "ml_modules"):
+    for m in law.config.get_expanded("analysis", "ml_modules", [], split_csv=True):
+        logger.debug(f"loading ml module '{m}'")
+        maybe_import(m.strip())
