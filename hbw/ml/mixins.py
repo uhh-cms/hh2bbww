@@ -144,7 +144,6 @@ class CallbacksBase():
 
         #
         # for each requested callback, merge default kwargs with custom callback kwargs
-        # and add callback to the
         #
 
         if "backup" in self.callbacks:
@@ -199,6 +198,10 @@ class CallbacksBase():
 
 
 class ClassicModelFitMixin(CallbacksBase):
+    """
+    Mixin to run ML Training with "classic" training loop.
+    TODO: this will require a different reweighting
+    """
 
     callbacks: set = {
         "backup", "checkpoint", "reduce_lr",

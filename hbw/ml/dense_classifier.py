@@ -225,47 +225,47 @@ dense_max_iter = DenseClassifier.derive(
     },
 )
 
-# for running the default setup with different numbers of epochs
-for n_epochs in (5, 10, 20, 50, 100, 200, 500):
-    _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
+# # for running the default setup with different numbers of epochs
+# for n_epochs in (5, 10, 20, 50, 100, 200, 500):
+#     _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
 
-# for testing different number of nodes per layer
-for n_nodes in (64, 128, 256, 512):
-    _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
+# # for testing different number of nodes per layer
+# for n_nodes in (64, 128, 256, 512):
+#     _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
 
-# for testing different modes of handling negative weights
-for negative_weights_mode in ("handle", "ignore", "abs"):
-    _dnn = DenseClassifier.derive(
-        f"dense_w_{negative_weights_mode}",
-        cls_dict={"negative_weights": negative_weights_mode},
-    )
+# # for testing different modes of handling negative weights
+# for negative_weights_mode in ("handle", "ignore", "abs"):
+#     _dnn = DenseClassifier.derive(
+#         f"dense_w_{negative_weights_mode}",
+#         cls_dict={"negative_weights": negative_weights_mode},
+#     )
 
-# for testing different learning rates
-for learningrate in (0.05000, .00500, 0.00050, 0.00010, 0.00005, 0.00001):
-    _dnn = DenseClassifier.derive(
-        f"dense_lr_{str(learningrate).replace('.', 'p')}",
-        cls_dict={"learningrate": learningrate},
-    )
+# # for testing different learning rates
+# for learningrate in (0.05000, .00500, 0.00050, 0.00010, 0.00005, 0.00001):
+#     _dnn = DenseClassifier.derive(
+#         f"dense_lr_{str(learningrate).replace('.', 'p')}",
+#         cls_dict={"learningrate": learningrate},
+#     )
 
-# for testing different batchsizes
-for batchsize in (11, 12, 13, 14, 15, 16, 17):
-    _dnn = DenseClassifier.derive(
-        f"dense_bs_2pow{batchsize}",
-        cls_dict={"batchsize": 2 ** batchsize},
-    )
+# # for testing different batchsizes
+# for batchsize in (11, 12, 13, 14, 15, 16, 17):
+#     _dnn = DenseClassifier.derive(
+#         f"dense_bs_2pow{batchsize}",
+#         cls_dict={"batchsize": 2 ** batchsize},
+#     )
 
-# for testing different dropout rates
-for dropout in (0, 0.1, 0.2, 0.3, 0.4, 0.5):
-    _dnn = DenseClassifier.derive(
-        f"dense_dropout_{str(dropout).replace('.', 'p')}",
-        cls_dict={"dropout": dropout},
-    )
+# # for testing different dropout rates
+# for dropout in (0, 0.1, 0.2, 0.3, 0.4, 0.5):
+#     _dnn = DenseClassifier.derive(
+#         f"dense_dropout_{str(dropout).replace('.', 'p')}",
+#         cls_dict={"dropout": dropout},
+#     )
 
-# for testing different weights between signal and backgrounds
-for bkg_weight in (1, 2, 4, 8, 16):
-    ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifier.processes}
-    ml_process_weights["ggHH_kl_1_kt_1_sl_hbbhww"] = 1
-    _dnn = DenseClassifier.derive(
-        f"dense_bkgw_{str(bkg_weight)}",
-        cls_dict={"ml_process_weights": ml_process_weights},
-    )
+# # for testing different weights between signal and backgrounds
+# for bkg_weight in (1, 2, 4, 8, 16):
+#     ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifier.processes}
+#     ml_process_weights["ggHH_kl_1_kt_1_sl_hbbhww"] = 1
+#     _dnn = DenseClassifier.derive(
+#         f"dense_bkgw_{str(bkg_weight)}",
+#         cls_dict={"ml_process_weights": ml_process_weights},
+#     )
