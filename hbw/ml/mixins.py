@@ -107,7 +107,7 @@ class DenseModelMixin():
         return model
 
 
-class ModelFitMixin():
+class CallbacksBase():
 
     callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
@@ -116,6 +116,134 @@ class ModelFitMixin():
     remove_backup: bool = True
     reduce_lr_factor: float = 0.8
     reduce_lr_patience: int = 3
+
+    # custom callback kwargs (TODO: allow overwriting defaults)
+    checkpoint_kwargs: dict = {}
+    backup_kwargs: dict = {}
+    early_stopping_kwargs: dict = {}
+    reduce_lr_kwargs: dict = {}
+
+    def get_callbacks(self, output):
+        # output used for BackupAndRestore callback (not deleted by --remove-output)
+        # NOTE: does that work when running remote?
+        # TODO: we should also save the parameters + input_features in the backup to ensure that they
+        #       are equivalent (delete backup if not)
+        backup_output = output["mlmodel"].sibling(f"backup_{output['mlmodel'].basename}", type="d")
+        if self.remove_backup:
+            backup_output.remove()
+
+        callback_options = {
+            "backup": tf.keras.callbacks.BackupAndRestore(
+                backup_dir=backup_output.path,
+                **self.backup_kwargs,
+            ),
+            "checkpoint": tf.keras.callbacks.ModelCheckpoint(
+                filepath=f"{output['mlmodel'].path}/checkpoint",
+                save_weights_only=False,
+                monitor="val_loss",
+                mode="auto",
+                save_best_only=True,
+                **self.checkpoint_kwargs,
+            ),
+            "early_stopping": tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                min_delta=0,
+                patience=max(min(50, int(self.epochs / 5)), 10),
+                verbose=1,
+                restore_best_weights=True,
+                start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
+                **self.early_stopping_kwargs,
+            ),
+            "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
+                monitor="val_loss",
+                factor=self.reduce_lr_factor,
+                patience=self.reduce_lr_patience,
+                verbose=1,
+                mode="auto",
+                min_delta=0,
+                min_lr=0,
+                **self.reduce_lr_kwargs,
+            ),
+        }
+
+        return [callback_options[key] for key in self.callbacks]
+
+
+class ClassicModelFitMixin(CallbacksBase):
+
+    callbacks: set = {
+        "backup", "checkpoint", "reduce_lr",
+        # "early_stopping",
+    }
+    remove_backup: bool = True
+    reduce_lr_factor: float = 0.8
+    reduce_lr_patience: int = 3
+    epochs: int = 200
+    batchsize: int = 2 ** 12
+
+    def __init__(
+            self,
+            *args,
+            **kwargs,
+    ):
+
+        super().__init__(*args, **kwargs)
+
+    def fit_ml_model(
+        self,
+        task: law.Task,
+        model,
+        train: DotDict[np.array],
+        validation: DotDict[np.array],
+        output,
+    ) -> None:
+        """
+        Training loop with normal tf dataset
+        """
+
+        log_memory("start")
+
+        with tf.device("CPU"):
+            tf_train = tf.data.Dataset.from_tensor_slices(
+                (train["inputs"], train["target"], train["weights"]),
+            ).batch(self.batchsize)
+            tf_validation = tf.data.Dataset.from_tensor_slices(
+                (validation["inputs"], validation["target"], validation["weights"]),
+            ).batch(self.batchsize)
+
+        log_memory("init")
+
+        # set the kwargs used for training
+        model_fit_kwargs = {
+            "validation_data": tf_validation,
+            "epochs": self.epochs,
+            "verbose": 2,
+            "callbacks": self.get_callbacks(output),
+        }
+
+        logger.info("Starting training...")
+        model.fit(
+            tf_train,
+            **model_fit_kwargs,
+        )
+        log_memory("loop")
+
+        # delete tf datasets to clear memory
+        del tf_train
+        del tf_validation
+        log_memory("del")
+
+
+class ModelFitMixin():
+    # parameters related to callbacks
+    callbacks: set = {
+        "backup", "checkpoint", "reduce_lr",
+        # "early_stopping",
+    }
+    remove_backup: bool = True
+    reduce_lr_factor: float = 0.8
+    reduce_lr_patience: int = 3
+
     epochs: int = 200
     batchsize: int = 2 ** 12
     # either set steps directly or use attribute from the MultiDataset
@@ -150,43 +278,6 @@ class ModelFitMixin():
             ).batch(self.batchsize)
 
         log_memory("init")
-        # output used for BackupAndRestore callback (not deleted by --remove-output)
-        # NOTE: does that work when running remote?
-        # TODO: we should also save the parameters + input_features in the backup to ensure that they
-        #       are equivalent (delete backup if not)
-        backup_output = output["mlmodel"].sibling(f"backup_{output['mlmodel'].basename}", type="d")
-        if self.remove_backup:
-            backup_output.remove()
-
-        callback_options = {
-            "backup": tf.keras.callbacks.BackupAndRestore(
-                backup_dir=backup_output.path,
-            ),
-            "checkpoint": tf.keras.callbacks.ModelCheckpoint(
-                filepath=f"{output['mlmodel'].path}/checkpoint",
-                save_weights_only=False,
-                monitor="val_loss",
-                mode="auto",
-                save_best_only=True,
-            ),
-            "early_stopping": tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss",
-                min_delta=0,
-                patience=max(min(50, int(self.epochs / 5)), 10),
-                verbose=1,
-                restore_best_weights=True,
-                start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
-            ),
-            "reduce_lr": tf.keras.callbacks.ReduceLROnPlateau(
-                monitor="val_loss",
-                factor=self.reduce_lr_factor,
-                patience=self.reduce_lr_patience,
-                verbose=1,
-                mode="auto",
-                min_delta=0,
-                min_lr=0,
-            ),
-        }
 
         # determine the requested steps_per_epoch
         if isinstance(self.steps_per_epoch, str):
@@ -205,7 +296,7 @@ class ModelFitMixin():
             "epochs": self.epochs,
             "verbose": 2,
             "steps_per_epoch": steps_per_epoch,
-            "callbacks": [callback_options[key] for key in self.callbacks],
+            "callbacks": self.get_callbacks(output),
         }
 
         # start training by iterating over the MultiDataset
