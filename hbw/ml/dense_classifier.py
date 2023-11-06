@@ -218,6 +218,12 @@ dense_max_iter_bs12 = DenseClassifier.derive(
 dense_max_iter_bs14 = DenseClassifier.derive(
     "dense_max_iter_bs14", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14},
 )
+dense_max_iter = DenseClassifier.derive(
+    "dense_max_iter", cls_dict={
+        "steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14, "dropout": 0.50, "epochs": 200,
+        "callbacks": {"backup", "checkpoint"},
+    },
+)
 
 # for running the default setup with different numbers of epochs
 for n_epochs in (5, 10, 20, 50, 100, 200, 500):
