@@ -226,3 +226,34 @@ class HBWInferenceModelBase(InferenceModel):
                 self.add_parameter_to_group(shape_uncertainty, "theory")
             else:
                 self.add_parameter_to_group(shape_uncertainty, "experiment")
+
+
+class HBWNoMLInferenceModel(HBWInferenceModelBase):
+    def add_inference_categories(self: InferenceModel):
+        """
+        This function creates categories for the inference model
+        """
+
+        lepton_channels = self.config_inst.x.lepton_channels
+
+        for lep in lepton_channels:
+            cat_name = f"cat_{lep}"
+            if cat_name not in self.channels:
+                continue
+
+            cat_kwargs = {
+                "config_category": f"{lep}",
+                "config_variable": "mli_mbb",
+                "mc_stats": self.mc_stats,
+            }
+            if self.skip_data:
+                cat_kwargs["data_from_processes"] = self.processes
+            else:
+                cat_kwargs["config_data_datasets"] = const.data_datasets[lep]
+
+            self.add_category(cat_name, **cat_kwargs)
+
+            # get the inference category to do some customization
+            cat = self.get_category(cat_name)
+            # variables that are plotting via hbw.InferencePlots for this category
+            cat.plot_variables = ["jet1_pt"]

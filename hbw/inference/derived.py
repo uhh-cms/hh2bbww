@@ -5,7 +5,7 @@ hbw inference model.
 """
 
 import hbw.inference.constants as const  # noqa
-from hbw.inference.base import HBWInferenceModelBase
+from hbw.inference.base import HBWInferenceModelBase, HBWNoMLInferenceModel
 
 
 #
@@ -14,6 +14,7 @@ from hbw.inference.base import HBWInferenceModelBase
 
 # used to set default requirements for cf.CreateDatacards based on the config
 ml_model_name = "dense_default"
+
 # default_producers = [f"ml_{ml_model_name}", "event_weights"]
 
 # All processes to be included in the final datacard
@@ -136,6 +137,10 @@ default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
 #
 # derive some additional Inference Models
 #
+
+no_ml_cls_dict = default_cls_dict.copy()
+no_ml_cls_dict["channels"] = ["cat_1e", "cat_1mu"]
+no_ml = HBWNoMLInferenceModel.derive("no_ml", cls_dict=no_ml_cls_dict)
 
 cls_dict = default_cls_dict.copy()
 
