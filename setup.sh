@@ -102,9 +102,8 @@ setup_hbw() {
     #
     # law setup
     #
-
-    export LAW_HOME="${HBW_BASE}/.law"
-    export LAW_CONFIG_FILE="${HBW_BASE}/${HBW_LAW_CONFIG}"
+    export LAW_HOME="${LAW_HOME:-${HBW_BASE}/.law}"
+    export LAW_CONFIG_FILE="${LAW_CONFIG_FILE:-${HBW_BASE}/${HBW_LAW_CONFIG}}"
 
     if which law &> /dev/null; then
         # source law's bash completion scipt

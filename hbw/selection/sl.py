@@ -281,7 +281,7 @@ def sl(
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
-    results.main["event"] = (
+    results.event = (
         results.steps.all_but_bjet &
         ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )
