@@ -27,7 +27,7 @@ def hbw_increment_stats(
     **kwargs,
 ) -> ak.Array:
     # collect important information from the results
-    event_mask = results.main.event
+    event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
     n_jets = results.x.n_central_jets
 
@@ -41,6 +41,8 @@ def hbw_increment_stats(
 
     if self.dataset_inst.is_mc:
         weight_map["num_negative_weights"] = (events.mc_weight < 0)
+        weight_map["num_pu_0"] = (events.pu_weight == 0)
+        weight_map["num_pu_100"] = (events.pu_weight >= 100)
         # "sum" operations
         weight_map["sum_mc_weight"] = events.mc_weight  # weights of all events
         weight_map["sum_mc_weight_selected"] = (events.mc_weight, event_mask)  # weights of selected events
@@ -120,7 +122,7 @@ def increment_stats_old(
     *stats* in-place based on all input *events* and the final selection *mask*.
     """
     # get event masks
-    event_mask = results.main.event
+    event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
 
     # increment plain counts
