@@ -21,6 +21,20 @@ np = maybe_import("numpy")
 _logger = law.logger.get_logger(__name__)
 
 
+def print_law_config(sections: list | None = None, keys: list | None = None):
+    """ Helper to print the currently used law config """
+    law_sections = law.config.sections()
+    for section in sections:
+        if section not in law_sections:
+            continue
+        print(f"{'=' * 20} [{section}] {'=' * 20}")
+        section_keys = law.config.options(section)
+        for key in section_keys:
+            if key in keys:
+                value = law.config.get_expanded(section, key)
+                print(f"{key}: {value}")
+
+
 def get_subclasses_deep(*classes):
     """
     Helper that gets all subclasses from input classes based on the '_subclasses' attribute.
