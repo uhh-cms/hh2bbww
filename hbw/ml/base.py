@@ -6,6 +6,7 @@ First implementation of DNN for HH analysis, generalized (TODO)
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Any
 import gc
 import time
@@ -116,9 +117,10 @@ class MLClassifierBase(MLModel):
 
         outp = {
             "mlmodel": target,
+            "checkpoint": target.child("checkpoint", type="d", optional=True),
             "plots": target.child("plots", type="d", optional=True),
             "stats": target.child("stats.yaml", type="f", optional=True),
-            "arrays": target.child("arrays", type="d", optionla=True),
+            "arrays": target.child("arrays", type="d", optional=True),
         }
 
         # define all files that need to be present
@@ -129,8 +131,10 @@ class MLClassifierBase(MLModel):
 
         return outp
 
-    def open_model(self, target: law.LocalDirectoryTarget) -> tf.keras.models.Model:
-        input_features = tuple(target["mlmodel"].child(
+    def open_model(self, target: law.LocalDirectoryTarget) -> dict[str, Any]:
+        models = {}
+
+        models["input_features"] = tuple(target["mlmodel"].child(
             "input_features.pkl", type="f",
         ).load(formatter="pickle"))
 
@@ -138,21 +142,24 @@ class MLClassifierBase(MLModel):
         #       should check that this also works when running remote
         with open(target["mlmodel"].child("parameters.yaml", type="f").fn) as f:
             f_in = f.read()
-        parameters = yaml.load(f_in, Loader=yaml.Loader)
+        models["parameters"] = yaml.load(f_in, Loader=yaml.Loader)
 
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
-        model = tf.keras.models.load_model(
+        models["model"] = tf.keras.models.load_model(
             target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
-        return model, input_features, parameters
+        models["best_model"] = tf.keras.models.load_model(
+            target["checkpoint"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+        )
+
+        return models
 
     def prepare_inputs(
         self,
         task,
         input,
         output: law.LocalDirectoryTarget,
-        per_process: bool = True,
     ) -> dict[str, np.array]:
         # get process instances and assign relevant information to the process_insts
         # from the first config_inst (NOTE: this assumes that all config_insts use the same processes)
@@ -347,64 +354,37 @@ class MLClassifierBase(MLModel):
                 proc_inst.x.ml_process_weight
             )
 
-        # if requested, merge per process
-        if not per_process:
-            def merge_processes(inputs: DotDict[any, DotDict[any: np.array]]):
-                return DotDict({
-                    key: np.concatenate([inputs[proc][key] for proc in inputs.keys()])
-                    for key in list(inputs.values())[0].keys()
-                })
+        return train, validation
 
-            validation = merge_processes(validation)
-            train = merge_processes(train)
+    def merge_processes(self, inputs: DotDict[any, DotDict[any: np.array]]):
+        """ Helper function to concatenate arrays in double-dict structure """
+        return DotDict({
+            key: np.concatenate([inputs[proc][key] for proc in inputs.keys()])
+            for key in list(inputs.values())[0].keys()
+        })
 
-            # shuffle all events
-            for inp in (train, validation):
-                np.random.shuffle(shuffle_indices := np.array(range(len(inp.inputs))))
-                for key in _inp.keys():
-                    inp[key] = inp[key][shuffle_indices]
+    def merge_and_shuffle(self, train, validation):
+        """ Helper function to merge and shuffle training and validation inputs """
+        train = self.merge_processes(train)
+        validation = self.merge_processes(validation)
+
+        # shuffle all events
+        for inp in (train, validation):
+            np.random.shuffle(shuffle_indices := np.array(range(len(inp.inputs))))
+            for key in inp.keys():
+                inp[key] = inp[key][shuffle_indices]
 
         return train, validation
 
+    @abstractmethod
     def prepare_ml_model(
         self,
         task: law.Task,
     ):
-        """
-        Minimal implementation of a ML model
-        """
+        """ Function to define the ml model. Needs to be implemented in daughter class """
+        return
 
-        from keras.models import Sequential
-        from keras.layers import Dense, BatchNormalization
-        from hbw.ml.tf_util import cumulated_crossentropy
-
-        n_inputs = len(set(self.input_features))
-        n_outputs = len(self.processes)
-
-        model = Sequential()
-
-        # input layer
-        model.add(BatchNormalization(input_shape=(n_inputs,)))
-
-        # hidden layers
-        model.add(Dense(units=64, activation="relu"))
-        model.add(Dense(units=64, activation="relu"))
-        model.add(Dense(units=64, activation="relu"))
-
-        # output layer
-        model.add(Dense(n_outputs, activation="softmax"))
-
-        # compile the network
-        # NOTE: the custom loss needed due to output layer changes for negative weights
-        optimizer = keras.optimizers.Adam(learning_rate=0.00050)
-        model.compile(
-            loss=cumulated_crossentropy,
-            optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy"],
-        )
-
-        return model
-
+    @abstractmethod
     def fit_ml_model(
         self,
         task: law.Task,
@@ -413,26 +393,8 @@ class MLClassifierBase(MLModel):
         validation: DotDict[np.array],
         output: law.LocalDirectoryTarget,
     ) -> None:
-        """
-        Minimal implementation of training loop.
-        """
-        from hbw.ml.tf_util import MultiDataset
-
-        with tf.device("CPU"):
-            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
-            tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.ml_weights),
-            ).batch(self.batchsize)
-
-        logger.info("Starting training...")
-        model.fit(
-            (x for x in tf_train),
-            validation_data=tf_validation,
-            # steps_per_epoch=tf_train.max_iter_valid,
-            steps_per_epoch=tf_train.iter_smallest_process,
-            epochs=self.epochs,
-            verbose=2,
-        )
+        """ Function to run the ml training loop. Needs to be implemented in daughter class """
+        return
 
     def create_train_val_plots(
         self,
@@ -516,6 +478,7 @@ class MLClassifierBase(MLModel):
         input: Any,
         output: law.LocalDirectoryTarget,
     ) -> ak.Array:
+        """ Training function that is called during the MLTraining task """
         # np.random.seed(1337)  # for reproducibility
 
         physical_devices = tf.config.list_physical_devices("GPU")
@@ -565,15 +528,13 @@ class MLClassifierBase(MLModel):
         model = self.prepare_ml_model(task)
         logger.info(model.summary())
         log_memory("prepare-model")
+
         #
         # training
         #
 
         # merge validation data
-        validation = DotDict({
-            key: np.concatenate([validation[proc][key] for proc in validation.keys()])
-            for key in list(validation.values())[0].keys()
-        })
+        validation = self.merge_processes(validation)
         log_memory("val merged")
 
         # train the model
@@ -584,14 +545,12 @@ class MLClassifierBase(MLModel):
         model.save(output["mlmodel"].path)
 
         # merge train data
-        train = DotDict({
-            key: np.concatenate([train[proc][key] for proc in train.keys()])
-            for key in list(train.values())[0].keys()
-        })
+        train = self.merge_processes(train)
         log_memory("train merged")
 
         #
         # direct evaluation as part of MLTraining
+        #
 
         self.create_train_val_plots(task, model, train, validation, output)
 
@@ -608,6 +567,8 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
+        use_best_model = False
+
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
             return events
@@ -633,7 +594,13 @@ class MLClassifierBase(MLModel):
         )
 
         # separate the outputs generated by the MLTraining task
-        models, input_features, parameters = zip(*models)
+        parameters = [model["parameters"] for model in models]
+        input_features = [model["input_features"] for model in models]
+
+        if use_best_model:
+            models = [model["best_model"] for model in models]
+        else:
+            models = [model["model"] for model in models]
 
         # check that all MLTrainings were started with the same set of parameters
         from hbw.util import dict_diff
@@ -721,4 +688,87 @@ class MLClassifierBase(MLModel):
         return events
 
 
-base_test = MLClassifierBase.derive("base_test", cls_dict={"folds": 5})
+class ExampleDNN(MLClassifierBase):
+    """ Example class how to implement a DNN from the MLClassifierBase """
+
+    # optionally overwrite input parameters
+    epochs: int = 10
+
+    def prepare_ml_model(
+        self,
+        task: law.Task,
+    ):
+        """
+        Minimal implementation of a ML model
+        """
+
+        from keras.models import Sequential
+        from keras.layers import Dense, BatchNormalization
+        from hbw.ml.tf_util import cumulated_crossentropy
+
+        n_inputs = len(set(self.input_features))
+        n_outputs = len(self.processes)
+
+        model = Sequential()
+
+        # input layer
+        model.add(BatchNormalization(input_shape=(n_inputs,)))
+
+        # hidden layers
+        model.add(Dense(units=64, activation="relu"))
+        model.add(Dense(units=64, activation="relu"))
+        model.add(Dense(units=64, activation="relu"))
+
+        # output layer
+        model.add(Dense(n_outputs, activation="softmax"))
+
+        # compile the network
+        # NOTE: the custom loss needed due to output layer changes for negative weights
+        optimizer = keras.optimizers.Adam(learning_rate=0.00050)
+        model.compile(
+            loss=cumulated_crossentropy,
+            optimizer=optimizer,
+            weighted_metrics=["categorical_accuracy"],
+        )
+
+        return model
+
+    def fit_ml_model(
+        self,
+        task: law.Task,
+        model,
+        train: DotDict[np.array],
+        validation: DotDict[np.array],
+        output: law.LocalDirectoryTarget,
+    ) -> None:
+        """
+        Minimal implementation of training loop.
+        """
+        from hbw.ml.tf_util import MultiDataset
+
+        with tf.device("CPU"):
+            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
+            tf_validation = tf.data.Dataset.from_tensor_slices(
+                (validation.inputs, validation.target, validation.ml_weights),
+            ).batch(self.batchsize)
+
+        logger.info("Starting training...")
+        model.fit(
+            (x for x in tf_train),
+            validation_data=tf_validation,
+            # steps_per_epoch=tf_train.max_iter_valid,
+            steps_per_epoch=tf_train.iter_smallest_process,
+            epochs=self.epochs,
+            verbose=2,
+        )
+
+
+# dervive another model from the ExampleDNN class with different class attributes
+example_test = ExampleDNN.derive("example_test", cls_dict={"epochs": 5})
+
+
+# load all ml modules here
+if law.config.has_option("analysis", "ml_modules"):
+    for m in law.config.get_expanded("analysis", "ml_modules", [], split_csv=True):
+        logger.debug(f"loading ml module '{m}'")
+        maybe_import(m.strip())
