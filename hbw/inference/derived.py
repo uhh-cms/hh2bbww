@@ -5,7 +5,7 @@ hbw inference model.
 """
 
 import hbw.inference.constants as const  # noqa
-from hbw.inference.base import HBWInferenceModelBase, HBWNoMLInferenceModel
+from hbw.inference.base import HBWInferenceModelBase
 
 
 #
@@ -34,18 +34,18 @@ processes = [
     # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
 ]
 
-# All inference channels to be included in the final datacard
-channels = [
-    "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
-    "cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "cat_1e_tt",
-    "cat_1e_st",
-    "cat_1e_v_lep",
-    "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww",
-    "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "cat_1mu_tt",
-    "cat_1mu_st",
-    "cat_1mu_v_lep",
+# All config categories to be included in the final datacard
+config_categories = [
+    "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "1e__ml_tt",
+    "1e__ml_st",
+    "1e__ml_v_lep",
+    "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "1mu__ml_tt",
+    "1mu__ml_st",
+    "1mu__ml_v_lep",
 ]
 
 rate_systematics = [
@@ -126,7 +126,7 @@ systematics = rate_systematics + shape_systematics
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes,
-    "channels": channels,
+    "config_categories": config_categories,
     "systematics": systematics,
     "mc_stats": True,
     "skip_data": True,
@@ -137,10 +137,6 @@ default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
 #
 # derive some additional Inference Models
 #
-
-no_ml_cls_dict = default_cls_dict.copy()
-no_ml_cls_dict["channels"] = ["cat_1e", "cat_1mu"]
-no_ml = HBWNoMLInferenceModel.derive("no_ml", cls_dict=no_ml_cls_dict)
 
 cls_dict = default_cls_dict.copy()
 
@@ -157,9 +153,9 @@ cls_dict["processes"] = [
     "st_schannel",
 ]
 
-cls_dict["channels"] = [
-    "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww",
-    "cat_1e_st",
+cls_dict["config_categories"] = [
+    "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "1e__ml_st",
 ]
 
 cls_dict["systematics"] = [
@@ -170,3 +166,7 @@ cls_dict["ml_model_name"] = "dense_test"
 
 # minimal model for quick test purposes
 test = default.derive("test", cls_dict=cls_dict)
+
+# model but with different fit variable
+cls_dict["config_variable"] = lambda config_cat_inst: "jet1_pt"
+jet1_pt = default.derive("jet1_pt", cls_dict=cls_dict)
