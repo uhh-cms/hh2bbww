@@ -10,7 +10,7 @@ import functools
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
+from columnflow.columnar_util import set_ak_column
 from columnflow.production.categories import category_ids
 
 from hbw.production.weights import event_weights
@@ -156,7 +156,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
+        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
 
@@ -275,7 +275,7 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(ll + events.MET[:]))
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
+        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
 
