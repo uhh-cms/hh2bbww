@@ -33,22 +33,22 @@ processes = [
     # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
 ]
 
-# All inference channels to be included in the final datacard
-channels = [
-    "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
-    "cat_2e_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
-    "cat_2e_tt",
-    "cat_2e_t_bkg",
-    "cat_2e_st",
-    "cat_2e_sig",
-    "cat_2e_v_lep",
-    "cat_2mu_ggHH_kl_1_kt_1_dl_hbbhww",
-    "cat_2mu_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
-    "cat_2mu_tt",
-    "cat_2mu_tt_bkg",
-    "cat_2mu_st",
-    "cat_2mu_sig",
-    "cat_2mu_v_lep",
+# All categories to be included in the final datacard
+config_categories = [
+    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "2e__ml_tt",
+    "2e__ml_t_bkg",
+    "2e__ml_st",
+    "2e__ml_sig",
+    "2e__ml_v_lep",
+    "2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "2mu__ml_tt",
+    "2mu__ml_tt_bkg",
+    "2mu__ml_st",
+    "2mu__ml_sig",
+    "2mu__ml_v_lep",
 ]
 
 rate_systematics = [
@@ -129,7 +129,7 @@ systematics = rate_systematics + shape_systematics
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes,
-    "channels": channels,
+    "config_categories": config_categories,
     "systematics": systematics,
     "mc_stats": True,
     "skip_data": True,
@@ -147,9 +147,9 @@ cls_dict["processes"] = [
     "tt",
 ]
 
-cls_dict["channels"] = [
-    "cat_2e_ggHH_kl_1_kt_1_dl_hbbhww",
-    "cat_2e_tt",
+cls_dict["config_categories"] = [
+    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__ml_tt",
 ]
 
 cls_dict["systematics"] = [
