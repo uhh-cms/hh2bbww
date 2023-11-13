@@ -86,7 +86,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     produces={
         bb_features, jj_features,
         category_ids, event_weights,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet",
+        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet",
         "FatJet.tau21", "n_bjet",
     },
 )
