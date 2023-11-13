@@ -80,6 +80,9 @@ def kwargs_fn(root_cats):
     kwargs = {
         "id": sum([c.id for c in root_cats.values()]),
         "label": ", ".join([c.name for c in root_cats.values()]),
+        "aux": {
+            "root_cats": {key: value.name for key, value in root_cats.items()},
+        },
     }
     return kwargs
 

@@ -8,8 +8,7 @@ import law
 import order as od
 
 from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation
-from columnflow.ml import MLModel
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, DotDict
 from columnflow.config_util import get_datasets_from_process
 
 import hbw.inference.constants as const  # noqa
@@ -30,16 +29,17 @@ class HBWInferenceModelBase(InferenceModel):
     # Model attributes, can be changed via `cls.derive`
     #
 
-    # default ml model
-    ml_model_name = "dense_default"
+    # default ml model, used for resolving defaults
+    ml_model_name: str = "dense_default"
 
     # list of all processes/channels/systematics to include in the datacards
-    processes = []
-    channels = []
-    systematics = []
+    processes: list = []
+    channels: list = []
+    systematics: list = []
 
-    mc_stats = True
-    skip_data = True
+    # customization of channels
+    mc_stats: bool = True
+    skip_data: bool = True
 
     def __init__(self, config_inst: od.Config, *args, **kwargs):
         super().__init__(config_inst)
@@ -47,6 +47,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_categories()
         self.add_inference_processes()
         self.add_inference_parameters()
+        # self.print_model()
 
         #
         # post-processing
@@ -54,40 +55,70 @@ class HBWInferenceModelBase(InferenceModel):
 
         self.cleanup()
 
+    def print_model(self):
+        """ Helper to print categories, processes and parameters of the InferenceModel """
+        for cat in self.categories:
+            print(f"{'=' * 20} {cat.name}")
+            print(f"Variable {cat.config_variable} \nCategory {cat.config_category}")
+            print(f"Processes {[p.name for p in cat.processes]}")
+            print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
+
+    def cat_name(self: InferenceModel, config_cat_inst: od.Category):
+        """ Function to determine inference category name from config category """
+        root_cats = config_cat_inst.x.root_cats
+        return "cat_" + "_".join(root_cats.values())
+
+    def config_variable(self: InferenceModel, config_cat_inst: od.Config):
+        """ Function to determine inference variable name from config category """
+        root_cats = config_cat_inst.x.root_cats
+        if dnn_cat := root_cats.get("dnn"):
+            dnn_proc = dnn_cat.replace("ml_", "")
+            return f"mlscore.{dnn_proc}_manybins"
+        else:
+            return "mli_mbb"
+
+    def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
+        """ Function to allow customizing the inference category """
+        root_cats = config_cat_inst.x.root_cats
+        variables = ["jet1_pt"]
+        if dnn_cat := root_cats.get("dnn"):
+            dnn_proc = dnn_cat.replace("ml_", "")
+            variables.append(f"mlscore.{dnn_proc}")
+        cat_inst.variables_to_plot = variables
+
     def add_inference_categories(self: InferenceModel):
         """
         This function creates categories for the inference model
         """
 
-        # get processes used in MLTraining
-        ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
-        ml_model_processes = ml_model_inst.processes
+        # get the MLModel inst
+        # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
 
-        lepton_channels = self.config_inst.x.lepton_channels
+        for config_category in self.config_categories:
+            cat_inst = self.config_inst.get_category(config_category)
+            root_cats = cat_inst.x.root_cats
+            lep_channel = root_cats.get("lep")
+            if lep_channel not in self.config_inst.x.lepton_channels:
+                raise Exception(
+                    "Each inference category needs to be categorized based on number of leptons; "
+                    f"Options: {self.config_inst.x.lepton_channels}",
+                )
 
-        for proc in ml_model_processes:
-            for lep in lepton_channels:
-                cat_name = f"cat_{lep}_{proc}"
-                if cat_name not in self.channels:
-                    continue
+            cat_name = self.cat_name(cat_inst)
+            cat_kwargs = dict(
+                config_category=config_category,
+                config_variable=self.config_variable(cat_inst),
+                mc_stats=self.mc_stats,
+            )
+            if self.skip_data:
+                cat_kwargs["data_from_processes"] = self.processes
+            else:
+                cat_kwargs["config_data_datasets"] = const.data_datasets[lep_channel]
 
-                cat_kwargs = {
-                    "config_category": f"{lep}__ml_{proc}",
-                    # "config_variable": f"mlscore.{proc}_rebin",
-                    "config_variable": f"mlscore.{proc}_manybins",
-                    "mc_stats": self.mc_stats,
-                }
-                if self.skip_data:
-                    cat_kwargs["data_from_processes"] = self.processes
-                else:
-                    cat_kwargs["config_data_datasets"] = const.data_datasets[lep]
+            self.add_category(cat_name, **cat_kwargs)
 
-                self.add_category(cat_name, **cat_kwargs)
-
-                # get the inference category to do some customization
-                cat = self.get_category(cat_name)
-                # variables that are plotting via hbw.InferencePlots for this category
-                cat.plot_variables = [f"mlscore.{proc}", "jet1_pt"]
+            # do some customization of the inference category
+            self.customize_category(self.get_category(cat_name), cat_inst)
 
     def add_inference_processes(self: InferenceModel):
         """
