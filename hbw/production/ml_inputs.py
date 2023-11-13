@@ -4,6 +4,8 @@
 Column production methods related to higher-level features.
 """
 
+from __future__ import annotations
+
 import functools
 
 from columnflow.production import Producer, producer
@@ -22,6 +24,8 @@ np = maybe_import("numpy")
 
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+
+ZERO_PADDING_VALUE = -10
 
 
 @producer(
