@@ -84,3 +84,30 @@ def add_hbw_processes(config: od.Config, campaign: od.Campaign):
     )
     v_lep.add_process(config.get_process("w_lnu"))
     v_lep.add_process(config.get_process("dy_lep"))
+
+    # Custom t_bkg process for ML Training, combining tt+st
+    t_bkg = config.add_process(
+        name="t_bkg",
+        id=97842611,  # random number
+        xsecs={13: config.get_process("tt").get_xsec(13) + config.get_process("st").get_xsec(13)},
+        label="tt + st",
+    )
+    t_bkg.add_process(config.get_process("tt"))
+    t_bkg.add_process(config.get_process("st"))
+
+    if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
+        # Custom signal  process for ML Training, combining multiple kl signal samples
+        signal_processes = [
+            config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
+            for kl in [0, 1, "2p45"]
+        ]
+        sig = config.add_process(
+            name="sig",
+            id=75835213,  # random number
+            xsecs={
+                13: sum([proc.get_xsec(13) for proc in signal_processes]),
+            },
+            label="signal",
+        )
+        for proc in signal_processes:
+            sig.add_process(proc)

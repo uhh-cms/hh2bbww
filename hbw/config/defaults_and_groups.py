@@ -202,7 +202,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
-        "dilep": ["Jet", "Bjet", "Lepton", "Trigger", "TriggerAndLep"],
+        "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
     }
 
     # plotting settings groups
@@ -257,12 +257,16 @@ def set_config_defaults_and_groups(config_inst):
         "SR": ("cat_1e_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww"),
         "vbfSR": ("cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": ("cat_1e_tt", "cat_1e_st", "cat_1e_v_lep", "cat_1mu_tt", "cat_1mu_st", "cat_1mu_v_lep"),
+        "SR_dl": ("cat_2e_ggHH_kl_5_kt_1_dl_hbbhww", "cat_2mu_ggHH_kl_5_kt_1_dl_hbbhww"),
+        "BR_dl": ("cat_2e_t_bkg", "cat_2e_v_lep", "cat_2mu_t_bkg", "cat_2mu_v_lep"),
     }
 
     config_inst.x.default_bins_per_category = {
         "SR": 10,
         "vbfSR": 5,
         "BR": 3,
+        # "SR_dl": 10,
+        # "BR_dl": 3,
         # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": 10,
         # "cat_1e_tt": 3,
         # "cat_1e_st": 3,
@@ -277,6 +281,8 @@ def set_config_defaults_and_groups(config_inst):
         "SR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": lambda proc_name: "hbbhww" not in proc_name,
+        # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
+        # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
         # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         # "cat_1e_tt": lambda proc_name: "hbbhww" not in proc_name,
         # "cat_1e_st": lambda proc_name: "hbbhww" not in proc_name,

@@ -47,7 +47,7 @@ class InferencePlots(
     categories = None
 
     inference_variables = law.CSVParameter(
-        default=("config_variable", "plot_variables"),
+        default=("config_variable", "variables_to_plot"),
         description="Inference category attributes to use to determine which variables to plot",
     )
     skip_variables = luigi.BoolParameter(default=False)

@@ -264,6 +264,7 @@ class ModifyDatacardsFlatRebin(
         return {
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
             "shapes": self.target(basename(f"shapes_rebin_{n_bins}", "root")),
+            "edges": self.target(basename(f"edges_{n_bins}", "json")),
         }
 
     def run(self):
@@ -295,7 +296,7 @@ class ModifyDatacardsFlatRebin(
             cat_name = list(cat_names)[0]
             if cat_name != self.branch_data.name:
                 raise Exception(
-                    f"Category name in the histograms {cat_name} does not agree with the"
+                    f"Category name in the histograms {cat_name} does not agree with the "
                     f"datacard category name {self.branch_data.name}",
                 )
 
@@ -320,6 +321,7 @@ class ModifyDatacardsFlatRebin(
 
             print(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
             rebin_values = get_rebin_values(hist, self.get_n_bins())
+            outputs["edges"].dump(rebin_values, formatter="json")
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)

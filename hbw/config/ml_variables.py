@@ -202,6 +202,12 @@ def add_ml_variables(config: od.Config) -> None:
         x_title=r"$S_{min}$",
     )
     config.add_variable(
+        name="mli_mindr_jj",
+        expression="mli_mindr_jj",
+        binning=(40, 0, 8),
+        x_title=r"min $\Delta R(j,j)$",
+    )
+    config.add_variable(
         name="mli_vbf_deta",
         expression="mli_vbf_deta",
         binning=(50, 2, 9.5),
@@ -220,6 +226,16 @@ def add_ml_variables(config: od.Config) -> None:
         binning=(2, -0.5, 1.5),
         x_title="existence of at least two vbf jets = 1, else 0",
     )
+
+    for obj in ["b1", "b2", "j1", "j2"]:
+        for var in ["btagDeepFlavB"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, var),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
 
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta"]:

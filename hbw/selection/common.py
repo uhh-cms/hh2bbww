@@ -4,6 +4,8 @@
 Selection modules for HH(bbWW) that are used for both SL and DL.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import Tuple
 
@@ -304,7 +306,16 @@ def post_selection(
     # increment stats
     self[hbw_increment_stats](events, results, stats, **kwargs)
 
-    logger.info(f"Fraction of negative weights: {(100 * stats['num_negative_weights'] / stats['num_events']):.2f}%")
+    def log_fraction(stats_key: str, msg: str | None = None):
+        if not stats.get(stats_key):
+            return
+        if not msg:
+            msg = "Fraction of {stats_key}"
+        logger.info(f"{msg}: {(100 * stats[stats_key] / stats['num_events']):.2f}%")
+
+    log_fraction("num_negative_weights", "Fraction of negative weights")
+    log_fraction("num_pu_0", "Fraction of events with pu_weight == 0")
+    log_fraction("num_pu_100", "Fraction of events with pu_weight >= 100")
 
     return events, results
 

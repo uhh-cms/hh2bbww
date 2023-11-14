@@ -6,8 +6,10 @@ Collection of helpers
 
 from __future__ import annotations
 
-from typing import Hashable, Iterable, Callable
 
+import time
+from typing import Hashable, Iterable, Callable
+from functools import wraps
 import tracemalloc
 
 import law
@@ -17,6 +19,35 @@ from columnflow.util import maybe_import
 np = maybe_import("numpy")
 
 _logger = law.logger.get_logger(__name__)
+
+
+def print_law_config(sections: list | None = None, keys: list | None = None):
+    """ Helper to print the currently used law config """
+    law_sections = law.config.sections()
+    for section in sections:
+        if section not in law_sections:
+            continue
+        print(f"{'=' * 20} [{section}] {'=' * 20}")
+        section_keys = law.config.options(section)
+        for key in section_keys:
+            if key in keys:
+                value = law.config.get_expanded(section, key)
+                print(f"{key}: {value}")
+
+
+def get_subclasses_deep(*classes):
+    """
+    Helper that gets all subclasses from input classes based on the '_subclasses' attribute.
+    """
+    classes = {_cls.__name__: _cls for _cls in classes}
+    all_classes = {}
+
+    while classes:
+        for key, _cls in classes.copy().items():
+            classes.update(getattr(_cls, "_subclasses", {}))
+            all_classes[key] = classes.pop(key)
+
+    return all_classes
 
 
 def build_param_product(params: dict[str, list], output_keys: Callable = lambda i: i):
@@ -211,6 +242,7 @@ def call_once_on_config(include_hash=False):
     Parametrized decorator to ensure that function *func* is only called once for the config *config*
     """
     def outer(func):
+        @wraps(func)
         def inner(config, *args, **kwargs):
             tag = f"{func.__name__}_called"
             if include_hash:
@@ -223,3 +255,31 @@ def call_once_on_config(include_hash=False):
             return func(config, *args, **kwargs)
         return inner
     return outer
+
+
+def timeit(func):
+    """ Simple wrapper to measure execution time of a function """
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        _logger.info(f"Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds")
+        return result
+    return timeit_wrapper
+
+
+def timeit_multiple(func):
+    """ Wrapper to measure the number of execution calls and the added execution time of a function """
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        func.total_calls = getattr(func, "total_calls", 0) + 1
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        func.total_time = getattr(func, "total_time", 0) + total_time
+        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({func.total_time:.4f} seconds)")
+        return result
+    return timeit_wrapper

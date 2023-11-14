@@ -9,6 +9,7 @@ from typing import Tuple
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import EMPTY_FLOAT
 
 from columnflow.selection import Selector, SelectionResult, selector
 # from columnflow.production.categories import category_ids
@@ -40,6 +41,7 @@ def invariant_mass(events: ak.Array):
     where = ak.num(events, axis=1) == 2
     events_with_2 = ak.where(where, events, empty_events)
     mass = ak.fill_none(ak.firsts((TetraVec(events_with_2[:, :1]) + TetraVec(events_with_2[:, 1:2])).mass), 0)
+    mass = ak.nan_to_num(mass, nan=EMPTY_FLOAT)
     return mass
 
 
@@ -406,7 +408,7 @@ def dl(
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
-    results.main["event"] = (
+    results.event = (
         results.steps.all_but_bjet &
         ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )

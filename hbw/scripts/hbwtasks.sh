@@ -36,6 +36,21 @@ hbw_reduction(){
 	$@
 }
 
+hbw_merge_reduction(){
+    law run cf.MergeReducedEventsWrapper --version $version --workers 20 \
+	--configs $config \
+	--shifts nominal \
+	--datasets $datasets \
+	--cf.ReduceEvents-workflow htcondor \
+	--cf.ReduceEvents-pilot \
+	--cf.ReduceEvents-parallel-jobs 4000 \
+	--cf.ReduceEvents-retries 1 \
+	--cf.ReduceEvents-tasks-per-job 1 \
+	--cf.ReduceEvents-job-workers 1 \
+	--cf.BundleRepo-custom-checksum $checksum \
+	$@
+}
+
 ml_model="dense_default"
 
 hbw_ml_training(){
@@ -65,6 +80,30 @@ inference_model="rates_only"
 
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
+	--config $config \
+	--inference-model $inference_model \
+	--pilot --workflow htcondor \
+	--retries 2 \
+	--cf.MLTraining-htcondor-gpus 1 \
+	--cf.MLTraining-htcondor-memory 40000 \
+	--cf.MLTraining-max-runtime 48h \
+	--cf.MergeMLEvents-workflow local \
+	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-gpus 0 \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-max-runtime 3h \
+	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReductionStats-n-inputs -1 \
+	--cf.ReduceEvents-workflow htcondor \
+	--cf.ReduceEvents-pilot True \
+	--cf.SelectEvents-workflow htcondor \
+	--cf.BundleRepo-custom-checksum $checksum \
+	$@
+}
+
+hbw_rebin_datacards(){
+	# same as `hbw_datacards`, but also runs the rebinning task
+	law run hbw.ModifyDatacardsFlatRebin --version $version --workers \
 	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \

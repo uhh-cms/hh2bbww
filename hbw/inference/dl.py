@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-hbw inference model.
+hbw(dl) inference model.
 """
 
 import hbw.inference.constants as const  # noqa
@@ -13,16 +13,15 @@ from hbw.inference.base import HBWInferenceModelBase
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dense_default"
-
+ml_model_name = "dense_default_dl"
 # default_producers = [f"ml_{ml_model_name}", "event_weights"]
 
 # All processes to be included in the final datacard
 processes = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
+    "ggHH_kl_0_kt_1_dl_hbbhww",
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    "ggHH_kl_2p45_kt_1_dl_hbbhww",
+    "ggHH_kl_5_kt_1_dl_hbbhww",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -34,18 +33,22 @@ processes = [
     # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
 ]
 
-# All config categories to be included in the final datacard
+# All categories to be included in the final datacard
 config_categories = [
-    "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "1e__ml_tt",
-    "1e__ml_st",
-    "1e__ml_v_lep",
-    "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "1mu__ml_tt",
-    "1mu__ml_st",
-    "1mu__ml_v_lep",
+    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "2e__ml_tt",
+    "2e__ml_t_bkg",
+    "2e__ml_st",
+    "2e__ml_sig",
+    "2e__ml_v_lep",
+    "2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "2mu__ml_tt",
+    "2mu__ml_tt_bkg",
+    "2mu__ml_st",
+    "2mu__ml_sig",
+    "2mu__ml_v_lep",
 ]
 
 rate_systematics = [
@@ -85,7 +88,7 @@ rate_systematics = [
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww",
+    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
     "murf_envelope_tt",
     "murf_envelope_st_schannel",
     "murf_envelope_st_tchannel",
@@ -132,41 +135,28 @@ default_cls_dict = {
     "skip_data": True,
 }
 
-default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
-
-#
-# derive some additional Inference Models
-#
+dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 
 cls_dict = default_cls_dict.copy()
 
-cls_dict["systematics"] = rate_systematics
-
-# inference model with only rate uncertainties
-sl_rates_only = default.derive("rates_only", cls_dict=cls_dict)
-
 cls_dict["processes"] = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
-    "st_schannel",
+    # "ggHH_kl_0_kt_1_dl_hbbhww",
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    # "ggHH_kl_2p45_kt_1_dl_hbbhww",
+    # "ggHH_kl_5_kt_1_dl_hbbhww",
+    "tt",
 ]
 
 cls_dict["config_categories"] = [
-    "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1e__ml_st",
+    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__ml_tt",
 ]
 
 cls_dict["systematics"] = [
     "lumi_13TeV_2017",
 ]
 
-cls_dict["ml_model_name"] = "dense_test"
+cls_dict["ml_model_name"] = "dense_test_dl"
 
 # minimal model for quick test purposes
-test = default.derive("test", cls_dict=cls_dict)
-
-# model but with different fit variable
-cls_dict["config_variable"] = lambda config_cat_inst: "jet1_pt"
-jet1_pt = default.derive("jet1_pt", cls_dict=cls_dict)
+dl_test = dl.derive("dl_test", cls_dict=cls_dict)
