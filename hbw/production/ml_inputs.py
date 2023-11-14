@@ -170,9 +170,13 @@ def ml_inputs_init(self: Producer) -> None:
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
-        "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
+        "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min", "mli_mindr_jj",
         "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
     } | set(
+        f"mli_{obj}_{var}"
+        for obj in ["b1", "b2", "j1", "j2"]
+        for var in ["btagDeepFlavB"]
+    ) | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
         for var in ["pt", "eta"]
@@ -273,6 +277,9 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(ll + events.MET[:]))
     events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
     events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(ll + events.MET[:]))
+
+    # TODO: variable to reconstruct top quark resonances (e.g. mT(lepton + met + b))
+
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
