@@ -218,12 +218,31 @@ dense_max_iter_bs12 = DenseClassifier.derive(
 dense_max_iter_bs14 = DenseClassifier.derive(
     "dense_max_iter_bs14", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14},
 )
-dense_max_iter = DenseClassifier.derive(
-    "dense_max_iter", cls_dict={
-        "steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14, "dropout": 0.50, "epochs": 200,
-        "callbacks": {"backup", "checkpoint"},
-    },
-)
+
+# ML Model with longer epochs
+cls_dict = {
+    "steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14, "dropout": 0.50, "epochs": 200,
+    "callbacks": {"backup", "checkpoint"},
+}
+
+dense_max_iter = DenseClassifier.derive("dense_max_iter", cls_dict=cls_dict)
+
+# reduced set of input features (simplification of training process)
+inputs1 = [
+    "mli_mbb", "mli_ht", "mli_n_jet", "mli_n_deepjet",
+    "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj", "mli_mlnu",
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+    for var in ["pt"]
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["b1", "b2"]
+    for var in ["btagDeepFlavB"]
+]
+
+cls_dict["input_features"] = inputs1
+dense_inputs1 = DenseClassifier.derive("dense_inputs1", cls_dict=cls_dict)
 
 # # for running the default setup with different numbers of epochs
 # for n_epochs in (5, 10, 20, 50, 100, 200, 500):
