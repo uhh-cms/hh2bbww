@@ -12,6 +12,7 @@ import law
 import order as od
 
 from columnflow.util import maybe_import
+from columnflow.columnar_util import Route
 
 from hbw.ml.base import MLClassifierBase
 from hbw.ml.mixins import DenseModelMixin, ModelFitMixin
@@ -96,7 +97,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     ]
 
-    store_name: str = "inputs_v1"
+    store_name: str = "inputs_inclusive"
     dump_arrays: bool = False
 
     folds: int = 5
@@ -139,6 +140,15 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
+
+    def uses(self, config_inst: od.Config) -> set[Route | str]:
+        if not all(var.startswith("mli_") for var in self.input_features):
+            raise Exception(
+                "We currently expect all input_features to start with 'mli_', which is not the case"
+                f"for one of the variables in the 'input_features' {self.input_features}",
+            )
+        # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
+        return {"mli_*"} | {"normalization_weight"}
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -243,6 +253,7 @@ inputs1 = [
 
 cls_dict["input_features"] = inputs1
 dense_inputs1 = DenseClassifier.derive("dense_inputs1", cls_dict=cls_dict)
+dense_inputs1_test = DenseClassifier.derive("dense_inputs1_test", cls_dict=law.util.merge_dicts(cls_dict, cls_dict_test))
 
 # # for running the default setup with different numbers of epochs
 # for n_epochs in (5, 10, 20, 50, 100, 200, 500):

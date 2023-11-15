@@ -245,7 +245,7 @@ class MLClassifierBase(MLModel):
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
                     raise Exception(
-                        f"The columns {set(events.fields).difference(set(self.input_features))} "
+                        f"The columns {set(self.input_features).difference(events.fields)} "
                         "are not present in the ML input events",
                     )
 
