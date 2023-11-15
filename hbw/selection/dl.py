@@ -70,17 +70,17 @@ def dl_jet_selection(
         ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.3, axis=2)
     )
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
-    jet_sel = events.cutflow.n_jet >= 2
+    jet_sel = events.cutflow.n_jet >= 1
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
     # b-tagged jets, medium working point
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= wp_med)
     events = set_ak_column(events, "cutflow.n_deepjet_med", ak.sum(btag_mask, axis=1))
-    btag_sel = events.cutflow.n_deepjet_med >= 2
+    btag_sel = events.cutflow.n_deepjet_med >= 1
 
     # define b-jets as the two b-score leading jets, b-score sorted
-    bjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, :2]
+    bjet_indices = masked_sorted_indices(btag_mask, events.Jet.btagDeepFlavB)[:, :2]
 
     # define lightjets as all non b-jets, pt-sorted
     b_idx = ak.fill_none(ak.pad_none(bjet_indices, 2), -1)

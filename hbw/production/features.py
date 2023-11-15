@@ -150,14 +150,16 @@ def features_init(self: Producer) -> None:
     produces={
         features,
         "deltaR_ll", "ll_pt", "m_bb", "deltaR_bb", "bb_pt",
-        "MT", "min_dr_lljj", "delta_Phi", "m_lljjMET",
-        "m_ll_check", "E_miss", "charge", "wp_score",
+        "MT", "min_dr_lljj", "delta_Phi", "m_lljjMET", 
+        "m_ll_check", "E_miss", "charge", "wp_score", "E_miss", "wp_score",
     },
 )
 def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # Inherit common features and prepares Object Lepton. Bjet, etc.
     events = self[features](events, **kwargs)
+    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    events = set_ak_column_f32(events, "wp_score", events.Bjet.btagDeepFlavB)
 
     # create ll object and ll variables
     ll = (events.Lepton[:, 0] + events.Lepton[:, 1])
@@ -175,6 +177,7 @@ def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # Transverse mass
     MT = (2 * events.MET.pt * ll.pt * (1 - np.cos(ll.delta_phi(events.MET)))) ** 0.5
     events = set_ak_column_f32(events, "MT", MT)
+    events = set_ak_column_f32(events, "E_miss", events.MET.pt)
 
     # delta Phi between ll and bb object
     bb = (events.Bjet[:, 0] + events.Bjet[:, 1])
@@ -194,6 +197,9 @@ def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     ]
     for var in dl_variable_list:
         events = set_ak_column_f32(events, var, ak.fill_none(events[var], EMPTY_FLOAT))
+
+    for obj in ["Bjet"]:
+        events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
 
     return events
 

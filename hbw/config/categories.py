@@ -31,6 +31,20 @@ import order as od
 
 logger = law.logger.get_logger(__name__)
 
+def name_fn(root_cats):
+    cat_name = "__".join(cat.name for cat in root_cats.values())
+    return cat_name
+
+
+def kwargs_fn(root_cats):
+    kwargs = {
+        "id": sum([c.id for c in root_cats.values()]),
+        "label": ", ".join([c.name for c in root_cats.values()]),
+        "aux": {
+            "root_cats": {key: value.name for key, value in root_cats.items()},
+        },
+    }
+    return kwargs
 
 @call_once_on_config()
 def add_gen_categories(config: od.Config) -> None:
@@ -126,22 +140,20 @@ def add_categories_selection(config: od.Config) -> None:
         selection="catid_selection_emu",
         label="1 Electron 1 Muon",
     )
+    
+    category_blocks = OrderedDict({
+        "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
+    })
+
+    n_cats = create_category_combinations(
+        config,
+        category_blocks,
+        name_fn=name_fn,
+        kwargs_fn=kwargs_fn,
+        skip_existing=False,  # there should be no existing sub-categories
+    )
 
 
-def name_fn(root_cats):
-    cat_name = "__".join(cat.name for cat in root_cats.values())
-    return cat_name
-
-
-def kwargs_fn(root_cats):
-    kwargs = {
-        "id": sum([c.id for c in root_cats.values()]),
-        "label": ", ".join([c.name for c in root_cats.values()]),
-        "aux": {
-            "root_cats": {key: value.name for key, value in root_cats.items()},
-        },
-    }
-    return kwargs
 
 
 @call_once_on_config()
@@ -204,7 +216,7 @@ def add_categories_production(config: od.Config) -> None:
 
     category_blocks = OrderedDict({
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [cat_resolved, cat_boosted],
+        # "jet": [cat_resolved, cat_boosted],
         "b": [cat_1b, cat_2b],
     })
 
@@ -238,7 +250,7 @@ def add_categories_ml(config, ml_model_inst):
 
     category_blocks = OrderedDict({
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category("resolved"), config.get_category("boosted")],
         "b": [config.get_category("1b"), config.get_category("2b")],
         "dnn": ml_categories,
     })

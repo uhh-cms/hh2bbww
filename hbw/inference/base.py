@@ -75,7 +75,7 @@ class HBWInferenceModelBase(InferenceModel):
             dnn_proc = dnn_cat.replace("ml_", "")
             return f"mlscore.{dnn_proc}_manybins"
         else:
-            return "mli_mbb"
+            return "deltaR_ll"
 
     def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
         """ Function to allow customizing the inference category """

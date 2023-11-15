@@ -16,7 +16,7 @@ checksum() {
 # possible config choices: "c17", "l17"
 # NOTE: use "l17" for testing purposes
 config="c17"
-datasets="*"
+datasets="dilep"
 
 hbw_selection(){
     law run cf.SelectEvents --version $version \
@@ -27,6 +27,21 @@ hbw_selection(){
 #
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
 #
+hbw_produce_columns(){
+    law run cf.ProduceColumnsWrapper --version $version --workers 20 \
+        --configs $config \
+        --dataset $datasets \
+        --cf.ProduceColumns-workflow htcondor \
+	--cf.ReduceEvents-pilot \
+	--cf.ReduceEvents-no-poll \
+	--cf.ReduceEvents-parallel-jobs 4000 \
+	--cf.ReduceEvents-retries 1 \
+	--cf.ReduceEvents-tasks-per-job 1 \
+	--cf.ReduceEvents-job-workers 1 \
+	--cf.BundleRepo-custom-checksum $checksum \
+	$@
+       
+}
 
 # NOTE: calibration version should correspond to what is setup in the config as our default calibration config
 common_version="${HBW_COMMON_VERSION:-"common1"}"
@@ -76,7 +91,7 @@ hbw_merge_reduction(){
 	$@
 }
 
-ml_model="dense_default"
+ml_model="dense_default_dl"
 
 hbw_ml_training(){
     law run cf.MLTraining --version $version --workers 20 \
@@ -103,7 +118,23 @@ hbw_ml_training(){
 }
 
 inference_model="rates_only"
+producer="dl_features"
 
+hbw_datacards_noML(){
+    law run cf.CreateDatacards --version $version --workers 20 \
+	--config $config \
+	--inference-model "dl_noML" \
+	--producers $producer \
+	--pilot --workflow htcondor \
+	--retries 2 \
+	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReductionStats-n-inputs -1 \
+	--cf.ReduceEvents-workflow htcondor \
+	--cf.ReduceEvents-pilot True \
+	--cf.SelectEvents-workflow htcondor \
+	--cf.BundleRepo-custom-checksum $checksum \
+	$@
+}
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
 	--config $config \
@@ -127,9 +158,12 @@ hbw_datacards(){
 	$@
 }
 
+
+
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
 	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
+	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 10\
 	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
@@ -172,8 +206,8 @@ hbw_cutflow(){
 }
 
 processes="default"
-categories="resolved,boosted,incl"
-variables="mli_*"
+categories="1b,2b,incl"
+variables="dilep"
 
 hbw_plot_variables(){
     law run cf.PlotVariables1D --version $version \

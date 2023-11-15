@@ -40,7 +40,7 @@ def add_dl_variables(config: od.Config) -> None:
     config.add_variable(
         name="m_lljjMET",
         binning=(40, 0, 600),
-        x_title=r"$m_{lljj \not{E_T}}}$",
+        x_title=r"$m_{lljj Emiss}$",
         unit="GeV",
     )
     config.add_variable(

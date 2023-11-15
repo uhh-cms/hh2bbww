@@ -152,7 +152,7 @@ def set_config_defaults_and_groups(config_inst):
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
         "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-        "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "ggHH_*"],
+        "dilep": ["tt_*", "st_*", "dy_*", "ggHH_*", "w_lnu_*"],
     }
 
     # category groups for conveniently looping over certain categories
@@ -174,7 +174,7 @@ def set_config_defaults_and_groups(config_inst):
         "dilep": [
             "n_jet", "n_muon", "n_electron", "ht", "m_bb", "m_ll", "deltaR_bb", "deltaR_ll",
             "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj",
-            "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
+            "m_lljjMET", "channel_id", "n_bjet", "wp_score", "m_ll_check",
         ],
         "control": [
             "n_jet", "n_fatjet", "n_electron", "n_muon",
@@ -282,7 +282,7 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.default_bins_per_category = {
         "SR": 10,
-        "vbfSR": 5,
+        #"vbfSR": 5,
         "BR": 3,
         "SR_resolved": 10,
         "SR_boosted": 5,
@@ -301,12 +301,8 @@ def set_config_defaults_and_groups(config_inst):
     }
 
     config_inst.x.inference_category_rebin_processes = {
-        "SR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR": ("ggHH_kl_1_kt_1_dl_hbbhww"),
+        #"vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": lambda proc_name: "hbbhww" not in proc_name,
         # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
         # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,

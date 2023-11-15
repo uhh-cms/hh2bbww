@@ -342,6 +342,8 @@ def post_selection(
     # increment stats
     self[hbw_increment_stats](events, results, stats, **kwargs)
 
+    events = ak.fill_none(events, EMPTY_FLOAT)
+
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):
             return

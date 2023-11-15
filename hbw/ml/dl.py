@@ -25,33 +25,34 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        "sig",
-        # "ggHH_kl_1_kt_1_dl_hbbhww",
-        # "tt",
-        # "st",
-        "v_lep",
-        "t_bkg",
-        # "w_lnu",
-        # "dy_lep",
+        # "sig",
+        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "tt",
+        "st",
+        # "v_lep",
+        # "t_bkg",
+        "w_lnu",
+        "dy_lep",
     ]
 
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
         "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
-        "sg": 1,
+        "sig": 1,
         "tt": 1,
         "st": 1,
         "v_lep": 1,
-        "tt_bkg": 1,
+        "t_bkg": 1,
         "w_lnu": 2,
         "dy_lep": 1,
     }
 
     dataset_names = {
-        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        # "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        # "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        # "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -67,11 +68,11 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "w_lnu_ht70To100_madgraph",
         "w_lnu_ht100To200_madgraph",
         "w_lnu_ht200To400_madgraph",
-        "w_lnu_ht400To600_madgraph",
+        # "w_lnu_ht400To600_madgraph",
         "w_lnu_ht600To800_madgraph",
-        "w_lnu_ht800To1200_madgraph",
+        #"w_lnu_ht800To1200_madgraph",
         "w_lnu_ht1200To2500_madgraph",
-        "w_lnu_ht2500_madgraph",
+        #"w_lnu_ht2500_madgraph",
         # DY
         "dy_lep_m50_ht70to100_madgraph",
         "dy_lep_m50_ht100to200_madgraph",
@@ -127,7 +128,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     # overwriting ModelFitMixin parameters
     callbacks = {
-        "backup", "checkpoint", "reduce_lr",
+        "backup", "checkpoint", # "reduce_lr",
         # "early_stopping",
     }
     remove_backup = True
@@ -207,10 +208,46 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         return ["ml_inputs"] if self.config_inst.has_tag("is_sl") else ["dl_ml_inputs"]
 
 
+cls_dict_test_kl1 = {
+    "folds": 3,
+    "epochs": 100,
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_kl1_dl = DenseClassifierDL.derive("dense_test_kl1_dl", cls_dict=cls_dict_test_kl1)
+
+cls_dict_all_proc = {
+    "folds": 3,
+    "epochs": 100,
+    # "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "dy_lep", "tt", "st", "w_lnu"],
+}
+
+# ML Model with reduced number of datasets
+dense_all_proc = DenseClassifierDL.derive("dense_all_proc", cls_dict=cls_dict_all_proc)
+
+cls_dict_test_sig_all_dl = {
+    "folds": 3,
+    "epochs": 100,
+    "processes": ["sig_all", "v_lep", "t_bkg"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_sig_all_dl = DenseClassifierDL.derive("dense_test_sig_all_dl", cls_dict=cls_dict_test_sig_all_dl)
+
+cls_dict_test_sig_dl = {
+    "folds": 3,
+    "epochs": 100,
+    "processes": ["sig", "v_lep", "t_bkg"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_sig_dl = DenseClassifierDL.derive("dense_test_sig_dl", cls_dict=cls_dict_test_sig_dl)
+
 cls_dict_test = {
     "folds": 2,
     "epochs": 90,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "tt"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
     "dataset_names": {
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
         # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
