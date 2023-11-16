@@ -20,10 +20,10 @@ def default_ml_model(cls, container, task_params):
     # for most tasks, do not use any default ml model
     default_ml_model = None
 
-    # the ml_model parameter is only used by `MLTraining` and `MLEvaluation`, therefore use some default
+    # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
-    if cls.task_family in ("cf.MLTraining", "cf.MLEvaluation", "cf.MergeMLEvents", "cf.PrepareMLEvents"):
-        # TODO: we might want to distinguish between two default ML models (sl vs dl)
+    if hasattr(cls, "ml_model"):
+        # TODO: we might want to distinguish between multiple default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
     # check if task is using an inference model
@@ -56,8 +56,12 @@ def default_producers(cls, container, task_params):
     # per default, use the ml_inputs and event_weights
     default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
 
-    # check if a ml_model has been set
-    ml_model = task_params.get("ml_model", None) or task_params.get("ml_models", None)
+    if hasattr(cls, "ml_model"):
+        # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
+        return default_producers
+
+    # check if a mlmodel has been set
+    ml_model = task_params.get("ml_models", None)
 
     # only consider 1 ml_model
     if ml_model and isinstance(ml_model, (list, tuple)):
@@ -67,12 +71,9 @@ def default_producers(cls, container, task_params):
     if ml_model in (None, law.NO_STR, RESOLVE_DEFAULT):
         ml_model = default_ml_model(cls, container, task_params)
 
-    # check if task is directly using the MLModel or just requires some ML output
-    is_ml_task = (cls.task_family in ("cf.MLTraining", "cf.MLEvaluation"))
-
-    # if a ML model is set, and the task is neither MLTraining nor MLEvaluation,
+    # if a ML model is set, and the task is not part of the MLTraining pipeline,
     # use the ml categorization producer
-    if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()) and not is_ml_task:
+    if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()):
         # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
         default_producers.append(f"ml_{ml_model}")
 
