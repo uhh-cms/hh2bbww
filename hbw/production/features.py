@@ -204,19 +204,22 @@ def dl_features_init(self: Producer) -> None:
     # add variable instances to config
     add_dl_variables(self.config_inst)
 
+
 from hbw.production.resonant_features import resonant_features
 from hbw.config.sl_res.variables import add_sl_res_variables
+
+
 @producer(
     uses={"Electron", "Muon", "Bjet", "MET", "Lightjet"} | {
         features, resonant_features,
     },
     produces={
         features, resonant_features,
-        "eta_Whadron","eta_Wlepton","eta_Higgs_WW","eta_Higgs_bb","eta_Higgs_bb",
-        "phi_Whadron","phi_Wlepton","phi_Higgs_WW","phi_Higgs_bb","phi_Heavy_Higgs",
-        "Whadron","Wlepton","Higgs_WW","Higgs_bb","Heavy_Higgs",
-        "pt_Whadron","pt_Wlepton","pt_Higgs_WW","pt_Higgs_bb","pt_Heavy_Higgs",
-        "m_Whadron","m_Wlepton","m_Higgs_WW","m_Higgs_bb","m_Heavy_Higgs", 
+        "eta_Whadron", "eta_Wlepton", "eta_Higgs_WW", "eta_Higgs_bb", "eta_Higgs_bb",
+        "phi_Whadron", "phi_Wlepton", "phi_Higgs_WW", "phi_Higgs_bb", "phi_Heavy_Higgs",
+        "Whadron", "Wlepton", "Higgs_WW", "Higgs_bb", "Heavy_Higgs",
+        "pt_Whadron", "pt_Wlepton", "pt_Higgs_WW", "pt_Higgs_bb", "pt_Heavy_Higgs",
+        "m_Whadron", "m_Wlepton", "m_Higgs_WW", "m_Higgs_bb", "m_Heavy_Higgs",
     },
 )
 def sl_res_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -224,7 +227,7 @@ def sl_res_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # Inherit common features and prepares Object Lepton. Bjet, etc.
     events = self[features](events, **kwargs)
     events = self[resonant_features](events, **kwargs)
-    for obj in ["Jet","Lightjet","Bjet","FatJet"]:
+    for obj in ["Jet", "Lightjet", "Bjet", "FatJet"]:
         events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
 
     return events

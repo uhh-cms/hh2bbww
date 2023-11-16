@@ -509,4 +509,3 @@ def add_config(
         configure_sl_res(cfg)
 
     return cfg
-

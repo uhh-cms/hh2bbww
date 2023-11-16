@@ -15,30 +15,30 @@ from hbw.config.styling import default_var_binning, default_var_unit
 from columnflow.columnar_util import EMPTY_FLOAT  # noqa
 from hbw.util import call_once_on_config
 
-#object of resonans 2Higgs analysis 
+# object of resonans 2Higgs analysis
 #
-#                           _    b 
+#                           _    b
 #                    Higgs_bb  /
-#                  - - - - - - 
+#                  - - - - - -
 #                /             \ _
-#               /                b 
+#               /                b
 #  Heavy_Higgs /                          l
-# - - - - - - -                 Wlepton  /
+#   - - - - - -                 Wlepton  /
 #              \                ---------
-#               \              /         \ 
+#               \              /         \
 #                \  Higgs_WW  /           nu
-#                  - - - - - -            
+#                  - - - - - -
 #                             \              q
 #                              \  Whadron   /
 #                               ------------
-#                                           \ 
+#                                           \
 #                                            q'
-#           
+#
+
+
 @call_once_on_config()
 def add_sl_res_variables(config: od.Config) -> None:
-
-    #Whadron 
-    config.add_variable(
+    config.add_variable(  # Whadron
         name="pt_Whadron",
         binning=(40, 0., 1500.),
         unit="GeV",
@@ -60,7 +60,7 @@ def add_sl_res_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$phi_{qq'}$",
     )
-    #Wlepton
+# Wlepton
     config.add_variable(
         name="pt_Wlepton",
         binning=(40, 0., 1500.),
@@ -83,7 +83,7 @@ def add_sl_res_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$phi_{leptnu}$",
     )
-    #Higgs_WW
+# Higgs_WW
     config.add_variable(
         name="pt_Higgs_WW",
         binning=(40, 0., 600.),
@@ -106,7 +106,7 @@ def add_sl_res_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$phi_{Leptnu+qq'}$",
     )
-    #Higgs_bb
+# Higgs_bb
     config.add_variable(
         name="pt_Higgs_bb",
         binning=(40, 0., 600.),
@@ -129,7 +129,7 @@ def add_sl_res_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$phi_{bb}$",
     )
-    #Heavy_Higgs
+# Heavy_Higgs
     config.add_variable(
         name="pt_Heavy_Higgs",
         binning=(40, 0., 600.),
@@ -363,91 +363,86 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(2, -0.5, 1.5),
         x_title="existence of at least two vbf jets = 1, else 0",
     )
-    #W_jj features 
+# W_jj features
     config.add_variable(
-        name=f"mli_pt_jj",
-        expression=f"mli_pt_jj",
+        name="mli_pt_jj",
+        expression="mli_pt_jj",
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"$W_{hadron}$ $p_{T}$",
     )
     config.add_variable(
-        name=f"mli_eta_jj",
-        expression=f"mli_eta_jj",
+        name="mli_eta_jj",
+        expression="mli_eta_jj",
         binning=(50, -2.5, 2.5),
         x_title=r"$W_{hadron}$ $\eta$",
     )
     config.add_variable(
-        name=f"mli_phi_jj",
-        expression=f"mli_phi_jj",
+        name="mli_phi_jj",
+        expression="mli_phi_jj",
         binning=(40, -3.2, 3.2),
         x_title=r"$W_{hadron}$ $\phi$ ",
     )
-   #W_lnu features 
+# W_lnu features
     config.add_variable(
-        name=f"mli_pt_lnu",
-        expression=f"mli_pt_lnu",
+        name="mli_pt_lnu",
+        expression="mli_pt_lnu",
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"$W_{lepton}$ $p_{T}$",
     )
     config.add_variable(
-        name=f"mli_eta_lnu",
-        expression=f"mli_eta_lnu",
+        name="mli_eta_lnu",
+        expression="mli_eta_lnu",
         binning=(50, -2.5, 2.5),
         x_title=r"$W_{lepton}$ $\eta$",
     )
     config.add_variable(
-        name=f"mli_phi_lnu",
-        expression=f"mli_phi_lnu",
+        name="mli_phi_lnu",
+        expression="mli_phi_lnu",
         binning=(40, -3.2, 3.2),
         x_title=r"$W_{lepton}$ $\phi$ ",
     )
-    #H_WW (all)  features 
+# H_WW (all) features
     config.add_variable(
-        name=f"mli_pt_jjlnu",
-        expression=f"mli_pt_jjlnu",
+        name="mli_pt_jjlnu",
+        expression="mli_pt_jjlnu",
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"$H_{WW}$ $p_{T}$",
     )
     config.add_variable(
-        name=f"mli_eta_jjlnu",
-        expression=f"mli_eta_jjlnu",
-       
+        name="mli_eta_jjlnu",
+        expression="mli_eta_jjlnu",
         binning=(50, -2.5, 2.5),
         x_title=r"H_{WW}$ $\eta$",
     )
     config.add_variable(
-        name=f"mli_phi_jjlnu",
-        expression=f"mli_phi_jjlnu",
-       
+        name="mli_phi_jjlnu",
+        expression="mli_phi_jjlnu",
         binning=(40, -3.2, 3.2),
         x_title=r"$H_{WW}$ $\phi$ ",
     )
-    #H_bbfeatures 
+# H_bb features
     config.add_variable(
-        name=f"mli_pt_bb",
-        expression=f"mli_pt_bb",
-       
+        name="mli_pt_bb",
+        expression="mli_pt_bb",
         binning=(40, 0., 400.),
         unit="GeV",
         x_title=r"$H_{bb}$ $p_{T}$",
     )
     config.add_variable(
-        name=f"mli_eta_bb",
-        expression=f"mli_eta_bb",
-       
+        name="mli_eta_bb",
+        expression="mli_eta_bb",
         binning=(50, -2.5, 2.5),
         x_title=r"H_{bb}$ $\eta$",
     )
     config.add_variable(
-        name=f"mli_phi_bb",
-        expression=f"mli_phi_bb",
-       
+        name="mli_phi_bb",
+        expression="mli_phi_bb",
         binning=(40, -3.2, 3.2),
         x_title=r"$H_{bb}$ $\phi$ ",
-    )   
+    )
 
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta"]:

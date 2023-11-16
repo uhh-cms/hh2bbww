@@ -313,6 +313,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # add variable instances to config
     add_dl_ml_variables(self.config_inst)
 
+
 @producer(
     uses={
         category_ids, event_weights,
@@ -327,7 +328,6 @@ def dl_ml_inputs_init(self: Producer) -> None:
         # other produced columns set in the init function
     },
 )
-
 def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add event weights
     if self.dataset_inst.is_mc:
@@ -391,7 +391,6 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_pt_bb", hbb.pt)
     events = set_ak_column_f32(events, "mli_eta_bb", hbb.eta)
     events = set_ak_column_f32(events, "mli_phi_bb", hbb.phi)
-
 
     mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
     events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
@@ -462,6 +461,7 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     return events
 
+
 @sl_res_ml_inputs.init
 def sl_res_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
@@ -473,11 +473,11 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
         "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
-        "mli_pt_jj","mli_eta_jj","mli_phi_jj",
-        "mli_pt_lnu","mli_eta_lnu","mli_phi_lnu",
-        "mli_pt_jjlnu","mli_eta_jjlnu","mli_phi_jjlnu",
-        "mli_pt_jjl","mli_eta_jjl","mli_phi_jjl",
-        "mli_pt_bb","mli_eta_bb","mli_phi_bb",
+        "mli_pt_jj", "mli_eta_jj", "mli_phi_jj",
+        "mli_pt_lnu", "mli_eta_lnu", "mli_phi_lnu",
+        "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
+        "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
+        "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
 
     } | set(
         f"mli_{obj}_{var}"
@@ -489,9 +489,7 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
     )
     self.produces |= self.ml_columns
-
     # add categories to config
     add_categories_production(self.config_inst)
-
     # add variable instances to config
     add_sl_res_ml_variables(self.config_inst)

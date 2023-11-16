@@ -14,7 +14,6 @@ import order as od
 from columnflow.util import maybe_import
 
 from hbw.ml.base import MLClassifierBase
-from hbw.ml.dense_classifier import DenseClassifier
 from hbw.ml.mixins import DenseModelMixin, ModelFitMixin
 
 np = maybe_import("numpy")
@@ -43,8 +42,8 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "w_lnu": 8,
         # "dy_lep": 8,
         "t_bkg": 1,
-        "v_lep": 1,      
-    } 
+        "v_lep": 1,
+    }
 
     dataset_names = {
         "graviton_hh_ggf_bbww_m600_madgraph",
@@ -56,7 +55,7 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "st_tchannel_t_powheg",
         "st_tchannel_tbar_powheg",
         "st_twchannel_t_powheg",
-        "st_twchannel_tbar_powheg", 
+        "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
         "st_schannel_had_amcatnlo",
         # WJets
@@ -89,13 +88,13 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-        "mli_pt_jj","mli_eta_jj","mli_phi_jj",
-        "mli_pt_lnu","mli_eta_lnu","mli_phi_lnu",
-        "mli_pt_jjlnu","mli_eta_jjlnu","mli_phi_jjlnu",
-        "mli_pt_jjl","mli_eta_jjl","mli_phi_jjl",
-       # "mli_pt_bbjjlnu","mli_eta_bbjjlnu","mli_phi_bbjjlnu",
-       # "mli_pt_bbjjl","mli_eta_bbjjl","mli_phi_bbjjl",
-        "mli_pt_bb","mli_eta_bb","mli_phi_bb",
+        "mli_pt_jj", "mli_eta_jj", "mli_phi_jj",
+        "mli_pt_lnu", "mli_eta_lnu", "mli_phi_lnu",
+        "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
+        "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
+        # "mli_pt_bbjjlnu", "mli_eta_bbjjlnu", "mli_phi_bbjjlnu",
+        # "mli_pt_bbjjl", "mli_eta_bbjjl", "mli_phi_bbjjl",
+        "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
@@ -104,7 +103,7 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         f"mli_{obj}_{var}"
         for obj in ["fj"]
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
-    ] 
+    ]
 
     store_name = "inputs_v1"
 
@@ -126,10 +125,10 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     remove_backup = True
     reduce_lr_factor = 0.8
     reduce_lr_patience = 3
-    #epochs = 100
+    # epochs = 100
     batchsize = 8000
     epochs = 100
-    #batchsize = 2 ** 12
+    # batchsize = 2 ** 12
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params = [
@@ -201,10 +200,11 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # fix MLTraining Phase Space
         return ["sl_res_ml_inputs"]
 
+
 cls_dict_test = {
     "epochs": 1,
     "processes": ["graviton_hh_ggf_bbww_m600", "w_lnu"],
-    "dataset_names": { 
+    "dataset_names": {
         "w_lnu_ht70To100_madgraph",
     },
 }
@@ -212,9 +212,9 @@ cls_dict_test = {
 # ML Model with reduced number of datasets
 dense_test = DenseClassifierRes.derive("dense_test_res", cls_dict=cls_dict_test)
 
-#Graviton ML Models 
+# Graviton ML Models
 
-for m in [250,350,450,600,750,1000]: 
+for m in [250, 350, 450, 600, 750, 1000]:
     processes = [
         f"graviton_hh_ggf_bbww_m{m}",
         # "tt",
@@ -231,8 +231,8 @@ for m in [250,350,450,600,750,1000]:
         # "w_lnu": 8,
         # "dy_lep": 8,
         "t_bkg": 1,
-        "v_lep": 1,      
-    } 
+        "v_lep": 1,
+    }
     dataset_names = {
         f"graviton_hh_ggf_bbww_m{m}_madgraph",
         # TTbar
@@ -243,7 +243,7 @@ for m in [250,350,450,600,750,1000]:
         "st_tchannel_t_powheg",
         "st_tchannel_tbar_powheg",
         "st_twchannel_t_powheg",
-        "st_twchannel_tbar_powheg", 
+        "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
         "st_schannel_had_amcatnlo",
         # WJets
@@ -266,8 +266,8 @@ for m in [250,350,450,600,750,1000]:
         "dy_lep_m50_ht2500_madgraph",
     }
     cls_dict_res = {
-       "processes": processes,
-       "dataset_names": dataset_names,
-       "ml_process_weights": ml_process_weights,
+        "processes": processes,
+        "dataset_names": dataset_names,
+        "ml_process_weights": ml_process_weights,
     }
     dense_m_graviton = DenseClassifierRes.derive(f"dense_graviton{m}", cls_dict=cls_dict_res)

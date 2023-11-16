@@ -54,8 +54,8 @@ processes = [
     "st",
     "dy_lep",
     "w_lnu",
-    #"v_lep",
-    #"t_bkg",
+    # "v_lep",
+    # "t_bkg",
 ]
 
 # All inference config_categories to be included in the final datacard
@@ -71,7 +71,7 @@ config_categories = [
     # "1mu__ml",
     "1mu__ml_graviton_hh_ggf_bbww_m600",
     # "1mu__ml_tt",
-    # "1mu__ml_st", 
+    # "1mu__ml_st",
     # "1mu__ml_dy_lep",
     # "1mu__ml_w_lnu",
     "1mu__ml_v_lep",
@@ -90,7 +90,7 @@ config_categories_not_ml = [
     # "1mu__ml",
     "1mu__ml_graviton_hh_ggf_bbww_m600",
     # "1mu__ml_tt",
-    # "1mu__ml_st", 
+    # "1mu__ml_st",
     # "1mu__ml_dy_lep",
     # "1mu__ml_w_lnu",
     "1mu__ml_v_lep",
@@ -187,7 +187,7 @@ default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
 # derive some additional Inference Models
 #
 
-for m in [250,350,450,600,750,1000]:
+for m in [250, 350, 450, 600, 750, 1000]:
 
     processes_ml = [
         f"graviton_hh_ggf_bbww_m{m}",
@@ -210,8 +210,8 @@ for m in [250,350,450,600,750,1000]:
         f"1mu__ml_graviton_hh_ggf_bbww_m{m}",
         "1mu__ml_v_lep",
         "1mu__ml_t_bkg",
-    ]  
-    config_categories_ml= [
+    ]
+    config_categories_ml = [
         f"1e__ml_graviton_hh_ggf_bbww_m{m}",
         "1e__ml_tt",
         "1e__ml_st",
@@ -219,15 +219,15 @@ for m in [250,350,450,600,750,1000]:
         "1e__ml_w_lnu",
         f"1mu__ml_graviton_hh_ggf_bbww_m{m}",
         "1mu__ml_tt",
-        "1mu__ml_st", 
+        "1mu__ml_st",
         "1mu__ml_dy_lep",
         "1mu__ml_w_lnu",
-    ]  
+    ]
     ml_model_name = f"dense_graviton{m}"
     config_categories__not_ml = [
         "1e__ml",
         "1mu__ml",
-    ] 
+    ]
     cls_dict_ml = {
         "ml_model_name": ml_model_name,
         "processes": processes_ml,
@@ -235,7 +235,7 @@ for m in [250,350,450,600,750,1000]:
         "systematics": systematics,
         "mc_stats": True,
         "skip_data": True,
-    } 
+    }
     cls_dict_ml_merged_bkg = {
         "ml_model_name": ml_model_name,
         "processes": processes_merged_bkg,
@@ -243,7 +243,7 @@ for m in [250,350,450,600,750,1000]:
         "systematics": systematics,
         "mc_stats": True,
         "skip_data": True,
-    } 
+    }
     cls_dict_not_ml = {
         "ml_model_name": None,
         "processes": processes_ml,
@@ -251,13 +251,12 @@ for m in [250,350,450,600,750,1000]:
         "systematics": systematics,
         "mc_stats": True,
         "skip_data": True,
-    } 
+    }
 
-    default_new = HBWInferenceModelBase.derive(f"graviton{m}_ml", cls_dict= cls_dict_ml) 
-    default_new_merged_bkg = HBWInferenceModelBase.derive(f"graviton{m}_ml_merged_bkg", cls_dict= cls_dict_ml_merged_bkg) 
-    default_new_not_ml = HBWNoMLInferenceModel.derive(f"graviton{m}_not_ml", cls_dict= cls_dict_not_ml) 
-
-
-
-
-
+    # default_new = HBWInferenceModelBase.derive(f"graviton{m}_ml", cls_dict=cls_dict_ml)
+    # default_new_merged_bkg = HBWInferenceModelBase.derive(
+    #     f"graviton{m}_ml_merged_bkg", cls_dict=cls_dict_ml_merged_bkg,
+    # )
+    # default_new_not_ml = HBWNoMLInferenceModel.derive(
+    #     f"graviton{m}_not_ml", cls_dict=cls_dict_not_ml,
+    # )
