@@ -89,6 +89,10 @@ class MLClassifierBase(MLModel):
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
+    def preparation_producer(self: MLModel, config_inst: od.Config):
+        """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
+        return "ml_preparation"
+
     def requires(self, task: law.Task) -> str:
         # Custom requirements (none currently)
         return {}
@@ -245,7 +249,7 @@ class MLClassifierBase(MLModel):
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):
                     raise Exception(
-                        f"The columns {set(events.fields).difference(set(self.input_features))} "
+                        f"The columns {set(self.input_features).difference(events.fields)} "
                         "are not present in the ML input events",
                     )
 
