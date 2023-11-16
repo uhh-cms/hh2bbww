@@ -93,7 +93,6 @@ class HBWInferenceModelBase(InferenceModel):
 
         # get the MLModel inst
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
-
         for config_category in self.config_categories:
             cat_inst = self.config_inst.get_category(config_category)
             root_cats = cat_inst.x.root_cats

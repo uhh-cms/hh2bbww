@@ -139,7 +139,9 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 ml_processes = [
     "ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
     "tt", "st", "w_lnu", "dy_lep", "v_lep",
-    "ggHH_kl_1_kt_1_dl_hbbhww", "t_bkg", "sig",
+    "ggHH_kl_1_kt_1_dl_hbbhww", "t_bkg", "sig", 
+    "graviton_hh_ggf_bbww_m250","graviton_hh_ggf_bbww_m350", "graviton_hh_ggf_bbww_m450",
+    "graviton_hh_ggf_bbww_m600","graviton_hh_ggf_bbww_m750","graviton_hh_ggf_bbww_m1000",
 ]
 for proc in ml_processes:
     @categorizer(

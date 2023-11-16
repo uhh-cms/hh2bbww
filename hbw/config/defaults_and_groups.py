@@ -43,10 +43,12 @@ def default_ml_model(cls, container, task_params):
 
 
 def ml_inputs_producer(cls, container, task_params):
-    if container.has_tag("is_sl"):
+    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
         ml_inputs = "ml_inputs"
-    elif container.has_tag("is_dl"):
+    if container.has_tag("is_dl"):
         ml_inputs = "dl_ml_inputs"
+    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
+        ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
 
 
@@ -132,7 +134,7 @@ def set_config_defaults_and_groups(config_inst):
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],      
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["dech"] = ["data_e"] + config_inst.x.process_groups["ech"]
