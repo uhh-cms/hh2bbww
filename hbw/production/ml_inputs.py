@@ -62,11 +62,13 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # low-level features
     # TODO: this could be more generalized
-    for var in ["pt", "eta"]:
+    for var in ["pt", "eta", "btagDeepFlavB"]:
         events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
         events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
+        if var == "btagDeepFlavB":
+            continue
         events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
         events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
 
@@ -81,7 +83,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # all possible jet pairs
     jet_pairs = ak.combinations(events.Jet, 2)
     dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
-    events = set_ak_column_f32(events, "mindr_jj", ak.min(dr, axis=1))
+    events = set_ak_column_f32(events, "mli_mindr_jj", ak.min(dr, axis=1))
 
     # vbf jet pair features
     events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta))

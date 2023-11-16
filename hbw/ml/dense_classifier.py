@@ -253,7 +253,9 @@ inputs1 = [
 
 cls_dict["input_features"] = inputs1
 dense_inputs1 = DenseClassifier.derive("dense_inputs1", cls_dict=cls_dict)
-dense_inputs1_test = DenseClassifier.derive("dense_inputs1_test", cls_dict=law.util.merge_dicts(cls_dict, cls_dict_test))
+dense_inputs1_test = DenseClassifier.derive(
+    "dense_inputs1_test", cls_dict=law.util.merge_dicts(cls_dict, cls_dict_test),
+)
 
 # # for running the default setup with different numbers of epochs
 # for n_epochs in (5, 10, 20, 50, 100, 200, 500):
