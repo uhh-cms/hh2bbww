@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-SL-specific configuration of the HH -> bbWW analysis.
+SL-specific configuration of the resonant HH -> bbWW analysis.
 """
 
 from __future__ import annotations

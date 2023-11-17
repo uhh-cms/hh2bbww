@@ -19,29 +19,44 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses=(four_vec({"Electron", "Muon", "Bjet", "MET", "Lightjet"})),
+    uses=four_vec({"Electron", "Muon", "Bjet", "MET", "Lightjet"}),
+    produces={
+        "eta_Whadron", "eta_Wlepton", "eta_Higgs_WW", "eta_Higgs_bb", "eta_Higgs_bb",
+        "phi_Whadron", "phi_Wlepton", "phi_Higgs_WW", "phi_Higgs_bb", "phi_Heavy_Higgs",
+        "pt_Whadron", "pt_Wlepton", "pt_Higgs_WW", "pt_Higgs_bb", "pt_Heavy_Higgs",
+        "m_Whadron", "m_Wlepton", "m_Higgs_WW", "m_Higgs_bb", "m_Heavy_Higgs",
+        # TODO: only store objects instead of individual columns
+        # "Whadron.*", "Wlepton.*", "Higgs_WW.*", "Higgs_bb.*", "Heavy_Higgs.*",
+    },
 )
 def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-#         object of resonans 2Higgs analysis
-#
-#                           _    b
-#                    Higgs_bb  /
-#                  - - - - - -
-#                /             \ _
-#               /                b
-#  Heavy_Higgs /                          l
-# - - - - - - -                 Wlepton  /
-#              \                ---------
-#               \              /         \
-#                \  Higgs_WW  /           nu
-#                  - - - - - -
-#                             \              q
-#                              \  Whadron   /
-#                               ------------
-#                                           \
-#                                            q'
-#
+    #         object of resonans 2Higgs analysis
+    #
+    #                           _    b
+    #                    Higgs_bb  /
+    #                  - - - - - -
+    #                /             \ _
+    #               /                b
+    #  Heavy_Higgs /                          l
+    # - - - - - - -                 Wlepton  /
+    #              \                ---------
+    #               \              /         \
+    #                \  Higgs_WW  /           nu
+    #                  - - - - - -
+    #                             \              q
+    #                              \  Whadron   /
+    #                               ------------
+    #                                           \
+    #                                            q'
+    #
+
+    # object padding
+    events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
+    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+    events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
+    events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
 
     if "Whadron" not in events.fields:
         events = set_ak_column(events, "Whadron", events.Lightjet[:, 0] + events.Lightjet[:, 1])
@@ -83,4 +98,16 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for col in self.produces:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
+    # undo object padding
+    for obj in ["Jet", "Lightjet", "Bjet", "FatJet"]:
+        events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
     return events
+
+
+from hbw.config.sl_res.variables import add_resonant_variables
+
+
+@resonant_features.init
+def sl_res_features_init(self: Producer) -> None:
+    # add variable instances to config
+    add_resonant_variables(self.config_inst)
