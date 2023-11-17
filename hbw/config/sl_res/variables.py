@@ -15,7 +15,7 @@ from hbw.config.styling import default_var_binning, default_var_unit
 from columnflow.columnar_util import EMPTY_FLOAT  # noqa
 from hbw.util import call_once_on_config
 
-# object of resonans 2Higgs analysis
+# object of resonant HH analysis
 #
 #                           _    b
 #                    Higgs_bb  /
@@ -37,9 +37,10 @@ from hbw.util import call_once_on_config
 
 
 @call_once_on_config()
-def add_sl_res_variables(config: od.Config) -> None:
+def add_resonant_variables(config: od.Config) -> None:
     config.add_variable(  # Whadron
         name="pt_Whadron",
+        expression="Whadron.pt",
         binning=(40, 0., 1500.),
         unit="GeV",
         x_title=r"$pt_{qq'}$",
