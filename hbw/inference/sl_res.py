@@ -181,7 +181,7 @@ default_cls_dict = {
     "skip_data": True,
 }
 
-default = HBWInferenceModelBase.derive("default", cls_dict=default_cls_dict)
+sl_res_default = HBWInferenceModelBase.derive("sl_res_default", cls_dict=default_cls_dict)
 
 #
 # derive some additional Inference Models
