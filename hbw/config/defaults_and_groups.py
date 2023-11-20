@@ -43,10 +43,12 @@ def default_ml_model(cls, container, task_params):
 
 
 def ml_inputs_producer(cls, container, task_params):
-    if container.has_tag("is_sl"):
+    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
         ml_inputs = "ml_inputs"
-    elif container.has_tag("is_dl"):
+    if container.has_tag("is_dl"):
         ml_inputs = "dl_ml_inputs"
+    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
+        ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
 
 

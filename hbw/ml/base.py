@@ -643,6 +643,7 @@ class MLClassifierBase(MLModel):
                 inputs = remove_ak_column(inputs, var)
 
         # check that all input features are present and reorder them if necessary
+
         if diff := set(inputs.fields).difference(set(self.input_features)):
             raise Exception(f"Columns {diff} are not present in the ML input events")
         if tuple(inputs.fields) != input_features:

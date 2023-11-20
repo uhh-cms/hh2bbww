@@ -504,13 +504,8 @@ def add_config(
     if cfg.has_tag("is_dl") and cfg.has_tag("is_nonresonant"):
         from hbw.config.dl import configure_dl
         configure_dl(cfg)
-    if cfg.has_tag("is_resonant"):
-        # from hbw.config.resonant import configure_resonant
-        configure_resonant(cfg)
+    if cfg.has_tag("is_sl") and cfg.has_tag("is_resonant"):
+        from hbw.config.sl_res import configure_sl_res
+        configure_sl_res(cfg)
 
     return cfg
-
-
-def configure_resonant(config: od.Config):
-    # TODO?
-    return

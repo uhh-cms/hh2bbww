@@ -202,3 +202,23 @@ def dl_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def dl_features_init(self: Producer) -> None:
     # add variable instances to config
     add_dl_variables(self.config_inst)
+
+
+from hbw.production.resonant_features import resonant_features
+
+
+@producer(
+    uses={
+        features, resonant_features,
+    },
+    produces={
+        features, resonant_features,
+    },
+)
+def sl_res_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    # Inherit common features and prepares Object Lepton. Bjet, etc.
+    events = self[features](events, **kwargs)
+    events = self[resonant_features](events, **kwargs)
+
+    return events
