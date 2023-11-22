@@ -104,20 +104,20 @@ def catid_emu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, 
 @categorizer(uses={"Jet.pt", "HbbJet.pt"}, call_force=True)
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
-    Categorization of events in the boosted category: presence of at least 1 AK8 jet fulfilling
-    requirements given by the Selector called in SelectEvents
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    for the H->bb decay
     """
-    mask = (ak.sum(events.Jet.pt > 0, axis=-1) >= 1) & (ak.sum(events.HbbJet.pt > 0, axis=-1) >= 1)
+    mask = (ak.sum(events.HbbJet.pt > 0, axis=-1) >= 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.pt"}, call_force=True)
+@categorizer(uses={"Jet.pt", "HbbJet.pt"}, call_force=True)
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
-    Categorization of events in the resolved category: presence of no AK8 jets fulfilling
-    requirements given by the Selector called in SelectEvents
+    Categorization of events in the resolved category: presence of no AK8 jet candidate
+    for the H->bb decay
     """
-    mask = (ak.sum(events.Jet.pt > 0, axis=-1) >= 3) & (ak.sum(events.FatJet.pt > 0, axis=-1) == 0)
+    mask = (ak.sum(events.HbbJet.pt > 0, axis=-1) == 0)
     return events, mask
 
 
