@@ -3,7 +3,13 @@
 
 # versioning and custom checksum (checksum only used for reduction, ml_training, datacards)
 version="prod1"
-checksum="prod1"
+
+checksum() {
+	# helper to include custom checksum based on time when task was called
+	TEXT="time"
+	TIMESTAMP=$(date +"%s")
+   	echo "${TEXT}${TIMESTAMP}"
+}
 
 # possible config choices: "c17", "l17"
 # NOTE: use "l17" for testing purposes
@@ -32,7 +38,7 @@ hbw_reduction(){
 	--cf.ReduceEvents-retries 1 \
 	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
-	--cf.BundleRepo-custom-checksum $checksum \
+	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
@@ -47,7 +53,7 @@ hbw_merge_reduction(){
 	--cf.ReduceEvents-retries 1 \
 	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
-	--cf.BundleRepo-custom-checksum $checksum \
+	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
@@ -71,7 +77,7 @@ hbw_ml_training(){
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
-	--cf.BundleRepo-custom-checksum $checksum \
+	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
 	$@
 }
@@ -97,7 +103,7 @@ hbw_datacards(){
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
 	--cf.SelectEvents-workflow htcondor \
-	--cf.BundleRepo-custom-checksum $checksum \
+	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
@@ -121,7 +127,7 @@ hbw_rebin_datacards(){
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot True \
 	--cf.SelectEvents-workflow htcondor \
-	--cf.BundleRepo-custom-checksum $checksum \
+	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
