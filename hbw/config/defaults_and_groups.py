@@ -248,6 +248,16 @@ def set_config_defaults_and_groups(config_inst):
         },
     }
 
+    # groups for custom plot styling
+    config_inst.x.custom_style_config_groups = {
+        "example": {
+            "legend_cfg": {"title": "my custom legend title", "ncols": 2},
+            "ax_cfg": {"ylabel": "my ylabel", "xlim": (0, 100)},
+            "rax_cfg": {"ylabel": "some other ylabel"},
+            "annotate_cfg": {"text": "category label usually here"},
+        },
+    }
+
     # CSP (calibrator, selector, producer) groups
     config_inst.x.producer_groups = {
         "mli": ["ml_inputs", "event_weights"],
