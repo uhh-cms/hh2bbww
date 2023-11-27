@@ -80,4 +80,4 @@ def ml_preparation_init(self):
     if not getattr(self.task, "dataset_inst", None) or self.task.dataset_inst.is_data:
         return
 
-    self.uses.add( "normalization_weight")
+    self.uses.add("normalization_weight")
