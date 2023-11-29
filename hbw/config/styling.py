@@ -109,6 +109,12 @@ default_var_binning = {
     # Jet
     "btagDeepB": (40, 0, 1),
     "btagDeepFlavB": (40, 0, 1),
+    "qgl": (40, 0, 1),
+    "puId": (8, -0.5, 7.5),
+    "puIdDisc": (40, -2, 1),
+    "chHEF": (40, 0, 1),
+    "bRegRes": (40, -10, 10),
+    "bRegCorr": (40, -10, 10),
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
@@ -164,6 +170,10 @@ def quick_addvar(config: od.Config, obj: str, i: int, var: str):
     """
     Helper to quickly generate generic variable instances for variable *var* from
     the *i*th entry of some object *obj*
+
+    Variables are lowercase and have names in the format:
+    cf_{obj}{i}_{var}, where `obj` is the name of the given object, `i` is the index of the
+    object (starting at 1) and `var` is the variable of interest; example: cf_loosejet1_pt
     """
     config.add_variable(
         name=name.format(obj=obj, i=i + 1, var=var).lower(),

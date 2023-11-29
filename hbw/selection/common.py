@@ -295,10 +295,6 @@ def post_selection(
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
 
-    # add cutflow features
-    if self.config_inst.x("do_cutflow_features", False):
-        events = self[cutflow_features](events, results=results, **kwargs)
-
     # produce event weights
     if self.dataset_inst.is_mc:
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
@@ -316,6 +312,10 @@ def post_selection(
     log_fraction("num_negative_weights", "Fraction of negative weights")
     log_fraction("num_pu_0", "Fraction of events with pu_weight == 0")
     log_fraction("num_pu_100", "Fraction of events with pu_weight >= 100")
+
+    # add cutflow features
+    if self.config_inst.x("do_cutflow_features", False):
+        events = self[cutflow_features](events, results=results, **kwargs)
 
     return events, results
 
