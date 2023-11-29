@@ -49,6 +49,8 @@ def add_config(
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    cfg.add_tag("is_run2")
+
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
     elif cfg.has_tag("is_dl"):
@@ -423,7 +425,7 @@ def add_config(
             "btag_weight*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "VBFJet"},
-            {"btagDeepFlavB", "hadronFlavour"},
+            {"btagDeepFlavB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
             {

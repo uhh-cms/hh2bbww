@@ -235,7 +235,71 @@ dl_boosted_jet_selection = sl_boosted_jet_selection.derive(
 
 
 @selector(
+    exposed=False,
+)
+def noise_filter(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    mask = ak.Array(np.ones(len(events), dtype=bool))
+    for flag in self.noise_filter:
+        mask = mask & events.Flag[flag]
+
+    results.steps["noise_filter"] = mask
+    return events, results
+
+
+@noise_filter.init
+def noise_filter_init(self: Selector):
+    if not getattr(self, "dataset_inst", None):
+        return
+
+    # TODO: make campaign dependent
+    self.noise_filter = {
+        "goodVertices",
+        "globalSuperTightHalo2016Filter",
+        "HBHENoiseFilter",
+        "HBHENoiseIsoFilter",
+        "EcalDeadCellTriggerPrimitiveFilter",
+        "BadPFMuonFilter",
+        "BadPFMuonDzFilter",
+        # "hfNoisyHitsFilter",  # optional for UL
+        "eeBadScFilter",  # might be data only
+        # "ecalBadCalibReducedMINIAODFilter",  # 2017 and 2018 only, only in MiniAOD
+    }
+
+    if self.dataset_inst.has_tag("is_hbw") and self.config_inst.has_tag("is_run2"):
+        # missing in MiniAOD HH samples
+        self.event_flats.remove("BadPFMuonDzFilter")
+
+    if self.config_inst.has_tag("is_run3"):
+        self.noise_filter.add("ecalBadCalibFilter")
+    # if self.dataset_inst.is_data:
+    #     self.noise_filter.add("eeBadScFilter")
+
+    self.uses = {f"Flag.{flag}" for flag in self.noise_filter}
+
+
+@selector(
+    uses={"PV.npvsGood"},
+    exposed=False,
+)
+def primary_vertex(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    """ requires at least one good primary vertex """
+    results.steps["good_vertex"] = events.PV.npvsGood >= 1
+    return events, results
+
+
+@selector(
     uses={
+        noise_filter, primary_vertex,
         process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
@@ -270,6 +334,10 @@ def pre_selection(
 
     # prepare the selection results that are updated at every step
     results = SelectionResult()
+
+    # apply some general quality criteria on events
+    events, results = self[noise_filter](events, results, **kwargs)
+    events, results = self[primary_vertex](events, results, **kwargs)
 
     return events, results
 
@@ -316,6 +384,10 @@ def post_selection(
     # add cutflow features
     if self.config_inst.x("do_cutflow_features", False):
         events = self[cutflow_features](events, results=results, **kwargs)
+
+    # temporary fix for optional types from Calibration (e.g. events.Jet.pt --> ?float32)
+    # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
+    events = ak.fill_none(events, EMPTY_FLOAT)
 
     return events, results
 
