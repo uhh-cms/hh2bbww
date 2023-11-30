@@ -476,12 +476,12 @@ def add_config(
     # Version of required tasks
     cfg.x.versions = {
         "cf.CalibrateEvents": "common1",
-        "cf.SelectEvents": "v1",
-        "cf.MergeSelectionStats": "v1",
-        "cf.MergeSelectionMasks": "v1",
-        "cf.ReduceEvents": "v1",
-        "cf.MergeReductionStats": "v1",
-        "cf.MergeReducedEvents": "v1",
+        "cf.SelectEvents": reduce_version,
+        "cf.MergeSelectionStats": reduce_version,
+        "cf.MergeSelectionMasks": reduce_version,
+        "cf.ReduceEvents": reduce_version,
+        "cf.MergeReductionStats": reduce_version,
+        "cf.MergeReducedEvents": reduce_version,
     }
 
     # add categories
