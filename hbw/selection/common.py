@@ -272,7 +272,7 @@ def noise_filter_init(self: Selector):
 
     if self.dataset_inst.has_tag("is_hbw") and self.config_inst.has_tag("is_run2"):
         # missing in MiniAOD HH samples
-        self.event_flats.remove("BadPFMuonDzFilter")
+        self.noise_filter.remove("BadPFMuonDzFilter")
 
     if self.config_inst.has_tag("is_run3"):
         self.noise_filter.add("ecalBadCalibFilter")
