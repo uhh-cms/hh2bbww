@@ -39,8 +39,8 @@ def sl_jet_selection(
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     # HH -> bbWW(qqlnu) jet selection
-    # - require at least 3 jets with pt>30, eta<2.4
-    # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3040 (Medium WP)
+    # - require at least 3 jets with pt>25, eta<2.4
+    # - require at least 1 jet with pt>25, eta<2.4, b-score>0.3040 (Medium WP)
 
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
