@@ -384,6 +384,19 @@ def add_config(
     if year != 2017:
         raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
+    cfg.x.met_filters = {
+        "Flag.goodVertices",
+        "Flag.globalSuperTightHalo2016Filter",
+        "Flag.HBHENoiseFilter",
+        "Flag.HBHENoiseIsoFilter",
+        "Flag.EcalDeadCellTriggerPrimitiveFilter",
+        "Flag.BadPFMuonFilter",
+        "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
+        "Flag.eeBadScFilter",
+    }
+    if cfg.has_tag("is_run3"):
+        cfg.x.noise_filter.add("ecalBadCalibFilter")
+
     cfg.x.external_files.update(DotDict.wrap({
         # files from TODO
         "lumi": {

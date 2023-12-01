@@ -113,8 +113,8 @@ default_var_binning = {
     "puId": (8, -0.5, 7.5),
     "puIdDisc": (40, -2, 1),
     "chHEF": (40, 0, 1),
-    "bRegRes": (40, -10, 10),
-    "bRegCorr": (40, -10, 10),
+    "bRegRes": (80, -1, 1),
+    "bRegCorr": (80, 0, 2),
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),

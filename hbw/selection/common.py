@@ -16,6 +16,8 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.selection.cms.met_filters import met_filters
+from columnflow.selection.cms.json_filter import json_filter
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
@@ -234,76 +236,31 @@ dl_boosted_jet_selection = sl_boosted_jet_selection.derive(
 )
 
 
-@selector(
-    exposed=False,
-)
-def noise_filter(
-    self: Selector,
-    events: ak.Array,
-    results: SelectionResult,
-    **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
-    mask = ak.Array(np.ones(len(events), dtype=bool))
-    for flag in self.noise_filter:
-        mask = mask & events.Flag[flag]
+def get_met_filters(self: Selector):
+    """ custom function to skip met filter for our Run2 EOY signal samples """
+    met_filters = self.config_inst.x.met_filters
 
-    results.steps["noise_filter"] = mask
-    return events, results
+    if getattr(self, "dataset_inst", None) and self.dataset_inst.has_tag("is_eoy"):
+        # remove filter for EOY sample
+        try:
+            met_filters.remove("Flag.BadPFMuonDzFilter")
+        except (KeyError, AttributeError):
+            pass
+
+    return met_filters
 
 
-@noise_filter.init
-def noise_filter_init(self: Selector):
-    if not getattr(self, "dataset_inst", None):
-        return
-
-    # TODO: make campaign dependent
-    self.noise_filter = {
-        "goodVertices",
-        "globalSuperTightHalo2016Filter",
-        "HBHENoiseFilter",
-        "HBHENoiseIsoFilter",
-        "EcalDeadCellTriggerPrimitiveFilter",
-        "BadPFMuonFilter",
-        "BadPFMuonDzFilter",
-        # "hfNoisyHitsFilter",  # optional for UL
-        "eeBadScFilter",  # might be data only
-        # "ecalBadCalibReducedMINIAODFilter",  # 2017 and 2018 only, only in MiniAOD
-    }
-
-    if self.dataset_inst.has_tag("is_hbw") and self.config_inst.has_tag("is_run2"):
-        # missing in MiniAOD HH samples
-        self.noise_filter.remove("BadPFMuonDzFilter")
-
-    if self.config_inst.has_tag("is_run3"):
-        self.noise_filter.add("ecalBadCalibFilter")
-    # if self.dataset_inst.is_data:
-    #     self.noise_filter.add("eeBadScFilter")
-
-    self.uses = {f"Flag.{flag}" for flag in self.noise_filter}
-
-
-@selector(
-    uses={"PV.npvsGood"},
-    exposed=False,
-)
-def primary_vertex(
-    self: Selector,
-    events: ak.Array,
-    results: SelectionResult,
-    **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
-    """ requires at least one good primary vertex """
-    results.steps["good_vertex"] = events.PV.npvsGood >= 1
-    return events, results
+hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_filters=get_met_filters))
 
 
 @selector(
     uses={
-        noise_filter, primary_vertex,
+        hbw_met_filters, json_filter, "PV.npvsGood",
         process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     produces={
+        hbw_met_filters, json_filter,
         process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
@@ -336,8 +293,19 @@ def pre_selection(
     results = SelectionResult()
 
     # apply some general quality criteria on events
-    events, results = self[noise_filter](events, results, **kwargs)
-    events, results = self[primary_vertex](events, results, **kwargs)
+    results.steps["good_vertex"] = events.PV.npvsGood >= 1
+    events, met_results = self[hbw_met_filters](events, **kwargs)  # produces "met_filter" step
+    results += met_results
+    if self.dataset_inst.is_data:
+        events, json_results = self[json_filter](events, **kwargs)  # produces "json" step
+        results += json_results
+    else:
+        results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
+
+    # combine quality criteria into a single step
+    results.steps["cleanup"] = (
+        results.steps.good_vertex & results.steps.met_filter & results.steps.json
+    )
 
     return events, results
 
@@ -388,6 +356,8 @@ def post_selection(
     # temporary fix for optional types from Calibration (e.g. events.Jet.pt --> ?float32)
     # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
     events = ak.fill_none(events, EMPTY_FLOAT)
+
+    logger.info(f"Selected {ak.sum(results.event)} from {len(events)} events")
 
     return events, results
 
