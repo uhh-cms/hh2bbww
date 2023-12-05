@@ -49,6 +49,8 @@ def add_config(
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    cfg.add_tag("is_run2")
+
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
     elif cfg.has_tag("is_dl"):
@@ -382,6 +384,19 @@ def add_config(
     if year != 2017:
         raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
+    cfg.x.met_filters = {
+        "Flag.goodVertices",
+        "Flag.globalSuperTightHalo2016Filter",
+        "Flag.HBHENoiseFilter",
+        "Flag.HBHENoiseIsoFilter",
+        "Flag.EcalDeadCellTriggerPrimitiveFilter",
+        "Flag.BadPFMuonFilter",
+        "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
+        "Flag.eeBadScFilter",
+    }
+    if cfg.has_tag("is_run3"):
+        cfg.x.noise_filter.add("ecalBadCalibFilter")
+
     cfg.x.external_files.update(DotDict.wrap({
         # files from TODO
         "lumi": {
@@ -423,7 +438,7 @@ def add_config(
             "btag_weight*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "VBFJet"},
-            {"btagDeepFlavB", "hadronFlavour"},
+            {"btagDeepFlavB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
             {
