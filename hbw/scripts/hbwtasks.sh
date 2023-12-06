@@ -109,7 +109,7 @@ hbw_datacards(){
 
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
-	law run hbw.ModifyDatacardsFlatRebin --version $version --workers \
+	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
 	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
