@@ -1,8 +1,10 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
-# versioning and custom checksum (checksum only used for reduction, ml_training, datacards)
-version="prod1"
+# default version, can be changed by locally setting HBW_MAIN_VERSION, e.g. by exporting it in
+# $HBW_BASE/.setups/${CF_SETUP_NAME}.sh and rerunning the setup script
+version="${HBW_MAIN_VERSION:-"prod1"}"
+echo "hbwtasks functions will be run with version '$version'"
 
 checksum() {
 	# helper to include custom checksum based on time when task was called
@@ -25,6 +27,23 @@ hbw_selection(){
 #
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
 #
+
+# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
+common_version="${HBW_COMMON_VERSION:-"common1"}"
+hbw_calibration(){
+    law run cf.CalibrateEventsWrapper --version $common_version --workers 20 \
+	--configs $config \
+	--shifts nominal \
+	--datasets $datasets \
+	--cf.CalibrateEvents-workflow htcondor \
+	--cf.CalibrateEvents-no-poll \
+	--cf.CalibrateEvents-parallel-jobs 4000 \
+	--cf.CalibrateEvents-retries 1 \
+	--cf.CalibrateEvents-tasks-per-job 1 \
+	--cf.CalibrateEvents-job-workers 1 \
+	--cf.BundleRepo-custom-checksum $(checksum) \
+	$@
+}
 
 hbw_reduction(){
     law run cf.ReduceEventsWrapper --version $version --workers 20 \
@@ -76,7 +95,8 @@ hbw_ml_training(){
 	--cf.MergeReducedEvents-workflow local \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
-	--cf.ReduceEvents-pilot True \
+	--cf.SelectEvents-workflow htcondor \
+	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
 	$@
@@ -89,7 +109,6 @@ hbw_datacards(){
 	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
-	--retries 2 \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
@@ -101,9 +120,10 @@ hbw_datacards(){
 	--cf.MergeReducedEvents-workflow local \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
-	--cf.ReduceEvents-pilot True \
 	--cf.SelectEvents-workflow htcondor \
+	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
+	--retries 2 \
 	$@
 }
 
@@ -113,7 +133,6 @@ hbw_rebin_datacards(){
 	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
-	--retries 2 \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
@@ -125,14 +144,16 @@ hbw_rebin_datacards(){
 	--cf.MergeReducedEvents-workflow local \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
-	--cf.ReduceEvents-pilot True \
 	--cf.SelectEvents-workflow htcondor \
+	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
+	--retries 2 \
 	$@
 }
 
 #
 # Plotting tasks (no assumptions on workers, workflow etc.)
+# NOTE: these functions have not been tested in a long time.
 #
 
 hbw_cutflow(){
