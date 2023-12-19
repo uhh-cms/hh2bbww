@@ -34,7 +34,7 @@ jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": []})
         "Jet.pt", "Jet.mass", "Jet.btagDeepFlavB", "Jet.bRegCorr",
     },
     produces={"Jet.pt", "Jet.mass"},
-    btag_wp=None,
+    btag_wp="medium",
 )
 def bjet_regression(
     self: Calibrator,
