@@ -42,7 +42,7 @@ def my_plot1d_func(
 
     .. code-block:: bash
         law run cf.PlotVariables1D --version v1 --processes st,tt --variables jet1_pt \
-            --plot-function ana_short.plotting.example.my_plot1d_func \
+            --plot-function hbw.plotting.example.my_plot1d_func \
             --general-settings example_param=some_text
     """
     # we can add arbitrary parameters via the `general_settings` parameter to access them in the
@@ -71,7 +71,7 @@ def my_plot1d_func(
 
     # styling and parameter implementation (e.g. `yscale`)
     ax.set(
-        yscale=yscale,
+        yscale=yscale if yscale else "linear",
         ylabel=variable_inst.get_full_y_title(),
         xlabel=variable_inst.get_full_x_title(),
         xscale="log" if variable_inst.log_x else "linear",
