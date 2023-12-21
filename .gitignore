@@ -34,3 +34,5 @@ data
 .data
 .law
 .setups
+*~
+*.ipynb*
