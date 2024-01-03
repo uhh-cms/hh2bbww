@@ -7,12 +7,12 @@ Column production methods related to higher-level features.
 from __future__ import annotations
 
 import functools
+import random
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 from columnflow.production.categories import category_ids
-
 from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
@@ -443,11 +443,55 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events.MET))
 
     # hh features
+
     hh = hbb + hww
     hh_vis = hbb + hww_vis
 
     events = set_ak_column_f32(events, "mli_mbbjjlnu", hh.mass)
     events = set_ak_column_f32(events, "mli_mbbjjl", hh_vis.mass)
+    # t_bkg_features
+    t_bkg1 = (wjj + events.Bjet[:, 0]) * 175.2 ** (-1)
+    t_bkg2 = (wjj + events.Bjet[:, 1]) * 175.2 ** (-1)
+    t_lep1 = (wlnu + events.Bjet[:, 0]) * 175.2 ** (-1)
+    t_lep2 = (wlnu + events.Bjet[:, 1]) * 175.2 ** (-1)
+    events = set_ak_column_f32(events, "mli_m_tbkg1", t_bkg1.mass)
+    events = set_ak_column_f32(events, "mli_m_tbkg2", t_bkg2.mass)
+    events = set_ak_column_f32(events, "mli_m_tlep1", t_lep1.mass)
+    events = set_ak_column_f32(events, "mli_m_tlep2", t_lep2.mass)
+
+    # pnn features
+    sig_true = [250, 350, 450, 600, 700, 1000]
+    len_features = len((t_bkg1))
+    feat_250 = [250 for _ in range(len_features)]
+    feat_350 = [350 for _ in range(len_features)]
+    feat_450 = [450 for _ in range(len_features)]
+    feat_600 = [600 for _ in range(len_features)]
+    feat_700 = [700 for _ in range(len_features)]
+    feat_1000 = [1000 for _ in range(len_features)]
+    feat_bkg1 = [random.choice(sig_true) for _ in range(len_features)]
+    feat_bkg2 = [random.choice(sig_true) for _ in range(len_features)]
+    feat_bkg3 = [random.choice(sig_true) for _ in range(len_features)]
+    feat_bkg4 = [random.choice(sig_true) for _ in range(len_features)]
+    if "dy_" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_bkg1)
+    if "w_lnu_" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_bkg2)
+    if "tt_" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_bkg3)
+    if "st_" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_bkg4)
+    if "graviton_hh_ggf_bbww_m250" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_250)
+    if "graviton_hh_ggf_bbww_m350" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_350)
+    if "graviton_hh_ggf_bbww_m450" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_450)
+    if "graviton_hh_ggf_bbww_m600" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_600)
+    if "graviton_hh_ggf_bbww_m700" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_700)
+    if "graviton_hh_ggf_bbww_m1000" in self.dataset_inst.name:
+        events = set_ak_column_f32(events, "pnn_feature", feat_1000)
 
     s_min = (
         2 * events.MET.pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
@@ -458,7 +502,6 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # fill nan/none values of all produced columns
     for col in self.ml_columns:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-
     return events
 
 
@@ -478,6 +521,8 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
         "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
         "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
         "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
+        "mli_m_tbkg1", "mli_m_tbkg2", "mli_m_tlep1", "mli_m_tlep2",
+        "pnn_feature",
 
     } | set(
         f"mli_{obj}_{var}"

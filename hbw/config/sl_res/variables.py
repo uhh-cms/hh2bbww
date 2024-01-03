@@ -444,7 +444,37 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$H_{bb}$ $\phi$ ",
     )
-
+    # new discr. var
+    config.add_variable(
+        name="mli_m_tbkg1",
+        binning=(100, 0., 3.),
+        unit="GeV",
+        x_title=r"rec mass1 of t quark (bkg)/top mass (real)",
+    )
+    config.add_variable(
+        name="mli_m_tbkg2",
+        binning=(100, 0., 3.),
+        unit="GeV",
+        x_title=r"rec mass2 of t quark (bkg)/top mass (real)",
+    )
+    config.add_variable(
+        name="mli_m_tlep1",
+        binning=(100, 0., 3.),
+        unit="GeV",
+        x_title=r"rec mass1 of t quark (bkg)/top mass (real)",
+    )
+    config.add_variable(
+        name="mli_m_tlep2",
+        binning=(100, 0., 3.),
+        unit="GeV",
+        x_title=r"rec mass2 of t quark (bkg)/top mass (real)",
+    )
+    config.add_variable(
+        name="pnn_feature",
+        binning=(100, 0., 1000.),
+        unit="GeV",
+        x_title=r"pnn variable bkg2",
+    )
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta"]:
             config.add_variable(

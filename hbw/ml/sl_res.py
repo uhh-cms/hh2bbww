@@ -32,17 +32,16 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "dy_lep",
         "t_bkg",
         "v_lep",
-
     ]
 
     ml_process_weights = {
         "graviton_hh_ggf_bbww_600": 1,
-        # "tt": 8,
-        # "st": 8,
-        # "w_lnu": 8,
-        # "dy_lep": 8,
-        "t_bkg": 1,
-        "v_lep": 1,
+        "tt": 8,
+        "st": 8,
+        "w_lnu": 8,
+        "dy_lep": 8,
+        # "t_bkg": 1,
+        # "v_lep": 1,
     }
 
     dataset_names = {
@@ -78,31 +77,53 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "dy_lep_m50_ht2500_madgraph",
     }
 
+    # input_features = [
+    #     # "ht",
+    #     # "m_bb",
+    #     # "deltaR_bb",
+    #     "mli_ht", "mli_n_jet", "mli_n_deepjet",
+    #     # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
+    #     "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
+    #     "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
+    #     "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
+    #     "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
+    #     "mli_pt_jj", "mli_eta_jj", "mli_phi_jj",
+    #     "mli_pt_lnu", "mli_eta_lnu", "mli_phi_lnu",
+    #     "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
+    #     "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
+    #     # "mli_pt_bbjjlnu", "mli_eta_bbjjlnu", "mli_phi_bbjjlnu",
+    #     # "mli_pt_bbjjl", "mli_eta_bbjjl", "mli_phi_bbjjl",
+    #     "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
+    # ] + [
+    #     f"mli_{obj}_{var}"
+    #     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
+    #     for var in ["pt", "eta"]
+    # ] + [
+    #     f"mli_{obj}_{var}"
+    #     for obj in ["fj"]
+    #     for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+    # ]
+
     input_features = [
-        # "ht",
-        # "m_bb",
-        # "deltaR_bb",
+        "ht",
+        "m_bb",
+        "deltaR_bb",
         "mli_ht", "mli_n_jet", "mli_n_deepjet",
         # "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
-        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb", "mli_dr_jj", "mli_dphi_jj", "mli_mjj", "mli_mindr_lj",
-        "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
-        "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
-        "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-        "mli_pt_jj", "mli_eta_jj", "mli_phi_jj",
-        "mli_pt_lnu", "mli_eta_lnu", "mli_phi_lnu",
-        "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
-        "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
-        # "mli_pt_bbjjlnu", "mli_eta_bbjjlnu", "mli_phi_bbjjlnu",
-        # "mli_pt_bbjjl", "mli_eta_bbjjl", "mli_phi_bbjjl",
-        "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
+        "mli_dr_bb", "mli_dphi_bb", "mli_mindr_lb", "mli_mindr_lj",
+
+        "mli_m_tbkg2",
+        "mli_m_tlep1",
+        "mli_m_tlep2",
+        "mli_m_tbkg1",
+        "mli_mbbjjlnu",
+        "mli_pt_bb",
+        "mli_pt_jjlnu",
+        "pnn_feature",
     ] + [
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
-        for var in ["pt", "eta"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+        for obj in ["b1", "j1", "j2", "b2", "met"]
+        for var in ["pt"]
     ]
 
     store_name = "inputs_v1"
@@ -126,9 +147,9 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     reduce_lr_factor = 0.8
     reduce_lr_patience = 3
     # epochs = 100
-    batchsize = 8000
-    epochs = 100
-    # batchsize = 2 ** 12
+    # batchsize = 8000
+    epochs = 200
+    batchsize = 2 ** 12
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params = [
@@ -217,21 +238,21 @@ dense_test = DenseClassifierRes.derive("dense_test_res", cls_dict=cls_dict_test)
 for m in [250, 350, 450, 600, 750, 1000]:
     processes = [
         f"graviton_hh_ggf_bbww_m{m}",
-        # "tt",
-        # "st",
-        # "w_lnu",
-        # "dy_lep",
-        "t_bkg",
-        "v_lep",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_lep",
+        # "t_bkg",
+        # "v_lep",
     ]
     ml_process_weights = {
         f"graviton_hh_ggf_bbww_m{m}": 1,
-        # "tt": 8,
-        # "st": 8,
-        # "w_lnu": 8,
-        # "dy_lep": 8,
-        "t_bkg": 1,
-        "v_lep": 1,
+        "tt": 4,
+        "st": 4,
+        "w_lnu": 4,
+        "dy_lep": 4,
+        # "t_bkg": 1,
+        # "v_lep": 1,
     }
     dataset_names = {
         f"graviton_hh_ggf_bbww_m{m}_madgraph",
@@ -271,3 +292,79 @@ for m in [250, 350, 450, 600, 750, 1000]:
         "ml_process_weights": ml_process_weights,
     }
     dense_m_graviton = DenseClassifierRes.derive(f"dense_graviton{m}", cls_dict=cls_dict_res)
+    dense_m_graviton_new_input = DenseClassifierRes.derive(f"dense_graviton{m}_new_input", cls_dict=cls_dict_res)
+    # Parametrical NN  (PNN)
+
+    processes = [
+        "graviton_hh_ggf_bbww_m250",
+        "graviton_hh_ggf_bbww_m350",
+        "graviton_hh_ggf_bbww_m450",
+        "graviton_hh_ggf_bbww_m600",
+        "graviton_hh_ggf_bbww_m750",
+        "graviton_hh_ggf_bbww_m1000",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_lep",
+        # "t_bkg",
+        # "v_lep",
+    ]
+
+    ml_process_weights = {
+        "graviton_hh_ggf_bbww_250": 1,
+        "graviton_hh_ggf_bbww_350": 1,
+        "graviton_hh_ggf_bbww_450": 1,
+        "graviton_hh_ggf_bbww_600": 1,
+        "graviton_hh_ggf_bbww_750": 1,
+        "graviton_hh_ggf_bbww_1000": 1,
+        "tt": 6,
+        "st": 6,
+        "w_lnu": 6,
+        "dy_lep": 6,
+        # "t_bkg": 1,
+        # "v_lep": 1,
+    }
+
+    dataset_names = {
+        "graviton_hh_ggf_bbww_m250_madgraph",
+        "graviton_hh_ggf_bbww_m350_madgraph",
+        "graviton_hh_ggf_bbww_m450_madgraph",
+        "graviton_hh_ggf_bbww_m600_madgraph",
+        "graviton_hh_ggf_bbww_m750_madgraph",
+        "graviton_hh_ggf_bbww_m1000_madgraph",
+        # TTbar
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+        # SingleTop
+        "st_tchannel_t_powheg",
+        "st_tchannel_tbar_powheg",
+        "st_twchannel_t_powheg",
+        "st_twchannel_tbar_powheg",
+        "st_schannel_lep_amcatnlo",
+        "st_schannel_had_amcatnlo",
+        # WJets
+        "w_lnu_ht70To100_madgraph",
+        "w_lnu_ht100To200_madgraph",
+        "w_lnu_ht200To400_madgraph",
+        "w_lnu_ht400To600_madgraph",
+        "w_lnu_ht600To800_madgraph",
+        "w_lnu_ht800To1200_madgraph",
+        "w_lnu_ht1200To2500_madgraph",
+        "w_lnu_ht2500_madgraph",
+        # DY
+        "dy_lep_m50_ht70to100_madgraph",
+        "dy_lep_m50_ht100to200_madgraph",
+        "dy_lep_m50_ht200to400_madgraph",
+        "dy_lep_m50_ht400to600_madgraph",
+        "dy_lep_m50_ht600to800_madgraph",
+        "dy_lep_m50_ht800to1200_madgraph",
+        "dy_lep_m50_ht1200to2500_madgraph",
+        "dy_lep_m50_ht2500_madgraph",
+    }
+    cls_dict_pnn = {
+        "processes": processes,
+        "dataset_names": dataset_names,
+        "ml_process_weights": ml_process_weights,
+    }
+    dense_res_pnn = DenseClassifierRes.derive("dense_res_pnn", cls_dict=cls_dict_pnn)

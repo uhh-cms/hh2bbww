@@ -66,7 +66,10 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column(events, "Higgs_WW", events.Whadron[:] + events.Wlepton[:])
     if "Higgs_bb" not in events.fields:
         events = set_ak_column(events, "Higgs_bb", events.Bjet[:, 0] + events.Bjet[:, 1])
-
+    if "Teilchen_1" not in events.fields:
+        events = set_ak_column(events, "Teilchen_1", events.Bjet[:, 0] + events.Whadron)
+    if "Teilchen_2" not in events.fields:
+        events = set_ak_column(events, "Teilchen_2", events.Bjet[:, 1] + events.Whadron)
     if "Heavy_Higgs" not in events.fields:
         events = set_ak_column(events, "Heavy_Higgs", events.Higgs_WW + events.Higgs_bb)
     # variables of objects (don't forget to describe them in variables.py and features.py in produces)
@@ -95,6 +98,7 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "m_Heavy_Higgs", events.Heavy_Higgs.mass)
     events = set_ak_column_f32(events, "eta_Heavy_Higgs", events.Heavy_Higgs.eta)
     events = set_ak_column_f32(events, "phi_Heavy_Higgs", events.Heavy_Higgs.phi)
+
     for col in self.produces:
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
