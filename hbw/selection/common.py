@@ -22,6 +22,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
+from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
@@ -328,6 +329,9 @@ def post_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL after calling the selection modules """
 
+    if self.dataset_inst.is_mc:
+        events, results = self[hard_gen_particles](events, results, **kwargs)
+
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
 
@@ -358,7 +362,6 @@ def post_selection(
     events = ak.fill_none(events, EMPTY_FLOAT)
 
     logger.info(f"Selected {ak.sum(results.event)} from {len(events)} events")
-
     return events, results
 
 
@@ -371,5 +374,5 @@ def post_selection_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
-    self.uses.add(event_weights_to_normalize)
-    self.produces.add(event_weights_to_normalize)
+    self.uses.update({event_weights_to_normalize, hard_gen_particles})
+    self.produces.update({event_weights_to_normalize, hard_gen_particles})

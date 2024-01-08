@@ -432,6 +432,8 @@ def add_config(
             "run", "luminosityBlock", "event",
             # columns added during selection, required in general
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+            # Gen information (for categorization)
+            "HardGenPart.pdgId",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
