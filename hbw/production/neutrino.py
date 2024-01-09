@@ -15,6 +15,7 @@ from columnflow.columnar_util import set_ak_column
 
 from hbw.util import four_vec
 from hbw.production.prepare_objects import prepare_objects
+from hbw.config.variables import add_neutrino_variables
 
 
 np = maybe_import("numpy")
@@ -29,13 +30,15 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 @producer(
     uses=prepare_objects,
-    produces=four_vec("Neutrino"),
+    produces=four_vec(["Neutrino1", "Neutrino2"]),
 )
 def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer to reconstruct a neutrino orignating from a leptonically decaying W boson.
     Assumes that Neutrino pt can be reconstructed via MET and that the W boson has been
     produced on-shell.
+
+    TODO: reference
     """
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
@@ -49,13 +52,11 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     pz_l = events.Lepton.pz[:, 0]
     pt_nu = events.MET.pt
 
-    delta_phi = events.Lepton[:, 0].delta_phi(events.MET)
-
+    delta_phi = abs(events.Lepton[:, 0].delta_phi(events.MET))
     mu = w_mass**2 / 2 + pt_nu * pt_l * np.cos(delta_phi)
 
-    # pz_nu = A +- sqrt(B-C)
+    # Neutrino pz will be calculated as: pz_nu = A +- sqrt(B-C)
     A = mu * pz_l / pt_l**2
-
     B = mu**2 * pz_l**2 / pt_l**4
     C = (E_l**2 * pt_nu**2 - mu**2) / pt_l**2
 
@@ -66,26 +67,55 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
         # complex solution -> take only the real part
         A,
     )
-    # pz_nu_2 = ak.where(
-    #     B - C >= 0,
-    #     # solution is real
-    #     A - np.sqrt(B - C),
-    #     # complex solution -> take only the real part
-    #     A,
-    # )
 
-    p_nu_1 = np.sqrt(pt_nu**2 + pz_nu_1**2)
-    eta_nu_1 = np.log((p_nu_1 + pz_nu_1) / (p_nu_1 - pz_nu_1)) / 2
+    pz_nu_2 = ak.where(
+        B - C >= 0,
+        # solution is real
+        A - np.sqrt(B - C),
+        # complex solution -> take only the real part
+        A,
+    )
 
-    # store Neutrino 4 vector components
-    events["Neutrino"] = events.MET
-    events = set_ak_column_f32(events, "Neutrino.eta", eta_nu_1)
+    pz_nu_solutions = [pz_nu_1, pz_nu_2]
 
-    # testing: Neutrino pz should be the same as pz_nu_1 within rounding errors
+    for i, pz_nu in enumerate(pz_nu_solutions, start=1):
+        # calculate Neutrino eta to define the Neutrino 4-vector
+        p_nu_1 = np.sqrt(pt_nu**2 + pz_nu**2)
+        eta_nu_1 = np.log((p_nu_1 + pz_nu) / (p_nu_1 - pz_nu)) / 2
 
-    # testing: reconstructing W mass should always (if B-C>0) give the input W mass (80.4 GeV)
-    # but currently, this is at 114 most of the times, so something is off
-    W_on_shell = events.Neutrino + events.Lepton[:, 0]
-    print(W_on_shell.mass)
+        # store Neutrino 4 vector components
+        events[f"Neutrino{i}"] = events.MET
+        events = set_ak_column_f32(events, f"Neutrino{i}.eta", eta_nu_1)
+
+        # sanity check: Neutrino pz should be the same as pz_nu within rounding errors
+        sanity_check_1 = ak.sum(abs(events[f"Neutrino{i}"].pz - pz_nu) > abs(events[f"Neutrino{i}"].pz) / 100)
+        if sanity_check_1:
+            logger.warning(
+                "Number of events with Neutrino.pz that differs from pz_nu by more than 1 percent: "
+                f"{sanity_check_1} (solution {i})",
+            )
+
+        # sanity check: reconstructing W mass should always (if B-C>0) give the input W mass (80.4 GeV)
+        W_on_shell = events[f"Neutrino{i}"] + events.Lepton[:, 0]
+        sanity_check_2 = ak.sum(abs(ak.where(B - C >= 0, W_on_shell.mass, w_mass) - w_mass) > 1)
+        if sanity_check_2:
+            logger.warning(
+                "Number of events with W mass from reconstructed Neutrino (real solutions only) that "
+                f"differs by more than 1 GeV from the input W mass: {sanity_check_2} (solution {i})",
+            )
+
+    # sanity check: for complex solutions, only the real part is considered -> both solutions should be identical
+    sanity_check_3 = ak.sum(ak.where(B - C <= 0, events.Neutrino1.eta - events.Neutrino2.eta, 0))
+    if sanity_check_3:
+        raise Exception(
+            "When finding complex neutrino solutions, both reconstructed Neutrinos should be identical",
+        )
 
     return events
+
+
+@neutrino_reconstruction.init
+def neutrino_reconstruction_init(self: Producer) -> None:
+
+    # add variable instances to config
+    add_neutrino_variables(self.config_inst)
