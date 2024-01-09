@@ -6,6 +6,8 @@ Selection methods defining categories based on selection step results.
 
 from __future__ import annotations
 
+import law
+
 from columnflow.util import maybe_import
 from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
@@ -26,15 +28,20 @@ def catid_selection_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple
 
 
 @categorizer(
-    uses=optional_column("HardGenPart.pdgId", "GenPart.pdgId"),
-    gp_dict={},  # dict with pdgId + number of required prompt particles with this pdgId
+    uses=optional_column("HardGenPart.pdgId", "GenPart.pdgId", "GenPart.statusFlags"),
+    gp_dict={},  # dict with (tuple of) pdgId + number of required prompt particles with this pdgId
     ignore_charge=True,
     call_force=True,
+    _operator="eq",
 )
 def catid_n_gen_particles(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
     """ Categorizer to select events with a certain number of prompt gen particles """
+
+    # possible options to compare number of particles with required number of particles: ==, >=, >, <=, <
+    assert self._operator in ("eq", "ge", "gt", "le", "lt")
+
     # start with true mask
     mask = np.ones(len(events), dtype=bool)
     if self.dataset_inst.is_data:
@@ -44,14 +51,26 @@ def catid_n_gen_particles(
     if has_ak_column(events, "HardGenPart.pdgId"):
         gp_id = events.HardGenPart.pdgId
     else:
-        # try to get gp_id column via SelectionResult
-        gp_id = events.GenPart.pdgId[results.objects.GenPart.HardGenPart]
+        try:
+            # try to get gp_id column via SelectionResult
+            gp_id = events.GenPart.pdgId[results.objects.GenPart.HardGenPart]
+        except AttributeError:
+            # try to select hard gen particles via status flags
+            gp_id = events.GenPart.pdgId[events.GenPart.hasFlags("isHardProcess")]
 
     if self.ignore_charge:
         gp_id = abs(gp_id)
 
-    for pdgId, num_particles in self.gp_dict.items():
-        mask = mask & (ak.sum(gp_id == pdgId, axis=1) == num_particles)
+    for pdgIds, required_n_particles in self.gp_dict.items():
+        # make sure that 'pdgIds' is a tuple
+        pdgIds = law.util.make_tuple(pdgIds)
+
+        # get number of gen particles with requested pdgIds for each event
+        n_particles = sum([ak.sum(gp_id == pdgId, axis=1) for pdgId in pdgIds])
+
+        # compare number of gen particles with required number of particles with requested operator
+        this_mask = getattr(n_particles, f"__{self._operator}__")(required_n_particles)
+        mask = mask & this_mask
 
     return events, mask
 
@@ -66,33 +85,9 @@ catid_gen_1tau = catid_n_gen_particles.derive("catid_gen_1tau", cls_dict={"gp_di
 # catid_gen_emu = catid_n_gen_particles.derive("catid_gen_emu", cls_dict={"gp_dict": {11: 1, 13: 1, 15: 0}})
 # catid_gen_etau = catid_n_gen_particles.derive("catid_gen_etau", cls_dict={"gp_dict": {11: 1, 13: 0, 15: 1}})
 # catid_gen_mutau = catid_n_gen_particles.derive("catid_gen_mutau", cls_dict={"gp_dict": {11: 0, 13: 1, 15: 1}})
-
-
-@categorizer(
-    uses=optional_column("HardGenPart.pdgId", "GenPart.pdgId"),
-    call_force=True,
+catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
+    "catid_geq_2_gen_leptons", cls_dict={"gp_dict": {(11, 13, 15): 2}, "_operator": "ge"},
 )
-def catid_geq_2_gen_leptons(
-    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    """ Categorizer to select events with a certain number of hard gen particles """
-
-    if self.dataset_inst.is_data:
-        # for data, always return true mask
-        return events, np.ones(len(events), dtype=bool)
-
-    if has_ak_column(events, "HardGenPart.pdgId"):
-        gp_id = events.HardGenPart.pdgId
-    else:
-        # try to get gp_id column via SelectionResult
-        gp_id = events.GenPart.pdgId[results.objects.GenPart.HardGenPart]
-
-    abs_id = abs(gp_id)
-    mask = (
-        ak.sum(abs_id == 11, axis=1) + ak.sum(abs_id == 13, axis=1) + ak.sum(abs_id == 15, axis=1)
-    ) >= 2
-
-    return events, mask
 
 
 #
