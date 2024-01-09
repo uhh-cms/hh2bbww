@@ -30,7 +30,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 @producer(
     uses=prepare_objects,
-    produces=four_vec(["Neutrino1", "Neutrino2"]),
+    produces=four_vec(["Neutrino", "Neutrino1", "Neutrino2"]),
 )
 def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -111,6 +111,11 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             "When finding complex neutrino solutions, both reconstructed Neutrinos should be identical",
         )
 
+    # combine both Neutrino solutions by taking the solution with smaller absolute eta
+    events = set_ak_column_f32(
+        events, "Neutrino",
+        ak.where(abs(events.Neutrino1.eta) > abs(events.Neutrino2.eta), events.Neutrino2, events.Neutrino1),
+    )
     return events
 
 

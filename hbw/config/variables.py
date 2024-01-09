@@ -145,7 +145,7 @@ def add_neutrino_variables(config: od.Config) -> None:
     Adds variables to a *config* that are produced as part of the `neutrino_reconstruction` producer.
     """
 
-    for obj in ["Neutrino1", "Neutrino2"]:
+    for obj in ["Neutrino", "Neutrino1", "Neutrino2"]:
         # pt and phi should be the same as MET, mass should always be 0
         for var in ["pt", "eta", "phi", "mass"]:
             config.add_variable(
