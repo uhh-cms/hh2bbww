@@ -233,7 +233,7 @@ def add_ml_variables(config: od.Config) -> None:
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=default_var_binning[var],
-                unit=default_var_unit.get(var, var),
+                unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
 
@@ -243,7 +243,7 @@ def add_ml_variables(config: od.Config) -> None:
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=default_var_binning[var],
-                unit=default_var_unit.get(var, var),
+                unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
 
@@ -253,6 +253,6 @@ def add_ml_variables(config: od.Config) -> None:
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=default_var_binning[var],
-                unit=default_var_unit.get(var, var),
+                unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
