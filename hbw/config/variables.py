@@ -158,6 +158,27 @@ def add_neutrino_variables(config: od.Config) -> None:
 
 
 @call_once_on_config()
+def add_top_reco_variables(config: od.Config) -> None:
+    """
+    Adds variables to a *config* that are produced as part of the `top_reconstruction` producer.
+    """
+    # add neutrino variables aswell since the neutrino needs to be reconstructed anyway
+    add_neutrino_variables(config)
+
+    # add reconstructed top variables
+    for obj in ["tlep_hyp1", "tlep_hyp2"]:
+        # pt and phi should be the same as MET, mass should always be 0
+        for var in ["pt", "eta", "phi", "mass"]:
+            config.add_variable(
+                name=f"{obj}_{var}",
+                expression=f"{obj}.{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+
+@call_once_on_config()
 def add_variables(config: od.Config) -> None:
     """
     Adds all variables to a *config* that are present after `ReduceEvents`
