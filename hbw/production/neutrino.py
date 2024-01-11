@@ -9,13 +9,13 @@ import law
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 # from cmsdb.constants import m_w
 
 from hbw.util import four_vec
 from hbw.production.prepare_objects import prepare_objects
-from hbw.config.variables import add_neutrino_variables
+from hbw.config.variables import add_neutrino_variables, add_top_reco_variables
 
 
 np = maybe_import("numpy")
@@ -79,10 +79,13 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     pz_nu_solutions = [pz_nu_1, pz_nu_2]
 
     for i, pz_nu in enumerate(pz_nu_solutions, start=1):
+        # convert to float64 to prevent rounding errors
+        pt_nu = ak.values_astype(pt_nu, np.float64)
+        pz_nu = ak.values_astype(pz_nu, np.float64)
+
         # calculate Neutrino eta to define the Neutrino 4-vector
         p_nu_1 = np.sqrt(pt_nu**2 + pz_nu**2)
         eta_nu_1 = np.log((p_nu_1 + pz_nu) / (p_nu_1 - pz_nu)) / 2
-
         # store Neutrino 4 vector components
         events[f"Neutrino{i}"] = events.MET
         events = set_ak_column_f32(events, f"Neutrino{i}.eta", eta_nu_1)
@@ -121,6 +124,57 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
 @neutrino_reconstruction.init
 def neutrino_reconstruction_init(self: Producer) -> None:
-
     # add variable instances to config
     add_neutrino_variables(self.config_inst)
+
+
+@producer(
+    uses={neutrino_reconstruction, prepare_objects} | four_vec("Bjet"),
+    produces={neutrino_reconstruction} | four_vec({"tlep_hyp1", "tlep_hyp2"}),
+)
+def top_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer to reconstruct ttbar top quark masses using the neutrino_reconstruction Producer
+    """
+    # add behavior and define new collections (e.g. Lepton)
+    events = self[prepare_objects](events, **kwargs)
+
+    # run the neutrino reconstruction
+    events = self[neutrino_reconstruction](events, **kwargs)
+
+    # object padding (there are some boosted events that only contain one Jet)
+    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+
+    dr_b1_lep = events.Bjet[:, 0].delta_r(events.Lepton[:, 0])
+    dr_b2_lep = events.Bjet[:, 1].delta_r(events.Lepton[:, 0])
+
+    blep = ak.where(dr_b1_lep < dr_b2_lep, events.Bjet[:, 0], events.Bjet[:, 1])
+    bhad = ak.where(dr_b1_lep > dr_b2_lep, events.Bjet[:, 0], events.Bjet[:, 1])
+
+    tlep_hyp1 = blep + events.Lepton[:, 0] + events.Neutrino
+    tlep_hyp2 = bhad + events.Lepton[:, 0] + events.Neutrino
+
+    # events = set_ak_column_f32(events, "tlep_hyp1", tlep_hyp1)
+    # events = set_ak_column_f32(events, "tlep_hyp2", tlep_hyp2)
+
+    # tlep vectors store columns (x, y, z, t), so set all 4-vec components by hand
+    for var in ("pt", "eta", "phi", "mass"):
+        events = set_ak_column_f32(events, f"tlep_hyp1.{var}", getattr(tlep_hyp1, var))
+        events = set_ak_column_f32(events, f"tlep_hyp2.{var}", getattr(tlep_hyp2, var))
+
+    # fill nan/none values of all produced columns
+    for route in self.produced_columns:
+        # replace nan, none, and inf values with EMPTY_FLOAT
+        col = route.apply(events)
+        col = ak.fill_none(ak.nan_to_none(route.apply(events)), EMPTY_FLOAT)
+        col = ak.where(np.isinf(col), EMPTY_FLOAT, col)
+
+        events = set_ak_column(events, route.string_column, col)
+
+    return events
+
+
+@neutrino_reconstruction.init
+def top_reconstruction_init(self: Producer) -> None:
+    # add variable instances to config
+    add_top_reco_variables(self.config_inst)
