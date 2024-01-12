@@ -6,48 +6,91 @@ Configuration of the Run 2 HH -> bbWW datasets.
 
 from __future__ import annotations
 
+import itertools
+
 import law
 import order as od
 
 import cmsdb.processes as procs
+from columnflow.util import DotDict
 from columnflow.tasks.external import GetDatasetLFNs
+from columnflow.config_util import get_root_processes_from_campaign
 
 
 logger = law.logger.get_logger(__name__)
 
 
-def add_hbw_datasets(config: od.Config, campaign: od.Campaign):
-    # load custom produced datasets into campaign
-    get_custom_hh_datasets(campaign)
+#
+# Collection of process names and their corresponding datasets for each year
+#
 
-    # use custom get_dataset_lfns function
-    config.x.get_dataset_lfns = get_dataset_lfns
 
-    # add datasets we need to study
-    dataset_names = [
-        # DATA
-        "data_e_b",
-        "data_e_c",
-        "data_e_d",
-        "data_e_e",
-        "data_e_f",
+data_mu = {
+    "2017": [
         "data_mu_b",
         "data_mu_c",
         "data_mu_d",
         "data_mu_e",
         "data_mu_f",
-        # TTbar
+    ],
+    "2022postEE": [
+        "data_mu_e",
+        "data_mu_f",
+        "data_mu_g",
+    ],
+}
+
+data_e = {
+    "2017": [
+        "data_e_b",
+        "data_e_c",
+        "data_e_d",
+        "data_e_e",
+        "data_e_f",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+tt = {
+    "2017": [
         "tt_sl_powheg",
         "tt_dl_powheg",
         "tt_fh_powheg",
-        # SingleTop
+    ],
+    "2022postEE": [
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+    ],
+}
+
+st = {
+    "2017": [
         "st_tchannel_t_powheg",
         "st_tchannel_tbar_powheg",
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
         "st_schannel_lep_amcatnlo",
         "st_schannel_had_amcatnlo",
-        # WJets
+    ],
+    "2022postEE": [
+        "st_tchannel_t_powheg",
+        "st_tchannel_tbar_powheg",
+        "st_twchannel_t_sl_powheg",
+        "st_twchannel_tbar_sl_powheg",
+        "st_twchannel_t_dl_powheg",
+        "st_twchannel_tbar_dl_powheg",
+        "st_twchannel_t_fh_powheg",
+        # "st_twchannel_tbar_fh_powheg",  # currently not available
+        # "st_schannel_lep_amcatnlo",
+        # "st_schannel_had_amcatnlo",
+    ],
+}
+
+w_lnu = {
+    "2017": [
         "w_lnu_ht70To100_madgraph",
         "w_lnu_ht100To200_madgraph",
         "w_lnu_ht200To400_madgraph",
@@ -56,7 +99,14 @@ def add_hbw_datasets(config: od.Config, campaign: od.Campaign):
         "w_lnu_ht800To1200_madgraph",
         "w_lnu_ht1200To2500_madgraph",
         "w_lnu_ht2500_madgraph",
-        # DY
+    ],
+    "2022postEE": [
+        "w_lnu_amcatnlo",
+    ],
+}
+
+dy_lep = {
+    "2017": [
         "dy_lep_m50_ht70to100_madgraph",
         "dy_lep_m50_ht100to200_madgraph",
         "dy_lep_m50_ht200to400_madgraph",
@@ -65,81 +115,263 @@ def add_hbw_datasets(config: od.Config, campaign: od.Campaign):
         "dy_lep_m50_ht800to1200_madgraph",
         "dy_lep_m50_ht1200to2500_madgraph",
         "dy_lep_m50_ht2500_madgraph",
-        # QCD (no LHEScaleWeight)
-        "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
-        "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
-        "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
-        "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
-        "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
-        "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000_pythia",
-        "qcd_em_pt15to20_pythia", "qcd_em_pt20to30_pythia",
-        "qcd_em_pt30to50_pythia", "qcd_em_pt50to80_pythia",
-        "qcd_em_pt80to120_pythia", "qcd_em_pt120to170_pythia",
-        "qcd_em_pt170to300_pythia", "qcd_em_pt300toInf_pythia",
-        "qcd_bctoe_pt15to20_pythia", "qcd_bctoe_pt20to30_pythia",
-        "qcd_bctoe_pt30to80_pythia", "qcd_bctoe_pt80to170_pythia",
-        "qcd_bctoe_pt170to250_pythia", "qcd_bctoe_pt250toInf_pythia",
-        # TTV, VV -> ignore?; Higgs -> not used in Msc, but would be interesting
-        # HH(bbtautau)
-        # "hh_ggf_bbtautau_madgraph",
-    ]
+    ],
+    "2022postEE": [
+        "dy_lep_m50_madgraph",
+    ],
+}
 
-    if config.has_tag("is_sl") and config.has_tag("is_nonresonant"):
-        # non-resonant HH -> bbWW(qqlnu) Signal
-        if config.has_tag("custom_signals"):
-            dataset_names += [
-                "ggHH_kl_0_kt_1_sl_hbbhww_custom",
-                "ggHH_kl_1_kt_1_sl_hbbhww_custom",
-                "ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
-                "ggHH_kl_5_kt_1_sl_hbbhww_custom",
-            ]
-        else:
-            dataset_names += [
-                "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
-                "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-                "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
-                "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
-            ]
+qcd_mu = {
+    "2017": [
+        "qcd_mu_pt15to20_pythia",
+        "qcd_mu_pt20to30_pythia",
+        "qcd_mu_pt30to50_pythia",
+        "qcd_mu_pt50to80_pythia",
+        "qcd_mu_pt80to120_pythia",
+        "qcd_mu_pt120to170_pythia",
+        "qcd_mu_pt170to300_pythia",
+        "qcd_mu_pt300to470_pythia",
+        "qcd_mu_pt470to600_pythia",
+        "qcd_mu_pt600to800_pythia",
+        "qcd_mu_pt800to1000_pythia",
+        "qcd_mu_pt1000_pythia",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
 
-        dataset_names += [
-            "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
-            "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
-            "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
-        ]
+qcd_em = {
+    "2017": [
+        "qcd_em_pt15to20_pythia",
+        "qcd_em_pt20to30_pythia",
+        "qcd_em_pt30to50_pythia",
+        "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia",
+        "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia",
+        "qcd_em_pt300toInf_pythia",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
 
-    if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
-        # non-resonant HH -> bbWW(lnulnu) Signal
-        dataset_names += [
-            "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
-            "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-            "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
-            "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
-            "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww_madgraph",
-            "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww_madgraph",
-            "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww_madgraph",
-            "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
-        ]
-    if config.has_tag("is_sl") and config.has_tag("is_resonant"):
-        for mass in config.x.graviton_masspoints:
-            dataset_names.append(f"graviton_hh_ggf_bbww_m{mass}_madgraph")
-        for mass in config.x.radion_masspoints:
-            dataset_names.append(f"radion_hh_ggf_bbww_m{mass}_madgraph")
+qcd_bctoe = {
+    "2017": [
+        "qcd_bctoe_pt15to20_pythia",
+        "qcd_bctoe_pt20to30_pythia",
+        "qcd_bctoe_pt30to80_pythia",
+        "qcd_bctoe_pt80to170_pythia",
+        "qcd_bctoe_pt170to250_pythia",
+        "qcd_bctoe_pt250toInf_pythia",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
 
-    if config.has_tag("is_dl") and config.has_tag("is_resonant"):
-        logger.warning(
-            f"For analysis {config.analysis.name}: dileptonic resonant samples still needs to be implemented",
-        )
+single_h = {
+    "2017": [
+        # empty for now
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+vv = {
+    "2017": [
+        # empty for now
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+ttv = {
+    "2017": [
+        # empty for now
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+ggHH_sl_hbbhww = {
+    "2017": [
+        "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
+        "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
+    ],
+    "2022postEE": [
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        # empty for now
+    ],
+}
+
+ggHH_dl_hbbhww = {
+    "2017": [
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+qqHH_sl_hbbhww = {
+    "2017": [
+        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
+        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+        "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+qqHH_dl_hbbhww = {
+    "2017": [
+        "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+        "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+    ],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+graviton_hh_ggf_bbww = {
+    "2017": [f"graviton_hh_ggf_bbww_m{mass}_madgraph" for mass in [
+        250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+        550, 600, 650, 700, 750, 800, 850, 900, 1000,
+        1250, 1500, 1750, 2000, 2500, 3000,
+    ]],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+radion_hh_ggf_bbww = {
+    "2017": [f"radion_hh_ggf_bbww_m{mass}_madgraph" for mass in [
+        250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+        550, 600, 650, 700, 750, 800, 850, 900, 1000,
+        1250, 1500, 1750, 2000, 2500, 3000,
+    ]],
+    "2022postEE": [
+        # empty for now
+    ],
+}
+
+
+def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
+    """
+    Central definition of datasets used in the hbbhww analysis based on the *cpn_tag*.
+    As a default, it creates one DotDict of process names mapped to the corresponding dataset names.
+    When *as_list* is True, a single list of all datasets is returned
+
+    :param cpn_tag: String or integer of which data-taking campaign is used.
+    :param as_list: Bool parameter to decide whether to return a list or a DotDict.
+    :return: List or DotDict containing all dataset names.
+    """
+
+    cpn_tag = str(cpn_tag)
+
+    #
+    # Combine all process datasets into a single DotDict
+    #
+
+    dataset_names = DotDict.wrap(
+        data_mu=data_mu[cpn_tag],
+        data_e=data_e[cpn_tag],
+        tt=tt[cpn_tag],
+        st=st[cpn_tag],
+        w_lnu=w_lnu[cpn_tag],
+        dy_lep=dy_lep[cpn_tag],
+        qcd_mu=qcd_mu[cpn_tag],
+        qcd_em=qcd_em[cpn_tag],
+        qcd_bctoe=qcd_bctoe[cpn_tag],
+        single_h=single_h[cpn_tag],
+        vv=vv[cpn_tag],
+        ttv=ttv[cpn_tag],
+        ggHH_sl_hbbhww=ggHH_sl_hbbhww[cpn_tag],
+        ggHH_dl_hbbhww=ggHH_dl_hbbhww[cpn_tag],
+        qqHH_sl_hbbhww=qqHH_sl_hbbhww[cpn_tag],
+        qqHH_dl_hbbhww=qqHH_dl_hbbhww[cpn_tag],
+        graviton_hh_ggf_bbww=graviton_hh_ggf_bbww[cpn_tag],
+        radion_hh_ggf_bbww=radion_hh_ggf_bbww[cpn_tag],
+    )
+    if as_list:
+        return list(itertools.chain(*dataset_names.values()))
+
+    return dataset_names
+
+
+def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
+    """
+    get all relevant dataset names and modify them based on the config and campaign
+    """
+
+    cpn_tag = str(config.x.cpn_tag)
+    dataset_names = get_dataset_names(cpn_tag, as_list)
+
+    # optionally switch to custom signal processes (only implemented for ggHH_sl)
+    if config.has_tag("custom_signals"):
+        dataset_names.ggHH_sl_hbbhww = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
+
+    if not config.has_tag("is_resonant"):
+        # remove all resonant signal processes/datasets
+        dataset_names.pop("graviton_hh_ggf_bbww")
+        dataset_names.pop("radion_hh_ggf_bbww")
+
+    if not config.has_tag("is_nonresonant"):
+        # remove all nonresonant signal processes/datasets
+        for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+            dataset_names.pop(hh_proc)
+
+    return dataset_names
+
+
+def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
+    if campaign.x.year == 2022:
+        get_2023_hh_dataset(campaign)
+
+    if campaign.x.year == 2017:
+        # load custom produced datasets into campaign (2017 only!)
+        get_custom_hh_2017_datasets(campaign)
+
+        # use custom get_dataset_lfns function
+        config.x.get_dataset_lfns = get_dataset_lfns_2017
+
+    dataset_names = get_dataset_names_for_config(config)
+
+    # get all process names with corresponding datasets
+    process_names = [proc_name for proc_name, _dataset_names in dataset_names.items() if _dataset_names]
+
+    # get all root processes
+    procs = get_root_processes_from_campaign(campaign)
+
+    # add processes to config
+    for proc_name in process_names:
+        config.add_process(procs.n(proc_name))
 
     # loop over all dataset names and add them to the config
-    for dataset_name in dataset_names:
-        config.add_dataset(campaign.get_dataset(dataset_name))
+    for dataset_name in list(itertools.chain(*dataset_names.values())):
+        try:
+            config.add_dataset(campaign.get_dataset(dataset_name))
+        except Exception:
+            from hbw.util import debugger; debugger()
 
 
 def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = None):
@@ -182,19 +414,31 @@ def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = 
             dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
-        else:
+        elif config.campaign.x.year == 2017:
             # our default Run2 signal samples are EOY, so we have to skip golden json, certain met filter
             dataset.add_tag("is_eoy")
 
 
-def get_custom_hh_datasets(
+def get_2023_hh_dataset(campaign: od.Campaign) -> None:
+    # load 2023 hh dataset into the campaign since we do not yet have HH datasets in the CMSDB
+    campaign.add_dataset(
+        name="ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        id=14854361,
+        processes=[procs.ggHH_kl_1_kt_1_sl_hbbhww],
+        keys=[
+            "/GluGlutoHHto2B2WtoLNu2Q_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v2-v2/NANOAODSIM",  # noqa
+        ],
+        n_files=50,
+        n_events=495374,
+    )
+
+
+def get_custom_hh_2017_datasets(
     campaign: od.Campaign,
 ) -> None:
     """
     Add custom HH datasets to campaign
     """
-    # TODO: change the n_files and n_events if available
-
     campaign.add_dataset(
         name="ggHH_kl_0_kt_1_sl_hbbhww_custom",
         id=10 ** 8 + 14057341,
@@ -244,7 +488,7 @@ def get_custom_hh_datasets(
     )
 
 
-def get_dataset_lfns(
+def get_dataset_lfns_2017(
     dataset_inst: od.Dataset,
     shift_inst: od.Shift,
     dataset_key: str,

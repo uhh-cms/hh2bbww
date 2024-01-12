@@ -18,8 +18,8 @@ from columnflow.util import DotDict
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
-from hbw.config.datasets import add_hbw_datasets, configure_hbw_datasets
-from hbw.config.processes import add_hbw_processes
+from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
+from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.util import four_vec
 
@@ -80,14 +80,16 @@ def add_config(
             1250, 1500, 1750, 2000, 2500, 3000,
         )
 
-    # add relevant processes to config
-    add_hbw_processes(cfg, campaign)
+    # add relevant processes and datasets to config
+    add_hbw_processes_and_datasets(cfg, campaign)
+
+    # configure processes in config
+    configure_hbw_processes(cfg, campaign)
 
     # set color of some processes
     stylize_processes(cfg)
 
-    # add and configure relevant datasets to config
-    add_hbw_datasets(cfg, campaign)
+    # configure datasets in config
     configure_hbw_datasets(cfg, limit_dataset_files)
 
     # lumi values in inverse pb
@@ -211,8 +213,8 @@ def add_config(
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
     cfg.x.jer = DotDict.wrap({
-        "campaign": jerc_campaign,
-        "version": "JR" + {2016: "V3", 2017: "V2", 2018: "V2", 2022: "V1"}[year],
+        "campaign": "JR_" + jerc_campaign,
+        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V1"}[year],
         "jet_type": jet_type,
     })
 
@@ -403,23 +405,23 @@ def add_config(
     elif cfg.x.run == 3:
         # TODO: Update when possible
         json_mirror = "/afs/desy.de/user/p/paaschal/public/mirrors/jsonpog-integration"
-        corr_tag = f"{year}_prompt"
+        corr_tag = f"{year}_Prompt"
 
     cfg.x.external_files = DotDict.wrap({
         # jet energy correction
         "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
 
         # electron scale factors
-        "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
+        # "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
 
         # muon scale factors
-        "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
+        # "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
 
         # btag scale factor
-        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
+        # "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
 
         # met phi corrector
-        "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
+        # "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
     })
 
     cfg.x.met_filters = {
@@ -433,7 +435,7 @@ def add_config(
         "Flag.eeBadScFilter",
     }
     if cfg.x.run == 3:
-        cfg.x.noise_filter.add("ecalBadCalibFilter")
+        cfg.x.met_filters.add("ecalBadCalibFilter")
 
     # external files with more complex year dependence
     # TODO: generalize to different years
