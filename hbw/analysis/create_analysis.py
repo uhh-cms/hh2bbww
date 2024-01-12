@@ -60,24 +60,41 @@ def create_hbw_analysis(
     #
 
     from hbw.config.config_run2 import add_config
+
     import cmsdb.campaigns.run2_2017_nano_v9
+    import cmsdb.campaigns.run3_2022_postEE_nano_v11
 
     campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
+    campaign_run3_2022_postEE_nano_v11 = cmsdb.campaigns.run3_2022_postEE_nano_v11.campaign_run3_2022_postEE_nano_v11
+    campaign_run3_2022_postEE_nano_v11.x.EE = "post"
 
-    # default config
+    # default configs
     c17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="c17",
-        config_id=2,
+        config_id=17,
+    )
+    c22 = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_postEE_nano_v11.copy(),
+        config_name="c22",
+        config_id=22,
     )
 
-    # config with limited number of files
+    # configs with limited number of files
     l17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="l17",
-        config_id=12,
+        config_id=117,
+        limit_dataset_files=2,
+    )
+    l22 = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_postEE_nano_v11.copy(),
+        config_name="l22",
+        config_id=122,
         limit_dataset_files=2,
     )
 

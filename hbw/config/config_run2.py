@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Configuration of the Run 2 HH -> bbWW config.
+Configuration of the HH -> bbWW config.
 """
 
 from __future__ import annotations
@@ -36,20 +36,34 @@ def add_config(
     limit_dataset_files: int | None = None,
 ) -> od.Config:
     # validations
-    assert campaign.x.year in [2016, 2017, 2018]
+    assert campaign.x.year in [2016, 2017, 2018, 2022]
     if campaign.x.year == 2016:
         assert campaign.x.vfp in ["pre", "post"]
+    if campaign.x.year == 2022:
+        assert campaign.x.EE in ["pre", "post"]
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
-    corr_postfix = f"{campaign.x.vfp}VFP" if year == 2016 else ""
 
-    if year != 2017:
-        raise NotImplementedError("For now, only 2017 campaign is fully implemented")
+    corr_postfix = ""
+    if year == 2016:
+        corr_postfix = f"{campaign.x.vfp}VFP"
+    elif year == 2022:
+        corr_postfix = f"{campaign.x.EE}EE"
+
+    if year != 2017 and year != 2022:
+        raise NotImplementedError("For now, only 2017 and 2022 campaign is implemented")
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
-    cfg.add_tag("is_run2")
+
+    # add some important tags to the config
+    cfg.x.cpn_tag = f"{year}{corr_postfix}"
+
+    if year in (2022, 2023):
+        cfg.x.run = 3
+    elif year in (2016, 2017, 2018):
+        cfg.x.run = 2
 
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
@@ -89,15 +103,24 @@ def add_config(
             "lumi_13TeV_1718": 0.006j,
             "lumi_13TeV_correlated": 0.009j,
         })
-    else:  # 2018
+    elif year == 2018:
         cfg.x.luminosity = Number(59830, {
             "lumi_13TeV_2017": 0.015j,
             "lumi_13TeV_1718": 0.002j,
             "lumi_13TeV_correlated": 0.02j,
         })
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
+    elif year == 2022:
+        cfg.x.luminosity = Number(26337, {
+            "lumi_13TeV_2022": 0.01j,
+            "lumi_13TeV_correlated": 0.006j,
+        })
+    else:
+        raise NotImplementedError(f"Luminosity for year {year} is not defined.")
 
     # minimum bias cross section in mb (milli) for creating PU weights, values from
     # https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData?rev=45#Recommended_cross_section
+    # TODO: changes in Run3?
     cfg.x.minbias_xs = Number(69.2, 0.046j)
 
     # whether to validate the number of obtained LFNs in GetDatasetLFNs
@@ -105,11 +128,24 @@ def add_config(
 
     # jec configuration
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
-    jerc_postfix = "APV" if year == 2016 and campaign.x.vfp == "post" else ""
+    jerc_postfix = ""
+    if year == 2016 and campaign.x.vfp == "post":
+        jerc_postfix = "APV"
+    elif year == 2022:
+        jerc_postfix = f"{campaign.x.EE}EE"
+
+    if cfg.x.run == 2:
+        jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
+        jet_type = "AK4PFchs"
+    elif cfg.x.run == 3:
+        # TODO: is that correct?
+        jerc_campaign = f"Winter{year2}Run3"
+        jet_type = "AK4PFPuppi"
+
     cfg.x.jec = DotDict.wrap({
-        "campaign": f"Summer19UL{year2}{jerc_postfix}",
-        "version": {2016: "V7", 2017: "V5", 2018: "V5"}[year],
-        "jet_type": "AK4PFchs",
+        "campaign": jerc_campaign,
+        "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+        "jet_type": jet_type,
         "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
         "levels_for_type1_met": ["L1FastJet"],
         "uncertainty_sources": [
@@ -175,9 +211,9 @@ def add_config(
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
     cfg.x.jer = DotDict.wrap({
-        "campaign": f"Summer19UL{year2}{jerc_postfix}",
-        "version": "JR" + {2016: "V3", 2017: "V2", 2018: "V2"}[year],
-        "jet_type": "AK4PFchs",
+        "campaign": jerc_campaign,
+        "version": "JR" + {2016: "V3", 2017: "V2", 2018: "V2", 2022: "V1"}[year],
+        "jet_type": jet_type,
     })
 
     # JEC uncertainty sources propagated to btag scale factors
@@ -227,17 +263,17 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
-    btag_key = f"2016{campaign.x.vfp}" if year == 2016 else year
+    # TODO: add 2022 sources + 2022preEE WPs
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016pre": 0.0508, "2016post": 0.0480, 2017: 0.0532, 2018: 0.0490}[btag_key],
-            "medium": {"2016pre": 0.2598, "2016post": 0.2489, 2017: 0.3040, 2018: 0.2783}[btag_key],
-            "tight": {"2016pre": 0.6502, "2016post": 0.6377, 2017: 0.7476, 2018: 0.7100}[btag_key],
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022postEE": 0.0480}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022postEE": 0.2489}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022postEE": 0.6377}[cfg.x.cpn_tag],  # noqa
         },
         "deepcsv": {
-            "loose": {"2016pre": 0.2027, "2016post": 0.1918, 2017: 0.1355, 2018: 0.1208}[btag_key],
-            "medium": {"2016pre": 0.6001, "2016post": 0.5847, 2017: 0.4506, 2018: 0.4168}[btag_key],
-            "tight": {"2016pre": 0.8819, "2016post": 0.8767, 2017: 0.7738, 2018: 0.7665}[btag_key],
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022postEE": 0.1918}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022postEE": 0.5847}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022postEE": 0.8767}[cfg.x.cpn_tag],  # noqa
         },
     })
 
@@ -247,11 +283,11 @@ def add_config(
 
     # names of electron correction sets and working points
     # (used in the electron_sf producer)
-    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{year}{corr_postfix}", "wp80iso")
+    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
 
     # names of muon correction sets and working points
     # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}{corr_postfix}_UL")
+    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     # helper to add column aliases for both shifts of a source
     # TODO: switch to the columnflow function (but what happened to *selection_dependent*?)
@@ -361,28 +397,30 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+    if cfg.x.run == 2:
+        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+        corr_tag = f"{cfg.x.cpn_tag}_UL"
+    elif cfg.x.run == 3:
+        # TODO: Update when possible
+        json_mirror = "/afs/desy.de/user/p/paaschal/public/mirrors/jsonpog-integration"
+        corr_tag = f"{year}_prompt"
+
     cfg.x.external_files = DotDict.wrap({
         # jet energy correction
-        "jet_jerc": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/jet_jerc.json.gz", "v1"),
+        "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
 
         # electron scale factors
-        "electron_sf": (f"{json_mirror}/POG/EGM/{year}{corr_postfix}_UL/electron.json.gz", "v1"),
+        "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
 
         # muon scale factors
-        "muon_sf": (f"{json_mirror}/POG/MUO/{year}{corr_postfix}_UL/muon_Z.json.gz", "v1"),
+        "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
 
         # btag scale factor
-        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{year}{corr_postfix}_UL/btagging.json.gz", "v1"),
+        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
 
         # met phi corrector
-        "met_phi_corr": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/met.json.gz", "v1"),
+        "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
     })
-
-    # external files with more complex year dependence
-    # TODO: generalize to different years
-    if year != 2017:
-        raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
     cfg.x.met_filters = {
         "Flag.goodVertices",
@@ -394,8 +432,15 @@ def add_config(
         "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
         "Flag.eeBadScFilter",
     }
-    if cfg.has_tag("is_run3"):
+    if cfg.x.run == 3:
         cfg.x.noise_filter.add("ecalBadCalibFilter")
+
+    # external files with more complex year dependence
+    # TODO: generalize to different years
+    if year not in (2017, 2022):
+        raise NotImplementedError("TODO: generalize external files to different years than 2017")
+
+    # TODO: we might need changes for Run3 here (!!!)
 
     cfg.x.external_files.update(DotDict.wrap({
         # files from TODO
