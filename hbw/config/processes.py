@@ -6,94 +6,104 @@ Configuration of the Run 2 HH -> bbWW processes.
 
 import order as od
 
-from columnflow.config_util import get_root_processes_from_campaign
+
+def get_process_names_for_config(config: od.Config):
+    process_names = [
+        "data",
+        "data_mu",
+        "data_e",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_lep",
+        "qcd",
+        "qcd_mu",
+        "qcd_em",
+        "qcd_bctoe",
+        "ttv",
+        "vv",
+        "h",
+    ]
+
+    if config.has_tag("is_resonant"):
+        # add resonant signal processes/datasets
+        process_names.append("graviton_hh_ggf_bbww")
+        process_names.append("radion_hh_ggf_bbww")
+
+    if config.has_tag("is_nonresonant"):
+        # add nonresonant signal processes/datasets
+        for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+            process_names.append(hh_proc)
+
+    return process_names
 
 
-def add_hbw_processes(config: od.Config, campaign: od.Campaign):
-    # get all root processes
-    procs = get_root_processes_from_campaign(campaign)
+def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwargs):
+    """
+    Helper function to create processes from multiple processes *child_procs*
+    """
+    if "id" not in kwargs:
+        raise ValueError("A field 'id' is required to create a process")
+    if "name" not in kwargs:
+        raise ValueError("A field 'name' is required to create a process")
 
-    # add processes we are interested in
-    config.add_process(procs.n.data)
-    config.add_process(procs.n.tt)
-    config.add_process(procs.n.st)
-    config.add_process(procs.n.w_lnu)
-    config.add_process(procs.n.dy_lep)
-    config.add_process(procs.n.qcd)
-    config.add_process(procs.n.qcd_mu)
-    config.add_process(procs.n.qcd_em)
-    config.add_process(procs.n.qcd_bctoe)
-    # config.add_process(procs.n.ttv)
-    # config.add_process(procs.n.vv)
-    # config.add_process(procs.n.vv)
-    # config.add_process(procs.n.hh_ggf_bbtautau)
+    proc_kwargs = kwargs.copy()
 
-    if config.has_tag("is_sl") and config.has_tag("is_nonresonant"):
-        config.add_process(procs.n.ggHH_kl_0_kt_1_sl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_1_kt_1_sl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_2p45_kt_1_sl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_5_kt_1_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww)
+    if "xsecs" not in kwargs:
+        # set the xsec as sum of all xsecs when the ecm key exists for all processes
+        valid_ecms = set.intersection(*[set(proc.xsecs.keys()) for proc in child_procs])
+        proc_kwargs["xsecs"] = {ecm: sum([proc.get_xsec(ecm) for proc in child_procs]) for ecm in valid_ecms}
 
-    if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
-        config.add_process(procs.n.ggHH_kl_0_kt_1_dl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_1_kt_1_dl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_2p45_kt_1_dl_hbbhww)
-        config.add_process(procs.n.ggHH_kl_5_kt_1_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_1_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_0_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_1_kl_2_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_0_kl_1_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1_C2V_2_kl_1_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww)
-        config.add_process(procs.n.qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww)
+    parent_process = config.add_process(**proc_kwargs)
 
-    if config.has_tag("is_sl") and config.has_tag("is_resonant"):
-        for mass in config.x.graviton_masspoints:
-            config.add_process(procs.n(f"graviton_hh_ggf_bbww_m{mass}"))
-        for mass in config.x.radion_masspoints:
-            config.add_process(procs.n(f"radion_hh_ggf_bbww_m{mass}"))
+    # add child processes to parent
+    for child_proc in child_procs:
+        parent_process.add_process(child_proc)
 
-    #
-    # add some custom processes
-    #
+    return parent_process
 
+
+def configure_hbw_processes(config: od.Config, campaign: od.Campaign):
     # QCD process customization
-    config.get_process("qcd_mu").label = "QCD Muon enriched"
-    qcd_ele = config.add_process(
-        name="qcd_ele",
-        id=31199,
-        xsecs={13: config.get_process("qcd_em").get_xsec(13) + config.get_process("qcd_bctoe").get_xsec(13)},
-        label="QCD Electron enriched",
-    )
-    qcd_ele.add_process(config.get_process("qcd_em"))
-    qcd_ele.add_process(config.get_process("qcd_bctoe"))
+    qcd_mu = config.get_process("qcd_mu", default=None)
+    if qcd_mu:
+        qcd_mu = "QCD Muon enriched"
 
-    # Custom v_lep process for ML Training, combining W+DY
-    v_lep = config.add_process(
-        name="v_lep",
-        id=64575573,  # random number
-        xsecs={13: config.get_process("w_lnu").get_xsec(13) + config.get_process("dy_lep").get_xsec(13)},
-        label="W and DY",
-    )
-    v_lep.add_process(config.get_process("w_lnu"))
-    v_lep.add_process(config.get_process("dy_lep"))
+    # add custom qcd_ele process
+    qcd_em = config.get_process("qcd_em", default=None)
+    qcd_bctoe = config.get_process("qcd_bctoe", default=None)
+    if qcd_em and qcd_bctoe:
+        qcd_ele = add_parent_process(  # noqa
+            config,
+            [qcd_em, qcd_bctoe],
+            name="qcd_ele",
+            id=31199,
+            label="QCD Electron enriched",
+        )
+
+    # custom v_lep process for ML Training, combining W+DY
+    w_lnu = config.get_process("w_lnu")
+    dy_lep = config.get_process("dy_lep")
+    if w_lnu and dy_lep:
+        v_lep = add_parent_process(  # noqa
+            config,
+            [w_lnu, dy_lep],
+            name="v_lep",
+            id=64575573,  # random number
+            label="W and DY",
+        )
 
     # Custom t_bkg process for ML Training, combining tt+st
-    t_bkg = config.add_process(
-        name="t_bkg",
-        id=97842611,  # random number
-        xsecs={13: config.get_process("tt").get_xsec(13) + config.get_process("st").get_xsec(13)},
-        label="tt + st",
-    )
-    t_bkg.add_process(config.get_process("tt"))
-    t_bkg.add_process(config.get_process("st"))
+    st = config.get_process("st")
+    tt = config.get_process("tt")
+    if st and tt:
+        t_bkg = add_parent_process(  # noqa
+            config,
+            [st, tt],
+            name="t_bkg",
+            id=97842611,  # random number
+            label="tt + st",
+        )
 
     if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
         # Custom signal  process for ML Training, combining multiple kl signal samples
