@@ -17,6 +17,8 @@ from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weig
 from columnflow.production.cms.pdf import pdf_weights
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
+from hbw.util import has_tag
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -58,8 +60,7 @@ def event_weight_init(self: Producer) -> None:
 
 
 @producer(
-    uses={pu_weight, btag_weights},
-    # don't save btag_weights to save storage space, since we can reproduce them in ProduceColumns
+    uses={pu_weight},
     produces={pu_weight},
     mc_only=True,
 )
@@ -72,18 +73,19 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
 
-    # compute btag SF weights (for renormalization tasks)
-    events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        # compute btag SF weights (for renormalization tasks)
+        events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
 
     # skip scale/pdf weights for some datasets (missing columns)
-    if not self.dataset_inst.has_tag("skip_scale"):
+    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
         # read out mur and weights
         events = self[murmuf_weights](events, **kwargs)
 
-    if not self.dataset_inst.has_tag("skip_pdf"):
+    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         # compute pdf weights
         events = self[pdf_weights](
             events,
@@ -100,11 +102,15 @@ def event_weights_to_normalize_init(self) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    if not self.dataset_inst.has_tag("skip_scale"):
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {btag_weights}
+        # dont store btag_weights to save storage space, since we can reproduce them in ProduceColumns
+
+    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
         self.produces |= {murmuf_envelope_weights, murmuf_weights}
 
-    if not self.dataset_inst.has_tag("skip_pdf"):
+    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {pdf_weights}
         self.produces |= {pdf_weights}
 
@@ -127,13 +133,13 @@ normalized_pu_weights = normalized_weight_factory(
 
 @producer(
     uses={
-        normalization_weights, electron_weights, muon_weights, btag_weights,
-        normalized_btag_weights, normalized_pu_weights,
+        normalization_weights, electron_weights, muon_weights,
+        normalized_pu_weights,
         event_weight,
     },
     produces={
         normalization_weights, electron_weights, muon_weights,
-        normalized_btag_weights, normalized_pu_weights,
+        normalized_pu_weights,
         event_weight,
     },
     mc_only=True,
@@ -146,21 +152,22 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
 
-    # compute btag SF weights
-    events = self[btag_weights](events, **kwargs)
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        # compute and normalize btag SF weights
+        events = self[btag_weights](events, **kwargs)
+        events = self[normalized_btag_weights](events, **kwargs)
 
     # compute electron and muon SF weights
     events = self[electron_weights](events, **kwargs)
     events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
-    events = self[normalized_btag_weights](events, **kwargs)
     events = self[normalized_pu_weights](events, **kwargs)
 
-    if not self.dataset_inst.has_tag("skip_scale"):
+    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_scale_weights](events, **kwargs)
 
-    if not self.dataset_inst.has_tag("skip_pdf"):
+    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_pdf_weights](events, **kwargs)
 
     # calculate the full event weight for plotting purposes
@@ -174,11 +181,15 @@ def event_weights_init(self: Producer) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    if not self.dataset_inst.has_tag("skip_scale"):
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {btag_weights, normalized_btag_weights}
+        self.produces |= {normalized_btag_weights}
+
+    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_scale_weights}
         self.produces |= {normalized_scale_weights}
 
-    if not self.dataset_inst.has_tag("skip_pdf"):
+    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_pdf_weights}
         self.produces |= {normalized_pdf_weights}
 
