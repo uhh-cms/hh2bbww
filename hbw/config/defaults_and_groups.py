@@ -6,6 +6,13 @@ from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
+def default_calibrator(cls, container, task_params):
+    if container.get_aux("run") == 2:
+        return "skip_jecunc"
+    else:
+        return None
+
+
 def default_selector(cls, container, task_params):
     if container.has_tag("is_sl"):
         selector = "sl"
@@ -107,7 +114,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    config_inst.x.default_calibrator = "skip_jecunc"
+    config_inst.x.default_calibrator = default_calibrator
     config_inst.x.default_selector = default_selector
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
