@@ -55,7 +55,7 @@ def vbf_jet_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
 
     # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet.pt))
 
     # default requirements for vbf jets (pt, eta and no H->bb jet)
     # NOTE: we might also want to remove the two H->jj jet candidates
