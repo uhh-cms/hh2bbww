@@ -412,17 +412,25 @@ def add_config(
         "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
 
         # electron scale factors
-        # "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
+        "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
 
         # muon scale factors
-        # "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
+        "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
 
         # btag scale factor
-        # "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
+        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
 
         # met phi corrector
-        # "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
+        "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
     })
+
+    # temporary fix due to missing corrections in run 3
+    if cfg.x.run == 3:
+        cfg.add_tag("skip_btag_weights")
+        cfg.x.external_files.pop("electron_sf")
+        cfg.x.external_files.pop("muon_sf")
+        cfg.x.external_files.pop("btag_sf_corr")
+        cfg.x.external_files.pop("met_phi_corr")
 
     cfg.x.met_filters = {
         "Flag.goodVertices",
@@ -434,8 +442,8 @@ def add_config(
         "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
         "Flag.eeBadScFilter",
     }
-    if cfg.x.run == 3:
-        cfg.x.met_filters.add("ecalBadCalibFilter")
+    # if cfg.x.run == 3:
+    #     cfg.x.met_filters.add("ecalBadCalibFilter")
 
     # external files with more complex year dependence
     # TODO: generalize to different years
@@ -502,6 +510,8 @@ def add_config(
 
     # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
     get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
+
+    # NOTE: the event_weights will be replaced with a weights_producer soon
     cfg.x.event_weights = DotDict()
 
     cfg.x.event_weights["normalization_weight"] = []
@@ -510,8 +520,10 @@ def add_config(
     #     if dataset.x("is_ttbar", False):
     #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
-    # NOTE: which to use, njet_btag_weight or btag_weight?
-    cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
+    if not cfg.has_tag("skip_btag_weights"):
+        # NOTE: which to use, njet_btag_weight or btag_weight?
+        cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
+
     cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
     cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
     cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
