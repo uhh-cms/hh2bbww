@@ -8,7 +8,7 @@ from collections import defaultdict
 from typing import Tuple
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, optional_column as optional
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.categories import category_ids
@@ -28,8 +28,8 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    uses=four_vec("Jet", {
-        "btagDeepFlavB", "jetId", "puId",
+    uses={optional("Jet.puId"), "Jet.*"} | four_vec("Jet", {
+        "btagDeepFlavB", "jetId",
     }),
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
@@ -54,9 +54,10 @@ def sl_jet_selection(
         (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId == 6) &
         ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
     )
-    # apply loose Jet puId to jets with pt below 50 GeV
-    jet_pu_mask = (events.Jet.puId >= 4) | (events.Jet.pt > 50)
-    jet_mask = jet_mask & jet_pu_mask
+    # apply loose Jet puId to jets with pt below 50 GeV (not in Run3 samples so skip this for now)
+    if self.config_inst.x.run == 2:
+        jet_pu_mask = (events.Jet.puId >= 4) | (events.Jet.pt > 50)
+        jet_mask = jet_mask & jet_pu_mask
 
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
     jet_sel = events.cutflow.n_jet >= 3
@@ -96,7 +97,7 @@ def sl_jet_selection(
 @selector(
     uses={
         "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
-        "Electron.cutBased", "Electron.mvaFall17V2Iso_WP80",
+        "Electron.cutBased", optional("Electron.mvaFall17V2Iso_WP80"), optional("Electron.mvaIso_WP80"),
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
         "Muon.tightId", "Muon.looseId", "Muon.pfRelIso04_all",
         "Tau.pt", "Tau.eta", "Tau.idDeepTau2017v2p1VSe",
@@ -131,11 +132,12 @@ def sl_lepton_selection(
     tau_veto_sel = ak.sum(tau_mask_veto, axis=-1) == 0
 
     # Lepton definition for this analysis
+    mvaIso_column = "mvaIso_WP80" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP80"
     e_mask = (
         (events.Electron.pt > self.e_pt) &
         (abs(events.Electron.eta) < 2.4) &
         (events.Electron.cutBased == 4) &
-        (events.Electron.mvaFall17V2Iso_WP80 == 1)
+        (events.Electron[mvaIso_column] == 1)
     )
     mu_mask = (
         (events.Muon.pt > self.mu_pt) &
@@ -211,23 +213,25 @@ def sl_lepton_selection_init(self: Selector) -> None:
     # Lepton pt thresholds (if not set manually) based on year (1 pt above trigger threshold)
     # When lepton pt thresholds are set manually, don't use any trigger
     if not self.e_pt:
-        self.e_pt = {2016: 28, 2017: 36, 2018: 33}[year]
+        self.e_pt = {2016: 28, 2017: 36, 2018: 33, 2022: 33}[year]
 
         # Trigger choice based on year of data-taking (for now: only single trigger)
         self.e_trigger = {
             2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
             2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
             2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
+            2022: "Ele32_WPTight_Gsf",  # TODO
         }[year]
         self.uses.add(f"HLT.{self.e_trigger}")
     if not self.mu_pt:
-        self.mu_pt = {2016: 25, 2017: 28, 2018: 25}[year]
+        self.mu_pt = {2016: 25, 2017: 28, 2018: 25, 2022: 28}[year]
 
         # Trigger choice based on year of data-taking (for now: only single trigger)
         self.mu_trigger = {
             2016: "IsoMu24",  # or "IsoTkMu27")
             2017: "IsoMu27",
             2018: "IsoMu24",
+            2022: "IsoMu27",  # TODO
         }[year]
         self.uses.add(f"HLT.{self.mu_trigger}")
 
