@@ -368,10 +368,7 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
 
     # loop over all dataset names and add them to the config
     for dataset_name in list(itertools.chain(*dataset_names.values())):
-        try:
-            config.add_dataset(campaign.get_dataset(dataset_name))
-        except Exception:
-            from hbw.util import debugger; debugger()
+        config.add_dataset(campaign.get_dataset(dataset_name))
 
 
 def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = None):
