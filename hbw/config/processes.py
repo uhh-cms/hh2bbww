@@ -6,6 +6,8 @@ Configuration of the Run 2 HH -> bbWW processes.
 
 import order as od
 
+from scinum import Number
+
 
 def get_process_names_for_config(config: od.Config):
     process_names = [
@@ -63,7 +65,26 @@ def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwarg
     return parent_process
 
 
-def configure_hbw_processes(config: od.Config, campaign: od.Campaign):
+def add_dummy_xsecs(config: od.Config):
+    """ Helper that adds dummy xsecs when missing for the campaign's correspondign ecm """
+    ecm = config.campaign.ecm
+
+    # Set dummy xsec for all processes if missing
+    process_insts = [
+        process_inst
+        for process_inst, _, _ in config.walk_processes()
+        if process_inst.is_mc
+    ]
+    for process_inst in process_insts:
+        if not process_inst.xsecs.get(ecm, None):
+            # print(f"TODO: xsecs for {ecm} TeV, process {process_inst.name}")
+            process_inst.xsecs[ecm] = Number(0.1)
+
+
+def configure_hbw_processes(config: od.Config):
+    # Set dummy xsec for all processes if missing
+    add_dummy_xsecs(config)
+
     # QCD process customization
     qcd_mu = config.get_process("qcd_mu", default=None)
     if qcd_mu:

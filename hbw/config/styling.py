@@ -84,7 +84,7 @@ def stylize_processes(config: od.Config) -> None:
     Could also include some more defaults (labels, unstack, ...)
     """
 
-    for proc in config.processes:
+    for proc, _, _ in config.walk_processes():
         # set default colors
         if color := default_process_colors.get(proc.name, None):
             proc.color1 = color
