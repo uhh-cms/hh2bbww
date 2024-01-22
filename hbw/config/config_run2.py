@@ -427,6 +427,8 @@ def add_config(
     # temporary fix due to missing corrections in run 3
     if cfg.x.run == 3:
         cfg.add_tag("skip_btag_weights")
+        cfg.add_tag("skip_electron_weights")
+        cfg.add_tag("skip_muon_weights")
         cfg.x.external_files.pop("electron_sf")
         cfg.x.external_files.pop("muon_sf")
         cfg.x.external_files.pop("btag_sf_corr")
@@ -525,8 +527,11 @@ def add_config(
         cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
 
     cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-    cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
-    cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
+
+    if not cfg.has_tag("skip_electron_weights"):
+        cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
+    if not cfg.has_tag("skip_muon_weights"):
+        cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
 
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()

@@ -133,12 +133,12 @@ normalized_pu_weights = normalized_weight_factory(
 
 @producer(
     uses={
-        normalization_weights, electron_weights, muon_weights,
+        normalization_weights,
         normalized_pu_weights,
         event_weight,
     },
     produces={
-        normalization_weights, electron_weights, muon_weights,
+        normalization_weights,
         normalized_pu_weights,
         event_weight,
     },
@@ -158,8 +158,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[normalized_btag_weights](events, **kwargs)
 
     # compute electron and muon SF weights
-    events = self[electron_weights](events, **kwargs)
-    events = self[muon_weights](events, **kwargs)
+    if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
+        events = self[electron_weights](events, **kwargs)
+    if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
+        events = self[muon_weights](events, **kwargs)
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
@@ -180,6 +182,14 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def event_weights_init(self: Producer) -> None:
     if not getattr(self, "dataset_inst", None):
         return
+
+    if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {electron_weights}
+        self.produces |= {electron_weights}
+
+    if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {muon_weights}
+        self.produces |= {muon_weights}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights, normalized_btag_weights}
