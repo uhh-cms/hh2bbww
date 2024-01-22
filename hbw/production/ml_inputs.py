@@ -33,7 +33,7 @@ ZERO_PADDING_VALUE = -10
     uses={
         category_ids, event_weights,
         prepare_objects,
-        "HbbJet.msoftdrop", "HbbJet.deepTagMD_HbbvsQCD",
+        "HbbJet.msoftdrop",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
         {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
@@ -74,7 +74,7 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
 
     # H->bb FatJet
-    for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+    for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
         events = set_ak_column_f32(events, f"mli_fj_{var}", events.HbbJet[:, 0][var])
 
     # jets in general
@@ -186,7 +186,7 @@ def ml_inputs_init(self: Producer) -> None:
     ) | set(
         f"mli_{obj}_{var}"
         for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
     )
     self.produces |= self.ml_columns
 

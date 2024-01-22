@@ -94,7 +94,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
     ]
 
     store_name: str = "inputs_inclusive"
