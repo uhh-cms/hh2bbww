@@ -84,7 +84,7 @@ def add_config(
     add_hbw_processes_and_datasets(cfg, campaign)
 
     # configure processes in config
-    configure_hbw_processes(cfg, campaign)
+    configure_hbw_processes(cfg)
 
     # set color of some processes
     stylize_processes(cfg)
