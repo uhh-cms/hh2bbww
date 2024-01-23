@@ -212,8 +212,9 @@ def add_config(
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
+    # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
-        "campaign": "JR_" + jerc_campaign,
+        "campaign": jerc_campaign,
         "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V1"}[year],
         "jet_type": jet_type,
     })
