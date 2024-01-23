@@ -65,11 +65,10 @@ def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwarg
     return parent_process
 
 
-def add_dummy_xsecs(config: od.Config):
-    """ Helper that adds dummy xsecs when missing for the campaign's correspondign ecm """
+def add_dummy_xsecs(config: od.Config, dummy_xsec: float = 0.1):
+    """ Helper that adds some dummy  xsecs when missing for the campaign's correspondign ecm """
     ecm = config.campaign.ecm
 
-    # Set dummy xsec for all processes if missing
     process_insts = [
         process_inst
         for process_inst, _, _ in config.walk_processes()
@@ -78,7 +77,16 @@ def add_dummy_xsecs(config: od.Config):
     for process_inst in process_insts:
         if not process_inst.xsecs.get(ecm, None):
             # print(f"TODO: xsecs for {ecm} TeV, process {process_inst.name}")
-            process_inst.xsecs[ecm] = Number(0.1)
+            process_inst.xsecs[ecm] = Number(dummy_xsec)
+
+    # # temporary xsecs from XSDB
+    # config.get_process("dy_lep").xsecs[13.6] = Number(67710.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
+    # config.get_process("w_lnu").xsecs[13.6] = Number(5558.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&ordDirection=1&ordFieldName=process_name&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
+
+    # temporary xsecs that were missing in xsdb
+    for proc in ("qcd_mu_pt170to300", "qcd_mu_pt470to600", "qcd_mu_pt1000"):
+        proc_inst = config.get_process(proc)
+        proc_inst.set_xsec(13.6, proc_inst.get_xsec(13))
 
 
 def configure_hbw_processes(config: od.Config):
