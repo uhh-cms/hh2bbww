@@ -74,6 +74,7 @@ class HBWInferenceModelBase(InferenceModel):
         if dnn_cat := root_cats.get("dnn"):
             dnn_proc = dnn_cat.replace("ml_", "")
             return f"mlscore.{dnn_proc}_manybins"
+            # return f"mlscore.{dnn_proc}_rebin"
         else:
             return "deltaR_ll"
 

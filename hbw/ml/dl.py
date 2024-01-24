@@ -25,34 +25,37 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes = [
-        # "sig",
-        "ggHH_kl_1_kt_1_dl_hbbhww",
-        "tt",
-        "st",
-        # "v_lep",
-        # "t_bkg",
-        "w_lnu",
-        "dy_lep",
+        "sig",
+        # "sig_all",
+        # "ggHH_kl_1_kt_1_dl_hbbhww",
+        # "tt",
+        # "st",
+        "v_lep",
+        "t_bkg",
+        # "w_lnu",
+        # "dy_lep",
     ]
 
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
         "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
         "sig": 1,
-        "tt": 1,
+        "ggHH_sig_all": 1,
+        "tt": 2,
         "st": 1,
         "v_lep": 1,
         "t_bkg": 1,
-        "w_lnu": 2,
+        "w_lnu": 1,
         "dy_lep": 1,
     }
 
     dataset_names = {
-        # "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        # "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
-        # "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
         # TTbar
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -68,7 +71,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "w_lnu_ht70To100_madgraph",
         "w_lnu_ht100To200_madgraph",
         "w_lnu_ht200To400_madgraph",
-        # "w_lnu_ht400To600_madgraph",
+        #"w_lnu_ht400To600_madgraph",
         "w_lnu_ht600To800_madgraph",
         #"w_lnu_ht800To1200_madgraph",
         "w_lnu_ht1200To2500_madgraph",
@@ -115,7 +118,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     layers = (164, 164, 164)
     activation = "relu"
     learningrate = 0.0005
-    batchsize = 8000  # 2 ** 12
+    batchsize = 2 ** 12
     epochs = 100
     dropout = 0.50
     negative_weights = "abs"
@@ -128,7 +131,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     # overwriting ModelFitMixin parameters
     callbacks = {
-        "backup", "checkpoint", # "reduce_lr",
+        "backup", "checkpoint",  # "reduce_lr",
         # "early_stopping",
     }
     remove_backup = True
@@ -208,10 +211,35 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         return ["ml_inputs"] if self.config_inst.has_tag("is_sl") else ["dl_ml_inputs"]
 
 
+# our default MLModel
+dense_default = DenseClassifierDL.derive("dense_default_dl", cls_dict={})
+
 cls_dict_test_kl1 = {
     "folds": 3,
     "epochs": 100,
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
+    "dataset_names": {
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        # TTbar
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+        # SingleTop
+        "st_tchannel_t_powheg",
+        # "st_tchannel_tbar_powheg", #problem in previous task for production
+        "st_twchannel_t_powheg",
+        "st_twchannel_tbar_powheg",
+        # "st_schannel_lep_amcatnlo", #problem with normalizatino weights..
+        # "st_schannel_had_amcatnlo",
+        # WJets commented out because no events avaible and hence no nomralization weights
+        "w_lnu_ht70To100_madgraph",
+        "w_lnu_ht100To200_madgraph",
+        "w_lnu_ht200To400_madgraph",
+        # "w_lnu_ht400To600_madgraph",
+        "w_lnu_ht600To800_madgraph",
+        # "w_lnu_ht800To1200_madgraph",
+        "w_lnu_ht1200To2500_madgraph",
+    }
 }
 
 # ML Model with reduced number of datasets
@@ -229,16 +257,71 @@ dense_all_proc = DenseClassifierDL.derive("dense_all_proc", cls_dict=cls_dict_al
 cls_dict_test_sig_all_dl = {
     "folds": 3,
     "epochs": 100,
-    "processes": ["sig_all", "v_lep", "t_bkg"],
+    "processes": ["ggHH_sig_all", "v_lep", "t_bkg"],
 }
 
 # ML Model with reduced number of datasets
 dense_test_sig_all_dl = DenseClassifierDL.derive("dense_test_sig_all_dl", cls_dict=cls_dict_test_sig_all_dl)
 
+cls_dict_test_aachen_dl = {
+    "folds": 3,
+    "epochs": 100,
+    # "processes": ["ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww", "w_lnu", "dy_lep", "tt", "st"],
+    "processes": ["ggHH_sig_all", "w_lnu", "dy_lep", "tt", "st"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_aachen_dl = DenseClassifierDL.derive("dense_test_aachen_dl", cls_dict=cls_dict_test_aachen_dl)
+
+
+cls_dict_test_aachen_weights_dl = {
+    "folds": 3,
+    "epochs": 100,
+    # "processes": ["ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww", "w_lnu", "dy_lep", "tt", "st"],
+    "processes": ["ggHH_sig_all", "dy_lep", "tt", "st"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_aachen_weights_dl = DenseClassifierDL.derive("dense_test_aachen_weights_dl", cls_dict=cls_dict_test_aachen_weights_dl)
+
+cls_dict_test_aachen_wo_wlnu_dl = {
+    "folds": 3,
+    "epochs": 100,
+    # "processes": ["ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww", "w_lnu", "dy_lep", "tt", "st"],
+    "processes": ["ggHH_sig_all", "dy_lep", "tt", "st"],
+}
+
+# ML Model with reduced number of datasets
+dense_test_aachen_wo_wlnu_dl = DenseClassifierDL.derive("dense_test_aachen_wo_wlnu_dl", cls_dict=cls_dict_test_aachen_wo_wlnu_dl)
+
 cls_dict_test_sig_dl = {
     "folds": 3,
     "epochs": 100,
-    "processes": ["sig", "v_lep", "t_bkg"],
+    "processes": ["ggHH_sig", "v_lep", "t_bkg"],
+    "dataset_names": {
+        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
+        # TTbar
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+        # SingleTop
+        "st_tchannel_t_powheg",
+        # "st_tchannel_tbar_powheg", #problem in previous task for production
+        "st_twchannel_t_powheg",
+        "st_twchannel_tbar_powheg",
+        # "st_schannel_lep_amcatnlo", #problem with normalizatino weights..
+        # "st_schannel_had_amcatnlo",
+        # WJets commented out because no events avaible and hence no nomralization weights
+        "w_lnu_ht70To100_madgraph",
+        "w_lnu_ht100To200_madgraph",
+        "w_lnu_ht200To400_madgraph",
+        # "w_lnu_ht400To600_madgraph",
+        "w_lnu_ht600To800_madgraph",
+        # "w_lnu_ht800To1200_madgraph",
+        "w_lnu_ht1200To2500_madgraph",
+    }
 }
 
 # ML Model with reduced number of datasets
@@ -248,11 +331,6 @@ cls_dict_test = {
     "folds": 2,
     "epochs": 90,
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "t_bkg"],
-    "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
-        # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-    },
 }
 
 # ML Model with reduced number of datasets

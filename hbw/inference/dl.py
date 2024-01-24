@@ -40,7 +40,7 @@ config_categories = [
     "emu__ml_t_bkg",
     # "2e__2b__ml_t_bkg",
     # "2mu__2b__ml_t_bkg",
-    #  "emu__2b__ml_t_bkg",
+    # "emu__2b__ml_t_bkg",
     "2e__ml_sig",
     "2mu__ml_sig",
     "emu__ml_sig",
@@ -52,7 +52,7 @@ config_categories = [
     "emu__ml_v_lep",
     # "2e__2b__ml_v_lep",
     # "2mu__2b__ml_v_lep",
-    #"emu__2b__ml_v_lep",
+    # "emu__2b__ml_v_lep",
     # "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
     # "2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
     # "2e__ml_tt",
@@ -141,8 +141,10 @@ shape_systematics = [
     # "top_pt",
 ]
 
+
 # All systematics to be included in the final datacard
-systematics = rate_systematics + shape_systematics
+
+systematics = rate_systematics  # + shape_systematics
 
 default_cls_dict = {
     "ml_model_name": ml_model_name,
@@ -188,23 +190,96 @@ dl_test = dl.derive("dl_test", cls_dict=cls_dict)
 
 cls_dict = default_cls_dict.copy()
 
-cls_dict["processes"] = [
-    # "sig_all",
-    "ggHH_kl_1_kt_1_dl_hbbhww",
-    "v_lep",
-    "t_bkg",
+cls_dict["config_categories"] = [
+    #"2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__1b__ml_tt",
+    "2e__1b__ml_st",
+    #"2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "emu__1b__ml_tt",
+    "emu__1b__ml_st",
+    #"emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__1b__ml_tt",
+    "2mu__1b__ml_st",
+    #"2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__2b__ml_tt",
+    "2e__2b__ml_st",
+    #"2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "emu__2b__ml_tt",
+    "emu__2b__ml_st",
+    #"emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__2b__ml_tt",
+    "2mu__2b__ml_st",
+    #"2e__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "2e__1b__ml_w_lnu",
+    "2e__1b__ml_dy_lep",
+    #"2mu__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "emu__1b__ml_w_lnu",
+    "emu__1b__ml_dy_lep",
+    #"emu__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "2mu__1b__ml_w_lnu",
+    "2mu__1b__ml_dy_lep",
+    #"2e__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "2e__2b__ml_w_lnu",
+    "2e__2b__ml_dy_lep",
+    #"2mu__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "emu__2b__ml_w_lnu",
+    "emu__2b__ml_dy_lep",
+    #"emu__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
+    "2mu__2b__ml_w_lnu",
+    "2mu__2b__ml_dy_lep",
+    "2e__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_ggHH_sig_all",
+    "2e__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_ggHH_sig_all",
+    #"2e__1b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"2mu__1b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"emu__1b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"2e__2b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"emu__2b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"2mu__2b__ml_ggHH_kl_5_kt_1_dl_hbbhww",
+    #"2e__1b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"2mu__1b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"emu__1b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"2e__2b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"emu__2b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    #"2mu__2b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
 ]
 
+cls_dict["ml_model_name"] = "dense_test_aachen_dl"
+
+# minimal model for quick test purposes
+dl_test_aachen = dl.derive("dl_test_aachen", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+# cls_dict["processes"] = [
+#    # "sig_all",
+#    "ggHH_kl_1_kt_1_dl_hbbhww",
+#    "v_lep",
+#    "t_bkg",
+# ]
+
 cls_dict["config_categories"] = [
-    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2e__ml_v_lep",
-    "2e__ml_t_bkg",
-    "2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "emu__ml_v_lep",
-    "emu__ml_t_bkg",
-    "emu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2mu__ml_v_lep",
-    "2mu__ml_t_bkg",
+    "2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__1b__ml_v_lep",
+    "2e__1b__ml_t_bkg",
+    "2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "emu__1b__ml_v_lep",
+    "emu__1b__ml_t_bkg",
+    "emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__1b__ml_v_lep",
+    "2mu__1b__ml_t_bkg",
+    "2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__2b__ml_v_lep",
+    "2e__2b__ml_t_bkg",
+    "2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "emu__2b__ml_v_lep",
+    "emu__2b__ml_t_bkg",
+    "emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2mu__2b__ml_v_lep",
+    "2mu__2b__ml_t_bkg",
 ]
 
 cls_dict["ml_model_name"] = "dense_test_kl1_dl"
@@ -212,29 +287,68 @@ cls_dict["ml_model_name"] = "dense_test_kl1_dl"
 # minimal model for quick test purposes
 dl_test_kl1 = dl.derive("dl_test_kl1", cls_dict=cls_dict)
 
+cls_dict = default_cls_dict.copy()
+
+# cls_dict["processes"] = [
+#    "ggHH_sig",
+#    "v_lep",
+#    "t_bkg",
+# ]
+
+cls_dict["config_categories"] = [
+    "2e__1b__ml_ggHH_sig",
+    "2e__1b__ml_v_lep",
+    "2e__1b__ml_t_bkg",
+    "emu__1b__ml_ggHH_sig",
+    "emu__1b__ml_v_lep",
+    "emu__1b__ml_t_bkg",
+    "2mu__1b__ml_ggHH_sig",
+    "2mu__1b__ml_v_lep",
+    "2mu__1b__ml_t_bkg",
+    "2e__2b__ml_ggHH_sig",
+    "2e__2b__ml_v_lep",
+    "2e__2b__ml_t_bkg",
+    "emu__2b__ml_ggHH_sig",
+    "emu__2b__ml_v_lep",
+    "emu__2b__ml_t_bkg",
+    "2mu__2b__ml_ggHH_sig",
+    "2mu__2b__ml_v_lep",
+    "2mu__2b__ml_t_bkg",
+]
+
+cls_dict["ml_model_name"] = "dense_test_sig_dl"
+
+# minimal model for quick test purposes
+dl_test_sig = dl.derive("dl_test_sig", cls_dict=cls_dict)
 
 cls_dict = default_cls_dict.copy()
 
-cls_dict["processes"] = [
-    "sig_all",
-    #"ggHH_kl_1_kt_1_dl_hbbhww",
-    "v_lep",
-    "t_bkg",
-]
+# cls_dict["processes"] = [
+#    "sig_all",
+#    "ggHH_kl_1_kt_1_dl_hbbhww",
+#    "v_lep",
+#    "t_bkg",
+# ]
 
 cls_dict["config_categories"] = [
-    "2e__ml_sig_all",
-    #"2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2e__ml_v_lep",
-    "2e__ml_t_bkg",
-    "emu__ml_sig_all",
-    #"2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "emu__ml_v_lep",
-    "emu__ml_t_bkg",
-    "emu__ml_sig_all",
-    #"2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2mu__ml_v_lep",
-    "2mu__ml_t_bkg",
+    "2e__1b__ml_ggHH_sig_all",
+    "2e__1b__ml_v_lep",
+    "2e__1b__ml_t_bkg",
+    "emu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_v_lep",
+    "emu__1b__ml_t_bkg",
+    "2mu__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_v_lep",
+    "2mu__1b__ml_t_bkg",
+    "2e__2b__ml_ggHH_sig_all",
+    "2e__2b__ml_v_lep",
+    "2e__2b__ml_t_bkg",
+    "emu__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_v_lep",
+    "emu__2b__ml_t_bkg",
+    "2mu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_v_lep",
+    "2mu__2b__ml_t_bkg",
 ]
 
 cls_dict["ml_model_name"] = "dense_test_sig_all_dl"
@@ -242,7 +356,7 @@ cls_dict["ml_model_name"] = "dense_test_sig_all_dl"
 # minimal model for quick test purposes
 dl_test_sig_all = dl.derive("dl_test_sig_all", cls_dict=cls_dict)
 
-# Inference model not on ML score but on hardcoded variable (bb_pt) 
+# Inference model not on ML score but on hardcoded variable (bb_pt)
 cls_dict = default_cls_dict.copy()
 
 cls_dict["config_categories"] = [

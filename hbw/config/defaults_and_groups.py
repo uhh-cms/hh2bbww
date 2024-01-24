@@ -282,7 +282,7 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.default_bins_per_category = {
         "SR": 10,
-        #"vbfSR": 5,
+        # "vbfSR": 5,
         "BR": 3,
         "SR_resolved": 10,
         "SR_boosted": 5,
@@ -302,7 +302,7 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.inference_category_rebin_processes = {
         "SR": ("ggHH_kl_1_kt_1_dl_hbbhww"),
-        #"vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        # "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": lambda proc_name: "hbbhww" not in proc_name,
         # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
         # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,

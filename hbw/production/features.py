@@ -150,7 +150,7 @@ def features_init(self: Producer) -> None:
     produces={
         features,
         "deltaR_ll", "ll_pt", "m_bb", "deltaR_bb", "bb_pt",
-        "MT", "min_dr_lljj", "delta_Phi", "m_lljjMET", 
+        "MT", "min_dr_lljj", "delta_Phi", "m_lljjMET",
         "m_ll_check", "E_miss", "charge", "wp_score", "E_miss", "wp_score",
     },
 )

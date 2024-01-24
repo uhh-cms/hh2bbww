@@ -105,10 +105,10 @@ class MLClassifierBase(MLModel):
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        columns = set(self.input_features)
-        if self.dataset_inst.is_mc:
-            # TODO: switch to full event weight
-            columns.add("normalization_weight")
+        columns = set(self.input_features) | {"normalization_weight"}
+        # if self.dataset_inst.is_mc:
+        # TODO: switch to full event weight
+        # ccolumns.add("normalization_weight")
         return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
@@ -585,15 +585,16 @@ class MLClassifierBase(MLModel):
 
         # determine truth label of the dataset (-1 if not used in training)
         ml_truth_label = -1
-        if events_used_in_training:
-            process_insts = []
-            for i, proc in enumerate(self.processes):
-                proc_inst = self.config_inst.get_process(proc)
-                proc_inst.x.ml_id = i
-                process_insts.append(proc_inst)
 
-            assign_dataset_to_process(task.dataset_inst, process_insts)
-            ml_truth_label = task.dataset_inst.x.ml_process.x.ml_id
+        # ml_truth_label = -1
+        # if events_used_in_training:
+        #    process_insts = []
+        #    for i, proc in enumerate(self.processes):
+        #        proc_inst = self.config_inst.get_process(proc)
+        #        proc_inst.x.ml_id = i
+        #        process_insts.append(proc_inst)
+        #    assign_dataset_to_process(task.dataset_inst, process_insts)
+        #    ml_truth_label = task.dataset_inst.x.ml_process.x.ml_id
 
         # store the ml truth label in the events
         events = set_ak_column(

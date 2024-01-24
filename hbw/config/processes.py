@@ -101,29 +101,28 @@ def add_hbw_processes(config: od.Config, campaign: od.Campaign):
             config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
             for kl in [0, 1, "2p45"]
         ]
-        sig = config.add_process(
-            name="sig",
+        ggHH_sig = config.add_process(
+            name="ggHH_sig",
             id=75835213,  # random number
             xsecs={
                 13: sum([proc.get_xsec(13) for proc in signal_processes]),
             },
-            label="signal",
+            label="signal (kl=0,1,2p45)",
         )
         for proc in signal_processes:
-            sig.add_process(proc)
-        
+            ggHH_sig.add_process(proc)
+ 
         signal_processes_all = [
             config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
             for kl in [0, 1, "2p45", 5]
         ]
-        sig_all = config.add_process(
-            name="sig_all",
+        ggHH_sig_all = config.add_process(
+            name="ggHH_sig_all",
             id=926816213,  # random number
             xsecs={
                 13: sum([proc.get_xsec(13) for proc in signal_processes_all]),
             },
-            label="signal all",
+            label="signal all kl",
         )
         for proc in signal_processes_all:
-            sig_all.add_process(proc)
->>>>>>> 57afd36 (Implementation DL analysis in newest framework)
+            ggHH_sig_all.add_process(proc)

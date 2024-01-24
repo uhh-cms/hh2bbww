@@ -29,7 +29,9 @@ from hbw.util import call_once_on_config
 
 import order as od
 
+
 logger = law.logger.get_logger(__name__)
+
 
 def name_fn(root_cats):
     cat_name = "__".join(cat.name for cat in root_cats.values())
@@ -45,6 +47,7 @@ def kwargs_fn(root_cats):
         },
     }
     return kwargs
+
 
 @call_once_on_config()
 def add_gen_categories(config: od.Config) -> None:
@@ -92,7 +95,7 @@ def add_categories_selection(config: od.Config) -> None:
     """
 
     # adds categories based on the existence of gen particles
-    add_gen_categories(config)
+    # add_gen_categories(config)
 
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
@@ -140,11 +143,12 @@ def add_categories_selection(config: od.Config) -> None:
         selection="catid_selection_emu",
         label="1 Electron 1 Muon",
     )
-    
+
     category_blocks = OrderedDict({
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
     })
 
+    """
     n_cats = create_category_combinations(
         config,
         category_blocks,
@@ -152,8 +156,7 @@ def add_categories_selection(config: od.Config) -> None:
         kwargs_fn=kwargs_fn,
         skip_existing=False,  # there should be no existing sub-categories
     )
-
-
+    """
 
 
 @call_once_on_config()
@@ -184,6 +187,7 @@ def add_categories_production(config: od.Config) -> None:
     # define additional 'main' categories
     #
 
+    """
     cat_resolved = config.add_category(
         name="resolved",
         id=10,
@@ -196,6 +200,7 @@ def add_categories_production(config: od.Config) -> None:
         selection="catid_boosted",
         label="boosted",
     )
+    """
 
     cat_1b = config.add_category(
         name="1b",
