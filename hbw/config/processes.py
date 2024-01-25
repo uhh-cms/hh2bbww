@@ -9,37 +9,6 @@ import order as od
 from scinum import Number
 
 
-def get_process_names_for_config(config: od.Config):
-    process_names = [
-        "data",
-        "data_mu",
-        "data_e",
-        "tt",
-        "st",
-        "w_lnu",
-        "dy_lep",
-        "qcd",
-        "qcd_mu",
-        "qcd_em",
-        "qcd_bctoe",
-        "ttv",
-        "vv",
-        "h",
-    ]
-
-    if config.has_tag("is_resonant"):
-        # add resonant signal processes/datasets
-        process_names.append("graviton_hh_ggf_bbww")
-        process_names.append("radion_hh_ggf_bbww")
-
-    if config.has_tag("is_nonresonant"):
-        # add nonresonant signal processes/datasets
-        for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
-            process_names.append(hh_proc)
-
-    return process_names
-
-
 def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwargs):
     """
     Helper function to create processes from multiple processes *child_procs*
@@ -84,9 +53,9 @@ def add_dummy_xsecs(config: od.Config, dummy_xsec: float = 0.1):
     # config.get_process("w_lnu").xsecs[13.6] = Number(5558.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&ordDirection=1&ordFieldName=process_name&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
 
     # temporary xsecs that were missing in xsdb
-    for proc in ("qcd_mu_pt170to300", "qcd_mu_pt470to600", "qcd_mu_pt1000"):
-        proc_inst = config.get_process(proc)
-        proc_inst.set_xsec(13.6, proc_inst.get_xsec(13))
+    # for proc in ("qcd_mu_pt170to300", "qcd_mu_pt470to600", "qcd_mu_pt1000"):
+    #     proc_inst = config.get_process(proc)
+    #     proc_inst.set_xsec(13.6, proc_inst.get_xsec(13))
 
 
 def configure_hbw_processes(config: od.Config):
