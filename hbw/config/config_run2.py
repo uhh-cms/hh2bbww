@@ -430,6 +430,7 @@ def add_config(
         cfg.add_tag("skip_btag_weights")
         cfg.add_tag("skip_electron_weights")
         cfg.add_tag("skip_muon_weights")
+        cfg.add_tag("skip_pu_weights")
         cfg.x.external_files.pop("electron_sf")
         cfg.x.external_files.pop("muon_sf")
         cfg.x.external_files.pop("btag_sf_corr")
@@ -572,7 +573,8 @@ def add_config(
         # NOTE: which to use, njet_btag_weight or btag_weight?
         cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
 
-    cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+    if not cfg.has_tag("skip_pu_weights"):
+        cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
 
     if not cfg.has_tag("skip_electron_weights"):
         cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
