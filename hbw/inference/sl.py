@@ -170,3 +170,42 @@ test = default.derive("test", cls_dict=cls_dict)
 # model but with different fit variable
 cls_dict["config_variable"] = lambda config_cat_inst: "jet1_pt"
 jet1_pt = default.derive("jet1_pt", cls_dict=cls_dict)
+
+
+#
+# 2022
+#
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["systematics"] = rate_systematics
+cls_dict["ml_model_name"] = "dense_22_full"
+cls_dict["dummy_kl_variation"] = True
+cls_dict["processes"] = [
+    # "ggHH_kl_0_kt_1_sl_hbbhww",
+    "ggHH_kl_1_kt_1_sl_hbbhww",
+    # "ggHH_kl_2p45_kt_1_sl_hbbhww",
+    # "ggHH_kl_5_kt_1_sl_hbbhww",
+    "tt",
+    # "ttv", "ttvv",
+    "st",
+    "dy_lep",
+    "w_lnu",
+    # "vv",
+    # "vvv",
+    # "qcd",
+    # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
+]
+cls_dict["config_categories"] = [
+    "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    # "1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "1e__ml_tt",
+    "1e__ml_st",
+    "1e__ml_v_lep",
+    "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    # "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "1mu__ml_tt",
+    "1mu__ml_st",
+    "1mu__ml_v_lep",
+]
+sl_22 = default.derive("sl_22", cls_dict=cls_dict)
