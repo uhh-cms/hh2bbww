@@ -214,6 +214,28 @@ cls_dict = {
 }
 dense_2022 = DenseClassifierSL.derive("dense_2022", cls_dict=cls_dict)
 
+cls_dict = {
+    "training_calibrators": lambda self, config_inst, requiested_calibrators: [],
+    "training_configs": lambda self, requested_configs: ["c22"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "dataset_names": {
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+        "st_tchannel_t_powheg",
+        "st_tchannel_tbar_powheg",
+        "st_twchannel_t_sl_powheg",
+        "st_twchannel_tbar_sl_powheg",
+        "st_twchannel_t_dl_powheg",
+        "st_twchannel_tbar_dl_powheg",
+        "st_twchannel_t_fh_powheg",
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "w_lnu_amcatnlo",
+        "dy_lep_m50_madgraph",
+    },
+}
+dense_22_full = DenseClassifierSL.derive("dense_22_full", cls_dict=cls_dict)
+
 # copies of the default DenseClassifierSL for testing hard-coded changes
 for i in range(10):
     dense_copy = DenseClassifierSL.derive(f"dense_{i}")
