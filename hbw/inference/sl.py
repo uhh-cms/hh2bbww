@@ -209,3 +209,15 @@ cls_dict["config_categories"] = [
     "1mu__ml_v_lep",
 ]
 sl_22 = default.derive("sl_22", cls_dict=cls_dict)
+
+cls_dict["systematics"] = cls_dict["systematics"] + [
+    "murf_envelope_tt",
+    "murf_envelope_st_schannel",
+    "murf_envelope_st_tchannel",
+    "murf_envelope_st_twchannel",
+    "murf_envelope_dy_lep",
+    "murf_envelope_w_lnu",
+    "murf_envelope_ttV",
+    "murf_envelope_VV",
+]
+sl_22 = default.derive("sl_22_shapes", cls_dict=cls_dict)
