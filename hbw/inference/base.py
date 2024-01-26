@@ -65,8 +65,9 @@ class HBWInferenceModelBase(InferenceModel):
 
     def cat_name(self: InferenceModel, config_cat_inst: od.Category):
         """ Function to determine inference category name from config category """
-        root_cats = config_cat_inst.x.root_cats
-        return "cat_" + "_".join(root_cats.values())
+        # Note: the name of the inference category cannot start with a Number
+        # -> use config category with single letter added at the start?
+        return f"cat_{config_cat_inst.name}"
 
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """

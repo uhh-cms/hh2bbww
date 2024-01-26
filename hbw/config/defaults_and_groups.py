@@ -156,13 +156,22 @@ def set_config_defaults_and_groups(config_inst):
     }
 
     # category groups for conveniently looping over certain categories
-    # (used during plotting)
+    # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
         "much": ["1mu", "1mu__resolved", "1mu__boosted"],
         "ech": ["1e", "1e__resolved", "1e__boosted"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
         "dilep": ["incl", "2e", "2mu", "emu"],
+        "SR": ("1e__ml_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "vbfSR": ("1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_resolved": ("1e__ml_resolved_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_resolved_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "SR_boosted": ("1e__ml_boosted_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_boosted_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "vbfSR_resolved": ("1e__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
+        "vbfSR_boosted": ("1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
+        "BR": ("1e__ml_tt", "1e__ml_st", "1e__ml_v_lep", "1mu__ml_tt", "1mu__ml_st", "1mu__ml_v_lep"),
+        "SR_dl": ("2e__ml_ggHH_kl_5_kt_1_dl_hbbhww", "2mu__ml_ggHH_kl_5_kt_1_dl_hbbhww"),
+        "BR_dl": ("2e__ml_t_bkg", "2e__ml_v_lep", "2mu__ml_t_bkg", "2mu__ml_v_lep"),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -265,21 +274,7 @@ def set_config_defaults_and_groups(config_inst):
         "cols": ["mli", "features"],
     }
 
-    # configuration regarding rebinning
-    config_inst.x.inference_category_groups = {
-        "SR": ("cat_1e_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "vbfSR": ("cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_resolved": ("cat_1e_resolved_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_resolved_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "SR_boosted": ("cat_1e_boosted_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_boosted_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "vbfSR_resolved": ("cat_1e_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-        "cat_1mu_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_boosted": ("cat_1e_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-        "cat_1mu_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "BR": ("cat_1e_tt", "cat_1e_st", "cat_1e_v_lep", "cat_1mu_tt", "cat_1mu_st", "cat_1mu_v_lep"),
-        "SR_dl": ("cat_2e_ggHH_kl_5_kt_1_dl_hbbhww", "cat_2mu_ggHH_kl_5_kt_1_dl_hbbhww"),
-        "BR_dl": ("cat_2e_t_bkg", "cat_2e_v_lep", "cat_2mu_t_bkg", "cat_2mu_v_lep"),
-    }
-
+    # groups are defined via config.x.category_groups
     config_inst.x.default_bins_per_category = {
         "SR": 10,
         # "vbfSR": 5,
@@ -290,14 +285,14 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_boosted": 3,
         # "SR_dl": 10,
         # "BR_dl": 3,
-        # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": 10,
-        # "cat_1e_tt": 3,
-        # "cat_1e_st": 3,
-        # "cat_1e_v_lep": 3,
-        # "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww": 10,
-        # "cat_1mu_tt": 3,
-        # "cat_1mu_st": 3,
-        # "cat_1mu_v_lep": 3,
+        # "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww": 10,
+        # "1e__ml_tt": 3,
+        # "1e__ml_st": 3,
+        # "1e__ml_v_lep": 3,
+        # "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww": 10,
+        # "1mu__ml_tt": 3,
+        # "1mu__ml_st": 3,
+        # "1mu__ml_v_lep": 3,
     }
 
     config_inst.x.inference_category_rebin_processes = {
@@ -306,12 +301,12 @@ def set_config_defaults_and_groups(config_inst):
         "BR": lambda proc_name: "hbbhww" not in proc_name,
         # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
         # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        # "cat_1e_tt": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1e_st": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1e_v_lep": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww":  ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        # "cat_1mu_tt": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1mu_st": lambda proc_name: "hbbhww" not in proc_name,
-        # "cat_1mu_v_lep": lambda proc_name: "hbbhww" not in proc_name,
+        # "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        # "1e__ml_tt": lambda proc_name: "hbbhww" not in proc_name,
+        # "1e__ml_st": lambda proc_name: "hbbhww" not in proc_name,
+        # "1e__ml_v_lep": lambda proc_name: "hbbhww" not in proc_name,
+        # "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww":  ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        # "1mu__ml_tt": lambda proc_name: "hbbhww" not in proc_name,
+        # "1mu__ml_st": lambda proc_name: "hbbhww" not in proc_name,
+        # "1mu__ml_v_lep": lambda proc_name: "hbbhww" not in proc_name,
     }
