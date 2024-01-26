@@ -43,10 +43,12 @@ def default_ml_model(cls, container, task_params):
 
 
 def ml_inputs_producer(cls, container, task_params):
-    if container.has_tag("is_sl"):
+    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
         ml_inputs = "ml_inputs"
-    elif container.has_tag("is_dl"):
+    if container.has_tag("is_dl"):
         ml_inputs = "dl_ml_inputs"
+    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
+        ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
 
 
@@ -246,6 +248,16 @@ def set_config_defaults_and_groups(config_inst):
         },
     }
 
+    # groups for custom plot styling
+    config_inst.x.custom_style_config_groups = {
+        "example": {
+            "legend_cfg": {"title": "my custom legend title", "ncols": 2},
+            "ax_cfg": {"ylabel": "my ylabel", "xlim": (0, 100)},
+            "rax_cfg": {"ylabel": "some other ylabel"},
+            "annotate_cfg": {"text": "category label usually here"},
+        },
+    }
+
     # CSP (calibrator, selector, producer) groups
     config_inst.x.producer_groups = {
         "mli": ["ml_inputs", "event_weights"],
@@ -257,6 +269,12 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.inference_category_groups = {
         "SR": ("cat_1e_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_ggHH_kl_1_kt_1_sl_hbbhww"),
         "vbfSR": ("cat_1e_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "cat_1mu_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_resolved": ("cat_1e_resolved_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_resolved_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "SR_boosted": ("cat_1e_boosted_ggHH_kl_1_kt_1_sl_hbbhww", "cat_1mu_boosted_ggHH_kl_1_kt_1_sl_hbbhww"),
+        "vbfSR_resolved": ("cat_1e_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        "cat_1mu_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_boosted": ("cat_1e_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        "cat_1mu_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": ("cat_1e_tt", "cat_1e_st", "cat_1e_v_lep", "cat_1mu_tt", "cat_1mu_st", "cat_1mu_v_lep"),
         "SR_dl": ("cat_2e_ggHH_kl_5_kt_1_dl_hbbhww", "cat_2mu_ggHH_kl_5_kt_1_dl_hbbhww"),
         "BR_dl": ("cat_2e_t_bkg", "cat_2e_v_lep", "cat_2mu_t_bkg", "cat_2mu_v_lep"),
@@ -266,6 +284,10 @@ def set_config_defaults_and_groups(config_inst):
         "SR": 10,
         "vbfSR": 5,
         "BR": 3,
+        "SR_resolved": 10,
+        "SR_boosted": 5,
+        "vbfSR_resolved": 5,
+        "vbfSR_boosted": 3,
         # "SR_dl": 10,
         # "BR_dl": 3,
         # "cat_1e_ggHH_kl_1_kt_1_sl_hbbhww": 10,
@@ -281,6 +303,10 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.inference_category_rebin_processes = {
         "SR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": lambda proc_name: "hbbhww" not in proc_name,
         # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
         # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,

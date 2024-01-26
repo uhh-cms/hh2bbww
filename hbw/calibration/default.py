@@ -4,72 +4,62 @@
 Calibration methods.
 """
 
+import law
+
 from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.jets import jec, jer
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.util import maybe_import
 
-from hbw.calibration.jet import jec_nominal
+from hbw.calibration.jet import jec_nominal, bjet_regression
 
 ak = maybe_import("awkward")
 
 
-@calibrator(
-    uses={deterministic_seeds},
-    produces={deterministic_seeds},
-)
-def default(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
-    events = self[deterministic_seeds](events, **kwargs)
-
-    if self.dataset_inst.is_data:
-        events = self[jec_nominal](events, **kwargs)
-    else:
-        events = self[jec](events, **kwargs)
-        events = self[jer](events, **kwargs)
-
-    return events
-
-
-@default.init
-def default_init(self: Calibrator) -> None:
-    if not getattr(self, "dataset_inst", None):
-        return
-
-    if self.dataset_inst.is_data:
-        calibrators = {jec_nominal}
-    else:
-        calibrators = {jec, jer}
-
-    self.uses |= calibrators
-    self.produces |= calibrators
+logger = law.logger.get_logger(__name__)
 
 
 @calibrator(
     uses={deterministic_seeds},
     produces={deterministic_seeds},
+    skip_jecunc=True,
+    bjet_regression=True,
 )
-def skip_jecunc(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
-    """ only uses jec_nominal for test purposes """
+def base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
 
-    if self.dataset_inst.is_data:
-        events = self[jec_nominal](events, **kwargs)
-    else:
-        events = self[jec_nominal](events, **kwargs)
-        events = self[jer](events, **kwargs)
+    logger.info(f"Running calibrators '{[calib.cls_name for calib in self.calibrators]}' (in that order)")
+    for calibrator_inst in self.calibrators:
+        events = self[calibrator_inst](events, **kwargs)
 
     return events
 
 
-@skip_jecunc.init
-def skip_jecunc_init(self: Calibrator) -> None:
+@base.init
+def base_init(self: Calibrator) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    if self.dataset_inst.is_data:
-        calibrators = {jec_nominal}
-    else:
-        calibrators = {jec_nominal, jer}
+    # list of calibrators to apply (in that order)
+    self.calibrators = []
 
-    self.uses |= calibrators
-    self.produces |= calibrators
+    if self.dataset_inst.is_data or self.skip_jecunc:
+        self.calibrators.append(jec_nominal)
+    else:
+        self.calibrators.append(jec)
+
+    if self.bjet_regression:
+        self.calibrators.append(bjet_regression)
+
+    if self.dataset_inst.is_mc:
+        # TODO: we might need to modify jer when using bjet calibration
+        self.calibrators.append(jer)
+
+    self.uses |= set(self.calibrators)
+    self.produces |= set(self.calibrators)
+
+
+default = base.derive("default", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
+skip_jecunc = base.derive("skip_jecunc", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
+with_b_reg = base.derive("with_b_reg", cls_dict=dict(skip_jecunc=True, bjet_regression=True))
+full = base.derive("full", cls_dict=dict(skip_jecunc=False, bjet_regression=True))

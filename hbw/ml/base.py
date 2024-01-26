@@ -105,7 +105,11 @@ class MLClassifierBase(MLModel):
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        return set(self.input_features) | {"normalization_weight"}
+        columns = set(self.input_features)
+        if self.dataset_inst.is_mc:
+            # TODO: switch to full event weight
+            columns.add("normalization_weight")
+        return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
@@ -643,6 +647,7 @@ class MLClassifierBase(MLModel):
                 inputs = remove_ak_column(inputs, var)
 
         # check that all input features are present and reorder them if necessary
+
         if diff := set(inputs.fields).difference(set(self.input_features)):
             raise Exception(f"Columns {diff} are not present in the ML input events")
         if tuple(inputs.fields) != input_features:

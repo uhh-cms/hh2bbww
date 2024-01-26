@@ -34,7 +34,8 @@ default_process_colors = {
     "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
     # "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
     "ggHH_kl_5_kt_1_sl_hbbhww": "#000080",  # navy
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
+    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#999999",  # grey
+    # "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
     "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
     "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green
     "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": "#984ea3",  # purple
@@ -45,7 +46,8 @@ default_process_colors = {
     "ggHH_kl_0_kt_1_dl_hbbhww": "#1b9e77",  # green2
     "ggHH_kl_2p45_kt_1_dl_hbbhww": "#d95f02",  # orange2
     "ggHH_kl_5_kt_1_dl_hbbhww": "#e7298a",  # pink2
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#e41a1c",  # red
+    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#999999",  # grey
+    # "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#e41a1c",  # red
     "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww": "#377eb8",  # blue
     "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww": "#4daf4a",  # green
     "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww": "#984ea3",  # purple
@@ -61,6 +63,12 @@ ml_labels = {
     "ggHH_kl_1_kt_1_dl_hbbhww": "ggHH (dl)",
     "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "qqHH (sl)",
     "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "qqHH (dl)",
+    "graviton_hh_ggf_bbww_m250": "grav250",
+    "graviton_hh_ggf_bbww_m350": "grav350",
+    "graviton_hh_ggf_bbww_m450": "grav450",
+    "graviton_hh_ggf_bbww_m600": "grav600",
+    "graviton_hh_ggf_bbww_m750": "grav750",
+    "graviton_hh_ggf_bbww_m1000": "grav1000",
     "st": "st",
     "w_lnu": "W",
     "dy_lep": "DY",
@@ -103,6 +111,12 @@ default_var_binning = {
     # Jet
     "btagDeepB": (40, 0, 1),
     "btagDeepFlavB": (40, 0, 1),
+    "qgl": (40, 0, 1),
+    "puId": (8, -0.5, 7.5),
+    "puIdDisc": (40, -2, 1),
+    "chHEF": (40, 0, 1),
+    "bRegRes": (80, -1, 1),
+    "bRegCorr": (80, 0, 2),
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
@@ -158,6 +172,10 @@ def quick_addvar(config: od.Config, obj: str, i: int, var: str):
     """
     Helper to quickly generate generic variable instances for variable *var* from
     the *i*th entry of some object *obj*
+
+    Variables are lowercase and have names in the format:
+    cf_{obj}{i}_{var}, where `obj` is the name of the given object, `i` is the index of the
+    object (starting at 1) and `var` is the variable of interest; example: cf_loosejet1_pt
     """
     config.add_variable(
         name=name.format(obj=obj, i=i + 1, var=var).lower(),

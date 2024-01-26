@@ -13,6 +13,7 @@ ak = maybe_import("awkward")
 
 from columnflow.columnar_util import EMPTY_FLOAT
 from hbw.util import call_once_on_config
+from hbw.config.styling import default_var_binning, default_var_unit
 
 
 @call_once_on_config()
@@ -136,6 +137,45 @@ def add_feature_variables(config: od.Config) -> None:
             binning=(40, 0, 1),
             x_title=r"FatJet %i $\tau_{21}$" % (i + 1),
         )
+
+
+@call_once_on_config()
+def add_neutrino_variables(config: od.Config) -> None:
+    """
+    Adds variables to a *config* that are produced as part of the `neutrino_reconstruction` producer.
+    """
+
+    for obj in ["Neutrino", "Neutrino1", "Neutrino2"]:
+        # pt and phi should be the same as MET, mass should always be 0
+        for var in ["pt", "eta", "phi", "mass"]:
+            config.add_variable(
+                name=f"{obj}_{var}",
+                expression=f"{obj}.{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+
+@call_once_on_config()
+def add_top_reco_variables(config: od.Config) -> None:
+    """
+    Adds variables to a *config* that are produced as part of the `top_reconstruction` producer.
+    """
+    # add neutrino variables aswell since the neutrino needs to be reconstructed anyway
+    add_neutrino_variables(config)
+
+    # add reconstructed top variables
+    for obj in ["tlep_hyp1", "tlep_hyp2"]:
+        # pt and phi should be the same as MET, mass should always be 0
+        for var in ["pt", "eta", "phi", "mass"]:
+            config.add_variable(
+                name=f"{obj}_{var}",
+                expression=f"{obj}.{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
 
 
 @call_once_on_config()

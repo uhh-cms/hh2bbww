@@ -2,6 +2,21 @@
 
 """
 Definition of categories.
+
+Categorizer modules (used to determine category masks) are defined in hbw.selection.categories
+
+Ids for combinations of categories are built as the sum of category ids.
+To avoid reusing category ids, each category block (e.g. leptons, jets, ...) uses ids of a different
+power of 10.
+
+power of 10 | category block
+
+0: free (only used for inclusive category)
+1: jet (resolved vs boosted)
+2: bjet (1 vs geq 2)
+3: lepton
+4: dnn
+5: gen-level leptons (not combined with other categories)
 """
 
 from collections import OrderedDict
@@ -18,10 +33,52 @@ logger = law.logger.get_logger(__name__)
 
 
 @call_once_on_config()
+def add_gen_categories(config: od.Config) -> None:
+    gen_0lep = config.add_category(  # noqa
+        name="gen_0lep",
+        id=100000,
+        selection="catid_gen_0lep",  # this should not be called!
+        label="No gen lepton",
+    )
+    gen_1lep = config.add_category(
+        name="gen_1lep",
+        id=200000,
+        label="1 gen lepton",
+    )
+    gen_1lep.add_category(
+        name="gen_1e",
+        id=300000,
+        selection="catid_gen_1e",
+        label="1 gen electron",
+    )
+    gen_1lep.add_category(
+        name="gen_1mu",
+        id=400000,
+        selection="catid_gen_1mu",
+        label="1 gen muon",
+    )
+    gen_1lep.add_category(
+        name="gen_1tau",
+        id=500000,
+        selection="catid_gen_1tau",
+        label="1 gen tau",
+    )
+    gen_2lep = config.add_category(  # noqa
+        name="gen_geq2lep",
+        id=600000,
+        selection="catid_geq_2_gen_leptons",
+        label=r"$\geq 2$ gen leptons",
+    )
+
+
+@call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
     """
+
+    # adds categories based on the existence of gen particles
+    add_gen_categories(config)
 
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
