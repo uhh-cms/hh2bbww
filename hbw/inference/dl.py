@@ -210,22 +210,22 @@ cls_dict["config_categories"] = [
     "2mu__2b__ml_tt",
     "2mu__2b__ml_st",
     #"2e__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "2e__1b__ml_w_lnu",
+    #"2e__1b__ml_w_lnu",
     "2e__1b__ml_dy_lep",
     #"2mu__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "emu__1b__ml_w_lnu",
+    #"emu__1b__ml_w_lnu",
     "emu__1b__ml_dy_lep",
     #"emu__1b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "2mu__1b__ml_w_lnu",
+    #"2mu__1b__ml_w_lnu",
     "2mu__1b__ml_dy_lep",
     #"2e__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "2e__2b__ml_w_lnu",
+    #"2e__2b__ml_w_lnu",
     "2e__2b__ml_dy_lep",
     #"2mu__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "emu__2b__ml_w_lnu",
+    #"emu__2b__ml_w_lnu",
     "emu__2b__ml_dy_lep",
     #"emu__2b__ml_ggHH_kl_0_kt_1_dl_hbbhww",
-    "2mu__2b__ml_w_lnu",
+    #"2mu__2b__ml_w_lnu",
     "2mu__2b__ml_dy_lep",
     "2e__1b__ml_ggHH_sig_all",
     "2mu__1b__ml_ggHH_sig_all",
@@ -247,7 +247,7 @@ cls_dict["config_categories"] = [
     #"2mu__2b__ml_ggHH_kl_2p45_kt_1_dl_hbbhww",
 ]
 
-cls_dict["ml_model_name"] = "dense_test_aachen_dl"
+cls_dict["ml_model_name"] = "dense_test_aachen_weights_dl"
 
 # minimal model for quick test purposes
 dl_test_aachen = dl.derive("dl_test_aachen", cls_dict=cls_dict)

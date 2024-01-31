@@ -273,7 +273,6 @@ class ModifyDatacardsFlatRebin(
         reqs = {
             "datacards": self.reqs.CreateDatacards.req(self),
         }
-
         return reqs
 
     def output(self):
@@ -361,3 +360,84 @@ class ModifyDatacardsFlatRebin(
                 problematic_bin_count = check_empty_bins(h_rebin)  # noqa
                 logger.info(f"Inserting histogram with name {key}")
                 out_file[key] = uproot.from_pyroot(h_rebin)
+
+
+class PrepareInferenceTaskCalls(
+    HBWTask,
+    InferenceModelMixin,
+    MLModelsMixin,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    """
+    Simple task that produces string to run certain tasks in Inference
+    """
+
+    # upstream requirements
+    reqs = Requirements(
+        ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
+    )
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["rebinned_datacards"] = self.reqs.ModifyDatacardsFlatRebin.req(self)
+
+        return reqs
+
+    def requires(self):
+        reqs = {
+            "rebinned_datacards": self.reqs.ModifyDatacardsFlatRebin.req(self),
+        }
+        return reqs
+
+    def output(self):
+        return {
+            "PlotUpperLimitsAtPoint": self.target("PlotUpperLimitsAtPoint.txt"),
+            "PlotUpperLimitsPoint": self.target("PlotUpperLimitsPoint.txt"),
+            "FitDiagnostics": self.target("FitDiagnostics.txt"),
+        }
+
+    def run(self):
+        inputs = self.input()
+        output = self.output()
+
+        # string that represents the version of datacards
+        identifier = "__".join([self.config, self.selector, self.inference_model, self.version])
+
+        # get the datacard names from the inputs
+        collection = inputs["rebinned_datacards"]["collection"]
+        card_fns = [collection[key]["card"].fn for key in collection.keys()]
+
+        # get the category names from the inference models
+        categories = self.inference_model_inst.categories
+        cat_names = [c.name for c in categories]
+
+        # combine category names with card fn to a single string
+        datacards = ",".join([f"{cat_name}={card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+
+        print("\n\n")
+        # creating upper limits for kl=1
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --multi-datacards {datacards} "
+            f"--datacard-names {identifier}"
+        )
+        print(cmd, "\n\n")
+        output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
+
+        # creating kl scan
+        cmd = (
+            f"law run PlotUpperLimits --version {identifier} --datacards {datacards} "
+            f"--xsec fb --y-log"
+        )
+        print(cmd, "\n\n")
+        output["PlotUpperLimitsPoint"].dump(cmd, formatter="text")
+
+        # running FitDiagnostics for Pre+Postfit plots
+        cmd = (
+            f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
+            f"--skip-b-only"
+        )
+        print(cmd, "\n\n")
+        output["FitDiagnostics"].dump(cmd, formatter="text")

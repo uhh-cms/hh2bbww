@@ -276,7 +276,8 @@ def sl(
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
-        results.steps.cleanup &
+        results.steps.noise_filter &
+        results.steps.good_vertex &
         (results.steps.Jet | results.steps.HbbJet_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
