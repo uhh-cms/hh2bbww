@@ -26,7 +26,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
-from hbw.selection.stats import hbw_increment_stats
+from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.util import four_vec
 
@@ -326,10 +326,10 @@ def pre_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        category_ids, hbw_increment_stats,
+        category_ids, hbw_increment_stats, hbw_selection_step_stats,
     },
     produces={
-        category_ids, hbw_increment_stats,
+        category_ids, hbw_increment_stats, hbw_selection_step_stats,
     },
     exposed=False,
 )
@@ -353,6 +353,7 @@ def post_selection(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
+    self[hbw_selection_step_stats](events, results, stats, **kwargs)
     self[hbw_increment_stats](events, results, stats, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
