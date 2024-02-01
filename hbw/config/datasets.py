@@ -34,9 +34,6 @@ data_mu = {
         "data_mu_f",
     ],
     "2022postEE": [
-        "data_mu_e",
-        "data_mu_f",
-        "data_mu_g",
     ],
 }
 
@@ -59,6 +56,11 @@ tt = {
         "tt_dl_powheg",
         "tt_fh_powheg",
     ],
+    "2022preEE": [
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+    ],
     "2022postEE": [
         "tt_sl_powheg",
         "tt_dl_powheg",
@@ -75,6 +77,18 @@ st = {
         "st_schannel_lep_amcatnlo",
         "st_schannel_had_amcatnlo",
     ],
+    "2022preEE": [
+        "st_tchannel_t_powheg",
+        "st_tchannel_tbar_powheg",
+        "st_twchannel_t_sl_powheg",
+        "st_twchannel_tbar_sl_powheg",
+        "st_twchannel_t_dl_powheg",
+        "st_twchannel_tbar_dl_powheg",
+        "st_twchannel_t_fh_powheg",
+        "st_twchannel_tbar_fh_powheg",
+        # "st_schannel_lep_amcatnlo",
+        # "st_schannel_had_amcatnlo",
+    ],
     "2022postEE": [
         "st_tchannel_t_powheg",
         "st_tchannel_tbar_powheg",
@@ -83,7 +97,7 @@ st = {
         "st_twchannel_t_dl_powheg",
         "st_twchannel_tbar_dl_powheg",
         "st_twchannel_t_fh_powheg",
-        # "st_twchannel_tbar_fh_powheg",  # currently not available
+        "st_twchannel_tbar_fh_powheg",
         # "st_schannel_lep_amcatnlo",
         # "st_schannel_had_amcatnlo",
     ],
@@ -103,6 +117,9 @@ w_lnu = {
     "2022postEE": [
         "w_lnu_amcatnlo",
     ],
+    "2022preEE": [
+        "w_lnu_amcatnlo",
+    ],
 }
 
 dy_lep = {
@@ -117,6 +134,9 @@ dy_lep = {
         "dy_lep_m50_ht2500_madgraph",
     ],
     "2022postEE": [
+        "dy_lep_m50_madgraph",
+    ],
+    "2022preEE": [
         "dy_lep_m50_madgraph",
     ],
 }
@@ -149,6 +169,20 @@ qcd_mu = {
         # # "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
         # "qcd_mu_pt800to1000_pythia",
         # "qcd_mu_pt1000_pythia",
+    ],
+    "2022preEE": [
+        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        "qcd_mu_pt20to30_pythia",
+        "qcd_mu_pt30to50_pythia",
+        "qcd_mu_pt50to80_pythia",
+        "qcd_mu_pt80to120_pythia",
+        "qcd_mu_pt120to170_pythia",
+        "qcd_mu_pt170to300_pythia",
+        "qcd_mu_pt300to470_pythia",
+        "qcd_mu_pt470to600_pythia",
+        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt800to1000_pythia",
+        "qcd_mu_pt1000_pythia",
     ],
 }
 
@@ -191,13 +225,21 @@ single_h = {
     ],
 }
 
+# cross sections still missing
 vv = {
     "2017": [
         # empty for now
     ],
-    "2022postEE": [
-        # empty for now
-    ],
+    # "2022preEE": [
+    #     "ww_pythia",
+    #     "wz_pythia",
+    #     "zz_pythia",
+    # ],
+    # "2022postEE": [
+    #     "ww_pythia",
+    #     "wz_pythia",
+    #     "zz_pythia",
+    # ],
 }
 
 ttv = {
@@ -216,9 +258,11 @@ ggHH_sl_hbbhww = {
         "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
         "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
     ],
+    "2022preEE": [
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+    ],
     "2022postEE": [
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-        # empty for now
     ],
 }
 
@@ -304,24 +348,24 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
     #
 
     dataset_names = DotDict.wrap(
-        data_mu=data_mu[cpn_tag],
-        data_e=data_e[cpn_tag],
-        tt=tt[cpn_tag],
-        st=st[cpn_tag],
-        w_lnu=w_lnu[cpn_tag],
-        dy_lep=dy_lep[cpn_tag],
-        qcd_mu=qcd_mu[cpn_tag],
-        qcd_em=qcd_em[cpn_tag],
-        qcd_bctoe=qcd_bctoe[cpn_tag],
-        single_h=single_h[cpn_tag],
-        vv=vv[cpn_tag],
-        ttv=ttv[cpn_tag],
-        ggHH_sl_hbbhww=ggHH_sl_hbbhww[cpn_tag],
-        ggHH_dl_hbbhww=ggHH_dl_hbbhww[cpn_tag],
-        qqHH_sl_hbbhww=qqHH_sl_hbbhww[cpn_tag],
-        qqHH_dl_hbbhww=qqHH_dl_hbbhww[cpn_tag],
-        graviton_hh_ggf_bbww=graviton_hh_ggf_bbww[cpn_tag],
-        radion_hh_ggf_bbww=radion_hh_ggf_bbww[cpn_tag],
+        data_mu=data_mu.get(cpn_tag, []),
+        data_e=data_e.get(cpn_tag, []),
+        tt=tt.get(cpn_tag, []),
+        st=st.get(cpn_tag, []),
+        w_lnu=w_lnu.get(cpn_tag, []),
+        dy_lep=dy_lep.get(cpn_tag, []),
+        qcd_mu=qcd_mu.get(cpn_tag, []),
+        qcd_em=qcd_em.get(cpn_tag, []),
+        qcd_bctoe=qcd_bctoe.get(cpn_tag, []),
+        single_h=single_h.get(cpn_tag, []),
+        vv=vv.get(cpn_tag, []),
+        ttv=ttv.get(cpn_tag, []),
+        ggHH_sl_hbbhww=ggHH_sl_hbbhww.get(cpn_tag, []),
+        ggHH_dl_hbbhww=ggHH_dl_hbbhww.get(cpn_tag, []),
+        qqHH_sl_hbbhww=qqHH_sl_hbbhww.get(cpn_tag, []),
+        qqHH_dl_hbbhww=qqHH_dl_hbbhww.get(cpn_tag, []),
+        graviton_hh_ggf_bbww=graviton_hh_ggf_bbww.get(cpn_tag, []),
+        radion_hh_ggf_bbww=radion_hh_ggf_bbww.get(cpn_tag, []),
     )
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
