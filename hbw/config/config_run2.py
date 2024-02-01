@@ -140,7 +140,6 @@ def add_config(
         jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
         jet_type = "AK4PFchs"
     elif cfg.x.run == 3:
-        # TODO: is that correct?
         jerc_campaign = f"Winter{year2}Run3"
         jet_type = "AK4PFPuppi"
 
@@ -214,7 +213,7 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
     # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
-        "campaign": jerc_campaign,
+        "campaign": jerc_campaign if cfg.x.run == 2 else f"JR_{jerc_campaign}",
         "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V1"}[year],
         "jet_type": jet_type,
     })

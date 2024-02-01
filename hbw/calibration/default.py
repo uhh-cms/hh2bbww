@@ -59,7 +59,7 @@ def base_init(self: Calibrator) -> None:
     self.produces |= set(self.calibrators)
 
 
-default = base.derive("default", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
+default = base.derive("default", cls_dict=dict(skip_jecunc=False, bjet_regression=False))
 skip_jecunc = base.derive("skip_jecunc", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
 with_b_reg = base.derive("with_b_reg", cls_dict=dict(skip_jecunc=True, bjet_regression=True))
 full = base.derive("full", cls_dict=dict(skip_jecunc=False, bjet_regression=True))
