@@ -18,6 +18,37 @@ ak = maybe_import("awkward")
 
 
 @selector(
+    uses={increment_stats, "mc_weight"},
+)
+def hbw_selection_step_stats(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    stats: dict,
+    **kwargs,
+) -> ak.Array:
+    """
+    Selector to increment stats
+    """
+    weight_map = {}
+    for step, mask in results.steps.items():
+        weight_map[f"num_events_step_{step}"] = mask
+    for step, mask in results.steps.items():
+        weight_map[f"sum_mc_weight_step_{step}"] = (events.mc_weight, mask)
+
+    self[increment_stats](
+        events,
+        results,
+        stats,
+        weight_map=weight_map,
+        group_map={},
+        **kwargs,
+    )
+
+    return events
+
+
+@selector(
     uses={increment_stats, event_weights_to_normalize},
 )
 def hbw_increment_stats(
@@ -27,6 +58,9 @@ def hbw_increment_stats(
     stats: dict,
     **kwargs,
 ) -> ak.Array:
+    """
+    Main selector to increment stats needed for weight normalization
+    """
     # collect important information from the results
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
