@@ -441,6 +441,12 @@ def add_config(
         cfg.x.external_files.pop("btag_sf_corr")
         cfg.x.external_files.pop("met_phi_corr")
 
+        # NOTE: we should mirror and gzip them
+        if campaign.x.EE == "pre":
+            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_schemaV2.json", "v1")  # noqa
+        elif campaign.x.EE == "post":
+            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022_EE/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_EE_schemaV2.json", "v1")  # noqa
+
     cfg.x.met_filters = {
         "Flag.goodVertices",
         "Flag.globalSuperTightHalo2016Filter",
