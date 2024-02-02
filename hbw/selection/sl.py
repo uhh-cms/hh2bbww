@@ -217,21 +217,21 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
         # Trigger choice based on year of data-taking (for now: only single trigger)
         self.e_trigger = {
-            2016: "Ele27_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon175")
-            2017: "Ele35_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-            2018: "Ele32_WPTight_Gsf",  # or "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Photon200")
-            2022: "Ele32_WPTight_Gsf",  # TODO
+            2016: "Ele27_WPTight_Gsf",
+            2017: "Ele35_WPTight_Gsf",
+            2018: "Ele32_WPTight_Gsf",
+            2022: "Ele30_WPTight_Gsf",  # source: https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIIISummary
         }[year]
         self.uses.add(f"HLT.{self.e_trigger}")
     if not self.mu_pt:
-        self.mu_pt = {2016: 25, 2017: 28, 2018: 25, 2022: 28}[year]
+        self.mu_pt = {2016: 25, 2017: 28, 2018: 25, 2022: 25}[year]
 
         # Trigger choice based on year of data-taking (for now: only single trigger)
         self.mu_trigger = {
             2016: "IsoMu24",  # or "IsoTkMu27")
             2017: "IsoMu27",
             2018: "IsoMu24",
-            2022: "IsoMu27",  # TODO
+            2022: "IsoMu24",  # source: https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2022
         }[year]
         self.uses.add(f"HLT.{self.mu_trigger}")
 
