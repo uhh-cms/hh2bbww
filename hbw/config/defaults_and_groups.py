@@ -166,8 +166,12 @@ def set_config_defaults_and_groups(config_inst):
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
-        "much": ["1mu", "1mu__resolved", "1mu__boosted"],
-        "ech": ["1e", "1e__resolved", "1e__boosted"],
+        "sl_much": ["1mu", "1mu__resolved", "1mu__boosted"],
+        "sl_ech": ["1e", "1e__resolved", "1e__boosted"],
+        "sl_much_resolved": ["1mu__resolved", "1mu__resolved__1b", "1mu__resolved__2b"],
+        "sl_ech_resolved": ["1e__resolved", "1e__resolved__1b", "1e__resolved__2b"],
+        "sl_much_boosted": ["1mu__boosted", "1mu_boosted__1b", "1mu_boosted__2b"],
+        "sl_ech_boosted": ["1e__boosted", "1e__boosted__1b", "1e__boosted__2b"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
         "dilep": ["incl", "2e", "2mu", "emu"],
@@ -185,6 +189,8 @@ def set_config_defaults_and_groups(config_inst):
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
+        "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
+        "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
