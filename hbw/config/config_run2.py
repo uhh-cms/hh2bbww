@@ -113,10 +113,16 @@ def add_config(
         })
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
     elif year == 2022:
-        cfg.x.luminosity = Number(26337, {
-            "lumi_13TeV_2022": 0.01j,
-            "lumi_13TeV_correlated": 0.006j,
-        })
+        if campaign.x.EE == "pre":
+            cfg.x.luminosity = Number(7971, {
+                "lumi_13TeV_2022": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
+        elif campaign.x.EE == "post":
+            cfg.x.luminosity = Number(26337, {
+                "lumi_13TeV_2022": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
 
