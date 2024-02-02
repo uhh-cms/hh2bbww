@@ -380,7 +380,6 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
     cpn_tag = str(config.x.cpn_tag)
     dataset_names = get_dataset_names(cpn_tag, as_list)
-
     # optionally switch to custom signal processes (only implemented for ggHH_sl)
     if config.has_tag("custom_signals"):
         dataset_names.ggHH_sl_hbbhww = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
@@ -399,9 +398,6 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
 
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
-    if campaign.x.year == 2022:
-        get_2023_hh_dataset(campaign)
-
     if campaign.x.year == 2017:
         # load custom produced datasets into campaign (2017 only!)
         get_custom_hh_2017_datasets(campaign)
@@ -420,7 +416,6 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
-
     # loop over all dataset names and add them to the config
     for dataset_name in list(itertools.chain(*dataset_names.values())):
         config.add_dataset(campaign.get_dataset(dataset_name))
@@ -469,20 +464,6 @@ def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = 
         elif config.campaign.x.year == 2017:
             # our default Run2 signal samples are EOY, so we have to skip golden json, certain met filter
             dataset.add_tag("is_eoy")
-
-
-def get_2023_hh_dataset(campaign: od.Campaign) -> None:
-    # load 2023 hh dataset into the campaign since we do not yet have HH datasets in the CMSDB
-    campaign.add_dataset(
-        name="ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-        id=14854361,
-        processes=[procs.ggHH_kl_1_kt_1_sl_hbbhww],
-        keys=[
-            "/GluGlutoHHto2B2WtoLNu2Q_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v2-v2/NANOAODSIM",  # noqa
-        ],
-        n_files=50,
-        n_events=495374,
-    )
 
 
 def get_custom_hh_2017_datasets(
