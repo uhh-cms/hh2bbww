@@ -24,7 +24,9 @@ class ControlPlotsSL(
     SelectorStepsMixin,
     CalibratorsMixin,
 ):
-
+    """
+    Helper task to produce default set of control plots
+    """
     def requires(self):
         reqs = {}
 
@@ -44,8 +46,6 @@ class ControlPlotsSL(
         return reqs
 
     def output(self):
-        # use the input also as output
-        # (makes it easier to fetch and delete outputs)
         return self.requires()
 
     def run(self):

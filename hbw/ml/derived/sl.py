@@ -206,7 +206,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 # 2022 ML Model
 cls_dict = {
     "training_calibrators": lambda self, config_inst, requiested_calibrators: [],
-    "training_configs": lambda self, requested_configs: ["c22"],
+    "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt"],
     "dataset_names": {
         "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_sl_powheg",
@@ -216,7 +216,7 @@ dense_2022 = DenseClassifierSL.derive("dense_2022", cls_dict=cls_dict)
 
 cls_dict = {
     "training_calibrators": lambda self, config_inst, requiested_calibrators: [],
-    "training_configs": lambda self, requested_configs: ["c22"],
+    "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
     "dataset_names": {
         "tt_sl_powheg",
