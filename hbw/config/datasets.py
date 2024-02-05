@@ -33,7 +33,14 @@ data_mu = {
         "data_mu_e",
         "data_mu_f",
     ],
+    "2022preEE": [
+        "data_mu_c",
+        "data_mu_d",
+    ],
     "2022postEE": [
+        "data_mu_e",
+        "data_mu_f",
+        "data_mu_g",
     ],
 }
 
@@ -45,8 +52,14 @@ data_e = {
         "data_e_e",
         "data_e_f",
     ],
+    "2022preEE": [
+        "data_egamma_c",
+        "data_egamma_d",
+    ],
     "2022postEE": [
-        # empty for now
+        "data_egamma_e",
+        "data_egamma_f",
+        "data_egamma_g",
     ],
 }
 
@@ -157,18 +170,18 @@ qcd_mu = {
         "qcd_mu_pt1000_pythia",
     ],
     "2022postEE": [
-        # # "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
-        # "qcd_mu_pt20to30_pythia",
-        # "qcd_mu_pt30to50_pythia",
-        # "qcd_mu_pt50to80_pythia",
-        # "qcd_mu_pt80to120_pythia",
-        # "qcd_mu_pt120to170_pythia",
-        # "qcd_mu_pt170to300_pythia",
-        # "qcd_mu_pt300to470_pythia",
-        # "qcd_mu_pt470to600_pythia",
-        # # "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
-        # "qcd_mu_pt800to1000_pythia",
-        # "qcd_mu_pt1000_pythia",
+        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        "qcd_mu_pt20to30_pythia",
+        "qcd_mu_pt30to50_pythia",
+        "qcd_mu_pt50to80_pythia",
+        "qcd_mu_pt80to120_pythia",
+        "qcd_mu_pt120to170_pythia",
+        "qcd_mu_pt170to300_pythia",
+        "qcd_mu_pt300to470_pythia",
+        "qcd_mu_pt470to600_pythia",
+        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt800to1000_pythia",
+        "qcd_mu_pt1000_pythia",
     ],
     "2022preEE": [
         "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
