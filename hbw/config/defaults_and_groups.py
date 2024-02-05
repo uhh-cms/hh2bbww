@@ -7,10 +7,7 @@ from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
 def default_calibrator(cls, container, task_params):
-    if container.get_aux("run") == 2:
-        return "skip_jecunc"
-    else:
-        return None
+    return "skip_jecunc"
 
 
 def default_selector(cls, container, task_params):
