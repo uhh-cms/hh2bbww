@@ -10,6 +10,8 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
 from columnflow.production.cms.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
+from columnflow.columnar_util import optional_column as optional
+
 from columnflow.util import maybe_import
 from hbw.util import has_tag
 
@@ -18,7 +20,7 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    uses={increment_stats, "mc_weight"},
+    uses={increment_stats, optional("mc_weight")},
 )
 def hbw_selection_step_stats(
     self: Selector,
@@ -33,8 +35,9 @@ def hbw_selection_step_stats(
     weight_map = {}
     for step, mask in results.steps.items():
         weight_map[f"num_events_step_{step}"] = mask
-    for step, mask in results.steps.items():
-        weight_map[f"sum_mc_weight_step_{step}"] = (events.mc_weight, mask)
+    if self.dataset_inst.is_mc:
+        for step, mask in results.steps.items():
+            weight_map[f"sum_mc_weight_step_{step}"] = (events.mc_weight, mask)
 
     self[increment_stats](
         events,
