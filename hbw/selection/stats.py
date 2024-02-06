@@ -11,13 +11,45 @@ from columnflow.selection.stats import increment_stats
 from columnflow.production.cms.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
 from columnflow.util import maybe_import
+from hbw.util import has_tag
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
 @selector(
-    uses={increment_stats, btag_weights, event_weights_to_normalize},
+    uses={increment_stats, "mc_weight"},
+)
+def hbw_selection_step_stats(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    stats: dict,
+    **kwargs,
+) -> ak.Array:
+    """
+    Selector to increment stats
+    """
+    weight_map = {}
+    for step, mask in results.steps.items():
+        weight_map[f"num_events_step_{step}"] = mask
+    for step, mask in results.steps.items():
+        weight_map[f"sum_mc_weight_step_{step}"] = (events.mc_weight, mask)
+
+    self[increment_stats](
+        events,
+        results,
+        stats,
+        weight_map=weight_map,
+        group_map={},
+        **kwargs,
+    )
+
+    return events
+
+
+@selector(
+    uses={increment_stats, event_weights_to_normalize},
 )
 def hbw_increment_stats(
     self: Selector,
@@ -26,6 +58,9 @@ def hbw_increment_stats(
     stats: dict,
     **kwargs,
 ) -> ak.Array:
+    """
+    Main selector to increment stats needed for weight normalization
+    """
     # collect important information from the results
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
@@ -49,10 +84,11 @@ def hbw_increment_stats(
         weight_map["sum_mc_weight_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
         weight_map["sum_mc_weight_selected_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
 
-        weight_columns = list(
-            set(self[event_weights_to_normalize].produced_columns) |
-            set(self[btag_weights].produced_columns),
-        )
+        weight_columns = set(self[event_weights_to_normalize].produced_columns)
+        if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+            # btag_weights are not produced and therefore need some manual care
+            weight_columns |= set(self[btag_weights].produced_columns)
+
         weight_columns = sorted([col.string_nano_column for col in weight_columns])
 
         # mc weight times correction weight (with variations) without any selection
@@ -102,6 +138,9 @@ def hbw_increment_stats(
 def hbw_increment_stats_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None):
         return
+
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {btag_weights}
 
     if self.dataset_inst.is_mc:
         self.uses |= {"mc_weight"}

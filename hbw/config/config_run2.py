@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Configuration of the Run 2 HH -> bbWW config.
+Configuration of the HH -> bbWW config.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from columnflow.util import DotDict
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
-from hbw.config.datasets import add_hbw_datasets, configure_hbw_datasets
-from hbw.config.processes import add_hbw_processes
+from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
+from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.util import four_vec
 
@@ -36,20 +36,34 @@ def add_config(
     limit_dataset_files: int | None = None,
 ) -> od.Config:
     # validations
-    assert campaign.x.year in [2016, 2017, 2018]
+    assert campaign.x.year in [2016, 2017, 2018, 2022]
     if campaign.x.year == 2016:
         assert campaign.x.vfp in ["pre", "post"]
+    if campaign.x.year == 2022:
+        assert campaign.x.EE in ["pre", "post"]
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
-    corr_postfix = f"{campaign.x.vfp}VFP" if year == 2016 else ""
 
-    if year != 2017:
-        raise NotImplementedError("For now, only 2017 campaign is fully implemented")
+    corr_postfix = ""
+    if year == 2016:
+        corr_postfix = f"{campaign.x.vfp}VFP"
+    elif year == 2022:
+        corr_postfix = f"{campaign.x.EE}EE"
+
+    if year != 2017 and year != 2022:
+        raise NotImplementedError("For now, only 2017 and 2022 campaign is implemented")
 
     # create a config by passing the campaign, so id and name will be identical
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
-    cfg.add_tag("is_run2")
+
+    # add some important tags to the config
+    cfg.x.cpn_tag = f"{year}{corr_postfix}"
+
+    if year in (2022, 2023):
+        cfg.x.run = 3
+    elif year in (2016, 2017, 2018):
+        cfg.x.run = 2
 
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
@@ -66,14 +80,16 @@ def add_config(
             1250, 1500, 1750, 2000, 2500, 3000,
         )
 
-    # add relevant processes to config
-    add_hbw_processes(cfg, campaign)
+    # add relevant processes and datasets to config
+    add_hbw_processes_and_datasets(cfg, campaign)
+
+    # configure processes in config
+    configure_hbw_processes(cfg)
 
     # set color of some processes
     stylize_processes(cfg)
 
-    # add and configure relevant datasets to config
-    add_hbw_datasets(cfg, campaign)
+    # configure datasets in config
     configure_hbw_datasets(cfg, limit_dataset_files)
 
     # lumi values in inverse pb
@@ -89,15 +105,30 @@ def add_config(
             "lumi_13TeV_1718": 0.006j,
             "lumi_13TeV_correlated": 0.009j,
         })
-    else:  # 2018
+    elif year == 2018:
         cfg.x.luminosity = Number(59830, {
             "lumi_13TeV_2017": 0.015j,
             "lumi_13TeV_1718": 0.002j,
             "lumi_13TeV_correlated": 0.02j,
         })
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
+    elif year == 2022:
+        if campaign.x.EE == "pre":
+            cfg.x.luminosity = Number(7971, {
+                "lumi_13TeV_2022": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
+        elif campaign.x.EE == "post":
+            cfg.x.luminosity = Number(26337, {
+                "lumi_13TeV_2022": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
+    else:
+        raise NotImplementedError(f"Luminosity for year {year} is not defined.")
 
     # minimum bias cross section in mb (milli) for creating PU weights, values from
     # https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData?rev=45#Recommended_cross_section
+    # TODO: changes in Run3?
     cfg.x.minbias_xs = Number(69.2, 0.046j)
 
     # whether to validate the number of obtained LFNs in GetDatasetLFNs
@@ -105,11 +136,23 @@ def add_config(
 
     # jec configuration
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
-    jerc_postfix = "APV" if year == 2016 and campaign.x.vfp == "post" else ""
+    jerc_postfix = ""
+    if year == 2016 and campaign.x.vfp == "post":
+        jerc_postfix = "APV"
+    elif year == 2022:
+        jerc_postfix = f"{campaign.x.EE}EE"
+
+    if cfg.x.run == 2:
+        jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
+        jet_type = "AK4PFchs"
+    elif cfg.x.run == 3:
+        jerc_campaign = f"Winter{year2}Run3"
+        jet_type = "AK4PFPuppi"
+
     cfg.x.jec = DotDict.wrap({
-        "campaign": f"Summer19UL{year2}{jerc_postfix}",
-        "version": {2016: "V7", 2017: "V5", 2018: "V5"}[year],
-        "jet_type": "AK4PFchs",
+        "campaign": jerc_campaign,
+        "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+        "jet_type": jet_type,
         "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
         "levels_for_type1_met": ["L1FastJet"],
         "uncertainty_sources": [
@@ -174,10 +217,11 @@ def add_config(
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
+    # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
-        "campaign": f"Summer19UL{year2}{jerc_postfix}",
-        "version": "JR" + {2016: "V3", 2017: "V2", 2018: "V2"}[year],
-        "jet_type": "AK4PFchs",
+        "campaign": jerc_campaign if cfg.x.run == 2 else f"JR_{jerc_campaign}",
+        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V1"}[year],
+        "jet_type": jet_type,
     })
 
     # JEC uncertainty sources propagated to btag scale factors
@@ -227,17 +271,17 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
-    btag_key = f"2016{campaign.x.vfp}" if year == 2016 else year
+    # TODO: add correct 2022 + 2022preEE WPs and sources
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016pre": 0.0508, "2016post": 0.0480, 2017: 0.0532, 2018: 0.0490}[btag_key],
-            "medium": {"2016pre": 0.2598, "2016post": 0.2489, 2017: 0.3040, 2018: 0.2783}[btag_key],
-            "tight": {"2016pre": 0.6502, "2016post": 0.6377, 2017: 0.7476, 2018: 0.7100}[btag_key],
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0480, "2022postEE": 0.0480}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2489, "2022postEE": 0.2489}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.6377, "2022postEE": 0.6377}[cfg.x.cpn_tag],  # noqa
         },
         "deepcsv": {
-            "loose": {"2016pre": 0.2027, "2016post": 0.1918, 2017: 0.1355, 2018: 0.1208}[btag_key],
-            "medium": {"2016pre": 0.6001, "2016post": 0.5847, 2017: 0.4506, 2018: 0.4168}[btag_key],
-            "tight": {"2016pre": 0.8819, "2016post": 0.8767, 2017: 0.7738, 2018: 0.7665}[btag_key],
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1918, "2022postEE": 0.1918}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.5847, "2022postEE": 0.5847}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.8767, "2022postEE": 0.8767}[cfg.x.cpn_tag],  # noqa
         },
     })
 
@@ -247,11 +291,11 @@ def add_config(
 
     # names of electron correction sets and working points
     # (used in the electron_sf producer)
-    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{year}{corr_postfix}", "wp80iso")
+    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
 
     # names of muon correction sets and working points
     # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}{corr_postfix}_UL")
+    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     # helper to add column aliases for both shifts of a source
     # TODO: switch to the columnflow function (but what happened to *selection_dependent*?)
@@ -361,28 +405,47 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+    if cfg.x.run == 2:
+        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+        corr_tag = f"{cfg.x.cpn_tag}_UL"
+    elif cfg.x.run == 3:
+        # TODO: Update when possible
+        json_mirror = "/afs/desy.de/user/p/paaschal/public/mirrors/jsonpog-integration"
+        corr_tag = f"{year}_Prompt"
+
     cfg.x.external_files = DotDict.wrap({
         # jet energy correction
-        "jet_jerc": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/jet_jerc.json.gz", "v1"),
+        "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
 
         # electron scale factors
-        "electron_sf": (f"{json_mirror}/POG/EGM/{year}{corr_postfix}_UL/electron.json.gz", "v1"),
+        "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
 
         # muon scale factors
-        "muon_sf": (f"{json_mirror}/POG/MUO/{year}{corr_postfix}_UL/muon_Z.json.gz", "v1"),
+        "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
 
         # btag scale factor
-        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{year}{corr_postfix}_UL/btagging.json.gz", "v1"),
+        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
 
         # met phi corrector
-        "met_phi_corr": (f"{json_mirror}/POG/JME/{year}{corr_postfix}_UL/met.json.gz", "v1"),
+        "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
     })
 
-    # external files with more complex year dependence
-    # TODO: generalize to different years
-    if year != 2017:
-        raise NotImplementedError("TODO: generalize external files to different years than 2017")
+    # temporary fix due to missing corrections in run 3
+    if cfg.x.run == 3:
+        cfg.add_tag("skip_btag_weights")
+        cfg.add_tag("skip_electron_weights")
+        cfg.add_tag("skip_muon_weights")
+        cfg.add_tag("skip_pu_weights")
+        cfg.x.external_files.pop("electron_sf")
+        cfg.x.external_files.pop("muon_sf")
+        cfg.x.external_files.pop("btag_sf_corr")
+        cfg.x.external_files.pop("met_phi_corr")
+
+        # NOTE: we should mirror and gzip them
+        if campaign.x.EE == "pre":
+            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_schemaV2.json", "v1")  # noqa
+        elif campaign.x.EE == "post":
+            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022_EE/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_EE_schemaV2.json", "v1")  # noqa
 
     cfg.x.met_filters = {
         "Flag.goodVertices",
@@ -394,27 +457,78 @@ def add_config(
         "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
         "Flag.eeBadScFilter",
     }
-    if cfg.has_tag("is_run3"):
-        cfg.x.noise_filter.add("ecalBadCalibFilter")
+    # if cfg.x.run == 3:
+    #     cfg.x.met_filters.add("ecalBadCalibFilter")
 
-    cfg.x.external_files.update(DotDict.wrap({
-        # files from TODO
-        "lumi": {
-            "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
-            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
-        },
+    # external files with more complex year dependence
+    # TODO: generalize to different years
+    if year not in (2017, 2022):
+        raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
-        # files from https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData?rev=44#Pileup_JSON_Files_For_Run_II # noqa
-        "pu": {
-            "json": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/pileup_latest.txt", "v1"),  # noqa
-            "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/435f0b04c0e318c1036a6b95eb169181bbbe8344/SimGeneral/MixingModule/python/mix_2017_25ns_UltraLegacy_PoissonOOTPU_cfi.py", "v1"),  # noqa
-            "data_profile": {
-                "nominal": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root", "v1"),  # noqa
-                "minbias_xs_up": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-72400ub-99bins.root", "v1"),  # noqa
-                "minbias_xs_down": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-66000ub-99bins.root", "v1"),  # noqa
+    if year == 2017:
+        cfg.x.external_files.update(DotDict.wrap({
+            # files from TODO
+            "lumi": {
+                "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
+                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
-        },
-    }))
+
+            # files from https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData?rev=44#Pileup_JSON_Files_For_Run_II # noqa
+            "pu": {
+                "json": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/pileup_latest.txt", "v1"),  # noqa
+                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/435f0b04c0e318c1036a6b95eb169181bbbe8344/SimGeneral/MixingModule/python/mix_2017_25ns_UltraLegacy_PoissonOOTPU_cfi.py", "v1"),  # noqa
+                "data_profile": {
+                    "nominal": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root", "v1"),  # noqa
+                    "minbias_xs_up": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-72400ub-99bins.root", "v1"),  # noqa
+                    "minbias_xs_down": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-66000ub-99bins.root", "v1"),  # noqa
+                },
+            },
+        }))
+    elif year == 2022 and campaign.x.EE == "pre":
+        cfg.x.external_files.update(DotDict.wrap({
+            # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
+            "lumi": {
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
+                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+            },
+            "pu": {
+                # "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileup_JSON.txt", "v1"),  # noqa
+                "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCDEFG/pileup_JSON.txt", "v1"),  # noqa
+                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/bb525104a7ddb93685f8ced6fed1ab793b2d2103/SimGeneral/MixingModule/python/Run3_2022_LHC_Simulation_10h_2h_cfi.py", "v1"),  # noqa
+                "data_profile": {
+                    # "nominal": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-69200ub-99bins.root", "v1"),  # noqa
+                    # "minbias_xs_up": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-72400ub-99bins.root", "v1"),  # noqa
+                    # "minbias_xs_down": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-66000ub-99bins.root", "v1"),  # noqa
+                    "nominal": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-69200ub-100bins.root", "v1"),  # noqa
+                    "minbias_xs_up": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-72400ub-100bins.root", "v1"),  # noqa
+                    "minbias_xs_down": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-66000ub-100bins.root", "v1"),  # noqa
+                },
+            },
+        }))
+    elif year == 2022 and campaign.x.EE == "post":
+        cfg.x.external_files.update(DotDict.wrap({
+            # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
+            "lumi": {
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
+                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+            },
+            "pu": {
+                # "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileup_JSON.txt", "v1"),  # noqa
+                "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCDEFG/pileup_JSON.txt", "v1"),  # noqa
+                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/bb525104a7ddb93685f8ced6fed1ab793b2d2103/SimGeneral/MixingModule/python/Run3_2022_LHC_Simulation_10h_2h_cfi.py", "v1"),  # noqa
+                "data_profile": {
+                    # data profiles were produced with 99 bins instead of 100 --> use custom produced data profiles instead  # noqa
+                    # "nominal": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-69200ub-99bins.root", "v1"),  # noqa
+                    # "minbias_xs_up": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-72400ub-99bins.root", "v1"),  # noqa
+                    # "minbias_xs_down": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-66000ub-99bins.root", "v1"),  # noqa
+                    "nominal": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-69200ub-100bins.root", "v1"),  # noqa
+                    "minbias_xs_up": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-72400ub-100bins.root", "v1"),  # noqa
+                    "minbias_xs_down": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-66000ub-100bins.root", "v1"),  # noqa
+                },
+            },
+        }))
+    else:
+        raise NotImplementedError(f"No lumi and pu files provided for year {year}")
 
     # columns to keep after certain steps
     # TODO: selector-dependent columns should either use the is_sl / is_dl tag or
@@ -455,6 +569,8 @@ def add_config(
 
     # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
     get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
+
+    # NOTE: the event_weights will be replaced with a weights_producer soon
     cfg.x.event_weights = DotDict()
 
     cfg.x.event_weights["normalization_weight"] = []
@@ -463,11 +579,17 @@ def add_config(
     #     if dataset.x("is_ttbar", False):
     #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
 
-    # NOTE: which to use, njet_btag_weight or btag_weight?
-    cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
-    cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-    cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
-    cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
+    if not cfg.has_tag("skip_btag_weights"):
+        # NOTE: which to use, njet_btag_weight or btag_weight?
+        cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
+
+    if not cfg.has_tag("skip_pu_weights"):
+        cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
+
+    if not cfg.has_tag("skip_electron_weights"):
+        cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
+    if not cfg.has_tag("skip_muon_weights"):
+        cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
 
     for dataset in cfg.datasets:
         dataset.x.event_weights = DotDict()

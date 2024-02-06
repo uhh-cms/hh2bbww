@@ -24,64 +24,52 @@ def add_feature_variables(config: od.Config) -> None:
 
     # Event properties
     config.add_variable(
-        name="n_jet",
+        name="features_n_jet",
+        expression=lambda events: ak.num(events.Jet.pt, axis=1),
         binning=(12, -0.5, 11.5),
         x_title="Number of jets",
+        aux={"inputs": {"Jet.pt"}},
         discrete_x=True,
     )
     config.add_variable(
-        name="n_deepjet",
+        name="features_n_deepjet",
         binning=(11, -0.5, 10.5),
         x_title="Number of deepjets",
         discrete_x=True,
     )
     config.add_variable(
-        name="n_fatjet",
+        name="features_n_fatjet",
         binning=(7, -0.5, 6.5),
         x_title="Number of fatjets",
         discrete_x=True,
     )
     config.add_variable(
-        name="n_hbbjet",
+        name="features_n_hbbjet",
         binning=(4, -0.5, 3.5),
         x_title="Number of hbbjets",
         discrete_x=True,
     )
     config.add_variable(
-        name="n_electron",
+        name="features_n_electron",
         binning=(4, -0.5, 3.5),
         x_title="Number of electrons",
         discrete_x=True,
     )
     config.add_variable(
-        name="n_muon",
+        name="features_n_muon",
         binning=(4, -0.5, 3.5),
         x_title="Number of muons",
         discrete_x=True,
     )
     config.add_variable(
-        name="n_bjet",
+        name="features_n_bjet",
         binning=(4, -0.5, 3.5),
         x_title="Number of bjets",
         discrete_x=True,
     )
     config.add_variable(
-        name="ht",
+        name="features_ht",
         binning=(40, 0, 1500),
-        x_title="HT",
-    )
-    config.add_variable(
-        name="ht_test",
-        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
-        binning=(40, 0, 1500),
-        unit="GeV",
-        x_title="HT",
-    )
-    config.add_variable(
-        name="ht_rebin",
-        expression="ht",
-        binning=[0, 80, 120, 160, 200, 240, 280, 320, 400, 500, 600, 800, 1200],
-        unit="GeV",
         x_title="HT",
     )
 
@@ -265,6 +253,92 @@ def add_variables(config: od.Config) -> None:
     )
 
     #
+    # Simple event properties
+    #
+
+    config.add_variable(
+        name="n_jet",
+        expression=lambda events: ak.num(events.Jet.pt, axis=1),
+        aux={"inputs": {"Jet.pt"}},
+        binning=(12, -0.5, 11.5),
+        x_title="Number of jets",
+        discrete_x=True,
+    )
+    deepjet_wps = config.x.btag_working_points.deepjet
+    config.add_variable(
+        name="n_deepjet_loose",
+        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
+        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+        binning=(7, -0.5, 6.5),
+        x_title="Number of deepjets (loose WP)",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_deepjet_medium",
+        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
+        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+        binning=(7, -0.5, 6.5),
+        x_title="Number of deepjets (medium WP)",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_deepjet_tight",
+        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
+        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+        binning=(7, -0.5, 6.5),
+        x_title="Number of deepjets (tight WP)",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_fatjet",
+        expression=lambda events: ak.num(events.FatJet.pt, axis=1),
+        aux={"inputs": {"FatJet.pt"}},
+        binning=(7, -0.5, 6.5),
+        x_title="Number of fatjets",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_hbbjet",
+        expression=lambda events: ak.num(events.HbbJet.pt, axis=1),
+        aux={"inputs": {"HbbJet.pt"}},
+        binning=(4, -0.5, 3.5),
+        x_title="Number of hbbjets",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_electron",
+        expression=lambda events: ak.num(events.Electron.pt, axis=1),
+        aux={"inputs": {"Electron.pt"}},
+        binning=(4, -0.5, 3.5),
+        x_title="Number of electrons",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_muon",
+        expression=lambda events: ak.num(events.Muon.pt, axis=1),
+        aux={"inputs": {"Muon.pt"}},
+        binning=(4, -0.5, 3.5),
+        x_title="Number of muons",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_bjet",
+        expression=lambda events: ak.num(events.Bjet.pt, axis=1),
+        aux={"inputs": {"Bjet.pt"}},
+        binning=(4, -0.5, 3.5),
+        x_title="Number of bjets",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="ht",
+        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
+        aux={"inputs": {"Jet.pt"}},
+        binning=(40, 0, 1200),
+        unit="GeV",
+        x_title="HT",
+    )
+
+    #
     # Object properties
     #
 
@@ -315,15 +389,13 @@ def add_variables(config: od.Config) -> None:
             unit="GeV",
             x_title=r"Jet %i mass" % (i + 1),
         )
-        """
-        config.add_variable(
-            name=f"jet{i+1}_btagDeepB",
-            expression=f"Jet.btagDeepB[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"Jet %i DeepCSV b+bb tag" % (i + 1),
-        )
-        """
+        # config.add_variable(
+        #     name=f"jet{i+1}_btagDeepB",
+        #     expression=f"Jet.btagDeepB[:,{i}]",
+        #     null_value=EMPTY_FLOAT,
+        #     binning=(40, 0, 1),
+        #     x_title=r"Jet %i DeepCSV b+bb tag" % (i + 1),
+        # )
         config.add_variable(
             name=f"jet{i+1}_btagDeepFlavB",
             expression=f"Jet.btagDeepFlavB[:,{i}]",

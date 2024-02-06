@@ -248,7 +248,7 @@ def add_ml_variables(config: od.Config) -> None:
             )
 
     for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",

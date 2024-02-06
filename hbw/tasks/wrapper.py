@@ -7,8 +7,9 @@ e.g. default sets of plots or datacards
 
 import law
 
+# from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin,  # SelectorStepsMixin, ProducersMixin, MLModelsMixin,
+    CalibratorsMixin, SelectorStepsMixin, ProducersMixin,  # , MLModelsMixin,
 )
 from columnflow.tasks.plotting import PlotVariables1D
 from columnflow.tasks.framework.remote import RemoteWorkflow
@@ -17,15 +18,51 @@ from hbw.tasks.base import HBWTask
 from columnflow.util import dev_sandbox
 
 
+class ControlPlotsSL(
+    HBWTask,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    """
+    Helper task to produce default set of control plots
+    """
+    def requires(self):
+        reqs = {}
+
+        for l_channel in ("mu", "e"):
+            for j_channel in ("resolved", "boosted"):
+                reqs[f"control_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
+                    self,
+                    processes=(f"d{l_channel}ch",),
+                    # processes=("ggHH_kl_1_kt_1_sl_hbbhww",),
+                    process_settings=[["scale_signal"]],
+                    variables=[f"sl_{j_channel}"],
+                    categories=(f"sl_{l_channel}ch_{j_channel}",),
+                    yscale="log",
+                    cms_label="pw",
+                )
+
+        return reqs
+
+    def output(self):
+        return self.requires()
+
+    def run(self):
+        pass
+
+
 class DefaultPlots(
     HBWTask,
     # MLModelsMixin,
     # ProducersMixin,
     # SelectorStepsMixin,
     CalibratorsMixin,
+    # we only add workflow mixins to be able to directly pass --workflow instead of --cf.PlotVariables1d-workflow
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    # TODO: this should be three separate tasks with one additional "wrapper"
     sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
 
     def create_branch_map(self):

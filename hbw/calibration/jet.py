@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import functools
 
-from columnflow.util import maybe_import, test_float
+from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column
 from columnflow.calibration.cms.jets import jec
 from columnflow.calibration import calibrator, Calibrator
@@ -60,7 +60,7 @@ def bjet_regression(
     default_jet_mask = (events.Jet.pt > 20)
     if self.btag_wp:
         btag_wp = self.btag_wp
-        if not test_float(self.btag_wp):
+        if not try_float(self.btag_wp):
             btag_wp = self.config_inst.x.btag_working_points.deepjet[self.btag_wp]
         default_jet_mask = default_jet_mask & (events.Jet.btagDeepFlavB > btag_wp)
 

@@ -23,7 +23,7 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
+class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     processes: list = [
         "ggHH_kl_1_kt_1_sl_hbbhww",
@@ -94,7 +94,7 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
     ]
 
     store_name: str = "inputs_inclusive"
@@ -203,9 +203,42 @@ class DenseClassifier(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         return ["ml_inputs"]
 
 
-# copies of the default DenseClassifier for testing hard-coded changes
+# 2022 ML Model
+cls_dict = {
+    "training_calibrators": lambda self, config_inst, requiested_calibrators: [],
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt"],
+    "dataset_names": {
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg", "tt_sl_powheg",
+    },
+}
+dense_2022 = DenseClassifierSL.derive("dense_2022", cls_dict=cls_dict)
+
+cls_dict = {
+    "training_calibrators": lambda self, config_inst, requiested_calibrators: [],
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "dataset_names": {
+        "tt_sl_powheg",
+        "tt_dl_powheg",
+        "tt_fh_powheg",
+        "st_tchannel_t_powheg",
+        "st_tchannel_tbar_powheg",
+        "st_twchannel_t_sl_powheg",
+        "st_twchannel_tbar_sl_powheg",
+        "st_twchannel_t_dl_powheg",
+        "st_twchannel_tbar_dl_powheg",
+        "st_twchannel_t_fh_powheg",
+        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "w_lnu_amcatnlo",
+        "dy_lep_m50_madgraph",
+    },
+}
+dense_22_full = DenseClassifierSL.derive("dense_22_full", cls_dict=cls_dict)
+
+# copies of the default DenseClassifierSL for testing hard-coded changes
 for i in range(10):
-    dense_copy = DenseClassifier.derive(f"dense_{i}")
+    dense_copy = DenseClassifierSL.derive(f"dense_{i}")
 
 cls_dict_test = {
     "epochs": 4,
@@ -218,15 +251,16 @@ cls_dict_test = {
 }
 
 # ML Model with reduced number of datasets
-dense_test = DenseClassifier.derive("dense_test", cls_dict=cls_dict_test)
+dense_test = DenseClassifierSL.derive("dense_test", cls_dict=cls_dict_test)
 
 # our default MLModel
-dense_default = DenseClassifier.derive("dense_default", cls_dict={})
+dense_default = DenseClassifierSL.derive("dense_default", cls_dict={})
 
-dense_max_iter_bs12 = DenseClassifier.derive(
+
+dense_max_iter_bs12 = DenseClassifierSL.derive(
     "dense_max_iter_bs12", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 12},
 )
-dense_max_iter_bs14 = DenseClassifier.derive(
+dense_max_iter_bs14 = DenseClassifierSL.derive(
     "dense_max_iter_bs14", cls_dict={"steps_per_epoch": "max_iter_valid", "batchsize": 2 ** 14},
 )
 
@@ -236,7 +270,7 @@ cls_dict = {
     "callbacks": {"backup", "checkpoint"},
 }
 
-dense_max_iter = DenseClassifier.derive("dense_max_iter", cls_dict=cls_dict)
+dense_max_iter = DenseClassifierSL.derive("dense_max_iter", cls_dict=cls_dict)
 
 # reduced set of input features (simplification of training process)
 inputs1 = [
@@ -253,54 +287,54 @@ inputs1 = [
 ]
 
 cls_dict["input_features"] = inputs1
-dense_inputs1 = DenseClassifier.derive("dense_inputs1", cls_dict=cls_dict)
-dense_inputs1_test = DenseClassifier.derive(
+dense_inputs1 = DenseClassifierSL.derive("dense_inputs1", cls_dict=cls_dict)
+dense_inputs1_test = DenseClassifierSL.derive(
     "dense_inputs1_test", cls_dict=law.util.merge_dicts(cls_dict, cls_dict_test),
 )
 
 # # for running the default setup with different numbers of epochs
 # for n_epochs in (5, 10, 20, 50, 100, 200, 500):
-#     _dnn = DenseClassifier.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
+#     _dnn = DenseClassifierSL.derive(f"dense_epochs_{n_epochs}", cls_dict={"epochs": n_epochs})
 
 # # for testing different number of nodes per layer
 # for n_nodes in (64, 128, 256, 512):
-#     _dnn = DenseClassifier.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
+#     _dnn = DenseClassifierSL.derive(f"dense_3x{n_nodes}", cls_dict={"layers": (n_nodes, n_nodes, n_nodes)})
 
 # # for testing different modes of handling negative weights
 # for negative_weights_mode in ("handle", "ignore", "abs"):
-#     _dnn = DenseClassifier.derive(
+#     _dnn = DenseClassifierSL.derive(
 #         f"dense_w_{negative_weights_mode}",
 #         cls_dict={"negative_weights": negative_weights_mode},
 #     )
 
 # # for testing different learning rates
 # for learningrate in (0.05000, .00500, 0.00050, 0.00010, 0.00005, 0.00001):
-#     _dnn = DenseClassifier.derive(
+#     _dnn = DenseClassifierSL.derive(
 #         f"dense_lr_{str(learningrate).replace('.', 'p')}",
 #         cls_dict={"learningrate": learningrate},
 #     )
 
 # # for testing different batchsizes
 # for batchsize in (11, 12, 13, 14, 15, 16, 17):
-#     _dnn = DenseClassifier.derive(
+#     _dnn = DenseClassifierSL.derive(
 #         f"dense_bs_2pow{batchsize}",
 #         cls_dict={"batchsize": 2 ** batchsize},
 #     )
 
 # # for testing different dropout rates
 # for dropout in (0, 0.1, 0.2, 0.3, 0.4, 0.5):
-#     _dnn = DenseClassifier.derive(
+#     _dnn = DenseClassifierSL.derive(
 #         f"dense_dropout_{str(dropout).replace('.', 'p')}",
 #         cls_dict={"dropout": dropout},
 #     )
 
 # # for testing different weights between signal and backgrounds
 # for bkg_weight in (1, 2, 4, 8, 16):
-#     ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifier.processes}
+#     ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifierSL.processes}
 #     ml_process_weights["ggHH_kl_1_kt_1_sl_hbbhww"] = 1
-#     _dnn = DenseClassifier.derive(
+#     _dnn = DenseClassifierSL.derive(
 #         f"dense_bkgw_{str(bkg_weight)}",
 #         cls_dict={"ml_process_weights": ml_process_weights},
 #     )
 
-logger.info(f"Number of derived DenseClassifiers: {len(DenseClassifier._subclasses)}")
+logger.info(f"Number of derived DenseClassifierSLs: {len(DenseClassifierSL._subclasses)}")

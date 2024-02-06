@@ -6,6 +6,10 @@ from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
+def default_calibrator(cls, container, task_params):
+    return "skip_jecunc"
+
+
 def default_selector(cls, container, task_params):
     if container.has_tag("is_sl"):
         selector = "sl"
@@ -89,6 +93,7 @@ def default_producers(cls, container, task_params):
 
 def set_config_defaults_and_groups(config_inst):
     """ Configuration function that sets all the defaults and groups in the config_inst """
+    year = config_inst.campaign.x.year
 
     # define the default dataset and process based on the analysis tags
     signal_tag = "sl" if config_inst.has_tag("is_sl") else "dl"
@@ -107,11 +112,11 @@ def set_config_defaults_and_groups(config_inst):
 
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    config_inst.x.default_calibrator = "skip_jecunc"
+    config_inst.x.default_calibrator = default_calibrator
     config_inst.x.default_selector = default_selector
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
-    config_inst.x.default_inference_model = "default"
+    config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl"]
     config_inst.x.default_variables = ["jet1_pt"]
 
@@ -158,8 +163,12 @@ def set_config_defaults_and_groups(config_inst):
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
-        "much": ["1mu", "1mu__resolved", "1mu__boosted"],
-        "ech": ["1e", "1e__resolved", "1e__boosted"],
+        "sl_much": ["1mu", "1mu__resolved", "1mu__boosted"],
+        "sl_ech": ["1e", "1e__resolved", "1e__boosted"],
+        "sl_much_resolved": ["1mu__resolved", "1mu__resolved__1b", "1mu__resolved__2b"],
+        "sl_ech_resolved": ["1e__resolved", "1e__resolved__1b", "1e__resolved__2b"],
+        "sl_much_boosted": ["1mu__boosted", "1mu_boosted__1b", "1mu_boosted__2b"],
+        "sl_ech_boosted": ["1e__boosted", "1e__boosted__1b", "1e__boosted__2b"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
         "dilep": ["incl", "2e", "2mu", "emu"],
@@ -177,6 +186,8 @@ def set_config_defaults_and_groups(config_inst):
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
+        "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
+        "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet

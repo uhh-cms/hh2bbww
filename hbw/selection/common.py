@@ -21,10 +21,12 @@ from columnflow.selection.cms.json_filter import json_filter
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
+from columnflow.production.cms.seeds import deterministic_seeds
+
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
-from hbw.selection.stats import hbw_increment_stats
+from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 from hbw.util import four_vec
 
@@ -55,7 +57,7 @@ def vbf_jet_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
 
     # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet.pt))
 
     # default requirements for vbf jets (pt, eta and no H->bb jet)
     # NOTE: we might also want to remove the two H->jj jet candidates
@@ -279,6 +281,10 @@ def pre_selection(
     # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
     events = ak.fill_none(events, EMPTY_FLOAT)
 
+    # run deterministic seeds when no Calibrator has been requested
+    if not self.task.calibrators:
+        events = self[deterministic_seeds](events, **kwargs)
+
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
@@ -311,12 +317,19 @@ def pre_selection(
     return events, results
 
 
+@pre_selection.init
+def pre_selection_init(self: Selector) -> None:
+    if self.task and not self.task.calibrators:
+        self.uses.add(deterministic_seeds)
+        self.produces.add(deterministic_seeds)
+
+
 @selector(
     uses={
-        category_ids, hbw_increment_stats,
+        category_ids, hbw_increment_stats, hbw_selection_step_stats,
     },
     produces={
-        category_ids, hbw_increment_stats,
+        category_ids, hbw_increment_stats, hbw_selection_step_stats,
     },
     exposed=False,
 )
@@ -340,6 +353,7 @@ def post_selection(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
+    self[hbw_selection_step_stats](events, results, stats, **kwargs)
     self[hbw_increment_stats](events, results, stats, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
