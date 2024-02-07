@@ -94,8 +94,19 @@ def sl_jet_selection(
     )
 
 
+@sl_jet_selection.init
+def sl_jet_selection_init(self: Selector) -> None:
+    # Note: we might need to add this to other Selectors aswell
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag(("jec", "jer"))
+    }
+
+
 @selector(
     uses={
+        "MET.pt", "MET.phi",
         "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
         "Electron.cutBased", optional("Electron.mvaFall17V2Iso_WP80"), optional("Electron.mvaIso_WP80"),
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
