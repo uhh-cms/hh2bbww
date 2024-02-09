@@ -96,4 +96,3 @@ def pu_weight_from_correctionlib_setup(
     # check versions
     if self.pileup_corrector.version not in (0,):
         raise Exception(f"unsuppprted pileup corrector version {self.pileup_corrector.version}")
-
