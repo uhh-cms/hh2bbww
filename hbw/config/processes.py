@@ -129,7 +129,7 @@ def configure_hbw_processes(config: od.Config):
             sig.add_process(proc)
 
     # add auxiliary information if process is signal
-    for proc_inst in config.processes:
+    for proc_inst, _, _ in config.walk_processes():
         is_signal = any([
             signal_tag in proc_inst.name
             for signal_tag in ("qqHH", "ggHH", "radion", "gravition")
