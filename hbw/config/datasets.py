@@ -170,7 +170,7 @@ qcd_mu = {
         "qcd_mu_pt1000_pythia",
     ],
     "2022postEE": [
-        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        # "qcd_mu_pt15to20_pythia",  # empty after selection
         "qcd_mu_pt20to30_pythia",
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
@@ -179,12 +179,12 @@ qcd_mu = {
         "qcd_mu_pt170to300_pythia",
         "qcd_mu_pt300to470_pythia",
         "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
         "qcd_mu_pt1000_pythia",
     ],
     "2022preEE": [
-        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        "qcd_mu_pt15to20_pythia",
         "qcd_mu_pt20to30_pythia",
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
@@ -193,7 +193,7 @@ qcd_mu = {
         "qcd_mu_pt170to300_pythia",
         "qcd_mu_pt300to470_pythia",
         "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
         "qcd_mu_pt1000_pythia",
     ],
@@ -211,7 +211,22 @@ qcd_em = {
         "qcd_em_pt300toInf_pythia",
     ],
     "2022postEE": [
-        # empty for now
+        "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
+        "qcd_em_pt30to50_pythia",
+        "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia",
+        "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia",
+        "qcd_em_pt300toInf_pythia",
+    ],
+    "2022preEE": [
+        "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
+        "qcd_em_pt30to50_pythia",
+        "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia",
+        "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia",
+        "qcd_em_pt300toInf_pythia",
     ],
 }
 
