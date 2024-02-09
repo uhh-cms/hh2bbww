@@ -31,7 +31,7 @@ ZERO_PADDING_VALUE = -10
 
 @producer(
     uses={
-        category_ids, event_weights,
+        category_ids,
         prepare_objects,
         "HbbJet.msoftdrop",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
@@ -39,15 +39,11 @@ ZERO_PADDING_VALUE = -10
         {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
     produces={
-        category_ids, event_weights,
+        category_ids,
         # other produced columns set in the init function
     },
 )
 def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
-
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
 
