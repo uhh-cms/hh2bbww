@@ -12,7 +12,7 @@ from typing import Tuple
 import law
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT, get_ak_routes
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -42,6 +42,22 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
     """
     indices = ak.argsort(sort_var, axis=-1, ascending=ascending)
     return indices[mask[indices]]
+
+
+@selector(
+    uses={"*"},
+    exposed=True,
+)
+def check_columns(
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    routes = get_ak_routes(events)  # noqa
+    from hbw.util import debugger
+    debugger()
+    raise Exception("This Selector is only for checking nano content")
 
 
 @selector(
