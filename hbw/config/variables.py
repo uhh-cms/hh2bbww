@@ -267,7 +267,7 @@ def add_variables(config: od.Config) -> None:
     deepjet_wps = config.x.btag_working_points.deepjet
     config.add_variable(
         name="n_deepjet_loose",
-        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
+        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
         aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
         binning=(7, -0.5, 6.5),
         x_title="Number of deepjets (loose WP)",
@@ -275,7 +275,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_deepjet_medium",
-        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
+        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
         aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
         binning=(7, -0.5, 6.5),
         x_title="Number of deepjets (medium WP)",
@@ -283,7 +283,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_deepjet_tight",
-        expression=lambda events: ak.num(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
+        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
         aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
         binning=(7, -0.5, 6.5),
         x_title="Number of deepjets (tight WP)",
