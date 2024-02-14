@@ -34,7 +34,7 @@ class ControlPlotsSL(
             for j_channel in ("resolved", "boosted"):
                 reqs[f"control_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
                     self,
-                    processes=(f"{l_channel}ch",),
+                    processes=(f"d{l_channel}ch",),
                     # processes=("ggHH_kl_1_kt_1_sl_hbbhww",),
                     process_settings=[["scale_signal"]],
                     variables=[f"sl_{j_channel}"],
@@ -150,7 +150,6 @@ class DefaultPlots(
         return reqs
 
     def output(self):
-
         # use the input also as output
         # (makes it easier to fetch and delete outputs)
         return self.requires()
