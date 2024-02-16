@@ -11,8 +11,8 @@ from typing import Tuple
 
 import law
 
-from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT, get_ak_routes
+from columnflow.util import maybe_import, DotDict
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT, get_ak_routes, optional_column as optional
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -58,6 +58,328 @@ def check_columns(
     from hbw.util import debugger
     debugger()
     raise Exception("This Selector is only for checking nano content")
+
+
+@selector(
+    uses=four_vec("Jet", {"jetId"}) | {optional("Jet.puId")},
+    exposed=True,
+    b_tagger="deepjet",
+    btag_wp="medium",
+)
+def jet_selection(
+    self: Selector,
+    events: ak.Array,
+    lepton_results: SelectionResult,
+    stats: defaultdict,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    """
+    Central definition of Jets in HH(bbWW)
+    """
+
+    steps = DotDict()
+
+    # assign local index to all Jets
+    events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
+
+    # default jet definition
+    jet_mask = (
+        (events.Jet.pt >= 25) &
+        (abs(events.Jet.eta) <= 2.4) &
+        (events.Jet.jetId >= 2) &  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+        ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
+    )
+
+    # apply loose Jet puId to jets with pt below 50 GeV (not in Run3 samples so skip this for now)
+    if self.config_inst.x.run == 2:
+        jet_pu_mask = (events.Jet.puId >= 4) | (events.Jet.pt > 50)
+        jet_mask = jet_mask & jet_pu_mask
+
+    # get the jet indices for pt-sorting of jets
+    jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
+
+    # add jet steps
+    events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
+    steps["nJet1"] = events.cutflow.n_jet >= 1
+    steps["nJet2"] = events.cutflow.n_jet >= 2
+    steps["nJet3"] = events.cutflow.n_jet >= 3
+    steps["nJet4"] = events.cutflow.n_jet >= 4
+
+    # define btag mask
+    wp_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
+    b_score = events.Jet[self.config_inst.x.btag_column]
+    btag_mask = (jet_mask) & (b_score >= wp_score)
+
+    # add btag steps
+    events = set_ak_column(events, "cutflow.n_btag", ak.sum(btag_mask, axis=1))
+    steps["nBjet1"] = events.cutflow.n_btag >= 1
+    steps["nBjet2"] = events.cutflow.n_btag >= 2
+
+    # define b-jets as the two b-score leading jets, b-score sorted
+    bjet_indices = masked_sorted_indices(jet_mask, b_score)[:, :2]
+
+    # define lightjets as all non b-jets, pt-sorted
+    b_idx = ak.fill_none(ak.pad_none(bjet_indices, 2), -1)
+    lightjet_indices = jet_indices[(jet_indices != b_idx[:, 0]) & (jet_indices != b_idx[:, 1])]
+
+    # build and return selection results plus new columns
+    return events, SelectionResult(
+        steps=steps,
+        objects={
+            "Jet": {
+                "Jet": jet_indices,
+                "Bjet": bjet_indices,
+                "Lightjet": lightjet_indices,
+            },
+        },
+        aux={
+            "jet_mask": jet_mask,
+            "n_central_jets": ak.num(jet_indices),
+        },
+    )
+
+
+@jet_selection.init
+def jet_selection_init(self: Selector) -> None:
+    # set the main b_tagger + working point as defined from the selector
+    self.config_inst.x.b_tagger = self.b_tagger
+    self.config_inst.x.btag_wp = self.btag_wp
+
+    self.btag_column = self.config_inst.x.btag_column = {
+        "deepjet": "btagDeepFlavB",
+        "particlenet": "btagPNetB",
+    }.get(self.config_inst.x.b_tagger, self.config_inst.x.b_tagger)
+
+    self.uses.add(f"Jet.{self.config_inst.x.btag_column}")
+
+    # update selector steps labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "nJet1": r"$N_{jets}^{AK4} \geq 1$",
+        "nJet2": r"$N_{jets}^{AK4} \geq 2$",
+        "nJet3": r"$N_{jets}^{AK4} \geq 3$",
+        "nJet4": r"$N_{jets}^{AK4} \geq 4$",
+        "nBjet1": r"$N_{jets}^{BTag} \geq 1$",
+        "nBjet2": r"$N_{jets}^{BTag} \geq 2$",
+    })
+
+    if self.config_inst.x("do_cutflow_features", False):
+        # add cutflow features to *produces* only when requested
+        self.produces.add("cutflow.n_jet")
+        self.produces.add("cutflow.n_btag")
+
+        # create variable instances
+        self.config_inst.add_variable(
+            name="cf_n_jet",
+            expression="cutflow.n_jet",
+            binning=(7, -0.5, 6.5),
+            x_title="Number of jets",
+            discrete_x=True,
+        )
+        self.config_inst.add_variable(
+            name="cf_n_btag",
+            expression="cutflow.n_btag",
+            binning=(7, -0.5, 6.5),
+            x_title=f"Number of b-tagged jets ({self.b_tagger}, {self.btag_wp} WP)",
+            discrete_x=True,
+        )
+
+
+@selector(
+    uses=(
+        four_vec("Electron", {
+            "dxy", "dz", "miniPFRelIso_all", "sip3d", "cutBased", "lostHits",  # Electron Preselection
+            "mvaIso_WP90",  # used as replacement for "mvaNoIso_WPL" in Preselection
+            "mvaTTH", "jetRelIso",  # cone-pt
+            "deltaEtaSC", "sieie", "hoe", "eInvMinusPInv", "convVeto", "jetIdx",  # Fakeable Electron
+        }) |
+        four_vec("Muon", {
+            "dxy", "dz", "miniPFRelIso_all", "sip3d", "looseId",  # Muon Preselection
+            "mediumId", "mvaTTH", "jetRelIso",  # cone-pt
+            "jetIdx",  # Fakeable Muon
+        }) |
+        four_vec("Tau", {
+            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet",
+        }) | {
+            jet_selection,  # the jet_selection init needs to be run to set the correct b_tagger
+        }
+    ),
+    produces={"Electron.cone_pt", "Muon.cone_pt"},
+)
+def lepton_definition(
+        self: Selector,
+        events: ak.Array,
+        stats: defaultdict,
+        synchronization: bool = True,
+        **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+    """
+    Central definition of Leptons in HH(bbWW)
+    """
+    # initialize dicts for the selection steps
+    steps = DotDict()
+
+    # reconstruct relevant variables
+    events = set_ak_column(events, "Electron.cone_pt", ak.where(
+        events.Electron.mvaTTH > 0.30,
+        events.Electron.pt,
+        0.9 * events.Electron.pt * (1.0 + events.Electron.jetRelIso),
+    ))
+    events = set_ak_column(events, "Muon.cone_pt", ak.where(
+        (events.Muon.mediumId & (events.Muon.mvaTTH > 0.50)),
+        events.Muon.pt,
+        0.9 * events.Muon.pt * (1.0 + events.Muon.jetRelIso),
+    ))
+
+    electron = events.Electron
+    muon = events.Muon
+
+    # preselection masks
+    e_mask_loose = (
+        (electron.cone_pt >= 7) &
+        (abs(electron.eta) <= 2.5) &
+        (abs(electron.dxy) <= 0.05) &
+        (abs(electron.dz) <= 0.1) &
+        (electron.sip3d <= 8) &
+        (electron.mvaIso_WP90) &  # TODO: replace when possible
+        # (electron.mvaNoIso_WPL) &  # missing
+        (electron.lostHits <= 1)
+    )
+    mu_mask_loose = (
+        (muon.cone_pt >= 5) &
+        (abs(muon.eta) <= 2.4) &
+        (abs(muon.dxy) <= 0.05) &
+        (abs(muon.dz) <= 0.1) &
+        (muon.miniPFRelIso_all <= 0.4) &
+        (muon.sip3d <= 8) &
+        (muon.looseId)
+    )
+
+    # lepton invariant mass cuts
+    loose_leptons = ak.concatenate([
+        events.Electron[e_mask_loose] * 1,
+        events.Muon[mu_mask_loose] * 1,
+    ], axis=1)
+
+    lepton_pairs = ak.combinations(loose_leptons, 2)
+    l1, l2 = ak.unzip(lepton_pairs)
+    lepton_pairs["m_inv"] = (l1 + l2).mass
+
+    steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
+    steps["ll_zmass_veto"] = ~ak.any((lepton_pairs.m_inv >= 81.2) & (lepton_pairs.m_inv <= 101.2), axis=1)
+
+    # get the correct btag WPs and column from the config (as setup by jet_selection)
+    btag_wp_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
+    btag_tight_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger]["tight"]
+    btag_column = self.config_inst.x.btag_column
+
+    # TODO: I am not sure if the lepton.matched_jet is working as intended
+    # TODO: fakeable masks seem to be too tight
+
+    # fakeable masks
+    e_mask_fakeable = (
+        e_mask_loose &
+        (
+            (abs(electron.eta + electron.deltaEtaSC) > 1.479) & (electron.sieie <= 0.030) |
+            (abs(electron.eta + electron.deltaEtaSC) <= 1.479) & (electron.sieie <= 0.011)
+        ) &
+        (electron.hoe <= 0.10) &
+        (electron.eInvMinusPInv >= -0.04) &
+        (electron.convVeto) &
+        (electron.lostHits == 0) &
+        ((electron.mvaTTH >= 0.30) | (electron.mvaIso_WP90)) &
+        (ak.all(electron.matched_jet[btag_column] <= btag_wp_score, axis=1)) &
+        ((electron.mvaTTH >= 0.30) | (electron.jetRelIso < 0.70))
+    )
+
+    mu_mask_fakeable = (
+        mu_mask_loose &
+        (muon.cone_pt >= 10) &
+        (
+            ((muon.mvaTTH < 0.30) & (ak.all(muon.matched_jet[btag_column] <= btag_tight_score, axis=1))) |
+            ((muon.mvaTTH >= 0.30) & (ak.all(muon.matched_jet[btag_column] <= btag_wp_score, axis=1)))
+        ) &
+        # missing: DeepJet of nearby jet
+        ((muon.mvaTTH >= 0.50) | (muon.jetRelIso < 0.80))
+    )
+
+    # tight masks
+    e_mask_tight = (
+        e_mask_fakeable &
+        (electron.mvaTTH >= 0.30)
+    )
+    mu_mask_tight = (
+        mu_mask_fakeable &
+        (muon.mvaTTH >= 0.50) &
+        (muon.mediumId)
+    )
+
+    # tau veto mask (only needed in SL?)
+    tau_mask_veto = (
+        (abs(events.Tau.eta) < 2.3) &
+        # (abs(events.Tau.dz) < 0.2) &
+        (events.Tau.pt > 20.0) &
+        (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
+        (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
+        (events.Tau.idDeepTau2017v2p1VSjet >= 2)  # 2: VVLoose
+    )
+
+    # store number of Loose/Fakeable/Tight electrons/muons/taus as cutflow variables
+    events = set_ak_column(events, "cutflow.n_loose_electron", ak.sum(e_mask_loose, axis=1))
+    events = set_ak_column(events, "cutflow.n_loose_muon", ak.sum(mu_mask_loose, axis=1))
+    events = set_ak_column(events, "cutflow.n_fakeable_electron", ak.sum(e_mask_fakeable, axis=1))
+    events = set_ak_column(events, "cutflow.n_fakeable_muon", ak.sum(mu_mask_fakeable, axis=1))
+    events = set_ak_column(events, "cutflow.n_tight_electron", ak.sum(e_mask_tight, axis=1))
+    events = set_ak_column(events, "cutflow.n_tight_muon", ak.sum(mu_mask_tight, axis=1))
+    events = set_ak_column(events, "cutflow.n_veto_tau", ak.sum(tau_mask_veto, axis=1))
+
+    # create the SelectionResult
+    lepton_results = SelectionResult(
+        steps=steps,
+        objects={
+            "Electron": {
+                "LooseElectron": masked_sorted_indices(e_mask_loose, electron.pt),
+                "FakeableElectron": masked_sorted_indices(e_mask_fakeable, electron.pt),
+                "TightElectron": masked_sorted_indices(e_mask_tight, electron.pt),
+            },
+            "Muon": {
+                "LooseMuon": masked_sorted_indices(mu_mask_loose, muon.pt),
+                "FakeableMuon": masked_sorted_indices(mu_mask_fakeable, muon.pt),
+                "TightMuon": masked_sorted_indices(mu_mask_tight, muon.pt),
+            },
+            "Tau": {"VetoTau": masked_sorted_indices(tau_mask_veto, events.Tau.pt)},
+        },
+        aux={
+            "mu_mask_fakeable": mu_mask_fakeable,
+            "e_mask_fakeable": e_mask_fakeable,
+            "mu_mask_tight": mu_mask_tight,
+            "e_mask_tight": e_mask_tight,
+        },
+    )
+
+    return events, lepton_results
+
+
+@lepton_definition.init
+def lepton_definition_init(self: Selector) -> None:
+    # update selector steps labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "ll_lowmass_veto": r"$m_{ll} > 12 GeV$",
+        "ll_zmass_veto": r"$|m_{ll} - m_{Z}| > 10 GeV$",
+    })
+
+    if self.config_inst.x("do_cutflow_features", False):
+        # add cutflow features to *produces* only when requested
+        self.produces.add("cutflow.n_loose_electron")
+        self.produces.add("cutflow.n_loose_muon")
+        self.produces.add("cutflow.n_fakeable_electron")
+        self.produces.add("cutflow.n_fakeable_muon")
+        self.produces.add("cutflow.n_tight_electron")
+        self.produces.add("cutflow.n_tight_muon")
+        self.produces.add("cutflow.n_veto_tau")
+
+        # TODO: add cutflow variables aswell
 
 
 @selector(
