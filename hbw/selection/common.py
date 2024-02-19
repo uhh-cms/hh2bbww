@@ -29,7 +29,7 @@ from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
-from hbw.util import four_vec
+from hbw.util import four_vec, call_once_on_config
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -84,6 +84,11 @@ def jet_selection(
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
     # default jet definition
+    jet_mask_loose = (
+        (events.Jet.pt >= 25) &
+        (abs(events.Jet.eta) <= 2.4) &
+        (events.Jet.jetId >= 2)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+    )
     jet_mask = (
         (events.Jet.pt >= 25) &
         (abs(events.Jet.eta) <= 2.4) &
@@ -98,6 +103,9 @@ def jet_selection(
 
     # get the jet indices for pt-sorting of jets
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
+
+    steps["nJetReco1"] = ak.num(events.Jet) >= 1
+    steps["nJetLoose1"] = ak.sum(jet_mask_loose, axis=1) >= 1
 
     # add jet steps
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
@@ -142,6 +150,13 @@ def jet_selection(
 
 @jet_selection.init
 def jet_selection_init(self: Selector) -> None:
+    # Add shift dependencies
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag(("jec", "jer"))
+    }
+
     # set the main b_tagger + working point as defined from the selector
     self.config_inst.x.b_tagger = self.b_tagger
     self.config_inst.x.btag_wp = self.btag_wp
@@ -169,22 +184,24 @@ def jet_selection_init(self: Selector) -> None:
         self.produces.add("cutflow.n_jet")
         self.produces.add("cutflow.n_btag")
 
-        # create variable instances
-        self.config_inst.add_variable(
-            name="cf_n_jet",
-            expression="cutflow.n_jet",
-            binning=(7, -0.5, 6.5),
-            x_title="Number of jets",
-            discrete_x=True,
-        )
-        self.config_inst.add_variable(
-            name="cf_n_btag",
-            expression="cutflow.n_btag",
-            binning=(7, -0.5, 6.5),
-            x_title=f"Number of b-tagged jets ({self.b_tagger}, {self.btag_wp} WP)",
-            discrete_x=True,
-        )
+        @call_once_on_config
+        def add_jet_cutflow_variables(config: od.Config):
+            config.add_variable(
+                name="cf_n_jet",
+                expression="cutflow.n_jet",
+                binning=(7, -0.5, 6.5),
+                x_title="Number of jets",
+                discrete_x=True,
+            )
+            config.add_variable(
+                name="cf_n_btag",
+                expression="cutflow.n_btag",
+                binning=(7, -0.5, 6.5),
+                x_title=f"Number of b-tagged jets ({self.b_tagger}, {self.btag_wp} WP)",
+                discrete_x=True,
+            )
 
+        add_jet_cutflow_variables(self.config_inst)
 
 @selector(
     uses=(
@@ -295,7 +312,11 @@ def lepton_definition(
         (electron.convVeto) &
         (electron.lostHits == 0) &
         ((electron.mvaTTH >= 0.30) | (electron.mvaIso_WP90)) &
-        (ak.all(electron.matched_jet[btag_column] <= btag_wp_score, axis=1)) &
+        (
+            ((electron.mvaTTH < 0.30) & (electron.matched_jet[btag_column] <= btag_tight_score)) |
+            ((electron.mvaTTH >= 0.30) & (electron.matched_jet[btag_column] <= btag_wp_score))
+        ) &
+        (electron.matched_jet[btag_column] <= btag_wp_score) &
         ((electron.mvaTTH >= 0.30) | (electron.jetRelIso < 0.70))
     )
 
@@ -303,13 +324,13 @@ def lepton_definition(
         mu_mask_loose &
         (muon.cone_pt >= 10) &
         (
-            ((muon.mvaTTH < 0.30) & (ak.all(muon.matched_jet[btag_column] <= btag_tight_score, axis=1))) |
-            ((muon.mvaTTH >= 0.30) & (ak.all(muon.matched_jet[btag_column] <= btag_wp_score, axis=1)))
+            ((muon.mvaTTH < 0.50) & (muon.matched_jet[btag_column] <= btag_tight_score)) |
+            ((muon.mvaTTH >= 0.50) & (muon.matched_jet[btag_column] <= btag_wp_score))
         ) &
         # missing: DeepJet of nearby jet
         ((muon.mvaTTH >= 0.50) | (muon.jetRelIso < 0.80))
     )
-    from hbw.util import debugger; debugger()
+
     # tight masks
     e_mask_tight = (
         e_mask_fakeable &
@@ -451,6 +472,22 @@ def vbf_jet_selection(
     )
 
 
+@vbf_jet_selection.init
+def vbf_jet_selection_init(self: Selector) -> None:
+    # Add shift dependencies
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag(("jec", "jer"))
+    }
+
+    # update selector step labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "VBFJetPair": r"$N_{VBFJetPair}^{AK4} \geq 1$",
+    })
+
+
 @selector(
     uses=(
         four_vec(
@@ -461,6 +498,7 @@ def vbf_jet_selection(
         )
     ),
     produces=(
+        # NOTE: we should only produce them when cutflow is required
         {"cutflow.n_fatjet", "cutflow.n_hbbjet"} |
         four_vec(
             {"FatJet", "HbbJet"},
@@ -579,6 +617,22 @@ def sl_boosted_jet_selection(
             "Jet": {"HbbSubJet": hbbSubJet_indices},
         },
     )
+
+
+@sl_boosted_jet_selection.init
+def sl_boosted_jet_selection_init(self: Selector) -> None:
+    # Add shift dependencies
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag(("jec", "jer"))
+    }
+
+    # update selector step labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "HbbJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
+    })
 
 
 # boosted selection for the DL channel (only one parameter needs to be changed)
