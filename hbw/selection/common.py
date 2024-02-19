@@ -11,6 +11,7 @@ from typing import Tuple
 
 import law
 
+from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT, get_ak_routes, optional_column as optional
 from columnflow.production.util import attach_coffea_behavior
@@ -204,7 +205,10 @@ def jet_selection_init(self: Selector) -> None:
             jet_selection,  # the jet_selection init needs to be run to set the correct b_tagger
         }
     ),
-    produces={"Electron.cone_pt", "Muon.cone_pt"},
+    produces={
+        "Muon.cone_pt", "Muon.is_tight",
+        "Electron.cone_pt", "Muon.is_tight",
+    },
 )
 def lepton_definition(
         self: Selector,
@@ -221,12 +225,12 @@ def lepton_definition(
 
     # reconstruct relevant variables
     events = set_ak_column(events, "Electron.cone_pt", ak.where(
-        events.Electron.mvaTTH > 0.30,
+        events.Electron.mvaTTH >= 0.30,
         events.Electron.pt,
         0.9 * events.Electron.pt * (1.0 + events.Electron.jetRelIso),
     ))
     events = set_ak_column(events, "Muon.cone_pt", ak.where(
-        (events.Muon.mediumId & (events.Muon.mvaTTH > 0.50)),
+        (events.Muon.mediumId & (events.Muon.mvaTTH >= 0.50)),
         events.Muon.pt,
         0.9 * events.Muon.pt * (1.0 + events.Muon.jetRelIso),
     ))
@@ -236,17 +240,20 @@ def lepton_definition(
 
     # preselection masks
     e_mask_loose = (
-        (electron.cone_pt >= 7) &
+        # (electron.cone_pt >= 7) &
+        (electron.pt >= 7) &
         (abs(electron.eta) <= 2.5) &
         (abs(electron.dxy) <= 0.05) &
         (abs(electron.dz) <= 0.1) &
+        (electron.miniPFRelIso_all <= 0.4) &
         (electron.sip3d <= 8) &
         (electron.mvaIso_WP90) &  # TODO: replace when possible
         # (electron.mvaNoIso_WPL) &  # missing
         (electron.lostHits <= 1)
     )
     mu_mask_loose = (
-        (muon.cone_pt >= 5) &
+        # (muon.cone_pt >= 5) &
+        (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
         (abs(muon.dxy) <= 0.05) &
         (abs(muon.dz) <= 0.1) &
@@ -266,7 +273,7 @@ def lepton_definition(
     lepton_pairs["m_inv"] = (l1 + l2).mass
 
     steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
-    steps["ll_zmass_veto"] = ~ak.any((lepton_pairs.m_inv >= 81.2) & (lepton_pairs.m_inv <= 101.2), axis=1)
+    steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
 
     # get the correct btag WPs and column from the config (as setup by jet_selection)
     btag_wp_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
@@ -302,7 +309,7 @@ def lepton_definition(
         # missing: DeepJet of nearby jet
         ((muon.mvaTTH >= 0.50) | (muon.jetRelIso < 0.80))
     )
-
+    from hbw.util import debugger; debugger()
     # tight masks
     e_mask_tight = (
         e_mask_fakeable &
@@ -332,6 +339,10 @@ def lepton_definition(
     events = set_ak_column(events, "cutflow.n_tight_electron", ak.sum(e_mask_tight, axis=1))
     events = set_ak_column(events, "cutflow.n_tight_muon", ak.sum(mu_mask_tight, axis=1))
     events = set_ak_column(events, "cutflow.n_veto_tau", ak.sum(tau_mask_veto, axis=1))
+
+    # store info whether lepton is tight or not
+    events = set_ak_column(events, "Muon.is_tight", mu_mask_tight)
+    events = set_ak_column(events, "Electron.is_tight", e_mask_tight)
 
     # create the SelectionResult
     lepton_results = SelectionResult(
