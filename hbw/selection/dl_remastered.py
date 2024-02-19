@@ -8,11 +8,7 @@ from collections import defaultdict
 from typing import Tuple
 
 from columnflow.util import maybe_import
-# from columnflow.columnar_util import set_ak_column
-
 from columnflow.selection import Selector, SelectionResult, selector
-# from columnflow.production.categories import category_ids
-# from columnflow.production.processes import process_ids
 
 from hbw.selection.common import (
     jet_selection, lepton_definition,
@@ -21,7 +17,6 @@ from hbw.selection.common import (
 )
 from hbw.production.weights import event_weights_to_normalize
 from hbw.selection.cutflow_features import cutflow_features
-# from hbw.util import four_vec
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -48,8 +43,8 @@ def dl_lepton_selection(
     - Dilepton (logical or of the previous 4)
 
     Objects:
-    - Electron (tight Electron + cone_pt > 15)
-    - Muon (tight Muon + cone_pt > 15)
+    - Electron (fakeable Electron + cone_pt > 15)
+    - Muon (fakeable Muon + cone_pt > 15)
     """
     # load default lepton definition
 
@@ -77,16 +72,17 @@ def dl_lepton_selection(
         events.cutflow.n_tight_electron + events.cutflow.n_tight_muon
     ) <= 2
 
-    mu_mask_tight = lepton_results.x.mu_mask_tight
-    e_mask_tight = lepton_results.x.e_mask_tight
+    # select events
+    mu_mask_fakeable = lepton_results.x.mu_mask_fakeable
+    e_mask_fakeable = lepton_results.x.e_mask_fakeable
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
-    leading_mu_mask = (mu_mask_tight) & (events.Muon.cone_pt > 25)
-    leading_e_mask = (e_mask_tight) & (events.Electron.cone_pt > 25)
+    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > 25)
+    leading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > 25)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    subleading_mu_mask = (mu_mask_tight) & (events.Muon.cone_pt > 15)
-    subleading_e_mask = (e_mask_tight) & (events.Electron.cone_pt > 15)
+    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > 15)
+    subleading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > 15)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
     lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(subleading_e_mask, events.Electron.pt)
@@ -108,6 +104,7 @@ def dl_lepton_selection(
     lepton_results.steps["TripleLeptonVeto"] = ak.num(lepton, axis=1) <= 2
     lepton_results.steps["Charge"] = ak.sum(electron.charge, axis=1) + ak.sum(muon.charge, axis=1) == 0
 
+    # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
         lepton_results.steps.TripleLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
@@ -131,6 +128,16 @@ def dl_lepton_selection(
 
     lepton_results.steps["Dilepton"] = (mm_mask | ee_mask | emu_mask | mue_mask)
 
+    # define (but not apply) steps on how to separate between Fake Region and Signal Region
+    lepton_results.steps["Fake"] = (
+        lepton_results.steps.Dilepton &
+        (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) <= 1)
+    )
+    lepton_results.steps["SR"] = (
+        lepton_results.steps.Dilepton &
+        (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
+    )
+
     for channel, trigger_columns in self.trigger.items():
         # apply the "or" of all triggers of this channel
         trigger_mask = ak.any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
@@ -152,12 +159,24 @@ def dl_lepton_selection(
         for channel in self.trigger.keys()
     ], axis=0)
 
-    # TODO: how to choose which event belongs into which category?
     return events, lepton_results
 
 
 @dl_lepton_selection.init
 def dl_lepton_selection_init(self: Selector) -> None:
+    # update selector steps labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "TripleLooseLeptonVeto": r"$N_{lepton}^{loose} \leq 2$",
+        "TripleFakeableLeptonVeto": r"$N_{lepton}^{fakeable} \leq 2$",
+        "TripleTightLeptonVeto": r"$N_{lepton}^{tight} \leq 2$",
+        "Charge": r"Opposite-charge leptons",
+        "Dilepton": r"$N_{lepton} = 2$",
+        "Fake": r"$N_{lepton}^{tight} \leq 1$",
+        "SR": r"$N_{lepton}^{tight} = 2$",
+        "TriggerAndLep": "Trigger matches Lepton Channel",
+    })
+
     # NOTE: this is something that only needs to be done when running the Selector, not later
     # for e.g. a Producer. Can I check the task here?
     year = self.config_inst.campaign.x.year
@@ -238,6 +257,7 @@ def dl(
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
+        results.steps.cleanup &
         (results.steps.nJet1 | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
         results.steps.ll_zmass_veto &
