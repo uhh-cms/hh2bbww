@@ -230,7 +230,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     },
     exposed=True,
 )
-def dl(
+def dl1(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
@@ -285,8 +285,8 @@ def dl(
     return events, results
 
 
-@dl.init
-def dl_init(self: Selector) -> None:
+@dl1.init
+def dl1_init(self: Selector) -> None:
     # define mapping from selector step to labels used in cutflow plots
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
