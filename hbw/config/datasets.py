@@ -10,6 +10,7 @@ import itertools
 
 import law
 import order as od
+from scinum import Number
 
 import cmsdb.processes as procs
 from columnflow.util import DotDict
@@ -359,7 +360,6 @@ radion_hh_ggf_bbww = {
         1250, 1500, 1750, 2000, 2500, 3000,
     ]],
     "2022postEE": [
-        # empty for now
     ],
 }
 
@@ -424,6 +424,12 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
         dataset_names.pop("graviton_hh_ggf_bbww")
         dataset_names.pop("radion_hh_ggf_bbww")
 
+    if config.has_tag("is_dl"):
+        # remove qcd datasets from DL
+        dataset_names.pop("qcd_mu")
+        dataset_names.pop("qcd_em")
+        dataset_names.pop("qcd_bctoe")
+
     if not config.has_tag("is_nonresonant"):
         # remove all nonresonant signal processes/datasets
         for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
@@ -432,7 +438,29 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
     return dataset_names
 
 
+def add_synchronization_dataset(config: od.Config):
+    radion_hh_ggf_dl_bbww_m450 = config.add_process(
+        name="radion_hh_ggf_dl_bbww_m450",
+        id=24563574,  # random number
+        xsecs={13: Number(0.1)},  # TODO
+    )
+
+    config.add_dataset(
+        name="radion_hh_ggf_dl_bbww_m450_magraph",
+        id=14876684,
+        processes=[radion_hh_ggf_dl_bbww_m450],
+        keys=[
+            "/GluGlutoRadiontoHHto2B2Vto2B2L2Nu_M-450_narrow_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM",  # noqa
+        ],
+        n_files=19,
+        n_events=87308,
+    )
+
+
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
+    if config.x.cpn_tag == "2022postEE":
+        add_synchronization_dataset(config)
+
     if campaign.x.year == 2017:
         # load custom produced datasets into campaign (2017 only!)
         get_custom_hh_2017_datasets(campaign)
@@ -451,6 +479,12 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
+
+    # # add leaf signal processes directly to the config
+    # for signal_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qqHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+    #     for dataset_name in dataset_names[signal_proc]:
+    #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
+
     # loop over all dataset names and add them to the config
     for dataset_name in list(itertools.chain(*dataset_names.values())):
         config.add_dataset(campaign.get_dataset(dataset_name))
