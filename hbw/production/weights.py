@@ -8,9 +8,7 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, has_ak_column, Route
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
-from hbw.production.pileup import pu_weight_from_correctionlib
-# TODO: switch to columnflow Producer as soon as PR is merged
-# from columnflow.production.cms.pileup import pu_weight  # , pu_weight_from_correctionlib
+from columnflow.production.cms.pileup import pu_weight
 from columnflow.production.normalization import normalization_weights
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights
@@ -62,8 +60,8 @@ def event_weight_init(self: Producer) -> None:
 
 
 @producer(
-    uses={pu_weight_from_correctionlib},
-    produces={pu_weight_from_correctionlib},
+    uses={pu_weight},
+    produces={pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -73,7 +71,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     """
 
     # compute pu weights
-    events = self[pu_weight_from_correctionlib](events, **kwargs)
+    events = self[pu_weight](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute btag SF weights (for renormalization tasks)
@@ -129,7 +127,7 @@ normalized_pdf_weights = normalized_weight_factory(
 
 normalized_pu_weights = normalized_weight_factory(
     producer_name="normalized_pu_weights",
-    weight_producers={pu_weight_from_correctionlib},
+    weight_producers={pu_weight},
 )
 
 
