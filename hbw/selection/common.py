@@ -25,7 +25,6 @@ from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 from columnflow.production.cms.seeds import deterministic_seeds
 
-
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
