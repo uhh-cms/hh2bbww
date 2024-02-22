@@ -181,38 +181,64 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TriggerAndLep": "Trigger matches Lepton Channel",
     })
 
-    # NOTE: this is something that only needs to be done when running the Selector, not later
-    # for e.g. a Producer. Can I check the task here?
-    year = self.config_inst.campaign.x.year
+    # Trigger setup, only required when running SelectEvents
+    if self.task and self.task.task_family == "cf.SelectEvents":
+        year = self.config_inst.campaign.x.year
 
-    if year == 2022:
-        self.trigger = {
-            "mm": [
-                "IsoMu24",
-                "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
-            ],
-            "ee": [
-                "Ele30_WPTight_Gsf",
-                "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
-            ],
-            "emu": [
-                "IsoMu24",
-                "Ele30_WPTight_Gsf",
-                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
-            ],
-            "mue": [
-                "IsoMu24",
-                "Ele30_WPTight_Gsf",
-                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
-            ],
-        }
-    else:
-        raise Exception(f"Dilepton trigger not implemented for year {year}")
+        if year == 2017:
+            self.trigger = {
+                "mm": [
+                    "IsoMu27",
+                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",
+                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
+                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8",
+                ],
+                "ee": [
+                    "Ele35_WPTight_Gsf",
+                    "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+                ],
+                "emu": [
+                    "IsoMu27",
+                    "Ele35_WPTight_Gsf",
+                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                ],
+                "mue": [
+                    "IsoMu27",
+                    "Ele35_WPTight_Gsf",
+                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+                ],
+            }
+        elif year == 2022:
+            self.trigger = {
+                "mm": [
+                    "IsoMu24",
+                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+                ],
+                "ee": [
+                    "Ele30_WPTight_Gsf",
+                    "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+                ],
+                "emu": [
+                    "IsoMu24",
+                    "Ele30_WPTight_Gsf",
+                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
+                ],
+                "mue": [
+                    "IsoMu24",
+                    "Ele30_WPTight_Gsf",
+                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
+                ],
+            }
+        else:
+            raise Exception(f"Dilepton trigger not implemented for year {year}")
 
-    # add all required trigger to the uses
-    for trigger_columns in self.trigger.values():
-        for column in trigger_columns:
-            self.uses.add(f"HLT.{column}")
+        # add all required trigger to the uses
+        for trigger_columns in self.trigger.values():
+            for column in trigger_columns:
+                self.uses.add(f"HLT.{column}")
 
     return
 
