@@ -285,6 +285,13 @@ def add_config(
         },
     })
 
+    # top pt reweighting parameters
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
+    cfg.x.top_pt_reweighting_params = {
+        "a": 0.0615,
+        "b": -0.0005,
+    }
+
     # TODO: check e/mu/btag corrections and implement
     # btag weight configuration
     cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
@@ -549,13 +556,15 @@ def add_config(
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
             # Gen information (for categorization)
             "HardGenPart.pdgId",
+            # Gen information for pt reweighting
+            "GenPartonTop.pt",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "VBFJet"},
-            {"btagDeepFlavB", "hadronFlavour", "qgl"},
+            {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
             {

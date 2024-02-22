@@ -15,6 +15,7 @@ from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
+from hbw.production.gen_top import gen_parton_top, top_pt_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.util import has_tag
@@ -60,8 +61,8 @@ def event_weight_init(self: Producer) -> None:
 
 
 @producer(
-    uses={pu_weight},
-    produces={pu_weight},
+    uses={gen_parton_top, pu_weight},
+    produces={gen_parton_top, pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -69,6 +70,10 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     Wrapper of several event weight producers that are typically called as part of SelectEvents
     since it is required to normalize them before applying certain event selections.
     """
+
+    # compute gen information that will later be needed for top pt and vector boson pt reweighting
+    if self.dataset_inst.has_tag("has_top"):
+        events = self[gen_parton_top](events, **kwargs)
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
@@ -134,11 +139,13 @@ normalized_pu_weights = normalized_weight_factory(
 @producer(
     uses={
         normalization_weights,
+        top_pt_weight,
         normalized_pu_weights,
         event_weight,
     },
     produces={
         normalization_weights,
+        top_pt_weight,
         normalized_pu_weights,
         event_weight,
     },
@@ -151,6 +158,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
+
+    # compute gen top pt weights
+    if self.dataset_inst.has_tag("is_ttbar"):
+        events = self[top_pt_weight](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights
