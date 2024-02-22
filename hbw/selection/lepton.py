@@ -13,7 +13,7 @@ import law
 
 from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
@@ -31,9 +31,11 @@ logger = law.logger.get_logger(__name__)
     uses=(
         four_vec("Electron", {
             "dxy", "dz", "miniPFRelIso_all", "sip3d", "cutBased", "lostHits",  # Electron Preselection
-            "mvaIso_WP90",  # used as replacement for "mvaNoIso_WPL" in Preselection
+            # "mvaIso_WP90",  # used as replacement for "mvaNoIso_WPL" in Preselection
             "mvaTTH", "jetRelIso",  # cone-pt
             "deltaEtaSC", "sieie", "hoe", "eInvMinusPInv", "convVeto", "jetIdx",  # Fakeable Electron
+        }) | optional({
+            "Electron.mvaIsoWP90", "Electron.mvaFall17V2Iso_WP90",  # columns that differ in Run 2 and 3
         }) |
         four_vec("Muon", {
             "dxy", "dz", "miniPFRelIso_all", "sip3d", "looseId",  # Muon Preselection
@@ -79,6 +81,9 @@ def lepton_definition(
     electron = events.Electron
     muon = events.Muon
 
+    # mva isolation, depends on data-taking campaign (could also be done in the init)
+    e_mva_iso_column = "mvaIsoWP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
+
     # preselection masks
     e_mask_loose = (
         # (electron.cone_pt >= 7) &
@@ -88,8 +93,7 @@ def lepton_definition(
         (abs(electron.dz) <= 0.1) &
         (electron.miniPFRelIso_all <= 0.4) &
         (electron.sip3d <= 8) &
-        (electron.mvaIso_WP90) &  # TODO: replace when possible
-        # (electron.mvaNoIso_WPL) &  # missing
+        (electron[e_mva_iso_column]) &
         (electron.lostHits <= 1)
     )
     mu_mask_loose = (
@@ -135,7 +139,7 @@ def lepton_definition(
         (electron.eInvMinusPInv >= -0.04) &
         (electron.convVeto) &
         (electron.lostHits == 0) &
-        ((electron.mvaTTH >= 0.30) | (electron.mvaIso_WP90)) &
+        ((electron.mvaTTH >= 0.30) | (electron[e_mva_iso_column])) &
         (
             ((electron.mvaTTH < 0.30) & (electron.matched_jet[btag_column] <= btag_tight_score)) |
             ((electron.mvaTTH >= 0.30) & (electron.matched_jet[btag_column] <= btag_wp_score))
