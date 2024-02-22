@@ -274,14 +274,14 @@ def add_config(
     # TODO: add correct 2022 + 2022preEE WPs and sources
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0480, "2022postEE": 0.0480}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2489, "2022postEE": 0.2489}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.6377, "2022postEE": 0.6377}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0490, "2022postEE": 0.0490}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2783, "2022postEE": 0.2783}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7100, "2022postEE": 0.7100}[cfg.x.cpn_tag],  # noqa
         },
         "deepcsv": {
-            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1918, "2022postEE": 0.1918}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.5847, "2022postEE": 0.5847}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.8767, "2022postEE": 0.8767}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1208, "2022postEE": 0.1208}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.4168, "2022postEE": 0.4168}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.7665, "2022postEE": 0.7665}[cfg.x.cpn_tag],  # noqa
         },
     })
 
