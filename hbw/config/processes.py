@@ -126,7 +126,12 @@ def configure_hbw_processes(config: od.Config):
             label="signal",
         )
         for proc in signal_processes:
-            sig.add_process(proc)
+            try:
+                sig.add_process(proc)
+            except Exception:
+                # this also adds 'sig' as parent to 'proc', but sometimes this is happening
+                # multiple times, since we create multiple configs
+                pass
 
     # add auxiliary information if process is signal
     for proc_inst, _, _ in config.walk_processes():
