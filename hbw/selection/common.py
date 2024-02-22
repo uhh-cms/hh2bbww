@@ -28,7 +28,6 @@ from columnflow.production.cms.seeds import deterministic_seeds
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
-from hbw.selection.cutflow_features import cutflow_features
 from hbw.util import four_vec, call_once_on_config
 
 np = maybe_import("numpy")
@@ -784,10 +783,6 @@ def post_selection(
     log_fraction("num_pu_0", "Fraction of events with pu_weight == 0")
     log_fraction("num_pu_100", "Fraction of events with pu_weight >= 100")
 
-    # add cutflow features
-    if self.config_inst.x("do_cutflow_features", False):
-        events = self[cutflow_features](events, results=results, **kwargs)
-
     # temporary fix for optional types from Calibration (e.g. events.Jet.pt --> ?float32)
     # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
     events = ak.fill_none(events, EMPTY_FLOAT)
@@ -798,9 +793,6 @@ def post_selection(
 
 @post_selection.init
 def post_selection_init(self: Selector) -> None:
-    if self.config_inst.x("do_cutflow_features", False):
-        self.uses.add(cutflow_features)
-        self.produces.add(cutflow_features)
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return

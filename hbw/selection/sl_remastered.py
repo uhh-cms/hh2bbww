@@ -16,7 +16,6 @@ from hbw.selection.common import (
     pre_selection, post_selection,
 )
 from hbw.production.weights import event_weights_to_normalize
-from hbw.selection.cutflow_features import cutflow_features
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -267,10 +266,6 @@ def sl1_init(self: Selector) -> None:
             r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
         ),
     })
-
-    if self.config_inst.x("do_cutflow_features", False):
-        self.uses.add(cutflow_features)
-        self.produces.add(cutflow_features)
 
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
