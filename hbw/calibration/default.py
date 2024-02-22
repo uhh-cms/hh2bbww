@@ -51,8 +51,9 @@ def base_init(self: Calibrator) -> None:
     if self.bjet_regression:
         self.calibrators.append(bjet_regression)
 
-    if self.dataset_inst.is_mc:
-        # TODO: we might need to modify jer when using bjet calibration
+    # run JER only on MC
+    # and not for 2022 (TODO: update as soon as JER is done for Summer22)
+    if self.dataset_inst.is_mc and not self.config_inst.campaign.x.year == 2022:
         self.calibrators.append(jer)
 
     self.uses |= set(self.calibrators)

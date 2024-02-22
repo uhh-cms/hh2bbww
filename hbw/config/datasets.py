@@ -52,6 +52,9 @@ data_e = {
         "data_e_e",
         "data_e_f",
     ],
+}
+
+data_egamma = {
     "2022preEE": [
         "data_egamma_c",
         "data_egamma_d",
@@ -170,7 +173,7 @@ qcd_mu = {
         "qcd_mu_pt1000_pythia",
     ],
     "2022postEE": [
-        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        # "qcd_mu_pt15to20_pythia",  # empty after selection
         "qcd_mu_pt20to30_pythia",
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
@@ -179,12 +182,12 @@ qcd_mu = {
         "qcd_mu_pt170to300_pythia",
         "qcd_mu_pt300to470_pythia",
         "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
         "qcd_mu_pt1000_pythia",
     ],
     "2022preEE": [
-        "qcd_mu_pt15to20_pythia",  # 1 file not possible to open
+        "qcd_mu_pt15to20_pythia",
         "qcd_mu_pt20to30_pythia",
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
@@ -193,7 +196,7 @@ qcd_mu = {
         "qcd_mu_pt170to300_pythia",
         "qcd_mu_pt300to470_pythia",
         "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",  # 1 file not possible to open
+        "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
         "qcd_mu_pt1000_pythia",
     ],
@@ -211,7 +214,22 @@ qcd_em = {
         "qcd_em_pt300toInf_pythia",
     ],
     "2022postEE": [
-        # empty for now
+        # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
+        # "qcd_em_pt30to50_pythia",  # empty after selection
+        "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia",
+        "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia",
+        "qcd_em_pt300toInf_pythia",
+    ],
+    "2022preEE": [
+        # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
+        "qcd_em_pt30to50_pythia",
+        "qcd_em_pt50to80_pythia",
+        "qcd_em_pt80to120_pythia",
+        "qcd_em_pt120to170_pythia",
+        "qcd_em_pt170to300_pythia",
+        "qcd_em_pt300toInf_pythia",
     ],
 }
 
@@ -286,8 +304,11 @@ ggHH_dl_hbbhww = {
         "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
         "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
     ],
+    "2022preEE": [
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+    ],
     "2022postEE": [
-        # empty for now
+        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
     ],
 }
 
@@ -363,6 +384,7 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
     dataset_names = DotDict.wrap(
         data_mu=data_mu.get(cpn_tag, []),
         data_e=data_e.get(cpn_tag, []),
+        data_egamma=data_egamma.get(cpn_tag, []),
         tt=tt.get(cpn_tag, []),
         st=st.get(cpn_tag, []),
         w_lnu=w_lnu.get(cpn_tag, []),

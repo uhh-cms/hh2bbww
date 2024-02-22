@@ -101,6 +101,9 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # apply results if given to create new collections
     events = apply_object_results(events, results)
 
+    # coffea behavior for relevant objects
+    events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
+
     if "Bjet" not in events.fields and "Jet" in events.fields:
         logger.warning("Bjet collection is missing: will be defined using the Jet collection")
         # define b-jets as the two b-score leading jets, b-score sorted
@@ -109,24 +112,13 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
 
     if "VetoLepton" not in events.fields and "VetoElectron" in events.fields and "VetoMuon" in events.fields:
         # combine VetoElectron and VetoMuon into a single object (VetoLepton)
-        lepton_fields = set(events.VetoMuon.fields).intersection(events.VetoElectron.fields)
-        veto_lepton = ak.concatenate([
-            ak.zip({f: events.VetoMuon[f] for f in lepton_fields}),
-            ak.zip({f: events.VetoElectron[f] for f in lepton_fields}),
-        ], axis=-1)
+        veto_lepton = ak.concatenate([events.VetoMuon * 1, events.VetoElectron * 1], axis=-1)
         events = set_ak_column(events, "VetoLepton", veto_lepton[ak.argsort(veto_lepton.pt, ascending=False)])
 
     if "Lepton" not in events.fields and "Electron" in events.fields and "Muon" in events.fields:
         # combine Electron and Muon into a single object (Lepton)
-        lepton_fields = set(events.Muon.fields).intersection(events.Electron.fields)
-        lepton = ak.concatenate([
-            ak.zip({f: events.Muon[f] for f in lepton_fields}),
-            ak.zip({f: events.Electron[f] for f in lepton_fields}),
-        ], axis=-1)
+        lepton = ak.concatenate([events.Muon * 1, events.Electron * 1], axis=-1)
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
-
-    # coffea behavior for relevant objects
-    events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
     # transform MET into 4-vector
     events["MET"] = set_ak_column(events.MET, "mass", 0)

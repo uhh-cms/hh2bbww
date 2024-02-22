@@ -52,6 +52,39 @@ class ControlPlotsSL(
         pass
 
 
+class MLInputPlotsSL(
+    HBWTask,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    """
+    Helper task to produce default set of control plots
+    """
+    def requires(self):
+        reqs = {}
+
+        for l_channel in ("mu", "e"):
+            for j_channel in ("resolved", "boosted"):
+                reqs[f"ml_input_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
+                    self,
+                    processes=(f"{l_channel}ch",),
+                    # process_settings=[["scale_signal"]],
+                    variables=["mli_*"],
+                    categories=(f"sl_{l_channel}ch_{j_channel}",),
+                    yscale="log",
+                    cms_label="simpw",
+                )
+
+        return reqs
+
+    def output(self):
+        return self.requires()
+
+    def run(self):
+        pass
+
+
 class DefaultPlots(
     HBWTask,
     # MLModelsMixin,
@@ -117,7 +150,6 @@ class DefaultPlots(
         return reqs
 
     def output(self):
-
         # use the input also as output
         # (makes it easier to fetch and delete outputs)
         return self.requires()

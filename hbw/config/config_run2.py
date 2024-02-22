@@ -7,7 +7,6 @@ Configuration of the HH -> bbWW config.
 from __future__ import annotations
 
 import os
-import re
 
 import yaml
 from scinum import Number
@@ -15,6 +14,7 @@ import law
 import order as od
 
 from columnflow.util import DotDict
+from columnflow.config_util import add_shift_aliases
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
@@ -139,14 +139,14 @@ def add_config(
     jerc_postfix = ""
     if year == 2016 and campaign.x.vfp == "post":
         jerc_postfix = "APV"
-    elif year == 2022:
-        jerc_postfix = f"{campaign.x.EE}EE"
+    elif year == 2022 and campaign.x.EE == "post":
+        jerc_postfix = "EE"
 
     if cfg.x.run == 2:
         jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
         jet_type = "AK4PFchs"
     elif cfg.x.run == 3:
-        jerc_campaign = f"Winter{year2}Run3"
+        jerc_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         jet_type = "AK4PFPuppi"
 
     cfg.x.jec = DotDict.wrap({
@@ -219,8 +219,8 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
     # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
-        "campaign": jerc_campaign if cfg.x.run == 2 else f"JR_{jerc_campaign}",
-        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V1"}[year],
+        "campaign": jerc_campaign,
+        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V2"}[year],
         "jet_type": jet_type,
     })
 
@@ -297,19 +297,6 @@ def add_config(
     # (used in the muon producer)
     cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
-    # helper to add column aliases for both shifts of a source
-    # TODO: switch to the columnflow function (but what happened to *selection_dependent*?)
-    def add_shift_aliases(shift_source: str, aliases: dict[str], selection_dependent: bool):
-
-        for direction in ["up", "down"]:
-            shift = cfg.get_shift(od.Shift.join_name(shift_source, direction))
-            # format keys and values
-            inject_shift = lambda s: re.sub(r"\{([^_])", r"{_\1", s).format(**shift.__dict__)
-            _aliases = {inject_shift(key): inject_shift(value) for key, value in aliases.items()}
-            alias_type = "column_aliases_selection_dependent" if selection_dependent else "column_aliases"
-            # extend existing or register new column aliases
-            shift.set_aux(alias_type, shift.get_aux(alias_type, {})).update(_aliases)
-
     # register shifts
     # TODO: make shifts year-dependent
     cfg.add_shift(name="nominal", id=0)
@@ -320,27 +307,28 @@ def add_config(
     cfg.add_shift(name="minbias_xs_up", id=7, type="shape")
     cfg.add_shift(name="minbias_xs_down", id=8, type="shape")
     add_shift_aliases(
+        cfg,
         "minbias_xs",
         {
             "pu_weight": "pu_weight_{name}",
             "normalized_pu_weight": "normalized_pu_weight_{name}",
         },
-        selection_dependent=False)
+    )
     cfg.add_shift(name="top_pt_up", id=9, type="shape")
     cfg.add_shift(name="top_pt_down", id=10, type="shape")
-    add_shift_aliases("top_pt", {"top_pt_weight": "top_pt_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases(cfg, "top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
 
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
-    add_shift_aliases("e_sf", {"electron_weight": "electron_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
 
     cfg.add_shift(name="mu_sf_up", id=50, type="shape")
     cfg.add_shift(name="mu_sf_down", id=51, type="shape")
     cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
     cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
-    add_shift_aliases("mu_sf", {"muon_weight": "muon_weight_{direction}"}, selection_dependent=False)
+    add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
 
     btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
@@ -350,12 +338,12 @@ def add_config(
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
         cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
         add_shift_aliases(
+            cfg,
             f"btag_{unc}",
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
             },
-            selection_dependent=False,
         )
 
     cfg.add_shift(name="mur_up", id=201, type="shape")
@@ -368,28 +356,40 @@ def add_config(
     cfg.add_shift(name="pdf_down", id=208, type="shape")
 
     for unc in ["mur", "muf", "murf_envelope", "pdf"]:
-        # add_shift_aliases(unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"}, selection_dependent=False)
+        # add_shift_aliases(cfg, unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"})
         add_shift_aliases(
+            cfg,
             unc,
             {f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}"},
-            selection_dependent=False,
         )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
     for jec_source in cfg.x.jec["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
-        cfg.add_shift(name=f"jec_{jec_source}_up", id=5000 + 2 * idx, type="shape")
-        cfg.add_shift(name=f"jec_{jec_source}_down", id=5001 + 2 * idx, type="shape")
+        cfg.add_shift(
+            name=f"jec_{jec_source}_up",
+            id=5000 + 2 * idx,
+            type="shape",
+            tags={"jec"},
+            aux={"jec_source": jec_source},
+        )
+        cfg.add_shift(
+            name=f"jec_{jec_source}_down",
+            id=5001 + 2 * idx,
+            type="shape",
+            tags={"jec"},
+            aux={"jec_source": jec_source},
+        )
         add_shift_aliases(
+            cfg,
             f"jec_{jec_source}",
             {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
-            selection_dependent=True,
         )
 
-    cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"selection_dependent"})
-    cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"selection_dependent"})
-    add_shift_aliases("jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"}, selection_dependent=True)
+    cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"jer"})
+    cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
+    add_shift_aliases(cfg, "jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
 
     def make_jme_filename(jme_aux, sample_type, name, era=None):
         """
@@ -409,11 +409,13 @@ def add_config(
         json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
-        # TODO: Update when possible
-        json_mirror = "/afs/desy.de/user/p/paaschal/public/mirrors/jsonpog-integration"
-        corr_tag = f"{year}_Prompt"
+        json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
+        corr_tag = f"{year}_Summer22{jerc_postfix}"
 
     cfg.x.external_files = DotDict.wrap({
+        # pileup weight corrections
+        "pu_sf": (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"),
+
         # jet energy correction
         "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
 
@@ -431,21 +433,20 @@ def add_config(
     })
 
     # temporary fix due to missing corrections in run 3
+    # electron, muon and met still missing, btag, and pu are TODO
     if cfg.x.run == 3:
-        cfg.add_tag("skip_btag_weights")
-        cfg.add_tag("skip_electron_weights")
-        cfg.add_tag("skip_muon_weights")
         cfg.add_tag("skip_pu_weights")
-        cfg.x.external_files.pop("electron_sf")
-        cfg.x.external_files.pop("muon_sf")
-        cfg.x.external_files.pop("btag_sf_corr")
-        cfg.x.external_files.pop("met_phi_corr")
 
-        # NOTE: we should mirror and gzip them
-        if campaign.x.EE == "pre":
-            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_schemaV2.json", "v1")  # noqa
-        elif campaign.x.EE == "post":
-            cfg.x.external_files["muon_sf"] = ("https://gitlab.cern.ch/cms-muonPOG/muonefficiencies/-/raw/master/Run3/2022_EE/2022_Z/ScaleFactors_Muon_Z_ID_ISO_2022_EE_schemaV2.json", "v1")  # noqa
+        cfg.add_tag("skip_btag_weights")
+        cfg.x.external_files.pop("btag_sf_corr")
+
+        cfg.add_tag("skip_electron_weights")
+        cfg.x.external_files.pop("electron_sf")
+
+        cfg.add_tag("skip_muon_weights")
+        cfg.x.external_files.pop("muon_sf")
+
+        cfg.x.external_files.pop("met_phi_corr")
 
     cfg.x.met_filters = {
         "Flag.goodVertices",

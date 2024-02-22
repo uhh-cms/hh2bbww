@@ -142,7 +142,7 @@ def set_config_defaults_and_groups(config_inst):
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
-    config_inst.x.process_groups["dech"] = ["data_e"] + config_inst.x.process_groups["ech"]
+    config_inst.x.process_groups["dech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -167,8 +167,8 @@ def set_config_defaults_and_groups(config_inst):
         "sl_ech": ["1e", "1e__resolved", "1e__boosted"],
         "sl_much_resolved": ["1mu__resolved", "1mu__resolved__1b", "1mu__resolved__2b"],
         "sl_ech_resolved": ["1e__resolved", "1e__resolved__1b", "1e__resolved__2b"],
-        "sl_much_boosted": ["1mu__boosted", "1mu_boosted__1b", "1mu_boosted__2b"],
-        "sl_ech_boosted": ["1e__boosted", "1e__boosted__1b", "1e__boosted__2b"],
+        "sl_much_boosted": ["1mu__boosted"],
+        "sl_ech_boosted": ["1e__boosted"],
         "default": ["incl", "1e", "1mu"],
         "test": ["incl", "1e"],
         "dilep": ["incl", "2e", "2mu", "emu"],
@@ -240,7 +240,7 @@ def set_config_defaults_and_groups(config_inst):
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
             proc.name: {"unstack": True, "scale": 10000}
-            for proc in config_inst.processes if "HH" in proc.name
+            for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "dilep": {
             "ggHH_kl_0_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},

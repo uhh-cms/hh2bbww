@@ -78,6 +78,14 @@ def configure_hbw_processes(config: od.Config):
             id=31199,
             label="QCD Electron enriched",
         )
+    elif qcd_em:
+        qcd_ele = add_parent_process(  # noqa
+            config,
+            [qcd_em],
+            name="qcd_ele",
+            id=31199,
+            label="QCD Electron enriched",
+        )
 
     # custom v_lep process for ML Training, combining W+DY
     w_lnu = config.get_process("w_lnu")
@@ -121,7 +129,7 @@ def configure_hbw_processes(config: od.Config):
             sig.add_process(proc)
 
     # add auxiliary information if process is signal
-    for proc_inst in config.processes:
+    for proc_inst, _, _ in config.walk_processes():
         is_signal = any([
             signal_tag in proc_inst.name
             for signal_tag in ("qqHH", "ggHH", "radion", "gravition")
