@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Selection modules for HH(bbWW) that are used for both SL and DL.
+Selection modules for HH(bbWW) lepton selections.
 """
 
 from __future__ import annotations

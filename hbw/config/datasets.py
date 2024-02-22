@@ -442,7 +442,7 @@ def add_synchronization_dataset(config: od.Config):
     radion_hh_ggf_dl_bbww_m450 = config.add_process(
         name="radion_hh_ggf_dl_bbww_m450",
         id=24563574,  # random number
-        xsecs={13: Number(0.1)},  # TODO
+        xsecs={13: Number(0.1), 13.6: Number(0.1)},  # TODO
     )
 
     config.add_dataset(
