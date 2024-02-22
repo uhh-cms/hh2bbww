@@ -172,6 +172,10 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TripleTightLeptonVeto": r"$N_{lepton}^{tight} \leq 2$",
         "Charge": r"Opposite-charge leptons",
         "Dilepton": r"$N_{lepton} = 2$",
+        "Lep_mm": r"$N_{\mu} = 2$ and $N_{e} = 0$",
+        "Lep_ee": r"$N_{\mu} = 0$ and $N_{e} = 2$",
+        "Lep_emu": r"Leading e, subleading $\mu$",
+        "Lep_mue": r"Leading $\mu$, subleading e",
         "Fake": r"$N_{lepton}^{tight} \leq 1$",
         "SR": r"$N_{lepton}^{tight} = 2$",
         "TriggerAndLep": "Trigger matches Lepton Channel",
@@ -251,6 +255,7 @@ def dl(
     events, vbf_jet_results = self[vbf_jet_selection](events, results, stats, **kwargs)
     results += vbf_jet_results
 
+    results.steps["Resolved"] = (results.steps.nJet1 & results.steps.nBjet1)
     results.steps["ResolvedOrBoosted"] = (
         (results.steps.nJet1 & results.steps.nBjet1 | results.steps.HbbJet)
     )
@@ -285,14 +290,7 @@ def dl_init(self: Selector) -> None:
     # define mapping from selector step to labels used in cutflow plots
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
-        # NOTE: many of these labels are too long for the cf.PlotCutflow task
-        "Jet": r"$N_{jets}^{AK4} \geq 1$",
-        "Bjet": r"$N_{jets}^{BTag} \geq 1$",
-        "Lepton": r"$N_{lepton} \geq  2$",
-        "TriggerAndLep": "Trigger matches Lepton Channel",
         "Resolved": r"$N_{jets}^{AK4} \geq 1$ and $N_{jets}^{BTag} \geq 1$",
-        "HbbJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
-        "VBFJetPair": r"$N_{VBFJetPair}^{AK4} \geq 1$",
         "ResolvedOrBoosted": (
             r"($N_{jets}^{AK4} \geq 3$ and $N_{jets}^{BTag} \geq 1$) "
             r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
