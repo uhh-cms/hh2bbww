@@ -44,7 +44,7 @@ def separate_sig_bkg_hists(hists: OrderedDict):
 
     if not h_sig:
         raise Exception(
-            "No signal processes given. Remember to add the 'is_signal' auxiliary to your "
+            "No signal processes given. Remember to add the 'is_signal' tag to your "
             "signal processes",
         )
     if not h_bkg:
@@ -64,6 +64,8 @@ def plot_s_over_b(
     yscale: str | None = "",
     hide_errors: bool | None = None,
     sqrt_b: bool | None = None,
+    cumsum: bool = False,
+    reversed_cumsum: bool = False,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
@@ -79,6 +81,9 @@ def plot_s_over_b(
             --plot-function hbw.plotting.s_over_b.plot_s_over_b \
             --general-settings sqrt_b
     """
+    if cumsum and reversed_cumsum:
+        raise Exception("We can only do the cumulative cumsum in one direction at the time!")
+
     remove_residual_axis(hists, "shift")
 
     variable_inst = variable_insts[0]
@@ -96,6 +101,18 @@ def plot_s_over_b(
         f"\n    Integrated S over B:     {round_sig(S_over_B)}" +
         f"\n    Integrated S over sqrtB: {round_sig(S_over_sqrtB)}",
     )
+
+    if cumsum or reversed_cumsum:
+        # calculate the cumulative sum of the histograms
+        for h in (h_sig, h_bkg):
+            h_view = h.view()
+            h_view.value = np.cumsum(h_view.value) if cumsum else np.cumsum(h_view.value[::-1])[::-1]
+
+            # TODO: implement correct variances; in the meantime, just set them to 0
+            h_view.variance = [0] * len(h.view())
+
+            # overwrite view of original histograms
+            h[...] = h_view
 
     # NOTE: this does not take into account the variances on the background stack
     if sqrt_b:

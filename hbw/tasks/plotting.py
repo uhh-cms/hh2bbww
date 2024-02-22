@@ -21,6 +21,7 @@ from columnflow.tasks.framework.mixins import (
 from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
 )
+from columnflow.tasks.framework.decorators import view_output_plots
 from columnflow.tasks.plotting import PlotVariables1D
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from hbw.tasks.base import HBWTask
@@ -182,7 +183,10 @@ def plot_postfit_shapes(
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    default_style_config["ax_cfg"].pop("xlim")
+
+    # since we are rebinning, the xlim should be defined based on the histograms itself
+    bin_edges = list(hists.values())[0].axes[0].edges
+    default_style_config["ax_cfg"]["xlim"] = (bin_edges[0], bin_edges[-1])
 
     style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
     if shape_norm:
@@ -235,6 +239,7 @@ class PlotPostfitShapes(
     def output(self):
         return {"plots": self.target("plots", dir=True)}
 
+    @view_output_plots
     def run(self):
         logger.warning(
             f"Note! It is important that the requested inference_model {self.inference_model} "
