@@ -12,9 +12,9 @@ def default_calibrator(cls, container, task_params):
 
 def default_selector(cls, container, task_params):
     if container.has_tag("is_sl"):
-        selector = "sl"
+        selector = "sl1"
     elif container.has_tag("is_dl"):
-        selector = "dl"
+        selector = "dl1"
 
     return selector
 
