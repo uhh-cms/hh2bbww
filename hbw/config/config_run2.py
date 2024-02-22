@@ -292,6 +292,18 @@ def add_config(
         "b": -0.0005,
     }
 
+    # V+jets reweighting
+    cfg.x.vjets_reweighting = DotDict.wrap({
+        "w": {
+            "value": "wjets_kfactor_value",
+            "error": "wjets_kfactor_error",
+        },
+        "z": {
+            "value": "zjets_kfactor_value",
+            "error": "zjets_kfactor_error",
+        },
+    })
+
     # TODO: check e/mu/btag corrections and implement
     # btag weight configuration
     cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
@@ -321,9 +333,16 @@ def add_config(
             "normalized_pu_weight": "normalized_pu_weight_{name}",
         },
     )
+
+    # top pt reweighting
     cfg.add_shift(name="top_pt_up", id=9, type="shape")
     cfg.add_shift(name="top_pt_down", id=10, type="shape")
     add_shift_aliases(cfg, "top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
+
+    # V+jets reweighting
+    cfg.add_shift(name="vjets_up", id=11, type="shape")
+    cfg.add_shift(name="vjets_down", id=12, type="shape")
+    add_shift_aliases(cfg, "vjets", {"vjets_weight": "vjets_weight_{direction}"})
 
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
@@ -412,11 +431,11 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
     if cfg.x.run == 2:
-        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+        # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
-        json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
         corr_tag = f"{year}_Summer22{jerc_postfix}"
 
     cfg.x.external_files = DotDict.wrap({
@@ -437,6 +456,9 @@ def add_config(
 
         # met phi corrector
         "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
+
+        # V+jets reweighting
+        "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
     })
 
     # temporary fix due to missing corrections in run 3
@@ -557,7 +579,7 @@ def add_config(
             # Gen information (for categorization)
             "HardGenPart.pdgId",
             # Gen information for pt reweighting
-            "GenPartonTop.pt",
+            "GenPartonTop.pt", "GenVBoson.pt",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",

@@ -501,33 +501,42 @@ def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = 
         # add aux info to datasets
         # TODO: switch from aux to tags for booleans
         if dataset.name.startswith(("st", "tt")):
-            dataset.x.has_top = True
+            # dataset.x.has_top = True
             dataset.add_tag("has_top")
         if dataset.name.startswith("tt"):
-            dataset.x.is_ttbar = True
+            # dataset.x.is_ttbar = True
             dataset.add_tag("is_ttbar")
+
+        if dataset.name.startswith("dy_"):
+            dataset.add_tag("is_v_jets")
+            dataset.add_tag("is_z_jets")
+        if dataset.name.startswith("w_"):
+            dataset.add_tag("is_v_jets")
+            dataset.add_tag("is_w_jets")
+
         if dataset.name.startswith("qcd"):
-            dataset.x.is_qcd = True
+            # dataset.x.is_qcd = True
             dataset.add_tag("is_qcd")
+
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             # TODO: the is_hbw tag is used at times were we should ask for is_hbw_sl
             dataset.add_tag("is_hbw")
-            dataset.x.is_hbw = True
+            # dataset.x.is_hbw = True
             if "_sl_" in dataset.name:
                 dataset.add_tag("is_hbw_sl")
             elif "_dl_" in dataset.name:
                 dataset.add_tag("is_hbw_dl")
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
-            dataset.x.skip_scale = True
-            dataset.x.skip_pdf = True
+            # dataset.x.skip_scale = True
+            # dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
 
         if dataset.has_tag("is_hbw") and "custom" in dataset.name:
             # No PDF weights and 6 scale weights in custom HH samples
-            dataset.x.skip_scale = True
-            dataset.x.skip_pdf = True
+            # dataset.x.skip_scale = True
+            # dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
         elif config.campaign.x.year == 2017:
