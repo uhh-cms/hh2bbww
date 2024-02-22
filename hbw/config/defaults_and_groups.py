@@ -270,6 +270,9 @@ def set_config_defaults_and_groups(config_inst):
 
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
+        "small_legend": {
+            "legend_cfg": {"ncols": 2, "fontsize": 16},
+        },
         "example": {
             "legend_cfg": {"title": "my custom legend title", "ncols": 2},
             "ax_cfg": {"ylabel": "my ylabel", "xlim": (0, 100)},

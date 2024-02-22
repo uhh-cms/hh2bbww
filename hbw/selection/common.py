@@ -353,6 +353,7 @@ def lepton_definition(
     )
 
     # tau veto mask (only needed in SL?)
+    # TODO: update criteria
     tau_mask_veto = (
         (abs(events.Tau.eta) < 2.3) &
         # (abs(events.Tau.dz) < 0.2) &
@@ -642,7 +643,7 @@ def sl_boosted_jet_selection_init(self: Selector) -> None:
 
     # add produced variables to *produces* only when requested
     if self.config_inst.x("do_cutflow_features", False):
-        self.uses |= {"cutflow.n_fatjet", "cutflow.n_hbbjet"} | four_vec(
+        self.produces |= {"cutflow.n_fatjet", "cutflow.n_hbbjet"} | four_vec(
             {"FatJet", "HbbJet"},
             {"n_subjets", "n_separated_jets", "max_dr_ak4"},
             skip_defaults=True,

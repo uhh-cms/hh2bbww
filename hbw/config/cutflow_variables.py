@@ -47,7 +47,7 @@ def add_cutflow_variables(config: od.Config) -> None:
 
     # number of objects
     for obj in (
-            "jet", "deepjet_med", "fatjet", "hbbjet", "electron", "muon", "lepton",
+            "deepjet_med", "fatjet", "hbbjet", "electron", "muon", "lepton",
             "veto_electron", "veto_muon", "veto_lepton", "veto_tau",
     ):
         config.add_variable(
