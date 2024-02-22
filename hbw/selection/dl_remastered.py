@@ -10,11 +10,9 @@ from typing import Tuple
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
-from hbw.selection.common import (
-    jet_selection, lepton_definition,
-    masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
-    pre_selection, post_selection,
-)
+from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection
+from hbw.selection.lepton import lepton_definition
+from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
 
 np = maybe_import("numpy")
