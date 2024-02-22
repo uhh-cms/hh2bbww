@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import Tuple
 
 import law
+import order as od
 
 from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
@@ -121,9 +122,8 @@ def jet_selection(
     steps["nJet4"] = events.cutflow.n_jet >= 4
 
     # define btag mask
-    wp_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
     b_score = events.Jet[self.config_inst.x.btag_column]
-    btag_mask = (jet_mask) & (b_score >= wp_score)
+    btag_mask = (jet_mask) & (b_score >= self.config_inst.x.btag_wp_score)
 
     # add btag steps
     events = set_ak_column(events, "cutflow.n_btag", ak.sum(btag_mask, axis=1))
@@ -166,6 +166,9 @@ def jet_selection_init(self: Selector) -> None:
     # set the main b_tagger + working point as defined from the selector
     self.config_inst.x.b_tagger = self.b_tagger
     self.config_inst.x.btag_wp = self.btag_wp
+    self.config_inst.x.btag_wp_score = (
+        self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
+    )
 
     self.btag_column = self.config_inst.x.btag_column = {
         "deepjet": "btagDeepFlavB",
@@ -208,6 +211,7 @@ def jet_selection_init(self: Selector) -> None:
             )
 
         add_jet_cutflow_variables(self.config_inst)
+
 
 @selector(
     uses=(
@@ -299,7 +303,7 @@ def lepton_definition(
     steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
 
     # get the correct btag WPs and column from the config (as setup by jet_selection)
-    btag_wp_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
+    btag_wp_score = self.config_inst.x.btag_wp_score
     btag_tight_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger]["tight"]
     btag_column = self.config_inst.x.btag_column
 
@@ -421,7 +425,7 @@ def lepton_definition_init(self: Selector) -> None:
 
 
 @selector(
-    uses=four_vec("Jet", {"btagDeepFlavB"}),
+    uses={jet_selection} | four_vec("Jet"),
     exposed=False,
 )
 def vbf_jet_selection(
@@ -496,20 +500,14 @@ def vbf_jet_selection_init(self: Selector) -> None:
 
 @selector(
     uses=(
+        {
+            jet_selection,
+        } |
         four_vec(
             {"Jet", "Electron", "Muon"},
         ) | {"Jet.jetId"} |
         four_vec(
             "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subJetIdx2", "tau1", "tau2"},
-        )
-    ),
-    produces=(
-        # NOTE: we should only produce them when cutflow is required
-        {"cutflow.n_fatjet", "cutflow.n_hbbjet"} |
-        four_vec(
-            {"FatJet", "HbbJet"},
-            {"n_subjets", "n_separated_jets", "max_dr_ak4"},
-            skip_defaults=True,
         )
     ),
     exposed=False,
@@ -585,14 +583,16 @@ def sl_boosted_jet_selection(
     hbbjets_no_bjet = hbbjets[subjets_mask_no_bjet]
     hbbjet_sel_no_bjet = ak.num(hbbjets_no_bjet, axis=1) >= 1
 
-    # requirements on H->bb subjets (with b-tagging)
-    wp_med = self.config_inst.x.btag_working_points.deepjet.medium
+    # get the correct btag WPs and column from the config (as setup by jet_selection)
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    btag_column = self.config_inst.x.btag_column
+
     subjets_mask = (
         (abs(subjet1.eta) < 2.4) & (abs(subjet2.eta) < 2.4) &
         (subjet1.pt > 20) & (subjet2.pt > 20) &
         (
-            ((subjet1.pt > 30) & (subjet1.btagDeepFlavB > wp_med)) |
-            ((subjet2.pt > 30) & (subjet2.btagDeepFlavB > wp_med))
+            ((subjet1.pt > 30) & (subjet1[btag_column] > btag_wp_score)) |
+            ((subjet2.pt > 30) & (subjet2[btag_column] > btag_wp_score))
         )
     )
 
@@ -639,6 +639,14 @@ def sl_boosted_jet_selection_init(self: Selector) -> None:
     self.config_inst.x.selector_step_labels.update({
         "HbbJet": r"$N_{H \rightarrow bb}^{AK8} \geq 1$",
     })
+
+    # add produced variables to *produces* only when requested
+    if self.config_inst.x("do_cutflow_features", False):
+        self.uses |= {"cutflow.n_fatjet", "cutflow.n_hbbjet"} | four_vec(
+            {"FatJet", "HbbJet"},
+            {"n_subjets", "n_separated_jets", "max_dr_ak4"},
+            skip_defaults=True,
+        )
 
 
 # boosted selection for the DL channel (only one parameter needs to be changed)
