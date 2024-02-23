@@ -35,7 +35,7 @@ logger = law.logger.get_logger(__name__)
             "mvaTTH", "jetRelIso",  # cone-pt
             "deltaEtaSC", "sieie", "hoe", "eInvMinusPInv", "convVeto", "jetIdx",  # Fakeable Electron
         }) | optional({
-            "Electron.mvaIsoWP90", "Electron.mvaFall17V2Iso_WP90",  # columns that differ in Run 2 and 3
+            "Electron.mvaIso_WP90", "Electron.mvaFall17V2Iso_WP90",  # columns that differ in Run 2 and 3
         }) |
         four_vec("Muon", {
             "dxy", "dz", "miniPFRelIso_all", "sip3d", "looseId",  # Muon Preselection
@@ -82,7 +82,7 @@ def lepton_definition(
     muon = events.Muon
 
     # mva isolation, depends on data-taking campaign (could also be done in the init)
-    e_mva_iso_column = "mvaIsoWP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
+    e_mva_iso_column = "mvaIso_WP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
 
     # preselection masks
     e_mask_loose = (
