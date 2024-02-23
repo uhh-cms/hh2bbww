@@ -105,17 +105,14 @@ class MLClassifierBase(MLModel):
         return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        columns = set(self.input_features)
-        if self.dataset_inst.is_mc:
-            # TODO: switch to full event weight
-            columns.add("normalization_weight")
-        return columns
+        return set(self.input_features) | {"normalization_weight"} | {"category_ids"}
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
         for proc in self.processes:
             produced.add(f"mlscore.{proc}")
-
+            produced.add(f"{self.cls_name}.score_{proc}")
+        produced.add("category_ids")
         return produced
 
     def output(self, task: law.Task) -> dict[law.FileSystemTarget]:
@@ -693,8 +690,11 @@ class MLClassifierBase(MLModel):
             events = set_ak_column(
                 events, f"mlscore.{proc}", outputs[:, i],
             )
-
+            events = set_ak_column(
+                events, f"{self.cls_name}.score_{proc}", outputs[:, i],
+            )
         return events
+
 
 
 class ExampleDNN(MLClassifierBase):

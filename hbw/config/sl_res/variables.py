@@ -471,9 +471,9 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="pnn_feature",
-        binning=(100, 0., 1000.),
+        binning=(50, 0., 1500.),
         unit="GeV",
-        x_title=r"pnn variable bkg2",
+        x_title=r"pnn additional node",
     )
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta"]:

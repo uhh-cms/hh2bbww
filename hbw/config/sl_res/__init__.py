@@ -16,6 +16,10 @@ def configure_sl_res(config: od.Config):
     config.x.keep_columns["cf.ReduceEvents"] = (
         config.x.keep_columns["cf.ReduceEvents"] | four_vec("Lightjet", {"btagDeepFlavB", "hadronFlavour"})
     )
-
-    # set some config defaults and groups
-    # set_config_defaults_and_groups(config)
+    sig_true_mass = [250, 300, 350, 400, 450, 600, 750, 1000]
+    for mass in sig_true_mass: 
+        dataset_signal = config.get_dataset(f"graviton_hh_ggf_bbww_m{mass}_madgraph")
+        dataset_signal.add_tag(f"is_graviton{mass}")
+    for dataset in config.datasets:
+        if dataset.name.startswith(("st", "tt", "dy", "w_lnu")):
+            dataset.add_tag("is_bkg_pnn")
