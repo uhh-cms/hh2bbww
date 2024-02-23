@@ -5,7 +5,7 @@ Column producers related to gen-level top quark.
 """
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, has_ak_column, optional_column as optional
+from columnflow.columnar_util import set_ak_column, has_ak_column
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -13,15 +13,10 @@ coffea = maybe_import("coffea")
 maybe_import("coffea.nanoevents.methods.nanoaod")
 
 
-# TODO
-
-
 @producer(
     uses={"GenPart.pdgId", "GenPart.statusFlags"},
-    # requested columns, passed to the *uses* and *produces*
+    # requested GenPartonTop columns, passed to the *uses* and *produces*
     produced_top_columns={"pt"},
-    # needs to be set to False because of the top_pt_weight Producer :/
-    check_used_columns=False,
     mc_only=True,
 )
 def gen_parton_top(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -62,13 +57,11 @@ def gen_parton_top_skip(self: Producer) -> bool:
 
 @producer(
     uses={
-        gen_parton_top, optional("GenPartonTop.pt"),
+        "GenPartonTop.pt",
     },
     produces={
         "top_pt_weight", "top_pt_weight_up", "top_pt_weight_down",
     },
-    # we cannot check used columns since there are two possible sets of columns that work with this Producer
-    check_used_columns=False,
     get_top_pt_config=(lambda self: self.config_inst.x.top_pt_reweighting_params),
 )
 def top_pt_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -78,10 +71,6 @@ def top_pt_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     The SF should *only be applied in ttbar MC* as an event weight computed
     based on the gen-level top quark transverse momenta.
     """
-
-    # fail if not run in ttbar simulation
-    if not self.dataset_inst.has_tag("is_ttbar"):
-        raise Exception(f"gen_top_pt_weight should only run for ttbar dataset, got {self.dataset_inst}")
 
     # get SF function parameters from config
     params = self.get_top_pt_config()

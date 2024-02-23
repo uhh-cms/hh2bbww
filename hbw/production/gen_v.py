@@ -20,7 +20,7 @@ ak = maybe_import("awkward")
         "GenPart.genPartIdxMother", "GenPart.pdgId", "GenPart.statusFlags",
         "GenPart.pt", "GenPart.eta", "GenPart.phi", "GenPart.mass",
     },
-    # requested columns, passed to the *uses* and *produces*
+    # requested GenVBoson columns, passed to the *uses* and *produces*
     produced_v_columns={"pt"},
     mc_only=True,
 )
