@@ -84,7 +84,10 @@ def lepton_definition(
     # mva isolation, depends on data-taking campaign (could also be done in the init)
     e_mva_iso_column = "mvaIso_WP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
 
+    #
     # preselection masks
+    #
+
     e_mask_loose = (
         # (electron.cone_pt >= 7) &
         (electron.pt >= 7) &
@@ -107,29 +110,19 @@ def lepton_definition(
         (muon.looseId)
     )
 
-    # lepton invariant mass cuts
-    loose_leptons = ak.concatenate([
-        events.Electron[e_mask_loose] * 1,
-        events.Muon[mu_mask_loose] * 1,
-    ], axis=1)
+    # TODO: I am not sure if the lepton.matched_jet is working as intended
+    # TODO: fakeable masks seem to be too tight
 
-    lepton_pairs = ak.combinations(loose_leptons, 2)
-    l1, l2 = ak.unzip(lepton_pairs)
-    lepton_pairs["m_inv"] = (l1 + l2).mass
-
-    steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
-    steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
+    #
+    # fakeable masks
+    #
 
     # get the correct btag WPs and column from the config (as setup by jet_selection)
     btag_wp_score = self.config_inst.x.btag_wp_score
     btag_tight_score = self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger]["tight"]
     btag_column = self.config_inst.x.btag_column
 
-    # TODO: I am not sure if the lepton.matched_jet is working as intended
-    # TODO: fakeable masks seem to be too tight
-
-    # fakeable masks
-    e_mask_fakeable = (
+    e_mask_fakeable = ak.fill_none((
         e_mask_loose &
         (
             (abs(electron.eta + electron.deltaEtaSC) > 1.479) & (electron.sieie <= 0.030) |
@@ -146,20 +139,22 @@ def lepton_definition(
         ) &
         (electron.matched_jet[btag_column] <= btag_wp_score) &
         ((electron.mvaTTH >= 0.30) | (electron.jetRelIso < 0.70))
-    )
+    ), False)
 
-    mu_mask_fakeable = (
+    mu_mask_fakeable = ak.fill_none((
         mu_mask_loose &
         (muon.cone_pt >= 10) &
         (
             ((muon.mvaTTH < 0.50) & (muon.matched_jet[btag_column] <= btag_tight_score)) |
             ((muon.mvaTTH >= 0.50) & (muon.matched_jet[btag_column] <= btag_wp_score))
         ) &
-        # missing: DeepJet of nearby jet
         ((muon.mvaTTH >= 0.50) | (muon.jetRelIso < 0.80))
-    )
+    ), False)
 
+    #
     # tight masks
+    #
+
     e_mask_tight = (
         e_mask_fakeable &
         (electron.mvaTTH >= 0.30)
@@ -180,6 +175,19 @@ def lepton_definition(
         (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
         (events.Tau.idDeepTau2017v2p1VSjet >= 2)  # 2: VVLoose
     )
+
+    # lepton invariant mass cuts
+    loose_leptons = ak.concatenate([
+        events.Electron[e_mask_loose] * 1,
+        events.Muon[mu_mask_loose] * 1,
+    ], axis=1)
+
+    lepton_pairs = ak.combinations(loose_leptons, 2)
+    l1, l2 = ak.unzip(lepton_pairs)
+    lepton_pairs["m_inv"] = (l1 + l2).mass
+
+    steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
+    steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
 
     # store number of Loose/Fakeable/Tight electrons/muons/taus as cutflow variables
     events = set_ak_column(events, "cutflow.n_loose_electron", ak.sum(e_mask_loose, axis=1))
@@ -217,7 +225,6 @@ def lepton_definition(
             "e_mask_tight": e_mask_tight,
         },
     )
-
     return events, lepton_results
 
 
