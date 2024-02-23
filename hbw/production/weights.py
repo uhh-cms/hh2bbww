@@ -61,6 +61,27 @@ def event_weight_init(self: Producer) -> None:
     self.uses |= set(self.dataset_inst.x("event_weights", {}).keys())
 
 
+# copy of the btag_weights setup, removing the version check
+# TODO: should be done in columnflow
+@btag_weights.setup
+def btag_weights_setup(
+    self: Producer,
+    reqs: dict,
+    inputs: dict,
+    reader_targets,
+) -> None:
+    bundle = reqs["external_files"]
+
+    # create the btag sf corrector
+    import correctionlib
+    correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
+    correction_set = correctionlib.CorrectionSet.from_string(
+        self.get_btag_file(bundle.files).load(formatter="gzip").decode("utf-8"),
+    )
+    corrector_name = self.get_btag_config()[0]
+    self.btag_sf_corrector = correction_set[corrector_name]
+
+
 @producer(
     uses={gen_parton_top, gen_v_boson, pu_weight},
     produces={gen_parton_top, gen_v_boson, pu_weight},

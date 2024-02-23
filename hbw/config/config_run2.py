@@ -461,19 +461,24 @@ def add_config(
         "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
     })
 
-    # temporary fix due to missing corrections in run 3
-    # electron, muon and met still missing, btag, and pu are TODO
     if cfg.x.run == 3:
-        cfg.add_tag("skip_pu_weights")
+        # inconsistent naming in the jsonpog integration...
+        corr_tag = f"2022{jerc_postfix}_27Jun2023"
+        cfg.x.external_files["muon_sf"] = (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1")
 
-        cfg.add_tag("skip_btag_weights")
-        cfg.x.external_files.pop("btag_sf_corr")
+    # temporary fix due to missing corrections in run 3
+    # electron and met still missing
+    if cfg.x.run == 3:
+        # cfg.add_tag("skip_pu_weights")
+
+        # cfg.add_tag("skip_btag_weights")
+        # cfg.x.external_files.pop("btag_sf_corr")
 
         cfg.add_tag("skip_electron_weights")
         cfg.x.external_files.pop("electron_sf")
 
-        cfg.add_tag("skip_muon_weights")
-        cfg.x.external_files.pop("muon_sf")
+        # cfg.add_tag("skip_muon_weights")
+        # cfg.x.external_files.pop("muon_sf")
 
         cfg.x.external_files.pop("met_phi_corr")
 
