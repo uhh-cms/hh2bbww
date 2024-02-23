@@ -21,7 +21,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses={increment_stats, "normalization_weight", "process_id"},
+    uses={increment_stats, "process_id"},
     # produces={"dummy"},
 )
 def ml_preparation(
@@ -36,14 +36,14 @@ def ml_preparation(
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
 
-    weight = events["normalization_weight"]
     stats["num_events"] += len(events)
-    stats["sum_weights"] += ak.sum(weight, axis=0)
-
     weight_map = {
         "num_events": Ellipsis,  # all events
     }
+
     if self.task.dataset_inst.is_mc:
+        weight = events["normalization_weight"]
+        stats["sum_weights"] += ak.sum(weight, axis=0)
         weight_map["sum_weights"] = weight
         weight_map["sum_abs_weights"] = (weight, weight > 0)
         weight_map["sum_pos_weights"] = np.abs(weight)
@@ -70,5 +70,14 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
-
     return events
+
+
+@ml_preparation.init
+def ml_preparation_init(self):
+    # TODO: we access self.task.dataset_inst instead of self.dataset_inst due to an issue
+    # with the preparation producer initialization
+    if not getattr(self.task, "dataset_inst", None) or self.task.dataset_inst.is_data:
+        return
+
+    self.uses.add("normalization_weight")

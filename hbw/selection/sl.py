@@ -14,6 +14,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.categories import category_ids
 from columnflow.production.processes import process_ids
 
+from hbw.util import four_vec
 from hbw.selection.common import (
     masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
     pre_selection, post_selection,
@@ -27,7 +28,9 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    uses={"Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.jetId"},
+    uses=four_vec("Jet", {
+        "btagDeepFlavB", "jetId", "puId",
+    }),
     produces={"cutflow.n_jet", "cutflow.n_deepjet_med"},
     exposed=True,
 )
@@ -38,19 +41,23 @@ def sl_jet_selection(
     stats: defaultdict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
+    # NanoAOD documentation: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD#Jets
     # HH -> bbWW(qqlnu) jet selection
-    # - require at least 3 jets with pt>30, eta<2.4
-    # - require at least 1 jet with pt>30, eta<2.4, b-score>0.3040 (Medium WP)
+    # - require at least 3 jets with pt>25, eta<2.4
+    # - require at least 1 jet with pt>25, eta<2.4, b-score>0.3040 (Medium WP)
 
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
-
     # jets
     jet_mask_loose = (events.Jet.pt > 5) & abs(events.Jet.eta < 2.4)
     jet_mask = (
         (events.Jet.pt > 25) & (abs(events.Jet.eta) < 2.4) & (events.Jet.jetId == 6) &
         ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
     )
+    # apply loose Jet puId to jets with pt below 50 GeV
+    jet_pu_mask = (events.Jet.puId >= 4) | (events.Jet.pt > 50)
+    jet_mask = jet_mask & jet_pu_mask
+
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
     jet_sel = events.cutflow.n_jet >= 3
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
@@ -269,7 +276,7 @@ def sl(
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
-        # NOTE: the boosted selection actually includes a b-jet selection...
+        results.steps.cleanup &
         (results.steps.Jet | results.steps.HbbJet_no_bjet) &
         results.steps.Lepton &
         results.steps.VetoLepton &
@@ -285,6 +292,7 @@ def sl(
         results.steps.all_but_bjet &
         ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )
+    results.steps["all"] = results.event
 
     # build categories
     events, results = self[post_selection](events, results, stats, **kwargs)

@@ -10,6 +10,7 @@ from typing import Callable
 
 # import luigi
 import law
+import order as od
 
 from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT
 from columnflow.tasks.framework.parameters import SettingsParameter
@@ -22,6 +23,9 @@ from columnflow.util import dev_sandbox, maybe_import
 from hbw.tasks.base import HBWTask
 
 array = maybe_import("array")
+
+
+logger = law.logger.get_logger(__name__)
 
 
 def get_hist_name(cat_name: str, proc_name: str, syst_name: str | None = None) -> str:
@@ -72,7 +76,7 @@ def get_rebin_values(hist, N_bins_final: int = 10):
 
     # determine events per bin the final histogram should have
     events_per_bin = hist.Integral() / N_bins_final
-    print(f"============ {round(events_per_bin, 3)} events per bin")
+    logger.info(f"============ {round(events_per_bin, 3)} events per bin")
 
     # bookkeeping number of bins and number of events
     bin_count = 1
@@ -88,17 +92,17 @@ def get_rebin_values(hist, N_bins_final: int = 10):
 
         N_events += hist.GetBinContent(i)
         if i % 100 == 0:
-            print(f"========== Bin {i} of {N_bins_input}, {N_events} events")
+            logger.info(f"========== Bin {i} of {N_bins_input}, {N_events} events")
         if N_events >= events_per_bin * bin_count:
             # when *N_events* surpasses threshold, append the corresponding bin edge and count
-            print(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
+            logger.info(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
             rebin_values.append(hist.GetBinLowEdge(i + 1))
             bin_count += 1
 
     # final bin is x_max
     x_max = hist.GetBinLowEdge(N_bins_input + 1)
     rebin_values.append(x_max)
-    print(f"final bin edges: {rebin_values}")
+    logger.info(f"final bin edges: {rebin_values}")
     return rebin_values
 
 
@@ -127,15 +131,15 @@ def check_empty_bins(hist, fill_empty: float = 1e-5, required_entries: int = 3) 
         value = hist.GetBinContent(i)
         error = hist.GetBinError(i)
         if value <= 0:
-            print(f"==== Found empty or negative bin {i}, (value: {value}, error: {error})")
+            logger.info(f"==== Found empty or negative bin {i}, (value: {value}, error: {error})")
             count += 1
             if fill_empty >= 0:
-                print(f"     Bin {i} value + error will be filled with {fill_empty}")
+                logger.info(f"     Bin {i} value + error will be filled with {fill_empty}")
                 hist.SetBinContent(i, fill_empty)
                 hist.SetBinError(i, fill_empty)
 
         if error > max_error(value):
-            print(
+            logger.warning(
                 f"==== Bin {i} has less than {required_entries} entries (value: {value}, error: {error}); "
                 f"Rebinning procedure might have to be restarted with less bins than {hist.GetNbinsX()}",
             )
@@ -143,12 +147,12 @@ def check_empty_bins(hist, fill_empty: float = 1e-5, required_entries: int = 3) 
 
 
 def print_hist(hist, max_bins: int = 20):
-    print("Printing bin number, lower edge and bin content")
+    logger.info("Printing bin number, lower edge and bin content")
     for i in range(0, hist.GetNbinsX() + 2):
         if i > max_bins:
             return
 
-        print(f"{i} \t {hist.GetBinLowEdge(i)} \t {hist.GetBinContent(i)}")
+        logger.info(f"{i} \t {hist.GetBinLowEdge(i)} \t {hist.GetBinContent(i)}")
 
 
 class ModifyDatacardsFlatRebin(
@@ -185,11 +189,17 @@ class ModifyDatacardsFlatRebin(
         params = super().resolve_param_values(params)
 
         if config_inst := params.get("config_inst"):
-            def resolve_category_groups(param, group_str):
+            def resolve_category_groups(param):
+                outp_param = {}
                 for cat_name in list(param.keys()):
-                    if resolved_cats := config_inst.x(group_str, {}).get(cat_name, None):
+                    resolved_cats = cls.find_config_objects(
+                        (cat_name,), config_inst, od.Category,
+                        object_groups=config_inst.x.category_groups, deep=True,
+                    )
+                    if resolved_cats:
                         for resolved_cat in law.util.make_tuple(resolved_cats):
-                            param[resolved_cat] = param[cat_name]
+                            outp_param[resolved_cat] = param[cat_name]
+                return outp_param
 
             # resolve default and groups for `bins_per_category`
             params["bins_per_category"] = cls.resolve_config_default(
@@ -198,7 +208,7 @@ class ModifyDatacardsFlatRebin(
                 container=config_inst,
                 default_str="default_bins_per_category",
             )
-            resolve_category_groups(params["bins_per_category"], "inference_category_groups")
+            params["bins_per_category"] = resolve_category_groups(params["bins_per_category"])
 
             # set `inference_category_rebin_processes` as parameter and resolve groups
             params["inference_category_rebin_processes"] = cls.resolve_config_default(
@@ -207,25 +217,34 @@ class ModifyDatacardsFlatRebin(
                 container=config_inst,
                 default_str="inference_category_rebin_processes",
             )
-            resolve_category_groups(params["inference_category_rebin_processes"], "inference_category_groups")
-
+            params["inference_category_rebin_processes"] = resolve_category_groups(
+                params["inference_category_rebin_processes"],
+            )
         return params
 
     def get_n_bins(self, DEFAULT_N_BINS=8):
         """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
-        cat_name = self.branch_data.name
-        return int(self.bins_per_category.get(cat_name, DEFAULT_N_BINS))
+        config_category = self.branch_data.config_category
+        n_bins = self.bins_per_category.get(config_category, None)
+        if not n_bins:
+            logger.warning(f"No number of bins setup for category {config_category}; will default to {DEFAULT_N_BINS}.")
+            n_bins = DEFAULT_N_BINS
+        return int(n_bins)
 
     def get_rebin_processes(self):
         """
         Method to resolve the requested processes on which to flatten the histograms of the current category.
         Defaults to all processes of the current category.
         """
-        cat_name = self.branch_data.name
+        config_category = self.branch_data.config_category
         proc_names = [proc.name for proc in self.branch_data.processes]
 
-        rebin_process_condition = self.inference_category_rebin_processes.get(cat_name, None)
+        rebin_process_condition = self.inference_category_rebin_processes.get(config_category, None)
         if not rebin_process_condition:
+            logger.warning(
+                f"No rebin condition found for category {config_category}; rebinning will be flat "
+                f"on all processes {proc_names}",
+            )
             return proc_names
 
         # transform `rebin_process_condition` into Callable if required
@@ -237,7 +256,7 @@ class ModifyDatacardsFlatRebin(
             # check for each process if the *rebin_process_condition*  is fulfilled
             if not rebin_process_condition(proc_name):
                 proc_names.remove(proc_name)
-
+        logger.info(f"Category {config_category} will be rebinned flat in processes {proc_names}")
         return proc_names
 
     def create_branch_map(self):
@@ -254,7 +273,6 @@ class ModifyDatacardsFlatRebin(
         reqs = {
             "datacards": self.reqs.CreateDatacards.req(self),
         }
-
         return reqs
 
     def output(self):
@@ -286,7 +304,7 @@ class ModifyDatacardsFlatRebin(
         outputs["card"].dump(datacard, formatter="text")
 
         with uproot.open(inp_shapes.fn) as file:
-            print(f"File keys: {file.keys()}")
+            logger.info(f"File keys: {file.keys()}")
             # determine which histograms are present
             cat_names, proc_names, syst_names = get_cat_proc_syst_names(file)
 
@@ -319,7 +337,7 @@ class ModifyDatacardsFlatRebin(
             for h in hists[1:]:
                 hist += h
 
-            print(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
+            logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
             rebin_values = get_rebin_values(hist, self.get_n_bins())
             outputs["edges"].dump(rebin_values, formatter="json")
 
@@ -339,5 +357,86 @@ class ModifyDatacardsFlatRebin(
 
                 h_rebin = apply_binning(h, rebin_values)
                 problematic_bin_count = check_empty_bins(h_rebin)  # noqa
-                print(f"Inserting histogram with name {key}")
+                logger.info(f"Inserting histogram with name {key}")
                 out_file[key] = uproot.from_pyroot(h_rebin)
+
+
+class PrepareInferenceTaskCalls(
+    HBWTask,
+    InferenceModelMixin,
+    MLModelsMixin,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    """
+    Simple task that produces string to run certain tasks in Inference
+    """
+
+    # upstream requirements
+    reqs = Requirements(
+        ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
+    )
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["rebinned_datacards"] = self.reqs.ModifyDatacardsFlatRebin.req(self)
+
+        return reqs
+
+    def requires(self):
+        reqs = {
+            "rebinned_datacards": self.reqs.ModifyDatacardsFlatRebin.req(self),
+        }
+        return reqs
+
+    def output(self):
+        return {
+            "PlotUpperLimitsAtPoint": self.target("PlotUpperLimitsAtPoint.txt"),
+            "PlotUpperLimitsPoint": self.target("PlotUpperLimitsPoint.txt"),
+            "FitDiagnostics": self.target("FitDiagnostics.txt"),
+        }
+
+    def run(self):
+        inputs = self.input()
+        output = self.output()
+
+        # string that represents the version of datacards
+        identifier = "__".join([self.config, self.selector, self.inference_model, self.version])
+
+        # get the datacard names from the inputs
+        collection = inputs["rebinned_datacards"]["collection"]
+        card_fns = [collection[key]["card"].fn for key in collection.keys()]
+
+        # get the category names from the inference models
+        categories = self.inference_model_inst.categories
+        cat_names = [c.name for c in categories]
+
+        # combine category names with card fn to a single string
+        datacards = ",".join([f"{cat_name}={card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+
+        print("\n\n")
+        # creating upper limits for kl=1
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --multi-datacards {datacards} "
+            f"--datacard-names {identifier}"
+        )
+        print(cmd, "\n\n")
+        output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
+
+        # creating kl scan
+        cmd = (
+            f"law run PlotUpperLimits --version {identifier} --datacards {datacards} "
+            f"--xsec fb --y-log"
+        )
+        print(cmd, "\n\n")
+        output["PlotUpperLimitsPoint"].dump(cmd, formatter="text")
+
+        # running FitDiagnostics for Pre+Postfit plots
+        cmd = (
+            f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
+            f"--skip-b-only"
+        )
+        print(cmd, "\n\n")
+        output["FitDiagnostics"].dump(cmd, formatter="text")

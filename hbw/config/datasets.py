@@ -182,6 +182,9 @@ def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = 
             dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
+        else:
+            # our default Run2 signal samples are EOY, so we have to skip golden json, certain met filter
+            dataset.add_tag("is_eoy")
 
 
 def get_custom_hh_datasets(
