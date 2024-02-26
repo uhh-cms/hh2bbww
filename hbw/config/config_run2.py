@@ -304,17 +304,31 @@ def add_config(
         },
     })
 
-    # TODO: check e/mu/btag corrections and implement
-    # btag weight configuration
-    cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+    if cfg.x.run == 2 :
+        # btag weight configuration
+        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
 
-    # names of electron correction sets and working points
-    # (used in the electron_sf producer)
-    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
+        # names of electron correction sets and working points
+        # (used in the electron_sf producer)
+        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
 
-    # names of muon correction sets and working points
-    # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+        # names of muon correction sets and working points
+        # (used in the muon producer)
+        cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+
+    elif cfg.x.run == 3:
+        # TODO: check that everyting is setup as intended
+
+        # btag weight configuration
+        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+
+        # names of electron correction sets and working points
+        # (used in the electron_sf producer)
+        cfg.x.electron_sf_names = ("TODO", f"{cfg.x.cpn_tag}", "TODO")
+
+        # names of muon correction sets and working points
+        # (used in the muon producer)
+        cfg.x.muon_sf_names = ("NUM_TightMiniIso_DEN_MediumID", f"{cfg.x.cpn_tag}")
 
     # register shifts
     # TODO: make shifts year-dependent
@@ -472,13 +486,11 @@ def add_config(
         # cfg.add_tag("skip_pu_weights")
 
         # cfg.add_tag("skip_btag_weights")
-        # cfg.x.external_files.pop("btag_sf_corr")
 
         cfg.add_tag("skip_electron_weights")
         cfg.x.external_files.pop("electron_sf")
 
-        # cfg.add_tag("skip_muon_weights")
-        # cfg.x.external_files.pop("muon_sf")
+        cfg.add_tag("skip_muon_weights")
 
         cfg.x.external_files.pop("met_phi_corr")
 
