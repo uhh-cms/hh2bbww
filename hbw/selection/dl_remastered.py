@@ -74,12 +74,12 @@ def dl_lepton_selection(
     e_mask_fakeable = lepton_results.x.e_mask_fakeable
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
-    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > 25)
-    leading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > 25)
+    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 25)
+    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > 25)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > 15)
-    subleading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > 15)
+    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 15)
+    subleading_e_mask = (e_mask_fakeable) & (events.Electron.pt > 15)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
     lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(subleading_e_mask, events.Electron.pt)
