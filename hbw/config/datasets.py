@@ -490,8 +490,31 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
         config.add_dataset(campaign.get_dataset(dataset_name))
 
 
-def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = None):
+def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
+    """
+    Adds relevant keys from "extension" DatasetInfo to the "nominal" DatasetInfo
+    """
+    if "extension" in dataset.info.keys():
+        dataset_info_ext = dataset.info["extension"]
+
+        # add info from extension dataset to the nominal one
+        dataset.info["nominal"].keys = dataset.info["nominal"].keys + dataset_info_ext.keys
+        dataset.info["nominal"].n_files = dataset.info["nominal"].n_files + dataset_info_ext.n_files
+        dataset.info["nominal"].n_events = dataset.info["nominal"].n_events + dataset_info_ext.n_events
+
+        # remove the extension dataset info, since it is now included in "nominal"
+        dataset.info.pop("extension")
+
+
+def configure_hbw_datasets(
+    config: od.Config,
+    limit_dataset_files: int | None = None,
+    add_dataset_extensions: bool = False,
+):
     for dataset in config.datasets:
+        if add_dataset_extensions:
+            add_dataset_extension_to_nominal(dataset)
+
         if limit_dataset_files:
             # apply optional limit on the max. number of files per dataset
             for info in dataset.info.values():

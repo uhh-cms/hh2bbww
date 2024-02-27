@@ -34,6 +34,7 @@ def add_config(
     config_name: str | None = None,
     config_id: int | None = None,
     limit_dataset_files: int | None = None,
+    add_dataset_extensions: bool = False,
 ) -> od.Config:
     # validations
     assert campaign.x.year in [2016, 2017, 2018, 2022]
@@ -90,7 +91,7 @@ def add_config(
     stylize_processes(cfg)
 
     # configure datasets in config
-    configure_hbw_datasets(cfg, limit_dataset_files)
+    configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
 
     # lumi values in inverse pb
     # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
@@ -308,7 +309,7 @@ def add_config(
         },
     })
 
-    if cfg.x.run == 2 :
+    if cfg.x.run == 2:
         # btag weight configuration
         cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
 
