@@ -1,10 +1,12 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
-# default version, can be changed by locally setting HBW_MAIN_VERSION, e.g. by exporting it in
-# $HBW_BASE/.setups/${CF_SETUP_NAME}.sh and rerunning the setup script
-version="${HBW_MAIN_VERSION:-"prod1"}"
-echo "hbwtasks functions will be run with version '$version'"
+# defaults, setup by the law config
+# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
+version=$(law config analysis.default_version)
+common_version=$(law config analysis.default_common_version)
+config=$(law config analysis.default_config)
+echo "hbwtasks functions will be run with version '$version' and config '$config'"
 
 checksum() {
 	# helper to include custom checksum based on time when task was called
@@ -26,8 +28,6 @@ hbw_selection(){
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
 #
 
-# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
-common_version="${HBW_COMMON_VERSION:-"common1"}"
 hbw_calibration(){
     law run cf.CalibrateEventsWrapper --version $common_version --workers 20 \
 	--shifts nominal \
