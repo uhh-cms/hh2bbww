@@ -1,16 +1,21 @@
 # coding: utf-8
 
 """
-Column producers related to gen-level top quark.
+Column producers related to top quark pt reweighting.
 """
+
+import law
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, has_ak_column
+from columnflow.columnar_util import set_ak_column
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 coffea = maybe_import("coffea")
 maybe_import("coffea.nanoevents.methods.nanoaod")
+
+logger = law.logger.get_logger(__name__)
 
 
 @producer(
@@ -22,6 +27,10 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 def gen_parton_top(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Produce parton-level top quarks (before showering and detector simulation).
+    Creates new collection named "GenPartonTop"
+
+    *produced_top_columns* can be adapted to change the columns that will be produced
+    for the GenPartonTop collection.
     """
     # find parton-level top quarks
     abs_id = abs(events.GenPart.pdgId)
@@ -75,21 +84,20 @@ def top_pt_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # get SF function parameters from config
     params = self.get_top_pt_config()
 
-    # obtain gen-level top quark information if not already done
-    if not has_ak_column(events, "GenPartonTop.pt"):
-        events = self[gen_parton_top](events, **kwargs)
+    if ak.any(ak.num(events.GenPartonTop, axis=1) != 2):
+        logger.warning("There are events with != 2 GenPartonTops. This producer should only run for ttbar")
 
-    # clamp top pT < 500 GeV and evaluate SF function
+    # clamp top pT < 500 GeV
     pt_clamped = ak.where(events.GenPartonTop.pt > 500.0, 500.0, events.GenPartonTop.pt)
-    sf = ak.pad_none(np.exp(params["a"] + params["b"] * pt_clamped), 2)
+    for variation in ("", "_up", "_down"):
+        # evaluate SF function (TODO: we could also vary a and b separately)
+        sf = np.exp(params[f"a{variation}"] + params[f"b{variation}"] * pt_clamped)
 
-    # compute weight from SF product for top and anti-top
-    weight = np.sqrt(sf[:, 0] * sf[:, 1])
+        # compute weight from SF product for top and anti-top
+        weight = np.sqrt(np.prod(sf, axis=1))
 
-    # write out weights
-    events = set_ak_column(events, "top_pt_weight", ak.fill_none(weight, 1.0))
-    events = set_ak_column(events, "top_pt_weight_up", ak.fill_none(weight * 1.5, 1.0))
-    events = set_ak_column(events, "top_pt_weight_down", ak.fill_none(weight * 0.5, 1.0))
+        # write out weights
+        events = set_ak_column(events, f"top_pt_weight{variation}", ak.fill_none(weight, 1.0))
 
     return events
 
