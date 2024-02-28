@@ -491,8 +491,8 @@ def sl_boosted_jet_selection(
     TODO: separate common parts from SL dependant
     """
     # assign local index to all Jets
-    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet))
-    events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet))
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet, axis=1))
+    events = set_ak_column(events, "FatJet.local_index", ak.local_index(events.FatJet, axis=1))
 
     # get leptons and jets with object masks applied
     electron = events.Electron[lepton_results.objects.Electron.Electron]
@@ -575,7 +575,7 @@ def sl_boosted_jet_selection(
     hbbSubJet_indices = ak.concatenate([hbbjets.subJetIdx1, hbbjets.subJetIdx2], axis=1)
 
     # build and return selection results plus new columns
-    return events, SelectionResult(
+    boosted_results = SelectionResult(
         steps={
             "HbbJet_no_bjet": hbbjet_sel_no_bjet,
             "HbbJet": hbbjet_sel,
@@ -588,6 +588,7 @@ def sl_boosted_jet_selection(
             "Jet": {"HbbSubJet": hbbSubJet_indices},
         },
     )
+    return events, boosted_results
 
 
 @sl_boosted_jet_selection.init
