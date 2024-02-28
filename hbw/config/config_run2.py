@@ -488,10 +488,6 @@ def add_config(
     # temporary fix due to missing corrections in run 3
     # electron and met still missing
     if cfg.x.run == 3:
-        # cfg.add_tag("skip_pu_weights")
-
-        # cfg.add_tag("skip_btag_weights")
-
         cfg.add_tag("skip_electron_weights")
         cfg.x.external_files.pop("electron_sf")
 
@@ -617,7 +613,7 @@ def add_config(
             },
         ) | four_vec(  # Leptons
             {"Electron", "Muon"},
-            {"charge", "pdgId"},
+            {"charge", "pdgId", "is_tight"},
         ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
 

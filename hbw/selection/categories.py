@@ -142,7 +142,57 @@ def catid_selection_emu(
 #
 
 
+#
+# Categorizer for ABCD (either during cf.SelectEvents or cf.ProduceColumns)
+#
+@categorizer(uses={"Electron.is_tight", "Muon.is_tight"}, call_force=True)
+def catid_sr(
+    self: Categorizer,
+    events: ak.Array,
+    results: SelectionResult | None = None,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        return events, results.steps.SR
+
+    n_lep_tight = ak.sum(events.Electron.is_tight, axis=1) + ak.sum(events.Muon.is_tight, axis=1)
+    n_lep_req = 1 if self.config_inst.has_tag("is_sl") else 2
+    mask = (n_lep_tight == n_lep_req)
+    return events, mask
+
+
+@categorizer(uses={"Electron.is_tight", "Muon.is_tight"}, call_force=True)
+def catid_fake(
+    self: Categorizer,
+    events: ak.Array,
+    results: SelectionResult | None = None,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        return events, results.steps.Fake
+
+    n_lep_tight = ak.sum(events.Electron.is_tight, axis=1) + ak.sum(events.Muon.is_tight, axis=1)
+    n_lep_req = 1 if self.config_inst.has_tag("is_sl") else 2
+    mask = (n_lep_tight < n_lep_req)
+    return events, mask
+
+
+@categorizer(uses={"MET.pt"}, call_force=True)
+def catid_highmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = events.MET.pt >= 20
+    return events, mask
+
+
+@categorizer(uses={"MET.pt"}, call_force=True)
+def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = events.MET.pt < 20
+    return events, mask
+
+#
 # SL
+#
+
+
 @categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
 def catid_1e(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0))
@@ -154,8 +204,11 @@ def catid_1mu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, 
     mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1))
     return events, mask
 
-
+#
 # DL
+#
+
+
 @categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
 def catid_2e(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 2) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0))
@@ -173,6 +226,10 @@ def catid_emu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, 
     mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1))
     return events, mask
 
+
+#
+# Jet categorization
+#
 
 @categorizer(uses={"Jet.pt", "HbbJet.pt"}, call_force=True)
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
@@ -207,6 +264,10 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     mask = (n_deepjet >= 2)
     return events, mask
 
+
+#
+# DNN categorizer
+#
 
 # TODO: not hard-coded -> use config?
 ml_processes = [
