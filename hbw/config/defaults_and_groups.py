@@ -48,7 +48,7 @@ def default_ml_model(cls, container, task_params):
 
 def ml_inputs_producer(cls, container, task_params):
     if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
-        ml_inputs = "ml_inputs"
+        ml_inputs = "sl_ml_inputs"
     if container.has_tag("is_dl"):
         ml_inputs = "dl_ml_inputs"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
@@ -82,11 +82,6 @@ def default_producers(cls, container, task_params):
     if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()):
         # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
         default_producers.append(f"ml_{ml_model}")
-
-    # if we're running the inference_model, we don't need the ml_inputs
-    # NOTE: we cannot skip ml_inputs, because it is needed for cf.MLEvaluation
-    # if "inference_model" in task_params.keys():
-    #     default_producers.remove("ml_inputs")
 
     return default_producers
 

@@ -43,7 +43,7 @@ ZERO_PADDING_VALUE = -10
         # other produced columns set in the init function
     },
 )
-def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
 
@@ -58,16 +58,15 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
     # low-level features
-    # TODO: this could be more generalized
     for var in ["pt", "eta", "btagDeepFlavB"]:
         events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
         events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
-        if var == "btagDeepFlavB":
-            continue
-        events = set_ak_column_f32(events, f"mli_lep_{var}", events.Lepton[:, 0][var])
-        events = set_ak_column_f32(events, f"mli_met_{var}", events.MET[var])
+
+    events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
+    events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
+    events = set_ak_column_f32(events, "mli_met_pt", events.MET.pt)
 
     # H->bb FatJet
     for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
@@ -158,16 +157,17 @@ def ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_s_min", s_min)
 
     # fill nan/none values of all produced columns
-    for col in self.ml_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+    for col in self.ml_input_columns:
+        if ak.any(np.isnan(events[col])):
+            events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
 
 
-@ml_inputs.init
-def ml_inputs_init(self: Producer) -> None:
+@sl_ml_inputs.init
+def sl_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
-    self.config_inst.x.ml_columns = self.ml_columns = {
+    self.config_inst.x.ml_input_columns = self.ml_input_columns = {
         # event features
         "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
         "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
@@ -195,14 +195,16 @@ def ml_inputs_init(self: Producer) -> None:
         for var in ["btagDeepFlavB"]
     ) | set(
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep", "met"]
-        for var in ["pt", "eta"]
-    ) | set(
+        for obj in ["b1", "b2", "j1", "j2", "lep"]
+        for var in ["pt"]
+    ) | {
+        "mli_met_pt",
+    } | set(
         f"mli_{obj}_{var}"
         for obj in ["fj"]
         for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
     )
-    self.produces |= self.ml_columns
+    self.produces |= self.ml_input_columns
 
     # add categories to config
     add_categories_production(self.config_inst)
