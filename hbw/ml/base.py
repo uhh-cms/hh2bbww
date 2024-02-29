@@ -18,6 +18,7 @@ import order as od
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
+from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
@@ -43,8 +44,8 @@ class MLClassifierBase(MLModel):
     """
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
+    # NOTE: the order of processes and input_features is crucial! Do not change after training
     processes: list = ["tt", "st"]
-    dataset_names: set = {"tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"}
     input_features: list = ["mli_ht", "mli_n_jet"]
     validation_fraction: float = 0.20  # percentage of the non-test events
     store_name: str = "inputs_base"
@@ -102,7 +103,23 @@ class MLClassifierBase(MLModel):
         return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
 
     def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
-        return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
+        used_datasets = set()
+        for proc in self.processes:
+            if not config_inst.has_process(proc):
+                raise Exception(f"Process {proc} not included in the config {config_inst.name}")
+
+            # get datasets corresponding to this process
+            datasets = [
+                d for d in
+                get_datasets_from_process(config_inst, proc, strategy="inclusive")
+            ]
+
+            # check that no dataset is used multiple times
+            if datasets_already_used := used_datasets.intersection(datasets):
+                raise Exception(f"{datasets_already_used} datasets are used for multiple processes")
+            used_datasets |= set(datasets)
+
+        return used_datasets
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
         columns = set(self.input_features)
