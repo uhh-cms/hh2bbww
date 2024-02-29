@@ -233,12 +233,13 @@ def add_categories_production(config: od.Config) -> None:
     #
 
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
-        "met": [config.get_category("highmet"), config.get_category("lowmet")],
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
+        # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [cat_resolved, cat_boosted],
         "b": [cat_1b, cat_2b],
     })
+    t0 = time()
     n_cats = create_category_combinations(
         config,
         category_blocks,
@@ -246,7 +247,7 @@ def add_categories_production(config: od.Config) -> None:
         kwargs_fn=kwargs_fn,
         skip_existing=False,  # there should be no existing sub-categories
     )
-    logger.info(f"Number of produced category insts: {n_cats}")
+    logger.info(f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
 
 
 @call_once_on_config()
@@ -272,8 +273,8 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
-        "met": [config.get_category("highmet"), config.get_category("lowmet")],
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
+        # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
         "b": [config.get_category("1b"), config.get_category("2b")],
