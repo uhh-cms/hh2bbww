@@ -61,6 +61,7 @@ hbw_merge_reduction(){
     law run cf.MergeReducedEventsWrapper --version $version --workers 20 \
 	--shifts nominal \
 	--datasets $datasets \
+    --cf.MergeReducedEvents-workflow htcondor \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
@@ -80,13 +81,12 @@ hbw_ml_training(){
 	--htcondor-gpus 1 \
 	--htcondor-memory 40000 \
 	--max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
-	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -105,12 +105,12 @@ hbw_datacards(){
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
-	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -128,12 +128,12 @@ hbw_rebin_datacards(){
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
-	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
