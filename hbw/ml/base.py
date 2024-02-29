@@ -140,9 +140,9 @@ class MLClassifierBase(MLModel):
             )
         # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
         columns = {"mli_*"}
-        if self.dataset_inst.is_mc:
-            # TODO: switch to full event weight
-            columns.add("normalization_weight")
+        # TODO: switch to full event weight
+        # TODO: this might not work with data, to be checked
+        columns.add("normalization_weight")
         return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:

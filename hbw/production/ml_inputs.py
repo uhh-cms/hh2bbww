@@ -55,7 +55,7 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
 
     events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
-    events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
+    events = set_ak_column_f32(events, "mli_lep_eta", events.Lepton[:, 0].eta)
     events = set_ak_column_f32(events, "mli_met_pt", events.MET.pt)
 
     # H->bb FatJet
