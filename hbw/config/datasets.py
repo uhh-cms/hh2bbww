@@ -424,7 +424,7 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
         dataset_names.pop("graviton_hh_ggf_bbww")
         dataset_names.pop("radion_hh_ggf_bbww")
 
-    if config.has_tag("is_dl"):
+    if not config.has_tag("is_sl"):
         # remove qcd datasets from DL
         dataset_names.pop("qcd_mu")
         dataset_names.pop("qcd_em")
