@@ -35,13 +35,13 @@ def dl_lepton_selection(
     Lepton Selector for the DL channel. Produces:
 
     Steps:
-    - TripleLeptonVeto (using )
+    - TripleLeptonVeto
     - Lep_mm, Lep_ee, Lep_emu, Lep_mue
     - Dilepton (logical or of the previous 4)
 
     Objects:
-    - Electron (fakeable Electron + cone_pt > 15)
-    - Muon (fakeable Muon + cone_pt > 15)
+    - Electron (fakeable Electron + pt > 15)
+    - Muon (fakeable Muon + pt > 15)
     """
     # load default lepton definition
 

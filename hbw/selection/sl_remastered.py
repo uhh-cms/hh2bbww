@@ -48,23 +48,33 @@ def sl_lepton_selection(
     lepton_results.steps["nFakeableMuon1"] = events.cutflow.n_fakeable_muon >= 1
     lepton_results.steps["nTightMuon1"] = events.cutflow.n_tight_muon >= 1
 
+    lepton_results.steps["DoubleLooseLeptonVeto"] = (
+        events.cutflow.n_loose_electron + events.cutflow.n_loose_muon
+    ) <= 1
+    lepton_results.steps["DoubleFakeableLeptonVeto"] = (
+        events.cutflow.n_fakeable_electron + events.cutflow.n_fakeable_muon
+    ) <= 1
+    lepton_results.steps["DoubleTightLeptonVeto"] = (
+        events.cutflow.n_tight_electron + events.cutflow.n_tight_muon
+    ) <= 1
+
     # select events
     mu_mask_fakeable = lepton_results.x.mu_mask_fakeable
     e_mask_fakeable = lepton_results.x.e_mask_fakeable
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
-    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > self.config_inst.x.mu_pt)
-    leading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > self.config_inst.x.e_pt)
+    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.config_inst.x.mu_pt)
+    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.config_inst.x.e_pt)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.cone_pt > 15)
-    subleading_e_mask = (e_mask_fakeable) & (events.Electron.cone_pt > 15)
+    veto_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 15)
+    veto_e_mask = (e_mask_fakeable) & (events.Electron.pt > 15)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
-    lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(subleading_e_mask, events.Electron.pt)
-    lepton_results.objects["Muon"]["Muon"] = masked_sorted_indices(subleading_mu_mask, events.Muon.pt)
-    electron = events.Electron[subleading_e_mask]
-    muon = events.Muon[subleading_mu_mask]
+    lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(veto_e_mask, events.Electron.pt)
+    lepton_results.objects["Muon"]["Muon"] = masked_sorted_indices(veto_mu_mask, events.Muon.pt)
+    electron = events.Electron[veto_e_mask]
+    muon = events.Muon[veto_mu_mask]
 
     # Create a temporary lepton collection
     lepton = ak.concatenate(
@@ -76,15 +86,17 @@ def sl_lepton_selection(
     )
     lepton = lepton_results.aux["lepton"] = lepton[ak.argsort(lepton.pt, axis=-1, ascending=False)]
 
+    # reject all events with > 1 lepton: this step ensures orthogonality to the DL channel.
+    # NOTE: we could tighten this cut (veto loose lepton or reduce pt threshold)
     lepton_results.steps["DileptonVeto"] = ak.num(lepton, axis=1) <= 1
 
     lepton_results.steps["Lep_e"] = e_mask = (
         (ak.sum(leading_e_mask, axis=1) == 1) &
-        (ak.sum(subleading_mu_mask, axis=1) == 0)
+        (ak.sum(veto_mu_mask, axis=1) == 0)
     )
     lepton_results.steps["Lep_mu"] = mu_mask = (
         (ak.sum(leading_mu_mask, axis=1) == 1) &
-        (ak.sum(subleading_e_mask, axis=1) == 0)
+        (ak.sum(veto_e_mask, axis=1) == 0)
     )
 
     lepton_results.steps["Lepton"] = (e_mask | mu_mask)
@@ -128,6 +140,9 @@ def sl_lepton_selection_init(self: Selector) -> None:
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
+        "DoubleLooseLeptonVeto": r"$N_{lepton}^{loose} \leq 1$",
+        "DoubleFakeableLeptonVeto": r"$N_{lepton}^{fakeable} \leq 1$",
+        "DoubleTightLeptonVeto": r"$N_{lepton}^{tight} \leq 1$",
         "DileptonVeto": r"$N_{lepton} \leq 1$",
         "Lepton": r"$N_{lepton} = 1$",
         "Lep_e": r"$N_{e} = 1$ and $N_{\mu} = 0$",
