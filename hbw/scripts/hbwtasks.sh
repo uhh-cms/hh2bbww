@@ -85,6 +85,7 @@ hbw_ml_training(){
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
 	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
@@ -109,6 +110,7 @@ hbw_datacards(){
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
 	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
@@ -132,6 +134,7 @@ hbw_rebin_datacards(){
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
 	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.PrepareMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
