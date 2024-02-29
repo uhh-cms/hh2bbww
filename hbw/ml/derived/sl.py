@@ -6,7 +6,7 @@ ML models using the MLClassifierBase and Mixins
 
 from __future__ import annotations
 
-from columnflow.types import Union, Sequence
+from columnflow.types import Union
 
 import law
 
