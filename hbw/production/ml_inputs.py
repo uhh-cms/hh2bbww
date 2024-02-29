@@ -192,13 +192,9 @@ def sl_ml_inputs_init(self: Producer) -> None:
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]
-        for var in ["btagDeepFlavB"]
-    ) | set(
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2", "lep"]
-        for var in ["pt"]
+        for var in ["btagDeepFlavB", "pt", "eta"]
     ) | {
-        "mli_met_pt",
+        "mli_lep_pt", "mli_lep_eta", "mli_met_pt",
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["fj"]
