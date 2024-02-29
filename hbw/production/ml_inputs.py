@@ -148,8 +148,7 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
-        if ak.any(np.isnan(events[col])):
-            events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
 
