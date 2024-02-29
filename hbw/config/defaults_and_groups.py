@@ -6,17 +6,27 @@ from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
-def default_calibrator(cls, container, task_params):
+def default_calibrator(container):
     return "skip_jecunc"
 
 
-def default_selector(cls, container, task_params):
+def default_selector(container):
     if container.has_tag("is_sl"):
         selector = "sl1"
     elif container.has_tag("is_dl"):
         selector = "dl1"
 
     return selector
+
+
+def ml_inputs_producer(container):
+    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
+        ml_inputs = "sl_ml_inputs"
+    if container.has_tag("is_dl"):
+        ml_inputs = "dl_ml_inputs"
+    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
+        ml_inputs = "sl_res_ml_inputs"
+    return ml_inputs
 
 
 def default_ml_model(cls, container, task_params):
@@ -44,16 +54,6 @@ def default_ml_model(cls, container, task_params):
         default_ml_model = getattr(inference_model_inst, "ml_model_name", default_ml_model)
 
     return default_ml_model
-
-
-def ml_inputs_producer(cls, container, task_params):
-    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
-        ml_inputs = "sl_ml_inputs"
-    if container.has_tag("is_dl"):
-        ml_inputs = "dl_ml_inputs"
-    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
-        ml_inputs = "sl_res_ml_inputs"
-    return ml_inputs
 
 
 def default_producers(cls, container, task_params):
@@ -107,8 +107,9 @@ def set_config_defaults_and_groups(config_inst):
 
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    config_inst.x.default_calibrator = default_calibrator
-    config_inst.x.default_selector = default_selector
+    config_inst.x.default_calibrator = default_calibrator(config_inst)
+    config_inst.x.default_selector = default_selector(config_inst)
+    config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"

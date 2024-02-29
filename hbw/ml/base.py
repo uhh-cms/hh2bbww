@@ -15,6 +15,7 @@ import yaml
 import law
 import order as od
 
+from columnflow.types import Sequence
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
@@ -86,13 +87,23 @@ class MLClassifierBase(MLModel):
                 self.config_inst.add_variable(
                     name=f"mlscore.{proc}",
                     null_value=-1,
-                    binning=(40, 0., 1.),
+                    binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
                 )
 
     def preparation_producer(self: MLModel, config_inst: od.Config):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
         return "ml_preparation"
+
+    def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        # NOTE: since automatic resolving is not working here, we do it ourselves
+        return requested_calibrators or [config_inst.x.default_calibrator]
+
+    def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        return [config_inst.x.ml_inputs_producer, "event_weights"]
 
     def requires(self, task: law.Task) -> str:
         # Custom requirements (none currently)
