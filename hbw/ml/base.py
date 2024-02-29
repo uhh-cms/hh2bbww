@@ -122,7 +122,13 @@ class MLClassifierBase(MLModel):
         return used_datasets
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        columns = set(self.input_features)
+        if not all(var.startswith("mli_") for var in self.input_features):
+            raise Exception(
+                "We currently expect all input_features to start with 'mli_', which is not the case"
+                f"for one of the variables in the 'input_features' {self.input_features}",
+            )
+        # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
+        columns = {"mli_*"}
         if self.dataset_inst.is_mc:
             # TODO: switch to full event weight
             columns.add("normalization_weight")
