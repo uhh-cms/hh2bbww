@@ -102,7 +102,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params: list = [
         # base params
-        "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
+        "processes", "input_features", "validation_fraction", "ml_process_weights",
         "negative_weights", "folds",
         # DenseModelMixin
         "activation", "layers", "dropout",
