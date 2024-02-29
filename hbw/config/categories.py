@@ -100,16 +100,7 @@ def add_abcd_categories(config: od.Config) -> None:
 
 
 @call_once_on_config()
-def add_categories_selection(config: od.Config) -> None:
-    """
-    Adds categories to a *config*, that are typically produced in `SelectEvents`.
-    """
-
-    # adds categories based on the existence of gen particles
-    add_gen_categories(config)
-
-    add_abcd_categories(config)
-
+def add_lepton_categories(config: od.Config) -> None:
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
         "dl": ("2e", "2mu", "emu"),
@@ -158,6 +149,51 @@ def add_categories_selection(config: od.Config) -> None:
     )
 
 
+@call_once_on_config()
+def add_jet_categories(config: od.Config) -> None:
+    cat_resolved = config.add_category(  # noqa
+        name="resolved",
+        id=100,
+        selection="catid_resolved",
+        label="resolved",
+    )
+    cat_boosted = config.add_category(  # noqa
+        name="boosted",
+        id=200,
+        selection="catid_boosted",
+        label="boosted",
+    )
+
+    cat_1b = config.add_category(  # noqa
+        name="1b",
+        id=300,
+        selection="catid_1b",
+        label="1b",
+    )
+    cat_2b = config.add_category(  # noqa
+        name="2b",
+        id=600,
+        selection="catid_2b",
+        label="2b",
+    )
+
+
+@call_once_on_config()
+def add_categories_selection(config: od.Config) -> None:
+    """
+    Adds categories to a *config*, that are typically produced in `SelectEvents`.
+    """
+
+    # adds categories based on the existence of gen particles
+    add_gen_categories(config)
+
+    # adds categories for ABCD background estimation
+    add_abcd_categories(config)
+
+    # adds categories based on number of leptons
+    add_lepton_categories(config)
+
+
 def name_fn(root_cats):
     cat_name = "__".join(cat.name for cat in root_cats.values())
     return cat_name
@@ -179,6 +215,10 @@ def add_categories_production(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `ProduceColumns`.
     """
+    if config.has_tag("add_categories_ml_called"):
+        logger.warning("We should not call *add_categories_production* when also building ML categories")
+        # when ML categories already exist, don't do anything
+        return
     #
     # switch existing categories to different production module
     #
@@ -198,46 +238,18 @@ def add_categories_production(config: od.Config) -> None:
     cat_emu = config.get_category("emu")
     cat_emu.selection = "catid_emu"
 
-    #
-    # define additional 'main' categories
-    #
-
-    cat_resolved = config.add_category(
-        name="resolved",
-        id=100,
-        selection="catid_resolved",
-        label="resolved",
-    )
-    cat_boosted = config.add_category(
-        name="boosted",
-        id=200,
-        selection="catid_boosted",
-        label="boosted",
-    )
-
-    cat_1b = config.add_category(
-        name="1b",
-        id=300,
-        selection="catid_1b",
-        label="1b",
-    )
-    cat_2b = config.add_category(
-        name="2b",
-        id=600,
-        selection="catid_2b",
-        label="2b",
-    )
+    add_jet_categories(config)
 
     #
     # define all combinations of categories
     #
 
     category_blocks = OrderedDict({
-        # "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [cat_resolved, cat_boosted],
-        "b": [cat_1b, cat_2b],
+        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        "b": [config.get_category("1b"), config.get_category("2b")],
     })
     t0 = time()
     n_cats = create_category_combinations(
@@ -252,6 +264,32 @@ def add_categories_production(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
+    if config.has_tag("add_categories_production_called"):
+        raise Exception("We should not call *add_categories_production* when also building ML categories")
+    #
+    # prepare non-ml categories
+    #
+
+    cat_1e = config.get_category("1e")
+    cat_1e.selection = "catid_1e"
+
+    cat_1mu = config.get_category("1mu")
+    cat_1mu.selection = "catid_1mu"
+
+    cat_2e = config.get_category("2e")
+    cat_2e.selection = "catid_2e"
+
+    cat_2mu = config.get_category("2mu")
+    cat_2mu.selection = "catid_2mu"
+
+    cat_emu = config.get_category("emu")
+    cat_emu.selection = "catid_emu"
+
+    add_jet_categories(config)
+
+    #
+    # add parent ml model categories
+    #
 
     # if not already done, get the ml_model instance
     if isinstance(ml_model_inst, str):
@@ -271,9 +309,13 @@ def add_categories_ml(config, ml_model_inst):
             label=f"ml_{proc}",
         ))
 
+    #
+    # create combination of categories
+    #
+
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        # "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],

@@ -60,10 +60,11 @@ def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
-    default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
+    default_producers = [ml_inputs_producer(container), "event_weights", "pre_ml_cats"]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
+        default_producers.remove("pre_ml_cats")
         return default_producers
 
     # check if a mlmodel has been set
@@ -78,10 +79,11 @@ def default_producers(cls, container, task_params):
         ml_model = default_ml_model(cls, container, task_params)
 
     # if a ML model is set, and the task is not part of the MLTraining pipeline,
-    # use the ml categorization producer
+    # use the ml categorization producer instead of the default categorization producer
     if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()):
+        default_producers.remove("pre_ml_cats")
         # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
-        default_producers.append(f"ml_{ml_model}")
+        default_producers.append(f"cats_ml_{ml_model}")
 
     return default_producers
 
