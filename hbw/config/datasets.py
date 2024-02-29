@@ -566,6 +566,10 @@ def configure_hbw_datasets(
             # our default Run2 signal samples are EOY, so we have to skip golden json, certain met filter
             dataset.add_tag("is_eoy")
 
+        if dataset.is_data:
+            if config.x.cpn_tag == "2022preEE":
+                dataset.x.jec_era = "RunCD"
+
 
 def get_custom_hh_2017_datasets(
     campaign: od.Campaign,
