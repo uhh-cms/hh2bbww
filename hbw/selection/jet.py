@@ -48,6 +48,10 @@ def jet_selection(
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
+    # sometimes, jet b-score is nan, so fill it with 0
+    if ak.any(np.isnan(events.Jet.btagDeepFlavB)):
+        events = set_ak_column(events, "Jet.btagDeepFlavB", ak.fill_none(ak.nan_to_none(events.Jet.btagDeepFlavB), 0))
+
     # default jet definition
     jet_mask_loose = (
         (events.Jet.pt >= 25) &
