@@ -11,14 +11,11 @@ import functools
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-from columnflow.production.categories import category_ids
 
-from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
-from hbw.config.categories import add_categories_production
 from hbw.util import four_vec
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -31,24 +28,17 @@ ZERO_PADDING_VALUE = -10
 
 @producer(
     uses={
-        category_ids,
         prepare_objects,
         "HbbJet.msoftdrop",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
         {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
-    produces={
-        category_ids,
-        # other produced columns set in the init function
-    },
+    # produced columns set in the init function
 )
 def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-
-    # produce (new) category ids
-    events = self[category_ids](events, **kwargs)
 
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
@@ -202,16 +192,12 @@ def sl_ml_inputs_init(self: Producer) -> None:
     )
     self.produces |= self.ml_input_columns
 
-    # add categories to config
-    add_categories_production(self.config_inst)
-
     # add variable instances to config
     add_ml_variables(self.config_inst)
 
 
 @producer(
     uses={
-        category_ids, event_weights,
         prepare_objects,
         "Electron.charge", "Muon.charge",
         "HbbJet.msoftdrop",
@@ -219,21 +205,11 @@ def sl_ml_inputs_init(self: Producer) -> None:
     } | four_vec(
         {"Electron", "Muon", "MET", "Jet", "Bjet", "HbbJet"},
     ),
-    produces={
-        category_ids, event_weights,
-        # other produced columns set in the init function
-    },
+    # produced columns set in the init function
 )
 def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
-
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-
-    # produce (new) category ids
-    events = self[category_ids](events, **kwargs)
 
     # object padding
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
@@ -319,37 +295,24 @@ def dl_ml_inputs_init(self: Producer) -> None:
     )
     self.produces |= self.ml_columns
 
-    # add categories to config
-    add_categories_production(self.config_inst)
-
     # add variable instances to config
     add_dl_ml_variables(self.config_inst)
 
 
 @producer(
     uses={
-        category_ids, event_weights,
         prepare_objects,
         "HbbJet.msoftdrop",
         "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
     } | four_vec(
         {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
-    produces={
-        category_ids, event_weights,
-        # other produced columns set in the init function
-    },
+    # produced columns set in the init function
 )
 def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
 
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-
-    # produce (new) category ids
-    events = self[category_ids](events, **kwargs)
 
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
@@ -501,7 +464,6 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
         for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
     )
     self.produces |= self.ml_columns
-    # add categories to config
-    add_categories_production(self.config_inst)
+
     # add variable instances to config
     add_sl_res_ml_variables(self.config_inst)
