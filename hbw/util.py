@@ -182,6 +182,22 @@ def debugger():
     __import__("IPython").embed(header=header, user_ns=namespace)
 
 
+def traceback_function(depth: int = 1):
+    """
+    Helper function to trace back function call by up to *depth* frames.
+    """
+    frame = __import__("inspect").currentframe().f_back
+    logger = law.logger.get_logger(frame.f_code.co_name)
+    logger.info("starting traceback")
+    for i in range(depth + 1):
+        if not frame:
+            logger.info("max depth reached")
+            return
+        logger = law.logger.get_logger(f"{frame.f_code.co_name} (depth {i})")
+        logger.info(f"Line: {frame.f_lineno}, File: {frame.f_code.co_filename}")
+        frame = frame.f_back
+
+
 def make_dict_hashable(d: dict, deep: bool = True):
     """ small helper that converts dict into hashable dict"""
     d_out = d.copy()
