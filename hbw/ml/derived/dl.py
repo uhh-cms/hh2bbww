@@ -161,7 +161,10 @@ dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
 })
-
+dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+})
 
 cls_dict_test = {
     "folds": 2,

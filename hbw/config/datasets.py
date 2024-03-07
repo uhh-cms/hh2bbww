@@ -189,7 +189,7 @@ qcd_mu = {
     ],
     "2022preEE": [
         "qcd_mu_pt15to20_pythia",
-        "qcd_mu_pt20to30_pythia",
+        # "qcd_mu_pt20to30_pythia",  # file stuck
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
         "qcd_mu_pt80to120_pythia",
@@ -216,7 +216,7 @@ qcd_em = {
     ],
     "2022postEE": [
         # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
-        # "qcd_em_pt30to50_pythia",  # empty after selection
+        "qcd_em_pt30to50_pythia",  # empty after selection
         "qcd_em_pt50to80_pythia",
         "qcd_em_pt80to120_pythia",
         "qcd_em_pt120to170_pythia",
