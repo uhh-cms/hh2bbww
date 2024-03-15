@@ -282,7 +282,7 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
                 if len(events) == 0:
-                    logger.warning("File {fn} of process {proc_inst.name} is empty and will be skipped")
+                    logger.warning(f"File {fn} of process {proc_inst.name} is empty and will be skipped")
                     continue
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):

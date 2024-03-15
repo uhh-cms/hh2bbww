@@ -71,7 +71,6 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_min_dr_llbb",
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
-        "mli_dr_bb_l",
         # VBF features
         "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
         # low-level features

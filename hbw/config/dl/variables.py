@@ -172,12 +172,12 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 3.2),
         x_title=r"$\Delta\Phi(bb,\nu)$",
     )
-    config.add_variable(
-        name="mli_dr_bb_l",
-        expression="mli_dr_bb_l",
-        binning=(40, 0, 8),
-        x_title=r"$\Delta R(bb,l)$",
-    )
+    # config.add_variable(
+    #     name="mli_dr_bb_l",
+    #     expression="mli_dr_bb_l",
+    #     binning=(40, 0, 8),
+    #     x_title=r"$\Delta R(bb,l)$",
+    # )
     config.add_variable(
         name="mli_mll",
         expression="mli_mll",
