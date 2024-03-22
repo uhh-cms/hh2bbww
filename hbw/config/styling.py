@@ -25,7 +25,7 @@ default_process_colors = {
     "higgs": "#984ea3",  # purple
     "st": "#ff7f00",  # orange
     "t_bkg": "#e41a1c",  # orange
-    "dy_lep": "#ffff33",  # yellow
+    "dy_lep": "#984ea3", # "#ffff33",  # yellow
     "ttV": "#a65628",  # brown
     "VV": "#f781bf",  # pink
     "other": "#999999",  # grey

@@ -51,7 +51,6 @@ def ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     # category ids
     events = self[category_ids](events, **kwargs)
-
     return events
 
 

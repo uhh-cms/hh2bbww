@@ -327,6 +327,7 @@ class ModifyDatacardsFlatRebin(
             # determine all processes required for the category *cat_name* to determine the rebin values
             rebin_processes = self.get_rebin_processes()
 
+
             if diff := set(rebin_processes).difference(nominal_hists.keys()):
                 raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
                 "nominal histograms found")

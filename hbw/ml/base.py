@@ -210,11 +210,29 @@ class MLClassifierBase(MLModel):
                 sum_weights = sum([ak.sum(w) for w in weights])
                 sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])
                 sum_pos_weights = sum([ak.sum(w[w > 0]) for w in weights])
+                
+                proc_sig = dataset_inst.processes.get_first()
+                if "kl_1" in proc_sig.name:  
+                    sum_weights_1 = sum_abs_weights #/proc_sig.get_xsec(self.config_inst.campaign.ecm).nominal
+                    proc_inst.x.sum_weights_1 = proc_inst.x("sum_weights_1", 0) + sum_weights_1
+                    proc_inst.x.N_events_1 = proc_inst.x("N_events_1", 0) + N_events
+                elif "kl_0" in proc_sig.name: 
+                    sum_weights_0 = sum_abs_weights #/proc_sig.get_xsec(self.config_inst.campaign.ecm).nominal
+                    proc_inst.x.sum_weights_0 = proc_inst.x("sum_weights_0", 0) + sum_weights_0
+                    proc_inst.x.N_events_0 = proc_inst.x("N_events_0", 0) + N_events
+                elif "kl_2p45" in proc_sig.name: 
+                    sum_weights_2p45 = sum_abs_weights #/proc_sig.get_xsec(self.config_inst.campaign.ecm).nominal
+                    proc_inst.x.sum_weights_2p45 = proc_inst.x("sum_weights_2p45", 0) + sum_weights_2p45
+                    proc_inst.x.N_events_2p45 = proc_inst.x("N_events_2p45", 0) + N_events
+                elif "kl_5" in proc_sig.name: 
+                    sum_weights_5 = sum_abs_weights #/proc_sig.get_xsec(self.config_inst.campaign.ecm).nominal
+                    proc_inst.x.sum_weights_5 = proc_inst.x("sum_weights_5", 0) + sum_weights_5
+                    proc_inst.x.N_events_5 = proc_inst.x("N_events_5", 0) + N_events
 
                 # bookkeep filenames and stats per process
                 proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
                 proc_inst.x.N_events = proc_inst.x("N_events", 0) + N_events
-                proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
+                proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights    
                 proc_inst.x.sum_abs_weights = proc_inst.x("sum_abs_weights", 0) + sum_abs_weights
                 proc_inst.x.sum_pos_weights = proc_inst.x("sum_pos_weights", 0) + sum_pos_weights
 
@@ -263,8 +281,44 @@ class MLClassifierBase(MLModel):
                 target[:, proc_inst.x.ml_id] = 1
 
                 # event weights, normalized to the sum of events per process
-                weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
-                ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
+                weights = ak.to_numpy(events.normalization_weight).astype(np.float32) # /proc_inst.get_xsec(self.config_inst.campaign.ecm).nominal
+                # __import__("IPython").embed()
+                ref_ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
+                if "kl_1" in fn:
+                    ml_weights = weights / proc_inst.x.sum_weights_1 * proc_inst.x.N_events_1
+                    logger.info(
+                        f"#####################################################################"
+                        f"------------ weights applied on file kl_1"
+                        f"ml_weights applied {ml_weights[0]} {chr(10)}"
+                        f"ml_weights reference applied before {ref_ml_weights[0]} {chr(10)}",
+                    )
+                elif "kl_0" in fn: 
+                    ml_weights = weights / proc_inst.x.sum_weights_0 * proc_inst.x.N_events_0
+                    logger.info(
+                        f"#####################################################################"
+                        f"------------ weights applied on file kl_0"
+                        f"ml_weights applied {ml_weights[0]} {chr(10)}"
+                        f"ml_weights reference applied before {ref_ml_weights[0]} {chr(10)}",
+                    )
+                elif "kl_2p45" in fn: 
+                    ml_weights = weights / proc_inst.x.sum_weights_2p45 * proc_inst.x.N_events_2p45
+                    logger.info(
+                        f"#####################################################################"
+                        f"------------ weights applied on file kl_2p45"
+                        f"ml_weights applied {ml_weights[0]} {chr(10)}"
+                        f"ml_weights reference applied before {ref_ml_weights[0]} {chr(10)}",
+                    )
+                elif "kl_5" in fn: 
+                    ml_weights = weights / proc_inst.x.sum_weights_5 * proc_inst.x.N_events_5
+                    logger.info(
+                        f"#####################################################################"
+                        f"------------ weights applied on file kl_5"
+                        f"ml_weights applied {ml_weights[0]} {chr(10)}"
+                        f"ml_weights reference applied before {ref_ml_weights[0]} {chr(10)}",
+                    )
+                else: 
+                    ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
+                # __import__("IPython").embed()
 
                 # transform ml weights to handle negative weights
                 m_negative_weights = ml_weights < 0

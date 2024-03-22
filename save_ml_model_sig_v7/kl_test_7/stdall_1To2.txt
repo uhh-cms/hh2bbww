@@ -1,0 +1,967 @@
+
+law remote job script
+=====================
+08/02/2024 09:40:14.509170443 (CET)
+
+-- environment -------------------------------------------------------------------------------------
+
+-- host infos
+> uname -a
+Linux batchg009.desy.de 3.10.0-1160.80.1.el7.x86_64 #1 SMP Tue Nov 8 15:48:59 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+
+> lsb_release -a
+LSB Version:	:core-4.1-amd64:core-4.1-noarch
+Distributor ID:	CentOS
+Description:	CentOS Linux release 7.9.2009 (Core)
+Release:	7.9.2009
+Codename:	Core
+
+> hostnamectl status
+
+-- job infos
+shell    : /bin/bash
+hostname : batchg009.desy.de
+python   : Python 2.7.5 from /bin/python
+python3  : Python 3.6.8 from /bin/python3
+init dir : /var/lib/condor/execute/dir_70655
+job home : /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1
+tmp dir  : /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/tmp
+user home: 
+pwd      : /var/lib/condor/execute/dir_70655
+script   : /var/lib/condor/execute/dir_70655/condor_exec.exe
+args     : columnflow.tasks.ml MLTraining LS1sb2ctZmlsZT1OT19TVFIgLS1lZmZlY3RpdmUtd29ya2Zsb3c9aHRjb25kb3IgLS1hbmFseXNpcz1oYncuYW5hbHlzaXMuaGJ3X2RsLmhid19kbCAtLXZlcnNpb249a2xfdGVzdF83IC0tbWwtbW9kZWw9ZGVuc2VfdGVzdF9zaWdfZGwgLS1jb25maWdzPWMxNyAtLWNhbGlicmF0b3JzPXNraXBfamVjdW5jIC0tc2VsZWN0b3JzPWRsIC0tcHJvZHVjZXJzPWRsX21sX2lucHV0cyAtLWNmLk1lcmdlTUxFdmVudHMtd29ya2Zsb3c9bG9jYWwgLS1jZi5QcmVwYXJlTUxFdmVudHMtd29ya2Zsb3c9aHRjb25kb3IgLS1jZi5QcmVwYXJlTUxFdmVudHMtaHRjb25kb3ItZ3B1cz0wIC0tY2YuUHJlcGFyZU1MRXZlbnRzLWh0Y29uZG9yLW1lbW9yeT00MDAwIC0tY2YuUHJlcGFyZU1MRXZlbnRzLW1heC1ydW50aW1lPTNoIC0tY2YuUHJlcGFyZU1MRXZlbnRzLXBpbG90PVRydWUgLS1jZi5NZXJnZVJlZHVjZWRFdmVudHMtd29ya2Zsb3c9bG9jYWwgLS1jZi5NZXJnZVJlZHVjdGlvblN0YXRzLW4taW5wdXRzPS0xIC0tY2YuUmVkdWNlRXZlbnRzLXdvcmtmbG93PWh0Y29uZG9yIC0tY2YuU2VsZWN0RXZlbnRzLXdvcmtmbG93PWh0Y29uZG9yIC0tY2YuU2VsZWN0RXZlbnRzLXBpbG90PVRydWUgLS1jZi5CdW5kbGVSZXBvLWN1c3RvbS1jaGVja3N1bT10aW1lMTcwNzM4MTUzOCAtLWxvY2FsLXNjaGVkdWxlcj1UcnVl MQ== 1 no LQ==
+
+-- task infos
+task module   : columnflow.tasks.ml
+task family   : MLTraining
+task params   : --log-file=NO_STR --effective-workflow=htcondor --analysis=hbw.analysis.hbw_dl.hbw_dl --version=kl_test_7 --ml-model=dense_test_sig_dl --configs=c17 --calibrators=skip_jecunc --selectors=dl --producers=dl_ml_inputs --cf.MergeMLEvents-workflow=local --cf.PrepareMLEvents-workflow=htcondor --cf.PrepareMLEvents-htcondor-gpus=0 --cf.PrepareMLEvents-htcondor-memory=4000 --cf.PrepareMLEvents-max-runtime=3h --cf.PrepareMLEvents-pilot=True --cf.MergeReducedEvents-workflow=local --cf.MergeReductionStats-n-inputs=-1 --cf.ReduceEvents-workflow=htcondor --cf.SelectEvents-workflow=htcondor --cf.SelectEvents-pilot=True --cf.BundleRepo-custom-checksum=time1707381538 --local-scheduler=True
+branches      : 1
+job workers   : 1
+auto retry    : no
+dashboard data: -
+
+-- files in LAW_JOB_INIT_DIR
+> pwd
+/var/lib/condor/execute/dir_70655
+> ls -la
+total 108
+drwx------ 5 markusla unihh2  4096 Feb  8 09:40 .
+drwxr-xr-x 3 condor   condor  4096 Feb  8 09:40 ..
+-rwx------ 1 markusla unihh2    48 Feb  8 09:40 .chirp.config
+-rwxr-xr-x 1 markusla unihh2 22171 Feb  8 09:40 condor_exec.exe
+drwx------ 3 markusla af-cms  4096 Feb  8 09:40 job_9AnltqSno3V1
+-rw-r--r-- 1 condor   it      6898 Feb  8 09:40 .job.ad
+-rw-r--r-- 1 markusla unihh2 10667 Feb  8 09:40 law_wlcg_tools_879652ea8b.sh
+-rw-r--r-- 1 condor   it      6666 Feb  8 09:40 .machine.ad
+-rw------- 1 markusla unihh2  4999 Feb  8 09:40 markusla.cc
+-rwxr-xr-x 1 markusla unihh2  8357 Feb  8 09:40 remote_bootstrap_3edc93caf8.sh
+-rw-r--r-- 1 markusla af-cms  2850 Feb  8 09:40 stdall_1To2.txt
+drwx------ 2 markusla unihh2  4096 Feb  8 09:40 tmp
+-rw-r--r-- 1 markusla unihh2  6599 Feb  8 09:40 .update.ad
+drwx------ 3 markusla unihh2  4096 Feb  8 09:40 var
+
+-- link input files
+link /var/lib/condor/execute/dir_70655/law_job_7975a40be7_1To2.sh
+link /var/lib/condor/execute/dir_70655/remote_bootstrap_3edc93caf8.sh
+link /var/lib/condor/execute/dir_70655/law_wlcg_tools_879652ea8b.sh
+
+-- render input files
+render /var/lib/condor/execute/dir_70655/remote_bootstrap_3edc93caf8.sh
+
+-- files in LAW_JOB_HOME
+> pwd
+/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1
+> ls -la
+total 32
+drwx------ 3 markusla af-cms 4096 Feb  8 09:40 .
+drwx------ 5 markusla unihh2 4096 Feb  8 09:40 ..
+lrwxrwxrwx 1 markusla af-cms   60 Feb  8 09:40 law_job_7975a40be7_1To2.sh -> /var/lib/condor/execute/dir_70655/law_job_7975a40be7_1To2.sh
+lrwxrwxrwx 1 markusla af-cms   62 Feb  8 09:40 law_wlcg_tools_879652ea8b.sh -> /var/lib/condor/execute/dir_70655/law_wlcg_tools_879652ea8b.sh
+-rw-r--r-- 1 markusla af-cms 9275 Feb  8 09:40 remote_bootstrap_3edc93caf8.sh
+drwxr-xr-x 2 markusla af-cms 4096 Feb  8 09:40 tmp
+
+-- setup -------------------------------------------------------------------------------------------
+
+-- bootstrap file
+run bootstrap file 'remote_bootstrap_3edc93caf8.sh'
+
+souring wlcg tools ...
+done sourcing wlcg tools
+
+fetching software bundle ...
+law_wlcg_get_file: fetched 'software.2.tgz' from '/nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleSoftware'
+done fetching software bundle
+
+fetching repository bundle ...
+law_wlcg_get_file: fetched 'hh2bbww.time1707381538.4.tgz' from '/nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleRepo'
+done fetching repository bundle
+
+source repository setup ...
+detected remote job environment
+initialized conda with micromamba interface and python 3.9
+looking for bash sandbox bundle for venv cf
+found bundle cf, index 0, pattern cf_5de7213c.b40d3b4314.[^.]+.tgz, uri file:///nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleBashSandbox
+law_wlcg_get_file: fetched 'cf_5de7213c.b40d3b4314.4.tgz' from '/nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleBashSandbox'
+
+INFO: hbw.ml.dense_classifier - Number of derived DenseClassifiers: 17
+INFO: hbw.production.categories - deriving 39 ML categorizer...
+HH -> bbWW analysis successfully setup
+done sourcing repository setup
+
+-- bootstrap command
+bootstrap command empty, skip
+
+-- detect law
+found law at /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/law/law
+
+-- setup dashboard
+dashboard file empty, skip
+
+-- environment variables
+PATH           : /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/cf_data/software/venvs/cf_5de7213c/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/law/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/cf_data/software/conda/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/cf_data/software/conda/condabin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/law/bin:/afs/desy.de/common/passwd:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/puppetlabs/bin
+PYTHONPATH     : /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/cmsdb:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/law:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/order:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/cf_data/software/venvs/cf_5de7213c/lib/python3.9/site-packages:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/bin:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/law:/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/repo/modules/columnflow/modules/order::/var/lib/condor/execute/dir_70655/job_9AnltqSno3V1/cf_data/software/conda/lib/python3.9/site-packages
+LD_LIBRARY_PATH: 
+CPATH          : 
+
+-- hook law_hook_job_running -----------------------------------------------------------------------
+
+function 'law_hook_job_running' does not exist, skip
+
+-- run task branch 1 -------------------------------------------------------------------------------
+
+cmd: law run columnflow.tasks.ml.MLTraining --log-file=NO_STR --effective-workflow=htcondor --analysis=hbw.analysis.hbw_dl.hbw_dl --version=kl_test_7 --ml-model=dense_test_sig_dl --configs=c17 --calibrators=skip_jecunc --selectors=dl --producers=dl_ml_inputs --cf.MergeMLEvents-workflow=local --cf.PrepareMLEvents-workflow=htcondor --cf.PrepareMLEvents-htcondor-gpus=0 --cf.PrepareMLEvents-htcondor-memory=4000 --cf.PrepareMLEvents-max-runtime=3h --cf.PrepareMLEvents-pilot=True --cf.MergeReducedEvents-workflow=local --cf.MergeReductionStats-n-inputs=-1 --cf.ReduceEvents-workflow=htcondor --cf.SelectEvents-workflow=htcondor --cf.SelectEvents-pilot=True --cf.BundleRepo-custom-checksum=time1707381538 --local-scheduler=True --branch=1  --workers=1
+
+-- dependency tree
+INFO: hbw.ml.dense_classifier - Number of derived DenseClassifiers: 17
+INFO: hbw.production.categories - deriving 39 ML categorizer...
+INFO: hbw.config.categories - Number of produced category insts: 6
+print task dependencies with max_depth 2
+
+0 > cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_1_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_1_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_1_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_1_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht100To200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht100To200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht100To200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht100To200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht200to400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht200to400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht200to400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht200to400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht600To800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht600To800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht600To800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht600To800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_tchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_tchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_tchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_tchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht70to100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht70to100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht70to100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht70to100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_fh_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_fh_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_fh_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_fh_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht800to1200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht800to1200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht800to1200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht800to1200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_dl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_dl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_dl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_dl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht100to200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht100to200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht100to200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht100to200_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_tbar_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_tbar_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_tbar_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_tbar_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht1200to2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht1200to2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht1200to2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht1200to2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht400to600_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht400to600_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht400to600_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht400to600_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht200To400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht200To400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht200To400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht200To400_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_sl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_sl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_sl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=tt_sl_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_0_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_0_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_0_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_0_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht1200To2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht1200To2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht1200To2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht1200To2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht2500_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht600to800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht600to800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht600to800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=dy_lep_m50_ht600to800_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht70To100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht70To100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht70To100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=w_lnu_ht70To100_madgraph, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=st_twchannel_t_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+│
+├──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_2p45_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0)
+│  │
+│  └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_2p45_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=0, workflow=local)
+│
+└──1 > cf.MergeMLEvents(effective_workflow=local, branch=0, tree_index=-1, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_2p45_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2)
+   │
+   └──2 > cf.MergeMLEvents(effective_workflow=local, branch=-1, tree_index=0, tree_depth=0, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, config=c17, local_shift=nominal, dataset=ggHH_kl_2p45_kt_1_dl_hbbhww_powheg, calibrators=skip_jecunc, selector=dl, producers=dl_ml_inputs, ml_model=dense_test_sig_dl, fold=2, workflow=local)
+
+-- execute attempt 1
+08/02/2024 09:41:09.304547577 (CET)
+INFO: hbw.ml.dense_classifier - Number of derived DenseClassifiers: 17
+INFO: hbw.production.categories - deriving 39 ML categorizer...
+INFO: hbw.config.categories - Number of produced category insts: 6
+INFO: luigi-interface - Informed scheduler that task   cf.MLTraining_hbw_analysis_hbw_1__2c68277660   has status   PENDING
+INFO: Informed scheduler that task   cf.MLTraining_hbw_analysis_hbw_1__2c68277660   has status   PENDING
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1de0bdf02b   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1de0bdf02b   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__336afc394a   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__336afc394a   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__4c81510abc   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__4c81510abc   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__3254ee1f2d   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__3254ee1f2d   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__045b5cd028   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__045b5cd028   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__978c78d2fc   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__978c78d2fc   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__0342892263   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__0342892263   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1bcd5fbc44   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1bcd5fbc44   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__2223b352c1   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__2223b352c1   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__6ea56119ac   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__6ea56119ac   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__592b172f51   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__592b172f51   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d752ed9162   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d752ed9162   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__a2e53cc9c7   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__a2e53cc9c7   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e15f651e50   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e15f651e50   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e4dcafeebd   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e4dcafeebd   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__cc591facc5   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__cc591facc5   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__734f9880b7   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__734f9880b7   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d44caf3396   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d44caf3396   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__ec9c0fd3aa   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__ec9c0fd3aa   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__9e3e7b0bd2   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__9e3e7b0bd2   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__9e9900a9ef   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__9e9900a9ef   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__21fa9a369a   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__21fa9a369a   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__ca4ad13572   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__ca4ad13572   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__f54af03738   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__f54af03738   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7b4f4474ea   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7b4f4474ea   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__41e7b9a607   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__41e7b9a607   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__074f0ca751   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__074f0ca751   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7cd49b594b   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7cd49b594b   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__dc29dbdf52   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__dc29dbdf52   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b159a6a27b   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b159a6a27b   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b0c65754ed   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b0c65754ed   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__f4b90577b6   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__f4b90577b6   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__5ea9c50bd7   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__5ea9c50bd7   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1507a0a408   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1507a0a408   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1e3ff7e52a   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__1e3ff7e52a   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__11d4c1cca3   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__11d4c1cca3   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__c816261abe   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__c816261abe   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e6a976f79c   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__e6a976f79c   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__514fa6bd00   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__514fa6bd00   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__8e33eda94f   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__8e33eda94f   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b5b3f86a4e   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__b5b3f86a4e   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__4f7ead5ce8   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__4f7ead5ce8   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d50431e9b9   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__d50431e9b9   has status   DONE
+INFO: luigi-interface - Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7e97b7edb7   has status   DONE
+INFO: Informed scheduler that task   cf.MergeMLEvents_hbw_analysis_hbw_0__7e97b7edb7   has status   DONE
+INFO: luigi-interface - Done scheduling tasks
+INFO: Done scheduling tasks
+INFO: luigi-interface - Running Worker with 1 processes
+INFO: Running Worker with 1 processes
+INFO: luigi-interface - [pid 73645] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) running   cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: [pid 73645] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) running   cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+
+=============================== entering sandbox ===============================
+task   : cf.MLTraining_hbw_analysis_hbw_1__2c68277660
+sandbox: bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh
+================================================================================
+
+looking for bash sandbox bundle for venv venv_ml_plotting
+found bundle venv_ml_plotting, index 2, pattern venv_ml_plotting_05ee2976.98276be81b.[^.]+.tgz, uri file:///nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleBashSandbox
+law_wlcg_get_file: fetched 'venv_ml_plotting_05ee2976.98276be81b.0.tgz' from '/nfs/dust/cms/user/markusla/analysis/dilepton/hh2bbww/data/hbw_store/hbw_dl/cf.BundleBashSandbox'
+
+
+2024-02-08 09:41:50.341184: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-02-08 09:41:53.274178: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory
+2024-02-08 09:41:53.274291: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory
+2024-02-08 09:41:53.274302: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+INFO: hbw.ml.dense_classifier - Number of derived DenseClassifiers: 17
+INFO: hbw.production.categories - deriving 39 ML categorizer...
+INFO: hbw.config.categories - Number of produced category insts: 6
+INFO: luigi-interface - Done scheduling tasks
+INFO: Done scheduling tasks
+INFO: luigi-interface - Running Worker with 1 processes
+INFO: Running Worker with 1 processes
+INFO: luigi-interface - [pid 74122] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) running   cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: [pid 74122] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) running   cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: hbw.util - Start tracing memory
+INFO: hbw.util - Memory after start: 0.000MB (peak: 0.000MB)
+INFO: hbw.ml.base - Dataset w_lnu_ht70To100_madgraph was assigned to process v_lep; took 0.142s 
+----- Number of events: 39 
+----- Sum of weights:   52.40484428405762
+INFO: hbw.ml.base - Dataset st_tchannel_t_powheg was assigned to process t_bkg; took 0.069s 
+----- Number of events: 4719 
+----- Sum of weights:   195.26900482177734
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht2500_madgraph was assigned to process v_lep; took 0.073s 
+----- Number of events: 4221 
+----- Sum of weights:   0.41564710438251495
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht600to800_madgraph was assigned to process v_lep; took 0.071s 
+----- Number of events: 7512 
+----- Sum of weights:   107.19917297363281
+INFO: hbw.ml.base - Dataset w_lnu_ht200To400_madgraph was assigned to process v_lep; took 0.058s 
+----- Number of events: 126 
+----- Sum of weights:   47.37541198730469
+INFO: hbw.ml.base - Dataset w_lnu_ht600To800_madgraph was assigned to process v_lep; took 0.063s 
+----- Number of events: 20 
+----- Sum of weights:   1.8736936450004578
+INFO: hbw.ml.base - Dataset tt_dl_powheg was assigned to process t_bkg; took 2.760s 
+----- Number of events: 3829381 
+----- Sum of weights:   133154.828125
+INFO: hbw.ml.base - Dataset ggHH_kl_1_kt_1_dl_hbbhww_powheg was assigned to process ggHH_sig; took 0.132s 
+----- Number of events: 32635 
+----- Sum of weights:   2.7792935371398926
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht70to100_madgraph was assigned to process v_lep; took 0.082s 
+----- Number of events: 7119 
+----- Sum of weights:   3544.2857666015625
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht200to400_madgraph was assigned to process v_lep; took 0.087s 
+----- Number of events: 12366 
+----- Sum of weights:   2003.2562866210938
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht100to200_madgraph was assigned to process v_lep; took 0.086s 
+----- Number of events: 13429 
+----- Sum of weights:   4799.759521484375
+INFO: hbw.ml.base - Dataset ggHH_kl_2p45_kt_1_dl_hbbhww_powheg was assigned to process ggHH_sig; took 0.101s 
+----- Number of events: 30963 
+----- Sum of weights:   1.0851844549179077
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht1200to2500_madgraph was assigned to process v_lep; took 0.079s 
+----- Number of events: 9795 
+----- Sum of weights:   16.652481079101562
+INFO: hbw.ml.base - Dataset tt_sl_powheg was assigned to process t_bkg; took 0.141s 
+----- Number of events: 82314 
+----- Sum of weights:   3607.7255859375
+INFO: hbw.ml.base - Dataset tt_fh_powheg was assigned to process t_bkg; took 0.068s 
+----- Number of events: 275 
+----- Sum of weights:   18.518917083740234
+INFO: hbw.ml.base - Dataset st_twchannel_tbar_powheg was assigned to process t_bkg; took 0.091s 
+----- Number of events: 19016 
+----- Sum of weights:   4984.2490234375
+INFO: hbw.ml.base - Dataset st_twchannel_t_powheg was assigned to process t_bkg; took 0.095s 
+----- Number of events: 18999 
+----- Sum of weights:   5001.67724609375
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht400to600_madgraph was assigned to process v_lep; took 0.082s 
+----- Number of events: 6858 
+----- Sum of weights:   369.416015625
+INFO: hbw.ml.base - Dataset dy_lep_m50_ht800to1200_madgraph was assigned to process v_lep; took 0.082s 
+----- Number of events: 7360 
+----- Sum of weights:   56.337724685668945
+INFO: hbw.ml.base - Dataset w_lnu_ht1200To2500_madgraph was assigned to process v_lep; took 0.068s 
+----- Number of events: 26 
+----- Sum of weights:   0.3005838543176651
+INFO: hbw.ml.base - Dataset w_lnu_ht100To200_madgraph was assigned to process v_lep; took 0.066s 
+----- Number of events: 83 
+----- Sum of weights:   104.19621276855469
+INFO: hbw.ml.base - Dataset ggHH_kl_0_kt_1_dl_hbbhww_powheg was assigned to process ggHH_sig; took 0.089s 
+----- Number of events: 30314 
+----- Sum of weights:   5.745995283126831
+INFO: hbw.ml.base - Preparing inputs for process ggHH_sig 
+----- Number of files:  6 
+----- Number of events: 93912 
+----- Sum of weights:   9.610473275184631
+INFO: hbw.ml.base - Input preparation done for process ggHH_sig; took 0.3s
+INFO: hbw.ml.base - Preparing inputs for process v_lep 
+----- Number of files:  26 
+----- Number of events: 68954 
+----- Sum of weights:   11103.473362714052
+INFO: hbw.ml.base - Input preparation done for process v_lep; took 0.5s
+INFO: hbw.ml.base - Preparing inputs for process t_bkg 
+----- Number of files:  12 
+----- Number of events: 3954704 
+----- Sum of weights:   146962.26790237427
+INFO: hbw.ml.base - Input preparation done for process t_bkg; took 8.0s
+INFO: hbw.ml.base - ggHH_sig sum of ml weights: 93917.5
+INFO: hbw.ml.base - v_lep sum of ml weights: 68954.0
+INFO: hbw.ml.base - t_bkg sum of ml weights: 3855798.5
+INFO: hbw.util - Memory after prepare_inputs: 569.233MB (peak: 1088.203MB)
+INFO: hbw.util - Memory after garbage collected: 569.131MB (peak: 1088.203MB)
+2024-02-08 09:42:45.800838: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-02-08 09:42:46.349755: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1613] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 10404 MB memory:  -> device: 0, name: NVIDIA GeForce GTX 1080 Ti, pci bus id: 0000:65:00.0, compute capability: 6.1
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ batch_normalization (BatchN  (None, 29)               116       
+ ormalization)                                                   
+                                                                 
+ dense (Dense)               (None, 512)               15360     
+                                                                 
+ dropout (Dropout)           (None, 512)               0         
+                                                                 
+ dense_1 (Dense)             (None, 512)               262656    
+                                                                 
+ dropout_1 (Dropout)         (None, 512)               0         
+                                                                 
+ dense_2 (Dense)             (None, 512)               262656    
+                                                                 
+ dropout_2 (Dropout)         (None, 512)               0         
+                                                                 
+ dense_3 (Dense)             (None, 3)                 1539      
+                                                                 
+=================================================================
+Total params: 542,327
+Trainable params: 542,269
+Non-trainable params: 58
+_________________________________________________________________
+INFO: hbw.ml.base - None
+INFO: hbw.util - Memory after prepare-model: 571.676MB (peak: 1088.203MB)
+INFO: hbw.util - Memory after val merged: 571.674MB (peak: 1088.203MB)
+INFO: hbw.util - Memory after start: 571.674MB (peak: 1088.203MB)
+WARNING: hbw.ml.tf_util - batch_size (4096) should be dividable by sum of process weights (3) to correctly weight processes as requested. batch_size has been corrected to 4095
+INFO: hbw.util - Memory after init: 571.709MB (peak: 1088.203MB)
+INFO: hbw.ml.mixins - Starting training...
+Epoch 1/100
+2024-02-08 09:42:51.050198: I tensorflow/compiler/xla/service/service.cc:173] XLA service 0x2aba34016740 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2024-02-08 09:42:51.050288: I tensorflow/compiler/xla/service/service.cc:181]   StreamExecutor device (0): NVIDIA GeForce GTX 1080 Ti, Compute Capability 6.1
+2024-02-08 09:42:51.070951: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:268] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2024-02-08 09:42:51.571178: I tensorflow/compiler/jit/xla_compilation_cache.cc:477] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 14s - loss: 0.7122 - categorical_accuracy: 0.6462 - weighted_categorical_accuracy: 0.6919 - val_loss: 8.8620 - val_categorical_accuracy: 0.5060 - val_weighted_categorical_accuracy: 0.6070 - 14s/epoch - 332ms/step
+Epoch 2/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.6100 - categorical_accuracy: 0.7192 - weighted_categorical_accuracy: 0.7410 - val_loss: 7.0352 - val_categorical_accuracy: 0.5923 - val_weighted_categorical_accuracy: 0.6635 - 6s/epoch - 141ms/step
+Epoch 3/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5907 - categorical_accuracy: 0.7321 - weighted_categorical_accuracy: 0.7480 - val_loss: 5.8057 - val_categorical_accuracy: 0.6394 - val_weighted_categorical_accuracy: 0.7162 - 6s/epoch - 145ms/step
+Epoch 4/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5840 - categorical_accuracy: 0.7404 - weighted_categorical_accuracy: 0.7510 - val_loss: 5.2095 - val_categorical_accuracy: 0.6945 - val_weighted_categorical_accuracy: 0.7420 - 6s/epoch - 147ms/step
+Epoch 5/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5745 - categorical_accuracy: 0.7480 - weighted_categorical_accuracy: 0.7554 - val_loss: 4.9202 - val_categorical_accuracy: 0.7113 - val_weighted_categorical_accuracy: 0.7568 - 6s/epoch - 147ms/step
+Epoch 6/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5677 - categorical_accuracy: 0.7526 - weighted_categorical_accuracy: 0.7591 - val_loss: 4.8007 - val_categorical_accuracy: 0.6919 - val_weighted_categorical_accuracy: 0.7616 - 6s/epoch - 151ms/step
+Epoch 7/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5617 - categorical_accuracy: 0.7555 - weighted_categorical_accuracy: 0.7608 - val_loss: 4.7405 - val_categorical_accuracy: 0.7357 - val_weighted_categorical_accuracy: 0.7654 - 6s/epoch - 147ms/step
+Epoch 8/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5595 - categorical_accuracy: 0.7581 - weighted_categorical_accuracy: 0.7620 - val_loss: 4.6859 - val_categorical_accuracy: 0.7387 - val_weighted_categorical_accuracy: 0.7692 - 6s/epoch - 150ms/step
+Epoch 9/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5555 - categorical_accuracy: 0.7612 - weighted_categorical_accuracy: 0.7644 - val_loss: 4.6593 - val_categorical_accuracy: 0.7294 - val_weighted_categorical_accuracy: 0.7715 - 6s/epoch - 158ms/step
+Epoch 10/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5493 - categorical_accuracy: 0.7627 - weighted_categorical_accuracy: 0.7652 - val_loss: 4.6317 - val_categorical_accuracy: 0.7264 - val_weighted_categorical_accuracy: 0.7725 - 6s/epoch - 146ms/step
+Epoch 11/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5485 - categorical_accuracy: 0.7648 - weighted_categorical_accuracy: 0.7672 - val_loss: 4.6180 - val_categorical_accuracy: 0.7374 - val_weighted_categorical_accuracy: 0.7742 - 6s/epoch - 149ms/step
+Epoch 12/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5459 - categorical_accuracy: 0.7675 - weighted_categorical_accuracy: 0.7688 - val_loss: 4.5990 - val_categorical_accuracy: 0.7205 - val_weighted_categorical_accuracy: 0.7750 - 6s/epoch - 148ms/step
+Epoch 13/100
+41/41 - 3s - loss: 0.5443 - categorical_accuracy: 0.7665 - weighted_categorical_accuracy: 0.7703 - val_loss: 4.6061 - val_categorical_accuracy: 0.7285 - val_weighted_categorical_accuracy: 0.7742 - 3s/epoch - 61ms/step
+Epoch 14/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5398 - categorical_accuracy: 0.7698 - weighted_categorical_accuracy: 0.7724 - val_loss: 4.5686 - val_categorical_accuracy: 0.7161 - val_weighted_categorical_accuracy: 0.7750 - 6s/epoch - 148ms/step
+Epoch 15/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5377 - categorical_accuracy: 0.7694 - weighted_categorical_accuracy: 0.7722 - val_loss: 4.5458 - val_categorical_accuracy: 0.7190 - val_weighted_categorical_accuracy: 0.7779 - 6s/epoch - 158ms/step
+Epoch 16/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5385 - categorical_accuracy: 0.7689 - weighted_categorical_accuracy: 0.7720 - val_loss: 4.5363 - val_categorical_accuracy: 0.7235 - val_weighted_categorical_accuracy: 0.7783 - 6s/epoch - 144ms/step
+Epoch 17/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5346 - categorical_accuracy: 0.7690 - weighted_categorical_accuracy: 0.7744 - val_loss: 4.5345 - val_categorical_accuracy: 0.7111 - val_weighted_categorical_accuracy: 0.7785 - 6s/epoch - 141ms/step
+Epoch 18/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5332 - categorical_accuracy: 0.7696 - weighted_categorical_accuracy: 0.7741 - val_loss: 4.5195 - val_categorical_accuracy: 0.7290 - val_weighted_categorical_accuracy: 0.7797 - 6s/epoch - 148ms/step
+Epoch 19/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5312 - categorical_accuracy: 0.7716 - weighted_categorical_accuracy: 0.7743 - val_loss: 4.5040 - val_categorical_accuracy: 0.7270 - val_weighted_categorical_accuracy: 0.7803 - 6s/epoch - 150ms/step
+Epoch 20/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5285 - categorical_accuracy: 0.7716 - weighted_categorical_accuracy: 0.7771 - val_loss: 4.5023 - val_categorical_accuracy: 0.7438 - val_weighted_categorical_accuracy: 0.7798 - 6s/epoch - 158ms/step
+Epoch 21/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5281 - categorical_accuracy: 0.7739 - weighted_categorical_accuracy: 0.7774 - val_loss: 4.4927 - val_categorical_accuracy: 0.7208 - val_weighted_categorical_accuracy: 0.7803 - 6s/epoch - 147ms/step
+Epoch 22/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5251 - categorical_accuracy: 0.7725 - weighted_categorical_accuracy: 0.7783 - val_loss: 4.4852 - val_categorical_accuracy: 0.7348 - val_weighted_categorical_accuracy: 0.7806 - 6s/epoch - 140ms/step
+Epoch 23/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5232 - categorical_accuracy: 0.7728 - weighted_categorical_accuracy: 0.7792 - val_loss: 4.4699 - val_categorical_accuracy: 0.7032 - val_weighted_categorical_accuracy: 0.7815 - 6s/epoch - 146ms/step
+Epoch 24/100
+41/41 - 3s - loss: 0.5256 - categorical_accuracy: 0.7729 - weighted_categorical_accuracy: 0.7780 - val_loss: 4.4719 - val_categorical_accuracy: 0.7266 - val_weighted_categorical_accuracy: 0.7816 - 3s/epoch - 63ms/step
+Epoch 25/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5224 - categorical_accuracy: 0.7733 - weighted_categorical_accuracy: 0.7798 - val_loss: 4.4691 - val_categorical_accuracy: 0.7194 - val_weighted_categorical_accuracy: 0.7820 - 6s/epoch - 147ms/step
+Epoch 26/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5200 - categorical_accuracy: 0.7756 - weighted_categorical_accuracy: 0.7814 - val_loss: 4.4599 - val_categorical_accuracy: 0.7134 - val_weighted_categorical_accuracy: 0.7822 - 6s/epoch - 155ms/step
+Epoch 27/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5178 - categorical_accuracy: 0.7752 - weighted_categorical_accuracy: 0.7814 - val_loss: 4.4513 - val_categorical_accuracy: 0.7124 - val_weighted_categorical_accuracy: 0.7823 - 6s/epoch - 138ms/step
+Epoch 28/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5151 - categorical_accuracy: 0.7776 - weighted_categorical_accuracy: 0.7839 - val_loss: 4.4419 - val_categorical_accuracy: 0.7235 - val_weighted_categorical_accuracy: 0.7837 - 6s/epoch - 151ms/step
+Epoch 29/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5149 - categorical_accuracy: 0.7770 - weighted_categorical_accuracy: 0.7829 - val_loss: 4.4385 - val_categorical_accuracy: 0.7352 - val_weighted_categorical_accuracy: 0.7836 - 6s/epoch - 147ms/step
+Epoch 30/100
+41/41 - 3s - loss: 0.5167 - categorical_accuracy: 0.7779 - weighted_categorical_accuracy: 0.7826 - val_loss: 4.4393 - val_categorical_accuracy: 0.7220 - val_weighted_categorical_accuracy: 0.7832 - 3s/epoch - 64ms/step
+Epoch 31/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5137 - categorical_accuracy: 0.7766 - weighted_categorical_accuracy: 0.7824 - val_loss: 4.4359 - val_categorical_accuracy: 0.7354 - val_weighted_categorical_accuracy: 0.7839 - 6s/epoch - 151ms/step
+Epoch 32/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 7s - loss: 0.5133 - categorical_accuracy: 0.7779 - weighted_categorical_accuracy: 0.7834 - val_loss: 4.4315 - val_categorical_accuracy: 0.7300 - val_weighted_categorical_accuracy: 0.7843 - 7s/epoch - 159ms/step
+Epoch 33/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5148 - categorical_accuracy: 0.7781 - weighted_categorical_accuracy: 0.7830 - val_loss: 4.4235 - val_categorical_accuracy: 0.7436 - val_weighted_categorical_accuracy: 0.7843 - 6s/epoch - 153ms/step
+Epoch 34/100
+41/41 - 3s - loss: 0.5129 - categorical_accuracy: 0.7795 - weighted_categorical_accuracy: 0.7837 - val_loss: 4.4422 - val_categorical_accuracy: 0.7220 - val_weighted_categorical_accuracy: 0.7842 - 3s/epoch - 61ms/step
+Epoch 35/100
+41/41 - 2s - loss: 0.5078 - categorical_accuracy: 0.7800 - weighted_categorical_accuracy: 0.7861 - val_loss: 4.4278 - val_categorical_accuracy: 0.7322 - val_weighted_categorical_accuracy: 0.7855 - 2s/epoch - 60ms/step
+Epoch 36/100
+41/41 - 3s - loss: 0.5080 - categorical_accuracy: 0.7804 - weighted_categorical_accuracy: 0.7868 - val_loss: 4.4312 - val_categorical_accuracy: 0.7303 - val_weighted_categorical_accuracy: 0.7844 - 3s/epoch - 64ms/step
+Epoch 37/100
+41/41 - 2s - loss: 0.5076 - categorical_accuracy: 0.7790 - weighted_categorical_accuracy: 0.7861 - val_loss: 4.4241 - val_categorical_accuracy: 0.7442 - val_weighted_categorical_accuracy: 0.7852 - 2s/epoch - 61ms/step
+Epoch 38/100
+41/41 - 3s - loss: 0.5063 - categorical_accuracy: 0.7800 - weighted_categorical_accuracy: 0.7859 - val_loss: 4.4346 - val_categorical_accuracy: 0.7424 - val_weighted_categorical_accuracy: 0.7856 - 3s/epoch - 63ms/step
+Epoch 39/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5056 - categorical_accuracy: 0.7816 - weighted_categorical_accuracy: 0.7862 - val_loss: 4.4103 - val_categorical_accuracy: 0.7237 - val_weighted_categorical_accuracy: 0.7860 - 6s/epoch - 146ms/step
+Epoch 40/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5031 - categorical_accuracy: 0.7833 - weighted_categorical_accuracy: 0.7889 - val_loss: 4.4077 - val_categorical_accuracy: 0.7352 - val_weighted_categorical_accuracy: 0.7864 - 6s/epoch - 149ms/step
+Epoch 41/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5017 - categorical_accuracy: 0.7815 - weighted_categorical_accuracy: 0.7885 - val_loss: 4.4006 - val_categorical_accuracy: 0.7377 - val_weighted_categorical_accuracy: 0.7876 - 6s/epoch - 142ms/step
+Epoch 42/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.5038 - categorical_accuracy: 0.7819 - weighted_categorical_accuracy: 0.7882 - val_loss: 4.3816 - val_categorical_accuracy: 0.7250 - val_weighted_categorical_accuracy: 0.7869 - 6s/epoch - 156ms/step
+Epoch 43/100
+41/41 - 3s - loss: 0.5050 - categorical_accuracy: 0.7818 - weighted_categorical_accuracy: 0.7867 - val_loss: 4.3891 - val_categorical_accuracy: 0.7253 - val_weighted_categorical_accuracy: 0.7873 - 3s/epoch - 64ms/step
+Epoch 44/100
+41/41 - 2s - loss: 0.5029 - categorical_accuracy: 0.7849 - weighted_categorical_accuracy: 0.7896 - val_loss: 4.3818 - val_categorical_accuracy: 0.7260 - val_weighted_categorical_accuracy: 0.7864 - 2s/epoch - 59ms/step
+Epoch 45/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.4997 - categorical_accuracy: 0.7830 - weighted_categorical_accuracy: 0.7896 - val_loss: 4.3801 - val_categorical_accuracy: 0.7384 - val_weighted_categorical_accuracy: 0.7875 - 6s/epoch - 139ms/step
+Epoch 46/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.4972 - categorical_accuracy: 0.7840 - weighted_categorical_accuracy: 0.7909 - val_loss: 4.3677 - val_categorical_accuracy: 0.7353 - val_weighted_categorical_accuracy: 0.7893 - 6s/epoch - 146ms/step
+Epoch 47/100
+41/41 - 3s - loss: 0.4998 - categorical_accuracy: 0.7826 - weighted_categorical_accuracy: 0.7892 - val_loss: 4.3719 - val_categorical_accuracy: 0.7384 - val_weighted_categorical_accuracy: 0.7883 - 3s/epoch - 66ms/step
+Epoch 48/100
+41/41 - 3s - loss: 0.4981 - categorical_accuracy: 0.7867 - weighted_categorical_accuracy: 0.7914 - val_loss: 4.4024 - val_categorical_accuracy: 0.7485 - val_weighted_categorical_accuracy: 0.7867 - 3s/epoch - 63ms/step
+Epoch 49/100
+41/41 - 3s - loss: 0.4938 - categorical_accuracy: 0.7857 - weighted_categorical_accuracy: 0.7920 - val_loss: 4.3728 - val_categorical_accuracy: 0.7286 - val_weighted_categorical_accuracy: 0.7888 - 3s/epoch - 64ms/step
+Epoch 50/100
+41/41 - 3s - loss: 0.4954 - categorical_accuracy: 0.7859 - weighted_categorical_accuracy: 0.7918 - val_loss: 4.3811 - val_categorical_accuracy: 0.7414 - val_weighted_categorical_accuracy: 0.7880 - 3s/epoch - 61ms/step
+Epoch 51/100
+41/41 - 3s - loss: 0.4993 - categorical_accuracy: 0.7841 - weighted_categorical_accuracy: 0.7903 - val_loss: 4.3771 - val_categorical_accuracy: 0.7454 - val_weighted_categorical_accuracy: 0.7868 - 3s/epoch - 62ms/step
+Epoch 52/100
+41/41 - 3s - loss: 0.4930 - categorical_accuracy: 0.7864 - weighted_categorical_accuracy: 0.7932 - val_loss: 4.3777 - val_categorical_accuracy: 0.7447 - val_weighted_categorical_accuracy: 0.7878 - 3s/epoch - 64ms/step
+Epoch 53/100
+41/41 - 3s - loss: 0.4944 - categorical_accuracy: 0.7862 - weighted_categorical_accuracy: 0.7928 - val_loss: 4.3741 - val_categorical_accuracy: 0.7314 - val_weighted_categorical_accuracy: 0.7889 - 3s/epoch - 64ms/step
+Epoch 54/100
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+41/41 - 6s - loss: 0.4936 - categorical_accuracy: 0.7853 - weighted_categorical_accuracy: 0.7920 - val_loss: 4.3632 - val_categorical_accuracy: 0.7370 - val_weighted_categorical_accuracy: 0.7885 - 6s/epoch - 152ms/step
+Epoch 55/100
+41/41 - 3s - loss: 0.4918 - categorical_accuracy: 0.7859 - weighted_categorical_accuracy: 0.7934 - val_loss: 4.3838 - val_categorical_accuracy: 0.7377 - val_weighted_categorical_accuracy: 0.7876 - 3s/epoch - 64ms/step
+Epoch 56/100
+41/41 - 2s - loss: 0.4898 - categorical_accuracy: 0.7877 - weighted_categorical_accuracy: 0.7948 - val_loss: 4.3701 - val_categorical_accuracy: 0.7381 - val_weighted_categorical_accuracy: 0.7876 - 2s/epoch - 61ms/step
+Epoch 57/100
+41/41 - 3s - loss: 0.4908 - categorical_accuracy: 0.7863 - weighted_categorical_accuracy: 0.7937 - val_loss: 4.3713 - val_categorical_accuracy: 0.7333 - val_weighted_categorical_accuracy: 0.7874 - 3s/epoch - 65ms/step
+Epoch 58/100
+41/41 - 3s - loss: 0.4881 - categorical_accuracy: 0.7882 - weighted_categorical_accuracy: 0.7948 - val_loss: 4.3681 - val_categorical_accuracy: 0.7317 - val_weighted_categorical_accuracy: 0.7891 - 3s/epoch - 62ms/step
+Epoch 59/100
+41/41 - 3s - loss: 0.4889 - categorical_accuracy: 0.7857 - weighted_categorical_accuracy: 0.7934 - val_loss: 4.3942 - val_categorical_accuracy: 0.7490 - val_weighted_categorical_accuracy: 0.7871 - 3s/epoch - 65ms/step
+Epoch 60/100
+41/41 - 3s - loss: 0.4880 - categorical_accuracy: 0.7870 - weighted_categorical_accuracy: 0.7946 - val_loss: 4.3688 - val_categorical_accuracy: 0.7398 - val_weighted_categorical_accuracy: 0.7880 - 3s/epoch - 63ms/step
+Epoch 61/100
+41/41 - 3s - loss: 0.4893 - categorical_accuracy: 0.7887 - weighted_categorical_accuracy: 0.7941 - val_loss: 4.3685 - val_categorical_accuracy: 0.7448 - val_weighted_categorical_accuracy: 0.7874 - 3s/epoch - 62ms/step
+Epoch 62/100
+41/41 - 3s - loss: 0.4881 - categorical_accuracy: 0.7863 - weighted_categorical_accuracy: 0.7936 - val_loss: 4.3673 - val_categorical_accuracy: 0.7388 - val_weighted_categorical_accuracy: 0.7893 - 3s/epoch - 61ms/step
+Epoch 63/100
+41/41 - 3s - loss: 0.4854 - categorical_accuracy: 0.7900 - weighted_categorical_accuracy: 0.7956 - val_loss: 4.3873 - val_categorical_accuracy: 0.7504 - val_weighted_categorical_accuracy: 0.7877 - 3s/epoch - 62ms/step
+Epoch 64/100
+41/41 - 2s - loss: 0.4854 - categorical_accuracy: 0.7888 - weighted_categorical_accuracy: 0.7960 - val_loss: 4.3680 - val_categorical_accuracy: 0.7442 - val_weighted_categorical_accuracy: 0.7872 - 2s/epoch - 61ms/step
+Epoch 65/100
+41/41 - 2s - loss: 0.4861 - categorical_accuracy: 0.7890 - weighted_categorical_accuracy: 0.7956 - val_loss: 4.3893 - val_categorical_accuracy: 0.7487 - val_weighted_categorical_accuracy: 0.7881 - 2s/epoch - 61ms/step
+Epoch 66/100
+41/41 - 3s - loss: 0.4844 - categorical_accuracy: 0.7888 - weighted_categorical_accuracy: 0.7953 - val_loss: 4.3762 - val_categorical_accuracy: 0.7428 - val_weighted_categorical_accuracy: 0.7884 - 3s/epoch - 63ms/step
+Epoch 67/100
+41/41 - 3s - loss: 0.4816 - categorical_accuracy: 0.7896 - weighted_categorical_accuracy: 0.7971 - val_loss: 4.4261 - val_categorical_accuracy: 0.7533 - val_weighted_categorical_accuracy: 0.7876 - 3s/epoch - 64ms/step
+Epoch 68/100
+41/41 - 3s - loss: 0.4830 - categorical_accuracy: 0.7900 - weighted_categorical_accuracy: 0.7958 - val_loss: 4.4081 - val_categorical_accuracy: 0.7494 - val_weighted_categorical_accuracy: 0.7863 - 3s/epoch - 62ms/step
+Epoch 69/100
+41/41 - 3s - loss: 0.4828 - categorical_accuracy: 0.7905 - weighted_categorical_accuracy: 0.7975 - val_loss: 4.4259 - val_categorical_accuracy: 0.7541 - val_weighted_categorical_accuracy: 0.7869 - 3s/epoch - 65ms/step
+Epoch 70/100
+41/41 - 3s - loss: 0.4838 - categorical_accuracy: 0.7896 - weighted_categorical_accuracy: 0.7971 - val_loss: 4.4080 - val_categorical_accuracy: 0.7394 - val_weighted_categorical_accuracy: 0.7880 - 3s/epoch - 64ms/step
+Epoch 71/100
+41/41 - 2s - loss: 0.4803 - categorical_accuracy: 0.7912 - weighted_categorical_accuracy: 0.7986 - val_loss: 4.3968 - val_categorical_accuracy: 0.7393 - val_weighted_categorical_accuracy: 0.7886 - 2s/epoch - 61ms/step
+Epoch 72/100
+41/41 - 2s - loss: 0.4800 - categorical_accuracy: 0.7923 - weighted_categorical_accuracy: 0.7984 - val_loss: 4.3904 - val_categorical_accuracy: 0.7493 - val_weighted_categorical_accuracy: 0.7883 - 2s/epoch - 60ms/step
+Epoch 73/100
+41/41 - 3s - loss: 0.4825 - categorical_accuracy: 0.7888 - weighted_categorical_accuracy: 0.7963 - val_loss: 4.4064 - val_categorical_accuracy: 0.7459 - val_weighted_categorical_accuracy: 0.7874 - 3s/epoch - 61ms/step
+Epoch 74/100
+41/41 - 3s - loss: 0.4780 - categorical_accuracy: 0.7907 - weighted_categorical_accuracy: 0.7981 - val_loss: 4.4068 - val_categorical_accuracy: 0.7434 - val_weighted_categorical_accuracy: 0.7881 - 3s/epoch - 63ms/step
+Epoch 75/100
+41/41 - 3s - loss: 0.4767 - categorical_accuracy: 0.7924 - weighted_categorical_accuracy: 0.7999 - val_loss: 4.3976 - val_categorical_accuracy: 0.7367 - val_weighted_categorical_accuracy: 0.7895 - 3s/epoch - 61ms/step
+Epoch 76/100
+41/41 - 2s - loss: 0.4784 - categorical_accuracy: 0.7904 - weighted_categorical_accuracy: 0.7982 - val_loss: 4.3934 - val_categorical_accuracy: 0.7344 - val_weighted_categorical_accuracy: 0.7887 - 2s/epoch - 60ms/step
+Epoch 77/100
+41/41 - 3s - loss: 0.4795 - categorical_accuracy: 0.7909 - weighted_categorical_accuracy: 0.7984 - val_loss: 4.4011 - val_categorical_accuracy: 0.7465 - val_weighted_categorical_accuracy: 0.7881 - 3s/epoch - 70ms/step
+Epoch 78/100
+41/41 - 3s - loss: 0.4755 - categorical_accuracy: 0.7913 - weighted_categorical_accuracy: 0.7993 - val_loss: 4.3950 - val_categorical_accuracy: 0.7444 - val_weighted_categorical_accuracy: 0.7895 - 3s/epoch - 65ms/step
+Epoch 79/100
+41/41 - 2s - loss: 0.4753 - categorical_accuracy: 0.7924 - weighted_categorical_accuracy: 0.8010 - val_loss: 4.4126 - val_categorical_accuracy: 0.7422 - val_weighted_categorical_accuracy: 0.7891 - 2s/epoch - 59ms/step
+Epoch 80/100
+41/41 - 3s - loss: 0.4749 - categorical_accuracy: 0.7911 - weighted_categorical_accuracy: 0.7998 - val_loss: 4.4290 - val_categorical_accuracy: 0.7588 - val_weighted_categorical_accuracy: 0.7886 - 3s/epoch - 77ms/step
+Epoch 81/100
+41/41 - 3s - loss: 0.4752 - categorical_accuracy: 0.7919 - weighted_categorical_accuracy: 0.8003 - val_loss: 4.4262 - val_categorical_accuracy: 0.7612 - val_weighted_categorical_accuracy: 0.7883 - 3s/epoch - 66ms/step
+Epoch 82/100
+41/41 - 2s - loss: 0.4736 - categorical_accuracy: 0.7922 - weighted_categorical_accuracy: 0.8000 - val_loss: 4.4238 - val_categorical_accuracy: 0.7475 - val_weighted_categorical_accuracy: 0.7883 - 2s/epoch - 61ms/step
+Epoch 83/100
+41/41 - 2s - loss: 0.4687 - categorical_accuracy: 0.7932 - weighted_categorical_accuracy: 0.8030 - val_loss: 4.4072 - val_categorical_accuracy: 0.7455 - val_weighted_categorical_accuracy: 0.7887 - 2s/epoch - 61ms/step
+Epoch 84/100
+41/41 - 3s - loss: 0.4703 - categorical_accuracy: 0.7916 - weighted_categorical_accuracy: 0.8024 - val_loss: 4.4492 - val_categorical_accuracy: 0.7485 - val_weighted_categorical_accuracy: 0.7873 - 3s/epoch - 64ms/step
+Epoch 85/100
+41/41 - 3s - loss: 0.4699 - categorical_accuracy: 0.7930 - weighted_categorical_accuracy: 0.8017 - val_loss: 4.4430 - val_categorical_accuracy: 0.7479 - val_weighted_categorical_accuracy: 0.7884 - 3s/epoch - 62ms/step
+Epoch 86/100
+41/41 - 2s - loss: 0.4708 - categorical_accuracy: 0.7940 - weighted_categorical_accuracy: 0.8029 - val_loss: 4.4202 - val_categorical_accuracy: 0.7572 - val_weighted_categorical_accuracy: 0.7879 - 2s/epoch - 60ms/step
+Epoch 87/100
+41/41 - 3s - loss: 0.4728 - categorical_accuracy: 0.7927 - weighted_categorical_accuracy: 0.8015 - val_loss: 4.4314 - val_categorical_accuracy: 0.7517 - val_weighted_categorical_accuracy: 0.7887 - 3s/epoch - 65ms/step
+Epoch 88/100
+41/41 - 3s - loss: 0.4653 - categorical_accuracy: 0.7945 - weighted_categorical_accuracy: 0.8049 - val_loss: 4.4743 - val_categorical_accuracy: 0.7513 - val_weighted_categorical_accuracy: 0.7858 - 3s/epoch - 61ms/step
+Epoch 89/100
+41/41 - 3s - loss: 0.4692 - categorical_accuracy: 0.7928 - weighted_categorical_accuracy: 0.8041 - val_loss: 4.4333 - val_categorical_accuracy: 0.7488 - val_weighted_categorical_accuracy: 0.7882 - 3s/epoch - 64ms/step
+Epoch 90/100
+41/41 - 3s - loss: 0.4713 - categorical_accuracy: 0.7917 - weighted_categorical_accuracy: 0.8003 - val_loss: 4.4381 - val_categorical_accuracy: 0.7516 - val_weighted_categorical_accuracy: 0.7875 - 3s/epoch - 63ms/step
+Epoch 91/100
+41/41 - 3s - loss: 0.4691 - categorical_accuracy: 0.7948 - weighted_categorical_accuracy: 0.8023 - val_loss: 4.4129 - val_categorical_accuracy: 0.7356 - val_weighted_categorical_accuracy: 0.7887 - 3s/epoch - 62ms/step
+Epoch 92/100
+41/41 - 3s - loss: 0.4641 - categorical_accuracy: 0.7956 - weighted_categorical_accuracy: 0.8056 - val_loss: 4.4099 - val_categorical_accuracy: 0.7375 - val_weighted_categorical_accuracy: 0.7886 - 3s/epoch - 63ms/step
+Epoch 93/100
+41/41 - 3s - loss: 0.4667 - categorical_accuracy: 0.7935 - weighted_categorical_accuracy: 0.8035 - val_loss: 4.4294 - val_categorical_accuracy: 0.7558 - val_weighted_categorical_accuracy: 0.7886 - 3s/epoch - 63ms/step
+Epoch 94/100
+41/41 - 3s - loss: 0.4672 - categorical_accuracy: 0.7935 - weighted_categorical_accuracy: 0.8042 - val_loss: 4.4197 - val_categorical_accuracy: 0.7490 - val_weighted_categorical_accuracy: 0.7879 - 3s/epoch - 62ms/step
+Epoch 95/100
+41/41 - 3s - loss: 0.4649 - categorical_accuracy: 0.7960 - weighted_categorical_accuracy: 0.8045 - val_loss: 4.4171 - val_categorical_accuracy: 0.7369 - val_weighted_categorical_accuracy: 0.7893 - 3s/epoch - 62ms/step
+Epoch 96/100
+41/41 - 3s - loss: 0.4669 - categorical_accuracy: 0.7948 - weighted_categorical_accuracy: 0.8027 - val_loss: 4.4006 - val_categorical_accuracy: 0.7362 - val_weighted_categorical_accuracy: 0.7902 - 3s/epoch - 64ms/step
+Epoch 97/100
+41/41 - 2s - loss: 0.4580 - categorical_accuracy: 0.7949 - weighted_categorical_accuracy: 0.8067 - val_loss: 4.4012 - val_categorical_accuracy: 0.7244 - val_weighted_categorical_accuracy: 0.7889 - 2s/epoch - 60ms/step
+Epoch 98/100
+41/41 - 3s - loss: 0.4662 - categorical_accuracy: 0.7938 - weighted_categorical_accuracy: 0.8039 - val_loss: 4.4222 - val_categorical_accuracy: 0.7379 - val_weighted_categorical_accuracy: 0.7884 - 3s/epoch - 63ms/step
+Epoch 99/100
+41/41 - 3s - loss: 0.4644 - categorical_accuracy: 0.7947 - weighted_categorical_accuracy: 0.8055 - val_loss: 4.4253 - val_categorical_accuracy: 0.7392 - val_weighted_categorical_accuracy: 0.7885 - 3s/epoch - 63ms/step
+Epoch 100/100
+41/41 - 3s - loss: 0.4628 - categorical_accuracy: 0.7966 - weighted_categorical_accuracy: 0.8061 - val_loss: 4.4155 - val_categorical_accuracy: 0.7275 - val_weighted_categorical_accuracy: 0.7882 - 3s/epoch - 61ms/step
+INFO: hbw.util - Memory after loop: 586.230MB (peak: 1088.203MB)
+INFO:hbw.util:Memory after loop: 586.230MB (peak: 1088.203MB)
+INFO: hbw.util - Memory after del: 586.230MB (peak: 1088.203MB)
+INFO:hbw.util:Memory after del: 586.230MB (peak: 1088.203MB)
+INFO: hbw.util - Memory after training: 586.223MB (peak: 1088.203MB)
+INFO:hbw.util:Memory after training: 586.223MB (peak: 1088.203MB)
+WARNING:absl:Found untraced functions such as re_lu_layer_call_fn, re_lu_layer_call_and_return_conditional_losses, re_lu_1_layer_call_fn, re_lu_1_layer_call_and_return_conditional_losses, re_lu_2_layer_call_fn while saving (showing 5 of 6). These functions will not be directly callable after loading.
+INFO: hbw.util - Memory after train merged: 652.220MB (peak: 1088.203MB)
+INFO:hbw.util:Memory after train merged: 652.220MB (peak: 1088.203MB)
+INFO: hbw.ml.base - Function 'get_input_weights' done; took 0.01 seconds
+INFO:hbw.ml.base:Function 'get_input_weights' done; took 0.01 seconds
+INFO: hbw.util - Memory after start plotting: 652.223MB (peak: 1088.203MB)
+INFO:hbw.util:Memory after start plotting: 652.223MB (peak: 1088.203MB)
+INFO: hbw.ml.base - Function 'plot_history' done; took 2.90 seconds
+INFO:hbw.ml.base:Function 'plot_history' done; took 2.90 seconds
+INFO: hbw.ml.base - Function 'plot_history' done; took 1.19 seconds
+INFO:hbw.ml.base:Function 'plot_history' done; took 1.19 seconds
+INFO: hbw.ml.base - Function 'plot_history' done; took 0.91 seconds
+INFO:hbw.ml.base:Function 'plot_history' done; took 0.91 seconds
+INFO: hbw.ml.base - Function 'predict_numpy_on_batch' done; took 2.33 seconds
+INFO:hbw.ml.base:Function 'predict_numpy_on_batch' done; took 2.33 seconds
+INFO: hbw.ml.base - Function 'predict_numpy_on_batch' done; took 0.43 seconds
+INFO:hbw.ml.base:Function 'predict_numpy_on_batch' done; took 0.43 seconds
+INFO: hbw.ml.base - Function 'plot_confusion' done; took 11.95 seconds
+INFO:hbw.ml.base:Function 'plot_confusion' done; took 11.95 seconds
+INFO: hbw.ml.base - Function 'plot_confusion' done; took 2.36 seconds
+INFO:hbw.ml.base:Function 'plot_confusion' done; took 2.36 seconds
+INFO: hbw.ml.base - Function 'plot_roc_ovr' done; took 7.68 seconds
+INFO:hbw.ml.base:Function 'plot_roc_ovr' done; took 7.68 seconds
+INFO: hbw.ml.base - Function 'plot_roc_ovr' done; took 2.10 seconds
+INFO:hbw.ml.base:Function 'plot_roc_ovr' done; took 2.10 seconds
+INFO: hbw.ml.base - Function 'plot_output_nodes' done; took 4.38 seconds
+INFO:hbw.ml.base:Function 'plot_output_nodes' done; took 4.38 seconds
+INFO: luigi-interface - [pid 74122] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) done      cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: [pid 74122] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) done      cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO:luigi-interface:[pid 74122] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) done      cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: luigi-interface - This progress looks :) because there were no failed tasks or missing dependencies
+INFO: This progress looks :) because there were no failed tasks or missing dependencies
+INFO:luigi-interface:This progress looks :) because there were no failed tasks or missing dependencies
+mli_b1_pt: 55.332
+mli_ht: 43.34
+mli_dr_bb: 36.386
+mli_b2_pt: 35.37
+mli_b2_eta: 35.046
+mli_mbbllMET: 34.051
+mli_met_pt: 33.559
+mli_dphi_bb_nu: 31.9
+mli_mllMET: 30.767
+mli_deepjetsum: 29.285
+mli_dphi_bb: 28.685
+mli_dr_bb_llMET: 28.558
+mli_mbb: 28.465
+mli_min_dr_llbb: 28.139
+mli_b_deepjetsum: 27.922
+mli_ll_pt: 27.894
+mli_lep_pt: 27.88
+mli_bb_pt: 27.859
+mli_mindr_lb: 27.34
+mli_lep2_pt: 26.329
+mli_n_deepjet: 25.71
+mli_b1_eta: 25.192
+mli_dr_ll: 25.135
+mli_lep_eta: 24.692
+mli_mll: 24.257
+mli_dphi_bb_llMET: 23.782
+mli_lep2_eta: 23.258
+mli_n_jet: 22.727
+mli_dphi_ll: 17.627
+
+=============================== leaving sandbox ================================
+task   : cf.MLTraining_hbw_analysis_hbw_1__2c68277660
+sandbox: bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh
+================================================================================
+
+INFO: luigi-interface - [pid 73645] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) done      cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: [pid 73645] Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) done      cf.MLTraining(effective_workflow=local, branch=1, analysis=hbw.analysis.hbw_dl.hbw_dl, version=kl_test_7, ml_model=dense_test_sig_dl, configs=c17, calibrators=skip_jecunc, selectors=dl, producers=dl_ml_inputs)
+INFO: luigi-interface - Informed scheduler that task   cf.MLTraining_hbw_analysis_hbw_1__2c68277660   has status   DONE
+INFO: Informed scheduler that task   cf.MLTraining_hbw_analysis_hbw_1__2c68277660   has status   DONE
+INFO: luigi-interface - Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) was stopped. Shutting down Keep-Alive thread
+INFO: Worker Worker(salt=1459695280, workers=1, host=batchg009.desy.de, username=markusla, pid=73645) was stopped. Shutting down Keep-Alive thread
+INFO: luigi-interface - 
+===== Luigi Execution Summary =====
+
+Scheduled 45 tasks of which:
+* 44 complete ones were encountered:
+    - 44 cf.MergeMLEvents(...)
+* 1 ran successfully:
+    - 1 cf.MLTraining(...)
+
+This progress looks :) because there were no failed tasks or missing dependencies
+
+===== Luigi Execution Summary =====
+
+INFO: 
+===== Luigi Execution Summary =====
+
+Scheduled 45 tasks of which:
+* 44 complete ones were encountered:
+    - 44 cf.MergeMLEvents(...)
+* 1 ran successfully:
+    - 1 cf.MLTraining(...)
+
+This progress looks :) because there were no failed tasks or missing dependencies
+
+===== Luigi Execution Summary =====
+
+task exit code: 0
+08/02/2024 09:50:06.729146929 (CET)
+
+-- hook law_hook_job_finished ----------------------------------------------------------------------
+
+function 'law_hook_job_finished' does not exist, skip
+
+-- stageout ----------------------------------------------------------------------------------------
+
+-- stageout file
+stageout file empty, skip
+
+-- stageout command
+stageout command empty, skip
+
+-- cleanup -----------------------------------------------------------------------------------------
+
+-- files before cleanup
+> ls -a /var/lib/condor/execute/dir_70655/job_9AnltqSno3V1 ($LAW_JOB_HOME)
+total 44
+drwx------ 6 markusla af-cms 4096 Feb  8 09:40 .
+drwx------ 5 markusla unihh2 4096 Feb  8 09:45 ..
+drwxr-xr-x 3 markusla af-cms 4096 Feb  8 09:40 cf_data
+drwxrwxrwx 2 markusla af-cms 4096 Feb  8 09:50 cf_wlcg_cache
+lrwxrwxrwx 1 markusla af-cms   60 Feb  8 09:40 law_job_7975a40be7_1To2.sh -> /var/lib/condor/execute/dir_70655/law_job_7975a40be7_1To2.sh
+lrwxrwxrwx 1 markusla af-cms   62 Feb  8 09:40 law_wlcg_tools_879652ea8b.sh -> /var/lib/condor/execute/dir_70655/law_wlcg_tools_879652ea8b.sh
+-rw-r--r-- 1 markusla af-cms 9275 Feb  8 09:40 remote_bootstrap_3edc93caf8.sh
+drwxr-xr-x 8 markusla af-cms 4096 Feb  8 09:40 repo
+drwxr-xr-x 3 markusla af-cms 4096 Feb  8 09:50 tmp
+
+-- files after cleanup
+> ls -a /var/lib/condor/execute/dir_70655 ($LAW_JOB_INIT_DIR)
+total 200
+drwx------ 4 markusla unihh2   4096 Feb  8 09:50 .
+drwxr-xr-x 3 condor   condor   4096 Feb  8 09:40 ..
+-rwx------ 1 markusla unihh2     48 Feb  8 09:40 .chirp.config
+-rwxr-xr-x 1 markusla unihh2  22171 Feb  8 09:40 condor_exec.exe
+-rw-r--r-- 1 condor   it       6898 Feb  8 09:40 .job.ad
+-rw-r--r-- 1 markusla unihh2  10667 Feb  8 09:40 law_wlcg_tools_879652ea8b.sh
+-rw-r--r-- 1 condor   it       6666 Feb  8 09:40 .machine.ad
+-rw------- 1 markusla unihh2   1537 Feb  8 09:45 markusla.cc
+-rwxr-xr-x 1 markusla unihh2   8357 Feb  8 09:40 remote_bootstrap_3edc93caf8.sh
+-rw-r--r-- 1 markusla af-cms 103740 Feb  8 09:50 stdall_1To2.txt
+drwx------ 2 markusla unihh2   4096 Feb  8 09:40 tmp
+-rw-r--r-- 1 markusla unihh2   6632 Feb  8 09:45 .update.ad
+drwx------ 3 markusla unihh2   4096 Feb  8 09:40 var
+
+-- end ---------------------------------------------------------------------------------------------
+
+start time    : 08/02/2024 09:40:14.509170443 (CET)
+end time      : 08/02/2024 09:50:08.433917263 (CET)
+job exit code : 0
+

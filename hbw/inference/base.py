@@ -74,8 +74,8 @@ class HBWInferenceModelBase(InferenceModel):
         root_cats = config_cat_inst.x.root_cats
         if dnn_cat := root_cats.get("dnn"):
             dnn_proc = dnn_cat.replace("ml_", "")
-            return f"mlscore.{dnn_proc}_manybins"
-            # return f"mlscore.{dnn_proc}_rebin"
+            #return f"mlscore.{dnn_proc}_manybins"
+            return f"mlscore.{dnn_proc}_rebin"
         else:
             return "deltaR_ll"
 
@@ -86,6 +86,7 @@ class HBWInferenceModelBase(InferenceModel):
         if dnn_cat := root_cats.get("dnn"):
             dnn_proc = dnn_cat.replace("ml_", "")
             variables.append(f"mlscore.{dnn_proc}")
+            variables.append(f"mlscore.{dnn_proc}_rebinned")
         cat_inst.variables_to_plot = variables
 
     def add_inference_categories(self: InferenceModel):

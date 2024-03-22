@@ -53,7 +53,7 @@ class InferencePlots(
 
     # disable some parameters
     datasets = None
-    processes = None
+    processes = "st","tt","dy_lep","ggHH_kl_1_kt_1_ddl_hbbhww" # None
     categories = None
 
     inference_variables = law.CSVParameter(
@@ -94,7 +94,7 @@ class InferencePlots(
                 variables.extend(self.variables)
 
             category = inference_category.config_category
-            processes = inference_category.data_from_processes
+            processes = ["st","tt","dy_lep","ggHH_sig_all","w_lnu"] #inference_category.data_from_processes
 
             # data_datasets = inference_category.config_data_datasets
 

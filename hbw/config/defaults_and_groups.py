@@ -124,6 +124,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.process_groups = {
         "all": ["*"],
         "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "dilep": ["ggHH_kl_*", "tt", "st", "w_lnu", "dy_lep"],
         "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
         "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
         "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
@@ -170,8 +171,40 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_resolved": ("1e__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
         "vbfSR_boosted": ("1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
         "BR": ("1e__ml_tt", "1e__ml_st", "1e__ml_v_lep", "1mu__ml_tt", "1mu__ml_st", "1mu__ml_v_lep"),
-        "SR_dl": ("2e__ml_ggHH_kl_5_kt_1_dl_hbbhww", "2mu__ml_ggHH_kl_5_kt_1_dl_hbbhww"),
-        "BR_dl": ("2e__ml_t_bkg", "2e__ml_v_lep", "2mu__ml_t_bkg", "2mu__ml_v_lep"),
+        "SR_dl": (
+            "2e__1b__ml_ggHH_sig",
+            "2mu__1b__ml_ggHH_sig",
+            "emu__1b__ml_ggHH_sig",
+            "2e__2b__ml_ggHH_sig",
+            "2mu__2b__ml_ggHH_sig",
+            "emu__2b__ml_ggHH_sig",
+            "2e__1b__ml_ggHH_sig_all",
+            "2mu__1b__ml_ggHH_sig_all",
+            "emu__1b__ml_ggHH_sig_all",
+            "2e__2b__ml_ggHH_sig_all",
+            "2mu__2b__ml_ggHH_sig_all",
+            "emu__2b__ml_ggHH_sig_all",
+        ),
+        "BR_dl": (
+            "2e__1b__ml_tt",
+            "2e__1b__ml_st",
+            "emu__1b__ml_tt",
+            "emu__1b__ml_st",
+            "2mu__1b__ml_tt",
+            "2mu__1b__ml_st",
+            "2e__2b__ml_tt",
+            "2e__2b__ml_st",
+            "emu__2b__ml_tt",
+            "emu__2b__ml_st",
+            "2mu__2b__ml_tt",
+            "2mu__2b__ml_st",
+            "2e__1b__ml_dy_lep",
+            "emu__1b__ml_dy_lep",
+            "2mu__1b__ml_dy_lep",
+            "2e__2b__ml_dy_lep",
+            "emu__2b__ml_dy_lep",
+            "2mu__2b__ml_dy_lep",
+        ),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -214,7 +247,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
-        "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
+        "dilep": ["Trigger", "Bjet", "Lepton"],
     }
 
     # plotting settings groups
@@ -236,6 +269,7 @@ def set_config_defaults_and_groups(config_inst):
             "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
             "ggHH_kl_2p45_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
             "ggHH_kl_5_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "ggHH_sig_all": {"scale": 1000, "unstack": True},
         },
         "dileptest": {
             "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
@@ -277,7 +311,9 @@ def set_config_defaults_and_groups(config_inst):
     # groups are defined via config.x.category_groups
     config_inst.x.default_bins_per_category = {
         "SR": 10,
+        "SR_dl": 10,
         # "vbfSR": 5,
+        "BR_dl": 3,
         "BR": 3,
         "SR_resolved": 10,
         "SR_boosted": 5,
@@ -297,8 +333,10 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.inference_category_rebin_processes = {
         "SR": ("ggHH_kl_1_kt_1_dl_hbbhww"),
+        "SR_dl": ("ggHH_kl_1_kt_0_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww"),
         # "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
         "BR": lambda proc_name: "hbbhww" not in proc_name,
+        "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
         # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
         # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
         # "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
