@@ -10,6 +10,7 @@ import itertools
 
 import law
 import order as od
+from scinum import Number
 
 import cmsdb.processes as procs
 from columnflow.util import DotDict
@@ -188,7 +189,7 @@ qcd_mu = {
     ],
     "2022preEE": [
         "qcd_mu_pt15to20_pythia",
-        "qcd_mu_pt20to30_pythia",
+        # "qcd_mu_pt20to30_pythia",  # file stuck
         "qcd_mu_pt30to50_pythia",
         "qcd_mu_pt50to80_pythia",
         "qcd_mu_pt80to120_pythia",
@@ -215,7 +216,7 @@ qcd_em = {
     ],
     "2022postEE": [
         # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
-        # "qcd_em_pt30to50_pythia",  # empty after selection
+        "qcd_em_pt30to50_pythia",  # empty after selection
         "qcd_em_pt50to80_pythia",
         "qcd_em_pt80to120_pythia",
         "qcd_em_pt120to170_pythia",
@@ -359,7 +360,6 @@ radion_hh_ggf_bbww = {
         1250, 1500, 1750, 2000, 2500, 3000,
     ]],
     "2022postEE": [
-        # empty for now
     ],
 }
 
@@ -424,6 +424,12 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
         dataset_names.pop("graviton_hh_ggf_bbww")
         dataset_names.pop("radion_hh_ggf_bbww")
 
+    if not config.has_tag("is_sl"):
+        # remove qcd datasets from DL
+        dataset_names.pop("qcd_mu")
+        dataset_names.pop("qcd_em")
+        dataset_names.pop("qcd_bctoe")
+
     if not config.has_tag("is_nonresonant"):
         # remove all nonresonant signal processes/datasets
         for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
@@ -432,7 +438,29 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
     return dataset_names
 
 
+def add_synchronization_dataset(config: od.Config):
+    radion_hh_ggf_dl_bbww_m450 = config.add_process(
+        name="radion_hh_ggf_dl_bbww_m450",
+        id=24563574,  # random number
+        xsecs={13: Number(0.1), 13.6: Number(0.1)},  # TODO
+    )
+
+    config.add_dataset(
+        name="radion_hh_ggf_dl_bbww_m450_magraph",
+        id=14876684,
+        processes=[radion_hh_ggf_dl_bbww_m450],
+        keys=[
+            "/GluGlutoRadiontoHHto2B2Vto2B2L2Nu_M-450_narrow_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM",  # noqa
+        ],
+        n_files=19,
+        n_events=87308,
+    )
+
+
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
+    if config.x.cpn_tag == "2022postEE":
+        add_synchronization_dataset(config)
+
     if campaign.x.year == 2017:
         # load custom produced datasets into campaign (2017 only!)
         get_custom_hh_2017_datasets(campaign)
@@ -451,13 +479,42 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
+
+    # # add leaf signal processes directly to the config
+    # for signal_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qqHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+    #     for dataset_name in dataset_names[signal_proc]:
+    #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
+
     # loop over all dataset names and add them to the config
     for dataset_name in list(itertools.chain(*dataset_names.values())):
         config.add_dataset(campaign.get_dataset(dataset_name))
 
 
-def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = None):
+def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
+    """
+    Adds relevant keys from "extension" DatasetInfo to the "nominal" DatasetInfo
+    """
+    if "extension" in dataset.info.keys():
+        dataset_info_ext = dataset.info["extension"]
+
+        # add info from extension dataset to the nominal one
+        dataset.info["nominal"].keys = dataset.info["nominal"].keys + dataset_info_ext.keys
+        dataset.info["nominal"].n_files = dataset.info["nominal"].n_files + dataset_info_ext.n_files
+        dataset.info["nominal"].n_events = dataset.info["nominal"].n_events + dataset_info_ext.n_events
+
+        # remove the extension dataset info, since it is now included in "nominal"
+        dataset.info.pop("extension")
+
+
+def configure_hbw_datasets(
+    config: od.Config,
+    limit_dataset_files: int | None = None,
+    add_dataset_extensions: bool = False,
+):
     for dataset in config.datasets:
+        if add_dataset_extensions:
+            add_dataset_extension_to_nominal(dataset)
+
         if limit_dataset_files:
             # apply optional limit on the max. number of files per dataset
             for info in dataset.info.values():
@@ -467,38 +524,51 @@ def configure_hbw_datasets(config: od.Config, limit_dataset_files: int | None = 
         # add aux info to datasets
         # TODO: switch from aux to tags for booleans
         if dataset.name.startswith(("st", "tt")):
-            dataset.x.has_top = True
+            # dataset.x.has_top = True
             dataset.add_tag("has_top")
         if dataset.name.startswith("tt"):
-            dataset.x.is_ttbar = True
+            # dataset.x.is_ttbar = True
             dataset.add_tag("is_ttbar")
+
+        if dataset.name.startswith("dy_"):
+            dataset.add_tag("is_v_jets")
+            dataset.add_tag("is_z_jets")
+        if dataset.name.startswith("w_"):
+            dataset.add_tag("is_v_jets")
+            dataset.add_tag("is_w_jets")
+
         if dataset.name.startswith("qcd"):
-            dataset.x.is_qcd = True
+            # dataset.x.is_qcd = True
             dataset.add_tag("is_qcd")
+
         if "HH" in dataset.name and "hbbhww" in dataset.name:
             # TODO: the is_hbw tag is used at times were we should ask for is_hbw_sl
             dataset.add_tag("is_hbw")
-            dataset.x.is_hbw = True
+            # dataset.x.is_hbw = True
             if "_sl_" in dataset.name:
                 dataset.add_tag("is_hbw_sl")
             elif "_dl_" in dataset.name:
                 dataset.add_tag("is_hbw_dl")
 
         if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
-            dataset.x.skip_scale = True
-            dataset.x.skip_pdf = True
+            # dataset.x.skip_scale = True
+            # dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
 
         if dataset.has_tag("is_hbw") and "custom" in dataset.name:
             # No PDF weights and 6 scale weights in custom HH samples
-            dataset.x.skip_scale = True
-            dataset.x.skip_pdf = True
+            # dataset.x.skip_scale = True
+            # dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
         elif config.campaign.x.year == 2017:
             # our default Run2 signal samples are EOY, so we have to skip golden json, certain met filter
             dataset.add_tag("is_eoy")
+
+        if dataset.is_data:
+            if config.x.cpn_tag == "2022preEE":
+                dataset.x.jec_era = "RunCD"
 
 
 def get_custom_hh_2017_datasets(

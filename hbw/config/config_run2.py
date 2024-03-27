@@ -34,6 +34,7 @@ def add_config(
     config_name: str | None = None,
     config_id: int | None = None,
     limit_dataset_files: int | None = None,
+    add_dataset_extensions: bool = False,
 ) -> od.Config:
     # validations
     assert campaign.x.year in [2016, 2017, 2018, 2022]
@@ -90,7 +91,7 @@ def add_config(
     stylize_processes(cfg)
 
     # configure datasets in config
-    configure_hbw_datasets(cfg, limit_dataset_files)
+    configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
 
     # lumi values in inverse pb
     # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
@@ -274,28 +275,65 @@ def add_config(
     # TODO: add correct 2022 + 2022preEE WPs and sources
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0480, "2022postEE": 0.0480}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2489, "2022postEE": 0.2489}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.6377, "2022postEE": 0.6377}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0490, "2022postEE": 0.0490}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2783, "2022postEE": 0.2783}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7100, "2022postEE": 0.7100}[cfg.x.cpn_tag],  # noqa
         },
         "deepcsv": {
-            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1918, "2022postEE": 0.1918}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.5847, "2022postEE": 0.5847}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.8767, "2022postEE": 0.8767}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1208, "2022postEE": 0.1208}[cfg.x.cpn_tag],  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.4168, "2022postEE": 0.4168}[cfg.x.cpn_tag],  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.7665, "2022postEE": 0.7665}[cfg.x.cpn_tag],  # noqa
         },
     })
 
-    # TODO: check e/mu/btag corrections and implement
-    # btag weight configuration
-    cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+    # top pt reweighting parameters
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
+    cfg.x.top_pt_reweighting_params = {
+        "a": 0.0615,
+        "a_up": 0.0615 * 1.5,
+        "a_down": 0.0615 * 0.5,
+        "b": -0.0005,
+        "b_up": -0.0005 * 1.5,
+        "b_down": -0.0005 * 0.5,
+    }
 
-    # names of electron correction sets and working points
-    # (used in the electron_sf producer)
-    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
+    # V+jets reweighting
+    cfg.x.vjets_reweighting = DotDict.wrap({
+        "w": {
+            "value": "wjets_kfactor_value",
+            "error": "wjets_kfactor_error",
+        },
+        "z": {
+            "value": "zjets_kfactor_value",
+            "error": "zjets_kfactor_error",
+        },
+    })
 
-    # names of muon correction sets and working points
-    # (used in the muon producer)
-    cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+    if cfg.x.run == 2:
+        # btag weight configuration
+        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+
+        # names of electron correction sets and working points
+        # (used in the electron_sf producer)
+        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
+
+        # names of muon correction sets and working points
+        # (used in the muon producer)
+        cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+
+    elif cfg.x.run == 3:
+        # TODO: check that everyting is setup as intended
+
+        # btag weight configuration
+        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+
+        # names of electron correction sets and working points
+        # (used in the electron_sf producer)
+        cfg.x.electron_sf_names = ("TODO", f"{cfg.x.cpn_tag}", "TODO")
+
+        # names of muon correction sets and working points
+        # (used in the muon producer)
+        cfg.x.muon_sf_names = ("NUM_TightMiniIso_DEN_MediumID", f"{cfg.x.cpn_tag}")
 
     # register shifts
     # TODO: make shifts year-dependent
@@ -314,9 +352,16 @@ def add_config(
             "normalized_pu_weight": "normalized_pu_weight_{name}",
         },
     )
+
+    # top pt reweighting
     cfg.add_shift(name="top_pt_up", id=9, type="shape")
     cfg.add_shift(name="top_pt_down", id=10, type="shape")
     add_shift_aliases(cfg, "top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
+
+    # V+jets reweighting
+    cfg.add_shift(name="vjets_up", id=11, type="shape")
+    cfg.add_shift(name="vjets_down", id=12, type="shape")
+    add_shift_aliases(cfg, "vjets", {"vjets_weight": "vjets_weight_{direction}"})
 
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
@@ -405,11 +450,11 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
     if cfg.x.run == 2:
-        json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
+        # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
-        json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
         corr_tag = f"{year}_Summer22{jerc_postfix}"
 
     cfg.x.external_files = DotDict.wrap({
@@ -430,21 +475,23 @@ def add_config(
 
         # met phi corrector
         "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
+
+        # V+jets reweighting
+        "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
     })
 
-    # temporary fix due to missing corrections in run 3
-    # electron, muon and met still missing, btag, and pu are TODO
     if cfg.x.run == 3:
-        cfg.add_tag("skip_pu_weights")
+        # inconsistent naming in the jsonpog integration...
+        corr_tag = f"2022{jerc_postfix}_27Jun2023"
+        cfg.x.external_files["muon_sf"] = (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1")
 
-        cfg.add_tag("skip_btag_weights")
-        cfg.x.external_files.pop("btag_sf_corr")
-
+    # temporary fix due to missing corrections in run 3
+    # electron and met still missing
+    if cfg.x.run == 3:
         cfg.add_tag("skip_electron_weights")
         cfg.x.external_files.pop("electron_sf")
 
         cfg.add_tag("skip_muon_weights")
-        cfg.x.external_files.pop("muon_sf")
 
         cfg.x.external_files.pop("met_phi_corr")
 
@@ -549,13 +596,15 @@ def add_config(
             "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
             # Gen information (for categorization)
             "HardGenPart.pdgId",
+            # Gen information for pt reweighting
+            "GenPartonTop.pt", "GenVBoson.pt",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "VBFJet"},
-            {"btagDeepFlavB", "hadronFlavour", "qgl"},
+            {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
             {
@@ -564,7 +613,7 @@ def add_config(
             },
         ) | four_vec(  # Leptons
             {"Electron", "Muon"},
-            {"charge", "pdgId"},
+            {"charge", "pdgId", "is_tight"},
         ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
 

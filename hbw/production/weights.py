@@ -8,15 +8,15 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, has_ak_column, Route
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
-from hbw.production.pileup import pu_weight_from_correctionlib
-# TODO: switch to columnflow Producer as soon as PR is merged
-# from columnflow.production.cms.pileup import pu_weight  # , pu_weight_from_correctionlib
+from columnflow.production.cms.pileup import pu_weight
 from columnflow.production.normalization import normalization_weights
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
+from hbw.production.gen_top import gen_parton_top, top_pt_weight
+from hbw.production.gen_v import gen_v_boson, vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.util import has_tag
@@ -61,9 +61,30 @@ def event_weight_init(self: Producer) -> None:
     self.uses |= set(self.dataset_inst.x("event_weights", {}).keys())
 
 
+# copy of the btag_weights setup, removing the version check
+# TODO: should be done in columnflow
+@btag_weights.setup
+def btag_weights_setup(
+    self: Producer,
+    reqs: dict,
+    inputs: dict,
+    reader_targets,
+) -> None:
+    bundle = reqs["external_files"]
+
+    # create the btag sf corrector
+    import correctionlib
+    correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
+    correction_set = correctionlib.CorrectionSet.from_string(
+        self.get_btag_file(bundle.files).load(formatter="gzip").decode("utf-8"),
+    )
+    corrector_name = self.get_btag_config()[0]
+    self.btag_sf_corrector = correction_set[corrector_name]
+
+
 @producer(
-    uses={pu_weight_from_correctionlib},
-    produces={pu_weight_from_correctionlib},
+    uses={gen_parton_top, gen_v_boson, pu_weight},
+    produces={gen_parton_top, gen_v_boson, pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -72,8 +93,16 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     since it is required to normalize them before applying certain event selections.
     """
 
+    # compute gen information that will later be needed for top pt reweighting
+    if self.dataset_inst.has_tag("has_top"):
+        events = self[gen_parton_top](events, **kwargs)
+
+    # compute gen information that will later be needed for vector boson pt reweighting
+    if self.dataset_inst.has_tag("is_v_jets"):
+        events = self[gen_v_boson](events, **kwargs)
+
     # compute pu weights
-    events = self[pu_weight_from_correctionlib](events, **kwargs)
+    events = self[pu_weight](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute btag SF weights (for renormalization tasks)
@@ -129,18 +158,22 @@ normalized_pdf_weights = normalized_weight_factory(
 
 normalized_pu_weights = normalized_weight_factory(
     producer_name="normalized_pu_weights",
-    weight_producers={pu_weight_from_correctionlib},
+    weight_producers={pu_weight},
 )
 
 
 @producer(
     uses={
         normalization_weights,
+        top_pt_weight,
+        vjets_weight,
         normalized_pu_weights,
         event_weight,
     },
     produces={
         normalization_weights,
+        top_pt_weight,
+        vjets_weight,
         normalized_pu_weights,
         event_weight,
     },
@@ -153,6 +186,14 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
+
+    # compute gen top pt weights
+    if self.dataset_inst.has_tag("is_ttbar"):
+        events = self[top_pt_weight](events, **kwargs)
+
+    # compute gen vjet pt weights
+    if self.dataset_inst.has_tag("is_v_jets"):
+        events = self[vjets_weight](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights

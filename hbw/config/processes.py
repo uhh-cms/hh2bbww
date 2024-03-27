@@ -111,8 +111,9 @@ def configure_hbw_processes(config: od.Config):
             label="tt + st",
         )
 
-    if config.has_tag("is_dl") and config.has_tag("is_nonresonant"):
+    if config.has_tag("is_dl") and config.has_tag("is_nonresonant") and config.x.run == 2:
         # Custom signal  process for ML Training, combining multiple kl signal samples
+        # NOTE: only built for run 2 because kl variations are missing in run 3
         signal_processes = [
             config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
             for kl in [0, 1, "2p45"]
@@ -126,7 +127,12 @@ def configure_hbw_processes(config: od.Config):
             label="signal",
         )
         for proc in signal_processes:
-            sig.add_process(proc)
+            try:
+                sig.add_process(proc)
+            except Exception:
+                # this also adds 'sig' as parent to 'proc', but sometimes this is happening
+                # multiple times, since we create multiple configs
+                pass
 
     # add auxiliary information if process is signal
     for proc_inst, _, _ in config.walk_processes():

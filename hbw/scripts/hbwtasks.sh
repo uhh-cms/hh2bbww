@@ -1,10 +1,12 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
-# default version, can be changed by locally setting HBW_MAIN_VERSION, e.g. by exporting it in
-# $HBW_BASE/.setups/${CF_SETUP_NAME}.sh and rerunning the setup script
-version="${HBW_MAIN_VERSION:-"prod1"}"
-echo "hbwtasks functions will be run with version '$version'"
+# defaults, setup by the law config
+# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
+version=$(law config analysis.default_version)
+common_version=$(law config analysis.default_common_version)
+config=$(law config analysis.default_config)
+echo "hbwtasks functions will be run with version '$version' and config '$config'"
 
 checksum() {
 	# helper to include custom checksum based on time when task was called
@@ -26,8 +28,6 @@ hbw_selection(){
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
 #
 
-# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
-common_version="${HBW_COMMON_VERSION:-"common1"}"
 hbw_calibration(){
     law run cf.CalibrateEventsWrapper --version $common_version --workers 20 \
 	--shifts nominal \
@@ -61,6 +61,7 @@ hbw_merge_reduction(){
     law run cf.MergeReducedEventsWrapper --version $version --workers 20 \
 	--shifts nominal \
 	--datasets $datasets \
+    --cf.MergeReducedEvents-workflow htcondor \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
@@ -80,13 +81,13 @@ hbw_ml_training(){
 	--htcondor-gpus 1 \
 	--htcondor-memory 40000 \
 	--max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -105,12 +106,13 @@ hbw_datacards(){
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -128,12 +130,13 @@ hbw_rebin_datacards(){
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \

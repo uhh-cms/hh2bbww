@@ -10,10 +10,7 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
-from columnflow.production.categories import category_ids
-from hbw.production.weights import event_weights
 from hbw.production.prepare_objects import prepare_objects
-from hbw.config.categories import add_categories_production
 from hbw.config.variables import add_feature_variables
 from hbw.config.dl.variables import add_dl_variables
 from hbw.util import four_vec
@@ -74,8 +71,7 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        prepare_objects, category_ids,
-        event_weights,
+        prepare_objects,
         bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Muon.charge", "Electron.charge",
@@ -85,22 +81,14 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     },
     produces={
         bb_features, jj_features,
-        category_ids, event_weights,
         "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet",
         "FatJet.tau21", "n_bjet",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-    # add event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights](events, **kwargs)
-
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-
-    # produce (new) category ids
-    events = self[category_ids](events, **kwargs)
 
     # object padding
     events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
@@ -135,9 +123,6 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @features.init
 def features_init(self: Producer) -> None:
-    # add categories to config
-    add_categories_production(self.config_inst)
-
     # add variable instances to config
     add_feature_variables(self.config_inst)
 

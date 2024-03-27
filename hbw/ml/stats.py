@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import functools
 
+import law
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
-
+from hbw.selection.categories import catid_sr
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -19,10 +21,12 @@ np = maybe_import("numpy")
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
+logger = law.logger.get_logger(__name__)
+
 
 @producer(
-    uses={increment_stats, "process_id"},
-    # produces={"dummy"},
+    uses={catid_sr, increment_stats, "process_id"},
+    # produces={"fold_indices"},
 )
 def ml_preparation(
     self: Producer,
@@ -35,7 +39,6 @@ def ml_preparation(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
-
     stats["num_events"] += len(events)
     weight_map = {
         "num_events": Ellipsis,  # all events
@@ -70,6 +73,12 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
+    if self.task.task_family == "cf.PrepareMLEvents":
+        # experimental: pass category mask to not use the full phase space in training
+        events, mask = self[catid_sr](events, **kwargs)
+        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining")
+        return events[mask]
+
     return events
 
 

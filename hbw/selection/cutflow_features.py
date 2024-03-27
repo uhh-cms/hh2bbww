@@ -27,10 +27,15 @@ ak = maybe_import("awkward")
     # skip the checking existence of used/produced columns for now because some columns are not there
     check_used_columns=False,
     check_produced_columns=False,
-
 )
 def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
+    """
+    Producer to produce columns as part of SelectEvents. This mostly just applies object definitions
+    to the nano and stores the resulting objects with the "cutflow." prefix.
+    All columns of interested are then stored by adding them to the *produces*.
 
+    NOTE: probably needs to be updated since selection has been reworked.
+    """
     # apply event results to objects and define objects in a convenient way for reconstructing variables
     # but create temporary ak.Array to not override objects in events
     arr = self[prepare_objects](events, results)

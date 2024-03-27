@@ -6,17 +6,27 @@ from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
-def default_calibrator(cls, container, task_params):
+def default_calibrator(container):
     return "skip_jecunc"
 
 
-def default_selector(cls, container, task_params):
+def default_selector(container):
     if container.has_tag("is_sl"):
-        selector = "sl"
+        selector = "sl1"
     elif container.has_tag("is_dl"):
-        selector = "dl"
+        selector = "dl1"
 
     return selector
+
+
+def ml_inputs_producer(container):
+    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
+        ml_inputs = "sl_ml_inputs"
+    if container.has_tag("is_dl"):
+        ml_inputs = "dl_ml_inputs"
+    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
+        ml_inputs = "sl_res_ml_inputs"
+    return ml_inputs
 
 
 def default_ml_model(cls, container, task_params):
@@ -46,24 +56,15 @@ def default_ml_model(cls, container, task_params):
     return default_ml_model
 
 
-def ml_inputs_producer(cls, container, task_params):
-    if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
-        ml_inputs = "ml_inputs"
-    if container.has_tag("is_dl"):
-        ml_inputs = "dl_ml_inputs"
-    if container.has_tag("is_sl") and container.has_tag("is_resonant"):
-        ml_inputs = "sl_res_ml_inputs"
-    return ml_inputs
-
-
 def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
-    default_producers = [ml_inputs_producer(cls, container, task_params), "event_weights"]
+    default_producers = [ml_inputs_producer(container), "event_weights", "pre_ml_cats"]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
+        default_producers.remove("pre_ml_cats")
         return default_producers
 
     # check if a mlmodel has been set
@@ -78,15 +79,11 @@ def default_producers(cls, container, task_params):
         ml_model = default_ml_model(cls, container, task_params)
 
     # if a ML model is set, and the task is not part of the MLTraining pipeline,
-    # use the ml categorization producer
+    # use the ml categorization producer instead of the default categorization producer
     if ml_model not in (None, law.NO_STR, RESOLVE_DEFAULT, tuple()):
+        default_producers.remove("pre_ml_cats")
         # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
-        default_producers.append(f"ml_{ml_model}")
-
-    # if we're running the inference_model, we don't need the ml_inputs
-    # NOTE: we cannot skip ml_inputs, because it is needed for cf.MLEvaluation
-    # if "inference_model" in task_params.keys():
-    #     default_producers.remove("ml_inputs")
+        default_producers.append(f"cats_ml_{ml_model}")
 
     return default_producers
 
@@ -112,8 +109,9 @@ def set_config_defaults_and_groups(config_inst):
 
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    config_inst.x.default_calibrator = default_calibrator
-    config_inst.x.default_selector = default_selector
+    config_inst.x.default_calibrator = default_calibrator(config_inst)
+    config_inst.x.default_selector = default_selector(config_inst)
+    config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
@@ -163,24 +161,55 @@ def set_config_defaults_and_groups(config_inst):
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
-        "sl_much": ["1mu", "1mu__resolved", "1mu__boosted"],
-        "sl_ech": ["1e", "1e__resolved", "1e__boosted"],
-        "sl_much_resolved": ["1mu__resolved", "1mu__resolved__1b", "1mu__resolved__2b"],
-        "sl_ech_resolved": ["1e__resolved", "1e__resolved__1b", "1e__resolved__2b"],
-        "sl_much_boosted": ["1mu__boosted"],
-        "sl_ech_boosted": ["1e__boosted"],
-        "default": ["incl", "1e", "1mu"],
-        "test": ["incl", "1e"],
-        "dilep": ["incl", "2e", "2mu", "emu"],
-        "SR": ("1e__ml_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "vbfSR": ("1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_resolved": ("1e__ml_resolved_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_resolved_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "SR_boosted": ("1e__ml_boosted_ggHH_kl_1_kt_1_sl_hbbhww", "1mu__ml_boosted_ggHH_kl_1_kt_1_sl_hbbhww"),
-        "vbfSR_resolved": ("1e__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_resolved_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
-        "vbfSR_boosted": ("1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),  # noqa
-        "BR": ("1e__ml_tt", "1e__ml_st", "1e__ml_v_lep", "1mu__ml_tt", "1mu__ml_st", "1mu__ml_v_lep"),
-        "SR_dl": ("2e__ml_ggHH_kl_5_kt_1_dl_hbbhww", "2mu__ml_ggHH_kl_5_kt_1_dl_hbbhww"),
-        "BR_dl": ("2e__ml_t_bkg", "2e__ml_v_lep", "2mu__ml_t_bkg", "2mu__ml_v_lep"),
+        "sl_much": ["sr__1mu", "sr__1mu__resolved", "sr__1mu__boosted"],
+        "sl_ech": ["sr__1e", "sr__1e__resolved", "sr__1e__boosted"],
+        "sl_much_resolved": ["sr__1mu__resolved", "sr__1mu__resolved__1b", "sr__1mu__resolved__2b"],
+        "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
+        "sl_much_boosted": ["sr__1mu__boosted"],
+        "sl_ech_boosted": ["sr__1e__boosted"],
+        "default": ["incl", "sr__1e", "sr__1mu"],
+        "test": ["incl", "sr__1e"],
+        "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
+        # Single lepton
+        "SR_sl": (
+            "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+        ),
+        "vbfSR_sl": (
+            "sr__1e__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        ),
+        "SR_sl_resolved": (
+            "sr__1e__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+        ),
+        "vbfSR_sl_resolved": (
+            "sr__1e__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1mu__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1mu__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        ),
+        "SR_sl_boosted": (
+            "sr__1e__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+        ),
+        "vbfSR_sl_boosted": (
+            "sr__1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        ),
+        "BR_sl": (
+            "sr__1e__ml_tt", "sr__1e__ml_st", "sr__1e__ml_v_lep",
+            "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
+        ),
+        # Dilepton
+        "SR_dl": (
+            "sr__2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+            "sr__2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+            "sr__emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+        ),
+        "BR_dl": (
+            "sr__2e__ml_tt", "sr__2e__ml_st", "sr__2e__ml_dy_lep",
+            "sr__2mu__ml_tt", "sr__2mu__ml_st", "sr__2mu__ml_dy_lep",
+            "sr__emu__ml_tt", "sr__emu__ml_st", "sr__emu__ml_dy_lep",
+        ),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -270,6 +299,9 @@ def set_config_defaults_and_groups(config_inst):
 
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
+        "small_legend": {
+            "legend_cfg": {"ncols": 2, "fontsize": 16},
+        },
         "example": {
             "legend_cfg": {"title": "my custom legend title", "ncols": 2},
             "ax_cfg": {"ylabel": "my ylabel", "xlim": (0, 100)},
@@ -287,41 +319,39 @@ def set_config_defaults_and_groups(config_inst):
 
     # groups are defined via config.x.category_groups
     config_inst.x.default_bins_per_category = {
-        "SR": 10,
-        "vbfSR": 5,
-        "BR": 3,
-        "SR_resolved": 10,
-        "SR_boosted": 5,
-        "vbfSR_resolved": 5,
-        "vbfSR_boosted": 3,
-        # "SR_dl": 10,
-        # "BR_dl": 3,
-        # "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww": 10,
-        # "1e__ml_tt": 3,
-        # "1e__ml_st": 3,
-        # "1e__ml_v_lep": 3,
-        # "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww": 10,
-        # "1mu__ml_tt": 3,
-        # "1mu__ml_st": 3,
-        # "1mu__ml_v_lep": 3,
+        # Single lepton
+        "SR_sl": 10,
+        "vbfSR_sl": 5,
+        "BR_sl": 3,
+        "SR_sl_resolved": 10,
+        "SR_sl_boosted": 5,
+        "vbfSR_sl_resolved": 5,
+        "vbfSR_sl_boosted": 3,
+        # Dilepton
+        "SR_dl": 10,
+        "vbfSR_dl": 5,
+        "BR_dl": 3,
+        "SR_dl_resolved": 10,
+        "SR_dl_boosted": 5,
+        "vbfSR_dl_resolved": 5,
+        "vbfSR_dl_boosted": 3,
     }
 
     config_inst.x.inference_category_rebin_processes = {
-        "SR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "BR": lambda proc_name: "hbbhww" not in proc_name,
-        # "SR_dl": ("ggHH_kl_5_kt_1_dl_hbbhww",),
-        # "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
-        # "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        # "1e__ml_tt": lambda proc_name: "hbbhww" not in proc_name,
-        # "1e__ml_st": lambda proc_name: "hbbhww" not in proc_name,
-        # "1e__ml_v_lep": lambda proc_name: "hbbhww" not in proc_name,
-        # "1mu__ml_ggHH_kl_1_kt_1_sl_hbbhww":  ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        # "1mu__ml_tt": lambda proc_name: "hbbhww" not in proc_name,
-        # "1mu__ml_st": lambda proc_name: "hbbhww" not in proc_name,
-        # "1mu__ml_v_lep": lambda proc_name: "hbbhww" not in proc_name,
+        # Single lepton
+        "SR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "SR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "vbfSR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
+        "BR_sl": lambda proc_name: "hbbhww" not in proc_name,
+        # Dilepton
+        "SR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "vbfSR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "SR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "SR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "vbfSR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "vbfSR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
+        "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
     }
