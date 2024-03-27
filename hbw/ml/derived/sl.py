@@ -43,7 +43,6 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "dy_lep": 2,
     }
 
-    # NOTE: the order of input features is crucial and should never be changed after training
     input_features: list = [
         # event features
         "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
@@ -125,13 +124,18 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         for proc in self.processes:
             if f"mlscore.{proc}_manybins" not in self.config_inst.variables:
                 self.config_inst.add_variable(
-                    # TODO: to be used for rebinning
                     name=f"mlscore.{proc}_manybins",
                     expression=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
+                )
+                self.config_inst.add_variable(
+                    name=f"mlscore40.{proc}",
+                    expression=f"mlscore.{proc}",
+                    null_value=-1,
+                    binning=(40, 0., 1.),
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
 

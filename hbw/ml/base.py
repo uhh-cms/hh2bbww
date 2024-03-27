@@ -45,8 +45,9 @@ class MLClassifierBase(MLModel):
     """
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
-    # NOTE: the order of processes and input_features is crucial! Do not change after training
+    # NOTE: the order of processes is crucial! Do not change after training
     processes: list = ["tt", "st"]
+    # NOTE: the order of input_features should not be relevant. We might want to change this to a set
     input_features: list = ["mli_ht", "mli_n_jet"]
     validation_fraction: float = 0.20  # percentage of the non-test events
     store_name: str = "inputs_base"

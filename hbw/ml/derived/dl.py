@@ -44,22 +44,6 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     }
 
     input_features = [
-        "mli_mll", "mli_min_dr_llbb", "mli_dr_ll", "mli_bb_pt",
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
-        "mli_deepjetsum", "mli_b_deepjetsum",
-        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_mindr_lb",
-        "mli_dphi_ll", "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
-        "mli_mbbllMET", "mli_dr_bb_llMET", "mli_ll_pt", "mli_met_pt",
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "lep", "lep2"]
-        for var in ["pt", "eta"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2"]
-        for var in ["btagDeepFlavB"]
-    ]
-    input_features = [
         # event features
         "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
         "mli_deepjetsum", "mli_b_deepjetsum",
@@ -140,13 +124,18 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         for proc in self.processes:
             if f"mlscore.{proc}_manybins" not in self.config_inst.variables:
                 self.config_inst.add_variable(
-                    # TODO: to be used for rebinning
                     name=f"mlscore.{proc}_manybins",
                     expression=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
+                )
+                self.config_inst.add_variable(
+                    name=f"mlscore40.{proc}",
+                    expression=f"mlscore.{proc}",
+                    null_value=-1,
+                    binning=(40, 0., 1.),
+                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
                 )
 
 

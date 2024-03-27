@@ -134,6 +134,8 @@ def set_config_defaults_and_groups(config_inst):
         "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
+        "mldl": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+        "mlsl": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
