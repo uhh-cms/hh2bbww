@@ -22,7 +22,7 @@ from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
 )
 from columnflow.tasks.framework.decorators import view_output_plots
-from columnflow.tasks.plotting import PlotVariables1D
+from columnflow.tasks.plotting import PlotVariables1D, PlotShiftedVariables1D
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from hbw.tasks.base import HBWTask
 
@@ -35,6 +35,7 @@ logger = law.logger.get_logger(__name__)
 
 
 class InferencePlots(
+    law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
     PlotBase1D,
@@ -64,19 +65,10 @@ class InferencePlots(
     skip_variables = luigi.BoolParameter(default=False)
     # skip_data = luigi.BoolParameter(default=False)
 
-    # def create_branch_map(self):
-    #     # create a dummy branch map so that this task could run as a job
-    #     return {0: None}
-
     # upstream requirements
     reqs = Requirements(
-        # RemoteWorkflow.reqs,
         PlotVariables1D=PlotVariables1D,
     )
-
-    # def workflow_requires(self):
-    #     reqs = super().workflow_requires()
-    #     return reqs
 
     def requires(self):
         reqs = {}
@@ -109,14 +101,84 @@ class InferencePlots(
 
         return reqs
 
-    def output(self):
-        # use the input also as output (makes it easier to fetch and delete outputs)
-        return {"0": self.target("dummy.txt")}
 
-        # return self.requires()
+class ShiftedInferencePlots(
+    law.WrapperTask,
+    HBWTask,
+    # pass mixins to directly use plot parameters on command line
+    PlotBase1D,
+    VariablePlotSettingMixin,
+    ProcessPlotSettingMixin,
+    InferenceModelMixin,
+    MLModelsMixin,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    def run(self):
-        pass
+    plot_function = PlotShiftedVariables1D.plot_function
+
+    # disable some parameters
+    datasets = None
+    processes = None
+    categories = None
+
+    inference_variables = law.CSVParameter(
+        default=("config_variable", "variables_to_plot"),
+        description="Inference category attributes to use to determine which variables to plot",
+    )
+    skip_variables = luigi.BoolParameter(default=False)
+
+    # upstream requirements
+    reqs = Requirements(
+        PlotShiftedVariables1D=PlotShiftedVariables1D,
+    )
+
+    def requires(self):
+        reqs = {}
+
+        inference_model = self.inference_model_inst
+
+        # NOTE: this is not generally included in an inference model, but only in hbw analysis
+        ml_model_name = inference_model.ml_model_name
+
+        for inference_category in inference_model.categories:
+            # decide which variables to plot based on the inference model and the variables parameter
+            variables = []
+            for attr in self.inference_variables:
+                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
+            if not self.skip_variables:
+                variables.extend(self.variables)
+
+            category = inference_category.config_category
+            processes = inference_category.data_from_processes
+
+            for process in processes:
+                inference_process = inference_model.get_process(process, inference_category.name)
+                shifts = [
+                    param.config_shift_source
+                    for param in inference_process.parameters
+                    if param.config_shift_source
+                ]
+                if not shifts:
+                    continue
+
+                for shift in shifts:
+                    branch_name = f"{inference_category.name}_{process}_{shift}"
+
+                    # produce shifted plots for each shift separately
+                    # NOTE: we could also try producing one plot per shift with all processes added
+                    reqs[branch_name] = self.reqs.PlotShiftedVariables1D.req(
+                        self,
+                        variables=variables,
+                        categories=(category,),
+                        processes=(process,),
+                        shift_sources=(shift,),
+                        ml_models=(ml_model_name,),
+                    )
+
+        return reqs
 
 
 def load_hists_uproot(fit_diagnostics_path):
