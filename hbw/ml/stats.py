@@ -39,6 +39,12 @@ def ml_preparation(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
+    if self.task.task_family == "cf.PrepareMLEvents":
+        # pass category mask to not use the full phase space in training
+        events, mask = self[catid_sr](events, **kwargs)
+        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining")
+        events = events[mask]
+
     stats["num_events"] += len(events)
     weight_map = {
         "num_events": Ellipsis,  # all events
@@ -73,11 +79,6 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
-    if self.task.task_family == "cf.PrepareMLEvents":
-        # experimental: pass category mask to not use the full phase space in training
-        events, mask = self[catid_sr](events, **kwargs)
-        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining")
-        return events[mask]
 
     return events
 
