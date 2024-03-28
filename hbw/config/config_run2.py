@@ -656,9 +656,34 @@ def add_config(
         # per default, use the version set on the command line
         version = inst.version  # same as params.get("version") ?
 
-        if params.get("selector") == "sl_v1":
-            # use a fixed version for the sl_v1 selector (NOTE: does not yet exist)
-            version = "sl_v1"
+        selector = params.get("selector")
+        if not selector:
+            return version
+
+        # set version of "dl1" and "sl1" Producer to "prod1"
+        if selector == "dl1":
+            version = "prod1"
+        elif selector == "sl1":
+            version = "prod1"
+
+        return version
+
+    def produce_version(cls, inst, params):
+        version = inst.version
+
+        producer = params.get("producer")
+        if not producer:
+            return version
+
+        # set version of Producers that are not affected by the ML pipeline
+        if producer == "event_weights":
+            version = "prod1"
+        elif producer == "sl_ml_inputs":
+            version = "prod1"
+        elif producer == "dl_ml_inputs":
+            version = "prod1"
+        elif producer == "pre_ml_cats":
+            version = "prod1"
 
         return version
 
@@ -671,6 +696,7 @@ def add_config(
         "cf.ReduceEvents": reduce_version,
         "cf.MergeReductionStats": reduce_version,
         "cf.MergeReducedEvents": reduce_version,
+        "cf.ProduceColumns": produce_version,
     }
 
     # add categories
