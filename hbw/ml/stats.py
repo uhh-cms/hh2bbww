@@ -25,7 +25,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={catid_sr, increment_stats, "process_id"},
+    uses={catid_sr, increment_stats, "process_id", "fold_indices"},
     # produces={"fold_indices"},
 )
 def ml_preparation(
@@ -63,8 +63,8 @@ def ml_preparation(
             "mask_fn": (lambda v: events.process_id == v),
         },
         "fold": {
-            "values": fold_indices,
-            "mask_fn": (lambda v: fold_indices == v),
+            "values": events.fold_indices,
+            "mask_fn": (lambda v: events.fold_indices == v),
         },
     }
 
