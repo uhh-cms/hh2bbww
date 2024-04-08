@@ -32,9 +32,10 @@ class CheckConfig(
     It only prints some informations from the config inst.
     Does not require anything, does not output anything.
     """
+    version = None
 
     debugger = luigi.BoolParameter(
-        default=False,
+        default=True,
         description="Whether to start a ipython debugger session or not; default: True",
     )
 
@@ -78,7 +79,7 @@ class CheckColumns(
     """
 
     debugger = luigi.BoolParameter(
-        default=False,
+        default=True,
         description="Whether to start a ipython debugger session or not; default: True",
     )
 

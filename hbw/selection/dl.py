@@ -10,17 +10,11 @@ from typing import Tuple
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 from columnflow.columnar_util import EMPTY_FLOAT
-
 from columnflow.selection import Selector, SelectionResult, selector
-# from columnflow.production.categories import category_ids
-# from columnflow.production.processes import process_ids
 
-from hbw.selection.common import (
-    masked_sorted_indices, sl_boosted_jet_selection, vbf_jet_selection,
-    pre_selection, post_selection,
-)
+from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection
+from hbw.selection.jet import sl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
-# from hbw.selection.stats import hbw_increment_stats
 from hbw.selection.cutflow_features import cutflow_features
 
 np = maybe_import("numpy")

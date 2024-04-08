@@ -40,6 +40,7 @@ class HBWInferenceModelBase(InferenceModel):
     # customization of channels
     mc_stats: bool = True
     skip_data: bool = True
+    dummy_kl_variation: bool = False
 
     def __init__(self, config_inst: od.Config, *args, **kwargs):
         super().__init__(config_inst)
@@ -147,6 +148,28 @@ class HBWInferenceModelBase(InferenceModel):
                 is_signal=("HH_" in proc),
                 config_mc_datasets=datasets,
             )
+
+            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_sl_hbbhww":
+                # add ggHH kl variations as copies from kl 1
+                for kl_proc in ("ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww"):
+                    if kl_proc not in self.processes:
+                        self.add_process(
+                            const.inference_procnames.get(kl_proc, kl_proc),
+                            config_process=proc,
+                            is_signal=("HH_" in proc),
+                            config_mc_datasets=datasets,
+                        )
+
+            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_dl_hbbhww":
+                # add ggHH kl variations as copies from kl 1
+                for kl_proc in ("ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww"):
+                    if kl_proc not in self.processes:
+                        self.add_process(
+                            const.inference_procnames.get(kl_proc, kl_proc),
+                            config_process=proc,
+                            is_signal=("HH_" in proc),
+                            config_mc_datasets=datasets,
+                        )
 
     def add_inference_parameters(self: InferenceModel):
         """

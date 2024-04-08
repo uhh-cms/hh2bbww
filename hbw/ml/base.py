@@ -15,9 +15,11 @@ import yaml
 import law
 import order as od
 
+from columnflow.types import Sequence
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
+from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
@@ -43,8 +45,9 @@ class MLClassifierBase(MLModel):
     """
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
+    # NOTE: the order of processes is crucial! Do not change after training
     processes: list = ["tt", "st"]
-    dataset_names: set = {"tt_sl_powheg", "tt_dl_powheg", "st_tchannel_t_powheg"}
+    # NOTE: the order of input_features should not be relevant. We might want to change this to a set
     input_features: list = ["mli_ht", "mli_n_jet"]
     validation_fraction: float = 0.20  # percentage of the non-test events
     store_name: str = "inputs_base"
@@ -58,7 +61,7 @@ class MLClassifierBase(MLModel):
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params: int = [
-        "processes", "dataset_names", "input_features", "validation_fraction", "ml_process_weights",
+        "processes", "input_features", "validation_fraction", "ml_process_weights",
         "negative_weights", "epochs", "batchsize", "folds",
     ]
 
@@ -85,13 +88,23 @@ class MLClassifierBase(MLModel):
                 self.config_inst.add_variable(
                     name=f"mlscore.{proc}",
                     null_value=-1,
-                    binning=(40, 0., 1.),
+                    binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
                 )
 
     def preparation_producer(self: MLModel, config_inst: od.Config):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
         return "ml_preparation"
+
+    def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        # NOTE: since automatic resolving is not working here, we do it ourselves
+        return requested_calibrators or [config_inst.x.default_calibrator]
+
+    def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        return [config_inst.x.ml_inputs_producer, "event_weights"]
 
     def requires(self, task: law.Task) -> str:
         # Custom requirements (none currently)
@@ -102,13 +115,35 @@ class MLClassifierBase(MLModel):
         return dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
 
     def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
-        return {config_inst.get_dataset(dataset_name) for dataset_name in self.dataset_names}
+        used_datasets = set()
+        for proc in self.processes:
+            if not config_inst.has_process(proc):
+                raise Exception(f"Process {proc} not included in the config {config_inst.name}")
+
+            # get datasets corresponding to this process
+            datasets = [
+                d for d in
+                get_datasets_from_process(config_inst, proc, strategy="inclusive")
+            ]
+
+            # check that no dataset is used multiple times
+            if datasets_already_used := used_datasets.intersection(datasets):
+                raise Exception(f"{datasets_already_used} datasets are used for multiple processes")
+            used_datasets |= set(datasets)
+
+        return used_datasets
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        columns = set(self.input_features)
-        if self.dataset_inst.is_mc:
-            # TODO: switch to full event weight
-            columns.add("normalization_weight")
+        if not all(var.startswith("mli_") for var in self.input_features):
+            raise Exception(
+                "We currently expect all input_features to start with 'mli_', which is not the case"
+                f"for one of the variables in the 'input_features' {self.input_features}",
+            )
+        # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
+        columns = {"mli_*"}
+        # TODO: switch to full event weight
+        # TODO: this might not work with data, to be checked
+        columns.add("normalization_weight")
         return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
@@ -248,7 +283,7 @@ class MLClassifierBase(MLModel):
             for fn in proc_inst.x.filenames:
                 events = ak.from_parquet(fn)
                 if len(events) == 0:
-                    logger.warning("File {fn} of process {proc_inst.name} is empty and will be skipped")
+                    logger.warning(f"File {fn} of process {proc_inst.name} is empty and will be skipped")
                     continue
                 # check that all relevant input features are present
                 if not set(self.input_features).issubset(set(events.fields)):

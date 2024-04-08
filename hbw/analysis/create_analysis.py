@@ -60,25 +60,67 @@ def create_hbw_analysis(
     #
 
     from hbw.config.config_run2 import add_config
+
     import cmsdb.campaigns.run2_2017_nano_v9
+    import cmsdb.campaigns.run3_2022_preEE_nano_v12
+    import cmsdb.campaigns.run3_2022_postEE_nano_v12
 
     campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
+    campaign_run3_2022_preEE_nano_v12 = cmsdb.campaigns.run3_2022_preEE_nano_v12.campaign_run3_2022_preEE_nano_v12
+    campaign_run3_2022_preEE_nano_v12.x.EE = "pre"
 
-    # default config
+    campaign_run3_2022_postEE_nano_v12 = cmsdb.campaigns.run3_2022_postEE_nano_v12.campaign_run3_2022_postEE_nano_v12
+    campaign_run3_2022_postEE_nano_v12.x.EE = "post"
+
+    # 2017
     c17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="c17",
-        config_id=2,
+        config_id=1700,
+        add_dataset_extensions=False,
     )
-
-    # config with limited number of files
     l17 = add_config(  # noqa
         analysis_inst,
         campaign_run2_2017_nano_v9.copy(),
         config_name="l17",
-        config_id=12,
+        config_id=1701,
         limit_dataset_files=2,
+        add_dataset_extensions=False,
+    )
+
+    # 2022 preEE
+    c22pre = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_preEE_nano_v12.copy(),
+        config_name="c22pre",
+        config_id=2200,
+        add_dataset_extensions=False,
+    )
+    l22pre = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_preEE_nano_v12.copy(),
+        config_name="l22pre",
+        config_id=2201,
+        limit_dataset_files=2,
+        add_dataset_extensions=False,
+    )
+
+    # 2022 postEE
+    c22post = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_postEE_nano_v12.copy(),
+        config_name="c22post",
+        config_id=2210,
+        add_dataset_extensions=False,
+    )
+    l22post = add_config(  # noqa
+        analysis_inst,
+        campaign_run3_2022_postEE_nano_v12.copy(),
+        config_name="l22post",
+        config_id=2211,
+        limit_dataset_files=2,
+        add_dataset_extensions=False,
     )
 
     return analysis_inst

@@ -26,6 +26,13 @@ def add_ml_variables(config: od.Config) -> None:
         x_title="HT",
     )
     config.add_variable(
+        name="mli_lt",
+        expression="mli_lt",
+        binning=(40, 0, 800),
+        unit="GeV",
+        x_title="LT",
+    )
+    config.add_variable(
         name="mli_n_jet",
         expression="mli_n_jet",
         binning=(11, -0.5, 10.5),
@@ -110,6 +117,12 @@ def add_ml_variables(config: od.Config) -> None:
         expression="mli_dphi_lnu",
         binning=(40, 0, 3.2),
         x_title=r"$\Delta\Phi(l,\nu)$",
+    )
+    config.add_variable(
+        name="mli_dphi_wl",
+        expression="mli_dphi_wl",
+        binning=(40, 0, 3.2),
+        x_title=r"$\Delta\Phi(W,l)$",
     )
     config.add_variable(
         name="mli_mlnu",
@@ -248,7 +261,7 @@ def add_ml_variables(config: od.Config) -> None:
             )
 
     for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",

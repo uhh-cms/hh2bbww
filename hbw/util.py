@@ -21,6 +21,20 @@ np = maybe_import("numpy")
 _logger = law.logger.get_logger(__name__)
 
 
+def has_tag(tag, *container, operator: callable = any) -> bool:
+    """
+    Helper to check multiple container for a certain tag *tag*.
+    Per default, booleans are combined with logical "or"
+
+    :param tag: String of which tag to look for.
+    :param container: Instances to check for tags.
+    :param operator: Callable on how to combine tag existance values.
+    :return: Boolean whether any (all) containter contains the requested tag.
+    """
+    values = [inst.has_tag(tag) for inst in container]
+    return operator(values)
+
+
 def print_law_config(sections: list | None = None, keys: list | None = None):
     """ Helper to print the currently used law config """
     law_sections = law.config.sections()
@@ -166,6 +180,22 @@ def debugger():
 
     # start the debugger
     __import__("IPython").embed(header=header, user_ns=namespace)
+
+
+def traceback_function(depth: int = 1):
+    """
+    Helper function to trace back function call by up to *depth* frames.
+    """
+    frame = __import__("inspect").currentframe().f_back
+    logger = law.logger.get_logger(frame.f_code.co_name)
+    logger.info("starting traceback")
+    for i in range(depth + 1):
+        if not frame:
+            logger.info("max depth reached")
+            return
+        logger = law.logger.get_logger(f"{frame.f_code.co_name} (depth {i})")
+        logger.info(f"Line: {frame.f_lineno}, File: {frame.f_code.co_filename}")
+        frame = frame.f_back
 
 
 def make_dict_hashable(d: dict, deep: bool = True):

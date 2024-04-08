@@ -28,7 +28,7 @@ def add_cutflow_variables(config: od.Config) -> None:
     # Jets
     for i in range(4):
         # loose jets
-        for var in ("pt", "puId", "puIdDisc", "bRegRes", "bRegCorr", "qgl"):
+        for var in ("pt", "puId", "puIdDisc", "bRegRes", "bRegCorr"):
             quick_addvar(config, "LooseJet", i, var)
             quick_addvar(config, "Jet", i, var)
             quick_addvar(config, "JetPtBelow50", i, var)
@@ -47,7 +47,7 @@ def add_cutflow_variables(config: od.Config) -> None:
 
     # number of objects
     for obj in (
-            "jet", "deepjet_med", "fatjet", "hbbjet", "electron", "muon", "lepton",
+            "deepjet_med", "fatjet", "hbbjet", "electron", "muon", "lepton",
             "veto_electron", "veto_muon", "veto_lepton", "veto_tau",
     ):
         config.add_variable(

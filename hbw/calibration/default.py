@@ -51,15 +51,16 @@ def base_init(self: Calibrator) -> None:
     if self.bjet_regression:
         self.calibrators.append(bjet_regression)
 
-    if self.dataset_inst.is_mc:
-        # TODO: we might need to modify jer when using bjet calibration
+    # run JER only on MC
+    # and not for 2022 (TODO: update as soon as JER is done for Summer22)
+    if self.dataset_inst.is_mc and not self.config_inst.campaign.x.year == 2022:
         self.calibrators.append(jer)
 
     self.uses |= set(self.calibrators)
     self.produces |= set(self.calibrators)
 
 
-default = base.derive("default", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
+default = base.derive("default", cls_dict=dict(skip_jecunc=False, bjet_regression=False))
 skip_jecunc = base.derive("skip_jecunc", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
 with_b_reg = base.derive("with_b_reg", cls_dict=dict(skip_jecunc=True, bjet_regression=True))
 full = base.derive("full", cls_dict=dict(skip_jecunc=False, bjet_regression=True))

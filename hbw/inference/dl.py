@@ -56,6 +56,8 @@ rate_systematics = [
     "lumi_13TeV_2016",
     "lumi_13TeV_2017",
     "lumi_13TeV_1718",
+    "lumi_13TeV_2022",
+    "lumi_13TeV_2023",
     "lumi_13TeV_correlated",
     # Rate QCDScale uncertainties
     "QCDScale_ttbar",
@@ -160,3 +162,71 @@ cls_dict["ml_model_name"] = "dense_test_dl"
 
 # minimal model for quick test purposes
 dl_test = dl.derive("dl_test", cls_dict=cls_dict)
+
+#
+# 2022
+#
+
+processes_22 = [
+    "ggHH_kl_1_kt_1_dl_hbbhww",
+    "tt",
+    # "st_schannel",
+    "st_tchannel", "st_twchannel",
+    "dy_lep",
+    "w_lnu",
+]
+
+config_categories_22 = [
+    # Signal regions
+    "sr__2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    # Background regions
+    "sr__2e__ml_tt",
+    "sr__2e__ml_st",
+    "sr__2e__ml_dy_lep",
+    "sr__2mu__ml_tt",
+    "sr__2mu__ml_st",
+    "sr__2mu__ml_dy_lep",
+    "sr__emu__ml_tt",
+    "sr__emu__ml_st",
+    "sr__emu__ml_dy_lep",
+]
+
+dl_22 = dl.derive("dl_22", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "config_categories": config_categories_22,
+    "ml_model_name": "dl_22",
+    "systematics": rate_systematics,
+})
+dl_22_test = dl.derive("dl_22_test", cls_dict={
+    "processes": [
+        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "st_tchannel",
+    ],
+    "config_categories": [
+        "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+        "sr__2mu__2b__ml_tt",
+        "sr__2mu__2b__ml_st",
+    ],
+    "ml_model_name": "dl_22",
+})
+
+
+shape_systematics_22 = [
+    "murf_envelope_tt",
+    "murf_envelope_st_schannel",
+    "murf_envelope_st_tchannel",
+    "murf_envelope_st_twchannel",
+    "murf_envelope_dy_lep",
+    "murf_envelope_w_lnu",
+    "murf_envelope_ttV",
+    "murf_envelope_VV",
+]
+dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
+    "systematics": rate_systematics + shape_systematics_22,
+})

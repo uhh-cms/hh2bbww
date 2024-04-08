@@ -44,7 +44,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     produces={category_ids},
     ml_model_name=None,
 )
-def ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Reproduces category ids after ML Training. Calling this producer also
     automatically adds `MLEvaluation` to the requirements.
@@ -55,8 +55,8 @@ def ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-@ml_cats.requires
-def ml_cats_reqs(self: Producer, reqs: dict) -> None:
+@cats_ml.requires
+def cats_ml_reqs(self: Producer, reqs: dict) -> None:
     if "ml" in reqs:
         return
 
@@ -64,18 +64,17 @@ def ml_cats_reqs(self: Producer, reqs: dict) -> None:
     reqs["ml"] = MLEvaluation.req(self.task, ml_model=self.ml_model_name)
 
 
-@ml_cats.setup
-def ml_cats_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+@cats_ml.setup
+def cats_ml_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
     reader_targets["mlcolumns"] = inputs["ml"]["mlcolumns"]
 
 
-@ml_cats.init
-def ml_cats_init(self: Producer) -> None:
+@cats_ml.init
+def cats_ml_init(self: Producer) -> None:
     if not self.ml_model_name:
         self.ml_model_name = "dense_default"
 
     # add categories to config inst
-    add_categories_production(self.config_inst)
     add_categories_ml(self.config_inst, self.ml_model_name)
 
 
@@ -85,4 +84,4 @@ ml_model_names = get_subclasses_deep(MLClassifierBase)
 logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
 for ml_model_name in ml_model_names:
-    ml_cats.derive(f"ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
+    cats_ml.derive(f"cats_ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})

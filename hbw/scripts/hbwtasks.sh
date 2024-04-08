@@ -1,10 +1,12 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
-# default version, can be changed by locally setting HBW_MAIN_VERSION, e.g. by exporting it in
-# $HBW_BASE/.setups/${CF_SETUP_NAME}.sh and rerunning the setup script
-version="${HBW_MAIN_VERSION:-"prod1"}"
-echo "hbwtasks functions will be run with version '$version'"
+# defaults, setup by the law config
+# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
+version=$(law config analysis.default_version)
+common_version=$(law config analysis.default_common_version)
+config=$(law config analysis.default_config)
+echo "hbwtasks functions will be run with version '$version' and config '$config'"
 
 checksum() {
 	# helper to include custom checksum based on time when task was called
@@ -13,9 +15,7 @@ checksum() {
    	echo "${TEXT}${TIMESTAMP}"
 }
 
-# possible config choices: "c17", "l17"
-# NOTE: use "l17" for testing purposes
-config="c17"
+# per default, take all datasets
 datasets="*"
 
 hbw_selection(){
@@ -28,11 +28,8 @@ hbw_selection(){
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
 #
 
-# NOTE: calibration version should correspond to what is setup in the config as our default calibration config
-common_version="${HBW_COMMON_VERSION:-"common1"}"
 hbw_calibration(){
     law run cf.CalibrateEventsWrapper --version $common_version --workers 20 \
-	--configs $config \
 	--shifts nominal \
 	--datasets $datasets \
 	--cf.CalibrateEvents-workflow htcondor \
@@ -47,7 +44,6 @@ hbw_calibration(){
 
 hbw_reduction(){
     law run cf.ReduceEventsWrapper --version $version --workers 20 \
-	--configs $config \
 	--shifts nominal \
 	--datasets $datasets \
 	--cf.ReduceEvents-workflow htcondor \
@@ -63,9 +59,9 @@ hbw_reduction(){
 
 hbw_merge_reduction(){
     law run cf.MergeReducedEventsWrapper --version $version --workers 20 \
-	--configs $config \
 	--shifts nominal \
 	--datasets $datasets \
+    --cf.MergeReducedEvents-workflow htcondor \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
@@ -80,19 +76,18 @@ ml_model="dense_default"
 
 hbw_ml_training(){
     law run cf.MLTraining --version $version --workers 20 \
-	--configs $config \
 	--ml-model $ml_model \
 	--workflow htcondor \
 	--htcondor-gpus 1 \
 	--htcondor-memory 40000 \
 	--max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -106,18 +101,18 @@ inference_model="rates_only"
 
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
-	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -130,18 +125,18 @@ hbw_datacards(){
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
 	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
-	--config $config \
 	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
-	--cf.MergeMLEvents-workflow local \
+	--cf.MergeMLEvents-workflow htcondor \
+	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-htcondor-gpus 0 \
-	--cf.PrepareMLEvents-htcondor-memory 4000 \
-	--cf.PrepareMLEvents-max-runtime 3h \
-	--cf.MergeReducedEvents-workflow local \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
 	--cf.ReduceEvents-workflow htcondor \
 	--cf.SelectEvents-workflow htcondor \
@@ -160,7 +155,6 @@ hbw_cutflow(){
     for steps in "resolved" "boosted"
     do
 	law run cf.PlotCutflow --version $version \
-	    --config l17 \
 	    --selector-steps $steps \
 	    --shift nominal \
 	    --processes with_qcd \
@@ -177,7 +171,6 @@ variables="mli_*"
 
 hbw_plot_variables(){
     law run cf.PlotVariables1D --version $version \
-	--config $config \
 	--processes $processes \
 	--variables $variables \
 	--categories $categories \
@@ -190,7 +183,6 @@ ml_categories="resolved,boosted,incl,ml_ggHH_kl_1_kt_1_sl_hbbhww,ml_tt,ml_st,ml_
 
 hbw_plot_ml_nodes(){
     law run cf.PlotVariables1D --version $version \
-	--config $config \
 	--ml-models $ml_model \
 	--processes $processes \
 	--variables $ml_output_variables \
@@ -201,7 +193,6 @@ hbw_plot_ml_nodes(){
 
 hbw_control_plots_noData_much(){
     law run cf.PlotVariables1D --version $version \
-	--config $config \
 	--producers features \
 	--processes much \
 	--process-settings scale_signal \
@@ -213,7 +204,6 @@ hbw_control_plots_noData_much(){
 
 hbw_control_plots_much(){
     law run cf.PlotVariables1D --version $version \
-	--config $config \
 	--producers features \
 	--processes dmuch \
 	--process-settings scale_signal \

@@ -5,7 +5,7 @@ Selectors to set ak columns for cutflow features
 """
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import Route, set_ak_column, EMPTY_INT, EMPTY_FLOAT, optional_column as optional
+from columnflow.columnar_util import set_ak_column, EMPTY_INT, optional_column as optional
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 
@@ -27,10 +27,15 @@ ak = maybe_import("awkward")
     # skip the checking existence of used/produced columns for now because some columns are not there
     check_used_columns=False,
     check_produced_columns=False,
-
 )
 def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
+    """
+    Producer to produce columns as part of SelectEvents. This mostly just applies object definitions
+    to the nano and stores the resulting objects with the "cutflow." prefix.
+    All columns of interested are then stored by adding them to the *produces*.
 
+    NOTE: probably needs to be updated since selection has been reworked.
+    """
     # apply event results to objects and define objects in a convenient way for reconstructing variables
     # but create temporary ak.Array to not override objects in events
     arr = self[prepare_objects](events, results)
@@ -63,9 +68,6 @@ def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult,
     events = set_ak_column(events, "cutflow.VetoElectron", arr.VetoElectron[:, :2])
     events = set_ak_column(events, "cutflow.VetoMuon", arr.VetoMuon[:, :2])
 
-    # zero-padding of potential nan value
-    for col in ("cutflow.Jet.qgl", "cutflow.LooseJet.qgl"):
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(Route(col).apply(events)), EMPTY_FLOAT))
     return events
 
 
@@ -81,7 +83,7 @@ def cutflow_features_init(self: Producer) -> None:
     }
     self.electron_columns = {"pfRelIso03_all", "mvaFall17V2Iso", "mvaFall17V2noIso"}
     self.muon_columns = {"pfRelIso04_all", "mvaLowPt"}
-    self.jet_columns = {"pt", "puId", "puIdDisc", "qgl", "bRegRes", "bRegCorr"}
+    self.jet_columns = {"pt", "puId", "puIdDisc", "bRegRes", "bRegCorr"}
 
     self.uses |= (
         set(

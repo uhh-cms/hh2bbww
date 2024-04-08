@@ -76,6 +76,36 @@ ml_labels = {
     "t_bkg": "tt+st",
 }
 
+short_labels = {
+    "ggHH_kl_0_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=0}$ (SL)",
+    "ggHH_kl_1_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=1}$ (SL)",
+    "ggHH_kl_2p45_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (SL)",
+    "ggHH_kl_5_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=5}$ (SL)",
+    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "ggHH_kl_0_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=0}$ (DL)",
+    "ggHH_kl_1_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=1}$ (DL)",
+    "ggHH_kl_2p45_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (DL)",
+    "ggHH_kl_5_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=5}$ (DL)",
+    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": r"$HH_{vbf}^{1,1,0} (SL)$",
+    "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": r"$HH_{vbf}^{1,1,2} (SL)$",
+    "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,0,1} (SL)$",
+    "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,2,1} (SL)$",
+    "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{0.5,1,1} (SL)$",
+    "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1.5,1,1} (SL)$",
+    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,1,1} (DL)$",
+    "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww": r"$HH_{vbf}^{1,1,0} (DL)$",
+    "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww": r"$HH_{vbf}^{1,1,2} (DL)$",
+    "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,0,1} (DL)$",
+    "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,2,1} (DL)$",
+    "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{0.5,1,1} (DL)$",
+    "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{1.5,1,1} (DL)$",
+    "w_lnu": r"$W \rightarrow l\nu$",
+    "dy_lep": r"$Z \rightarrow ll$",
+    "qcd_mu": r"$QCD \mu$",
+    "qcd_ele": r"$QCD e$",
+}
+
 
 def stylize_processes(config: od.Config) -> None:
     """
@@ -84,10 +114,13 @@ def stylize_processes(config: od.Config) -> None:
     Could also include some more defaults (labels, unstack, ...)
     """
 
-    for proc in config.processes:
+    for proc, _, _ in config.walk_processes():
         # set default colors
         if color := default_process_colors.get(proc.name, None):
             proc.color1 = color
+
+        if short_label := short_labels.get(proc.name, None):
+            proc.short_label = short_label
 
         # unstack signal in plotting
         if "hh_" in proc.name.lower():
