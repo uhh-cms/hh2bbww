@@ -25,7 +25,7 @@ from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
 from hbw.ml.plotting import (
     plot_history, plot_confusion, plot_roc_ovr,  # plot_roc_ovo,
-    plot_output_nodes, get_input_weights,
+    plot_output_nodes, get_input_weights, plot_introspection,
 )
 
 
@@ -378,6 +378,7 @@ class MLClassifierBase(MLModel):
 
         # save tuple of input feature names for sanity checks in MLEvaluation
         output["mlmodel"].child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
+        self.input_features_ordered = input_features
 
         # shuffle per process
         for inp in (train, validation):
@@ -480,7 +481,8 @@ class MLClassifierBase(MLModel):
             return outp
 
         # get a simple ranking of input variables
-        call_func_safe(get_input_weights, model, output)
+        call_func_safe(get_input_weights, model, output, input_features=self.input_features)
+        call_func_safe(plot_introspection, model, output, validation, output_node=0, input_features=self.input_features)
 
         log_memory("start plotting")
         # make some plots of the history

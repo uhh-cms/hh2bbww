@@ -21,6 +21,72 @@ tf = maybe_import("tensorflow")
 logger = law.logger.get_logger(__name__)
 
 
+def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
+    """
+    :param dict_of_rankings: dictionary of multiple dictionaries of rankings of variables. The keys of this
+    dictionary are interpreted as labels for different types of variable rankings. The keys of the sub-dictionaries
+    correspond to the names of the variables to be ranked and they should be identical for each sub-dictionary.
+    The first sub-directory is used for the sorting of variables.
+    :param normalize_weights: whether to normalize the sum of weights per ranking to 1.
+    """
+    fig, ax = plt.subplots(figsize=(8, 10))
+    plt.style.use("seaborn-v0_8")
+
+    num_dicts = len(dict_of_rankings.keys())
+    num_labels = len(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())
+    labels = list(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())[::-1]
+
+    bar_width = 0.9 / num_dicts
+    index = np.arange(num_labels)
+
+    for idx, (d_label, d) in enumerate(dict_of_rankings.items()):
+        # always get labels in the same order
+        weights = [d[label] for label in labels]
+        if normalize_weights:
+            weights = weights / np.sum(weights)
+
+        # Offset to separate bars from different dictionaries
+        offset = idx * bar_width
+
+        ax.barh(index - offset, weights, bar_width, label=d_label)
+
+    ax.set_xlabel("Contribution")
+    ax.set_ylabel("Input features")
+    ax.set_yticks(index - (bar_width * (num_dicts - 1)) / 2)
+    ax.set_yticklabels(labels)
+    ax.legend()
+
+    plt.tight_layout()
+
+    return fig, ax
+
+
+def plot_introspection(
+    model,
+    output,
+    inputs,
+    output_node: int = 0,
+    input_features: list | None = None,
+):
+    from hbw.ml.introspection import sensitivity_analysis, gradient_times_input, shap_ranking
+
+    # get only signal events for now
+    inputs = inputs.inputs[inputs.label == 0]
+
+    shap_ranking_dict, shap_values = shap_ranking(model, inputs, output_node, input_features)
+
+    rankings = {
+        "SHAP": shap_ranking_dict,
+        "Sensitivity Analysis": sensitivity_analysis(model, inputs, output_node, input_features),
+        "Gradient * Input": gradient_times_input(model, inputs, output_node, input_features),
+    }
+    logger.info(rankings)
+    fig, ax = barplot_from_multidict(rankings)
+
+    output.child("rankings.pdf", type="f").dump(fig, formatter="mpl")
+    return fig, ax
+
+
 def plot_history(
     history,
     output: law.FileSystemDirectoryTarget,
