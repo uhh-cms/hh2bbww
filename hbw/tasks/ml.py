@@ -9,18 +9,34 @@ law run hbw.MLOptimizer --version prod1 --ml-models dense_3x64,dense_3x128,dense
 ```
 """
 
+from __future__ import annotations
+
+from collections import defaultdict
+
 import law
 import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
+    # SelectorMixin,
+    CalibratorsMixin,
+    # ProducerMixin,
+    ProducersMixin,
+    MLModelTrainingMixin,
+    # MLModelMixin,
+    MLModelsMixin,
+    # ChunkedIOMixin,
+    SelectorStepsMixin,
 )
-
-from columnflow.util import dev_sandbox
+from columnflow.tasks.framework.remote import RemoteWorkflow
+# from columnflow.tasks.reduction import MergeReducedEventsUser, MergeReducedEvents
+# from columnflow.tasks.production import ProduceColumns
+from columnflow.util import dev_sandbox, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT
-from columnflow.tasks.ml import MLTraining
+from columnflow.tasks.ml import MergeMLEvents, MergeMLStats, MLTraining
 from hbw.tasks.base import HBWTask
+
+logger = law.logger.get_logger(__name__)
 
 
 class MLOptimizer(
@@ -80,3 +96,232 @@ class MLOptimizer(
                 model_summary[stat_name] = stat_summary
 
         self.output()["model_summary"].dump(model_summary, formatter="yaml")
+
+
+class MLPreTraining(
+    HBWTask,
+    MLModelTrainingMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    This task prepares input arrays for MLTraining, producing one numpy array per fold, process,
+    array type, and training/validation/test set.
+
+    Attributes that are required by the requested MLModel are:
+    - folds: number of folds to be used
+    - processes: list of processes to be used
+    - data_loader: class to be used to load the data
+    - input_arrays: list of input arrays to be loaded. Each array is a string, pointing to a property
+    of the data_loader class that returns the data.
+    """
+
+    allow_empty_ml_model = False
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeMLEvents=MergeMLEvents,
+        MergeMLStats=MergeMLStats,
+    )
+
+    @property
+    def sandbox(self):
+        # use the default columnar sandbox
+        return dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    @property
+    def accepts_messages(self):
+        return self.ml_model_inst.accepts_scheduler_messages
+
+    @property
+    def fold(self):
+        if not self.is_branch():
+            return None
+        return self.branch_data["fold"]
+
+    def create_branch_map(self):
+        return [
+            DotDict({"fold": fold, "process": process})
+            for fold in range(self.ml_model_inst.folds)
+            for process in self.ml_model_inst.processes
+        ]
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["events"] = {
+            config_inst.name: {
+                dataset_inst.name: [
+                    self.reqs.MergeMLEvents.req(
+                        self,
+                        config=config_inst.name,
+                        dataset=dataset_inst.name,
+                        calibrators=_calibrators,
+                        selector=_selector,
+                        producers=_producers,
+                        fold=f,
+                        tree_index=-1,
+                    )
+                    for f in range(self.ml_model_inst.folds)
+                ]
+                for dataset_inst in dataset_insts
+            }
+            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+                self.ml_model_inst.used_datasets.items(),
+                self.calibrators,
+                self.selectors,
+                self.producers,
+            )
+        }
+        reqs["stats"] = {
+            config_inst.name: {
+                dataset_inst.name: self.reqs.MergeMLStats.req(
+                    self,
+                    config=config_inst.name,
+                    dataset=dataset_inst.name,
+                    calibrators=_calibrators,
+                    selector=_selector,
+                    producers=_producers,
+                    tree_index=-1,
+                )
+                for dataset_inst in dataset_insts
+            }
+            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+                self.ml_model_inst.used_datasets.items(),
+                self.calibrators,
+                self.selectors,
+                self.producers,
+            )
+        }
+
+        # ml model requirements
+        reqs["model"] = self.ml_model_inst.requires(self)
+
+        return reqs
+
+    def requires(self):
+
+        reqs = {}
+
+        process = self.branch_data["process"]
+        # load events only for specified process and fold
+        reqs["events"] = {
+            config_inst.name: {
+                dataset_inst.name: self.reqs.MergeMLEvents.req(
+                    self,
+                    config=config_inst.name,
+                    dataset=dataset_inst.name,
+                    calibrators=_calibrators,
+                    selector=_selector,
+                    producers=_producers,
+                    fold=self.fold,
+                )
+                for dataset_inst in dataset_insts
+                if dataset_inst.x.ml_process == process
+            }
+            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+                self.ml_model_inst.used_datasets.items(),
+                self.calibrators,
+                self.selectors,
+                self.producers,
+            )
+        }
+
+        # load stats for all processes
+        reqs["stats"] = {
+            config_inst.name: {
+                dataset_inst.name: self.reqs.MergeMLStats.req(
+                    self,
+                    config=config_inst.name,
+                    dataset=dataset_inst.name,
+                    calibrators=_calibrators,
+                    selector=_selector,
+                    producers=_producers,
+                    tree_index=-1)
+                for dataset_inst in dataset_insts
+            }
+            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+                self.ml_model_inst.used_datasets.items(),
+                self.calibrators,
+                self.selectors,
+                self.producers,
+            )
+        }
+
+        # ml model requirements
+        reqs["model"] = self.ml_model_inst.requires(self)
+
+        return reqs
+
+    def output(self):
+        k = self.ml_model_inst.folds
+        process = self.branch_data["process"]
+
+        outputs = {
+            input_array: {
+                train_val_test: self.target(f"{input_array}_{train_val_test}_{process}_fold{self.fold}of{k}.npy")
+                for train_val_test in ("train", "val", "test")
+            } for input_array in self.ml_model_inst.input_arrays
+        }
+        return outputs
+
+    def merge_stats(self, inputs) -> dict:
+        """
+        Merge stats from different inputs into a single dict.
+        """
+        merged_stats = defaultdict(dict)
+        for config_inst in self.ml_model_inst.config_insts:
+            used_datasets = inputs["stats"][config_inst.name].keys()
+            for dataset in used_datasets:
+                # gather stats per ml process
+                stats = inputs["stats"][config_inst.name][dataset]["stats"].load(formatter="json")
+                process = config_inst.get_dataset(dataset).x.ml_process
+                MergeMLStats.merge_counts(merged_stats[process], stats)
+
+        return merged_stats
+
+    def merge_datasets(self, inputs):
+        """
+        Merge datasets from different inputs into a single awkward array.
+        """
+        import awkward as ak
+        events = defaultdict(list)
+        for config_inst in self.ml_model_inst.config_insts:
+            used_datasets = inputs["events"][config_inst.name].keys()
+            for dataset in used_datasets:
+                input_target = inputs["events"][config_inst.name][dataset]["mlevents"]
+                process = config_inst.get_dataset(dataset).x.ml_process
+                events[process].append(ak.from_parquet(input_target.path))
+
+        for process in events.keys():
+            events[process] = ak.concatenate(events[process])
+        return dict(events)
+
+    @law.decorator.log
+    @law.decorator.safe_output
+    def run(self):
+        # prepare inputs and outputs
+        inputs = self.input()
+        outputs = self.output()
+
+        # prepare objects
+        process = self.branch_data["process"]
+        # fold = self.fold
+
+        # load stats and input data
+        stats = self.merge_stats(inputs)
+        events = self.merge_datasets(inputs)[process]
+
+        # initialize the DatasetLoader
+        ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+
+        for input_array in self.ml_model_inst.input_arrays:
+            logger.info(f"loading data for input array {input_array}")
+            # load data and split into training, validation, and testing
+            train, val, test = ml_dataset.load_split_data(input_array)
+
+            # store loaded data
+            outputs[input_array]["train"].dump(train, formatter="numpy")
+            outputs[input_array]["val"].dump(val, formatter="numpy")
+            outputs[input_array]["test"].dump(test, formatter="numpy")

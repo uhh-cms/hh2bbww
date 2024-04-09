@@ -23,6 +23,7 @@ from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
+from hbw.ml.data_loader import MLDatasetLoader
 from hbw.ml.plotting import (
     plot_history, plot_confusion, plot_roc_ovr,  # plot_roc_ovo,
     plot_output_nodes, get_input_weights, plot_introspection,
@@ -49,6 +50,7 @@ class MLClassifierBase(MLModel):
     processes: list = ["tt", "st"]
     # NOTE: the order of input_features should not be relevant. We might want to change this to a set
     input_features: list = ["mli_ht", "mli_n_jet"]
+    train_val_test_split: tuple = (0.75, 0.15, 0.10)
     validation_fraction: float = 0.20  # percentage of the non-test events
     store_name: str = "inputs_base"
     ml_process_weights: dict = {"st": 2, "tt": 1}
@@ -56,11 +58,13 @@ class MLClassifierBase(MLModel):
     epochs: int = 50
     batchsize: int = 2 ** 10
     folds: int = 5
+    input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
+    data_loader = MLDatasetLoader
 
     dump_arrays: bool = False
 
     # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params: int = [
+    bookkeep_params: list[str] = [
         "processes", "input_features", "validation_fraction", "ml_process_weights",
         "negative_weights", "epochs", "batchsize", "folds",
     ]
@@ -106,7 +110,7 @@ class MLClassifierBase(MLModel):
         # fix MLTraining Phase Space
         return [config_inst.x.ml_inputs_producer, "event_weights"]
 
-    def requires(self, task: law.Task) -> str:
+    def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
         return {}
 
@@ -116,20 +120,30 @@ class MLClassifierBase(MLModel):
 
     def datasets(self, config_inst: od.Config) -> set[od.Dataset]:
         used_datasets = set()
-        for proc in self.processes:
+        for i, proc in enumerate(self.processes):
             if not config_inst.has_process(proc):
                 raise Exception(f"Process {proc} not included in the config {config_inst.name}")
 
+            proc_inst = config_inst.get_process(proc)
+            # NOTE: this info is accessible during training but probably not afterwards in other tasks
+            proc_inst.x.ml_id = i
+            proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
+
             # get datasets corresponding to this process
-            datasets = [
-                d for d in
+            dataset_insts = [
+                dataset_inst for dataset_inst in
                 get_datasets_from_process(config_inst, proc, strategy="inclusive")
             ]
 
+            # store assignment of datasets and processes in the instances
+            for dataset_inst in dataset_insts:
+                dataset_inst.x.ml_process = proc
+            proc_inst.x.ml_datasets = [dataset_inst.name for dataset_inst in dataset_insts]
+
             # check that no dataset is used multiple times
-            if datasets_already_used := used_datasets.intersection(datasets):
+            if datasets_already_used := used_datasets.intersection(dataset_insts):
                 raise Exception(f"{datasets_already_used} datasets are used for multiple processes")
-            used_datasets |= set(datasets)
+            used_datasets |= set(dataset_insts)
 
         return used_datasets
 
@@ -153,7 +167,7 @@ class MLClassifierBase(MLModel):
 
         return produced
 
-    def output(self, task: law.Task) -> dict[law.FileSystemTarget]:
+    def output(self, task: law.Task) -> dict[str, law.FileSystemTarget]:
 
         # declare the main target
         target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
@@ -203,9 +217,10 @@ class MLClassifierBase(MLModel):
         task,
         input,
         output: law.LocalDirectoryTarget,
-    ) -> dict[str, np.array]:
+    ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
         # get process instances and assign relevant information to the process_insts
         # from the first config_inst (NOTE: this assumes that all config_insts use the same processes)
+        # TODO: move to setup
         self.process_insts = []
         for i, proc in enumerate(self.processes):
             proc_inst = self.config_insts[0].get_process(proc)
