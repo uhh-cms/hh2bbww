@@ -194,15 +194,14 @@ class MLPreTraining(
                 self.producers,
             )
         }
-
-        # ml model requirements
-        reqs["model"] = self.ml_model_inst.requires(self)
-
         return reqs
 
     def requires(self):
 
         reqs = {}
+
+        if not self.is_branch():
+            return reqs
 
         process = self.branch_data["process"]
         # load events only for specified process and fold
@@ -249,9 +248,6 @@ class MLPreTraining(
             )
         }
 
-        # ml model requirements
-        reqs["model"] = self.ml_model_inst.requires(self)
-
         return reqs
 
     def output(self):
@@ -260,10 +256,20 @@ class MLPreTraining(
 
         outputs = {
             input_array: {
-                train_val_test: self.target(f"{input_array}_{train_val_test}_{process}_fold{self.fold}of{k}.npy")
+                train_val_test: {process: {self.fold: (
+                    self.target(f"{input_array}_{train_val_test}_{process}_fold{self.fold}of{k}.npy")
+                )}}
                 for train_val_test in ("train", "val", "test")
-            } for input_array in self.ml_model_inst.input_arrays
+            }
+            for input_array in self.ml_model_inst.input_arrays
         }
+
+        # NOTE: this is stored per fold and process, since we cannot do the check that they are all
+        # the same since we parallelized over processes/folds
+        outputs["input_features"] = {process: {self.fold: (
+            self.target(f"input_features_{process}_fold{self.fold}of{k}.pickle")
+        )}}
+
         return outputs
 
     def merge_stats(self, inputs) -> dict:
@@ -307,7 +313,7 @@ class MLPreTraining(
 
         # prepare objects
         process = self.branch_data["process"]
-        # fold = self.fold
+        fold = self.fold
 
         # load stats and input data
         stats = self.merge_stats(inputs)
@@ -322,6 +328,8 @@ class MLPreTraining(
             train, val, test = ml_dataset.load_split_data(input_array)
 
             # store loaded data
-            outputs[input_array]["train"].dump(train, formatter="numpy")
-            outputs[input_array]["val"].dump(val, formatter="numpy")
-            outputs[input_array]["test"].dump(test, formatter="numpy")
+            outputs[input_array]["train"][process][fold].dump(train, formatter="numpy")
+            outputs[input_array]["val"][process][fold].dump(val, formatter="numpy")
+            outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
+
+            outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")

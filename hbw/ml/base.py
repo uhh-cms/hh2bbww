@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Any
-import gc
-import time
 import yaml
 
 import law
@@ -21,21 +19,17 @@ from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.columnar_util import Route, set_ak_column, remove_ak_column
 from columnflow.config_util import get_datasets_from_process
 
-from hbw.util import log_memory
-from hbw.ml.helper import assign_dataset_to_process, predict_numpy_on_batch
-from hbw.ml.data_loader import MLDatasetLoader
-from hbw.ml.plotting import (
-    plot_history, plot_confusion, plot_roc_ovr,  # plot_roc_ovo,
-    plot_output_nodes, get_input_weights, plot_introspection,
-)
+from hbw.util import log_memory, timeit
+from hbw.ml.helper import assign_dataset_to_process
+from hbw.ml.data_loader import MLDatasetLoader, MLProcessData, MLMultiProcessData
 
+from hbw.tasks.ml import MLPreTraining
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 tf = maybe_import("tensorflow")
 pickle = maybe_import("pickle")
 keras = maybe_import("tensorflow.keras")
-
 
 logger = law.logger.get_logger(__name__)
 
@@ -49,9 +43,10 @@ class MLClassifierBase(MLModel):
     # NOTE: the order of processes is crucial! Do not change after training
     processes: list = ["tt", "st"]
     # NOTE: the order of input_features should not be relevant. We might want to change this to a set
-    input_features: list = ["mli_ht", "mli_n_jet"]
+    input_features: set = {"mli_ht", "mli_n_jet"}
+    # NOTE: we split each fold into train, val, test + do k-folding, so we have a 4-way split in total
+    # TODO: test whether setting "test" to 0 is working
     train_val_test_split: tuple = (0.75, 0.15, 0.10)
-    validation_fraction: float = 0.20  # percentage of the non-test events
     store_name: str = "inputs_base"
     ml_process_weights: dict = {"st": 2, "tt": 1}
     negative_weights: str = "handle"
@@ -60,8 +55,6 @@ class MLClassifierBase(MLModel):
     folds: int = 5
     input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
     data_loader = MLDatasetLoader
-
-    dump_arrays: bool = False
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params: list[str] = [
@@ -112,7 +105,10 @@ class MLClassifierBase(MLModel):
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
-        return {}
+        reqs = {}
+
+        reqs["preml"] = MLPreTraining.req_different_branching(task, branch=-1)
+        return reqs
 
     def sandbox(self, task: law.Task) -> str:
         # venv_ml_tf sandbox but with scikit-learn and restricted to tf 2.11.0
@@ -172,12 +168,10 @@ class MLClassifierBase(MLModel):
         # declare the main target
         target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
 
+        # TODO: cleanup (produce plots, stats in separate task)
         outp = {
             "mlmodel": target,
             "checkpoint": target.child("checkpoint", type="d", optional=True),
-            "plots": target.child("plots", type="d", optional=True),
-            "stats": target.child("stats.yaml", type="f", optional=True),
-            "arrays": target.child("arrays", type="d", optional=True),
         }
 
         # define all files that need to be present
@@ -212,228 +206,82 @@ class MLClassifierBase(MLModel):
 
         return models
 
-    def prepare_inputs(
+    @timeit
+    def load_data(
         self,
-        task,
-        input,
+        task: law.Task,
+        input: Any,
         output: law.LocalDirectoryTarget,
-    ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
-        # get process instances and assign relevant information to the process_insts
-        # from the first config_inst (NOTE: this assumes that all config_insts use the same processes)
-        # TODO: move to setup
-        self.process_insts = []
-        for i, proc in enumerate(self.processes):
-            proc_inst = self.config_insts[0].get_process(proc)
-            proc_inst.x.ml_id = i
-            proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
+    ) -> tuple[DotDict[np.array], MLMultiProcessData]:
+        input_files = input["model"]["preml"]["collection"]
+        input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
 
-            self.process_insts.append(proc_inst)
-
-        # assign datasets to proceses and calculate some stats per process
-        # TODO: testing with working multi-config analysis
-        for config_inst in self.config_insts:
-            for dataset, files in input["events"][config_inst.name].items():
-                t0 = time.perf_counter()
-
-                dataset_inst = config_inst.get_dataset(dataset)
-                if len(dataset_inst.processes) != 1:
-                    raise Exception("only 1 process inst is expected for each dataset")
-
-                # do the dataset-process assignment and raise Execption when unmatched
-                if not assign_dataset_to_process(dataset_inst, self.process_insts):
-                    raise Exception(
-                        f"The dataset {dataset_inst.name} is not matched to any"
-                        f"of the given processes {self.process_insts}",
-                    )
-                proc_inst = dataset_inst.x.ml_process
-
-                # calculate some stats per dataset
-                filenames = [inp["mlevents"].path for inp in files]
-
-                N_events = sum([len(ak.from_parquet(fn)) for fn in filenames])
-                if N_events == 0:
-                    # skip empty datasets
-                    logger.warning(f"Dataset {dataset_inst.name} is empty and will be ignored")
-                    continue
-
-                weights = [ak.from_parquet(inp["mlevents"].fn).normalization_weight for inp in files]
-                sum_weights = sum([ak.sum(w) for w in weights])
-                sum_abs_weights = sum([ak.sum(np.abs(w)) for w in weights])
-                sum_pos_weights = sum([ak.sum(w[w > 0]) for w in weights])
-
-                # bookkeep filenames and stats per process
-                proc_inst.x.filenames = proc_inst.x("filenames", []) + filenames
-                proc_inst.x.N_events = proc_inst.x("N_events", 0) + N_events
-                proc_inst.x.sum_weights = proc_inst.x("sum_weights", 0) + sum_weights
-                proc_inst.x.sum_abs_weights = proc_inst.x("sum_abs_weights", 0) + sum_abs_weights
-                proc_inst.x.sum_pos_weights = proc_inst.x("sum_pos_weights", 0) + sum_pos_weights
-
-                logger.info(
-                    f"Dataset {dataset} was assigned to process {proc_inst.name}; "
-                    f"took {(time.perf_counter() - t0):.3f}s {chr(10)}"
-                    f"----- Number of events: {N_events} {chr(10)}"
-                    f"----- Sum of weights:   {sum_weights}",
-                )
-
-        #
-        # set inputs, weights and targets for each datset and fold
-        #
-
-        train = DotDict()
-        validation = DotDict()
-
-        # bookkeep that input features are always the same
-        input_features = None
-
-        for proc_inst in self.process_insts:
-            _train = DotDict()
-            _validation = DotDict()
-            logger.info(
-                f"Preparing inputs for process {proc_inst.name} {chr(10)}"
-                f"----- Number of files:  {len(proc_inst.x.filenames)} {chr(10)}"
-                f"----- Number of events: {proc_inst.x.N_events} {chr(10)}"
-                f"----- Sum of weights:   {proc_inst.x.sum_weights}",
-            )
-            t0 = time.perf_counter()
-            for fn in proc_inst.x.filenames:
-                events = ak.from_parquet(fn)
-                if len(events) == 0:
-                    logger.warning(f"File {fn} of process {proc_inst.name} is empty and will be skipped")
-                    continue
-                # check that all relevant input features are present
-                if not set(self.input_features).issubset(set(events.fields)):
-                    raise Exception(
-                        f"The columns {set(self.input_features).difference(events.fields)} "
-                        "are not present in the ML input events",
-                    )
-
-                # create truth values
-                label = np.ones(len(events)) * proc_inst.x.ml_id
-                target = np.zeros((len(events), len(self.processes))).astype(np.float32)
-                target[:, proc_inst.x.ml_id] = 1
-
-                # event weights, normalized to the sum of events per process
-                weights = ak.to_numpy(events.normalization_weight).astype(np.float32)
-                ml_weights = weights / proc_inst.x.sum_abs_weights * proc_inst.x.N_events
-
-                # transform ml weights to handle negative weights
-                m_negative_weights = ml_weights < 0
-                if self.negative_weights == "ignore":
-                    ml_weights[m_negative_weights] = 0
-                elif self.negative_weights == "abs":
-                    ml_weights = np.abs(ml_weights)
-                elif self.negative_weights == "handle":
-                    ml_weights[m_negative_weights] = (
-                        np.abs(ml_weights[m_negative_weights]) / (len(self.process_insts) - 1)
-                    )
-                    # transform target layer for events with negative weights (1 -> 0 and 0 -> 1)
-                    target[m_negative_weights] = 1 - target[m_negative_weights]
-
-                ml_weights = ml_weights.astype(np.float32)
-                proc_inst.x.sum_ml_weights = proc_inst.x("sum_ml_weights", 0) + ak.sum(ml_weights)
-
-                # remove columns that are not used as training features
-                for var in events.fields:
-                    if var not in self.input_features:
-                        events = remove_ak_column(events, var)
-
-                # bookkeep order of input features and check that it is the same for all datasets
-                if input_features is None:
-                    input_features = tuple(events.fields)
-                elif input_features != tuple(events.fields):
-                    raise Exception("The order of input features is not the same for all datasets")
-
-                # transform events into numpy npdarray
-                events = ak.to_numpy(events)
-                events = events.astype(
-                    [(name, np.float32) for name in events.dtype.names], copy=False,
-                ).view(np.float32).reshape((-1, len(events.dtype)))
-
-                # split into train and validation dataset
-                N_events_validation = int(self.validation_fraction * len(events))
-
-                def add_arrays(array: np.array, key: str):
-                    """
-                    Small helper to add arrays split into train and validation
-                    """
-                    if key not in _train.keys():
-                        # initialize list on first call
-                        _train[key] = [array[N_events_validation:]]
-                        _validation[key] = [array[:N_events_validation]]
-                    else:
-                        # append on all following calls
-                        _train[key].append(array[N_events_validation:])
-                        _validation[key].append(array[:N_events_validation])
-
-                # shuffle arrays in-place and add them to train and validation dictionaries
-                np.random.shuffle(shuffle_indices := np.array(range(len(events))))
-                for array, key in (
-                    (events, "inputs"),
-                    (target, "target"),
-                    (label, "label"),
-                    (weights, "weights"),
-                    (ml_weights, "ml_weights"),
-                ):
-                    array[...] = array[shuffle_indices]
-                    add_arrays(array, key)
-
-            # concatenate arrays per process
-            for inp in (_train, _validation):
-                for key, arrays in inp.items():
-                    inp[key] = np.concatenate(arrays)
-
-            train[proc_inst] = _train
-            validation[proc_inst] = _validation
-
-            logger.info(f"Input preparation done for process {proc_inst.name}; took {(time.perf_counter() - t0):.1f}s")
-
-        # check that weights are set as expected
-        for proc_inst in self.process_insts:
-            logger.info(f"{proc_inst.name} sum of ml weights: {proc_inst.x.sum_ml_weights:.1f}")
-
-        # save tuple of input feature names for sanity checks in MLEvaluation
-        output["mlmodel"].child("input_features.pkl", type="f").dump(input_features, formatter="pickle")
-        self.input_features_ordered = input_features
-
-        # shuffle per process
-        for inp in (train, validation):
-            for proc_inst, _inp in inp.items():
-                np.random.shuffle(shuffle_indices := np.array(range(len(_inp.inputs))))
-                for key in _inp.keys():
-                    inp[proc_inst][key] = inp[proc_inst][key][shuffle_indices]
-
-        # reweight validation events to match the number of events used in the training multi_dataset
-        weights_scaler = (
-            min([proc_inst.x.N_events / proc_inst.x.ml_process_weight for proc in self.process_insts]) *
-            sum([proc_inst.x.ml_process_weight for proc_inst in self.process_insts])
+        train = DotDict(
+            {proc_inst: MLProcessData(
+                self, input_files, "train", proc_inst.name, task.fold,
+            ) for proc_inst in self.process_insts},
         )
-        for proc_inst in validation.keys():
-            validation[proc_inst].ml_weights = (
-                validation[proc_inst].ml_weights * weights_scaler / proc_inst.x.N_events *
-                proc_inst.x.ml_process_weight
-            )
+        for proc_data in train.values():
+            # load into memory
+            proc_data.load_all()
+
+        log_memory("loading train data")
+
+        validation = MLMultiProcessData(
+            self, input_files, "val", self.processes, task.fold,
+        )
+        # load into memory
+        validation.load_all
+        log_memory("loading validation data")
+
+        # store input features as an output
+        output["mlmodel"].child("input_features.pkl", type="f").dump(self.input_features_ordered, formatter="pickle")
+
 
         return train, validation
 
-    def merge_processes(self, inputs: DotDict[any, DotDict[any: np.array]]):
-        """ Helper function to concatenate arrays in double-dict structure """
-        return DotDict({
-            key: np.concatenate([inputs[proc][key] for proc in inputs.keys()])
-            for key in list(inputs.values())[0].keys()
-        })
+    def train(
+        self,
+        task: law.Task,
+        input: Any,
+        output: law.LocalDirectoryTarget,
+    ) -> ak.Array:
+        """ Training function that is called during the MLTraining task """
+        log_memory("start")
+        self.process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
+        # np.random.seed(1337)  # for reproducibility
 
-    def merge_and_shuffle(self, train, validation):
-        """ Helper function to merge and shuffle training and validation inputs """
-        train = self.merge_processes(train)
-        validation = self.merge_processes(validation)
+        # input preparation
+        train, validation = self.load_data(task, input, output)
+        physical_devices = tf.config.list_physical_devices("GPU")
+        try:
+            tf.config.experimental.set_memory_growth(physical_devices[0], True)
+        except:
+            # Invalid device or cannot modify virtual devices once initialized.
+            pass
 
-        # shuffle all events
-        for inp in (train, validation):
-            np.random.shuffle(shuffle_indices := np.array(range(len(inp.inputs))))
-            for key in inp.keys():
-                inp[key] = inp[key][shuffle_indices]
+        # hyperparameter bookkeeping
+        output["mlmodel"].child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
 
-        return train, validation
+        #
+        # model preparation
+        #
+
+        model = self.prepare_ml_model(task)
+        logger.info(model.summary())
+        log_memory("prepare-model")
+
+        #
+        # training
+        #
+
+        self.fit_ml_model(task, model, train, validation, output)
+        log_memory("training")
+        # save the model and history; TODO: use formatter
+        # output.dump(model, formatter="tf_keras_model")
+        model.save(output["mlmodel"].path)
+
+        return
 
     @abstractmethod
     def prepare_ml_model(
@@ -455,167 +303,6 @@ class MLClassifierBase(MLModel):
         """ Function to run the ml training loop. Needs to be implemented in daughter class """
         return
 
-    def create_train_val_plots(
-        self,
-        task: law.Task,
-        model,
-        train: tf.data.Dataset,
-        validation: tf.data.Dataset,
-        output: law.LocalDirectoryTarget,
-    ) -> None:
-        output_stats = output["stats"]
-        stats = {}
-
-        # store all outputs from this function in the 'plots' directory
-        output = output["plots"]
-
-        # store the model history
-        output.child("model_history.pkl", type="f").dump(model.history.history)
-
-        def call_func_safe(func, *args, **kwargs) -> Any:
-            """
-            Small helper to make sure that our training does not fail due to plotting
-            """
-
-            # get the function name without the possibility of raising an error
-            try:
-                func_name = func.__name__
-            except Exception:
-                # default to empty name
-                func_name = ""
-
-            t0 = time.perf_counter()
-
-            try:
-                outp = func(*args, **kwargs)
-                logger.info(f"Function '{func_name}' done; took {(time.perf_counter() - t0):.2f} seconds")
-            except Exception as e:
-                logger.warning(f"Function '{func_name}' failed due to {type(e)}: {e}")
-                outp = None
-
-            return outp
-
-        # get a simple ranking of input variables
-        call_func_safe(get_input_weights, model, output, input_features=self.input_features)
-        call_func_safe(plot_introspection, model, output, validation, output_node=0, input_features=self.input_features)
-
-        log_memory("start plotting")
-        # make some plots of the history
-        for metric, ylabel in (
-            ("loss", "Loss"),
-            ("categorical_accuracy", "Accuracy"),
-            ("weighted_categorical_accuracy", "Weighted Accuracy"),
-        ):
-            call_func_safe(plot_history, model.history.history, output, metric, ylabel)
-
-        # evaluate training and validation sets
-        train.prediction = call_func_safe(predict_numpy_on_batch, model, train.inputs)
-        validation.prediction = call_func_safe(predict_numpy_on_batch, model, validation.inputs)
-
-        # create some confusion matrices
-        call_func_safe(plot_confusion, model, train, output, "train", self.process_insts, stats=stats)
-        call_func_safe(plot_confusion, model, validation, output, "validation", self.process_insts, stats=stats)
-        gc.collect()
-
-        # create some ROC curves
-        call_func_safe(plot_roc_ovr, model, train, output, "train", self.process_insts, stats=stats)
-        call_func_safe(plot_roc_ovr, model, validation, output, "validation", self.process_insts, stats=stats)
-        # call_func_safe(plot_roc_ovo, model, train, output, "train", self.process_insts)
-        # call_func_safe(plot_roc_ovo, model, validation, output, "validation", self.process_insts)
-        gc.collect()
-
-        # create plots for all output nodes
-        call_func_safe(plot_output_nodes, model, train, validation, output, self.process_insts)
-
-        # dump all stats into yaml file
-        output_stats.dump(stats, formatter="yaml")
-
-        return
-
-    def train(
-        self,
-        task: law.Task,
-        input: Any,
-        output: law.LocalDirectoryTarget,
-    ) -> ak.Array:
-        """ Training function that is called during the MLTraining task """
-        # np.random.seed(1337)  # for reproducibility
-
-        physical_devices = tf.config.list_physical_devices("GPU")
-        try:
-            tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        except:
-            # Invalid device or cannot modify virtual devices once initialized.
-            pass
-
-        # hyperparameter bookkeeping
-        output["mlmodel"].child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
-
-        #
-        # input preparation
-        #
-        log_memory("start")
-        train, validation = self.prepare_inputs(task, input, output)
-
-        log_memory("prepare_inputs")
-        # check for infinite values
-        for proc_inst in train.keys():
-            for key in train[proc_inst].keys():
-                if np.any(~np.isfinite(train[proc_inst][key])):
-                    raise Exception(f"Infinite values found in training {key}, process {proc_inst.name}")
-                if np.any(~np.isfinite(validation[proc_inst][key])):
-                    raise Exception(f"Infinite values found in validation {key}, process {proc_inst.name}")
-
-        gc.collect()
-        log_memory("garbage collected")
-        #
-        # model preparation
-        #
-
-        if self.dump_arrays:
-            def dump_arrays(inputs: DotDict[any, DotDict[any, np.array]], output, type: str):
-                for proc_inst, arrays in inputs.items():
-                    outp = output.child(f"{type}_{proc_inst.name}.npz", type="f")
-                    outp.touch()
-                    np.savez(outp.fn, **arrays)
-
-            dump_arrays(train, output["arrays"], "train")
-            dump_arrays(validation, output["arrays"], "validation")
-
-            # return without training
-            return
-
-        model = self.prepare_ml_model(task)
-        logger.info(model.summary())
-        log_memory("prepare-model")
-
-        #
-        # training
-        #
-
-        # merge validation data
-        validation = self.merge_processes(validation)
-        log_memory("val merged")
-
-        # train the model
-        self.fit_ml_model(task, model, train, validation, output)
-        log_memory("training")
-        # save the model and history; TODO: use formatter
-        # output.dump(model, formatter="tf_keras_model")
-        model.save(output["mlmodel"].path)
-
-        # merge train data
-        train = self.merge_processes(train)
-        log_memory("train merged")
-
-        #
-        # direct evaluation as part of MLTraining
-        #
-
-        self.create_train_val_plots(task, model, train, validation, output)
-
-        return
-
     def evaluate(
         self,
         task: law.Task,
@@ -632,8 +319,6 @@ class MLClassifierBase(MLModel):
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
             return events
-
-        logger.info(f"Evaluation of dataset {task.dataset}")
 
         # determine truth label of the dataset (-1 if not used in training)
         ml_truth_label = -1
@@ -810,7 +495,7 @@ class ExampleDNN(MLClassifierBase):
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.ml_weights),
+                (validation.features, validation.target, validation.ml_weights),
             ).batch(self.batchsize)
 
         logger.info("Starting training...")

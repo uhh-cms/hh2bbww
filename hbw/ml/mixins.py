@@ -306,7 +306,7 @@ class ModelFitMixin(CallbacksBase):
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.ml_weights),
+                (validation.features, validation.target, validation.train_weights),
             ).batch(self.batchsize)
 
         log_memory("init")
@@ -338,10 +338,4 @@ class ModelFitMixin(CallbacksBase):
             iterator,
             **model_fit_kwargs,
         )
-        log_memory("loop")
-
-        # delete tf datasets to clear memory
-        del tf_train
-        del iterator
-        del tf_validation
-        log_memory("del")
+        log_memory("done")
