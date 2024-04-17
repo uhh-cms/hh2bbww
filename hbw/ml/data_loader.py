@@ -5,11 +5,13 @@ Collection of classes to load and prepare data for machine learning.
 from __future__ import annotations
 
 import law
+import order as od
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import remove_ak_column
 from columnflow.ml import MLModel
-from hbw.util import timeit
+from hbw.ml.helper import predict_numpy_on_batch
+
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -55,6 +57,9 @@ class MLDatasetLoader:
     - processes: A tuple of strings representing the processes.
     - ml_process_weights: A dictionary containing the relative weights for each process.
     """
+
+    input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
+    evaluation_arrays: tuple = ("prediction",)
 
     def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
         """
@@ -253,115 +258,6 @@ class MLDatasetLoader:
         return data[:train_end], data[train_end:val_end], data[val_end:]
 
 
-class MLMultiProcessData:
-    def __init__(self, ml_model_inst: MLModel, inputs, test_val_train: str, processes: list[str], evaluation_fold: int):
-        self._ml_model_inst = ml_model_inst
-        self._input = inputs
-        self._test_val_train = test_val_train
-        self._processes = processes
-        self._evaluation_fold = evaluation_fold
-
-        self.ml_process_datasets = [
-            MLProcessData(ml_model_inst, inputs, test_val_train, process, evaluation_fold)
-            for process in processes
-        ]
-
-    def __del__(self):
-        """
-        Destructor for the MLMultiProcessData class.
-
-        This method is called when the object is about to be destroyed.
-        It deletes the attributes that are MLProcessData instances to free up memory.
-        """
-        for ml_process_data in self.ml_process_datasets:
-            del ml_process_data
-
-        del self
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._test_val_train}, {self._processes})"
-
-    @timeit
-    def load_all(self):
-        for ml_process_data in self.ml_process_datasets:
-            ml_process_data.load_all()
-
-    @property
-    def n_events_per_process(self) -> int:
-        if hasattr(self, "_n_events_per_process"):
-            return self._n_events_per_process
-
-        self._n_events_per_process = [ml_process_data.n_events for ml_process_data in self.ml_process_datasets]
-        return self._n_events_per_process
-
-    @property
-    def shuffle_indices(self) -> np.ndarray:
-        if hasattr(self, "_shuffle_indices"):
-            return self._shuffle_indices
-
-        n_events_total = np.sum(self.n_events_per_process)
-        self._shuffle_indices = np.random.permutation(n_events_total)
-        return self._shuffle_indices
-
-    def merge_and_shuffle(self, data):
-        output = []
-        for ml_process_data in self.ml_process_datasets:
-            output.append(getattr(ml_process_data, data))
-
-        output = np.concatenate(output)
-        output = output[self.shuffle_indices]
-
-        return output
-
-    @property
-    def features(self) -> np.ndarray:
-        if hasattr(self, "_features"):
-            return self._features
-
-        self._features = self.merge_and_shuffle("features")
-        return self._features
-
-    @property
-    def weights(self) -> np.ndarray:
-        if hasattr(self, "_weights"):
-            return self._weights
-
-        self._weights = self.merge_and_shuffle("weights")
-        return self._weights
-
-    @property
-    def train_weights(self) -> np.ndarray:
-        if hasattr(self, "_train_weights"):
-            return self._train_weights
-
-        self._train_weights = self.merge_and_shuffle("train_weights")
-        return self._train_weights
-
-    @property
-    def val_weights(self) -> np.ndarray:
-        if hasattr(self, "_val_weights"):
-            return self._val_weights
-
-        self._val_weights = self.merge_and_shuffle("val_weights")
-        return self._val_weights
-
-    @property
-    def target(self) -> np.ndarray:
-        if hasattr(self, "_target"):
-            return self._target
-
-        self._target = self.merge_and_shuffle("target")
-        return self._target
-
-    @property
-    def labels(self) -> np.ndarray:
-        if hasattr(self, "_labels"):
-            return self._labels
-
-        self._labels = self.merge_and_shuffle("labels")
-        return self._labels
-
-
 class MLProcessData:
     """
     Helper class to conveniently load ML training data from the MLPreTraining task outputs.
@@ -371,13 +267,30 @@ class MLProcessData:
     Implements the following parameters of the ml_model_inst:
     - negative_weights: A string representing the handling of negative weights.
     """
-    def __init__(self, ml_model_inst: MLModel, inputs, test_val_train: str, process: str, evaluation_fold: int):
+
+    shuffle = False
+
+    input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
+    evaluation_arrays: tuple = ("prediction",)
+
+    def __init__(
+        self,
+        ml_model_inst: MLModel,
+        inputs,
+        test_val_train: str,
+        processes: str,
+        evaluation_fold: int,
+        fold_modus: str = "all_except_evaluation_fold"
+    ):
         self._ml_model_inst = ml_model_inst
 
         self._input = inputs
         self._test_val_train = test_val_train
-        self._process = process
+        self._processes = law.util.make_list(processes)
         self._evaluation_fold = evaluation_fold
+
+        assert fold_modus in ("all_except_evaluation_fold", "evaluation_only", "all")
+        self._fold_modus = fold_modus
 
         # initialize input features
         self.input_features
@@ -396,7 +309,19 @@ class MLProcessData:
         del self
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._test_val_train}, {self._process})"
+        return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._test_val_train}, {self._processes})"
+
+    @property
+    def process_insts(self) -> list[od.process]:
+        return [self._ml_model_inst.config_inst.get_process(proc) for proc in self._processes]
+
+    @property
+    def shuffle_indices(self) -> np.ndarray:
+        if hasattr(self, "_shuffle_indices"):
+            return self._shuffle_indices
+
+        self._shuffle_indices = np.random.permutation(self.n_events)
+        return self._shuffle_indices
 
     @property
     def input_features(self) -> tuple[str]:
@@ -404,9 +329,10 @@ class MLProcessData:
             return self._input_features
 
         # load input features for all folds and check consistency between them and with the ml_model_inst
-        for i in range(self._ml_model_inst.folds):
-            self._input_features = self._input["input_features"][self._process][i].load(formatter="pickle")
-            input_features_sanity_checks(self._ml_model_inst, self._input_features)
+        for process in self._processes:
+            for i in range(self._ml_model_inst.folds):
+                self._input_features = self._input["input_features"][process][i].load(formatter="pickle")
+                input_features_sanity_checks(self._ml_model_inst, self._input_features)
 
         return self._input_features
 
@@ -421,32 +347,48 @@ class MLProcessData:
 
     @property
     def folds(self) -> tuple[int]:
+        """ Property to set the folds for which to merge the data """
         if hasattr(self, "_folds"):
             return self._folds
-        self._folds = list(range(self._ml_model_inst.folds))
-        self._folds.remove(self._evaluation_fold)
+
+        if self._fold_modus == "all_except_evaluation_fold":
+            self._folds = list(range(self._ml_model_inst.folds))
+            self._folds.remove(self._evaluation_fold)
+        elif self._fold_modus == "evaluation_only":
+            self._folds = [self._evaluation_fold]
+        elif self._fold_modus == "all":
+            self._folds = list(range(self._ml_model_inst.folds))
+        else:
+            raise Exception(f"unknown fold modus {self._fold_modus} for MLProcessData")
         return self._folds
 
+    @law.decorator.timeit()
     def load_all(self):
         """
         Convenience function to load all data into memory.
         """
-        logger.info(f"Loading all data for process {self._process} in {self._test_val_train} set in memory.")
+        logger.info(f"Loading all data for processes {self._processes} in {self._test_val_train} set in memory.")
         self.features
         self.weights
         self.train_weights
         self.val_weights
         self.target
         self.labels
+        # self.prediction
 
     def load_data(self, data_str: str) -> np.ndarray:
         data = []
-        for fold in self.folds:
-            fold_data = self._input[data_str][self._test_val_train][self._process][fold].load(formatter="numpy")
-            if np.any(~np.isfinite(fold_data)):
-                raise Exception(f"Found non-finite values in {data_str} for {self._process} in fold {fold}.")
-            data.append(fold_data)
-        return np.concatenate(data)
+        for process in self._processes:
+            for fold in self.folds:
+                fold_data = self._input[data_str][self._test_val_train][process][fold].load(formatter="numpy")
+                if np.any(~np.isfinite(fold_data)):
+                    raise Exception(f"Found non-finite values in {data_str} for {process} in fold {fold}.")
+                data.append(fold_data)
+
+        data = np.concatenate(data)
+        if self.shuffle:
+            data = data[self.shuffle_indices]
+        return data
 
     @property
     def features(self) -> np.ndarray:
@@ -525,3 +467,19 @@ class MLProcessData:
 
         self._labels = self.load_data("labels")
         return self._labels
+
+    @property
+    def prediction(self) -> np.ndarray:
+        if hasattr(self, "_prediction"):
+            return self._prediction
+
+        if "prediction" in self._input.keys():
+            # load prediction if possible
+            self._prediction = self.load_data("prediction")
+        else:
+            # calcluate prediction if needed
+            if not hasattr(self._ml_model_inst, "trained_model"):
+                raise Exception("No trained model found in the MLModel instance. Cannot calculate prediction.")
+            self._prediction = predict_numpy_on_batch(self._ml_model_inst.trained_model, self.features)
+
+        return self._prediction
