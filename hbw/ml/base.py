@@ -170,6 +170,7 @@ class MLClassifierBase(MLModel):
         # TODO: cleanup (produce plots, stats in separate task)
         outp = {
             "mlmodel": target,
+            "plots": target.child("plots", type="d", optional=True),
             "checkpoint": target.child("checkpoint", type="d", optional=True),
         }
 

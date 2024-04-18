@@ -8,7 +8,7 @@ from __future__ import annotations
 
 
 import time
-from typing import Hashable, Iterable, Callable
+from typing import Hashable, Iterable, Callable, Any
 from functools import wraps
 import tracemalloc
 
@@ -313,3 +313,27 @@ def timeit_multiple(func):
         _logger.info(f"{func.__name__} has been run {func.total_calls} times ({func.total_time:.4f} seconds)")
         return result
     return timeit_wrapper
+
+
+def call_func_safe(func, *args, **kwargs) -> Any:
+    """
+    Small helper to make sure that our training does not fail due to plotting
+    """
+
+    # get the function name without the possibility of raising an error
+    try:
+        func_name = func.__name__
+    except Exception:
+        # default to empty name
+        func_name = ""
+
+    t0 = time.perf_counter()
+
+    try:
+        outp = func(*args, **kwargs)
+        _logger.info(f"Function '{func_name}' done; took {(time.perf_counter() - t0):.2f} seconds")
+    except Exception as e:
+        _logger.warning(f"Function '{func_name}' failed due to {type(e)}: {e}")
+        outp = None
+
+    return outp

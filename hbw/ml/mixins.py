@@ -10,7 +10,7 @@ import law
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
 
-from hbw.util import log_memory
+from hbw.util import log_memory, call_func_safe
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -301,6 +301,8 @@ class ModelFitMixin(CallbacksBase):
         Training loop but with custom dataset
         """
         from hbw.ml.tf_util import MultiDataset
+        from hbw.ml.plotting import plot_history
+
         log_memory("start")
 
         with tf.device("CPU"):
@@ -338,4 +340,11 @@ class ModelFitMixin(CallbacksBase):
             iterator,
             **model_fit_kwargs,
         )
-        log_memory("done")
+
+        # create history plots
+        for metric, ylabel in (
+            ("loss", "Loss"),
+            ("categorical_accuracy", "Accuracy"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy"),
+        ):
+            call_func_safe(plot_history, model.history.history, output["plots"], metric, ylabel)

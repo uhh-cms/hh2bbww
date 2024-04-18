@@ -545,7 +545,6 @@ class PlotMLResultsSingleFold(
         # imports
         from hbw.ml.data_loader import MLProcessData
         from hbw.ml.plotting import (
-            # plot_history,
             plot_confusion,
             plot_roc_ovr,
             plot_roc_ovo,
@@ -584,9 +583,6 @@ class PlotMLResultsSingleFold(
             "val": MLProcessData(self.ml_model_inst, input_files, "val", self.ml_model_inst.processes, self.fold),
             "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
         })
-
-
-        # training history... either do this during training or store history
 
         for data_split in ("train", "val", "test"):
             # confusion matrix
