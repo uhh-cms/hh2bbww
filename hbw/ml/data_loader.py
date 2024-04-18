@@ -11,7 +11,7 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import remove_ak_column
 from columnflow.ml import MLModel
 from hbw.ml.helper import predict_numpy_on_batch
-
+from hbw.util import timeit
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -55,7 +55,6 @@ class MLDatasetLoader:
     - input_features: A set of strings representing the input features we want to keep.
     - train_val_test_split: A tuple of floats representing the split of the data into training, validation, and testing.
     - processes: A tuple of strings representing the processes.
-    - ml_process_weights: A dictionary containing the relative weights for each process.
     """
 
     input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
@@ -172,6 +171,9 @@ class MLDatasetLoader:
 
     @property
     def train_weights(self) -> np.ndarray:
+        """
+        Weighting such that each event has roughly the same weight
+        """
         if hasattr(self, "_train_weights"):
             return self._train_weights
 
@@ -186,6 +188,9 @@ class MLDatasetLoader:
 
     @property
     def val_weights(self) -> np.ndarray:
+        """
+        Weighting such that each process has roughly the same sum of weights
+        """
         if hasattr(self, "_validation_weights"):
             return self._validation_weights
 
@@ -193,19 +198,11 @@ class MLDatasetLoader:
             raise Exception("cannot determine val weights without stats")
 
         processes = self.ml_model_inst.processes
-        # sum_abs_weights = self.stats[proc_inst.name]["sum_abs_weights"]
-        num_events = self.stats[self.process]["num_events"]
+        sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
         num_events_per_process = {proc: self.stats[proc]["num_events"] for proc in processes}
-        ml_process_weights = self.ml_model_inst.ml_process_weights
 
-        # reweight validation events to match the number of events used in the training multi_dataset
-        weights_scaler = (
-            min([num_events_per_process[proc] / ml_process_weights[proc] for proc in processes]) *
-            sum([ml_process_weights[proc] for proc in processes])
-        )
-        self._validation_weights = (
-            self.train_weights * weights_scaler / num_events * ml_process_weights[self.process]
-        )
+        self._validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
+
         return self._validation_weights
 
     @property
@@ -362,7 +359,7 @@ class MLProcessData:
             raise Exception(f"unknown fold modus {self._fold_modus} for MLProcessData")
         return self._folds
 
-    @law.decorator.timeit()
+    @timeit
     def load_all(self):
         """
         Convenience function to load all data into memory.
