@@ -74,7 +74,6 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ]
 
     store_name: str = "inputs_inclusive"
-    dump_arrays: bool = False
 
     folds: int = 5
     validation_fraction: float = 0.20

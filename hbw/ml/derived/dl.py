@@ -74,10 +74,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ]
 
     store_name: str = "inputs_inclusive"
-    dump_arrays: bool = False
 
     folds: int = 5
-    validation_fraction: float = 0.20
     negative_weights: str = "handle"
 
     # overwriting DenseModelMixin parameters
@@ -150,9 +148,20 @@ dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
 })
+dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l22post"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+})
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+})
+
+# model for testing
+dl_22.derive("dl_22_v1")
+dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
 })
 
 cls_dict_test = {

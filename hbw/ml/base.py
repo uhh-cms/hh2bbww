@@ -41,18 +41,26 @@ class MLClassifierBase(MLModel):
     # set some defaults, can be overwritten by subclasses or via cls_dict
     # NOTE: the order of processes is crucial! Do not change after training
     processes: list = ["tt", "st"]
-    # NOTE: the order of input_features should not be relevant. We might want to change this to a set
     input_features: set = {"mli_ht", "mli_n_jet"}
+
+    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when changing input features
+    store_name: str = "inputs_base"
+
+    # identifier of the PreMLTask output. Needs to be changed when changing data loader or it's dependencies
+    preml_store_name: str = "preml_base"
+
+    # Class for data loading and it's dependencies.
+    data_loader = MLDatasetLoader
     # NOTE: we split each fold into train, val, test + do k-folding, so we have a 4-way split in total
     # TODO: test whether setting "test" to 0 is working
     train_val_test_split: tuple = (0.75, 0.15, 0.10)
-    store_name: str = "inputs_base"
+    folds: int = 5
+
+    # training-specific parameters. Only need to re-run training when changing these
     ml_process_weights: dict = {"st": 2, "tt": 1}
     negative_weights: str = "handle"
     epochs: int = 50
     batchsize: int = 2 ** 10
-    folds: int = 5
-    data_loader = MLDatasetLoader
 
     # parameters to add into the `parameters` attribute and store in a yaml file
     bookkeep_params: list[str] = [
