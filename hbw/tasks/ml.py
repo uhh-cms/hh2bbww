@@ -27,6 +27,7 @@ from columnflow.tasks.framework.mixins import (
     SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.framework.decorators import view_output_plots
 from columnflow.util import dev_sandbox, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.tasks.ml import MergeMLEvents, MergeMLStats, MLTraining
@@ -111,6 +112,9 @@ class MLPreTraining(
     - input_arrays: list of input arrays to be loaded. Each array is a string, pointing to a property
     of the data_loader class that returns the data.
     """
+
+    # never run this task on GPU
+    htcondor_gpus = 0
 
     allow_empty_ml_model = False
 
@@ -265,6 +269,9 @@ class MLPreTraining(
             self.target(f"input_features_{process}_fold{self.fold}of{k}.pickle")
         )}}
 
+        # the stats dict is created per process+fold, but should always be identical, therefore we store it only once
+        outputs["stats"] = self.target("stats.json")
+
         return outputs
 
     def merge_stats(self, inputs) -> dict:
@@ -313,6 +320,9 @@ class MLPreTraining(
         # load stats and input data
         stats = self.merge_stats(inputs)
         events = self.merge_datasets(inputs)[process]
+
+        # dump stats
+        outputs["stats"].dump(stats, formatter="json")
 
         # initialize the DatasetLoader
         ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
@@ -535,12 +545,11 @@ class PlotMLResultsSingleFold(
     def output(self):
         return {
             "plots": self.target("plots", dir=True),
-            "stats": self.target("stats.yaml"),
+            "stats": self.target("stats.json"),
         }
 
     @law.decorator.log
-    @law.decorator.localize
-    @law.decorator.safe_output
+    @view_output_plots
     def run(self):
         # imports
         from hbw.ml.data_loader import MLProcessData
@@ -631,4 +640,4 @@ class PlotMLResultsSingleFold(
         )
 
         # dump all stats into yaml file
-        output["stats"].dump(stats, formatter="yaml")
+        output["stats"].dump(stats, formatter="json")
