@@ -20,6 +20,8 @@ tf = maybe_import("tensorflow")
 
 logger = law.logger.get_logger(__name__)
 
+cms_llabel = "Simulation Work in progress"
+
 
 def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
     """
@@ -67,20 +69,22 @@ def plot_introspection(
     inputs,
     output_node: int = 0,
     input_features: list | None = None,
+    stats: dict | None = None,
 ):
     from hbw.ml.introspection import sensitivity_analysis, gradient_times_input, shap_ranking
 
     # get only signal events for now
-    inputs = inputs.inputs[inputs.label == 0]
+    inputs = inputs.features[inputs.labels == 0]
 
-    shap_ranking_dict, shap_values = shap_ranking(model, inputs, output_node, input_features)
+    shap_ranking_dict, shap_values = shap_ranking(model.trained_model, inputs, output_node, input_features)
 
     rankings = {
         "SHAP": shap_ranking_dict,
-        "Sensitivity Analysis": sensitivity_analysis(model, inputs, output_node, input_features),
-        "Gradient * Input": gradient_times_input(model, inputs, output_node, input_features),
+        "Sensitivity Analysis": sensitivity_analysis(model.trained_model, inputs, output_node, input_features),
+        "Gradient * Input": gradient_times_input(model.trained_model, inputs, output_node, input_features),
     }
-    logger.info(rankings)
+    if stats:
+        stats["rankings"] = rankings
     fig, ax = barplot_from_multidict(rankings)
 
     output.child("rankings.pdf", type="f").dump(fig, formatter="mpl")
@@ -112,7 +116,7 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False)
+    mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False)
 
     plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -165,7 +169,7 @@ def plot_confusion(
 
     # Create confusion matrix and normalizes it over predicted (columns)
     confusion = confusion_matrix(
-        y_true=inputs.label,
+        y_true=inputs.labels,
         y_pred=np.argmax(inputs.prediction, axis=1),
         sample_weight=inputs.weights,
     )
@@ -196,7 +200,7 @@ def plot_confusion(
     ConfusionMatrixDisplay(confusion, display_labels=labels).plot(ax=ax)
 
     ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
-    mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False, loc=0)
+    mplhep.cms.label(ax=ax, llabel=cms_llabel, fontsize=20, data=False, loc=0)
 
     plt.tight_layout()
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
@@ -221,7 +225,7 @@ def plot_roc_ovr(
 
     fig, ax = plt.subplots()
     for i in range(n_classes):
-        y_true = (inputs.label == i)
+        y_true = (inputs.labels == i)
         fpr, tpr, thresholds = roc_curve(
             y_true=y_true,
             # y_true=inputs.target[:, i],
@@ -289,8 +293,8 @@ def plot_roc_ovo(
             if i == j:
                 continue
 
-            event_mask = (inputs.label == i) | (inputs.label == j)
-            y_true = (inputs.label[event_mask] == i)
+            event_mask = (inputs.labels == i) | (inputs.labels == j)
+            y_true = (inputs.labels[event_mask] == i)
             y_score = inputs.prediction[event_mask, i]
 
             fpr, tpr, thresholds = roc_curve(
@@ -354,7 +358,7 @@ def plot_output_nodes(
 
         for input_type, inputs in (("train", train), ("validation", validation)):
             for j in range(n_classes):
-                mask = (inputs.label == j)
+                mask = (inputs.labels == j)
                 # mask = (np.argmax(inputs.target, axis=1) == j)
                 fill_kwargs = {
                     "type": input_type,
@@ -410,7 +414,7 @@ def plot_output_nodes(
         # plot validation scores, scaled to train dataset
         (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
 
-        mplhep.cms.label(ax=ax, llabel="Simulation Work in progress", data=False, loc=0)
+        mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False, loc=0)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 

@@ -18,19 +18,15 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    # SelectorMixin,
+    SelectorMixin,
     CalibratorsMixin,
-    # ProducerMixin,
     ProducersMixin,
     MLModelTrainingMixin,
-    # MLModelMixin,
+    MLModelMixin,
     MLModelsMixin,
-    # ChunkedIOMixin,
     SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
-# from columnflow.tasks.reduction import MergeReducedEventsUser, MergeReducedEvents
-# from columnflow.tasks.production import ProduceColumns
 from columnflow.util import dev_sandbox, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.tasks.ml import MergeMLEvents, MergeMLStats, MLTraining
@@ -199,7 +195,6 @@ class MLPreTraining(
     def requires(self):
 
         reqs = {}
-
         if not self.is_branch():
             return reqs
 
@@ -261,7 +256,7 @@ class MLPreTraining(
                 )}}
                 for train_val_test in ("train", "val", "test")
             }
-            for input_array in self.ml_model_inst.input_arrays
+            for input_array in self.ml_model_inst.data_loader.input_arrays
         }
 
         # NOTE: this is stored per fold and process, since we cannot do the check that they are all
@@ -322,7 +317,7 @@ class MLPreTraining(
         # initialize the DatasetLoader
         ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
 
-        for input_array in self.ml_model_inst.input_arrays:
+        for input_array in self.ml_model_inst.data_loader.input_arrays:
             logger.info(f"loading data for input array {input_array}")
             # load data and split into training, validation, and testing
             train, val, test = ml_dataset.load_split_data(input_array)
@@ -333,3 +328,311 @@ class MLPreTraining(
             outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
 
             outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")
+
+
+class MLEvaluationSingleFold(
+    HBWTask,
+    MLModelMixin,
+    ProducersMixin,
+    SelectorMixin,
+    CalibratorsMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    This task creates evaluation outputs for a single trained MLModel.
+    """
+    sandbox = None
+
+    allow_empty_ml_model = False
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MLPreTraining=MLPreTraining,
+        MLTraining=MLTraining,
+    )
+
+    fold = luigi.IntParameter(
+        default=0,
+        description="the fold index of the MLTraining to use; must be compatible with the "
+        "number of folds defined in the ML model; default: 0",
+    )
+
+    def create_branch_map(self):
+        return [
+            DotDict({"process": process})
+            for process in self.ml_model_inst.processes
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # set the sandbox
+        self.sandbox = self.ml_model_inst.sandbox(self)
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["models"] = self.reqs.MLTraining.req_different_branching(
+            self,
+            branch=self.fold,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+        )
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+
+        return reqs
+
+    def requires(self):
+        reqs = {}
+        if not self.is_branch():
+            return reqs
+
+        reqs["training"] = self.reqs.MLTraining.req_different_branching(
+            self,
+            branch=self.fold,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+        )
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        return reqs
+
+    def output(self):
+        k = self.ml_model_inst.folds
+        process = self.branch_data["process"]
+
+        outputs = {
+            evaluation_array: {
+                train_val_test: {process: {fold: (
+                    self.target(f"{evaluation_array}_{train_val_test}_{process}_fold{fold}of{k}.npy")
+                ) for fold in range(self.ml_model_inst.folds)
+                }}
+                for train_val_test in ("train", "val", "test")
+            }
+            for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays
+        }
+
+        return outputs
+
+    @law.decorator.log
+    @law.decorator.localize
+    @law.decorator.safe_output
+    def run(self):
+        from hbw.ml.data_loader import MLProcessData
+
+        # prepare inputs and outputs
+        inputs = self.input()
+        output = self.output()
+        process = self.branch_data["process"]
+
+        # open trained model and assign to ml_model_inst
+        training_results = self.ml_model_inst.open_model(inputs["training"])
+        self.ml_model_inst.trained_model = training_results["model"]
+        self.ml_model_inst.best_model = training_results["best_model"]
+
+        self.ml_model_inst.process_insts = [
+            self.ml_model_inst.config_inst.get_process(proc)
+            for proc in self.ml_model_inst.processes
+        ]
+
+        input_files = inputs["preml"]["collection"]
+        input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
+
+        for data_split in ("train", "val", "test"):
+            for fold in range(self.ml_model_inst.folds):
+                data = MLProcessData(
+                    self.ml_model_inst, input_files, data_split, process, fold, fold_modus="evaluation_only",
+                )
+
+                for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays:
+                    # store loaded data
+                    output[evaluation_array][data_split][self.branch_data["process"]][fold].dump(
+                        getattr(data, evaluation_array), formatter="numpy",
+                    )
+
+
+class PlotMLResultsSingleFold(
+    HBWTask,
+    MLModelMixin,
+    ProducersMixin,
+    SelectorMixin,
+    CalibratorsMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    This task creates plots for the results of a single trained MLModel.
+    """
+    sandbox = None
+
+    allow_empty_ml_model = False
+
+    # strategy for handling missing source columns when adding aliases on event chunks
+    missing_column_alias_strategy = "original"
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MLPreTraining=MLPreTraining,
+        MLEvaluationSingleFold=MLEvaluationSingleFold,
+        MLTraining=MLTraining,
+    )
+
+    fold = luigi.IntParameter(
+        default=0,
+        description="the fold index of the MLTraining to use; must be compatible with the "
+        "number of folds defined in the ML model; default: 0",
+    )
+
+    def create_branch_map(self):
+        return {0: None}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # set the sandbox
+        self.sandbox = self.ml_model_inst.sandbox(self)
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["training"] = self.reqs.MLTraining.req_different_branching(
+            self,
+            branch=self.fold,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+        )
+
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        reqs["mlpred"] = self.reqs.MLEvaluationSingleFold.req_different_branching(self, branch=-1)
+
+        return reqs
+
+    def requires(self):
+        reqs = {
+            "training": self.reqs.MLTraining.req_different_branching(
+                self,
+                configs=(self.config_inst.name,),
+                calibrators=(self.calibrators,),
+                selectors=(self.selector,),
+                producers=(self.producers,),
+                branch=self.fold,
+            ),
+        }
+
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        reqs["mlpred"] = self.reqs.MLEvaluationSingleFold.req_different_branching(self, branch=-1)
+
+        return reqs
+
+    def output(self):
+        return {
+            "plots": self.target("plots", dir=True),
+            "stats": self.target("stats.yaml"),
+        }
+
+    @law.decorator.log
+    @law.decorator.localize
+    @law.decorator.safe_output
+    def run(self):
+        # imports
+        from hbw.ml.data_loader import MLProcessData
+        from hbw.ml.plotting import (
+            # plot_history,
+            plot_confusion,
+            plot_roc_ovr,
+            plot_roc_ovo,
+            plot_output_nodes,
+            plot_introspection,
+        )
+
+        # prepare inputs and outputs
+        inputs = self.input()
+        output = self.output()
+        stats = {}
+
+        # this initializes some process information (e.g. proc_inst.x.ml_id), but feels kind of hacky
+        self.ml_model_inst.datasets(self.config_inst)
+
+        # open all model files
+        training_results = self.ml_model_inst.open_model(inputs["training"])
+        self.ml_model_inst.trained_model = training_results["model"]
+        self.ml_model_inst.best_model = training_results["best_model"]
+
+        self.ml_model_inst.process_insts = [
+            self.ml_model_inst.config_inst.get_process(proc)
+            for proc in self.ml_model_inst.processes
+        ]
+
+        # load data
+        input_files_preml = inputs["preml"]["collection"]
+        input_files_mlpred = inputs["mlpred"]["collection"]
+        input_files = law.util.merge_dicts(
+            *[input_files_preml[key] for key in input_files_preml.keys()],
+            *[input_files_mlpred[key] for key in input_files_mlpred.keys()],
+            deep=True,
+        )
+        data = DotDict({
+            "train": MLProcessData(self.ml_model_inst, input_files, "train", self.ml_model_inst.processes, self.fold),
+            "val": MLProcessData(self.ml_model_inst, input_files, "val", self.ml_model_inst.processes, self.fold),
+            "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
+        })
+
+
+        # training history... either do this during training or store history
+
+        for data_split in ("train", "val", "test"):
+            # confusion matrix
+            plot_confusion(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.process_insts,
+                stats,
+            )
+
+            # ROC curves
+            plot_roc_ovr(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.process_insts,
+                stats,
+            )
+            plot_roc_ovo(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.process_insts,
+            )
+
+        # output nodes
+        plot_output_nodes(
+            self.ml_model_inst,
+            data.train,
+            data.val,
+            output["plots"],
+            self.ml_model_inst.process_insts,
+        )
+
+        # introspection plot for variable importance ranking
+        plot_introspection(
+            self.ml_model_inst,
+            output["plots"],
+            data.test,
+            input_features=self.ml_model_inst.input_features_ordered,
+            stats=stats,
+        )
+
+        # dump all stats into yaml file
+        output["stats"].dump(stats, formatter="yaml")

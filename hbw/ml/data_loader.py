@@ -280,7 +280,7 @@ class MLProcessData:
         test_val_train: str,
         processes: str,
         evaluation_fold: int,
-        fold_modus: str = "all_except_evaluation_fold"
+        fold_modus: str = "all_except_evaluation_fold",
     ):
         self._ml_model_inst = ml_model_inst
 
@@ -374,6 +374,7 @@ class MLProcessData:
         self.val_weights
         self.target
         self.labels
+        # do not load prediction because it can only be loaded after training
         # self.prediction
 
     def load_data(self, data_str: str) -> np.ndarray:
