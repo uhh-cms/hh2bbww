@@ -342,6 +342,8 @@ def add_config(
     cfg.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
+    cfg.add_shift(name="mtop_up", id=5, type="shape", tags={"disjoint_from_nominal"})
+    cfg.add_shift(name="mtop_down", id=6, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="minbias_xs_up", id=7, type="shape")
     cfg.add_shift(name="minbias_xs_down", id=8, type="shape")
     add_shift_aliases(
@@ -651,6 +653,9 @@ def add_config(
 
         if not dataset.has_tag("skip_pdf"):
             dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
+
+        if dataset.has_tag("is_ttbar"):
+            dataset.x.event_weights["top_pt_weight"] = get_shifts("top_pt")
 
     def reduce_version(cls, inst, params):
         # per default, use the version set on the command line
