@@ -9,6 +9,7 @@ import law
 import order as od
 
 from hbw.util import round_sig
+from columnflow.ml import MLModel
 from columnflow.util import maybe_import, DotDict
 
 
@@ -64,8 +65,8 @@ def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights:
 
 
 def plot_introspection(
-    model,
-    output,
+    model: MLModel,
+    output: law.FileSystemDirectoryTarget,
     inputs,
     output_node: int = 0,
     input_features: list | None = None,
@@ -83,8 +84,9 @@ def plot_introspection(
         "Sensitivity Analysis": sensitivity_analysis(model.trained_model, inputs, output_node, input_features),
         "Gradient * Input": gradient_times_input(model.trained_model, inputs, output_node, input_features),
     }
-    if stats:
-        stats["rankings"] = rankings
+    # TODO: dump rankings in stats json (need to convert float32 into str for json compatibility)
+    # if stats:
+    #     stats["rankings"] = rankings
     fig, ax = barplot_from_multidict(rankings)
 
     output.child("rankings.pdf", type="f").dump(fig, formatter="mpl")
@@ -151,7 +153,7 @@ def gather_confusion_stats(
 
 
 def plot_confusion(
-        model: tf.keras.models.Model,
+        model: MLModel,
         inputs: DotDict,
         output: law.FileSystemDirectoryTarget,
         input_type: str,
@@ -207,7 +209,7 @@ def plot_confusion(
 
 
 def plot_roc_ovr(
-        model: tf.keras.models.Model,
+        model: MLModel,
         inputs: DotDict,
         output: law.FileSystemDirectoryTarget,
         input_type: str,
@@ -265,7 +267,7 @@ def plot_roc_ovr(
 
 
 def plot_roc_ovo(
-        model: tf.keras.models.Model,
+        model: MLModel,
         inputs: DotDict,
         output: law.FileSystemDirectoryTarget,
         input_type: str,
@@ -326,7 +328,7 @@ def plot_roc_ovo(
 
 
 def plot_output_nodes(
-        model: tf.keras.models.Model,
+        model: MLModel,
         train: DotDict,
         validation: DotDict,
         output: law.FileSystemDirectoryTarget,
@@ -416,6 +418,102 @@ def plot_output_nodes(
 
         mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False, loc=0)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
+
+
+def plot_input_features(
+        model: MLModel,
+        train: DotDict,
+        validation: DotDict,
+        output: law.FileSystemDirectoryTarget,
+        process_insts: tuple[od.Process],
+        shape_norm: bool = True,
+        y_log: bool = True,
+):
+    """
+    Function that creates a plot for each ML input feature, displaying all processes per plot.
+    """
+
+    # use CMS plotting style
+    plt.style.use(mplhep.style.CMS)
+
+    n_processes = len(process_insts)
+    input_features = model.input_features_ordered
+
+    for i, feature_name in enumerate(input_features):
+        fig, ax = plt.subplots()
+
+        # NOTE: we could get the variable inst from the feature name
+        variable_inst = model.config_inst.get_variable(feature_name)
+        h = (
+            hist.Hist.new
+            .StrCat(["train", "validation"], name="type")
+            .IntCat([], name="process", growth=True)
+            .Var(variable_inst.bin_edges, name=feature_name, label=variable_inst.get_full_x_title())
+            .Weight()
+        )
+
+        for input_type, inputs in (("train", train), ("validation", validation)):
+            for j in range(n_processes):
+                mask = (inputs.labels == j)
+                fill_kwargs = {
+                    "type": input_type,
+                    "process": j,
+                    feature_name: inputs.features[:, i][mask],
+                    "weight": inputs.weights[mask],
+                }
+                h.fill(**fill_kwargs)
+
+        plot_kwargs = {
+            "ax": ax,
+            "label": [proc_inst.label for proc_inst in process_insts],
+            "color": [proc_inst.color for proc_inst in process_insts],
+        }
+
+        # dummy legend entries
+        plt.hist([], histtype="step", label="Training", color="black")
+        plt.hist([], histtype="step", label="Validation", linestyle="dotted", color="black")
+
+        # get the correct normalization factors
+        if shape_norm:
+            scale_train = np.array([
+                h[{"type": "train", "process": i}].sum().value for i in range(n_processes)
+            ])[:, np.newaxis]
+            scale_val = np.array([
+                h[{"type": "validation", "process": i}].sum().value for i in range(n_processes)
+            ])[:, np.newaxis]
+        else:
+            scale_train = 1
+            scale_val = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
+
+        # plot training scores
+        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs)
+
+        # legend
+        ax.legend(loc="best")
+
+        # axis styling
+        ax_kwargs = {
+            "ylabel": "Entries",
+            "xlim": (variable_inst.x_min, variable_inst.x_max),
+            "yscale": "log" if y_log else "linear",
+        }
+        # set y_lim to appropriate ranges based on the yscale
+        y_max = ax.get_ylim()[1]
+        if y_log:
+            ax_kwargs["ylim"] = (y_max * 1e-4, y_max * 2)
+        else:
+            ax_kwargs["ylim"] = (0.00001, y_max)
+
+        ax.set(**ax_kwargs)
+
+        # plot validation scores, scaled to train dataset
+        (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
+
+        mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False, loc=0)
+        try:
+            output.child(f"Input_{feature_name}.pdf", type="f").dump(fig, formatter="mpl")
+        except Exception:
+            logger.warning(f"Feature {feature_name} plot does not like to be stored for some reason?")
 
 
 def get_input_weights(model, output, input_features: list | None = None):

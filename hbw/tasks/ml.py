@@ -558,6 +558,7 @@ class PlotMLResultsSingleFold(
             plot_roc_ovr,
             plot_roc_ovo,
             plot_output_nodes,
+            plot_input_features,
             plot_introspection,
         )
 
@@ -593,6 +594,10 @@ class PlotMLResultsSingleFold(
             "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
         })
 
+        # create plots
+        # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since
+        # input reading is quite fast, while producing certain plots takes a long time
+
         for data_split in ("train", "val", "test"):
             # confusion matrix
             plot_confusion(
@@ -620,6 +625,15 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.process_insts,
             )
+
+        # input features
+        plot_input_features(
+            self.ml_model_inst,
+            data.train,
+            data.val,
+            output["plots"],
+            self.ml_model_inst.process_insts,
+        )
 
         # output nodes
         plot_output_nodes(
