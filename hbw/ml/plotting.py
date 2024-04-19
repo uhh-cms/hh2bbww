@@ -8,7 +8,7 @@ import functools
 import law
 import order as od
 
-from hbw.util import round_sig
+from hbw.util import round_sig, timeit
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, DotDict
 
@@ -64,6 +64,7 @@ def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights:
     return fig, ax
 
 
+@timeit
 def plot_introspection(
     model: MLModel,
     output: law.FileSystemDirectoryTarget,
@@ -93,6 +94,7 @@ def plot_introspection(
     return fig, ax
 
 
+@timeit
 def plot_history(
     history,
     output: law.FileSystemDirectoryTarget,
@@ -152,6 +154,7 @@ def gather_confusion_stats(
         stats[f"S_over_sqrtB_{input_type}_{proc_name}"] = round_sig(S / sqrt(B), 4, float)
 
 
+@timeit
 def plot_confusion(
         model: MLModel,
         inputs: DotDict,
@@ -208,6 +211,7 @@ def plot_confusion(
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
 
+@timeit
 def plot_roc_ovr(
         model: MLModel,
         inputs: DotDict,
@@ -266,6 +270,7 @@ def plot_roc_ovr(
             stats[f"AUC_{input_type}_{process_insts[i].name}"] = round_sig(auc_score, 4, float)
 
 
+@timeit
 def plot_roc_ovo(
         model: MLModel,
         inputs: DotDict,
@@ -327,6 +332,7 @@ def plot_roc_ovo(
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
 
+@timeit
 def plot_output_nodes(
         model: MLModel,
         train: DotDict,
@@ -420,6 +426,7 @@ def plot_output_nodes(
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
+@timeit
 def plot_input_features(
         model: MLModel,
         train: DotDict,

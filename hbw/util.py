@@ -295,7 +295,7 @@ def timeit(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         total_time = end_time - start_time
-        _logger.info(f"Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds")
+        _logger.info(f"Function '{func.__name__}' done; took {round_sig(total_time)} seconds")
         return result
     return timeit_wrapper
 
@@ -310,7 +310,7 @@ def timeit_multiple(func):
         end_time = time.perf_counter()
         total_time = end_time - start_time
         func.total_time = getattr(func, "total_time", 0) + total_time
-        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({func.total_time:.4f} seconds)")
+        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
         return result
     return timeit_wrapper
 

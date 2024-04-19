@@ -549,6 +549,7 @@ class PlotMLResultsSingleFold(
         }
 
     @law.decorator.log
+    @law.decorator.timeit()
     @view_output_plots
     def run(self):
         # imports
