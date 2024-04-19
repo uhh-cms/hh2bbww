@@ -26,9 +26,7 @@ from hbw.tasks.ml import MLPreTraining
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-tf = maybe_import("tensorflow")
 pickle = maybe_import("pickle")
-keras = maybe_import("tensorflow.keras")
 
 logger = law.logger.get_logger(__name__)
 
@@ -191,6 +189,8 @@ class MLClassifierBase(MLModel):
         return outp
 
     def open_model(self, target: law.LocalDirectoryTarget) -> dict[str, Any]:
+        import tensorflow as tf
+
         models = {}
 
         models["input_features"] = tuple(target["mlmodel"].child(
@@ -252,6 +252,7 @@ class MLClassifierBase(MLModel):
         output: law.LocalDirectoryTarget,
     ) -> ak.Array:
         """ Training function that is called during the MLTraining task """
+        import tensorflow as tf
         log_memory("start")
         self.process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
         # np.random.seed(1337)  # for reproducibility
@@ -407,6 +408,7 @@ class ExampleDNN(MLClassifierBase):
         """
         Minimal implementation of a ML model
         """
+        import tesorflow.keras as keras
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
@@ -450,6 +452,7 @@ class ExampleDNN(MLClassifierBase):
         """
         Minimal implementation of training loop.
         """
+        import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
 
         with tf.device("CPU"):

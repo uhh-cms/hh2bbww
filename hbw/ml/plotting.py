@@ -17,7 +17,6 @@ np = maybe_import("numpy")
 plt = maybe_import("matplotlib.pyplot")
 mplhep = maybe_import("mplhep")
 hist = maybe_import("hist")
-tf = maybe_import("tensorflow")
 
 logger = law.logger.get_logger(__name__)
 

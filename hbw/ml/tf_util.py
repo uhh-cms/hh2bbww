@@ -17,7 +17,6 @@ logger = law.logger.get_logger(__name__)
 
 
 class MultiDataset(object):
-
     def __init__(
         self,
         data: DotDict[od.Process, DotDict[str, np.array]],
