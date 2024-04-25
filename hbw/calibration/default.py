@@ -52,8 +52,7 @@ def base_init(self: Calibrator) -> None:
         self.calibrators.append(bjet_regression)
 
     # run JER only on MC
-    # and not for 2022 (TODO: update as soon as JER is done for Summer22)
-    if self.dataset_inst.is_mc and not self.config_inst.campaign.x.year == 2022:
+    if self.dataset_inst.is_mc:
         self.calibrators.append(jer)
 
     self.uses |= set(self.calibrators)

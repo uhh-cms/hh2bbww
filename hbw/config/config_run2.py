@@ -221,7 +221,7 @@ def add_config(
     # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
         "campaign": jerc_campaign,
-        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V2"}[year],
+        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
         "jet_type": jet_type,
     })
 
@@ -458,7 +458,7 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-0263d239"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
