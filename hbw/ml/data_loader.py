@@ -54,7 +54,7 @@ class MLDatasetLoader:
     Depends on following parameters of the ml_model_inst:
     - input_features: A set of strings representing the input features we want to keep.
     - train_val_test_split: A tuple of floats representing the split of the data into training, validation, and testing.
-    - processes: A tuple of strings representing the processes.
+    - processes: A tuple of strings representing the processes. Can be parallelized over.
     """
 
     input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
@@ -89,7 +89,21 @@ class MLDatasetLoader:
         """
         # TODO: store values of hyperparameters as task output
         # TODO: we could also reuse task outputs for multiple MLModels with same hyperparameters
-        return ("input_features", "train_val_test_split", "processes", "ml_process_weights")
+        return ("input_features", "train_val_test_split", "input_features_ordered")
+
+    @property
+    def parameters(self):
+        """
+        Values of the MLModel parameters that the MLDatasetLoader depends on.
+        """
+        if hasattr(self, "_parameters"):
+            return self._parameters
+
+        self._parameters = {
+            param: getattr(self.ml_model_inst, param, None)
+            for param in self.hyperparameter_deps
+        }
+        return self._parameters
 
     @property
     def ml_model_inst(self):

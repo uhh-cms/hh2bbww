@@ -249,6 +249,24 @@ class MLPreTraining(
 
         return reqs
 
+    def store_parts(self):
+        parts = super().store_parts()
+
+        # we do not want to store the MLModel instance, but only the relevant settings from the
+        # MLModel (e.g. the data_loader class, the train_val_test_split and the input_features)
+        # could also be represented by a singular attribute of the MLModel, but that would be needed to be updated
+        # manually, which is error-prone
+
+        # replace the ml_model entry
+        # NOTE: at the moment, we bookkeep preml via a single attribute; we could also bookkeep the relevant settings
+        # from the MLModel (e.g. the data_loader class, the train_val_test_split and the input_features)
+        store_name = self.ml_model_inst.store_name or self.ml_model_inst.cls_name
+        preml_store_name = getattr(self.ml_model_inst, "preml_store_name", "")
+        parts.insert_before("ml_model", "ml_data", f"ml__{store_name}__{preml_store_name}")
+
+        parts.pop("ml_model")
+        return parts
+
     def output(self):
         k = self.ml_model_inst.folds
         process = self.branch_data["process"]
@@ -271,6 +289,8 @@ class MLPreTraining(
 
         # the stats dict is created per process+fold, but should always be identical, therefore we store it only once
         outputs["stats"] = self.target("stats.json")
+
+        outputs["parameters"] = self.target("parameters.yaml")
 
         return outputs
 
@@ -338,6 +358,13 @@ class MLPreTraining(
             outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
 
             outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")
+
+        # dump parameters of the DatasetLoader
+        outputs["parameters"].dump(ml_dataset.parameters, formatter="yaml")
+
+    @law.workflow.base.workflow_property
+    def workflow_run(self):
+        pass
 
 
 class MLEvaluationSingleFold(
