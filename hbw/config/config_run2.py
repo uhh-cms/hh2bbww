@@ -605,7 +605,7 @@ def add_config(
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
-            {"Jet", "Bjet", "VBFJet"},
+            {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
@@ -615,7 +615,7 @@ def add_config(
             },
         ) | four_vec(  # Leptons
             {"Electron", "Muon"},
-            {"charge", "pdgId", "is_tight"},
+            {"charge", "pdgId", "jetRelIso", "is_tight"},
         ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
 

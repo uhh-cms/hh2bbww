@@ -135,7 +135,9 @@ def event_weights_to_normalize_init(self) -> None:
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights}
-        # dont store btag_weights to save storage space, since we can reproduce them in ProduceColumns
+        # dont store most btag_weights to save storage space, since we can reproduce them in ProduceColumns
+        # but keep nominal one for checks/synchronization
+        self.produces |= {"btag_weight"}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
