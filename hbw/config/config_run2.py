@@ -268,21 +268,27 @@ def add_config(
     ]
 
     # b-tag working points
+    # main source with all WPs: https://btv-wiki.docs.cern.ch/ScaleFactors/#sf-campaigns
+    # 2016/17 sources with revision:
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16preVFP?rev=6
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
-    # TODO: add correct 2022 + 2022preEE WPs and sources
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0490, "2022postEE": 0.0490}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2783, "2022postEE": 0.2783}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7100, "2022postEE": 0.7100}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "deepcsv": {
-            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1208, "2022postEE": 0.1208}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.4168, "2022postEE": 0.4168}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.7665, "2022postEE": 0.7665}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
+        "particlenet": {
+            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023": 0.0358, "2023BPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023": 0.1917, "2023BPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023": 0.6172, "2023BPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
 
