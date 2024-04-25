@@ -26,7 +26,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 # custom jec calibrator that only runs nominal correction
-jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": []})
+jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": ["Total"]})
 
 
 @calibrator(
