@@ -198,14 +198,16 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        pre_selection, post_selection,
+        pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
+        post_selection,
     },
     produces={
-        pre_selection, post_selection,
+        pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
+        post_selection,
     },
     exposed=True,
 )

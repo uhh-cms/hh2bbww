@@ -29,7 +29,7 @@ logger = law.logger.get_logger(__name__)
 @selector(
     uses=four_vec("Jet", {"jetId"}) | {optional("Jet.puId")},
     exposed=True,
-    b_tagger="deepjet",
+    b_tagger="particlenet",
     btag_wp="medium",
 )
 def jet_selection(
@@ -48,9 +48,6 @@ def jet_selection(
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
-    # sometimes, jet b-score is nan, so fill it with 0
-    if ak.any(np.isnan(events.Jet.btagDeepFlavB)):
-        events = set_ak_column(events, "Jet.btagDeepFlavB", ak.fill_none(ak.nan_to_none(events.Jet.btagDeepFlavB), 0))
 
     # default jet definition
     jet_mask_loose = (
@@ -90,8 +87,13 @@ def jet_selection(
     steps["nJet4"] = events.cutflow.n_jet >= 4
 
     # define btag mask
-    b_score = events.Jet[self.config_inst.x.btag_column]
+    btag_column = self.config_inst.x.btag_column
+    b_score = events.Jet[btag_column]
+    # sometimes, jet b-score is nan, so fill it with 0
+    if ak.any(np.isnan(b_score)):
+        b_score = ak.fill_none(ak.nan_to_none(b_score), 0)
     btag_mask = (jet_mask) & (b_score >= self.config_inst.x.btag_wp_score)
+
 
     # add btag steps
     events = set_ak_column(events, "cutflow.n_btag", ak.sum(btag_mask, axis=1))
@@ -137,6 +139,10 @@ def jet_selection_init(self: Selector) -> None:
     self.config_inst.x.btag_wp_score = (
         self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
     )
+    if self.config_inst.x.b_tagger == "deepjet":
+        self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
+    elif self.config_inst.x.b_tagger == "particlenet":
+        self.config_inst.x.btag_sf = ("particleNet_shape", self.config_inst.x.btag_sf_jec_sources, "btagPNetB")
 
     self.btag_column = self.config_inst.x.btag_column = {
         "deepjet": "btagDeepFlavB",

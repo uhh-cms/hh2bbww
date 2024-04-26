@@ -31,7 +31,7 @@ jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": ["Total
 
 @calibrator(
     uses={
-        "Jet.pt", "Jet.mass", "Jet.btagDeepFlavB", "Jet.bRegCorr",
+        "Jet.pt", "Jet.mass", "Jet.btagPNetB", "Jet.bRegCorr",
     },
     produces={"Jet.pt", "Jet.mass"},
     btag_wp="medium",
@@ -52,7 +52,7 @@ def bjet_regression(
 
     :param events: Awkward array containing events to process
     :param jet_mask: Optional awkward array containing a mask on which to apply the bjet regression.
-        Jet.pt > 20 and Jet-btagDeepFlavB > btag_wp is always required
+        Jet.pt > 20 and Jet-btagPNetB > btag_wp is always required
     """
 
     # apply regression only for jet pt > 20 (docu: https://twiki.cern.ch/twiki/bin/view/Main/BJetRegression)
@@ -61,8 +61,8 @@ def bjet_regression(
     if self.btag_wp:
         btag_wp = self.btag_wp
         if not try_float(self.btag_wp):
-            btag_wp = self.config_inst.x.btag_working_points.deepjet[self.btag_wp]
-        default_jet_mask = default_jet_mask & (events.Jet.btagDeepFlavB > btag_wp)
+            btag_wp = self.config_inst.x.btag_working_points.particlenet[self.btag_wp]
+        default_jet_mask = default_jet_mask & (events.Jet.btagPNetB > btag_wp)
 
     if jet_mask:
         jet_mask = jet_mask & default_jet_mask
