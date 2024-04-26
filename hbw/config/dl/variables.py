@@ -158,14 +158,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 8),
         x_title=r"$\Delta \phi(bb,llMET)$",
     )
-
-    config.add_variable(
-        name="mli_min_dr_llbb",
-        expression="mli_min_dr_llbb",
-        binning=(40, 0, 4),
-        x_title=r"$min \Delta R(b, l)$",
-    )
-
     config.add_variable(
         name="mli_mbbllMET",
         expression="mli_mbbllMET",
@@ -190,16 +182,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
 
     for obj in ["lep2"]:
         for var in ["pt", "eta"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
-
-    for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
