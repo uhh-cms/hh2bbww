@@ -15,7 +15,7 @@ from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from hbw.production.gen_top import gen_parton_top, top_pt_weight
+from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
 from hbw.production.gen_v import gen_v_boson, vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
@@ -71,7 +71,6 @@ def btag_weights_setup(
     reader_targets,
 ) -> None:
     bundle = reqs["external_files"]
-
     # create the btag sf corrector
     import correctionlib
     correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
