@@ -216,7 +216,7 @@ configurable_attributes = {
     # bjet selection
     "b_tagger": str,
     "btag_wp": str,
-    "n_bjet": int,
+    "n_btag": int,
 }
 
 

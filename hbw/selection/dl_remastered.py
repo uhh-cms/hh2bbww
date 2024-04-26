@@ -24,6 +24,8 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 @selector(
     uses={lepton_definition, "Electron.charge", "Muon.charge"},
     produces={lepton_definition},
+    meeeh=4,
+    moooh=5,
 )
 def dl_lepton_selection(
         self: Selector,
@@ -255,10 +257,10 @@ def dl_lepton_selection_init(self: Selector) -> None:
     ele2_pt=None,
     trigger=None,
     jet_pt=None,
-    n_jet=None,  # TODO
+    n_jet=None,
     b_tagger=None,
     btag_wp=None,
-    n_bjet=None,  # TODO
+    n_btag=None,
 )
 def dl1(
     self: Selector,
@@ -285,15 +287,19 @@ def dl1(
     events, vbf_jet_results = self[vbf_jet_selection](events, results, stats, **kwargs)
     results += vbf_jet_results
 
-    results.steps["Resolved"] = (results.steps.nJet1 & results.steps.nBjet1)
+    # NOTE: the bjet step can be customized only for the resolved selection as of now
+    jet_step = results.steps[f"nJet{self.n_jet}"] if self.n_jet != 0 else True
+    bjet_step = results.steps[f"nBjet{self.n_btag}"] if self.n_btag != 0 else True
+
+    results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
-        (results.steps.nJet1 & results.steps.nBjet1 | results.steps.HbbJet)
+        (jet_step & bjet_step | results.steps.HbbJet)
     )
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
-        (results.steps.nJet1 | results.steps.HbbJet_no_bjet) &
+        (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
         results.steps.ll_zmass_veto &
         results.steps.TripleLooseLeptonVeto &
@@ -306,7 +312,7 @@ def dl1(
     # combined event selection after all steps
     results.steps["all"] = results.event = (
         results.steps.all_but_bjet &
-        ((results.steps.nJet1 & results.steps.nBjet1) | results.steps.HbbJet)
+        ((results.steps.nJet1 & bjet_step) | results.steps.HbbJet)
     )
 
     # build categories
@@ -317,6 +323,12 @@ def dl1(
 
 @dl1.init
 def dl1_init(self: Selector) -> None:
+    # defaults
+    if self.n_jet is None:
+        self.n_jet = 1
+    if self.n_btag is None:
+        self.n_btag = 1
+
     # configuration of selection parameters
     # apparently, this init only runs after the used selectors, but we can run this init first
     # by only adding the used selectors in the init

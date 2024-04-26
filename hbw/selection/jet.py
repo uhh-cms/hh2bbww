@@ -88,6 +88,8 @@ def jet_selection(
     steps["nJet2"] = events.cutflow.n_jet >= 2
     steps["nJet3"] = events.cutflow.n_jet >= 3
     steps["nJet4"] = events.cutflow.n_jet >= 4
+    if self.config_inst.x("n_jet", 0) > 4:
+        steps[f"nJet{self.config_inst.x.n_jet}"] = events.cutflow.n_jet >= self.config_inst.x.n_jet
 
     # define btag mask
     btag_column = self.config_inst.x.btag_column
@@ -101,6 +103,8 @@ def jet_selection(
     events = set_ak_column(events, "cutflow.n_btag", ak.sum(btag_mask, axis=1))
     steps["nBjet1"] = events.cutflow.n_btag >= 1
     steps["nBjet2"] = events.cutflow.n_btag >= 2
+    if self.config_inst.x("n_btag", 0) > 2:
+        steps[f"nBjet{self.config_inst.x.n_btag}"] = events.cutflow.n_btag >= self.config_inst.x.n_btag
 
     # define b-jets as the two b-score leading jets, b-score sorted
     bjet_indices = masked_sorted_indices(jet_mask, b_score)[:, :2]

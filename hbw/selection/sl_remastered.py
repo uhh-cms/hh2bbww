@@ -205,18 +205,6 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses={
-        pre_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, sl_lepton_selection,
-        post_selection,
-    },
-    produces={
-        pre_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, sl_lepton_selection,
-        post_selection,
-    },
     exposed=True,
     # configurable attributes
     mu_pt=None,
@@ -225,10 +213,10 @@ def sl_lepton_selection_init(self: Selector) -> None:
     ele2_pt=None,
     trigger=None,
     jet_pt=None,
-    n_jet=None,  # TODO
+    n_jet=None,
     b_tagger=None,
     btag_wp=None,
-    n_bjet=None,  # TODO
+    n_btag=None,
 )
 def sl1(
     self: Selector,
@@ -255,16 +243,20 @@ def sl1(
     events, vbf_jet_results = self[vbf_jet_selection](events, results, stats, **kwargs)
     results += vbf_jet_results
 
-    results.steps["Resolved"] = (results.steps.nJet3 & results.steps.nBjet1)
+    # NOTE: the bjet step can be customized only for the resolved selection as of now
+    jet_step = results.steps[f"nJet{self.n_jet}"] if self.n_jet != 0 else True
+    bjet_step = results.steps[f"nBjet{self.n_btag}"] if self.n_btag != 0 else True
+
+    results.steps["Resolved"] = (jet_step & bjet_step)
 
     results.steps["ResolvedOrBoosted"] = (
-        (results.steps.nJet3 & results.steps.nBjet1) | results.steps.HbbJet
+        (jet_step & bjet_step) | results.steps.HbbJet
     )
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
-        (results.steps.nJet3 | results.steps.HbbJet_no_bjet) &
+        (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
         results.steps.ll_zmass_veto &
         results.steps.DileptonVeto &
@@ -279,7 +271,7 @@ def sl1(
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.event = (
         results.steps.all_but_bjet &
-        ((results.steps.nJet3 & results.steps.nBjet1) | results.steps.HbbJet)
+        ((results.steps.nJet3 & bjet_step) | results.steps.HbbJet)
     )
     results.steps["all"] = results.event
 
@@ -291,6 +283,12 @@ def sl1(
 
 @sl1.init
 def sl1_init(self: Selector) -> None:
+    # defaults
+    if self.n_jet is None:
+        self.n_jet = 3
+    if self.n_btag is None:
+        self.n_btag = 1
+
     # configuration of selection parameters
     # apparently, this init only runs after the used selectors, but we can run this init first
     # by only adding the used selectors in the init
