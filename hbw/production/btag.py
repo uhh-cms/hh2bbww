@@ -74,6 +74,7 @@ def btag_weights(
     abs_eta = flat_np_view(abs(events.Jet.eta[jet_mask]), axis=1)
     pt = flat_np_view(events.Jet.pt[jet_mask], axis=1)
     b_discr = flat_np_view(events.Jet[self.b_score_column][jet_mask], axis=1)
+    b_discr[b_discr < 0] = 0
 
     # helper to create and store the weight
     def add_weight(syst_name, syst_direction, column_name):
