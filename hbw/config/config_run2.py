@@ -673,11 +673,11 @@ def add_config(
         if not selector:
             return version
 
-        # set version of "dl1" and "sl1" Producer to "prod1"
+        # set version of "dl1" and "sl1" Producer to "prod2"
         if selector == "dl1":
-            version = "prod1"
+            version = "prod2"
         elif selector == "sl1":
-            version = "prod1"
+            version = "prod2"
 
         return version
 
@@ -690,19 +690,19 @@ def add_config(
 
         # set version of Producers that are not affected by the ML pipeline
         if producer == "event_weights":
-            version = "prod1"
+            version = "prod2"
         elif producer == "sl_ml_inputs":
-            version = "prod1"
+            version = "prod2"
         elif producer == "dl_ml_inputs":
-            version = "prod1"
+            version = "prod2"
         elif producer == "pre_ml_cats":
-            version = "prod1"
+            version = "prod2"
 
         return version
 
     # Version of required tasks
     cfg.x.versions = {
-        "cf.CalibrateEvents": "common1",
+        "cf.CalibrateEvents": "common2",
         "cf.SelectEvents": reduce_version,
         "cf.MergeSelectionStats": reduce_version,
         "cf.MergeSelectionMasks": reduce_version,
