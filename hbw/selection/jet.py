@@ -28,8 +28,6 @@ logger = law.logger.get_logger(__name__)
 @selector(
     uses=four_vec("Jet", {"jetId"}) | {optional("Jet.puId")},
     exposed=True,
-    b_tagger="particlenet",
-    btag_wp="medium",
 )
 def jet_selection(
     self: Selector,
@@ -40,6 +38,13 @@ def jet_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
     """
     Central definition of Jets in HH(bbWW)
+
+    Requires the following attributes in the config aux:
+    - jet_pt: minimum pt for jets (defaults to 25 GeV)
+    - b_tagger: b-tagger to use
+    - btag_column: column name for b-tagging score
+    - btag_wp: b-tagging working point (either "loose", "medium", or "tight")
+    - btag_wp_score: score corresponding to b-tagging wp and b-score
     """
 
     steps = DotDict()
@@ -49,7 +54,7 @@ def jet_selection(
 
     # default jet definition
     jet_mask_loose = (
-        (events.Jet.pt >= 25) &
+        (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
         (events.Jet.jetId >= 2)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
     )
@@ -58,7 +63,7 @@ def jet_selection(
     muon = events.Muon[lepton_results.objects.Muon.FakeableMuon]
 
     jet_mask = (
-        (events.Jet.pt >= 25) &
+        (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
         (events.Jet.jetId >= 2) &  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
@@ -123,30 +128,15 @@ def jet_selection(
 
 @jet_selection.init
 def jet_selection_init(self: Selector) -> None:
+    # configuration of defaults
+    self.jet_pt = self.config_inst.x("jet_pt", 25)
+
     # Add shift dependencies
     self.shifts |= {
         shift_inst.name
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag(("jec", "jer"))
     }
-
-    # set the main b_tagger + working point as defined from the selector
-    self.config_inst.x.b_tagger = self.b_tagger
-    self.config_inst.x.btag_wp = self.btag_wp
-    self.config_inst.x.btag_wp_score = (
-        self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
-    )
-    if self.config_inst.x.b_tagger == "deepjet":
-        self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
-    elif self.config_inst.x.b_tagger == "particlenet":
-        self.config_inst.x.btag_sf = ("particleNet_shape", self.config_inst.x.btag_sf_jec_sources, "btagPNetB")
-
-    self.btag_column = self.config_inst.x.btag_column = {
-        "deepjet": "btagDeepFlavB",
-        "particlenet": "btagPNetB",
-    }.get(self.config_inst.x.b_tagger, self.config_inst.x.b_tagger)
-
-    self.uses.add(f"Jet.{self.config_inst.x.btag_column}")
 
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
@@ -177,7 +167,7 @@ def jet_selection_init(self: Selector) -> None:
                 name="cf_n_btag",
                 expression="cutflow.n_btag",
                 binning=(7, -0.5, 6.5),
-                x_title=f"Number of b-tagged jets ({self.b_tagger}, {self.btag_wp} WP)",
+                x_title=f"Number of b-tagged jets ({self.config_inst.x.b_tagger}, {self.config_inst.x.btag_wp} WP)",
                 discrete_x=True,
             )
 

@@ -26,6 +26,7 @@ from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -200,3 +201,59 @@ def post_selection_init(self: Selector) -> None:
 
     self.uses.update({event_weights_to_normalize, hard_gen_particles})
     self.produces.update({event_weights_to_normalize, hard_gen_particles})
+
+
+configurable_attributes = {
+    # lepton selection
+    "mu_pt": float,
+    "ele_pt": float,
+    "mu2_pt": float,
+    "ele2_pt": float,
+    "trigger": dict,  # dict[str, list[str]]
+    # jet selection
+    "jet_pt": float,
+    "n_jet": int,
+    # bjet selection
+    "b_tagger": str,
+    "btag_wp": str,
+    "n_bjet": int,
+}
+
+
+def configure_selector(self: Selector):
+    """
+    Helper to configure the selector with the configurable attributes.
+    """
+    for attr_name, attr_type in configurable_attributes.items():
+        if hasattr(self, attr_name):
+            attr = getattr(self, attr_name)
+
+            if attr is None:
+                continue
+
+            if not isinstance(attr, attr_type):
+                raise TypeError(f"Attribute '{attr_name}' must be of type '{attr_type}' or None")
+
+            if attr_name in self.config_inst.aux and attr != self.config_inst.get_aux(attr_name):
+                logger.info(
+                    f"Selector {self.cls_name} is overwriting config attribute '{attr_name}' "
+                    f"(replaces '{self.config_inst.get_aux(attr_name)}' with '{attr}')",
+                )
+
+            self.config_inst.set_aux(attr_name, attr)
+
+    # define config for b-tagging SFs (this needs to be done by the main Selector, because this
+    # needs to be setup before running the init of the btag Producer)
+    if self.config_inst.x.b_tagger == "deepjet":
+        self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
+        self.config_inst.x.btag_column = "btagDeepFlavB"
+    elif self.config_inst.x.b_tagger == "particlenet":
+        self.config_inst.x.btag_sf = ("particleNet_shape", self.config_inst.x.btag_sf_jec_sources, "btagPNetB")
+        self.config_inst.x.btag_column = "btagPNetB"
+    else:
+        raise NotImplementedError(f"Cannot resolve btag sf config for b_tagger {self.config_inst.x.b_tagger}")
+
+    # write used btag wp score in the config
+    self.config_inst.x.btag_wp_score = (
+        self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
+    )

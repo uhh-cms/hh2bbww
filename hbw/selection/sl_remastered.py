@@ -10,7 +10,7 @@ from typing import Tuple
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
-from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection
+from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
@@ -22,7 +22,6 @@ ak = maybe_import("awkward")
 @selector(
     uses={lepton_definition, "Electron.charge", "Muon.charge"},
     produces={lepton_definition},
-    e_pt=None, mu_pt=None, trigger=None,
 )
 def sl_lepton_selection(
         self: Selector,
@@ -64,11 +63,11 @@ def sl_lepton_selection(
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
     leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.config_inst.x.mu_pt)
-    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.config_inst.x.e_pt)
+    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.config_inst.x.ele_pt)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    veto_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 15)
-    veto_e_mask = (e_mask_fakeable) & (events.Electron.pt > 15)
+    veto_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.config_inst.x.mu2_pt)
+    veto_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.config_inst.x.ele2_pt)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
     lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(veto_e_mask, events.Electron.pt)
@@ -137,6 +136,10 @@ def sl_lepton_selection(
 @sl_lepton_selection.init
 # @call_once_on_instance()
 def sl_lepton_selection_init(self: Selector) -> None:
+    # configuration of defaults
+    self.mu_pt = self.config_inst.x("mu_pt", 25)
+    self.ele_pt = self.config_inst.x("ele_pt", 25)
+
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
@@ -159,34 +162,39 @@ def sl_lepton_selection_init(self: Selector) -> None:
     # when the lepton selector does not define the values, resort to defaults
     # NOTE: this is not doing what I was intending: this allows me to share the selector info
     # with other tasks, but I want other selectors to be able to change these attributes...
+
+    # for vetoing additional leptons; should be in sync with DL channel
+    self.config_inst.x.mu2_pt = self.config_inst.x("mu2_pt", 15)
+    self.config_inst.x.ele2_pt = self.config_inst.x("ele2_pt", 15)
+
     if year == 2016:
-        self.config_inst.x.mu_pt = self.mu_pt or 25
-        self.config_inst.x.e_pt = self.e_pt or 27
-        self.config_inst.x.trigger = self.trigger or {
+        self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
+        self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 27)
+        self.config_inst.x.trigger = self.config_inst.x("trigger", {
             "e": ["Ele27_WPTight_Gsf"],
             "mu": ["IsoMu24"],
-        }
+        })
     elif year == 2017:
-        self.config_inst.x.mu_pt = self.mu_pt or 28
-        self.config_inst.x.e_pt = self.e_pt or 36
-        self.config_inst.x.trigger = self.trigger or {
+        self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 28)
+        self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 36)
+        self.config_inst.x.trigger = self.config_inst.x("trigger", {
             "e": ["Ele35_WPTight_Gsf"],
             "mu": ["IsoMu27"],
-        }
+        })
     elif year == 2018:
-        self.config_inst.x.mu_pt = self.mu_pt or 25
-        self.config_inst.x.e_pt = self.e_pt or 33
-        self.config_inst.x.trigger = self.trigger or {
+        self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
+        self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 33)
+        self.config_inst.x.trigger = self.config_inst.x("trigger", {
             "e": ["Ele32_WPTight_Gsf"],
             "mu": ["IsoMu24"],
-        }
+        })
     elif year == 2022:
-        self.config_inst.x.mu_pt = self.mu_pt or 25
-        self.config_inst.x.e_pt = self.e_pt or 31
-        self.config_inst.x.trigger = self.trigger or {
+        self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
+        self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 31)
+        self.config_inst.x.trigger = self.config_inst.x("trigger", {
             "e": ["Ele30_WPTight_Gsf"],
             "mu": ["IsoMu24"],
-        }
+        })
     else:
         raise Exception(f"Single lepton trigger not implemented for year {year}")
 
@@ -210,6 +218,17 @@ def sl_lepton_selection_init(self: Selector) -> None:
         post_selection,
     },
     exposed=True,
+    # configurable attributes
+    mu_pt=None,
+    ele_pt=None,
+    mu2_pt=None,
+    ele2_pt=None,
+    trigger=None,
+    jet_pt=None,
+    n_jet=None,  # TODO
+    b_tagger=None,
+    btag_wp=None,
+    n_bjet=None,  # TODO
 )
 def sl1(
     self: Selector,
@@ -272,6 +291,24 @@ def sl1(
 
 @sl1.init
 def sl1_init(self: Selector) -> None:
+    # configuration of selection parameters
+    # apparently, this init only runs after the used selectors, but we can run this init first
+    # by only adding the used selectors in the init
+    configure_selector(self)
+
+    self.uses = {
+        pre_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        jet_selection, sl_lepton_selection,
+        post_selection,
+    }
+    self.produces = {
+        pre_selection,
+        vbf_jet_selection, sl_boosted_jet_selection,
+        jet_selection, sl_lepton_selection,
+        post_selection,
+    }
+
     # define mapping from selector step to labels used in cutflow plots
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
