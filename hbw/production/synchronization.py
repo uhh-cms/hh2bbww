@@ -90,6 +90,7 @@ def get_flat_array(events, config_inst):
 
     return ak.Array(arrays)
 
+
 @producer(uses={"*"}, produces={"*"}, exposed=True)
 def sync_exercise(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # prepare object behavior
