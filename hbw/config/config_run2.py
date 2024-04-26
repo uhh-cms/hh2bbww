@@ -292,6 +292,13 @@ def add_config(
         },
     })
 
+    # b-tag configuration. Potentially overwritten by the jet Selector.
+    cfg.x.b_tagger = {
+        2: "deepjet",
+        3: "particlenet",
+    }[cfg.x.run]
+    cfg.x.btag_wp = "medium"
+
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
     cfg.x.top_pt_reweighting_params = {
@@ -316,8 +323,6 @@ def add_config(
     })
 
     if cfg.x.run == 2:
-        # btag weight configuration
-        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
 
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
@@ -329,9 +334,6 @@ def add_config(
 
     elif cfg.x.run == 3:
         # TODO: check that everyting is setup as intended
-
-        # btag weight configuration
-        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
 
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
