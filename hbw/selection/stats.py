@@ -8,7 +8,7 @@ from collections import defaultdict, OrderedDict
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
-from columnflow.production.cms.btag import btag_weights
+from hbw.production.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
 from columnflow.columnar_util import optional_column as optional
 
