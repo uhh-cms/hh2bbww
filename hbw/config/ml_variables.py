@@ -12,12 +12,11 @@ from hbw.util import call_once_on_config
 
 
 @call_once_on_config()
-def add_ml_variables(config: od.Config) -> None:
+def add_common_ml_variables(config: od.Config) -> None:
     """
-    Adds ML input variables to a *config*.
+    Adds common ML input variables to a *config*.
     """
 
-    # reconstructed variables
     config.add_variable(
         name="mli_ht",
         expression="mli_ht",
@@ -63,6 +62,37 @@ def add_ml_variables(config: od.Config) -> None:
         x_title="sum of lightjet deepjet scores",
     )
     config.add_variable(
+        name="mli_n_particlenet",
+        expression="mli_n_particlenet",
+        binning=(11, -0.5, 10.5),
+        x_title="Number of b-tagged jets (particlenet medium WP)",
+    )
+    config.add_variable(
+        name="mli_particlenetsum",
+        expression="mli_particlenetsum",
+        binning=(40, 0, 4),
+        x_title="sum of particlenet scores",
+    )
+    config.add_variable(
+        name="mli_b_particlenetsum",
+        expression="mli_b_particlenetsum",
+        binning=(40, 0, 4),
+        x_title="sum of bjet particlenet scores",
+    )
+    config.add_variable(
+        name="mli_l_particlenetsum",
+        expression="mli_l_particlenetsum",
+        binning=(40, 0, 4),
+        x_title="sum of lightjet particlenet scores",
+    )
+    config.add_variable(
+        name="mli_bb_pt",
+        expression="mli_bb_pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title=r"$p_{T}^{bb}$",
+    )
+    config.add_variable(
         name="mli_dr_bb",
         expression="mli_dr_bb",
         binning=(40, 0, 8),
@@ -88,6 +118,80 @@ def add_ml_variables(config: od.Config) -> None:
         x_title=r"min $\Delta R(l,b)$",
     )
     config.add_variable(
+        name="mli_mindr_lj",
+        expression="mli_mindr_lj",
+        binning=(40, 0, 8),
+        x_title=r"min $\Delta R(l,j)$",
+    )
+    config.add_variable(
+        name="mli_mindr_jj",
+        expression="mli_mindr_jj",
+        binning=(40, 0, 8),
+        x_title=r"min $\Delta R(j,j)$",
+    )
+    config.add_variable(
+        name="mli_vbf_deta",
+        expression="mli_vbf_deta",
+        binning=(50, 2, 9.5),
+        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
+    )
+    config.add_variable(
+        name="mli_vbf_invmass",
+        expression="mli_vbf_invmass",
+        binning=(50, 400, 4000),
+        unit="GeV",
+        x_title="invarint mass of two vbf jets",
+    )
+    config.add_variable(
+        name="mli_vbf_tag",
+        expression="mli_vbf_tag",
+        binning=(2, -0.5, 1.5),
+        x_title="existence of at least two vbf jets = 1, else 0",
+    )
+
+    #
+    # low-level variables
+    #
+
+    for obj in ["b1", "b2", "j1", "j2"]:
+        for var in ["btagDeepFlavB", "btagPNetB"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
+        for var in ["pt", "eta", "phi"]:
+            if var == "phi" and obj != "met":
+                continue
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+    for obj in ["fj"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
+            config.add_variable(
+                name=f"mli_{obj}_{var}",
+                expression=f"mli_{obj}_{var}",
+                binning=default_var_binning[var],
+                unit=default_var_unit.get(var, "1"),
+                x_title="{obj} {var}".format(obj=obj, var=var),
+            )
+
+
+@call_once_on_config()
+def add_sl_ml_variables(config: od.Config) -> None:
+    """
+    Adds SL ML input variables to a *config*.
+    """
+    config.add_variable(
         name="mli_dr_jj",
         expression="mli_dr_jj",
         binning=(40, 0, 8),
@@ -105,12 +209,6 @@ def add_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         x_title=r"m(j,j)",
-    )
-    config.add_variable(
-        name="mli_mindr_lj",
-        expression="mli_mindr_lj",
-        binning=(40, 0, 8),
-        x_title=r"min $\Delta R(l,j)$",
     )
     config.add_variable(
         name="mli_dphi_lnu",
@@ -214,58 +312,3 @@ def add_ml_variables(config: od.Config) -> None:
         log_x=True,
         x_title=r"$S_{min}$",
     )
-    config.add_variable(
-        name="mli_mindr_jj",
-        expression="mli_mindr_jj",
-        binning=(40, 0, 8),
-        x_title=r"min $\Delta R(j,j)$",
-    )
-    config.add_variable(
-        name="mli_vbf_deta",
-        expression="mli_vbf_deta",
-        binning=(50, 2, 9.5),
-        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
-    )
-    config.add_variable(
-        name="mli_vbf_invmass",
-        expression="mli_vbf_invmass",
-        binning=(50, 400, 4000),
-        unit="GeV",
-        x_title="invarint mass of two vbf jets",
-    )
-    config.add_variable(
-        name="mli_vbf_tag",
-        expression="mli_vbf_tag",
-        binning=(2, -0.5, 1.5),
-        x_title="existence of at least two vbf jets = 1, else 0",
-    )
-
-    for obj in ["b1", "b2", "j1", "j2"]:
-        for var in ["btagDeepFlavB"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
-
-    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
-        for var in ["pt", "eta"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
-
-    for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
