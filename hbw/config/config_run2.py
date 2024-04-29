@@ -88,12 +88,14 @@ def add_config(
             "lumi_13TeV_2017": 0.02j,
             "lumi_13TeV_1718": 0.006j,
             "lumi_13TeV_correlated": 0.009j,
+            "Higgs_BR": 0.02j,
         })
     else:  # 2018
         cfg.x.luminosity = Number(59830, {
             "lumi_13TeV_2017": 0.015j,
             "lumi_13TeV_1718": 0.002j,
             "lumi_13TeV_correlated": 0.02j,
+            "Higgs_BR": 0.02j,
         })
 
     # minimum bias cross section in mb (milli) for creating PU weights, values from

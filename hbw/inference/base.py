@@ -74,8 +74,8 @@ class HBWInferenceModelBase(InferenceModel):
         root_cats = config_cat_inst.x.root_cats
         if dnn_cat := root_cats.get("dnn"):
             dnn_proc = dnn_cat.replace("ml_", "")
-            #return f"mlscore.{dnn_proc}_manybins"
-            return f"mlscore.{dnn_proc}_rebin"
+            return f"mlscore.{dnn_proc}_manybins"
+            #return f"mlscore.{dnn_proc}_rebin"
         else:
             return "deltaR_ll"
 
@@ -192,7 +192,7 @@ class HBWInferenceModelBase(InferenceModel):
             syst_name = f"QCDScale_{k}"
             if syst_name not in self.systematics:
                 continue
-
+            #__import__("IPython").embed()
             for proc in procs:
                 if proc not in self.processes:
                     continue
@@ -209,6 +209,29 @@ class HBWInferenceModelBase(InferenceModel):
                     )),
                 )
             self.add_parameter_to_group(syst_name, "theory")
+        
+        for k, procs in const.processes_per_mtop.items():
+            syst_name = f"mtop_{k}"
+            if syst_name not in self.systematics:
+                continue
+            #__import__("IPython").embed()
+            for proc in procs:
+                if proc not in self.processes:
+                    continue
+                process_inst = self.config_inst.get_process(proc)
+                if "mtop" not in process_inst.xsecs[ecm]:
+                    continue
+                self.add_parameter(
+                    syst_name,
+                    process=const.inference_procnames.get(proc, proc),
+                    type=ParameterType.rate_gauss,
+                    effect=tuple(map(
+                        lambda f: round(f, 3),
+                        process_inst.xsecs[ecm].get(names=("mtop"), direction=("down", "up"), factor=True),
+                    )),
+                )
+            self.add_parameter_to_group(syst_name, "theory")
+
 
         # add PDF rate uncertainties to inference model
         for k, procs in const.processes_per_pdf_rate.items():
@@ -238,6 +261,7 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
+        #__import__("IPython").embed()
         for shape_uncertainty, shape_processes in const.processes_per_shape.items():
             if shape_uncertainty not in self.systematics:
                 continue

@@ -6,8 +6,8 @@ Collection of configurations that stay constant for the analysis
 
 # collection of all signal processes
 signals_ggHH = {
-    "ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww",
+    "ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww",
+    "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww",
 }
 signals_qqHH = {
     "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww",
@@ -35,6 +35,11 @@ inference_procnames = {
 }
 
 # mapping, which processes are used for which QCDScale (rate) uncertainty
+processes_per_mtop = {
+    "ttbar": ["tt"], # , "st_tchannel", "st_schannel", "st_twchannel", "ttW", "ttZ"],
+}
+
+# mapping, which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
     "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttW", "ttZ"],
     "V": ["dy_lep", "w_lnu"],
@@ -45,7 +50,7 @@ processes_per_QCDScale = {
     "VH": ["ZH", "WH", "VH"],
     "ttH": ["ttH", "tHq", "tHW"],
     "bbH": ["bbH"],  # contains also pdf and alpha_s
-    # "ggHH": signals_ggHH,  # included in inference model (THU_HH)
+    "ggHH": signals_ggHH,  # included in inference model (THU_HH)
     "qqHH": signals_qqHH,
     "VHH": [],
     "ttHH": [],
@@ -78,11 +83,14 @@ processes_per_shape = {
     "btag_lfstats2_2017": ["all"],
     "btag_cferr1": ["all"],
     "btag_cferr2": ["all"],
-    "mu_trig": ["all"],
+    "mu_trig_sf": ["all"],
     "e_sf": ["all"],
-    "e_trig": ["all"],
+    "mu_sf": ["all"],
+    "e_trig_sf": ["all"],
     "minbias_xs": ["all"],
     "top_pt": ["all"],
+    "jer": ["all"],
+    "jec_Total": ["all"],
     "pdf_shape_ggHH_kl_0_kt_1_sl_hbbhww": ["ggHH_kl_0_kt_1_sl_hbbhww"],
     "pdf_shape_ggHH_kl_1_kt_1_sl_hbbhww": ["ggHH_kl_1_kt_1_sl_hbbhww"],
     "pdf_shape_ggHH_kl_2p45_kt_1_sl_hbbhww": ["ggHH_kl_2p45_kt_1_sl_hbbhww"],

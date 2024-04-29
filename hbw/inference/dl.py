@@ -69,6 +69,14 @@ config_categories = [
     # "2mu__ml_v_lep",
 ]
 
+
+added_rate_systematics = [
+    # Lumi: should automatically choose viable uncertainties based on campaign
+    "mtop_ttbar",
+    "Higgs_BR",
+    "QCDScale_ggHH",  # should be included in inference model (THU_HH)
+]
+
 rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
     "lumi_13TeV_2016",
@@ -85,7 +93,6 @@ rate_systematics = [
     "QCDScale_VH",
     "QCDScale_ttH",
     "QCDScale_bbH",
-    "QCDScale_ggHH",  # should be included in inference model (THU_HH)
     "QCDScale_qqHH",
     "QCDScale_VHH",
     "QCDScale_ttHH",
@@ -106,7 +113,10 @@ rate_systematics = [
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
+    "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
+    "murf_envelope_ggHH_kl_0_kt_1_dl_hbbhww",
+    "murf_envelope_ggHH_kl_2p45_kt_1_dl_hbbhww",
+    "murf_envelope_ggHH_kl_5_kt_1_dl_hbbhww",
     "murf_envelope_tt",
     "murf_envelope_st_schannel",
     "murf_envelope_st_tchannel",
@@ -133,12 +143,21 @@ shape_systematics = [
     "btag_lfstats2_2017"
     "btag_cferr1",
     "btag_cferr2",
+    #"jer",
+    #"jec_Total",
     "mu_sf",
-    # "mu_trig",
+    #"mu_trig_sf",
     "e_sf",
-    # "e_trig",
-    # "minbias_xs",
-    # "top_pt",
+    #"e_trig_sf",
+    #"minbias_xs",
+    #"top_pt",
+]
+
+shape_systematics_rerun = [
+    "jer",
+    "jec_Total",
+    "minbias_xs",
+    "top_pt",
 ]
 
 
@@ -253,6 +272,140 @@ cls_dict["config_categories"] = [
 cls_dict["ml_model_name"] = "dense_test_aachen_sig_dl"
 # minimal model for quick test purposes
 dl_test_aachen_sig = dl.derive("dl_test_aachen_sig", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["systematics"] = rate_systematics + added_rate_systematics + shape_systematics
+cls_dict["config_categories"] = [
+    "2e__1b__ml_tt",
+    "2e__1b__ml_st",
+    "emu__1b__ml_tt",
+    "emu__1b__ml_st",
+    "2mu__1b__ml_tt",
+    "2mu__1b__ml_st",
+    "2e__2b__ml_tt",
+    "2e__2b__ml_st",
+    "emu__2b__ml_tt",
+    "emu__2b__ml_st",
+    "2mu__2b__ml_tt",
+    "2mu__2b__ml_st",
+    "2e__1b__ml_dy_lep",
+    "emu__1b__ml_dy_lep",
+    "2mu__1b__ml_dy_lep",
+    "2e__2b__ml_dy_lep",
+    "emu__2b__ml_dy_lep",
+    "2mu__2b__ml_dy_lep",
+    "2e__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_ggHH_sig_all",
+    "2e__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_ggHH_sig_all",
+]
+
+cls_dict["ml_model_name"] = "dense_test_opt_weights_dl"
+# minimal model for quick test purposes
+dl_test_test_all_syst = dl.derive("dl_test_all_syst", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["config_categories"] = [
+    "2e__1b__ml_tt",
+    "2e__1b__ml_st",
+    "emu__1b__ml_tt",
+    "emu__1b__ml_st",
+    "2mu__1b__ml_tt",
+    "2mu__1b__ml_st",
+    "2e__2b__ml_tt",
+    "2e__2b__ml_st",
+    "emu__2b__ml_tt",
+    "emu__2b__ml_st",
+    "2mu__2b__ml_tt",
+    "2mu__2b__ml_st",
+    "2e__1b__ml_dy_lep",
+    "emu__1b__ml_dy_lep",
+    "2mu__1b__ml_dy_lep",
+    "2e__2b__ml_dy_lep",
+    "emu__2b__ml_dy_lep",
+    "2mu__2b__ml_dy_lep",
+    "2e__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_ggHH_sig_all",
+    "2e__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_ggHH_sig_all",
+]
+
+cls_dict["ml_model_name"] = "dense_test_opt_outputnodes_dl"
+# minimal model for quick test purposes
+dl_test_opt_outputnodes = dl.derive("dl_test_opt_outputnodes", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["config_categories"] = [
+    "2e__1b__ml_tt",
+    "2e__1b__ml_st",
+    "emu__1b__ml_tt",
+    "emu__1b__ml_st",
+    "2mu__1b__ml_tt",
+    "2mu__1b__ml_st",
+    "2e__2b__ml_tt",
+    "2e__2b__ml_st",
+    "emu__2b__ml_tt",
+    "emu__2b__ml_st",
+    "2mu__2b__ml_tt",
+    "2mu__2b__ml_st",
+    "2e__1b__ml_dy_lep",
+    "emu__1b__ml_dy_lep",
+    "2mu__1b__ml_dy_lep",
+    "2e__2b__ml_dy_lep",
+    "emu__2b__ml_dy_lep",
+    "2mu__2b__ml_dy_lep",
+    "2e__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_ggHH_sig_all",
+    "2e__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_ggHH_sig_all",
+]
+
+cls_dict["ml_model_name"] = "dense_test_opt_weights_dl"
+# minimal model for quick test purposes
+dl_test_opt_weights = dl.derive("dl_test_opt_weights", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+cls_dict["systematics"] = rate_systematics + added_rate_systematics
+cls_dict["config_categories"] = [
+    "2e__1b__ml_tt",
+    "2e__1b__ml_st",
+    "emu__1b__ml_tt",
+    "emu__1b__ml_st",
+    "2mu__1b__ml_tt",
+    "2mu__1b__ml_st",
+    "2e__2b__ml_tt",
+    "2e__2b__ml_st",
+    "emu__2b__ml_tt",
+    "emu__2b__ml_st",
+    "2mu__2b__ml_tt",
+    "2mu__2b__ml_st",
+    "2e__1b__ml_dy_lep",
+    "emu__1b__ml_dy_lep",
+    "2mu__1b__ml_dy_lep",
+    "2e__2b__ml_dy_lep",
+    "emu__2b__ml_dy_lep",
+    "2mu__2b__ml_dy_lep",
+    "2e__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_ggHH_sig_all",
+    "2e__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_ggHH_sig_all",
+]
+
+cls_dict["ml_model_name"] = "dense_test_opt_weights_dl"
+# minimal model for quick test purposes
+dl_test_syst = dl.derive("dl_test_syst", cls_dict=cls_dict)
 
 
 cls_dict = default_cls_dict.copy()
@@ -391,6 +544,41 @@ dl_test_sig = dl.derive("dl_test_sig", cls_dict=cls_dict)
 cls_dict = default_cls_dict.copy()
 
 # cls_dict["processes"] = [
+#    "ggHH_sig",
+#    "v_lep",
+#    "t_bkg",
+# ]
+
+cls_dict["config_categories"] = [
+    "2e__1b__ml_ggHH_sig",
+    "2e__1b__ml_v_lep",
+    "2e__1b__ml_t_bkg",
+    "emu__1b__ml_ggHH_sig",
+    "emu__1b__ml_v_lep",
+    "emu__1b__ml_t_bkg",
+    "2mu__1b__ml_ggHH_sig",
+    "2mu__1b__ml_v_lep",
+    "2mu__1b__ml_t_bkg",
+    "2e__2b__ml_ggHH_sig",
+    "2e__2b__ml_v_lep",
+    "2e__2b__ml_t_bkg",
+    "emu__2b__ml_ggHH_sig",
+    "emu__2b__ml_v_lep",
+    "emu__2b__ml_t_bkg",
+    "2mu__2b__ml_ggHH_sig",
+    "2mu__2b__ml_v_lep",
+    "2mu__2b__ml_t_bkg",
+]
+
+cls_dict["ml_model_name"] = "dense_test_sig_equal"
+
+# minimal model for quick test purposes
+dl_test_sig_eq = dl.derive("dl_test_sig_eq", cls_dict=cls_dict)
+
+
+cls_dict = default_cls_dict.copy()
+
+# cls_dict["processes"] = [
 #    "sig_all",
 #    "ggHH_kl_1_kt_1_dl_hbbhww",
 #    "v_lep",
@@ -422,6 +610,41 @@ cls_dict["ml_model_name"] = "dense_test_sig_all_dl"
 
 # minimal model for quick test purposes
 dl_test_sig_all = dl.derive("dl_test_sig_all", cls_dict=cls_dict)
+
+cls_dict = default_cls_dict.copy()
+
+# cls_dict["processes"] = [
+#    "sig_all",
+#    "ggHH_kl_1_kt_1_dl_hbbhww",
+#    "v_lep",
+#    "t_bkg",
+# ]
+
+cls_dict["config_categories"] = [
+    "2e__1b__ml_ggHH_sig_all",
+    "2e__1b__ml_v_lep",
+    "2e__1b__ml_t_bkg",
+    "emu__1b__ml_ggHH_sig_all",
+    "emu__1b__ml_v_lep",
+    "emu__1b__ml_t_bkg",
+    "2mu__1b__ml_ggHH_sig_all",
+    "2mu__1b__ml_v_lep",
+    "2mu__1b__ml_t_bkg",
+    "2e__2b__ml_ggHH_sig_all",
+    "2e__2b__ml_v_lep",
+    "2e__2b__ml_t_bkg",
+    "emu__2b__ml_ggHH_sig_all",
+    "emu__2b__ml_v_lep",
+    "emu__2b__ml_t_bkg",
+    "2mu__2b__ml_ggHH_sig_all",
+    "2mu__2b__ml_v_lep",
+    "2mu__2b__ml_t_bkg",
+]
+
+cls_dict["ml_model_name"] = "dense_test_sig_all_equal"
+
+# minimal model for quick test purposes
+dl_test_sig_all_eq = dl.derive("dl_test_sig_all_eq", cls_dict=cls_dict)
 
 # Inference model not on ML score but on hardcoded variable (bb_pt)
 cls_dict = default_cls_dict.copy()
