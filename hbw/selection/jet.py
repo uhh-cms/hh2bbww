@@ -46,7 +46,6 @@ def jet_selection(
     - btag_wp: b-tagging working point (either "loose", "medium", or "tight")
     - btag_wp_score: score corresponding to b-tagging wp and b-score
     """
-
     steps = DotDict()
 
     # assign local index to all Jets
@@ -141,6 +140,9 @@ def jet_selection_init(self: Selector) -> None:
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag(("jec", "jer"))
     }
+
+    # add btag requirement
+    self.uses.add(f"Jet.{self.config_inst.x.btag_column}")
 
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
