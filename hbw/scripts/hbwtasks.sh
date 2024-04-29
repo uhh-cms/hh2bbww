@@ -72,6 +72,16 @@ hbw_merge_reduction(){
 	$@
 }
 
+hbw_reduction_status(){
+	# call wrapper tasks with print-status flag to check output status from CalibrateEvents up to MergeReducedEvents
+	law run cf.MergeReducedEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.MergeReductionStatsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.MergeSelectionStatsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.ReduceEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.SelectEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.CalibrateEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+}
+
 ml_model="dense_default"
 
 hbw_ml_training(){
