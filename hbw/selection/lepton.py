@@ -32,20 +32,15 @@ logger = law.logger.get_logger(__name__)
 
 @selector(
     uses=(
-        # TODO: cleanup
-        # {muon_weights, electron_weights, "*"} |  # load muon and electron weights producer for checks (?)
+        # {muon_weights, electron_weights} |  # we could load muon and electron weights producer for checks
         four_vec("Electron", {
-            "dxy", "dz", "miniPFRelIso_all", "cutBased",
-            "jetRelIso",  # cone-pt
-            "deltaEtaSC", "sieie", "hoe", "eInvMinusPInv", "convVeto", "jetIdx",  # Fakeable Electron
-        }) | optional({
-            "Electron.mvaIso_WP90", "Electron.mvaFall17V2Iso_WP90",  # columns that differ in Run 2 and 3
+            "dxy", "dz", "cutBased",
+            "jetRelIso",  # for cone-pt
         }) | four_vec("Muon", {
-            "dxy", "dz", "looseId", "pfIsoId",  # Muon Preselection
-            "jetRelIso",  # cone-pt
-            "jetIdx",  # Fakeable Muon
+            "dxy", "dz", "looseId", "pfIsoId",
+            "jetRelIso",  # for cone-pt
         }) | four_vec("Tau", {
-            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet",
+            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet", "decayMode",
         }) | {
             jet_selection,  # the jet_selection init needs to be run to set the correct b_tagger
         }
@@ -112,12 +107,12 @@ def lepton_definition(
 
     e_mask_fakeable = (
         e_mask_loose &
-        (electron.cone_pt >= 10)
+        (electron.pt >= 10)
     )
 
     mu_mask_fakeable = (
         mu_mask_loose &
-        (muon.cone_pt >= 10) &
+        (muon.pt >= 10) &
         self.muon_id_req(muon)
     )
 
@@ -142,7 +137,14 @@ def lepton_definition(
         (events.Tau.pt > 20.0) &
         (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
         (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
-        (events.Tau.idDeepTau2017v2p1VSjet >= 2)  # 2: VVLoose
+        (events.Tau.idDeepTau2017v2p1VSjet >= 2) &  # 2: VVLoose
+        (
+            (events.Tau.decayMode == 0) |
+            (events.Tau.decayMode == 1) |
+            (events.Tau.decayMode == 2) |
+            (events.Tau.decayMode == 10) |
+            (events.Tau.decayMode == 11)
+        )
     )
 
     # lepton invariant mass cuts
