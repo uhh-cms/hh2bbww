@@ -13,7 +13,7 @@ import law
 
 from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import set_ak_column, optional_column as optional
+from columnflow.columnar_util import set_ak_column
 from columnflow.selection import Selector, SelectionResult, selector
 
 # from columnflow.production.cms.electron import electron_weights

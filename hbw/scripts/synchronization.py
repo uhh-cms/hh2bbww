@@ -99,11 +99,15 @@ def dump_to_csv(events, columns_to_store, output_name="bbWW_sl_synch_table_uhh.c
 
 def sync_exercise():
     task = ReduceEvents(
-        version="prod1",
+        version="sync",
+        analysis="hbw.analysis.hbw_sl.hbw_sl",
         config="c22pre",
+        calibrators="",
+        selector="sl1",
         dataset="ggHH_kl_1_kt_1_sl_hbbhww_powheg",
         branch=3,
         walltime="1h",
+        remove_output="1,a,y",
     )
     task.law_run()
     config_inst = task.config_inst

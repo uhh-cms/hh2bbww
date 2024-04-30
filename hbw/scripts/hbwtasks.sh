@@ -1,6 +1,9 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
+# shortcuts
+alias hbw_synchronization="cf_sandbox venv_columnar_dev 'python $HBW_BASE/hbw/scripts/synchronization.py'"
+
 # defaults, setup by the law config
 # NOTE: calibration version should correspond to what is setup in the config as our default calibration config
 version=$(law config analysis.default_version)
@@ -23,6 +26,7 @@ hbw_selection(){
 	--config $config \
 	$@
 }
+
 
 #
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
