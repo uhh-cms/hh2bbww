@@ -220,6 +220,9 @@ class MLClassifierBase(MLModel):
         input: Any,
         output: law.LocalDirectoryTarget,
     ):
+        # we need to call this function for some process config setup
+        self.datasets(self.config_inst)
+
         input_files = input["model"]["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
         train = DotDict(

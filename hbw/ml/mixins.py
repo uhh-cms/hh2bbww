@@ -325,7 +325,7 @@ class ModelFitMixin(CallbacksBase):
                 f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
                 "a string corresponding to an integer attribute of the MultiDataset",
             )
-        logger.info(f"Training will be done with {self.steps_per_epoch} steps per epoch")
+        logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
         # set the kwargs used for training
         model_fit_kwargs = {

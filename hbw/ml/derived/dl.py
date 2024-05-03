@@ -34,6 +34,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
         "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
         "sig": 1,
         "tt": 2,
         "st": 2,
@@ -74,6 +75,9 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ]
 
     store_name: str = "inputs_inclusive"
+
+    # identifier of the PreMLTask output. Needs to be changed when changing data loader or it's dependencies
+    preml_store_name: str = "preml_base"
 
     folds: int = 5
     negative_weights: str = "handle"
@@ -157,26 +161,14 @@ dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
 })
 
+# testing of hyperparameter changes
+dl_22.derive("dl_22_stepsMax", cls_dict={"steps_per_epoch": "max_iter_valid"})
+dl_22.derive("dl_22_steps100", cls_dict={"steps_per_epoch": 100})
+dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
+
 # model for testing
 dl_22.derive("dl_22_v1")
 dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
 })
-
-cls_dict_test = {
-    "folds": 2,
-    "epochs": 90,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "tt"],
-    "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
-        # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-    },
-}
-
-# ML Model with reduced number of datasets
-dense_test_dl = DenseClassifierDL.derive("dense_test_dl", cls_dict=cls_dict_test)
-
-# our default MLModel
-dense_default_dl = DenseClassifierDL.derive("dense_default_dl", cls_dict={})
