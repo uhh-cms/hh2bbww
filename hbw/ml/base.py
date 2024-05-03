@@ -41,7 +41,7 @@ class MLClassifierBase(MLModel):
     processes: list = ["tt", "st"]
     input_features: set = {"mli_ht", "mli_n_jet"}
 
-    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when changing input features
+    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when adding new input features
     store_name: str = "inputs_base"
 
     # identifier of the PreMLTask output. Needs to be changed when changing data loader or it's dependencies
