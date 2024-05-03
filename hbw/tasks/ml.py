@@ -526,6 +526,13 @@ class PlotMLResultsSingleFold(
         "number of folds defined in the ML model; default: 0",
     )
 
+    view_cmd = luigi.Parameter(
+        default=law.NO_STR,
+        significant=False,
+        description="a command to execute after the task has run to visualize plots right in the "
+        "terminal; no default",
+    )
+
     def create_branch_map(self):
         return {0: None}
 
