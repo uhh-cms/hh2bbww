@@ -34,6 +34,7 @@ class MultiDataset(object):
         self.buffersize = buffersize
 
         # create datasets, store counts and relative weights
+        self.processes = tuple(data.keys())
         self.datasets = []
         self.counts = []
         self.weights = []
@@ -76,9 +77,15 @@ class MultiDataset(object):
         if batch_size != sum(self.batch_sizes):
             print(f"batch_size is {sum(self.batch_sizes)} but should be {batch_size}")
 
-        self.max_iter_valid = int(math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
-        self.iter_smallest_process = int(math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)])))
+        self.max_iter_valid = math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
+        self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
         gc.collect()
+
+        for proc_inst, batch_size, count, weights in zip(self.processes, self.batch_sizes, self.counts, self.weights):
+            logger.info(
+                f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen completely "
+                f"(count {count}, weight {weight}, batch size {batch_size})",
+            )
 
     @property
     def n_datasets(self):
