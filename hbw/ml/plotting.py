@@ -175,7 +175,7 @@ def plot_confusion(
     confusion = confusion_matrix(
         y_true=inputs.labels,
         y_pred=np.argmax(inputs.prediction, axis=1),
-        sample_weight=inputs.weights,
+        sample_weight=inputs.equal_weights,
     )
     if isinstance(stats, dict):
         gather_confusion_stats(confusion, process_insts, input_type, stats)
@@ -235,7 +235,7 @@ def plot_roc_ovr(
             y_true=y_true,
             # y_true=inputs.target[:, i],
             y_score=inputs.prediction[:, i],
-            sample_weight=inputs.weights,
+            sample_weight=inputs.equal_weights,
         )
 
         auc_scores.append(roc_auc_score(
@@ -306,7 +306,7 @@ def plot_roc_ovo(
             fpr, tpr, thresholds = roc_curve(
                 y_true=y_true,
                 y_score=y_score,
-                sample_weight=inputs.weights[event_mask],
+                sample_weight=inputs.equal_weights[event_mask],
             )
 
             auc_scores[j] = roc_auc_score(
