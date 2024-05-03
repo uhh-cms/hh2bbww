@@ -57,7 +57,7 @@ class MLDatasetLoader:
     - processes: A tuple of strings representing the processes. Can be parallelized over.
     """
 
-    input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
+    input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights", "target", "labels")
     evaluation_arrays: tuple = ("prediction",)
 
     def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
@@ -201,7 +201,7 @@ class MLDatasetLoader:
         return self._train_weights
 
     @property
-    def val_weights(self) -> np.ndarray:
+    def equal_weights(self) -> np.ndarray:
         """
         Weighting such that each process has roughly the same sum of weights
         """
@@ -304,7 +304,7 @@ class MLProcessData:
 
     shuffle = False
 
-    input_arrays: tuple = ("features", "weights", "train_weights", "val_weights", "target", "labels")
+    input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights", "target", "labels")
     evaluation_arrays: tuple = ("prediction",)
 
     def __init__(
@@ -336,7 +336,7 @@ class MLProcessData:
         This method is called when the object is about to be destroyed.
         It deletes the attributes that are numpy arrays to free up memory.
         """
-        for attr in ("features", "weights", "train_weights", "val_weights", "target", "labels"):
+        for attr in ("features", "weights", "train_weights", "equal_weights", "target", "labels"):
             if hasattr(self, f"_{attr}"):
                 delattr(self, f"_{attr}")
 
@@ -405,7 +405,7 @@ class MLProcessData:
         self.features
         self.weights
         self.train_weights
-        self.val_weights
+        self.equal_weights
         self.target
         self.labels
         # do not load prediction because it can only be loaded after training
@@ -474,12 +474,12 @@ class MLProcessData:
         return self._train_weights
 
     @property
-    def val_weights(self) -> np.ndarray:
-        if hasattr(self, "_val_weights"):
-            return self._val_weights
+    def equal_weights(self) -> np.ndarray:
+        if hasattr(self, "_equal_weights"):
+            return self._equal_weights
 
-        self._val_weights = self.load_data("val_weights")
-        return self._val_weights
+        self._equal_weights = self.load_data("equal_weights")
+        return self._equal_weights
 
     @property
     def target(self) -> np.ndarray:
