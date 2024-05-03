@@ -224,6 +224,18 @@ class MLDatasetLoader:
         if hasattr(self, "_labels"):
             return self._labels
 
+        if not self.process_inst.has_aux("ml_id"):
+            logger.warning(
+                f"Process {self.process} does not have an ml_id. Label will be set to -1.",
+            )
+            self._labels = np.ones(self.n_events) * -1
+            return self._labels
+        elif self.process_inst.x.ml_id not in range(len(self.ml_model_inst.processes)):
+            raise Exception(
+                f"ml_id {self.process_inst.x.ml_id} of process {self.process} not in range of processes "
+                f"{self.ml_model_inst.processes}. Cannot create target array.",
+            )
+
         self._labels = np.ones(self.n_events) * self.process_inst.x.ml_id
         return self._labels
 
@@ -233,8 +245,19 @@ class MLDatasetLoader:
             return self._target
 
         self._target = np.zeros((self.n_events, len(self.ml_model_inst.processes))).astype(np.float32)
-        self._target[:, self.process_inst.x.ml_id] = 1
 
+        if not self.process_inst.has_aux("ml_id"):
+            logger.warning(
+                f"Process {self.process} does not have an ml_id. Target will be set to 0 for all classes.",
+            )
+            return self._target
+        elif self.process_inst.x.ml_id not in range(len(self.ml_model_inst.processes)):
+            raise Exception(
+                f"ml_id {self.process_inst.x.ml_id} of process {self.process} not in range of processes "
+                f"{self.ml_model_inst.processes}. Cannot create target array.",
+            )
+
+        self._target[:, self.process_inst.x.ml_id] = 1
         return self._target
 
     @property
