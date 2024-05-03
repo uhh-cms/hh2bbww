@@ -86,15 +86,15 @@ hbw_reduction_status(){
 	law run cf.CalibrateEventsWrapper --version $version --datasets $datasets --print-status "0" $@
 }
 
-ml_model="dense_default"
-
 hbw_ml_training(){
     law run cf.MLTraining --version $version --workers 20 \
-	--ml-model $ml_model \
 	--workflow htcondor \
 	--htcondor-gpus 1 \
 	--htcondor-memory 40000 \
 	--max-runtime 48h \
+	--hbw.MLPreTraining-workflow htcondor \
+	--hbw.MLPreTraining-htcondor-memory 4000 \
+	--hbw.MLPreTraining-max-runtime 3h \
 	--cf.MergeMLEvents-workflow htcondor \
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
@@ -111,15 +111,16 @@ hbw_ml_training(){
 	$@
 }
 
-inference_model="rates_only"
 
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
-	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
+	--hbw.MLPreTraining-workflow htcondor \
+	--hbw.MLPreTraining-htcondor-memory 4000 \
+	--hbw.MLPreTraining-max-runtime 3h \
 	--cf.MergeMLEvents-workflow htcondor \
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
@@ -139,11 +140,13 @@ hbw_datacards(){
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
 	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
-	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
+	--hbw.MLPreTraining-workflow htcondor \
+	--hbw.MLPreTraining-htcondor-memory 4000 \
+	--hbw.MLPreTraining-max-runtime 3h \
 	--cf.MergeMLEvents-workflow htcondor \
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
