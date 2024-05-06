@@ -302,10 +302,10 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dphi_ll", events.Lepton[:, 0].delta_phi(events.Lepton[:, 1]))
 
     # minimum deltaR between lep and jet
-    lljj_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
-    lep, jet = ak.unzip(lljj_pairs)
-    min_dr_lljj = (ak.min(lep.delta_r(jet), axis=-1))
-    events = set_ak_column_f32(events, "mli_min_dr_llbb", min_dr_lljj)
+    llbb_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
+    lep, jet = ak.unzip(llbb_pairs)
+    min_dr_llbb = (ak.min(lep.delta_r(jet), axis=-1))
+    events = set_ak_column_f32(events, "mli_min_dr_llbb", min_dr_llbb)
 
     # hh system
     hbb = events.Bjet[:, 0] + events.Bjet[:, 1]

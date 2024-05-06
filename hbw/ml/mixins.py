@@ -10,12 +10,10 @@ import law
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
 
-from hbw.util import log_memory
+from hbw.util import log_memory, call_func_safe
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-tf = maybe_import("tensorflow")
-keras = maybe_import("tensorflow.keras")
 
 logger = law.logger.get_logger(__name__)
 
@@ -49,6 +47,7 @@ class DenseModelMixin():
         self,
         task: law.Task,
     ):
+        import tensorflow.keras as keras
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
         from hbw.ml.tf_util import cumulated_crossentropy
@@ -126,6 +125,7 @@ class CallbacksBase():
     reduce_lr_kwargs: dict = {}
 
     def get_callbacks(self, output):
+        import tensorflow.keras as keras
         # check that only valid options have been requested
         callback_options = {"backup", "checkpoint", "reduce_lr", "early_stopping"}
         if diff := self.callbacks.difference(callback_options):
@@ -151,7 +151,7 @@ class CallbacksBase():
                 backup_dir=backup_output.path,
             )
             backup_kwargs.update(self.backup_kwargs)
-            callbacks.append(tf.keras.callbacks.BackupAndRestore(**backup_kwargs))
+            callbacks.append(keras.callbacks.BackupAndRestore(**backup_kwargs))
 
         if "checkpoint" in self.callbacks:
             checkpoint_kwargs = dict(
@@ -162,7 +162,7 @@ class CallbacksBase():
                 save_best_only=True,
             )
             checkpoint_kwargs.update(self.checkpoint_kwargs)
-            callbacks.append(tf.keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
+            callbacks.append(keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
 
         if "early_stopping" in self.callbacks:
             early_stopping_kwargs = dict(
@@ -174,7 +174,7 @@ class CallbacksBase():
                 start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
             )
             early_stopping_kwargs.update(self.early_stopping_kwargs)
-            callbacks.append(tf.keras.callbacks.EarlyStopping(**early_stopping_kwargs))
+            callbacks.append(keras.callbacks.EarlyStopping(**early_stopping_kwargs))
 
         if "reduce_lr" in self.callbacks:
             reduce_lr_kwargs = dict(
@@ -187,7 +187,7 @@ class CallbacksBase():
                 min_lr=0,
             )
             reduce_lr_kwargs.update(self.reduce_lr_kwargs)
-            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
+            callbacks.append(keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
 
         if len(callbacks) != len(self.callbacks):
             logger.warning(
@@ -232,6 +232,7 @@ class ClassicModelFitMixin(CallbacksBase):
         """
         Training loop with normal tf dataset
         """
+        import tensorflow as tf
 
         log_memory("start")
 
@@ -300,13 +301,16 @@ class ModelFitMixin(CallbacksBase):
         """
         Training loop but with custom dataset
         """
+        import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
+        from hbw.ml.plotting import plot_history
+
         log_memory("start")
 
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.ml_weights),
+                (validation.features, validation.target, validation.train_weights),
             ).batch(self.batchsize)
 
         log_memory("init")
@@ -338,10 +342,11 @@ class ModelFitMixin(CallbacksBase):
             iterator,
             **model_fit_kwargs,
         )
-        log_memory("loop")
 
-        # delete tf datasets to clear memory
-        del tf_train
-        del iterator
-        del tf_validation
-        log_memory("del")
+        # create history plots
+        for metric, ylabel in (
+            ("loss", "Loss"),
+            ("categorical_accuracy", "Accuracy"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy"),
+        ):
+            call_func_safe(plot_history, model.history.history, output["plots"], metric, ylabel)

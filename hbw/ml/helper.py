@@ -8,7 +8,6 @@ from columnflow.util import maybe_import
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
-tf = maybe_import("tensorflow")
 
 
 def assign_dataset_to_process(
@@ -33,7 +32,7 @@ def assign_dataset_to_process(
 
 
 def predict_numpy_on_batch(
-    model: tf.keras.Model,
+    model,
     inputs: np.array,
     batch_size: int = 2 ** 16,
 ) -> np.array:

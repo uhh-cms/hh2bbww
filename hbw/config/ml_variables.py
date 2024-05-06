@@ -308,7 +308,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_s_min",
         expression="mli_s_min",
-        binning=(50, 1, 10000),
+        binning=(40, 1, 10000),
         log_x=True,
         x_title=r"$S_{min}$",
     )
