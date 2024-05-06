@@ -113,6 +113,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_selector = default_selector(config_inst)
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
+    config_inst.x.default_weight_producer = "example"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl"]
@@ -129,7 +130,10 @@ def set_config_defaults_and_groups(config_inst):
         "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
         "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
+        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
+        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
@@ -219,6 +223,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.variable_groups = {
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
+        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
+        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
