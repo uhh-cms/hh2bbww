@@ -323,25 +323,27 @@ def add_config(
     })
 
     if cfg.x.run == 2:
-
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
-        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
+        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "Tight")
 
         # names of muon correction sets and working points
         # (used in the muon producer)
         cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     elif cfg.x.run == 3:
-        # TODO: check that everyting is setup as intended
-
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
-        cfg.x.electron_sf_names = ("TODO", f"{cfg.x.cpn_tag}", "TODO")
+        if cfg.x.cpn_tag == "2022postEE":
+            # TODO: we need to use different SFs for control regions
+            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoE+PromptFG", "Tight")
+        elif cfg.x.cpn_tag == "2022preEE":
+            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoBCD", "Tight")
 
         # names of muon correction sets and working points
         # (used in the muon producer)
-        cfg.x.muon_sf_names = ("NUM_TightMiniIso_DEN_MediumID", f"{cfg.x.cpn_tag}")
+        # TODO: we need to use different SFs for control regions
+        cfg.x.muon_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
 
     # register shifts
     # TODO: make shifts year-dependent
@@ -358,8 +360,8 @@ def add_config(
         cfg,
         "minbias_xs",
         {
-            "pu_weight": "pu_weight_{name}",
             "normalized_pu_weight": "normalized_pu_weight_{name}",
+            "pu_weight": "pu_weight_{name}",
         },
     )
 
@@ -398,6 +400,8 @@ def add_config(
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
+                "btag_weight": f"btag_weight_{unc}_" + "{direction}",
+                "njet_btag_weight": f"njet_btag_weight_{unc}_" + "{direction}",
             },
         )
 
@@ -415,7 +419,10 @@ def add_config(
         add_shift_aliases(
             cfg,
             unc,
-            {f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}"},
+            {
+                f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}",
+                f"{unc}_weight": f"{unc}_weight_" + "{direction}",
+            },
         )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
@@ -460,7 +467,7 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-0263d239"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a332cfa"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
@@ -490,19 +497,8 @@ def add_config(
         "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
     })
 
-    if cfg.x.run == 3:
-        # inconsistent naming in the jsonpog integration...
-        corr_tag = f"2022{jerc_postfix}_27Jun2023"
-        cfg.x.external_files["muon_sf"] = (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1")
-
     # temporary fix due to missing corrections in run 3
-    # electron and met still missing
     if cfg.x.run == 3:
-        cfg.add_tag("skip_electron_weights")
-        cfg.x.external_files.pop("electron_sf")
-
-        cfg.add_tag("skip_muon_weights")
-
         cfg.x.external_files.pop("met_phi_corr")
 
     cfg.x.met_filters = {
