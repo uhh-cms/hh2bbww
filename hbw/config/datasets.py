@@ -67,6 +67,18 @@ data_egamma = {
     ],
 }
 
+data_muoneg = {
+    "2022preEE": [
+        "data_muoneg_c",
+        "data_muoneg_d",
+    ],
+    "2022postEE": [
+        "data_muoneg_e",
+        "data_muoneg_f",
+        "data_muoneg_g",
+    ],
+}
+
 tt = {
     "2017": [
         "tt_sl_powheg",
@@ -385,6 +397,7 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
         data_mu=data_mu.get(cpn_tag, []),
         data_e=data_e.get(cpn_tag, []),
         data_egamma=data_egamma.get(cpn_tag, []),
+        data_muoneg=data_muoneg.get(cpn_tag, []),
         tt=tt.get(cpn_tag, []),
         st=st.get(cpn_tag, []),
         w_lnu=w_lnu.get(cpn_tag, []),

@@ -146,7 +146,10 @@ def set_config_defaults_and_groups(config_inst):
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
+    config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["dech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
+    config_inst.x.process_groups["d2ech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
+    config_inst.x.process_groups["demuch"] = ["data_muoneg"] + config_inst.x.process_groups["ech"]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -173,6 +176,15 @@ def set_config_defaults_and_groups(config_inst):
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
+        "dl_2much": ["sr__2mu", "sr__2mu__resolved", "sr__2mu__boosted"],
+        "dl_2ech": ["sr__2e", "sr__2e__resolved", "sr__2e__boosted"],
+        "dl_emuch": ["sr__emu", "sr__emu__resolved", "sr__emu__boosted"],
+        "dl_2much_resolved": ["sr__2mu__resolved", "sr__2mu__resolved__1b", "sr__2mu__resolved__2b"],
+        "dl_2ech_resolved": ["sr__2e__resolved", "sr__2e__resolved__1b", "sr__2e__resolved__2b"],
+        "dl_emuch_resolved": ["sr__emu__resolved", "sr__emu__resolved__1b", "sr__emu__resolved__2b"],
+        "dl_2much_boosted": ["sr__2mu__boosted"],
+        "dl_2ech_boosted": ["sr__2e__boosted"],
+        "dl_emuch_boosted": ["sr__emu__boosted"],
         "default": ["incl", "sr__1e", "sr__1mu"],
         "test": ["incl", "sr__1e"],
         "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
