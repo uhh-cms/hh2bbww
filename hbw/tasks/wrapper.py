@@ -5,20 +5,28 @@ Convenience wrapper tasks to simplify producing results and fetching & deleting 
 e.g. default sets of plots or datacards
 """
 
-import law
+from __future__ import annotations
 
-# from columnflow.tasks.framework.base import ConfigTask
+
+import law
+import luigi
+
+from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin,  # , MLModelsMixin,
+    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
+    CalibratorsMixin,
 )
-from columnflow.tasks.plotting import PlotVariables1D
-from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.framework.plotting import (
+    PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
+)
+from columnflow.tasks.plotting import PlotVariables1D, PlotShiftedVariables1D
+# from columnflow.tasks.framework.remote import RemoteWorkflow
 from hbw.tasks.base import HBWTask
 
 from columnflow.util import dev_sandbox
 
 
-class ControlPlotsSL(
+class ControlPlots(
     HBWTask,
     ProducersMixin,
     SelectorStepsMixin,
@@ -52,7 +60,7 @@ class ControlPlotsSL(
         pass
 
 
-class MLInputPlotsSL(
+class MLInputPlots(
     HBWTask,
     ProducersMixin,
     SelectorStepsMixin,
@@ -87,74 +95,148 @@ class MLInputPlotsSL(
         pass
 
 
-class DefaultPlots(
+class InferencePlots(
+    law.WrapperTask,
     HBWTask,
-    # MLModelsMixin,
-    # ProducersMixin,
-    # SelectorStepsMixin,
+    # pass mixins to directly use plot parameters on command line
+    PlotBase1D,
+    VariablePlotSettingMixin,
+    ProcessPlotSettingMixin,
+    InferenceModelMixin,
+    MLModelsMixin,
+    ProducersMixin,
+    SelectorStepsMixin,
     CalibratorsMixin,
-    # we only add workflow mixins to be able to directly pass --workflow instead of --cf.PlotVariables1d-workflow
-    law.LocalWorkflow,
-    RemoteWorkflow,
+    # law.LocalWorkflow,
+    # RemoteWorkflow,
 ):
-    # TODO: this should be three separate tasks with one additional "wrapper"
-    sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    def create_branch_map(self):
-        # create a dummy branch map so that this task could as a job
-        return {0: None}
+    plot_function = PlotVariables1D.plot_function
+
+    # disable some parameters
+    datasets = None
+    processes = None
+    categories = None
+
+    inference_variables = law.CSVParameter(
+        default=("config_variable", "variables_to_plot"),
+        description="Inference category attributes to use to determine which variables to plot",
+    )
+    skip_variables = luigi.BoolParameter(default=False)
+    # skip_data = luigi.BoolParameter(default=False)
+
+    # upstream requirements
+    reqs = Requirements(
+        PlotVariables1D=PlotVariables1D,
+    )
 
     def requires(self):
         reqs = {}
 
-        for channel in ("mu", "e"):
+        inference_model = self.inference_model_inst
 
-            # control plots with data
-            reqs[f"control_plots_{channel}"] = PlotVariables1D.req(
+        # NOTE: this is not generally included in an inference model, but only in hbw analysis
+        ml_model_name = inference_model.ml_model_name
+
+        for inference_category in inference_model.categories:
+            # decide which variables to plot based on the inference model and the variables parameter
+            variables = []
+            for attr in self.inference_variables:
+                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
+            if not self.skip_variables:
+                variables.extend(self.variables)
+
+            category = inference_category.config_category
+            processes = inference_category.data_from_processes
+
+            # data_datasets = inference_category.config_data_datasets
+
+            reqs[inference_category.name] = self.reqs.PlotVariables1D.req(
                 self,
-                producers=("features",),
-                processes=(f"d{channel}ch",),
-                process_settings=[["scale_signal"]],
-                variables=["*"],
-                categories=(f"{channel}ch",),
-                yscale="log",
-                cms_label="pw",
+                variables=variables,
+                categories=(category,),
+                processes=processes,
+                ml_models=(ml_model_name,),
             )
-
-            # ML input features
-            reqs[f"ml_inputs_{channel}"] = PlotVariables1D.req(
-                self,
-                producers=("ml_inputs",),
-                processes=(f"{channel}ch",),
-                # process_settings=[["scale_signal"]],
-                variables=["mli_*"],
-                categories=(f"{channel}ch",),
-                yscale="log",
-                cms_label="simpw",
-            )
-
-            # ML output nodes
-            ml_model = "dense_default"
-            reqs[f"ml_outputs_{channel}"] = PlotVariables1D.req(
-                self,
-                producers=(f"ml_{ml_model}",),
-                ml_models=(ml_model,),
-                processes=(f"{channel}ch",),
-                # process_settings=[["scale_signal"]],
-                variables=["mlscore.*"],
-                categories=(f"{channel}ch",),
-                yscale="log",
-                cms_label="simpw",
-            )
-
-        # ML outputs categorized (TODO)
 
         return reqs
 
-    def output(self):
-        # use the input also as output
-        # (makes it easier to fetch and delete outputs)
-        return self.requires()
 
-    def run(self):
-        pass
+class ShiftedInferencePlots(
+    law.WrapperTask,
+    HBWTask,
+    # pass mixins to directly use plot parameters on command line
+    PlotBase1D,
+    VariablePlotSettingMixin,
+    ProcessPlotSettingMixin,
+    InferenceModelMixin,
+    MLModelsMixin,
+    ProducersMixin,
+    SelectorStepsMixin,
+    CalibratorsMixin,
+):
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    plot_function = PlotShiftedVariables1D.plot_function
+
+    # disable some parameters
+    datasets = None
+    processes = None
+    categories = None
+
+    inference_variables = law.CSVParameter(
+        default=("config_variable", "variables_to_plot"),
+        description="Inference category attributes to use to determine which variables to plot",
+    )
+    skip_variables = luigi.BoolParameter(default=False)
+
+    # upstream requirements
+    reqs = Requirements(
+        PlotShiftedVariables1D=PlotShiftedVariables1D,
+    )
+
+    def requires(self):
+        reqs = {}
+
+        inference_model = self.inference_model_inst
+
+        # NOTE: this is not generally included in an inference model, but only in hbw analysis
+        ml_model_name = inference_model.ml_model_name
+
+        for inference_category in inference_model.categories:
+            # decide which variables to plot based on the inference model and the variables parameter
+            variables = []
+            for attr in self.inference_variables:
+                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
+            if not self.skip_variables:
+                variables.extend(self.variables)
+
+            category = inference_category.config_category
+            processes = inference_category.data_from_processes
+
+            for process in processes:
+                inference_process = inference_model.get_process(process, inference_category.name)
+                shifts = [
+                    param.config_shift_source
+                    for param in inference_process.parameters
+                    if param.config_shift_source
+                ]
+                if not shifts:
+                    continue
+
+                for shift in shifts:
+                    branch_name = f"{inference_category.name}_{process}_{shift}"
+
+                    # produce shifted plots for each shift separately
+                    # NOTE: we could also try producing one plot per shift with all processes added
+                    reqs[branch_name] = self.reqs.PlotShiftedVariables1D.req(
+                        self,
+                        variables=variables,
+                        categories=(category,),
+                        processes=(process,),
+                        shift_sources=(shift,),
+                        ml_models=(ml_model_name,),
+                    )
+
+        return reqs
