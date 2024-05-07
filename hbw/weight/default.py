@@ -5,7 +5,6 @@ Event weight producer.
 """
 
 import law
-import order as od
 
 from columnflow.util import maybe_import
 from columnflow.weight import WeightProducer, weight_producer
