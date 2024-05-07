@@ -10,6 +10,7 @@ from columnflow.util import memoize
 
 logger = law.logger.get_logger(__name__)
 
+
 @memoize
 def patch_mltraining():
     logger.info("Patching MLTraining to use NestedSiblingFileCollection and remove unnecessary requires...")
