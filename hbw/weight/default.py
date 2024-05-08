@@ -131,3 +131,16 @@ base.derive("btag_not_normalized", cls_dict={"weight_columns": {
     "normalized_pdf_weight": ["pdf"],
     "top_pt_weight": ["top_pt"],
 }})
+
+base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
+    "normalization_weight": [],
+    "normalized_pu_weight": ["minbias_xs"],
+    "muon_weight": ["mu_sf"],
+    "electron_weight": ["e_sf"],
+    "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_murf_envelope_weight": ["murf_envelope"],
+    "normalized_mur_weight": ["mur"],
+    "normalized_muf_weight": ["muf"],
+    "normalized_pdf_weight": ["pdf"],
+    "top_pt_weight": ["top_pt"],
+}})

@@ -363,3 +363,6 @@ def dl1_init(self: Selector) -> None:
 
     self.uses.add(event_weights_to_normalize)
     self.produces.add(event_weights_to_normalize)
+
+
+dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
