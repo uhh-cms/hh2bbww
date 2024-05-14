@@ -136,10 +136,6 @@ def sl_lepton_selection(
 @sl_lepton_selection.init
 # @call_once_on_instance()
 def sl_lepton_selection_init(self: Selector) -> None:
-    # configuration of defaults
-    self.mu_pt = self.config_inst.x("mu_pt", 25)
-    self.ele_pt = self.config_inst.x("ele_pt", 25)
-
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
@@ -158,10 +154,9 @@ def sl_lepton_selection_init(self: Selector) -> None:
 
     year = self.config_inst.campaign.x.year
 
-    # setup lepton pt and trigger requirements in the config
-    # when the lepton selector does not define the values, resort to defaults
-    # NOTE: this is not doing what I was intending: this allows me to share the selector info
-    # with other tasks, but I want other selectors to be able to change these attributes...
+    #
+    # if not already done, setup lepton pt and trigger requirements in the config
+    #
 
     # for vetoing additional leptons; should be in sync with DL channel
     self.config_inst.x.mu2_pt = self.config_inst.x("mu2_pt", 15)

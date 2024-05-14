@@ -49,9 +49,10 @@ logger = law.logger.get_logger(__name__)
         "Muon.cone_pt", "Muon.is_tight",
         "Electron.cone_pt", "Electron.is_tight",
     },
-    muon_id="TightID",  # options: MediumID, MediumPromptID, TightID
+    # TODO: we would need to move these attributes to the main Selector init to make this configurable
+    muon_id="TightId",  # options: MediumId, MediumPromptId, TightId
     muon_iso="TightPFIso",  # options: LoosePFIso, TightPFIso (for MediumId only: Loose/Medium/TightMiniIso)
-    electron_id="TightID",  # options: TODO, probably Loose, Medium, Tight, wp80iso, wp90iso, wp80noiso, wp90noiso
+    electron_id="TightId",  # options: LooseId, MediumId, TightId, wp80iso, wp90iso, wp80noiso, wp90noiso
 )
 def lepton_definition(
         self: Selector,
@@ -90,14 +91,14 @@ def lepton_definition(
         (abs(electron.eta) <= 2.5) &
         (abs(electron.dxy) <= 0.05) &
         (abs(electron.dz) <= 0.1) &
-        (electron.cutBased >= 1)  # veto ID
+        (electron.cutBased >= 1)  # veto Id
     )
     mu_mask_loose = (
         (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
         (abs(muon.dxy) <= 0.05) &  # muon efficiencies are computed with dxy < 0.2; loosen?
         (abs(muon.dz) <= 0.1) &  # muon efficiencies are computed with dz < 0.5; loosen?
-        (muon.looseId) &  # loose ID
+        (muon.looseId) &  # loose Id
         (muon.pfIsoId >= 2)  # loose Isolation
     )
 
@@ -208,10 +209,9 @@ def lepton_definition_setup(
 ) -> None:
     # collection of id and isolation requirements
     self.muon_id_req = {
-        "mvaTTH": lambda muon: ((muon.mvaTTH >= 0.50) & muon.mediumId),
-        "LooseID": lambda muon: muon.looseId,
-        "MediumID": lambda muon: muon.mediumId,
-        "TightID": lambda muon: muon.tightId,
+        "LooseId": lambda muon: muon.looseId,
+        "MediumId": lambda muon: muon.mediumId,
+        "TightId": lambda muon: muon.tightId,
         "MediumPromptId": lambda muon: muon.mediumPromptId,
     }[self.muon_id]
 
@@ -225,10 +225,9 @@ def lepton_definition_setup(
     }[self.muon_iso]
 
     self.electron_id_req = {
-        "mvaTTH": lambda electron: electron.mvaTTH >= 0.30,
-        "LooseID": lambda electron: (electron.cutBased >= 2),
-        "MediumID": lambda electron: (electron.cutBased >= 3),
-        "TightID": lambda electron: (electron.cutBased >= 4),
+        "LooseId": lambda electron: (electron.cutBased >= 2),
+        "MediumId": lambda electron: (electron.cutBased >= 3),
+        "TightId": lambda electron: (electron.cutBased >= 4),
         "MediumPromptId": lambda electron: electron.mediumPromptId,
         "wp80iso": lambda electron: electron[self.e_mva_iso_wp80],
         "wp90iso": lambda electron: electron[self.e_mva_iso_wp90],
@@ -244,10 +243,9 @@ def lepton_definition_init(self: Selector) -> None:
 
     # add required electron and muon id and iso columns
     muon_id_column = {
-        "mvaTTH": "mvaTTH",  # and mediumId?
-        "LooseID": "looseId",
-        "MediumID": "mediumId",
-        "TightID": "tightId",
+        "LooseId": "looseId",
+        "MediumId": "mediumId",
+        "TightId": "tightId",
         "MediumPromptId": "mediumPromptId",
     }[self.muon_id]
     self.uses.add(f"Muon.{muon_id_column}")
@@ -266,10 +264,9 @@ def lepton_definition_init(self: Selector) -> None:
     self.e_mva_iso_wp90 = "mvaIso_WP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
 
     electron_id_column = {
-        "mvaTTH": "mvaTTH",
-        "LooseID": "cutBased",
-        "MediumID": "cutBased",
-        "TightID": "cutBased",
+        "LooseId": "cutBased",
+        "MediumId": "cutBased",
+        "TightId": "cutBased",
         "wp80iso": self.e_mva_iso_wp80,
         "wp90iso": self.e_mva_iso_wp90,
     }[self.electron_id]
