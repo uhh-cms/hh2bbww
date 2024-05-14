@@ -322,6 +322,8 @@ def add_config(
         },
     })
 
+    # electron and muon SFs (TODO: we should add these config entries as part of the selector init)
+
     if cfg.x.run == 2:
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
@@ -330,6 +332,8 @@ def add_config(
         # names of muon correction sets and working points
         # (used in the muon producer)
         cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+        cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
+        cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     elif cfg.x.run == 3:
         # names of electron correction sets and working points
@@ -344,6 +348,13 @@ def add_config(
         # (used in the muon producer)
         # TODO: we need to use different SFs for control regions
         cfg.x.muon_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
+        cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}")
+        cfg.x.muon_iso_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
+
+        # central trigger SF, only possible for SL
+        if cfg.x.lepton_tag == "sl":
+            # TODO: this should be year-dependent and setup in the selector
+            cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")
 
     # register shifts
     # TODO: make shifts year-dependent
