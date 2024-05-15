@@ -623,44 +623,6 @@ def add_config(
         ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
 
-    # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
-    get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
-
-    # NOTE: the event_weights will be replaced with a weights_producer soon
-    cfg.x.event_weights = DotDict()
-
-    cfg.x.event_weights["normalization_weight"] = []
-
-    # for dataset in cfg.datasets:
-    #     if dataset.x("is_ttbar", False):
-    #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
-
-    if not cfg.has_tag("skip_btag_weights"):
-        # NOTE: which to use, njet_btag_weight or btag_weight?
-        cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
-
-    if not cfg.has_tag("skip_pu_weights"):
-        cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-
-    if not cfg.has_tag("skip_electron_weights"):
-        cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
-    if not cfg.has_tag("skip_muon_weights"):
-        cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
-
-    for dataset in cfg.datasets:
-        dataset.x.event_weights = DotDict()
-        if not dataset.has_tag("skip_scale"):
-            # pdf/scale weights for all non-qcd datasets
-            dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
-            dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
-            dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
-
-        if not dataset.has_tag("skip_pdf"):
-            dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
-
-        if dataset.has_tag("is_ttbar"):
-            dataset.x.event_weights["top_pt_weight"] = get_shifts("top_pt")
-
     def reduce_version(cls, inst, params):
         # per default, use the version set on the command line
         version = inst.version  # same as params.get("version") ?
