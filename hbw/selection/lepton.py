@@ -35,10 +35,8 @@ logger = law.logger.get_logger(__name__)
         # {muon_weights, electron_weights} |  # we could load muon and electron weights producer for checks
         four_vec("Electron", {
             "dxy", "dz", "cutBased",
-            "jetRelIso",  # for cone-pt
         }) | four_vec("Muon", {
             "dxy", "dz", "looseId", "pfIsoId",
-            "jetRelIso",  # for cone-pt
         }) | four_vec("Tau", {
             "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet", "decayMode",
         }) | {
@@ -46,8 +44,7 @@ logger = law.logger.get_logger(__name__)
         }
     ),
     produces={
-        "Muon.cone_pt", "Muon.is_tight",
-        "Electron.cone_pt", "Electron.is_tight",
+        "Muon.is_tight", "Electron.is_tight",
     },
     # TODO: we would need to move these attributes to the main Selector init to make this configurable
     muon_id="TightId",  # options: MediumId, MediumPromptId, TightId
@@ -66,18 +63,6 @@ def lepton_definition(
     """
     # initialize dicts for the selection steps
     steps = DotDict()
-
-    # reconstruct relevant variables
-    events = set_ak_column(events, "Electron.cone_pt", ak.where(
-        self.electron_id_req(events.Electron),
-        events.Electron.pt,
-        0.9 * events.Electron.pt * (1.0 + events.Electron.jetRelIso),
-    ))
-    events = set_ak_column(events, "Muon.cone_pt", ak.where(
-        self.muon_id_req(events.Muon),
-        events.Muon.pt,
-        0.9 * events.Muon.pt * (1.0 + events.Muon.jetRelIso),
-    ))
 
     electron = events.Electron
     muon = events.Muon
