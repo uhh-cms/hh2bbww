@@ -391,12 +391,21 @@ def add_config(
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
+    # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
 
-    cfg.add_shift(name="mu_sf_up", id=50, type="shape")
-    cfg.add_shift(name="mu_sf_down", id=51, type="shape")
+    # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
+    # cfg.add_shift(name="mu_sf_down", id=51, type="shape")
+    # add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
+
     cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
     cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
-    add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
+    cfg.add_shift(name="mu_id_sf_up", id=54, type="shape")
+    cfg.add_shift(name="mu_id_sf_down", id=55, type="shape")
+    cfg.add_shift(name="mu_iso_sf_up", id=56, type="shape")
+    cfg.add_shift(name="mu_iso_sf_down", id=57, type="shape")
+    add_shift_aliases(cfg, "mu_id_sf", {"muon_id_weight": "muon_id_weight_{direction}"})
+    add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
+    # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
     btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",

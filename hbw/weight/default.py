@@ -94,10 +94,11 @@ btag_uncs = [
     "lfstats1_{year}", "lfstats2_{year}", "cferr1", "cferr2",
 ]
 
-base.derive("default", cls_dict={"weight_columns": {
+default_weight_columns = {
     "normalization_weight": [],
     "normalized_pu_weight": ["minbias_xs"],
-    "muon_weight": ["mu_sf"],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
     "normalized_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murf_envelope_weight": ["murf_envelope"],
@@ -105,42 +106,18 @@ base.derive("default", cls_dict={"weight_columns": {
     "normalized_muf_weight": ["muf"],
     "normalized_pdf_weight": ["pdf"],
     "top_pt_weight": ["top_pt"],
-}})
+}
+base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 
-base.derive("no_btag_weight", cls_dict={"weight_columns": {
-    "normalization_weight": [],
-    "normalized_pu_weight": ["minbias_xs"],
-    "muon_weight": ["mu_sf"],
-    "electron_weight": ["e_sf"],
-    "normalized_murf_envelope_weight": ["murf_envelope"],
-    "normalized_mur_weight": ["mur"],
-    "normalized_muf_weight": ["muf"],
-    "normalized_pdf_weight": ["pdf"],
-    "top_pt_weight": ["top_pt"],
-}})
+weight_columns_execpt_btag = default_weight_columns.copy()
+weight_columns_execpt_btag.pop("normalized_btag_weight")
 
+base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
-    "normalization_weight": [],
-    "normalized_pu_weight": ["minbias_xs"],
-    "muon_weight": ["mu_sf"],
-    "electron_weight": ["e_sf"],
+    **weight_columns_execpt_btag,
     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-    "normalized_murf_envelope_weight": ["murf_envelope"],
-    "normalized_mur_weight": ["mur"],
-    "normalized_muf_weight": ["muf"],
-    "normalized_pdf_weight": ["pdf"],
-    "top_pt_weight": ["top_pt"],
 }})
-
 base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
-    "normalization_weight": [],
-    "normalized_pu_weight": ["minbias_xs"],
-    "muon_weight": ["mu_sf"],
-    "electron_weight": ["e_sf"],
+    **weight_columns_execpt_btag,
     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-    "normalized_murf_envelope_weight": ["murf_envelope"],
-    "normalized_mur_weight": ["mur"],
-    "normalized_muf_weight": ["muf"],
-    "normalized_pdf_weight": ["pdf"],
-    "top_pt_weight": ["top_pt"],
 }})
