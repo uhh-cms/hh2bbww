@@ -7,12 +7,14 @@ Selection modules for HH -> bbWW(lnulnu).
 from collections import defaultdict
 from typing import Tuple
 
+from cmsdb.constants import m_z
+
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
-from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
 
 np = maybe_import("numpy")
@@ -89,6 +91,7 @@ def dl_lepton_selection(
     muon = events.Muon[subleading_mu_mask]
 
     # Create a temporary lepton collection
+
     lepton = ak.concatenate(
         [
             electron * 1,
@@ -101,27 +104,40 @@ def dl_lepton_selection(
     lepton_results.steps["TripleLeptonVeto"] = ak.num(lepton, axis=1) <= 2
     lepton_results.steps["Charge"] = ak.sum(electron.charge, axis=1) + ak.sum(muon.charge, axis=1) == 0
 
+    dilepton = ak.pad_none(lepton, 2)
+    dilepton = dilepton[:, 0] + dilepton[:, 1]
+    lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
+
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         lepton_results.steps.TripleLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
+    lepton_results.steps["Lep_mixed"] = (emu_mask | mue_mask)
 
     lepton_results.steps["Dilepton"] = (mm_mask | ee_mask | emu_mask | mue_mask)
 
@@ -135,9 +151,23 @@ def dl_lepton_selection(
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
     )
 
+    def ak_any(masks: list[ak.Array], axis: int = 0) -> ak.Array:
+        """
+        Apparently, ak.any is very slow, so just do the "or" of all masks in a loop.
+        This is more than 100x faster than doing `ak.any(masks, axis=0)`.
+
+        param masks: list of masks to be combined via logical "or"
+        param axis: only kept for consistency with ak.any
+        return: ak.Array of logical "or" of all masks
+        """
+        mask = masks[0]
+        for _mask in masks[1:]:
+            mask = mask | _mask
+        return mask
+
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
-        trigger_mask = ak.any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
         lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
@@ -146,12 +176,12 @@ def dl_lepton_selection(
         )
 
     # combine results of each individual channel
-    lepton_results.steps["Trigger"] = ak.any([
+    lepton_results.steps["Trigger"] = ak_any([
         lepton_results.steps[f"Trigger_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
-    lepton_results.steps["TriggerAndLep"] = ak.any([
+    lepton_results.steps["TriggerAndLep"] = ak_any([
         lepton_results.steps[f"TriggerAndLep_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
@@ -278,7 +308,7 @@ def dl1(
     results += jet_results
 
     # boosted selection
-    events, boosted_results = self[sl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
+    events, boosted_results = self[dl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
 
     # vbf_jet selection
@@ -302,6 +332,7 @@ def dl1(
         results.steps.ll_zmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
+        results.steps.DiLeptonMass81 &
         results.steps.Dilepton &
         results.steps.Trigger &
         results.steps.TriggerAndLep
@@ -334,13 +365,13 @@ def dl1_init(self: Selector) -> None:
 
     self.uses = {
         pre_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
+        vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
         post_selection,
     }
     self.produces = {
         pre_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
+        vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
         post_selection,
     }

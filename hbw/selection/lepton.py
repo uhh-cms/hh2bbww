@@ -145,6 +145,7 @@ def lepton_definition(
 
     steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
     steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
+    steps["ll_mass_81"] = ~ak.any((lepton_pairs.m_inv - m_z.nominal) >= 10, axis=1)
 
     # store number of Loose/Fakeable/Tight electrons/muons/taus as cutflow variables
     events = set_ak_column(events, "cutflow.n_loose_electron", ak.sum(e_mask_loose, axis=1))
