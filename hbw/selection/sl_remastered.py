@@ -14,6 +14,7 @@ from hbw.selection.common import masked_sorted_indices, pre_selection, post_sele
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
+from hbw.util import ak_any
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -111,7 +112,7 @@ def sl_lepton_selection(
 
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
-        trigger_mask = ak.any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
         lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
@@ -120,12 +121,12 @@ def sl_lepton_selection(
         )
 
     # combine results of each individual channel
-    lepton_results.steps["Trigger"] = ak.any([
+    lepton_results.steps["Trigger"] = ak_any([
         lepton_results.steps[f"Trigger_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
-    lepton_results.steps["TriggerAndLep"] = ak.any([
+    lepton_results.steps["TriggerAndLep"] = ak_any([
         lepton_results.steps[f"TriggerAndLep_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)

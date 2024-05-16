@@ -16,6 +16,7 @@ from hbw.selection.common import masked_sorted_indices, pre_selection, post_sele
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
+from hbw.util import ak_any
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -150,20 +151,6 @@ def dl_lepton_selection(
         lepton_results.steps.Dilepton &
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
     )
-
-    def ak_any(masks: list[ak.Array], axis: int = 0) -> ak.Array:
-        """
-        Apparently, ak.any is very slow, so just do the "or" of all masks in a loop.
-        This is more than 100x faster than doing `ak.any(masks, axis=0)`.
-
-        param masks: list of masks to be combined via logical "or"
-        param axis: only kept for consistency with ak.any
-        return: ak.Array of logical "or" of all masks
-        """
-        mask = masks[0]
-        for _mask in masks[1:]:
-            mask = mask | _mask
-        return mask
 
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel

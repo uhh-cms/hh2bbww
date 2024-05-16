@@ -17,8 +17,23 @@ import law
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
+ak = maybe_import("awkward")
 
 _logger = law.logger.get_logger(__name__)
+
+
+def ak_any(masks: list[ak.Array], **kwargs) -> ak.Array:
+    """
+    Apparently, ak.any is very slow, so just do the "or" of all masks in a loop.
+    This is more than 100x faster than doing `ak.any(masks, axis=0)`.
+
+    param masks: list of masks to be combined via logical "or"
+    return: ak.Array of logical "or" of all masks
+    """
+    mask = masks[0]
+    for _mask in masks[1:]:
+        mask = mask | _mask
+    return mask
 
 
 def has_tag(tag, *container, operator: callable = any) -> bool:
