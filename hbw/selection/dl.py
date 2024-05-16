@@ -63,14 +63,14 @@ def dl_jet_selection(
         ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.3, axis=2)
     )
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
-    jet_sel = events.cutflow.n_jet >= 2
+    jet_sel = events.cutflow.n_jet >= 1
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
     # b-tagged jets, medium working point
     wp_med = self.config_inst.x.btag_working_points.deepjet.medium
     btag_mask = (jet_mask) & (events.Jet.btagDeepFlavB >= wp_med)
     events = set_ak_column(events, "cutflow.n_deepjet_med", ak.sum(btag_mask, axis=1))
-    btag_sel = events.cutflow.n_deepjet_med >= 2
+    btag_sel = events.cutflow.n_deepjet_med >= 1
 
     # define b-jets as the two b-score leading jets, b-score sorted
     bjet_indices = masked_sorted_indices(jet_mask, events.Jet.btagDeepFlavB)[:, :2]
@@ -159,13 +159,13 @@ def dl_lepton_selection(
 
     # mumu channel
     mm_mask = (
-        (ak.num(leptons.pdgId, axis=-1) == 2) &
+        (ak.num(leptons.pdgId, axis=-1) == 2) &  # this requires <= 2 leptons (padding: all events have >= 2 leptons)
         (abs(leptons.pdgId[:, 0]) == 13) &
-        (abs(leptons.pdgId[:, 1]) == 13) &
+        (abs(leptons.pdgId[:, 1]) == 13) &  # this requires <= 2 leptons
         (leptons.pt[:, 0] > 20) &
         (invariant_mass(leptons) > 12) &
         (invariant_mass(leptons) < 76) &
-        (ak.sum(leptons.charge, axis=-1) == 0)
+        (ak.sum(leptons.charge, axis=-1) == 0)  # this vetos same-sign leptons + events with 1 or 3 leptons
     )
 
     # ee channel
@@ -183,10 +183,8 @@ def dl_lepton_selection(
     em_mask = (
         (ak.num(leptons.pdgId, axis=-1) == 2) &
         (
-            (abs(leptons.pdgId[:, 0]) == 11) &
-            (abs(leptons.pdgId[:, 1]) == 13) |
-            (abs(leptons.pdgId[:, 0]) == 13) &
-            (abs(leptons.pdgId[:, 1]) == 11)
+            ((abs(leptons.pdgId[:, 0]) == 11) & (abs(leptons.pdgId[:, 1]) == 13)) |
+            ((abs(leptons.pdgId[:, 0]) == 13) & (abs(leptons.pdgId[:, 1]) == 11))
         ) &
         (leptons.pt[:, 0] > 25) &
         (invariant_mass(leptons) > 12) &
@@ -300,8 +298,8 @@ def dl_lepton_selection_init(self: Selector) -> None:
         self.ee_trigger = {
             2017: ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"],
             2022: [
-                "Ele35_WPTight_Gsf",
-                "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+                "Ele30_WPTight_Gsf",
+                "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
             ],
         }[year]
         for trigger in self.ee_trigger:
@@ -313,11 +311,8 @@ def dl_lepton_selection_init(self: Selector) -> None:
             2017: ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL", "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
                   "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8", "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"],
             2022: [
-                "IsoMu27",
-                "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",
-                "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
+                "IsoMu24",
                 "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
-                "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8",
             ],
         }[year]
         for trigger in self.mm_trigger:
@@ -329,10 +324,9 @@ def dl_lepton_selection_init(self: Selector) -> None:
             2017: ["Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
                   "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ"],
             2022: [
-                "IsoMu27",
-                "Ele35_WPTight_Gsf",
-                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                "IsoMu24",
+                "Ele30_WPTight_Gsf",
+                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
             ],
         }[year]
         for trigger in self.emu_trigger:
@@ -344,10 +338,9 @@ def dl_lepton_selection_init(self: Selector) -> None:
             2017: ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
                   "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL"],
             2022: [
-                "IsoMu27",
-                "Ele35_WPTight_Gsf",
-                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
-                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+                "IsoMu24",
+                "Ele30_WPTight_Gsf",
+                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
             ],
         }[year]
         for trigger in self.mue_trigger:
@@ -408,7 +401,7 @@ def dl(
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
-    results.event = (
+    results.steps["all"] = results.event = (
         results.steps.all_but_bjet &
         ((results.steps.Jet & results.steps.Bjet) | results.steps.HbbJet)
     )
