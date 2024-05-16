@@ -92,7 +92,6 @@ def dl_lepton_selection(
     muon = events.Muon[subleading_mu_mask]
 
     # Create a temporary lepton collection
-
     lepton = ak.concatenate(
         [
             electron * 1,
@@ -108,9 +107,9 @@ def dl_lepton_selection(
     dilepton = ak.pad_none(lepton, 2)
     dilepton = dilepton[:, 0] + dilepton[:, 1]
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
-
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.Charge &
         lepton_results.steps.DiLeptonMass81 &
         lepton_results.steps.TripleLeptonVeto &
@@ -118,6 +117,7 @@ def dl_lepton_selection(
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
         lepton_results.steps.Charge &
         lepton_results.steps.DiLeptonMass81 &
@@ -125,6 +125,7 @@ def dl_lepton_selection(
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
         lepton_results.steps.Charge &
         lepton_results.steps.DiLeptonMass81 &
@@ -132,6 +133,7 @@ def dl_lepton_selection(
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
         lepton_results.steps.Charge &
         lepton_results.steps.DiLeptonMass81 &
@@ -328,8 +330,10 @@ def dl1(
     # combined event selection after all steps
     results.steps["all"] = results.event = (
         results.steps.all_but_bjet &
-        ((results.steps.nJet1 & bjet_step) | results.steps.HbbJet)
+        ((jet_step & bjet_step) | results.steps.HbbJet)
     )
+    results.steps["all_SR"] = results.event & results.steps.SR
+    results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
     events, results = self[post_selection](events, results, stats, **kwargs)
