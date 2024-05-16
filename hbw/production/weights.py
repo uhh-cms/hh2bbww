@@ -27,41 +27,6 @@ ak = maybe_import("awkward")
 
 
 @producer(
-    produces={"event_weight"},
-    mc_only=True,
-)
-def event_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Producer that calculates the 'final' event weight (as done in cf.CreateHistograms)
-    """
-    weight = ak.Array(np.ones(len(events)))
-    if self.dataset_inst.is_mc:
-        for column in self.config_inst.x.event_weights:
-            weight = weight * Route(column).apply(events)
-        for column in self.dataset_inst.x("event_weights", []):
-            if has_ak_column(events, column):
-                weight = weight * Route(column).apply(events)
-            else:
-                self.logger.warning_once(
-                    f"missing_dataset_weight_{column}",
-                    f"weight '{column}' for dataset {self.dataset_inst.name} not found",
-                )
-
-    events = set_ak_column(events, "event_weight", weight)
-
-    return events
-
-
-@event_weight.init
-def event_weight_init(self: Producer) -> None:
-    if not getattr(self, "dataset_inst", None):
-        return
-
-    self.uses |= set(self.config_inst.x.event_weights.keys())
-    self.uses |= set(self.dataset_inst.x("event_weights", {}).keys())
-
-
-@producer(
     uses={gen_parton_top, gen_v_boson, pu_weight},
     produces={gen_parton_top, gen_v_boson, pu_weight},
     mc_only=True,
@@ -149,14 +114,12 @@ normalized_pu_weights = normalized_weight_factory(
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
-        event_weight,
     },
     produces={
         normalization_weights,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
-        event_weight,
     },
     mc_only=True,
 )
@@ -195,9 +158,6 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_pdf_weights](events, **kwargs)
-
-    # calculate the full event weight for plotting purposes
-    events = self[event_weight](events, **kwargs)
 
     return events
 

@@ -24,8 +24,6 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 @selector(
     uses={lepton_definition, "Electron.charge", "Muon.charge"},
     produces={lepton_definition},
-    meeeh=4,
-    moooh=5,
 )
 def dl_lepton_selection(
         self: Selector,
