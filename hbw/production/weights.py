@@ -5,7 +5,7 @@ Column production methods related to generic event weights.
 """
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, has_ak_column, Route
+from columnflow.columnar_util import set_ak_column
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
