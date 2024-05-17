@@ -67,16 +67,17 @@ data_egamma = {
     ],
 }
 
+# commented out because of empty datasets
 data_muoneg = {
-    "2022preEE": [
-        "data_muoneg_c",
-        "data_muoneg_d",
-    ],
-    "2022postEE": [
-        "data_muoneg_e",
-        "data_muoneg_f",
-        "data_muoneg_g",
-    ],
+    # "2022preEE": [
+    #     "data_muoneg_c",
+    #     "data_muoneg_d",
+    # ],
+    # "2022postEE": [
+    #     "data_muoneg_e",
+    #     "data_muoneg_f",
+    #     "data_muoneg_g",
+    # ],
 }
 
 tt = {
