@@ -49,8 +49,6 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     uses={
         prepare_objects,
         "HbbJet.msoftdrop",
-        "Jet.btagDeepFlavB", "Bjet.btagDeepFlavB", "Lightjet.btagDeepFlavB",
-        "Jet.btagPNetB", "Bjet.btagPNetB", "Lightjet.btagPNetB",
     } | four_vec(
         {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
     ),
@@ -69,12 +67,20 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
     events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
+    # setup correct btagging columns
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    btag_column = self.config_inst.x.btag_column
+
+    events = set_ak_column_f32(events, "Jet.b_score", events.Jet[btag_column])
+    events = set_ak_column_f32(events, "Bjet.b_score", events.Bjet[btag_column])
+    events = set_ak_column_f32(events, "Lightjet.b_score", events.Lightjet[btag_column])
+
     # H->bb FatJet
     for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
         events = set_ak_column_f32(events, f"mli_fj_{var}", events.HbbJet[:, 0][var])
 
     # low-level features
-    for var in ["pt", "eta", "btagDeepFlavB", "btagPNetB"]:
+    for var in ["pt", "eta", "b_score"]:
         events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
         events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
         # even in DL, ~10% of events contain 4 jets, so it might be worth keeping this
@@ -97,23 +103,13 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2
     events = set_ak_column_f32(events, "mli_vbf_tag", vbf_tag)
 
-    # deepjets in general
-    wp_med_deepjet = self.config_inst.x.btag_working_points.deepjet.medium
+    # bjets in general
     events = set_ak_column_f32(
-        events, "mli_n_deepjet", ak.num(events.Jet[events.Jet.btagDeepFlavB > wp_med_deepjet], axis=1),
+        events, "mli_n_btag", ak.num(events.Jet[events.Jet.b_score > btag_wp_score], axis=1),
     )
-    events = set_ak_column_f32(events, "mli_deepjetsum", ak.sum(events.Jet.btagDeepFlavB, axis=1))
-    events = set_ak_column_f32(events, "mli_b_deepjetsum", ak.sum(events.Bjet.btagDeepFlavB, axis=1))
-    events = set_ak_column_f32(events, "mli_l_deepjetsum", ak.sum(events.Lightjet.btagDeepFlavB, axis=1))
-
-    # pnet in general
-    wp_med_particlenet = self.config_inst.x.btag_working_points.particlenet.medium
-    events = set_ak_column_f32(
-        events, "mli_n_particlenet", ak.num(events.Jet[events.Jet.btagDeepFlavB > wp_med_particlenet], axis=1),
-    )
-    events = set_ak_column_f32(events, "mli_particlenetsum", ak.sum(events.Jet.btagPNetB, axis=1))
-    events = set_ak_column_f32(events, "mli_b_particlenetsum", ak.sum(events.Bjet.btagPNetB, axis=1))
-    events = set_ak_column_f32(events, "mli_l_particlenetsum", ak.sum(events.Lightjet.btagPNetB, axis=1))
+    events = set_ak_column_f32(events, "mli_b_score_sum", ak.sum(events.Jet.b_score, axis=1))
+    events = set_ak_column_f32(events, "mli_b_b_score_sum", ak.sum(events.Bjet.b_score, axis=1))
+    events = set_ak_column_f32(events, "mli_l_b_score_sum", ak.sum(events.Lightjet.b_score, axis=1))
 
     # all possible jet pairs
     jet_pairs = ak.combinations(events.Jet, 2)
@@ -146,12 +142,14 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @common_ml_inputs.init
 def common_ml_inputs_init(self: Producer) -> None:
+    btag_column = self.config_inst.x.btag_column
+    self.uses |= {f"Jet.{btag_column}", f"Bjet.{btag_column}", f"Lightjet.{btag_column}"}
+
     # define ML input separately to self.produces
     self.ml_input_columns = {
         # event features
         "mli_ht", "mli_lt", "mli_n_jet",
-        "mli_n_deepjet", "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
-        "mli_n_particlenet", "mli_particlenetsum", "mli_b_particlenetsum", "mli_l_particlenetsum",
+        "mli_n_btag", "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
         # bb system
         "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb",
         # minimum angles
@@ -163,7 +161,7 @@ def common_ml_inputs_init(self: Producer) -> None:
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]
-        for var in ["btagDeepFlavB", "btagPNetB", "pt", "eta"]
+        for var in ["b_score", "pt", "eta"]
     ) | set(
         f"mli_{obj}_{var}"
         for obj in ["fj"]

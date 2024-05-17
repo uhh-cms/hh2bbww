@@ -38,52 +38,28 @@ def add_common_ml_variables(config: od.Config) -> None:
         x_title="Number of jets",
     )
     config.add_variable(
-        name="mli_n_deepjet",
-        expression="mli_n_deepjet",
+        name="mli_n_btag",
+        expression="mli_n_btag",
         binning=(11, -0.5, 10.5),
-        x_title="Number of b-tagged jets (deepjet medium WP)",
+        x_title="Number of b-tagged jets",
     )
     config.add_variable(
-        name="mli_deepjetsum",
-        expression="mli_deepjetsum",
+        name="mli_b_score_sum",
+        expression="mli_b_score_sum",
         binning=(40, 0, 4),
-        x_title="sum of deepjet scores",
+        x_title="sum of btag scores",
     )
     config.add_variable(
-        name="mli_b_deepjetsum",
-        expression="mli_b_deepjetsum",
+        name="mli_b_b_score_sum",
+        expression="mli_b_b_score_sum",
         binning=(40, 0, 4),
-        x_title="sum of bjet deepjet scores",
+        x_title="sum of bjet btag scores",
     )
     config.add_variable(
-        name="mli_l_deepjetsum",
-        expression="mli_l_deepjetsum",
+        name="mli_l_b_score_sum",
+        expression="mli_l_b_score_sum",
         binning=(40, 0, 4),
-        x_title="sum of lightjet deepjet scores",
-    )
-    config.add_variable(
-        name="mli_n_particlenet",
-        expression="mli_n_particlenet",
-        binning=(11, -0.5, 10.5),
-        x_title="Number of b-tagged jets (particlenet medium WP)",
-    )
-    config.add_variable(
-        name="mli_particlenetsum",
-        expression="mli_particlenetsum",
-        binning=(40, 0, 4),
-        x_title="sum of particlenet scores",
-    )
-    config.add_variable(
-        name="mli_b_particlenetsum",
-        expression="mli_b_particlenetsum",
-        binning=(40, 0, 4),
-        x_title="sum of bjet particlenet scores",
-    )
-    config.add_variable(
-        name="mli_l_particlenetsum",
-        expression="mli_l_particlenetsum",
-        binning=(40, 0, 4),
-        x_title="sum of lightjet particlenet scores",
+        x_title="sum of lightjet btag scores",
     )
     config.add_variable(
         name="mli_bb_pt",
@@ -154,7 +130,7 @@ def add_common_ml_variables(config: od.Config) -> None:
     #
 
     for obj in ["b1", "b2", "j1", "j2"]:
-        for var in ["btagDeepFlavB", "btagPNetB"]:
+        for var in ["b_score"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
