@@ -46,8 +46,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     input_features = [
         # event features
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
-        "mli_deepjetsum", "mli_b_deepjetsum",
+        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
+        "mli_b_score_sum",
         # bb system
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
         "mli_mindr_lb",
@@ -62,8 +62,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_met_pt",
     ] + [
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2"]
-        for var in ["pt", "eta", "btagDeepFlavB"]
+        for obj in ["b1", "b2", "j1"]
+        for var in ["pt", "eta", "b_score"]
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["lep", "lep2"]
