@@ -160,6 +160,10 @@ dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
 })
+dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c17"],
+    "processes": ["sig", "tt", "st", "dy_lep"],
+})
 
 # testing of hyperparameter changes
 dl_22.derive("dl_22_stepsMax", cls_dict={"steps_per_epoch": "max_iter_valid"})

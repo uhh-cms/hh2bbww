@@ -10,6 +10,7 @@ import luigi
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
 )
+from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import MergeReducedEventsUser
 from columnflow.util import maybe_import
 from columnflow.columnar_util import get_ak_routes, update_ak_array
@@ -38,6 +39,8 @@ class CheckConfig(
         default=True,
         description="Whether to start a ipython debugger session or not; default: True",
     )
+
+    settings = SettingsParameter(default={})
 
     def requires(self):
         return {}

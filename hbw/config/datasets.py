@@ -28,7 +28,7 @@ logger = law.logger.get_logger(__name__)
 
 data_mu = {
     "2017": [
-        "data_mu_b",
+        # "data_mu_b",  # missing triggers in DL
         "data_mu_c",
         "data_mu_d",
         "data_mu_e",
@@ -47,7 +47,7 @@ data_mu = {
 
 data_e = {
     "2017": [
-        "data_e_b",
+        # "data_e_b",  # missing triggers in DL
         "data_e_c",
         "data_e_d",
         "data_e_e",
