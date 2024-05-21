@@ -21,14 +21,14 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
+class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
-    processes = [
+    processes = (
         "sig",
         "tt",
         "st",
         "dy_lep",
-    ]
+    )
 
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
@@ -76,9 +76,6 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     store_name: str = "inputs_inclusive"
 
-    # identifier of the PreMLTask output. Needs to be changed when changing data loader or it's dependencies
-    preml_store_name: str = "preml_base"
-
     folds: int = 5
     negative_weights: str = "handle"
 
@@ -100,17 +97,29 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     batchsize: int = 2 ** 12
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
-    # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params = [
+    # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
+    bookkeep_params: set[str] = {
         # base params
-        "processes", "input_features", "validation_fraction", "ml_process_weights",
-        "negative_weights", "folds",
+        "data_loader", "input_features", "train_val_test_split",
+        "processes", "ml_process_weights", "negative_weights", "folds",
         # DenseModelMixin
-        "activation", "layers", "dropout",
+        "activation", "layers", "dropout", "learningrate",
         # ModelFitMixin
-        "callbacks", "reduce_r_factor", "reduce_lr_patience",
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
-    ]
+    }
+
+    # parameters that can be overwritten via command line
+    settings_parameters: set[str] = {
+        # base params
+        "processes", "ml_process_weights",
+        "negative_weights",
+        # DenseModelMixin
+        "activation", "layers", "dropout", "learningrate",
+        # ModelFitMixin
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
+        "epochs", "batchsize",
+    }
 
     def __init__(
             self,
@@ -118,6 +127,9 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
+
+    def cast_ml_param_values(self):
+        super().cast_ml_param_values()
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -131,6 +143,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
                     null_value=-1,
                     binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                    aux={"rebin": 40},
                 )
                 self.config_inst.add_variable(
                     name=f"mlscore40.{proc}",

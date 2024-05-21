@@ -4,6 +4,8 @@
 Mixin classes to build ML models
 """
 
+from __future__ import annotations
+
 import law
 # import order as od
 
@@ -26,22 +28,25 @@ def loop_dataset(data, max_count=10000):
             break
 
 
-class DenseModelMixin():
+class DenseModelMixin(object):
     """
     Mixin that provides an implementation for `prepare_ml_model`
     """
 
     activation: str = "relu"
-    layers: tuple = (64, 64, 64)
+    layers: tuple[int] = (64, 64, 64)
     dropout: float = 0.50
-    learningrate: int = 0.00050
+    learningrate: float = 0.00050
 
-    def __init__(
-        self,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.activation = str(self.activation)
+        self.layers = tuple(int(n_nodes) for n_nodes in self.layers)
+        self.dropout = float(self.dropout)
+        self.learningrate = float(self.learningrate)
 
     def prepare_ml_model(
         self,
@@ -106,9 +111,9 @@ class DenseModelMixin():
         return model
 
 
-class CallbacksBase():
+class CallbacksBase(object):
     """ Base class that handles parametrization of callbacks """
-    callbacks: set = {
+    callbacks: set[str] = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
@@ -123,6 +128,16 @@ class CallbacksBase():
     backup_kwargs: dict = {}
     early_stopping_kwargs: dict = {}
     reduce_lr_kwargs: dict = {}
+
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.callbacks = set(self.callbacks)
+        self.remove_backup = bool(self.remove_backup)
+        self.reduce_lr_factor = float(self.reduce_lr_factor)
+        self.reduce_lr_patience = int(self.reduce_lr_patience)
 
     def get_callbacks(self, output):
         import tensorflow.keras as keras
@@ -213,13 +228,13 @@ class ClassicModelFitMixin(CallbacksBase):
     epochs: int = 200
     batchsize: int = 2 ** 12
 
-    def __init__(
-            self,
-            *args,
-            **kwargs,
-    ):
-
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.epochs = int(self.epochs)
+        self.batchsize = int(self.batchsize)
 
     def fit_ml_model(
         self,
@@ -282,13 +297,17 @@ class ModelFitMixin(CallbacksBase):
     # either set steps directly or use attribute from the MultiDataset
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
-    def __init__(
-            self,
-            *args,
-            **kwargs,
-    ):
-
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.epochs = int(self.epochs)
+        self.batchsize = int(self.batchsize)
+        if isinstance(self.steps_per_epoch, float):
+            self.steps_per_epoch = int(self.steps_per_epoch)
+        else:
+            self.steps_per_epoch = str(self.steps_per_epoch)
 
     def fit_ml_model(
         self,

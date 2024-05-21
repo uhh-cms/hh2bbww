@@ -38,17 +38,16 @@ class MLClassifierBase(MLModel):
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
     # NOTE: the order of processes is crucial! Do not change after training
-    processes: list = ["tt", "st"]
+    processes: tuple = ("tt", "st")
     input_features: set = {"mli_ht", "mli_n_jet"}
 
-    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when adding new input features
+    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when producing new input features
     store_name: str = "inputs_base"
-
-    # identifier of the PreMLTask output. Needs to be changed when changing data loader or it's dependencies
-    preml_store_name: str = "preml_base"
 
     # Class for data loading and it's dependencies.
     data_loader = MLDatasetLoader
+    preml_params: set[str] = {"data_loader", "input_features", "train_val_test_split"}
+
     # NOTE: we split each fold into train, val, test + do k-folding, so we have a 4-way split in total
     # TODO: test whether setting "test" to 0 is working
     train_val_test_split: tuple = (0.75, 0.15, 0.10)
@@ -60,11 +59,17 @@ class MLClassifierBase(MLModel):
     epochs: int = 50
     batchsize: int = 2 ** 10
 
-    # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params: list[str] = [
-        "processes", "input_features", "validation_fraction", "ml_process_weights",
-        "negative_weights", "epochs", "batchsize", "folds",
-    ]
+    # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
+    bookkeep_params: set[str] = {
+        "data_loader", "input_features", "train_val_test_split",
+        "processes", "ml_process_weights", "negative_weights", "epochs", "batchsize", "folds",
+    }
+
+    # parameters that can be overwritten via command line
+    settings_parameters: set[str] = {
+        "processes", "ml_process_weights",
+        "negative_weights", "epochs", "batchsize",
+    }
 
     def __init__(
             self,
@@ -72,16 +77,120 @@ class MLClassifierBase(MLModel):
             folds: int | None = None,
             **kwargs,
     ):
+        """
+        Initialization function of the MLModel. We first overwrite the class attributes with what is set
+        in the  *self.parameters* attribute via the `--ml-model-settings` parameter. Then we cast the
+        parameters to the correct types and store them as individual class attributes. Finally, we store
+        the parameters in the `self.parameters` attribute, which is used both to create a hash for the output
+        path and to store the parameters in a yaml file.
+
+        Only the parameters in the `settings_parameters` attribute can be overwritten via the command line.
+        Only the parameters in the `bookkeep_params` attribute are stored in the `self.parameters` attribute.
+        """
         super().__init__(*args, **kwargs)
 
-        # TODO: find some appropriate names for the negative_weights modes
-        assert self.negative_weights in ("ignore", "abs", "handle")
+        # checks
+        if diff := self.settings_parameters.difference(self.bookkeep_params):
+            raise Exception(
+                f"settings_parameters {diff} not in bookkeep_params; all customizable settings should"
+                "be bookkept in the parameters.yaml file and the self.parameters_repr to ensure reproducibility",
+            )
+        if diff := self.preml_params.difference(self.bookkeep_params):
+            raise Exception(
+                f"preml_params {diff} not in bookkeep_params; all parameters that change the preml_store_name"
+                "should be bookkept via the 'self.bookkeep_params' attribute",
+            )
+        if unknown_params := set(self.parameters.keys()).difference(self.settings_parameters):
+            raise Exception(
+                f"unknown parameters {unknown_params} passed to the MLModel; only the following "
+                f"parameters are allowed: {', '.join(self.settings_parameters)}",
+            )
 
+        for param in self.settings_parameters:
+            # overwrite the default value with the value from the parameters
+            setattr(self, param, self.parameters.get(param, getattr(self, param)))
+
+        # cast the ml parameters to the correct types if necessary
+        self.cast_ml_param_values()
+
+        # overwrite self.parameters with the typecasted values
         for param in self.bookkeep_params:
-            self.parameters[param] = getattr(self, param, None)
+            self.parameters[param] = getattr(self, param)
+            if isinstance(self.parameters[param], set):
+                # sets are not hashable, so convert them to sorted tuple
+                self.parameters[param] = tuple(sorted(self.parameters[param]))
+
+        # sort the self.settings_parameters
+        self.parameters = DotDict(sorted(self.parameters.items()))
+
+    def cast_ml_param_values(self):
+        """
+        Resolve the values of the parameters that are used in the MLModel
+        """
+        self.processes = tuple(self.processes)
+        self.input_features = set(self.input_features)
+        self.train_val_test_split = tuple(self.train_val_test_split)
+        if not isinstance(self.ml_process_weights, dict):
+            # cast tuple to dict
+            self.ml_process_weight = {
+                proc: weight for proc, weight in [s.split(":") for s in self.ml_process_weight]
+            }
+        # cast weights to int and remove processes not used in training
+        self.ml_model_weights = {
+            proc: int(weight)
+            for proc, weight in self.ml_process_weights.items()
+            if proc in self.processes
+        }
+        self.negative_weights = str(self.negative_weights)
+        self.epochs = int(self.epochs)
+        self.batchsize = int(self.batchsize)
+        self.folds = int(self.folds)
+
+        # checks
+        if self.negative_weights not in ("ignore", "abs", "handle"):
+            raise Exception(
+                f"negative_weights {self.negative_weights} not in ('ignore', 'abs', 'handle')",
+            )
+
+    @property
+    def preml_store_name(self):
+        """
+        Create a hash of the parameters that are used in the MLModel to determine the 'preml_store_name'.
+        The preml_store_name is cached to ensure that it does not change during the lifetime of the object.
+        """
+        preml_params = {param: self.parameters[param] for param in self.preml_params}
+        preml_store_name = law.util.create_hash(sorted(preml_params.items()))
+        if hasattr(self, "_preml_store_name") and self._preml_store_name != preml_store_name:
+            raise Exception(
+                f"preml_store_name changed from {self._preml_store_name} to {preml_store_name};"
+                "this should not happen",
+            )
+        self._preml_store_name = preml_store_name
+        return self._preml_store_name
+
+    @property
+    def parameters_repr(self):
+        """
+        Create a hash of the parameters to store as part of the output path.
+        The repr is cached to ensure that it does not change during the lifetime of the object.
+        """
+        if not self.parameters:
+            return ""
+        parameters_repr = law.util.create_hash(sorted(self.parameters.items()))
+        if hasattr(self, "_parameters_repr") and self._parameters_repr != parameters_repr:
+            raise Exception(
+                f"parameters_repr changed from {self._parameters_repr} to {parameters_repr};"
+                "this should not happen",
+            )
+        self._parameters_repr = parameters_repr
+        return self._parameters_repr
 
     def setup(self):
         """ function that is run as part of the setup phase. Most likely overwritten by subclasses """
+        logger.info(
+            f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr})"
+            f"parameters: \n{self.parameters}",
+        )
         # dynamically add variables for the quantities produced by this model
         # NOTE: since these variables are only used in ConfigTasks,
         #       we do not need to add these variables to all configs
@@ -271,7 +380,7 @@ class MLClassifierBase(MLModel):
 
         # hyperparameter bookkeeping
         output["mlmodel"].child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
-
+        logger.info(f"Training will be run with the following parameters: \n{self.parameters}")
         #
         # model preparation
         #
