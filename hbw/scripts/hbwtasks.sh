@@ -87,19 +87,33 @@ hbw_reduction_status(){
 }
 
 hbw_ml_training(){
-    law run cf.MLTraining --version $version --workers 20 \
+	law run cf.MLTraining --version $version --workers 20 \
 	--workflow htcondor \
-	--htcondor-gpus 1 \
-	--htcondor-memory 40000 \
-	--max-runtime 48h \
-	--hbw.MLPreTraining-workflow htcondor \
-	--hbw.MLPreTraining-htcondor-memory 4000 \
-	--hbw.MLPreTraining-max-runtime 3h \
-	--cf.MergeMLEvents-workflow htcondor \
-	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--htcondor-memory 10000 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
-	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.MergeMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
+	--cf.MergeReductionStats-n-inputs -1 \
+	--cf.ReduceEvents-workflow htcondor \
+	--cf.SelectEvents-workflow htcondor \
+	--cf.SelectEvents-pilot True \
+	--cf.BundleRepo-custom-checksum $(checksum) \
+	--retries 2 \
+	$@
+}
+
+hbw_plot_ml_training(){
+	law run hbw.PlotMLEvaluationSingleFold --version $version --workers 20 \
+	--fold 0 \
+	--workflow htcondor \
+	--htcondor-memory 10000 \
+	--cf.MergeMLEvents-workflow htcondor \
+ 	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
