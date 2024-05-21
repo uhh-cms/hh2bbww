@@ -413,7 +413,7 @@ class MLEvaluationSingleFold(
 
         reqs["models"] = self.reqs.MLTraining.req_different_branching(
             self,
-            branch=self.fold,
+            branches=(self.fold,),
             configs=(self.config_inst.name,),
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
@@ -430,7 +430,7 @@ class MLEvaluationSingleFold(
 
         reqs["training"] = self.reqs.MLTraining.req_different_branching(
             self,
-            branch=self.fold,
+            branches=(self.fold,),
             configs=(self.config_inst.name,),
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
@@ -547,7 +547,7 @@ class PlotMLResultsSingleFold(
 
         reqs["training"] = self.reqs.MLTraining.req_different_branching(
             self,
-            branch=self.fold,
+            branches=(self.fold,),
             configs=(self.config_inst.name,),
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
@@ -567,7 +567,7 @@ class PlotMLResultsSingleFold(
                 calibrators=(self.calibrators,),
                 selectors=(self.selector,),
                 producers=(self.producers,),
-                branch=self.fold,
+                branches=(self.fold,),
             ),
         }
 
