@@ -1,7 +1,8 @@
-# version 4
+# version 5
 
 -r ../modules/columnflow/sandboxes/columnar.txt
 
 tensorflow==2.11.0
 scikit-learn~=1.2
+scikit-optimize~=0.10.1
 shap==0.45.0
