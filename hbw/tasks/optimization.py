@@ -89,6 +89,7 @@ class GetAUCScores(PlotMLResultsSingleFold):
             output["plots"],
             "test",
             self.ml_model_inst.process_insts,
+            stats,
         )
 
         # dump all stats into yaml file

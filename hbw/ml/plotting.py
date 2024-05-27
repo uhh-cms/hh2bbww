@@ -218,30 +218,50 @@ def plot_roc_ovr(
         input_type: str,
         process_insts: tuple[od.Process],
         stats: dict | None = None,
+        weighting: str = "equal_weights",
 ) -> None:
     """
     Simple function to create and store some ROC plots;
     mode: OvR (one versus rest)
     """
+    # use CMS plotting style
+    plt.style.use(mplhep.style.CMS)
+
     from sklearn.metrics import roc_curve, roc_auc_score
 
     auc_scores = []
     n_classes = len(inputs.target[0])
+
+    # load weights and remove negative values
+    weights = np.copy(getattr(inputs, weighting))
+    weights[weights < 0] = 0
 
     fig, ax = plt.subplots()
     for i in range(n_classes):
         y_true = (inputs.labels == i)
         fpr, tpr, thresholds = roc_curve(
             y_true=y_true,
-            # y_true=inputs.target[:, i],
             y_score=inputs.prediction[:, i],
-            sample_weight=inputs.equal_weights,
+            sample_weight=weights,
         )
 
+        # to calculate the AUC score, we reduce the problem of multi-classification to a binary classification
         auc_scores.append(roc_auc_score(
-            y_true, inputs.prediction[:, i],
-            average="macro", multi_class="ovr",
+            y_true=y_true,
+            y_score=inputs.prediction[:, i],
+            average="macro",
+            multi_class="ovo",
+            sample_weight=weights,
         ))
+
+        # we could also switch to "ovr" (one versus rest) strategy, as shown in the block below
+        # auc_scores.append(roc_auc_score(
+        #     y_true=inputs.target,
+        #     y_score=inputs.prediction,
+        #     average="micro",
+        #     multi_class="ovr",
+        #     sample_weight=weights,
+        # ))
 
         # create the plot
         ax.plot(fpr, tpr)
@@ -276,11 +296,16 @@ def plot_roc_ovo(
         output: law.FileSystemDirectoryTarget,
         input_type: str,
         process_insts: tuple[od.Process],
+        stats: dict | None = None,
+        weighting: str = "equal_weights",
 ) -> None:
     """
     Simple function to create and store some ROC plots;
     mode: OvO (one versus one)
     """
+    # use CMS plotting style
+    plt.style.use(mplhep.style.CMS)
+
     from sklearn.metrics import roc_curve, roc_auc_score
 
     n_classes = len(inputs.target[0])
@@ -289,6 +314,10 @@ def plot_roc_ovo(
         proc_inst.x.ml_id: proc_inst.x("ml_label", proc_inst.label)
         for proc_inst in process_insts
     }
+
+    # load weights and remove negative values
+    weights = np.copy(getattr(inputs, weighting))
+    weights[weights < 0] = 0
 
     # loop over all classes, considering each as signal for one OvO ROC curve
     for i in range(n_classes):
@@ -306,16 +335,23 @@ def plot_roc_ovo(
             fpr, tpr, thresholds = roc_curve(
                 y_true=y_true,
                 y_score=y_score,
-                sample_weight=inputs.equal_weights[event_mask],
+                sample_weight=weights[event_mask],
             )
 
             auc_scores[j] = roc_auc_score(
                 y_true, y_score,
                 average="macro", multi_class="ovo",
+                sample_weight=weights[event_mask],
             )
 
             # create the plot
             ax.plot(fpr, tpr)
+
+        if isinstance(stats, dict):
+            # append AUC scores to stats dict
+            for j, auc_score in auc_scores.items():
+                auc_score = round_sig(auc_score, 4, float)
+                stats[f"AUC_{input_type}_{process_insts[i].name}_vs_{process_insts[j].name}"] = auc_score
 
         ax.set_title(f"ROC OvO, {input_type} set")
         ax.set_xlabel("Background selection efficiency (FPR)")
