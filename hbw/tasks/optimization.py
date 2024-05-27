@@ -28,10 +28,12 @@ from hbw.tasks.ml import PlotMLResultsSingleFold
 logger = law.logger.get_logger(__name__)
 
 
-class MLOptimizerROC(PlotMLResultsSingleFold):
+class GetAUCScores(PlotMLResultsSingleFold):
     """
     This is quite copy-pastey, I just need to produce some AUC scores...
     """
+    data_splits = ("test",)
+
     def run(self):
         # imports
         from hbw.ml.data_loader import MLProcessData
@@ -60,7 +62,7 @@ class MLOptimizerROC(PlotMLResultsSingleFold):
 
         # load data
         input_files_preml = inputs["preml"]["collection"]
-        input_files_mlpred = inputs["mlpred"]["collection"]
+        input_files_mlpred = inputs["mlpred"]["test"]["collection"]
         input_files = law.util.merge_dicts(
             *[input_files_preml[key] for key in input_files_preml.keys()],
             *[input_files_mlpred[key] for key in input_files_mlpred.keys()],
@@ -203,7 +205,7 @@ class Objective(
 
     # upstream requirements
     reqs = Requirements(
-        MLOptimizerROC=MLOptimizerROC,
+        GetAUCScores=GetAUCScores,
     )
 
     @property
@@ -240,7 +242,7 @@ class Objective(
         reqs = {}
         if self.branch == -1:
             return reqs
-        reqs["MLOptimizerROC"] = self.reqs.MLOptimizerROC.req(
+        reqs["GetAUCScores"] = self.reqs.GetAUCScores.req(
             self,
             fold=0,
             ml_model_settings=self.branch_data,
@@ -249,7 +251,7 @@ class Objective(
 
     def workflow_requires(self):
         reqs = super().workflow_requires()
-        reqs["MLOptimizerROC"] = [self.reqs.MLOptimizerROC.req(
+        reqs["GetAUCScores"] = [self.reqs.GetAUCScores.req(
             self,
             fold=0,
             ml_model_settings=parameter_dict,
@@ -264,7 +266,7 @@ class Objective(
         logger.info("Running Objective Task")
 
         # load stats
-        stats = self.input()["MLOptimizerROC"]["stats"].load(formatter="json")
+        stats = self.input()["GetAUCScores"]["stats"].load(formatter="json")
 
         # calculate objective value
         auc_sum = sum(stats.values()) / len(stats.values())

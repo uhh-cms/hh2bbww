@@ -311,7 +311,7 @@ class MLProcessData:
         self,
         ml_model_inst: MLModel,
         inputs,
-        test_val_train: str,
+        data_split: str,
         processes: str,
         evaluation_fold: int,
         fold_modus: str = "all_except_evaluation_fold",
@@ -319,7 +319,7 @@ class MLProcessData:
         self._ml_model_inst = ml_model_inst
 
         self._input = inputs
-        self._test_val_train = test_val_train
+        self._data_split = data_split
         self._processes = law.util.make_list(processes)
         self._evaluation_fold = evaluation_fold
 
@@ -343,7 +343,7 @@ class MLProcessData:
         del self
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._test_val_train}, {self._processes})"
+        return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._data_split}, {self._processes})"
 
     @property
     def process_insts(self) -> list[od.process]:
@@ -401,7 +401,7 @@ class MLProcessData:
         """
         Convenience function to load all data into memory.
         """
-        logger.info(f"Loading all data for processes {self._processes} in {self._test_val_train} set in memory.")
+        logger.info(f"Loading all data for processes {self._processes} in {self._data_split} set in memory.")
         self.features
         self.weights
         self.train_weights
@@ -415,7 +415,7 @@ class MLProcessData:
         data = []
         for process in self._processes:
             for fold in self.folds:
-                fold_data = self._input[data_str][self._test_val_train][process][fold].load(formatter="numpy")
+                fold_data = self._input[data_str][self._data_split][process][fold].load(formatter="numpy")
                 if np.any(~np.isfinite(fold_data)):
                     raise Exception(f"Found non-finite values in {data_str} for {process} in fold {fold}.")
                 data.append(fold_data)

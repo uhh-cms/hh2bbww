@@ -328,6 +328,7 @@ class MLPreTraining(
 
     @law.decorator.log
     @law.decorator.safe_output
+    @law.decorator.timeit()
     def run(self):
         # prepare inputs and outputs
         inputs = self.input()
@@ -396,6 +397,11 @@ class MLEvaluationSingleFold(
         "number of folds defined in the ML model; default: 0",
     )
 
+    data_split = luigi.Parameter(
+        default="test",
+        description="the data split to evaluate; must be one of 'train', 'val', 'test'; default: 'test'",
+    )
+
     def create_branch_map(self):
         return [
             DotDict({"process": process})
@@ -445,12 +451,10 @@ class MLEvaluationSingleFold(
 
         outputs = {
             evaluation_array: {
-                train_val_test: {process: {fold: (
-                    self.target(f"{evaluation_array}_{train_val_test}_{process}_fold{fold}of{k}.npy")
+                self.data_split: {process: {fold: (
+                    self.target(f"{evaluation_array}_{self.data_split}_{process}_fold{fold}of{k}.npy")
                 ) for fold in range(self.ml_model_inst.folds)
-                }}
-                for train_val_test in ("train", "val", "test")
-            }
+                }}}
             for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays
         }
 
@@ -459,6 +463,7 @@ class MLEvaluationSingleFold(
     @law.decorator.log
     @law.decorator.localize
     @law.decorator.safe_output
+    @law.decorator.timeit()
     def run(self):
         from hbw.ml.data_loader import MLProcessData
 
@@ -466,6 +471,8 @@ class MLEvaluationSingleFold(
         inputs = self.input()
         output = self.output()
         process = self.branch_data["process"]
+
+        logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
 
         # open trained model and assign to ml_model_inst
         training_results = self.ml_model_inst.open_model(inputs["training"])
@@ -480,17 +487,16 @@ class MLEvaluationSingleFold(
         input_files = inputs["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
 
-        for data_split in ("train", "val", "test"):
-            for fold in range(self.ml_model_inst.folds):
-                data = MLProcessData(
-                    self.ml_model_inst, input_files, data_split, process, fold, fold_modus="evaluation_only",
-                )
+        for fold in range(self.ml_model_inst.folds):
+            data = MLProcessData(
+                self.ml_model_inst, input_files, self.data_split, process, fold, fold_modus="evaluation_only",
+            )
 
-                for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays:
-                    # store loaded data
-                    output[evaluation_array][data_split][self.branch_data["process"]][fold].dump(
-                        getattr(data, evaluation_array), formatter="numpy",
-                    )
+            for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays:
+                # store loaded data
+                output[evaluation_array][self.data_split][self.branch_data["process"]][fold].dump(
+                    getattr(data, evaluation_array), formatter="numpy",
+                )
 
 
 class PlotMLResultsSingleFold(
@@ -533,6 +539,8 @@ class PlotMLResultsSingleFold(
         "terminal; no default",
     )
 
+    data_splits = ("test", "val", "train")
+
     def create_branch_map(self):
         return {0: None}
 
@@ -545,17 +553,7 @@ class PlotMLResultsSingleFold(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
-        reqs["training"] = self.reqs.MLTraining.req_different_branching(
-            self,
-            branches=(self.fold,),
-            configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
-        )
-
-        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
-        reqs["mlpred"] = self.reqs.MLEvaluationSingleFold.req_different_branching(self, branch=-1)
+        reqs["inputs"] = self.requires_from_branch()
 
         return reqs
 
@@ -572,7 +570,11 @@ class PlotMLResultsSingleFold(
         }
 
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
-        reqs["mlpred"] = self.reqs.MLEvaluationSingleFold.req_different_branching(self, branch=-1)
+        reqs["mlpred"] = {
+            data_split:
+            self.reqs.MLEvaluationSingleFold.req_different_branching(self, data_split=data_split, branch=-1)
+            for data_split in self.data_splits
+        }
 
         return reqs
 
@@ -617,10 +619,14 @@ class PlotMLResultsSingleFold(
 
         # load data
         input_files_preml = inputs["preml"]["collection"]
-        input_files_mlpred = inputs["mlpred"]["collection"]
+        input_files_mlpred = {data_split: value["collection"] for data_split, value in inputs["mlpred"].items()}
         input_files = law.util.merge_dicts(
             *[input_files_preml[key] for key in input_files_preml.keys()],
-            *[input_files_mlpred[key] for key in input_files_mlpred.keys()],
+            *[
+                input_files_mlpred[data_split][key]
+                for data_split in input_files_mlpred.keys()
+                for key in input_files_mlpred[data_split].keys()
+            ],
             deep=True,
         )
         data = DotDict({
