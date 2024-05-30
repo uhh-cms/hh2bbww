@@ -449,7 +449,7 @@ class PrepareInferenceTaskCalls(
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
 
-        base_cmd = f"export CARDS_PATH={cards_path}; "
+        base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
 
         print("\n\n")
         # creating upper limits for kl=1

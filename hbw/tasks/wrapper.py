@@ -26,6 +26,9 @@ from hbw.tasks.base import HBWTask
 from columnflow.util import dev_sandbox
 
 
+logger = law.logger.get_logger(__name__)
+
+
 class ControlPlots(
     HBWTask,
     ProducersMixin,
@@ -123,7 +126,9 @@ class InferencePlots(
         default=("config_variable", "variables_to_plot"),
         description="Inference category attributes to use to determine which variables to plot",
     )
-    skip_variables = luigi.BoolParameter(default=False)
+    add_variables = luigi.BoolParameter(
+        default=False,
+        description="whether to add plotting the variables from the --variables parameter; default: False")
     # skip_data = luigi.BoolParameter(default=False)
 
     # upstream requirements
@@ -144,7 +149,7 @@ class InferencePlots(
             variables = []
             for attr in self.inference_variables:
                 variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
-            if not self.skip_variables:
+            if self.add_variables:
                 variables.extend(self.variables)
 
             category = inference_category.config_category
@@ -189,13 +194,15 @@ class ShiftedInferencePlots(
         default=("config_variable", "variables_to_plot"),
         description="Inference category attributes to use to determine which variables to plot",
     )
-    skip_variables = luigi.BoolParameter(default=False)
+    add_variables = luigi.BoolParameter(default=False)
 
     # upstream requirements
     reqs = Requirements(
         PlotShiftedVariables1D=PlotShiftedVariables1D,
     )
+    from hbw.util import timeit_multiple
 
+    @timeit_multiple
     def requires(self):
         reqs = {}
 
@@ -209,7 +216,7 @@ class ShiftedInferencePlots(
             variables = []
             for attr in self.inference_variables:
                 variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
-            if not self.skip_variables:
+            if self.add_variables:
                 variables.extend(self.variables)
 
             category = inference_category.config_category
@@ -224,19 +231,16 @@ class ShiftedInferencePlots(
                 ]
                 if not shifts:
                     continue
+                logger.info(f"require plotting shifts {shifts} for process {process}")
 
-                for shift in shifts:
-                    branch_name = f"{inference_category.name}_{process}_{shift}"
-
-                    # produce shifted plots for each shift separately
-                    # NOTE: we could also try producing one plot per shift with all processes added
-                    reqs[branch_name] = self.reqs.PlotShiftedVariables1D.req(
-                        self,
-                        variables=variables,
-                        categories=(category,),
-                        processes=(process,),
-                        shift_sources=(shift,),
-                        ml_models=(ml_model_name,),
-                    )
+                branch_name = f"{inference_category.name}_{process}"
+                reqs[branch_name] = self.reqs.PlotShiftedVariables1D.req(
+                    self,
+                    variables=variables,
+                    categories=(category,),
+                    processes=(process,),
+                    shift_sources=shifts,
+                    ml_models=(ml_model_name,),
+                )
 
         return reqs
