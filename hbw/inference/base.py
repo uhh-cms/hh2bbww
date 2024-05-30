@@ -44,6 +44,8 @@ class HBWInferenceModelBase(InferenceModel):
 
     def __init__(self, config_inst: od.Config, *args, **kwargs):
         super().__init__(config_inst)
+        year = config_inst.campaign.x.year
+        self.systematics = [syst.format(year=year) for syst in self.systematics]
 
         self.add_inference_categories()
         self.add_inference_processes()
@@ -81,12 +83,13 @@ class HBWInferenceModelBase(InferenceModel):
 
     def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
         """ Function to allow customizing the inference category """
-        root_cats = config_cat_inst.x.root_cats
-        variables = ["jet1_pt"]
-        if dnn_cat := root_cats.get("dnn"):
-            dnn_proc = dnn_cat.replace("ml_", "")
-            variables.append(f"mlscore.{dnn_proc}")
-        cat_inst.variables_to_plot = variables
+        # root_cats = config_cat_inst.x.root_cats
+        # variables = ["jet1_pt"]
+        # if dnn_cat := root_cats.get("dnn"):
+        #     dnn_proc = dnn_cat.replace("ml_", "")
+        #     variables.append(f"mlscore.{dnn_proc}")
+        # cat_inst.variables_to_plot = variables
+        return
 
     def add_inference_categories(self: InferenceModel):
         """
@@ -259,8 +262,10 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
+        year = self.config_inst.campaign.x.year
         for shape_uncertainty, shape_processes in const.processes_per_shape.items():
-            if shape_uncertainty not in self.systematics:
+            shape_uncertainty_formatted = shape_uncertainty.format(year=year)
+            if shape_uncertainty_formatted not in self.systematics:
                 continue
 
             # If "all" is included, takes all processes except for the ones specified (starting with !)
@@ -269,10 +274,10 @@ class HBWInferenceModelBase(InferenceModel):
                 shape_processes = set(self.processes) - _remove_processes
 
             self.add_parameter(
-                shape_uncertainty,
+                shape_uncertainty_formatted,
                 process=shape_processes,
                 type=ParameterType.shape,
-                config_shift_source=const.source_per_shape[shape_uncertainty],
+                config_shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
             )
 
             is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty

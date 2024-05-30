@@ -35,20 +35,20 @@ processes = [
 
 # All categories to be included in the final datacard
 config_categories = [
-    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
-    "2e__ml_tt",
-    "2e__ml_t_bkg",
-    "2e__ml_st",
-    "2e__ml_sig",
-    "2e__ml_v_lep",
-    "2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "2mu__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
-    "2mu__ml_tt",
-    "2mu__ml_tt_bkg",
-    "2mu__ml_st",
-    "2mu__ml_sig",
-    "2mu__ml_v_lep",
+    "sr__2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "sr__2e__ml_tt",
+    "sr__2e__ml_t_bkg",
+    "sr__2e__ml_st",
+    "sr__2e__ml_sig",
+    "sr__2e__ml_v_lep",
+    "sr__2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2mu__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "sr__2mu__ml_tt",
+    "sr__2mu__ml_tt_bkg",
+    "sr__2mu__ml_st",
+    "sr__2mu__ml_sig",
+    "sr__2mu__ml_v_lep",
 ]
 
 rate_systematics = [
@@ -92,18 +92,14 @@ shape_systematics = [
     # Shape Scale uncertainties
     # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
     "murf_envelope_tt",
-    "murf_envelope_st_schannel",
-    "murf_envelope_st_tchannel",
-    "murf_envelope_st_twchannel",
+    "murf_envelope_st",
     "murf_envelope_dy_lep",
     "murf_envelope_w_lnu",
     "murf_envelope_ttV",
     "murf_envelope_VV",
     # Shape PDF Uncertainties
     "pdf_shape_tt",
-    "pdf_shape_st_schannel",
-    "pdf_shape_st_tchannel",
-    "pdf_shape_st_twchannel",
+    "pdf_shape_st",
     "pdf_shape_dy_lep",
     "pdf_shape_w_lnu",
     "pdf_shape_ttV",
@@ -111,18 +107,19 @@ shape_systematics = [
     # Scale Factors (TODO)
     "btag_hf",
     "btag_lf",
-    "btag_hfstats1_2017",
-    "btag_hfstats2_2017"
-    "btag_lfstats1_2017"
-    "btag_lfstats2_2017"
+    "btag_hfstats1_{year}",
+    "btag_hfstats2_{year}",
+    "btag_lfstats1_{year}",
+    "btag_lfstats2_{year}",
     "btag_cferr1",
     "btag_cferr2",
-    "mu_sf",
-    # "mu_trig",
+    "mu_id_sf",
+    "mu_iso_sf",
+    # "mu_trig_sf",
     "e_sf",
-    # "e_trig",
-    # "minbias_xs",
-    # "top_pt",
+    # "e_trig_sf",
+    "minbias_xs",
+    "top_pt",
 ]
 
 # All systematics to be included in the final datacard
@@ -203,6 +200,9 @@ dl_22 = dl.derive("dl_22", cls_dict={
     "ml_model_name": "dl_22",
     "systematics": rate_systematics,
 })
+dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
+    "systematics": rate_systematics + shape_systematics,
+})
 dl_22_test = dl.derive("dl_22_test", cls_dict={
     "processes": [
         "ggHH_kl_1_kt_1_dl_hbbhww",
@@ -214,19 +214,4 @@ dl_22_test = dl.derive("dl_22_test", cls_dict={
         "sr__2mu__2b__ml_st",
     ],
     "ml_model_name": "dl_22",
-})
-
-
-shape_systematics_22 = [
-    "murf_envelope_tt",
-    "murf_envelope_st_schannel",
-    "murf_envelope_st_tchannel",
-    "murf_envelope_st_twchannel",
-    "murf_envelope_dy_lep",
-    "murf_envelope_w_lnu",
-    "murf_envelope_ttV",
-    "murf_envelope_VV",
-]
-dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
-    "systematics": rate_systematics + shape_systematics_22,
 })
