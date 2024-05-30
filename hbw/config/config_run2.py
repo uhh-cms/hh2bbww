@@ -447,6 +447,7 @@ def add_config(
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
+
     for jec_source in cfg.x.jec["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
         cfg.add_shift(
@@ -468,6 +469,18 @@ def add_config(
             f"jec_{jec_source}",
             {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
         )
+
+        if jec_source in ["Total", *cfg.x.btag_sf_jec_sources]:
+            # when jec_source is a known btag SF source, add aliases for btag weight column
+            add_shift_aliases(
+                cfg,
+                f"jec_{jec_source}",
+                {
+                    "btag_weight": f"btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
+                },
+            )
 
     cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"jer"})
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})

@@ -70,6 +70,18 @@ def base_init(self: WeightProducer) -> None:
         self.weight_columns.pop("top_pt_weight", None)
 
     self.shifts = set()
+
+    # when jec sources are known btag SF source, then propagate the shift to the WeightProducer
+    # TODO: we should do this somewhere centrally
+    btag_sf_jec_sources = (
+        (set(self.config_inst.x.btag_sf_jec_sources) | {"Total"}) &
+        set(self.config_inst.x.jec["uncertainty_sources"])
+    )
+    self.shifts |= set(get_shifts_from_sources(
+        self.config_inst,
+        *[f"jec_{jec_source}" for jec_source in btag_sf_jec_sources]
+    ))
+
     for weight_column, shift_sources in self.weight_columns.items():
         shift_sources = law.util.make_list(shift_sources)
         shift_sources = [s.format(year=year) for s in shift_sources]
