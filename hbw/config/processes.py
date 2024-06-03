@@ -88,8 +88,8 @@ def configure_hbw_processes(config: od.Config):
         )
 
     # custom v_lep process for ML Training, combining W+DY
-    w_lnu = config.get_process("w_lnu")
-    dy_lep = config.get_process("dy_lep")
+    w_lnu = config.get_process("w_lnu", default=None)
+    dy_lep = config.get_process("dy_lep", default=None)
     if w_lnu and dy_lep:
         v_lep = add_parent_process(  # noqa
             config,
@@ -100,8 +100,8 @@ def configure_hbw_processes(config: od.Config):
         )
 
     # Custom t_bkg process for ML Training, combining tt+st
-    st = config.get_process("st")
-    tt = config.get_process("tt")
+    st = config.get_process("st", default=None)
+    tt = config.get_process("tt", default=None)
     if st and tt:
         t_bkg = add_parent_process(  # noqa
             config,

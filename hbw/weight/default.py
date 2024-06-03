@@ -79,7 +79,7 @@ def base_init(self: WeightProducer) -> None:
     )
     self.shifts |= set(get_shifts_from_sources(
         self.config_inst,
-        *[f"jec_{jec_source}" for jec_source in btag_sf_jec_sources]
+        *[f"jec_{jec_source}" for jec_source in btag_sf_jec_sources],
     ))
 
     for weight_column, shift_sources in self.weight_columns.items():

@@ -475,3 +475,11 @@ class PrepareInferenceTaskCalls(
         )
         print(cmd, "\n\n")
         output["FitDiagnostics"].dump(cmd, formatter="text")
+
+        # running FitDiagnostics for Pre+Postfit plots
+        cmd = base_cmd + (
+            f"law run PlotPullsAndImpacts --version {identifier} --datacards {datacards} "
+            f"--order-by-impact"
+        )
+        print(cmd, "\n\n")
+        output["FitDiagnostics"].dump(cmd, formatter="text")
