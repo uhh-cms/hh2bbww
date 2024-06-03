@@ -289,7 +289,7 @@ def add_variables(config: od.Config) -> None:
         x_title="Number of deepjets (tight WP)",
         discrete_x=True,
     )
-    if config.campaign.x.year >= 2022:
+    if config.x.run == 3:
         particlenet_wps = config.x.btag_working_points.particlenet
         config.add_variable(
             name="n_particlenet_loose",
@@ -437,6 +437,14 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0, 1),
             x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % (i + 1),
         )
+        if config.x.run == 3:
+            config.add_variable(
+                name=f"jet{i+1}_btagPNetB",
+                expression=f"Jet.btagPNetB[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                x_title=r"Jet %i ParticleNet score" % (i + 1),
+            )
 
     # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
     for i in range(2):
@@ -470,6 +478,14 @@ def add_variables(config: od.Config) -> None:
                 binning=(40, 0, 200),
                 x_title=obj + r" %i mass" % (i + 1),
             )
+            if config.x.run == 3:
+                config.add_variable(
+                    name=f"{obj}{i+1}_btagPNetB",
+                    expression=f"{obj}.btagPNetB[:,{i}]",
+                    null_value=EMPTY_FLOAT,
+                    binning=(40, 0, 1),
+                    x_title=obj + r" %i ParticleNet score" % (i + 1),
+                )
 
     # FatJets (2 pt-leading fatjets)
     for i in range(2):
