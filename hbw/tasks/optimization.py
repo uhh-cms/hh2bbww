@@ -151,6 +151,7 @@ class Optimizer(
         return list(range(self.iterations))
 
     def requires(self):
+        # NOTE: cache requirements?
         if self.branch == 0:
             return None
         return Optimizer.req(self, branch=self.branch - 1)

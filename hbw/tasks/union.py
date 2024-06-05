@@ -10,10 +10,10 @@ import law
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
     ProducerMixin,
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, ChunkedIOMixin,
+    ProducersMixin, MLModelsMixin, ChunkedIOMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
-from columnflow.tasks.reduction import MergeReducedEventsUser, MergeReducedEvents
+from columnflow.tasks.reduction import ReducedEventsUser, MergeReducedEvents
 from columnflow.tasks.production import ProduceColumns
 from columnflow.tasks.ml import MLEvaluation
 from columnflow.util import dev_sandbox
@@ -92,10 +92,8 @@ class CustomUniteColumns(
     HBWTask,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
     ChunkedIOMixin,
-    MergeReducedEventsUser,
+    ReducedEventsUser,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
@@ -188,7 +186,6 @@ class CustomUniteColumns(
 
         return reqs
 
-    @MergeReducedEventsUser.maybe_dummy
     def output(self):
         return {"events": self.target(f"data_{self.branch}.{self.file_type}")}
 
