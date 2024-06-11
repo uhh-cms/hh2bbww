@@ -115,7 +115,7 @@ def configure_hbw_processes(config: od.Config):
         # Custom signal  process for ML Training, combining multiple kl signal samples
         # NOTE: only built for run 2 because kl variations are missing in run 3
         signal_processes = [
-            config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
+            config.get_process(f"hh_ggf_kl{kl}_kt1_hbb_hvv2l2nu")
             for kl in [0, 1, "2p45"]
         ]
         sig = config.add_process(
@@ -138,7 +138,7 @@ def configure_hbw_processes(config: od.Config):
     for proc_inst, _, _ in config.walk_processes():
         is_signal = any([
             signal_tag in proc_inst.name
-            for signal_tag in ("qqHH", "ggHH", "radion", "gravition")
+            for signal_tag in ("hh_vbf", "hh_ggf", "radion", "gravition")
         ])
         if is_signal:
             proc_inst.add_tag("is_signal")

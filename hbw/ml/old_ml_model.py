@@ -529,7 +529,7 @@ class SimpleDNN(MLModel):
 
 
 processes = [
-    "ggHH_kl_1_kt_1_sl_hbbhww",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
     "tt",
     "st",
     "w_lnu",
@@ -537,7 +537,7 @@ processes = [
 ]
 
 custom_procweights = {
-    "ggHH_kl_1_kt_1_sl_hbbhww": 1,
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": 1,
     "tt": 8,
     "st": 8,
     "w_lnu": 8,
@@ -545,7 +545,7 @@ custom_procweights = {
 }
 
 dataset_names = {
-    "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
     # TTbar
     "tt_sl_powheg",
     "tt_dl_powheg",
@@ -622,12 +622,12 @@ cls_dict = default_cls_dict
 cls_dict["epochs"] = 6
 cls_dict["batchsize"] = 2048
 cls_dict["processes"] = [
-    "ggHH_kl_1_kt_1_sl_hbbhww",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
     "st",
     "w_lnu",
 ]
 cls_dict["dataset_names"] = {
-    "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
     "st_tchannel_t_powheg",
     "w_lnu_ht400To600_madgraph",
 }

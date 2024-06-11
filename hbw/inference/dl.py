@@ -18,10 +18,10 @@ ml_model_name = "dense_default_dl"
 
 # All processes to be included in the final datacard
 processes = [
-    "ggHH_kl_0_kt_1_dl_hbbhww",
-    "ggHH_kl_1_kt_1_dl_hbbhww",
-    "ggHH_kl_2p45_kt_1_dl_hbbhww",
-    "ggHH_kl_5_kt_1_dl_hbbhww",
+    "hh_ggf_kl0_kt1_hbb_hvv2l2nu",
+    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu",
+    "hh_ggf_kl5_kt1_hbb_hvv2l2nu",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -35,15 +35,15 @@ processes = [
 
 # All categories to be included in the final datacard
 config_categories = [
-    "sr__2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__2e__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "sr__2e__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2e__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu",
     "sr__2e__ml_tt",
     "sr__2e__ml_t_bkg",
     "sr__2e__ml_st",
     "sr__2e__ml_sig",
     "sr__2e__ml_v_lep",
-    "sr__2mu__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__2mu__ml_qqHH_CV_1_C2V_1_kl_1_dl_hbbhww",
+    "sr__2mu__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2mu__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu",
     "sr__2mu__ml_tt",
     "sr__2mu__ml_tt_bkg",
     "sr__2mu__ml_st",
@@ -69,8 +69,8 @@ rate_systematics = [
     "QCDScale_VH",
     "QCDScale_ttH",
     "QCDScale_bbH",
-    "QCDScale_ggHH",  # should be included in inference model (THU_HH)
-    "QCDScale_qqHH",
+    "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+    "QCDScale_hh_vbf",
     "QCDScale_VHH",
     "QCDScale_ttHH",
     # Rate PDF uncertainties
@@ -82,15 +82,15 @@ rate_systematics = [
     "pdf_Higgs_qg",  # none so far
     "pdf_Higgs_ttH",
     "pdf_Higgs_bbH",  # removed
-    "pdf_Higgs_ggHH",
-    "pdf_Higgs_qqHH",
+    "pdf_Higgs_hh_ggf",
+    "pdf_Higgs_hh_vbf",
     "pdf_VHH",
     "pdf_ttHH",
 ]
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
+    # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
     "murf_envelope_tt",
     "murf_envelope_st",
     "murf_envelope_dy_lep",
@@ -139,15 +139,15 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 cls_dict = default_cls_dict.copy()
 
 cls_dict["processes"] = [
-    # "ggHH_kl_0_kt_1_dl_hbbhww",
-    "ggHH_kl_1_kt_1_dl_hbbhww",
-    # "ggHH_kl_2p45_kt_1_dl_hbbhww",
-    # "ggHH_kl_5_kt_1_dl_hbbhww",
+    # "hh_ggf_kl0_kt1_hbb_hvv2l2nu",
+    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    # "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu",
+    # "hh_ggf_kl5_kt1_hbb_hvv2l2nu",
     "tt",
 ]
 
 cls_dict["config_categories"] = [
-    "2e__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "2e__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
     "2e__ml_tt",
 ]
 
@@ -165,7 +165,7 @@ dl_test = dl.derive("dl_test", cls_dict=cls_dict)
 #
 
 processes_22 = [
-    "ggHH_kl_1_kt_1_dl_hbbhww",
+    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
     "tt",
     # "st_schannel",
     "st_tchannel", "st_twchannel",
@@ -175,12 +175,12 @@ processes_22 = [
 
 config_categories_22 = [
     # Signal regions
-    "sr__2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-    "sr__emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+    "sr__2e__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2e__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__emu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__emu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
     # Background regions
     "sr__2e__ml_tt",
     "sr__2e__ml_st",
@@ -205,11 +205,11 @@ dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
 })
 dl_22_test = dl.derive("dl_22_test", cls_dict={
     "processes": [
-        "ggHH_kl_1_kt_1_dl_hbbhww",
+        "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
         "st_tchannel",
     ],
     "config_categories": [
-        "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+        "sr__2mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
         "sr__2mu__2b__ml_tt",
         "sr__2mu__2b__ml_st",
     ],

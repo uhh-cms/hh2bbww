@@ -19,10 +19,10 @@ ml_model_name = "dense_default"
 
 # All processes to be included in the final datacard
 processes = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
+    "hh_ggf_kl0_kt1_hbb_hvvqqlnu",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu",
+    "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -36,15 +36,15 @@ processes = [
 
 # All config categories to be included in the final datacard
 config_categories = [
-    "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1e__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1e__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1e__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
     "sr__1e__ml_tt",
     "sr__1e__ml_st",
     "sr__1e__ml_v_lep",
-    "sr__1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1mu__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
     "sr__1mu__ml_tt",
     "sr__1mu__ml_st",
     "sr__1mu__ml_v_lep",
@@ -68,8 +68,8 @@ rate_systematics = [
     "QCDScale_VH",
     "QCDScale_ttH",
     "QCDScale_bbH",
-    "QCDScale_ggHH",  # should be included in inference model (THU_HH)
-    "QCDScale_qqHH",
+    "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+    "QCDScale_hh_vbf",
     "QCDScale_VHH",
     "QCDScale_ttHH",
     # Rate PDF uncertainties
@@ -81,15 +81,15 @@ rate_systematics = [
     "pdf_Higgs_qg",  # none so far
     "pdf_Higgs_ttH",
     "pdf_Higgs_bbH",  # removed
-    "pdf_Higgs_ggHH",
-    "pdf_Higgs_qqHH",
+    "pdf_Higgs_hh_ggf",
+    "pdf_Higgs_hh_vbf",
     "pdf_VHH",
     "pdf_ttHH",
 ]
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
+    # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
     "murf_envelope_tt",
     "murf_envelope_st",
     "murf_envelope_dy_lep",
@@ -147,11 +147,11 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 cls_dict_test = {
     "ml_model_name": "dense_test",
     "processes": [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         "st_tchannel",
     ],
     "config_categories": [
-        "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+        "1e__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         "1e__ml_st",
     ],
     "systematics": [
@@ -172,7 +172,7 @@ jet1_pt = default.derive("jet1_pt", cls_dict={
 #
 
 processes_22 = [
-    "ggHH_kl_1_kt_1_sl_hbbhww",
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
     "tt",
     # "st_schannel",
     "st_tchannel", "st_twchannel",
@@ -182,10 +182,10 @@ processes_22 = [
 
 config_categories_22 = [
     # Signal regions
-    "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1e__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1e__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
     # Background regions
     "sr__1e__ml_tt",
     "sr__1e__ml_st",

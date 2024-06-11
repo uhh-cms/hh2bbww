@@ -152,9 +152,9 @@ class HBWInferenceModelBase(InferenceModel):
                 config_mc_datasets=datasets,
             )
 
-            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_sl_hbbhww":
-                # add ggHH kl variations as copies from kl 1
-                for kl_proc in ("ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww"):
+            if self.dummy_kl_variation and proc == "hh_ggf_kl1_kt1_hbb_hvvqqlnu":
+                # add hh_ggf kl variations as copies from kl 1
+                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu"):
                     if kl_proc not in self.processes:
                         self.add_process(
                             const.inference_procnames.get(kl_proc, kl_proc),
@@ -163,9 +163,9 @@ class HBWInferenceModelBase(InferenceModel):
                             config_mc_datasets=datasets,
                         )
 
-            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_dl_hbbhww":
-                # add ggHH kl variations as copies from kl 1
-                for kl_proc in ("ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww"):
+            if self.dummy_kl_variation and proc == "hh_ggf_kl1_kt1_hbb_hvv2l2nu":
+                # add hh_ggf kl variations as copies from kl 1
+                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvv2l2nu", "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu", "hh_ggf_kl5_kt1_hbb_hvv2l2nu"):
                     if kl_proc not in self.processes:
                         self.add_process(
                             const.inference_procnames.get(kl_proc, kl_proc),

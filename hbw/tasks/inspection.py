@@ -25,6 +25,7 @@ class CheckConfig(
     MLModelsMixin,
     ProducersMixin,
     ReducedEventsUser,
+    law.LocalWorkflow,
 ):
     """
     Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.

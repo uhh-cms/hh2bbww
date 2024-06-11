@@ -8,7 +8,7 @@ from columnflow.tasks.cutflow import PlotCutflowVariables1D
 version = "v1"
 # workers = 6
 variables = ["gen_*"]
-processes = ["ggHH_*", "qqHH*"]
+processes = ["hh_ggf_*", "hh_vbf*"]
 categories = ["incl"]
 selector_steps = ["Lepton"]
 

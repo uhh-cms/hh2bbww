@@ -321,4 +321,4 @@ def sl1_init(self: Selector) -> None:
     self.produces.add(event_weights_to_normalize)
 
 
-sl1_no_btag = sl1.derive("sl1_no_btag", cls_dict={"n_btag": 0})
+sl1_no_btag = sl1.derive("sl1_no_btag", cls_dict={"n_btag": 0, "b_tagger": "deepjet"})

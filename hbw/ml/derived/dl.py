@@ -31,10 +31,10 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
     )
 
     ml_process_weights = {
-        "ggHH_kl_0_kt_1_dl_hbbhww": 1,
-        "ggHH_kl_1_kt_1_dl_hbbhww": 1,
-        "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
-        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
+        "hh_ggf_kl0_kt1_hbb_hvv2l2nu": 1,
+        "hh_ggf_kl1_kt1_hbb_hvv2l2nu": 1,
+        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": 1,
+        "hh_ggf_kl5_kt1_hbb_hvv2l2nu": 1,
         "sig": 1,
         "tt": 2,
         "st": 2,
@@ -160,18 +160,18 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
 dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
 })
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
 })
 dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
 })
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
 })
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
     "training_configs": lambda self, requested_configs: ["c17"],
@@ -187,5 +187,5 @@ dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
 dl_22.derive("dl_22_v1")
 dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
 })

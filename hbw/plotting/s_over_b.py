@@ -77,7 +77,7 @@ def plot_s_over_b(
 
     .. code-block:: bash
         law run cf.PlotVariables1D --version prod1 \
-            --processes ggHH_kl_1_kt_1_sl_hbbhww,tt_sl --variables jet1_pt \
+            --processes hh_ggf_kl1_kt1_hbb_hvvqqlnu,tt_sl --variables jet1_pt \
             --plot-function hbw.plotting.s_over_b.plot_s_over_b \
             --general-settings sqrt_b
     """
@@ -172,7 +172,7 @@ def cutflow_s_over_b(
 
     .. code-block:: bash
         law run cf.PlotCutflow --version prod1 \
-            --processes ggHH_kl_1_kt_1_sl_hbbhww,tt_sl \
+            --processes hh_ggf_kl1_kt1_hbb_hvvqqlnu,tt_sl \
             --plot-function hbw.plotting.s_over_b.cutflow_s_over_b \
             --general-settings sqrt_b
     """

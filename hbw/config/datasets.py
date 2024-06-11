@@ -135,13 +135,13 @@ st = {
 
 w_lnu = {
     "2017": [
-        "w_lnu_ht70To100_madgraph",
-        "w_lnu_ht100To200_madgraph",
-        "w_lnu_ht200To400_madgraph",
-        "w_lnu_ht400To600_madgraph",
-        "w_lnu_ht600To800_madgraph",
-        "w_lnu_ht800To1200_madgraph",
-        "w_lnu_ht1200To2500_madgraph",
+        "w_lnu_ht70to100_madgraph",
+        "w_lnu_ht100to200_madgraph",
+        "w_lnu_ht200to400_madgraph",
+        "w_lnu_ht400to600_madgraph",
+        "w_lnu_ht600to800_madgraph",
+        "w_lnu_ht800to1200_madgraph",
+        "w_lnu_ht1200to2500_madgraph",
         "w_lnu_ht2500_madgraph",
     ],
     "2022postEE": [
@@ -296,60 +296,60 @@ ttv = {
     ],
 }
 
-ggHH_sl_hbbhww = {
+hh_ggf_hbb_hvvqqlnu = {
     "2017": [
-        "ggHH_kl_0_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww_powheg",
-        "ggHH_kl_5_kt_1_sl_hbbhww_powheg",
+        "hh_ggf_kl0_kt1_hbb_hvvqqlnu_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
+        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_powheg",
+        "hh_ggf_kl5_kt1_hbb_hvvqqlnu_powheg",
     ],
     "2022preEE": [
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
     ],
     "2022postEE": [
-        "ggHH_kl_1_kt_1_sl_hbbhww_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
     ],
 }
 
-ggHH_dl_hbbhww = {
+hh_ggf_hbb_hvv2l2nu = {
     "2017": [
-        "ggHH_kl_0_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_2p45_kt_1_dl_hbbhww_powheg",
-        "ggHH_kl_5_kt_1_dl_hbbhww_powheg",
+        "hh_ggf_kl0_kt1_hbb_hvv2l2nu_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
+        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu_powheg",
+        "hh_ggf_kl5_kt1_hbb_hvv2l2nu_powheg",
     ],
     "2022preEE": [
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
     ],
     "2022postEE": [
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg",
+        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
     ],
 }
 
-qqHH_sl_hbbhww = {
+hh_vbf_hbb_hvvqqlnu = {
     "2017": [
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww_madgraph",
-        "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww_madgraph",
+        "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
     ],
     "2022postEE": [
         # empty for now
     ],
 }
 
-qqHH_dl_hbbhww = {
+hh_vbf_hbb_hvv2l2nu = {
     "2017": [
-        "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww_madgraph",
-        "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww_madgraph",
-        "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww_madgraph",
-        "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww_madgraph",
+        "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
     ],
     "2022postEE": [
         # empty for now
@@ -379,7 +379,7 @@ radion_hh_ggf_bbww = {
 
 def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
     """
-    Central definition of datasets used in the hbbhww analysis based on the *cpn_tag*.
+    Central definition of datasets used in the hbb_hvv analysis based on the *cpn_tag*.
     As a default, it creates one DotDict of process names mapped to the corresponding dataset names.
     When *as_list* is True, a single list of all datasets is returned
 
@@ -409,10 +409,10 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
         single_h=single_h.get(cpn_tag, []),
         vv=vv.get(cpn_tag, []),
         ttv=ttv.get(cpn_tag, []),
-        ggHH_sl_hbbhww=ggHH_sl_hbbhww.get(cpn_tag, []),
-        ggHH_dl_hbbhww=ggHH_dl_hbbhww.get(cpn_tag, []),
-        qqHH_sl_hbbhww=qqHH_sl_hbbhww.get(cpn_tag, []),
-        qqHH_dl_hbbhww=qqHH_dl_hbbhww.get(cpn_tag, []),
+        hh_ggf_hbb_hvvqqlnu=hh_ggf_hbb_hvvqqlnu.get(cpn_tag, []),
+        hh_ggf_hbb_hvv2l2nu=hh_ggf_hbb_hvv2l2nu.get(cpn_tag, []),
+        hh_vbf_hbb_hvvqqlnu=hh_vbf_hbb_hvvqqlnu.get(cpn_tag, []),
+        hh_vbf_hbb_hvv2l2nu=hh_vbf_hbb_hvv2l2nu.get(cpn_tag, []),
         graviton_hh_ggf_bbww=graviton_hh_ggf_bbww.get(cpn_tag, []),
         radion_hh_ggf_bbww=radion_hh_ggf_bbww.get(cpn_tag, []),
     )
@@ -429,9 +429,9 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
     cpn_tag = str(config.x.cpn_tag)
     dataset_names = get_dataset_names(cpn_tag, as_list)
-    # optionally switch to custom signal processes (only implemented for ggHH_sl)
+    # optionally switch to custom signal processes (only implemented for hh_ggf_sl)
     if config.has_tag("custom_signals"):
-        dataset_names.ggHH_sl_hbbhww = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
+        dataset_names.hh_ggf_hbb_hvvqqlnu = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
 
     if not config.has_tag("is_resonant"):
         # remove all resonant signal processes/datasets
@@ -446,7 +446,7 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
     if not config.has_tag("is_nonresonant"):
         # remove all nonresonant signal processes/datasets
-        for hh_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+        for hh_proc in ("hh_ggf_hbb_hvvqqlnu", "hh_ggf_hbb_hvv2l2nu", "qHH_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
             dataset_names.pop(hh_proc)
 
     return dataset_names
@@ -475,12 +475,12 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     if config.x.cpn_tag == "2022postEE":
         add_synchronization_dataset(config)
 
-    if campaign.x.year == 2017:
-        # load custom produced datasets into campaign (2017 only!)
-        get_custom_hh_2017_datasets(campaign)
+    # if campaign.x.year == 2017:
+    #     # load custom produced datasets into campaign (2017 only!)
+    #     get_custom_hh_2017_datasets(campaign)
 
-        # use custom get_dataset_lfns function
-        config.x.get_dataset_lfns = get_dataset_lfns_2017
+    #     # use custom get_dataset_lfns function
+    #     config.x.get_dataset_lfns = get_dataset_lfns_2017
 
     dataset_names = get_dataset_names_for_config(config)
 
@@ -495,7 +495,7 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
         config.add_process(procs.n(proc_name))
 
     # # add leaf signal processes directly to the config
-    # for signal_proc in ("ggHH_sl_hbbhww", "ggHH_dl_hbbhww", "qqHH_sl_hbbhww", "qqHH_dl_hbbhww"):
+    # for signal_proc in ("hh_ggf_hbb_hvvqqlnu", "hh_ggf_hbb_hvv2l2nu", "hh_vbf_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
     #     for dataset_name in dataset_names[signal_proc]:
     #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
 
@@ -555,7 +555,7 @@ def configure_hbw_datasets(
             # dataset.x.is_qcd = True
             dataset.add_tag("is_qcd")
 
-        if "HH" in dataset.name and "hbbhww" in dataset.name:
+        if "HH" in dataset.name and "hbb_hvv" in dataset.name:
             # TODO: the is_hbw tag is used at times were we should ask for is_hbw_sl
             dataset.add_tag("is_hbw")
             # dataset.x.is_hbw = True
@@ -564,7 +564,7 @@ def configure_hbw_datasets(
             elif "_dl_" in dataset.name:
                 dataset.add_tag("is_hbw_dl")
 
-        if dataset.name.startswith("qcd") or dataset.name.startswith("qqHH_"):
+        if dataset.name.startswith("qcd") or dataset.name.startswith("hh_vbf_"):
             # dataset.x.skip_scale = True
             # dataset.x.skip_pdf = True
             dataset.add_tag("skip_scale")
@@ -592,9 +592,9 @@ def get_custom_hh_2017_datasets(
     Add custom HH datasets to campaign
     """
     campaign.add_dataset(
-        name="ggHH_kl_0_kt_1_sl_hbbhww_custom",
+        name="hh_ggf_kl0_kt1_hbb_hvvqqlnu_custom",
         id=10 ** 8 + 14057341,
-        processes=[procs.ggHH_kl_0_kt_1_sl_hbbhww],
+        processes=[procs.hh_ggf_kl0_kt1_hbb_hvvqqlnu],
         keys=[
             "chhh0",
         ],
@@ -604,9 +604,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="ggHH_kl_1_kt_1_sl_hbbhww_custom",
+        name="hh_ggf_kl1_kt1_hbb_hvvqqlnu_custom",
         id=10 ** 8 + 14065482,
-        processes=[procs.ggHH_kl_1_kt_1_sl_hbbhww],
+        processes=[procs.hh_ggf_kl1_kt1_hbb_hvvqqlnu],
         keys=[
             "chhh1",
         ],
@@ -616,9 +616,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="ggHH_kl_2p45_kt_1_sl_hbbhww_custom",
+        name="hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_custom",
         id=10 ** 8 + 14066581,
-        processes=[procs.ggHH_kl_2p45_kt_1_sl_hbbhww],
+        processes=[procs.hh_ggf_kl2p45_kt1_hbb_hvvqqlnu],
         keys=[
             "chhh2p45",
         ],
@@ -628,9 +628,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="ggHH_kl_5_kt_1_sl_hbbhww_custom",
+        name="hh_ggf_kl5_kt1_hbb_hvvqqlnu_custom",
         id=10 ** 8 + 14058363,
-        processes=[procs.ggHH_kl_5_kt_1_sl_hbbhww],
+        processes=[procs.hh_ggf_kl5_kt1_hbb_hvvqqlnu],
         keys=[
             "chhh5",
         ],

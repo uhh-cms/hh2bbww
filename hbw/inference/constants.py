@@ -5,21 +5,21 @@ Collection of configurations that stay constant for the analysis
 """
 
 # collection of all signal processes
-signals_ggHH = {
-    "ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww",
-    "ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_1_kt_1_dl_hbbhww",
-    "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww",
+signals_hh_ggf = {
+    "hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
+    "hh_ggf_kl0_kt1_hbb_hvv2l2nu", "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu", "hh_ggf_kl5_kt1_hbb_hvv2l2nu",
 }
-signals_qqHH = {
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww",
-    "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww",
-    "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww",
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww",
-    "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww", "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww",
-    "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww", "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww",
+signals_hh_vbf = {
+    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu",
+    "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu",
+    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu",
+    "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu",
+    "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu",
+    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu", "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu",
 }
-signals = {*signals_ggHH, *signals_qqHH}
+signals = {*signals_hh_ggf, *signals_hh_vbf}
 
 # mapping between lepton categories and datasets (only 2017 ATM)
 data_datasets = {
@@ -50,8 +50,8 @@ processes_per_QCDScale = {
     "VH": ["ZH", "WH", "VH"],
     "ttH": ["ttH", "tHq", "tHW"],
     "bbH": ["bbH"],  # contains also pdf and alpha_s
-    # "ggHH": signals_ggHH,  # included in inference model (THU_HH)
-    "qqHH": signals_qqHH,
+    # "hh_ggf": signals_hh_ggf,  # included in inference model (THU_HH)
+    "hh_vbf": signals_hh_vbf,
     "VHH": [],
     "ttHH": [],
 }
@@ -66,8 +66,8 @@ processes_per_pdf_rate = {
     # "Higgs_qg": [],  # none so far
     "Higgs_ttH": ["ttH", "tHq", "tHW"],
     # "Higgs_bbh": ["bbH"],  # removed
-    "Higgs_ggHH": signals_ggHH,
-    "Higgs_qqHH": signals_qqHH,
+    "Higgs_hh_ggf": signals_hh_ggf,
+    "Higgs_hh_vbf": signals_hh_vbf,
     "Higgs_VHH": ["HHZ", "HHW+", "HHW-"],
     "Higgs_ttHH": ["ttHH"],
 }
@@ -90,26 +90,26 @@ processes_per_shape = {
     "e_trig_sf": ["all"],
     "minbias_xs": ["all"],
     "top_pt": ["tt"],
-    "pdf_shape_ggHH_kl_0_kt_1_sl_hbbhww": ["ggHH_kl_0_kt_1_sl_hbbhww"],
-    "pdf_shape_ggHH_kl_1_kt_1_sl_hbbhww": ["ggHH_kl_1_kt_1_sl_hbbhww"],
-    "pdf_shape_ggHH_kl_2p45_kt_1_sl_hbbhww": ["ggHH_kl_2p45_kt_1_sl_hbbhww"],
-    "pdf_shape_ggHH_kl_5_kt_1_sl_hbbhww": ["ggHH_kl_5_kt_1_sl_hbbhww"],
-    "pdf_shape_ggHH_kl_0_kt_1_dl_hbbhww": ["ggHH_kl_0_kt_1_dl_hbbhww"],
-    "pdf_shape_ggHH_kl_1_kt_1_dl_hbbhww": ["ggHH_kl_1_kt_1_dl_hbbhww"],
-    "pdf_shape_ggHH_kl_2p45_kt_1_dl_hbbhww": ["ggHH_kl_2p45_kt_1_dl_hbbhww"],
-    "pdf_shape_ggHH_kl_5_kt_1_dl_hbbhww": ["ggHH_kl_5_kt_1_dl_hbbhww"],
+    "pdf_shape_hh_ggf_kl0_kt1_hbb_hvvqqlnu": ["hh_ggf_kl0_kt1_hbb_hvvqqlnu"],
+    "pdf_shape_hh_ggf_kl1_kt1_hbb_hvvqqlnu": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu"],
+    "pdf_shape_hh_ggf_kl2p45_kt1_hbb_hvvqqlnu": ["hh_ggf_kl2p45_kt1_hbb_hvvqqlnu"],
+    "pdf_shape_hh_ggf_kl5_kt1_hbb_hvvqqlnu": ["hh_ggf_kl5_kt1_hbb_hvvqqlnu"],
+    "pdf_shape_hh_ggf_kl0_kt1_hbb_hvv2l2nu": ["hh_ggf_kl0_kt1_hbb_hvv2l2nu"],
+    "pdf_shape_hh_ggf_kl1_kt1_hbb_hvv2l2nu": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu"],
+    "pdf_shape_hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": ["hh_ggf_kl2p45_kt1_hbb_hvv2l2nu"],
+    "pdf_shape_hh_ggf_kl5_kt1_hbb_hvv2l2nu": ["hh_ggf_kl5_kt1_hbb_hvv2l2nu"],
     "pdf_shape_tt": ["tt"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
     "pdf_shape_dy": ["dy_lep"],
     "pdf_shape_w": ["w_lnu"],
-    "murf_envelope_ggHH_kl_0_kt_1_sl_hbbhww": ["ggHH_kl_0_kt_1_sl_hbbhww"],
-    "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww": ["ggHH_kl_1_kt_1_sl_hbbhww"],
-    "murf_envelope_ggHH_kl_2p45_kt_1_sl_hbbhww": ["ggHH_kl_2p45_kt_1_sl_hbbhww"],
-    "murf_envelope_ggHH_kl_5_kt_1_sl_hbbhww": ["ggHH_kl_5_kt_1_sl_hbbhww"],
-    "murf_envelope_ggHH_kl_0_kt_1_dl_hbbhww": ["ggHH_kl_0_kt_1_dl_hbbhww"],
-    "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww": ["ggHH_kl_1_kt_1_dl_hbbhww"],
-    "murf_envelope_ggHH_kl_2p45_kt_1_dl_hbbhww": ["ggHH_kl_2p45_kt_1_dl_hbbhww"],
-    "murf_envelope_ggHH_kl_5_kt_1_dl_hbbhww": ["ggHH_kl_5_kt_1_dl_hbbhww"],
+    "murf_envelope_hh_ggf_kl0_kt1_hbb_hvvqqlnu": ["hh_ggf_kl0_kt1_hbb_hvvqqlnu"],
+    "murf_envelope_hh_ggf_kl1_kt1_hbb_hvvqqlnu": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu"],
+    "murf_envelope_hh_ggf_kl2p45_kt1_hbb_hvvqqlnu": ["hh_ggf_kl2p45_kt1_hbb_hvvqqlnu"],
+    "murf_envelope_hh_ggf_kl5_kt1_hbb_hvvqqlnu": ["hh_ggf_kl5_kt1_hbb_hvvqqlnu"],
+    "murf_envelope_hh_ggf_kl0_kt1_hbb_hvv2l2nu": ["hh_ggf_kl0_kt1_hbb_hvv2l2nu"],
+    "murf_envelope_hh_ggf_kl1_kt1_hbb_hvv2l2nu": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu"],
+    "murf_envelope_hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": ["hh_ggf_kl2p45_kt1_hbb_hvv2l2nu"],
+    "murf_envelope_hh_ggf_kl5_kt1_hbb_hvv2l2nu": ["hh_ggf_kl5_kt1_hbb_hvv2l2nu"],
     "murf_envelope_tt": ["tt"],
     "murf_envelope_st": ["st_schannel", "st_tchannel", "st_twchannel"],
     "murf_envelope_dy": ["dy_lep"],
