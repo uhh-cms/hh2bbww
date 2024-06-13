@@ -410,55 +410,6 @@ radion_hh_ggf_bbww = {
 }
 
 
-"""
-Mapping of a process group to the corresponding datasets that are needed to calculate normalization weight.
-"""
-stitching_groups = {
-    "dy_lep_m50": [
-        "dy_lep_m50_amcatnlo",
-        "dy_lep_m50_0j_amcatnlo",
-        "dy_lep_m50_1j_amcatnlo",
-        "dy_lep_m50_2j_amcatnlo",
-    ],
-    "hh_ggf_kl1_kt1_hbb_hvv": [
-        "hh_ggf_kl1_kt1_hbb_hvv_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
-    ],
-    "hh_ggf_kl0_kt1_hbb_hvv": [
-        "hh_ggf_kl0_kt1_hbb_hvv_powheg",
-        "hh_ggf_kl0_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl0_kt1_hbb_hvv2l2nu_powheg",
-    ],
-    "hh_ggf_kl2p45_kt1_hbb_hvv": [
-        "hh_ggf_kl2p45_kt1_hbb_hvv_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu_powheg",
-    ],
-    "hh_ggf_kl5_kt1_hbb_hvv": [
-        "hh_ggf_kl5_kt1_hbb_hvv_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvv2l2nu_powheg",
-    ],
-}
-
-
-"""
-Mapping of processes that need to be replaced by other processes.
-"""
-replace_processes_map = {
-    "dy_lep_m50": ["dy_lep_m50_0j", "dy_lep_m50_1j", "dy_lep_m50_2j"],
-    "hh_ggf_kl1_kt1_hbb_hvv": [
-        "hh_ggf_kl1_kt1_hbb_hwwqqlnu", "hh_ggf_kl1_kt1_hbb_hww2l2nu",
-        "hh_ggf_kl1_kt1_hbb_hzz2l2nu",
-        # "hh_ggf_kl1_kt1_hbb_hzz4l", "hh_ggf_kl1_kt1_hbb_hzz2l2q", "hh_ggf_kl1_kt1_hbb_hzz2nu2q",
-        # "hh_ggf_kl1_kt1_hbb_hzz4nu", "hh_ggf_kl1_kt1_hbb_hzz4q",
-    ],
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": ["hh_ggf_kl1_kt1_hbb_hwwqqlnu"],
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu": ["hh_ggf_kl1_kt1_hbb_hww2l2nu", "hh_ggf_kl1_kt1_hbb_hzz2l2nu"],
-}
-
-
 def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
     """
     Central definition of datasets used in the hbb_hvv analysis based on the *cpn_tag*.
@@ -663,19 +614,6 @@ def configure_hbw_datasets(
         if dataset.is_data:
             if config.x.cpn_tag == "2022preEE":
                 dataset.x.jec_era = "RunCD"
-
-        # replace processes if necessary
-        for proc in dataset.processes:
-            if proc.name in replace_processes_map:
-                dataset.remove_process(proc)
-                for new_proc_name in replace_processes_map[proc.name]:
-                    dataset.add_process(config.x.procs.n(new_proc_name))
-
-        # add stitching group information
-        for stichting_group, datasets in stitching_groups.items():
-            if dataset.name in datasets:
-                dataset.x.stitching_group = stichting_group
-                dataset.x.stitching_datasets = datasets
 
 
 def get_custom_hh_2017_datasets(
