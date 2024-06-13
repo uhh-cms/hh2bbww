@@ -8,7 +8,7 @@ from __future__ import annotations
 
 
 import time
-from typing import Hashable, Iterable, Callable
+from typing import Hashable, Iterable, Callable, Any
 from functools import wraps
 import tracemalloc
 
@@ -17,8 +17,23 @@ import law
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
+ak = maybe_import("awkward")
 
 _logger = law.logger.get_logger(__name__)
+
+
+def ak_any(masks: list[ak.Array], **kwargs) -> ak.Array:
+    """
+    Apparently, ak.any is very slow, so just do the "or" of all masks in a loop.
+    This is more than 100x faster than doing `ak.any(masks, axis=0)`.
+
+    param masks: list of masks to be combined via logical "or"
+    return: ak.Array of logical "or" of all masks
+    """
+    mask = masks[0]
+    for _mask in masks[1:]:
+        mask = mask | _mask
+    return mask
 
 
 def has_tag(tag, *container, operator: callable = any) -> bool:
@@ -295,7 +310,7 @@ def timeit(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         total_time = end_time - start_time
-        _logger.info(f"Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds")
+        _logger.info(f"Function '{func.__name__}' done; took {round_sig(total_time)} seconds")
         return result
     return timeit_wrapper
 
@@ -310,6 +325,30 @@ def timeit_multiple(func):
         end_time = time.perf_counter()
         total_time = end_time - start_time
         func.total_time = getattr(func, "total_time", 0) + total_time
-        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({func.total_time:.4f} seconds)")
+        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
         return result
     return timeit_wrapper
+
+
+def call_func_safe(func, *args, **kwargs) -> Any:
+    """
+    Small helper to make sure that our training does not fail due to plotting
+    """
+
+    # get the function name without the possibility of raising an error
+    try:
+        func_name = func.__name__
+    except Exception:
+        # default to empty name
+        func_name = ""
+
+    t0 = time.perf_counter()
+
+    try:
+        outp = func(*args, **kwargs)
+        _logger.info(f"Function '{func_name}' done; took {(time.perf_counter() - t0):.2f} seconds")
+    except Exception as e:
+        _logger.warning(f"Function '{func_name}' failed due to {type(e)}: {e}")
+        outp = None
+
+    return outp

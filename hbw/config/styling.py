@@ -144,6 +144,8 @@ default_var_binning = {
     # Jet
     "btagDeepB": (40, 0, 1),
     "btagDeepFlavB": (40, 0, 1),
+    "btagPNetB": (40, 0, 1),
+    "b_score": (40, 0, 1),
     "qgl": (40, 0, 1),
     "puId": (8, -0.5, 7.5),
     "puIdDisc": (40, -2, 1),

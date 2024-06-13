@@ -21,19 +21,20 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
+class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
-    processes = [
+    processes = (
         "sig",
         "tt",
         "st",
         "dy_lep",
-    ]
+    )
 
     ml_process_weights = {
         "ggHH_kl_0_kt_1_dl_hbbhww": 1,
         "ggHH_kl_1_kt_1_dl_hbbhww": 1,
         "ggHH_kl_2p45_kt_1_dl_hbbhww": 1,
+        "ggHH_kl_5_kt_1_dl_hbbhww": 1,
         "sig": 1,
         "tt": 2,
         "st": 2,
@@ -45,8 +46,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     input_features = [
         # event features
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
-        "mli_deepjetsum", "mli_b_deepjetsum",
+        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
+        "mli_b_score_sum",
         # bb system
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
         "mli_mindr_lb",
@@ -61,8 +62,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_met_pt",
     ] + [
         f"mli_{obj}_{var}"
-        for obj in ["b1", "b2"]
-        for var in ["pt", "eta", "btagDeepFlavB"]
+        for obj in ["b1", "b2", "j1"]
+        for var in ["pt", "eta", "b_score"]
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["lep", "lep2"]
@@ -74,10 +75,8 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ]
 
     store_name: str = "inputs_inclusive"
-    dump_arrays: bool = False
 
     folds: int = 5
-    validation_fraction: float = 0.20
     negative_weights: str = "handle"
 
     # overwriting DenseModelMixin parameters
@@ -98,17 +97,29 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     batchsize: int = 2 ** 12
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
-    # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params = [
+    # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
+    bookkeep_params: set[str] = {
         # base params
-        "processes", "input_features", "validation_fraction", "ml_process_weights",
-        "negative_weights", "folds",
+        "data_loader", "input_features", "train_val_test_split",
+        "processes", "ml_process_weights", "negative_weights", "folds",
         # DenseModelMixin
-        "activation", "layers", "dropout",
+        "activation", "layers", "dropout", "learningrate",
         # ModelFitMixin
-        "callbacks", "reduce_r_factor", "reduce_lr_patience",
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
-    ]
+    }
+
+    # parameters that can be overwritten via command line
+    settings_parameters: set[str] = {
+        # base params
+        "processes", "ml_process_weights",
+        "negative_weights",
+        # DenseModelMixin
+        "activation", "layers", "dropout", "learningrate",
+        # ModelFitMixin
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
+        "epochs", "batchsize",
+    }
 
     def __init__(
             self,
@@ -116,6 +127,9 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
+
+    def cast_ml_param_values(self):
+        super().cast_ml_param_values()
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -129,6 +143,7 @@ class DenseClassifierDL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
                     null_value=-1,
                     binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                    aux={"rebin": 40},
                 )
                 self.config_inst.add_variable(
                     name=f"mlscore40.{proc}",
@@ -150,24 +165,27 @@ dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
 })
+dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l22post"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+})
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
     "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
 })
+dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c17"],
+    "processes": ["sig", "tt", "st", "dy_lep"],
+})
 
-cls_dict_test = {
-    "folds": 2,
-    "epochs": 90,
-    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "v_lep", "tt"],
-    "dataset_names": {
-        "ggHH_kl_1_kt_1_dl_hbbhww_powheg", "tt_dl_powheg",
-        # "st_tchannel_t_powheg", #"w_lnu_ht400To600_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-    },
-}
+# testing of hyperparameter changes
+dl_22.derive("dl_22_stepsMax", cls_dict={"steps_per_epoch": "max_iter_valid"})
+dl_22.derive("dl_22_steps100", cls_dict={"steps_per_epoch": 100})
+dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
 
-# ML Model with reduced number of datasets
-dense_test_dl = DenseClassifierDL.derive("dense_test_dl", cls_dict=cls_dict_test)
-
-# our default MLModel
-dense_default_dl = DenseClassifierDL.derive("dense_default_dl", cls_dict={})
+# model for testing
+dl_22.derive("dl_22_v1")
+dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
+    "processes": ["ggHH_kl_1_kt_1_dl_hbbhww", "st_tchannel_t"],
+})

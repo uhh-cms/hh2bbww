@@ -75,8 +75,9 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         bb_features, jj_features,
         "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
         "Muon.charge", "Electron.charge",
-        "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
-        "Bjet.btagDeepFlavB", "Bjet.pt",
+        "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.btagPNetB",
+        "Bjet.pt",
+        "HbbJet.pt",
         "FatJet.pt", "FatJet.tau1", "FatJet.tau2",
     },
     produces={
@@ -102,8 +103,10 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "n_bjet", ak.sum(events.Bjet.pt > 0, axis=1))
     events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
     events = set_ak_column(events, "n_muon", ak.sum(events.Muon.pt > 0, axis=1))
-    wp_med = self.config_inst.x.btag_working_points.deepjet.medium
-    events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > wp_med, axis=1))
+    wp_med_deepjet = self.config_inst.x.btag_working_points.deepjet.medium
+    events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > wp_med_deepjet, axis=1))
+    wp_med_particlenet = self.config_inst.x.btag_working_points.particlenet.medium
+    events = set_ak_column(events, "n_particlenet", ak.sum(events.Jet.btagPNetB > wp_med_particlenet, axis=1))
     events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
     events = set_ak_column(events, "n_hbbjet", ak.sum(events.HbbJet.pt > 0, axis=1))
 

@@ -28,7 +28,7 @@ logger = law.logger.get_logger(__name__)
 
 data_mu = {
     "2017": [
-        "data_mu_b",
+        # "data_mu_b",  # missing triggers in DL
         "data_mu_c",
         "data_mu_d",
         "data_mu_e",
@@ -47,7 +47,7 @@ data_mu = {
 
 data_e = {
     "2017": [
-        "data_e_b",
+        # "data_e_b",  # missing triggers in DL
         "data_e_c",
         "data_e_d",
         "data_e_e",
@@ -65,6 +65,19 @@ data_egamma = {
         "data_egamma_f",
         "data_egamma_g",
     ],
+}
+
+# commented out because of empty datasets
+data_muoneg = {
+    # "2022preEE": [
+    #     "data_muoneg_c",
+    #     "data_muoneg_d",
+    # ],
+    # "2022postEE": [
+    #     "data_muoneg_e",
+    #     "data_muoneg_f",
+    #     "data_muoneg_g",
+    # ],
 }
 
 tt = {
@@ -385,6 +398,7 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
         data_mu=data_mu.get(cpn_tag, []),
         data_e=data_e.get(cpn_tag, []),
         data_egamma=data_egamma.get(cpn_tag, []),
+        data_muoneg=data_muoneg.get(cpn_tag, []),
         tt=tt.get(cpn_tag, []),
         st=st.get(cpn_tag, []),
         w_lnu=w_lnu.get(cpn_tag, []),

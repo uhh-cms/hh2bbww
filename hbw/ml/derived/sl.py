@@ -45,8 +45,8 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
     input_features: list = [
         # event features
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_deepjet",
-        "mli_deepjetsum", "mli_b_deepjetsum", "mli_l_deepjetsum",
+        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
+        "mli_b_score_sum",
         # bb system
         "mli_dr_bb", "mli_dphi_bb", "mli_mbb",
         # jj system
@@ -68,13 +68,12 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]
-        for var in ["btagDeepFlavB", "pt", "eta"]
+        for var in ["b_score", "pt", "eta"]
     ] + [
         "mli_lep_pt", "mli_lep_eta", "mli_met_pt",
     ]
 
     store_name: str = "inputs_inclusive"
-    dump_arrays: bool = False
 
     folds: int = 5
     validation_fraction: float = 0.20
@@ -98,17 +97,29 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     batchsize: int = 2 ** 12
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
-    # parameters to add into the `parameters` attribute and store in a yaml file
-    bookkeep_params: list = [
+    # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
+    bookkeep_params: set[str] = {
         # base params
-        "processes", "input_features", "validation_fraction", "ml_process_weights",
-        "negative_weights", "folds",
+        "data_loader", "input_features", "train_val_test_split",
+        "processes", "ml_process_weights", "negative_weights", "folds",
         # DenseModelMixin
-        "activation", "layers", "dropout",
+        "activation", "layers", "dropout", "learningrate",
         # ModelFitMixin
-        "callbacks", "reduce_r_factor", "reduce_lr_patience",
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
-    ]
+    }
+
+    # parameters that can be overwritten via command line
+    settings_parameters: set[str] = {
+        # base params
+        "processes", "ml_process_weights",
+        "negative_weights",
+        # DenseModelMixin
+        "activation", "layers", "dropout", "learningrate",
+        # ModelFitMixin
+        "callbacks", "reduce_lr_factor", "reduce_lr_patience",
+        "epochs", "batchsize",
+    }
 
     def __init__(
             self,
@@ -116,6 +127,9 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
+
+    def cast_ml_param_values(self):
+        super().cast_ml_param_values()
 
     def setup(self):
         # dynamically add variables for the quantities produced by this model
@@ -129,6 +143,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
                     null_value=-1,
                     binning=(1000, 0., 1.),
                     x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
+                    aux={"rebin": 40},
                 )
                 self.config_inst.add_variable(
                     name=f"mlscore40.{proc}",

@@ -1,6 +1,9 @@
 #!/bin/sh
 # small script to source to quickly run tasks
 
+# shortcuts
+alias hbw_synchronization="cf_sandbox venv_columnar_dev 'python $HBW_BASE/hbw/scripts/synchronization.py'"
+
 # defaults, setup by the law config
 # NOTE: calibration version should correspond to what is setup in the config as our default calibration config
 version=$(law config analysis.default_version)
@@ -23,6 +26,7 @@ hbw_selection(){
 	--config $config \
 	$@
 }
+
 
 #
 # Production tasks (will submit jobs and use cf.BundleRepo outputs based on the checksum)
@@ -72,20 +76,24 @@ hbw_merge_reduction(){
 	$@
 }
 
-ml_model="dense_default"
+hbw_reduction_status(){
+	# call wrapper tasks with print-status flag to check output status from CalibrateEvents up to MergeReducedEvents
+	law run cf.MergeReducedEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.MergeReductionStatsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.MergeSelectionStatsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.ReduceEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.SelectEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+	law run cf.CalibrateEventsWrapper --version $version --datasets $datasets --print-status "0" $@
+}
 
 hbw_ml_training(){
-    law run cf.MLTraining --version $version --workers 20 \
-	--ml-model $ml_model \
+	law run cf.MLTraining --version $version --workers 20 \
 	--workflow htcondor \
-	--htcondor-gpus 1 \
-	--htcondor-memory 40000 \
-	--max-runtime 48h \
-	--cf.MergeMLEvents-workflow htcondor \
-	--cf.MergeMLEvents-htcondor-gpus 0 \
+	--htcondor-memory 10000 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
-	--cf.MergeMLEvents-max-runtime 3h \
+	--cf.MergeMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
 	--cf.MergeReductionStats-n-inputs -1 \
@@ -97,15 +105,36 @@ hbw_ml_training(){
 	$@
 }
 
-inference_model="rates_only"
+hbw_plot_ml_training(){
+	law run hbw.PlotMLEvaluationSingleFold --version $version --workers 20 \
+	--fold 0 \
+	--workflow htcondor \
+	--htcondor-memory 10000 \
+	--cf.MergeMLEvents-workflow htcondor \
+ 	--cf.MergeMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-workflow htcondor \
+	--cf.PrepareMLEvents-htcondor-memory 4000 \
+	--cf.PrepareMLEvents-pilot True \
+	--cf.MergeReducedEvents-workflow htcondor \
+	--cf.MergeReductionStats-n-inputs -1 \
+	--cf.ReduceEvents-workflow htcondor \
+	--cf.SelectEvents-workflow htcondor \
+	--cf.SelectEvents-pilot True \
+	--cf.BundleRepo-custom-checksum $(checksum) \
+	--retries 2 \
+	$@
+}
+
 
 hbw_datacards(){
     law run cf.CreateDatacards --version $version --workers 20 \
-	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
+	--hbw.MLPreTraining-workflow htcondor \
+	--hbw.MLPreTraining-htcondor-memory 4000 \
+	--hbw.MLPreTraining-max-runtime 3h \
 	--cf.MergeMLEvents-workflow htcondor \
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
@@ -125,11 +154,13 @@ hbw_datacards(){
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
 	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
-	--inference-model $inference_model \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
 	--cf.MLTraining-max-runtime 48h \
+	--hbw.MLPreTraining-workflow htcondor \
+	--hbw.MLPreTraining-htcondor-memory 4000 \
+	--hbw.MLPreTraining-max-runtime 3h \
 	--cf.MergeMLEvents-workflow htcondor \
 	--cf.MergeMLEvents-htcondor-gpus 0 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \

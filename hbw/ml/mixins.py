@@ -4,18 +4,18 @@
 Mixin classes to build ML models
 """
 
+from __future__ import annotations
+
 import law
 # import order as od
 
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
 
-from hbw.util import log_memory
+from hbw.util import log_memory, call_func_safe
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-tf = maybe_import("tensorflow")
-keras = maybe_import("tensorflow.keras")
 
 logger = law.logger.get_logger(__name__)
 
@@ -28,27 +28,31 @@ def loop_dataset(data, max_count=10000):
             break
 
 
-class DenseModelMixin():
+class DenseModelMixin(object):
     """
     Mixin that provides an implementation for `prepare_ml_model`
     """
 
     activation: str = "relu"
-    layers: tuple = (64, 64, 64)
+    layers: tuple[int] = (64, 64, 64)
     dropout: float = 0.50
-    learningrate: int = 0.00050
+    learningrate: float = 0.00050
 
-    def __init__(
-        self,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.activation = str(self.activation)
+        self.layers = tuple(int(n_nodes) for n_nodes in self.layers)
+        self.dropout = float(self.dropout)
+        self.learningrate = float(self.learningrate)
 
     def prepare_ml_model(
         self,
         task: law.Task,
     ):
+        import tensorflow.keras as keras
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
         from hbw.ml.tf_util import cumulated_crossentropy
@@ -107,9 +111,9 @@ class DenseModelMixin():
         return model
 
 
-class CallbacksBase():
+class CallbacksBase(object):
     """ Base class that handles parametrization of callbacks """
-    callbacks: set = {
+    callbacks: set[str] = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
@@ -125,7 +129,18 @@ class CallbacksBase():
     early_stopping_kwargs: dict = {}
     reduce_lr_kwargs: dict = {}
 
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.callbacks = set(self.callbacks)
+        self.remove_backup = bool(self.remove_backup)
+        self.reduce_lr_factor = float(self.reduce_lr_factor)
+        self.reduce_lr_patience = int(self.reduce_lr_patience)
+
     def get_callbacks(self, output):
+        import tensorflow.keras as keras
         # check that only valid options have been requested
         callback_options = {"backup", "checkpoint", "reduce_lr", "early_stopping"}
         if diff := self.callbacks.difference(callback_options):
@@ -151,7 +166,7 @@ class CallbacksBase():
                 backup_dir=backup_output.path,
             )
             backup_kwargs.update(self.backup_kwargs)
-            callbacks.append(tf.keras.callbacks.BackupAndRestore(**backup_kwargs))
+            callbacks.append(keras.callbacks.BackupAndRestore(**backup_kwargs))
 
         if "checkpoint" in self.callbacks:
             checkpoint_kwargs = dict(
@@ -162,7 +177,7 @@ class CallbacksBase():
                 save_best_only=True,
             )
             checkpoint_kwargs.update(self.checkpoint_kwargs)
-            callbacks.append(tf.keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
+            callbacks.append(keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
 
         if "early_stopping" in self.callbacks:
             early_stopping_kwargs = dict(
@@ -174,7 +189,7 @@ class CallbacksBase():
                 start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
             )
             early_stopping_kwargs.update(self.early_stopping_kwargs)
-            callbacks.append(tf.keras.callbacks.EarlyStopping(**early_stopping_kwargs))
+            callbacks.append(keras.callbacks.EarlyStopping(**early_stopping_kwargs))
 
         if "reduce_lr" in self.callbacks:
             reduce_lr_kwargs = dict(
@@ -187,7 +202,7 @@ class CallbacksBase():
                 min_lr=0,
             )
             reduce_lr_kwargs.update(self.reduce_lr_kwargs)
-            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
+            callbacks.append(keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
 
         if len(callbacks) != len(self.callbacks):
             logger.warning(
@@ -213,13 +228,13 @@ class ClassicModelFitMixin(CallbacksBase):
     epochs: int = 200
     batchsize: int = 2 ** 12
 
-    def __init__(
-            self,
-            *args,
-            **kwargs,
-    ):
-
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.epochs = int(self.epochs)
+        self.batchsize = int(self.batchsize)
 
     def fit_ml_model(
         self,
@@ -232,6 +247,7 @@ class ClassicModelFitMixin(CallbacksBase):
         """
         Training loop with normal tf dataset
         """
+        import tensorflow as tf
 
         log_memory("start")
 
@@ -281,13 +297,17 @@ class ModelFitMixin(CallbacksBase):
     # either set steps directly or use attribute from the MultiDataset
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
-    def __init__(
-            self,
-            *args,
-            **kwargs,
-    ):
-
-        super().__init__(*args, **kwargs)
+    def cast_ml_param_values(self):
+        """
+        Cast the values of the parameters to the correct types
+        """
+        super().cast_ml_param_values()
+        self.epochs = int(self.epochs)
+        self.batchsize = int(self.batchsize)
+        if isinstance(self.steps_per_epoch, float):
+            self.steps_per_epoch = int(self.steps_per_epoch)
+        else:
+            self.steps_per_epoch = str(self.steps_per_epoch)
 
     def fit_ml_model(
         self,
@@ -300,13 +320,16 @@ class ModelFitMixin(CallbacksBase):
         """
         Training loop but with custom dataset
         """
+        import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
+        from hbw.ml.plotting import plot_history
+
         log_memory("start")
 
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
             tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.inputs, validation.target, validation.ml_weights),
+                (validation.features, validation.target, validation.train_weights),
             ).batch(self.batchsize)
 
         log_memory("init")
@@ -321,6 +344,7 @@ class ModelFitMixin(CallbacksBase):
                 f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
                 "a string corresponding to an integer attribute of the MultiDataset",
             )
+        logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
         # set the kwargs used for training
         model_fit_kwargs = {
@@ -338,10 +362,11 @@ class ModelFitMixin(CallbacksBase):
             iterator,
             **model_fit_kwargs,
         )
-        log_memory("loop")
 
-        # delete tf datasets to clear memory
-        del tf_train
-        del iterator
-        del tf_validation
-        log_memory("del")
+        # create history plots
+        for metric, ylabel in (
+            ("loss", "Loss"),
+            ("categorical_accuracy", "Accuracy"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy"),
+        ):
+            call_func_safe(plot_history, model.history.history, output["plots"], metric, ylabel)

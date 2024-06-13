@@ -8,9 +8,10 @@ import law
 import luigi
 
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
+    ProducersMixin, MLModelsMixin,
 )
-from columnflow.tasks.reduction import MergeReducedEventsUser
+from columnflow.tasks.framework.parameters import SettingsParameter
+from columnflow.tasks.reduction import ReducedEventsUser
 from columnflow.util import maybe_import
 from columnflow.columnar_util import get_ak_routes, update_ak_array
 
@@ -23,9 +24,7 @@ class CheckConfig(
     HBWTask,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    MergeReducedEventsUser,
+    ReducedEventsUser,
 ):
     """
     Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.
@@ -38,6 +37,8 @@ class CheckConfig(
         default=True,
         description="Whether to start a ipython debugger session or not; default: True",
     )
+
+    settings = SettingsParameter(default={})
 
     def requires(self):
         return {}

@@ -36,18 +36,18 @@ processes = [
 
 # All config categories to be included in the final datacard
 config_categories = [
-    "1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "1e__ml_tt",
-    "1e__ml_st",
-    "1e__ml_v_lep",
-    "1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-    "1mu__ml_tt",
-    "1mu__ml_st",
-    "1mu__ml_v_lep",
+    "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1e__ml_tt",
+    "sr__1e__ml_st",
+    "sr__1e__ml_v_lep",
+    "sr__1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1mu__ml_tt",
+    "sr__1mu__ml_st",
+    "sr__1mu__ml_v_lep",
 ]
 
 rate_systematics = [
@@ -55,6 +55,8 @@ rate_systematics = [
     "lumi_13TeV_2016",
     "lumi_13TeV_2017",
     "lumi_13TeV_1718",
+    "lumi_13TeV_2022",
+    "lumi_13TeV_2023",
     "lumi_13TeV_correlated",
     # Rate QCDScale uncertainties
     "QCDScale_ttbar",
@@ -87,20 +89,16 @@ rate_systematics = [
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww",
+    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
     "murf_envelope_tt",
-    "murf_envelope_st_schannel",
-    "murf_envelope_st_tchannel",
-    "murf_envelope_st_twchannel",
+    "murf_envelope_st",
     "murf_envelope_dy_lep",
     "murf_envelope_w_lnu",
     "murf_envelope_ttV",
     "murf_envelope_VV",
     # Shape PDF Uncertainties
     "pdf_shape_tt",
-    "pdf_shape_st_schannel",
-    "pdf_shape_st_tchannel",
-    "pdf_shape_st_twchannel",
+    "pdf_shape_st",
     "pdf_shape_dy_lep",
     "pdf_shape_w_lnu",
     "pdf_shape_ttV",
@@ -108,18 +106,19 @@ shape_systematics = [
     # Scale Factors (TODO)
     "btag_hf",
     "btag_lf",
-    "btag_hfstats1_2017",
-    "btag_hfstats2_2017"
-    "btag_lfstats1_2017"
-    "btag_lfstats2_2017"
+    "btag_hfstats1_{year}",
+    "btag_hfstats2_{year}",
+    "btag_lfstats1_{year}",
+    "btag_lfstats2_{year}",
     "btag_cferr1",
     "btag_cferr2",
-    "mu_sf",
-    # "mu_trig",
+    "mu_id_sf",
+    "mu_iso_sf",
+    # "mu_trig_sf",
     "e_sf",
-    # "e_trig",
-    # "minbias_xs",
-    # "top_pt",
+    # "e_trig_sf",
+    "minbias_xs",
+    "top_pt",
 ]
 
 # All systematics to be included in the final datacard
@@ -196,25 +195,13 @@ config_categories_22 = [
     "sr__1mu__ml_v_lep",
 ]
 
-sl_22post = default.derive("sl_22", cls_dict={
+sl_22 = default.derive("sl_22", cls_dict={
     "dummy_kl_variation": True,
     "processes": processes_22,
     "config_categories": config_categories_22,
     "ml_model_name": "dense_22",
     "systematics": rate_systematics,
 })
-
-
-shape_systematics_22 = [
-    "murf_envelope_tt",
-    "murf_envelope_st_schannel",
-    "murf_envelope_st_tchannel",
-    "murf_envelope_st_twchannel",
-    "murf_envelope_dy_lep",
-    "murf_envelope_w_lnu",
-    "murf_envelope_ttV",
-    "murf_envelope_VV",
-]
-sl_22post_shapes = sl_22post.derive("sl_22_shapes", cls_dict={
-    "systematics": rate_systematics + shape_systematics_22,
+sl_22_shapes = sl_22.derive("sl_22_shapes", cls_dict={
+    "systematics": rate_systematics + shape_systematics,
 })

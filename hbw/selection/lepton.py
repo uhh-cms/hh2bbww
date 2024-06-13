@@ -13,7 +13,7 @@ import law
 
 from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import set_ak_column, optional_column as optional
+from columnflow.columnar_util import set_ak_column
 from columnflow.selection import Selector, SelectionResult, selector
 
 # from columnflow.production.cms.electron import electron_weights
@@ -32,31 +32,24 @@ logger = law.logger.get_logger(__name__)
 
 @selector(
     uses=(
-        # TODO: cleanup
-        # {muon_weights, electron_weights, "*"} |  # load muon and electron weights producer for checks (?)
+        # {muon_weights, electron_weights} |  # we could load muon and electron weights producer for checks
         four_vec("Electron", {
-            "dxy", "dz", "miniPFRelIso_all", "cutBased",
-            "jetRelIso",  # cone-pt
-            "deltaEtaSC", "sieie", "hoe", "eInvMinusPInv", "convVeto", "jetIdx",  # Fakeable Electron
-        }) | optional({
-            "Electron.mvaIso_WP90", "Electron.mvaFall17V2Iso_WP90",  # columns that differ in Run 2 and 3
+            "dxy", "dz", "cutBased",
         }) | four_vec("Muon", {
-            "dxy", "dz", "looseId", "pfIsoId",  # Muon Preselection
-            "jetRelIso",  # cone-pt
-            "jetIdx",  # Fakeable Muon
+            "dxy", "dz", "looseId", "pfIsoId",
         }) | four_vec("Tau", {
-            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet",
+            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet", "decayMode",
         }) | {
             jet_selection,  # the jet_selection init needs to be run to set the correct b_tagger
         }
     ),
     produces={
-        "Muon.cone_pt", "Muon.is_tight",
-        "Electron.cone_pt", "Electron.is_tight",
+        "Muon.is_tight", "Electron.is_tight",
     },
-    muon_id="TightID",  # options: MediumID, MediumPromptID, TightID
+    # TODO: we would need to move these attributes to the main Selector init to make this configurable
+    muon_id="TightId",  # options: MediumId, MediumPromptId, TightId
     muon_iso="TightPFIso",  # options: LoosePFIso, TightPFIso (for MediumId only: Loose/Medium/TightMiniIso)
-    electron_id="TightID",  # options: TODO, probably Loose, Medium, Tight, wp80iso, wp90iso, wp80noiso, wp90noiso
+    electron_id="TightId",  # options: LooseId, MediumId, TightId, wp80iso, wp90iso, wp80noiso, wp90noiso
 )
 def lepton_definition(
         self: Selector,
@@ -71,18 +64,6 @@ def lepton_definition(
     # initialize dicts for the selection steps
     steps = DotDict()
 
-    # reconstruct relevant variables
-    events = set_ak_column(events, "Electron.cone_pt", ak.where(
-        self.electron_id_req(events.Electron),
-        events.Electron.pt,
-        0.9 * events.Electron.pt * (1.0 + events.Electron.jetRelIso),
-    ))
-    events = set_ak_column(events, "Muon.cone_pt", ak.where(
-        self.muon_id_req(events.Muon),
-        events.Muon.pt,
-        0.9 * events.Muon.pt * (1.0 + events.Muon.jetRelIso),
-    ))
-
     electron = events.Electron
     muon = events.Muon
 
@@ -95,14 +76,14 @@ def lepton_definition(
         (abs(electron.eta) <= 2.5) &
         (abs(electron.dxy) <= 0.05) &
         (abs(electron.dz) <= 0.1) &
-        (electron.cutBased >= 1)  # veto ID
+        (electron.cutBased >= 1)  # veto Id
     )
     mu_mask_loose = (
         (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
         (abs(muon.dxy) <= 0.05) &  # muon efficiencies are computed with dxy < 0.2; loosen?
         (abs(muon.dz) <= 0.1) &  # muon efficiencies are computed with dz < 0.5; loosen?
-        (muon.looseId) &  # loose ID
+        (muon.looseId) &  # loose Id
         (muon.pfIsoId >= 2)  # loose Isolation
     )
 
@@ -112,12 +93,12 @@ def lepton_definition(
 
     e_mask_fakeable = (
         e_mask_loose &
-        (electron.cone_pt >= 10)
+        (electron.pt >= 10)
     )
 
     mu_mask_fakeable = (
         mu_mask_loose &
-        (muon.cone_pt >= 10) &
+        (muon.pt >= 10) &
         self.muon_id_req(muon)
     )
 
@@ -142,7 +123,14 @@ def lepton_definition(
         (events.Tau.pt > 20.0) &
         (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
         (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
-        (events.Tau.idDeepTau2017v2p1VSjet >= 2)  # 2: VVLoose
+        (events.Tau.idDeepTau2017v2p1VSjet >= 2) &  # 2: VVLoose
+        (
+            (events.Tau.decayMode == 0) |
+            (events.Tau.decayMode == 1) |
+            (events.Tau.decayMode == 2) |
+            (events.Tau.decayMode == 10) |
+            (events.Tau.decayMode == 11)
+        )
     )
 
     # lepton invariant mass cuts
@@ -157,6 +145,7 @@ def lepton_definition(
 
     steps["ll_lowmass_veto"] = ~ak.any((lepton_pairs.m_inv < 12), axis=1)
     steps["ll_zmass_veto"] = ~ak.any((abs(lepton_pairs.m_inv - m_z.nominal) <= 10), axis=1)
+    steps["ll_mass_81"] = ~ak.any((lepton_pairs.m_inv - m_z.nominal) >= 10, axis=1)
 
     # store number of Loose/Fakeable/Tight electrons/muons/taus as cutflow variables
     events = set_ak_column(events, "cutflow.n_loose_electron", ak.sum(e_mask_loose, axis=1))
@@ -206,10 +195,9 @@ def lepton_definition_setup(
 ) -> None:
     # collection of id and isolation requirements
     self.muon_id_req = {
-        "mvaTTH": lambda muon: ((muon.mvaTTH >= 0.50) & muon.mediumId),
-        "LooseID": lambda muon: muon.looseId,
-        "MediumID": lambda muon: muon.mediumId,
-        "TightID": lambda muon: muon.tightId,
+        "LooseId": lambda muon: muon.looseId,
+        "MediumId": lambda muon: muon.mediumId,
+        "TightId": lambda muon: muon.tightId,
         "MediumPromptId": lambda muon: muon.mediumPromptId,
     }[self.muon_id]
 
@@ -223,10 +211,9 @@ def lepton_definition_setup(
     }[self.muon_iso]
 
     self.electron_id_req = {
-        "mvaTTH": lambda electron: electron.mvaTTH >= 0.30,
-        "LooseID": lambda electron: (electron.cutBased >= 2),
-        "MediumID": lambda electron: (electron.cutBased >= 3),
-        "TightID": lambda electron: (electron.cutBased >= 4),
+        "LooseId": lambda electron: (electron.cutBased >= 2),
+        "MediumId": lambda electron: (electron.cutBased >= 3),
+        "TightId": lambda electron: (electron.cutBased >= 4),
         "MediumPromptId": lambda electron: electron.mediumPromptId,
         "wp80iso": lambda electron: electron[self.e_mva_iso_wp80],
         "wp90iso": lambda electron: electron[self.e_mva_iso_wp90],
@@ -242,10 +229,9 @@ def lepton_definition_init(self: Selector) -> None:
 
     # add required electron and muon id and iso columns
     muon_id_column = {
-        "mvaTTH": "mvaTTH",  # and mediumId?
-        "LooseID": "looseId",
-        "MediumID": "mediumId",
-        "TightID": "tightId",
+        "LooseId": "looseId",
+        "MediumId": "mediumId",
+        "TightId": "tightId",
         "MediumPromptId": "mediumPromptId",
     }[self.muon_id]
     self.uses.add(f"Muon.{muon_id_column}")
@@ -264,10 +250,9 @@ def lepton_definition_init(self: Selector) -> None:
     self.e_mva_iso_wp90 = "mvaIso_WP90" if self.config_inst.x.run == 3 else "mvaFall17V2Iso_WP90"
 
     electron_id_column = {
-        "mvaTTH": "mvaTTH",
-        "LooseID": "cutBased",
-        "MediumID": "cutBased",
-        "TightID": "cutBased",
+        "LooseId": "cutBased",
+        "MediumId": "cutBased",
+        "TightId": "cutBased",
         "wp80iso": self.e_mva_iso_wp80,
         "wp90iso": self.e_mva_iso_wp90,
     }[self.electron_id]

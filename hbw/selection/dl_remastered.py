@@ -7,13 +7,16 @@ Selection modules for HH -> bbWW(lnulnu).
 from collections import defaultdict
 from typing import Tuple
 
+from cmsdb.constants import m_z
+
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
-from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection
+from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
-from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
 from hbw.production.weights import event_weights_to_normalize
+from hbw.util import ak_any
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -74,12 +77,12 @@ def dl_lepton_selection(
     e_mask_fakeable = lepton_results.x.e_mask_fakeable
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
-    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 25)
-    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > 25)
+    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.mu_pt)
+    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.ele_pt)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > 15)
-    subleading_e_mask = (e_mask_fakeable) & (events.Electron.pt > 15)
+    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.mu2_pt)
+    subleading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.ele2_pt)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
     lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(subleading_e_mask, events.Electron.pt)
@@ -101,27 +104,43 @@ def dl_lepton_selection(
     lepton_results.steps["TripleLeptonVeto"] = ak.num(lepton, axis=1) <= 2
     lepton_results.steps["Charge"] = ak.sum(electron.charge, axis=1) + ak.sum(muon.charge, axis=1) == 0
 
+    dilepton = ak.pad_none(lepton, 2)
+    dilepton = dilepton[:, 0] + dilepton[:, 1]
+    lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
+        lepton_results.steps.ll_lowmass_veto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         lepton_results.steps.TripleLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
+        lepton_results.steps.ll_lowmass_veto &
         lepton_results.steps.TripleLeptonVeto &
+        lepton_results.steps.Charge &
+        lepton_results.steps.DiLeptonMass81 &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
+    lepton_results.steps["Lep_mixed"] = (emu_mask | mue_mask)
 
     lepton_results.steps["Dilepton"] = (mm_mask | ee_mask | emu_mask | mue_mask)
 
@@ -135,9 +154,9 @@ def dl_lepton_selection(
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
     )
 
-    for channel, trigger_columns in self.trigger.items():
+    for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
-        trigger_mask = ak.any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
         lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
@@ -146,14 +165,14 @@ def dl_lepton_selection(
         )
 
     # combine results of each individual channel
-    lepton_results.steps["Trigger"] = ak.any([
+    lepton_results.steps["Trigger"] = ak_any([
         lepton_results.steps[f"Trigger_{channel}"]
-        for channel in self.trigger.keys()
+        for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
-    lepton_results.steps["TriggerAndLep"] = ak.any([
+    lepton_results.steps["TriggerAndLep"] = ak_any([
         lepton_results.steps[f"TriggerAndLep_{channel}"]
-        for channel in self.trigger.keys()
+        for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
     return events, lepton_results
@@ -161,6 +180,12 @@ def dl_lepton_selection(
 
 @dl_lepton_selection.init
 def dl_lepton_selection_init(self: Selector) -> None:
+    # configuration of defaults
+    self.mu_pt = self.config_inst.x("mu_pt", 25)
+    self.ele_pt = self.config_inst.x("ele_pt", 25)
+    self.mu2_pt = self.config_inst.x("mu2_pt", 15)
+    self.ele2_pt = self.config_inst.x("ele2_pt", 15)
+
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
@@ -183,7 +208,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
         year = self.config_inst.campaign.x.year
 
         if year == 2017:
-            self.trigger = {
+            self.config_inst.x.trigger = self.config_inst.x("trigger", {
                 "mm": [
                     "IsoMu27",
                     "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",
@@ -207,9 +232,9 @@ def dl_lepton_selection_init(self: Selector) -> None:
                     "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
                     "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
                 ],
-            }
+            })
         elif year == 2022:
-            self.trigger = {
+            self.config_inst.x.trigger = self.config_inst.x("trigger", {
                 "mm": [
                     "IsoMu24",
                     "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
@@ -228,12 +253,12 @@ def dl_lepton_selection_init(self: Selector) -> None:
                     "Ele30_WPTight_Gsf",
                     "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
                 ],
-            }
+            })
         else:
             raise Exception(f"Dilepton trigger not implemented for year {year}")
 
         # add all required trigger to the uses
-        for trigger_columns in self.trigger.values():
+        for trigger_columns in self.config_inst.x.trigger.values():
             for column in trigger_columns:
                 self.uses.add(f"HLT.{column}")
 
@@ -241,17 +266,18 @@ def dl_lepton_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses={
-        pre_selection, post_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, dl_lepton_selection,
-    },
-    produces={
-        pre_selection, post_selection,
-        vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, dl_lepton_selection,
-    },
     exposed=True,
+    # configurable attributes
+    mu_pt=None,
+    ele_pt=None,
+    mu2_pt=None,
+    ele2_pt=None,
+    trigger=None,
+    jet_pt=None,
+    n_jet=None,
+    b_tagger=None,
+    btag_wp=None,
+    n_btag=None,
 )
 def dl1(
     self: Selector,
@@ -271,26 +297,31 @@ def dl1(
     results += jet_results
 
     # boosted selection
-    events, boosted_results = self[sl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
+    events, boosted_results = self[dl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
 
     # vbf_jet selection
     events, vbf_jet_results = self[vbf_jet_selection](events, results, stats, **kwargs)
     results += vbf_jet_results
 
-    results.steps["Resolved"] = (results.steps.nJet1 & results.steps.nBjet1)
+    # NOTE: the bjet step can be customized only for the resolved selection as of now
+    jet_step = results.steps[f"nJet{self.n_jet}"] if self.n_jet != 0 else True
+    bjet_step = results.steps[f"nBjet{self.n_btag}"] if self.n_btag != 0 else True
+
+    results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
-        (results.steps.nJet1 & results.steps.nBjet1 | results.steps.HbbJet)
+        (jet_step & bjet_step | results.steps.HbbJet)
     )
 
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
-        (results.steps.nJet1 | results.steps.HbbJet_no_bjet) &
+        (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
         results.steps.ll_zmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
+        results.steps.DiLeptonMass81 &
         results.steps.Dilepton &
         results.steps.Trigger &
         results.steps.TriggerAndLep
@@ -299,8 +330,10 @@ def dl1(
     # combined event selection after all steps
     results.steps["all"] = results.event = (
         results.steps.all_but_bjet &
-        ((results.steps.nJet1 & results.steps.nBjet1) | results.steps.HbbJet)
+        ((jet_step & bjet_step) | results.steps.HbbJet)
     )
+    results.steps["all_SR"] = results.event & results.steps.SR
+    results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
     events, results = self[post_selection](events, results, stats, **kwargs)
@@ -310,6 +343,30 @@ def dl1(
 
 @dl1.init
 def dl1_init(self: Selector) -> None:
+    # defaults
+    if self.n_jet is None:
+        self.n_jet = 1
+    if self.n_btag is None:
+        self.n_btag = 1
+
+    # configuration of selection parameters
+    # apparently, this init only runs after the used selectors, but we can run this init first
+    # by only adding the used selectors in the init
+    configure_selector(self)
+
+    self.uses = {
+        pre_selection,
+        vbf_jet_selection, dl_boosted_jet_selection,
+        jet_selection, dl_lepton_selection,
+        post_selection,
+    }
+    self.produces = {
+        pre_selection,
+        vbf_jet_selection, dl_boosted_jet_selection,
+        jet_selection, dl_lepton_selection,
+        post_selection,
+    }
+
     # define mapping from selector step to labels used in cutflow plots
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
@@ -320,8 +377,12 @@ def dl1_init(self: Selector) -> None:
         ),
     })
 
+    # NOTE: the init's of the following Producers will not run if this is not a DatasetTask
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
     self.uses.add(event_weights_to_normalize)
     self.produces.add(event_weights_to_normalize)
+
+
+dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})

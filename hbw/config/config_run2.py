@@ -221,7 +221,7 @@ def add_config(
     # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
         "campaign": jerc_campaign,
-        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "V2"}[year],
+        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
         "jet_type": jet_type,
     })
 
@@ -268,23 +268,36 @@ def add_config(
     ]
 
     # b-tag working points
+    # main source with all WPs: https://btv-wiki.docs.cern.ch/ScaleFactors/#sf-campaigns
+    # 2016/17 sources with revision:
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16preVFP?rev=6
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
-    # TODO: add correct 2022 + 2022preEE WPs and sources
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0490, "2022postEE": 0.0490}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.2783, "2022postEE": 0.2783}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7100, "2022postEE": 0.7100}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "deepcsv": {
-            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208, "2022preEE": 0.1208, "2022postEE": 0.1208}[cfg.x.cpn_tag],  # noqa
-            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168, "2022preEE": 0.4168, "2022postEE": 0.4168}[cfg.x.cpn_tag],  # noqa
-            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665, "2022preEE": 0.7665, "2022postEE": 0.7665}[cfg.x.cpn_tag],  # noqa
+            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
+        "particlenet": {
+            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023": 0.0358, "2023BPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023": 0.1917, "2023BPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023": 0.6172, "2023BPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
+
+    # b-tag configuration. Potentially overwritten by the jet Selector.
+    cfg.x.b_tagger = {
+        2: "deepjet",
+        3: "particlenet",
+    }[cfg.x.run]
+    cfg.x.btag_wp = "medium"
 
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
@@ -309,31 +322,39 @@ def add_config(
         },
     })
 
-    if cfg.x.run == 2:
-        # btag weight configuration
-        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
+    # electron and muon SFs (TODO: we should add these config entries as part of the selector init)
 
+    if cfg.x.run == 2:
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
-        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "wp80iso")
+        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "Tight")
 
         # names of muon correction sets and working points
         # (used in the muon producer)
         cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
+        cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
+        cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     elif cfg.x.run == 3:
-        # TODO: check that everyting is setup as intended
-
-        # btag weight configuration
-        cfg.x.btag_sf = ("deepJet_shape", cfg.x.btag_sf_jec_sources)
-
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
-        cfg.x.electron_sf_names = ("TODO", f"{cfg.x.cpn_tag}", "TODO")
+        if cfg.x.cpn_tag == "2022postEE":
+            # TODO: we need to use different SFs for control regions
+            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoE+PromptFG", "Tight")
+        elif cfg.x.cpn_tag == "2022preEE":
+            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoBCD", "Tight")
 
         # names of muon correction sets and working points
         # (used in the muon producer)
-        cfg.x.muon_sf_names = ("NUM_TightMiniIso_DEN_MediumID", f"{cfg.x.cpn_tag}")
+        # TODO: we need to use different SFs for control regions
+        cfg.x.muon_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
+        cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}")
+        cfg.x.muon_iso_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
+
+        # central trigger SF, only possible for SL
+        if cfg.x.lepton_tag == "sl":
+            # TODO: this should be year-dependent and setup in the selector
+            cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")
 
     # register shifts
     # TODO: make shifts year-dependent
@@ -342,14 +363,16 @@ def add_config(
     cfg.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="hdamp_down", id=4, type="shape", tags={"disjoint_from_nominal"})
+    cfg.add_shift(name="mtop_up", id=5, type="shape", tags={"disjoint_from_nominal"})
+    cfg.add_shift(name="mtop_down", id=6, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="minbias_xs_up", id=7, type="shape")
     cfg.add_shift(name="minbias_xs_down", id=8, type="shape")
     add_shift_aliases(
         cfg,
         "minbias_xs",
         {
-            "pu_weight": "pu_weight_{name}",
             "normalized_pu_weight": "normalized_pu_weight_{name}",
+            "pu_weight": "pu_weight_{name}",
         },
     )
 
@@ -368,12 +391,21 @@ def add_config(
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
+    # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
 
-    cfg.add_shift(name="mu_sf_up", id=50, type="shape")
-    cfg.add_shift(name="mu_sf_down", id=51, type="shape")
+    # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
+    # cfg.add_shift(name="mu_sf_down", id=51, type="shape")
+    # add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
+
     cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
     cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
-    add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
+    cfg.add_shift(name="mu_id_sf_up", id=54, type="shape")
+    cfg.add_shift(name="mu_id_sf_down", id=55, type="shape")
+    cfg.add_shift(name="mu_iso_sf_up", id=56, type="shape")
+    cfg.add_shift(name="mu_iso_sf_down", id=57, type="shape")
+    add_shift_aliases(cfg, "mu_id_sf", {"muon_id_weight": "muon_id_weight_{direction}"})
+    add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
+    # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
     btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
@@ -388,6 +420,8 @@ def add_config(
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
+                "btag_weight": f"btag_weight_{unc}_" + "{direction}",
+                "njet_btag_weight": f"njet_btag_weight_{unc}_" + "{direction}",
             },
         )
 
@@ -405,11 +439,15 @@ def add_config(
         add_shift_aliases(
             cfg,
             unc,
-            {f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}"},
+            {
+                f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}",
+                f"{unc}_weight": f"{unc}_weight_" + "{direction}",
+            },
         )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
+
     for jec_source in cfg.x.jec["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
         cfg.add_shift(
@@ -432,6 +470,18 @@ def add_config(
             {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
         )
 
+        if jec_source in ["Total", *cfg.x.btag_sf_jec_sources]:
+            # when jec_source is a known btag SF source, add aliases for btag weight column
+            add_shift_aliases(
+                cfg,
+                f"jec_{jec_source}",
+                {
+                    "btag_weight": f"btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
+                },
+            )
+
     cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"jer"})
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
     add_shift_aliases(cfg, "jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
@@ -450,7 +500,7 @@ def add_config(
         return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
 
     # external files
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-f35ab53e"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a332cfa"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
@@ -480,19 +530,8 @@ def add_config(
         "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
     })
 
-    if cfg.x.run == 3:
-        # inconsistent naming in the jsonpog integration...
-        corr_tag = f"2022{jerc_postfix}_27Jun2023"
-        cfg.x.external_files["muon_sf"] = (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1")
-
     # temporary fix due to missing corrections in run 3
-    # electron and met still missing
     if cfg.x.run == 3:
-        cfg.add_tag("skip_electron_weights")
-        cfg.x.external_files.pop("electron_sf")
-
-        cfg.add_tag("skip_muon_weights")
-
         cfg.x.external_files.pop("met_phi_corr")
 
     cfg.x.met_filters = {
@@ -520,17 +559,6 @@ def add_config(
                 "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
-
-            # files from https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData?rev=44#Pileup_JSON_Files_For_Run_II # noqa
-            "pu": {
-                "json": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/pileup_latest.txt", "v1"),  # noqa
-                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/435f0b04c0e318c1036a6b95eb169181bbbe8344/SimGeneral/MixingModule/python/mix_2017_25ns_UltraLegacy_PoissonOOTPU_cfi.py", "v1"),  # noqa
-                "data_profile": {
-                    "nominal": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root", "v1"),  # noqa
-                    "minbias_xs_up": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-72400ub-99bins.root", "v1"),  # noqa
-                    "minbias_xs_down": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-66000ub-99bins.root", "v1"),  # noqa
-                },
-            },
         }))
     elif year == 2022 and campaign.x.EE == "pre":
         cfg.x.external_files.update(DotDict.wrap({
@@ -539,19 +567,6 @@ def add_config(
                 "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
-            "pu": {
-                # "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileup_JSON.txt", "v1"),  # noqa
-                "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCDEFG/pileup_JSON.txt", "v1"),  # noqa
-                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/bb525104a7ddb93685f8ced6fed1ab793b2d2103/SimGeneral/MixingModule/python/Run3_2022_LHC_Simulation_10h_2h_cfi.py", "v1"),  # noqa
-                "data_profile": {
-                    # "nominal": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-69200ub-99bins.root", "v1"),  # noqa
-                    # "minbias_xs_up": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-72400ub-99bins.root", "v1"),  # noqa
-                    # "minbias_xs_down": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCD/pileupHistogram-Cert_Collisions2022_355100_357900_eraBCD_GoldenJson-13p6TeV-66000ub-99bins.root", "v1"),  # noqa
-                    "nominal": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-69200ub-100bins.root", "v1"),  # noqa
-                    "minbias_xs_up": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-72400ub-100bins.root", "v1"),  # noqa
-                    "minbias_xs_down": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-66000ub-100bins.root", "v1"),  # noqa
-                },
-            },
         }))
     elif year == 2022 and campaign.x.EE == "post":
         cfg.x.external_files.update(DotDict.wrap({
@@ -559,20 +574,6 @@ def add_config(
             "lumi": {
                 "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
-            },
-            "pu": {
-                # "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileup_JSON.txt", "v1"),  # noqa
-                "json": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/BCDEFG/pileup_JSON.txt", "v1"),  # noqa
-                "mc_profile": ("https://raw.githubusercontent.com/cms-sw/cmssw/bb525104a7ddb93685f8ced6fed1ab793b2d2103/SimGeneral/MixingModule/python/Run3_2022_LHC_Simulation_10h_2h_cfi.py", "v1"),  # noqa
-                "data_profile": {
-                    # data profiles were produced with 99 bins instead of 100 --> use custom produced data profiles instead  # noqa
-                    # "nominal": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-69200ub-99bins.root", "v1"),  # noqa
-                    # "minbias_xs_up": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-72400ub-99bins.root", "v1"),  # noqa
-                    # "minbias_xs_down": (f"https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/PileUp/EFG/pileupHistogram-Cert_Collisions2022_359022_362760_eraEFG_GoldenJson-13p6TeV-66000ub-99bins.root", "v1"),  # noqa
-                    "nominal": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-69200ub-100bins.root", "v1"),  # noqa
-                    "minbias_xs_up": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-72400ub-100bins.root", "v1"),  # noqa
-                    "minbias_xs_down": (f"/afs/cern.ch/user/a/anhaddad/public/Collisions22/pileupHistogram-Cert_Collisions2022_355100_362760_GoldenJson-13p6TeV-66000ub-100bins.root", "v1"),  # noqa
-                },
             },
         }))
     else:
@@ -603,7 +604,7 @@ def add_config(
             "murf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
-            {"Jet", "Bjet", "VBFJet"},
+            {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
         ) | four_vec(  # FatJets
             {"FatJet", "HbbJet"},
@@ -613,44 +614,9 @@ def add_config(
             },
         ) | four_vec(  # Leptons
             {"Electron", "Muon"},
-            {"charge", "pdgId", "is_tight"},
+            {"charge", "pdgId", "jetRelIso", "is_tight"},
         ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
     )
-
-    # event weight columns as keys in an ordered dict, mapped to shift instances they depend on
-    get_shifts = lambda *keys: sum(([cfg.get_shift(f"{k}_up"), cfg.get_shift(f"{k}_down")] for k in keys), [])
-
-    # NOTE: the event_weights will be replaced with a weights_producer soon
-    cfg.x.event_weights = DotDict()
-
-    cfg.x.event_weights["normalization_weight"] = []
-
-    # for dataset in cfg.datasets:
-    #     if dataset.x("is_ttbar", False):
-    #         dataset.x.event_weights = {"top_pt_weight": get_shifts("top_pt")}
-
-    if not cfg.has_tag("skip_btag_weights"):
-        # NOTE: which to use, njet_btag_weight or btag_weight?
-        cfg.x.event_weights["normalized_btag_weight"] = get_shifts(*(f"btag_{unc}" for unc in btag_uncs))
-
-    if not cfg.has_tag("skip_pu_weights"):
-        cfg.x.event_weights["normalized_pu_weight"] = get_shifts("minbias_xs")
-
-    if not cfg.has_tag("skip_electron_weights"):
-        cfg.x.event_weights["electron_weight"] = get_shifts("e_sf")
-    if not cfg.has_tag("skip_muon_weights"):
-        cfg.x.event_weights["muon_weight"] = get_shifts("mu_sf")
-
-    for dataset in cfg.datasets:
-        dataset.x.event_weights = DotDict()
-        if not dataset.has_tag("skip_scale"):
-            # pdf/scale weights for all non-qcd datasets
-            dataset.x.event_weights["normalized_murf_envelope_weight"] = get_shifts("murf_envelope")
-            dataset.x.event_weights["normalized_mur_weight"] = get_shifts("mur")
-            dataset.x.event_weights["normalized_muf_weight"] = get_shifts("muf")
-
-        if not dataset.has_tag("skip_pdf"):
-            dataset.x.event_weights["normalized_pdf_weight"] = get_shifts("pdf")
 
     def reduce_version(cls, inst, params):
         # per default, use the version set on the command line
@@ -660,11 +626,11 @@ def add_config(
         if not selector:
             return version
 
-        # set version of "dl1" and "sl1" Producer to "prod1"
+        # set version of "dl1" and "sl1" Producer to "prod2"
         if selector == "dl1":
-            version = "prod1"
+            version = "prod2"
         elif selector == "sl1":
-            version = "prod1"
+            version = "prod2"
 
         return version
 
@@ -677,19 +643,19 @@ def add_config(
 
         # set version of Producers that are not affected by the ML pipeline
         if producer == "event_weights":
-            version = "prod1"
+            version = "prod2"
         elif producer == "sl_ml_inputs":
-            version = "prod1"
+            version = "prod2"
         elif producer == "dl_ml_inputs":
-            version = "prod1"
+            version = "prod2"
         elif producer == "pre_ml_cats":
-            version = "prod1"
+            version = "prod2"
 
         return version
 
     # Version of required tasks
     cfg.x.versions = {
-        "cf.CalibrateEvents": "common1",
+        "cf.CalibrateEvents": "common2",
         "cf.SelectEvents": reduce_version,
         "cf.MergeSelectionStats": reduce_version,
         "cf.MergeSelectionMasks": reduce_version,

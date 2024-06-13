@@ -7,7 +7,7 @@ from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
 def default_calibrator(container):
-    return "skip_jecunc"
+    return "with_b_reg"
 
 
 def default_selector(container):
@@ -113,6 +113,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_selector = default_selector(config_inst)
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
+    config_inst.x.default_weight_producer = "default"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl"]
@@ -129,7 +130,10 @@ def set_config_defaults_and_groups(config_inst):
         "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
         "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
+        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
+        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
@@ -142,7 +146,10 @@ def set_config_defaults_and_groups(config_inst):
         "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
+    config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["dech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
+    config_inst.x.process_groups["d2ech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
+    config_inst.x.process_groups["demuch"] = ["data_muoneg"] + config_inst.x.process_groups["ech"]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -169,6 +176,15 @@ def set_config_defaults_and_groups(config_inst):
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
+        "dl_2much": ["sr__2mu", "sr__2mu__resolved", "sr__2mu__boosted"],
+        "dl_2ech": ["sr__2e", "sr__2e__resolved", "sr__2e__boosted"],
+        "dl_emuch": ["sr__emu", "sr__emu__resolved", "sr__emu__boosted"],
+        "dl_2much_resolved": ["sr__2mu__resolved", "sr__2mu__resolved__1b", "sr__2mu__resolved__2b"],
+        "dl_2ech_resolved": ["sr__2e__resolved", "sr__2e__resolved__1b", "sr__2e__resolved__2b"],
+        "dl_emuch_resolved": ["sr__emu__resolved", "sr__emu__resolved__1b", "sr__emu__resolved__2b"],
+        "dl_2much_boosted": ["sr__2mu__boosted"],
+        "dl_2ech_boosted": ["sr__2e__boosted"],
+        "dl_emuch_boosted": ["sr__emu__boosted"],
         "default": ["incl", "sr__1e", "sr__1mu"],
         "test": ["incl", "sr__1e"],
         "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
@@ -219,6 +235,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.variable_groups = {
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
+        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
+        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
@@ -226,18 +244,6 @@ def set_config_defaults_and_groups(config_inst):
             "n_jet", "n_muon", "n_electron", "ht", "m_bb", "m_ll", "deltaR_bb", "deltaR_ll",
             "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj",
             "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
-        ],
-        "control": [
-            "n_jet", "n_fatjet", "n_electron", "n_muon",
-            "jet1_pt", "jet1_eta", "jet1_phi", "jet1_btagDeepFlavB",   # "jet1_btagDeepB",
-            "jet2_pt", "jet2_eta", "jet2_phi", "jet2_btagDeepFlavB",   # "jet2_btagDeepB",
-            "jet3_pt", "jet3_eta", "jet3_phi", "jet3_btagDeepFlavB",   # "jet3_btagDeepB",
-            "jet4_pt", "jet4_eta", "jet4_phi", "jet4_btagDeepFlavB",   # "jet4_btagDeepB",
-            "fatjet1_pt", "fatjet1_eta", "fatjet1_phi", "fatjet1_btagHbb", "fatjet1_deepTagMD_HbbvsQCD",
-            "fatjet1_mass", "fatjet1_msoftdrop", "fatjet1_tau1", "fatjet1_tau2", "fatjet1_tau21",
-            "fatjet2_pt", "fatjet2_eta", "fatjet2_phi", "fatjet2_btagHbb", "fatjet2_deepTagMD_HbbvsQCD",
-            "fatjet2_mass", "fatjet2_msoftdrop", "fatjet2_tau1", "fatjet2_tau2", "fatjet2_tau21",
-            "electron_pt", "electron_eta", "electron_phi", "muon_pt", "muon_eta", "muon_phi",
         ],
     }
 

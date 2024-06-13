@@ -12,7 +12,7 @@ from typing import Callable
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT
+from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT, AnalysisTask
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
@@ -155,6 +155,44 @@ def print_hist(hist, max_bins: int = 20):
         logger.info(f"{i} \t {hist.GetBinLowEdge(i)} \t {hist.GetBinContent(i)}")
 
 
+from hbw.util import timeit_multiple
+
+
+@timeit_multiple
+def resolve_category_groups(param: dict[str, any], config_inst: od.Config):
+    """
+    Resolve the category groups for the given parameter *param* and the *config_inst*.
+
+    :param param: The parameter to resolve
+    """
+    all_cats = set([x.name for x, _, _ in config_inst.walk_categories()])
+    outp_param = {}
+    for cat_name in list(param.keys()):
+        resolved_cats = config_inst.x.category_groups.get(cat_name, cat_name)
+        if resolved_cats:
+            for resolved_cat in law.util.make_tuple(resolved_cats):
+                if resolved_cat in all_cats:
+                    outp_param[resolved_cat] = param[cat_name]
+
+    return outp_param
+
+
+@timeit_multiple
+def resolve_category_groups_new(param: dict[str, any], config_inst: od.Config):
+    # NOTE: this is only kept for timing comparisons of the `find_config_objects` function
+    outp_param = {}
+    for cat_name in list(param.keys()):
+        resolved_cats = AnalysisTask.find_config_objects(
+            (cat_name,), config_inst, od.Category,
+            object_groups=config_inst.x.category_groups, deep=True,
+        )
+        if resolved_cats:
+            for resolved_cat in law.util.make_tuple(resolved_cats):
+                outp_param[resolved_cat] = param[cat_name]
+
+    return outp_param
+
+
 class ModifyDatacardsFlatRebin(
     HBWTask,
     InferenceModelMixin,
@@ -189,17 +227,6 @@ class ModifyDatacardsFlatRebin(
         params = super().resolve_param_values(params)
 
         if config_inst := params.get("config_inst"):
-            def resolve_category_groups(param):
-                outp_param = {}
-                for cat_name in list(param.keys()):
-                    resolved_cats = cls.find_config_objects(
-                        (cat_name,), config_inst, od.Category,
-                        object_groups=config_inst.x.category_groups, deep=True,
-                    )
-                    if resolved_cats:
-                        for resolved_cat in law.util.make_tuple(resolved_cats):
-                            outp_param[resolved_cat] = param[cat_name]
-                return outp_param
 
             # resolve default and groups for `bins_per_category`
             params["bins_per_category"] = cls.resolve_config_default(
@@ -208,7 +235,7 @@ class ModifyDatacardsFlatRebin(
                 container=config_inst,
                 default_str="default_bins_per_category",
             )
-            params["bins_per_category"] = resolve_category_groups(params["bins_per_category"])
+            params["bins_per_category"] = resolve_category_groups(params["bins_per_category"], config_inst)
 
             # set `inference_category_rebin_processes` as parameter and resolve groups
             params["inference_category_rebin_processes"] = cls.resolve_config_default(
@@ -219,6 +246,7 @@ class ModifyDatacardsFlatRebin(
             )
             params["inference_category_rebin_processes"] = resolve_category_groups(
                 params["inference_category_rebin_processes"],
+                config_inst,
             )
         return params
 
@@ -407,18 +435,25 @@ class PrepareInferenceTaskCalls(
 
         # get the datacard names from the inputs
         collection = inputs["rebinned_datacards"]["collection"]
-        card_fns = [collection[key]["card"].fn for key in collection.keys()]
+        cards_path = {collection[key]["card"].dirname for key in collection.keys()}
+        if len(cards_path) != 1:
+            raise Exception("Expected only one datacard path")
+        cards_path = cards_path.pop()
+
+        card_fns = [collection[key]["card"].basename for key in collection.keys()]
 
         # get the category names from the inference models
         categories = self.inference_model_inst.categories
         cat_names = [c.name for c in categories]
 
         # combine category names with card fn to a single string
-        datacards = ",".join([f"{cat_name}={card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+        datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+
+        base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
 
         print("\n\n")
         # creating upper limits for kl=1
-        cmd = (
+        cmd = base_cmd + (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
@@ -426,7 +461,7 @@ class PrepareInferenceTaskCalls(
         output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
 
         # creating kl scan
-        cmd = (
+        cmd = base_cmd + (
             f"law run PlotUpperLimits --version {identifier} --datacards {datacards} "
             f"--xsec fb --y-log"
         )
@@ -434,9 +469,17 @@ class PrepareInferenceTaskCalls(
         output["PlotUpperLimitsPoint"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
-        cmd = (
+        cmd = base_cmd + (
             f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
             f"--skip-b-only"
+        )
+        print(cmd, "\n\n")
+        output["FitDiagnostics"].dump(cmd, formatter="text")
+
+        # running FitDiagnostics for Pre+Postfit plots
+        cmd = base_cmd + (
+            f"law run PlotPullsAndImpacts --version {identifier} --datacards {datacards} "
+            f"--order-by-impact"
         )
         print(cmd, "\n\n")
         output["FitDiagnostics"].dump(cmd, formatter="text")

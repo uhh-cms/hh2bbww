@@ -289,6 +289,32 @@ def add_variables(config: od.Config) -> None:
         x_title="Number of deepjets (tight WP)",
         discrete_x=True,
     )
+    if config.x.run == 3:
+        particlenet_wps = config.x.btag_working_points.particlenet
+        config.add_variable(
+            name="n_particlenet_loose",
+            expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.loose, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of pnet jets (loose WP)",
+            discrete_x=True,
+        )
+        config.add_variable(
+            name="n_particlenet_medium",
+            expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.medium, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of pnet jets (medium WP)",
+            discrete_x=True,
+        )
+        config.add_variable(
+            name="n_particlenet_tight",
+            expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.tight, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of pnet jets (tight WP)",
+            discrete_x=True,
+        )
     config.add_variable(
         name="n_fatjet",
         expression=lambda events: ak.num(events.FatJet.pt, axis=1),
@@ -334,6 +360,14 @@ def add_variables(config: od.Config) -> None:
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
         binning=(40, 0, 1200),
+        unit="GeV",
+        x_title="HT",
+    )
+    config.add_variable(
+        name="ht_bjet_norm",
+        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
+        aux={"inputs": {"Jet.pt"}},
+        binning=[500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         unit="GeV",
         x_title="HT",
     )
@@ -403,6 +437,14 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0, 1),
             x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % (i + 1),
         )
+        if config.x.run == 3:
+            config.add_variable(
+                name=f"jet{i+1}_btagPNetB",
+                expression=f"Jet.btagPNetB[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                x_title=r"Jet %i ParticleNet score" % (i + 1),
+            )
 
     # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
     for i in range(2):
@@ -436,6 +478,14 @@ def add_variables(config: od.Config) -> None:
                 binning=(40, 0, 200),
                 x_title=obj + r" %i mass" % (i + 1),
             )
+            if config.x.run == 3:
+                config.add_variable(
+                    name=f"{obj}{i+1}_btagPNetB",
+                    expression=f"{obj}.btagPNetB[:,{i}]",
+                    null_value=EMPTY_FLOAT,
+                    binning=(40, 0, 1),
+                    x_title=obj + r" %i ParticleNet score" % (i + 1),
+                )
 
     # FatJets (2 pt-leading fatjets)
     for i in range(2):

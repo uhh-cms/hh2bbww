@@ -10,7 +10,6 @@ from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-from hbw.config.styling import default_var_binning, default_var_unit
 
 from columnflow.columnar_util import EMPTY_FLOAT  # noqa
 from hbw.util import call_once_on_config
@@ -163,68 +162,6 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
 
     # reconstructed variables
     config.add_variable(
-        name="mli_ht",
-        expression="mli_ht",
-        binning=(40, 0, 1200),
-        unit="GeV",
-        x_title="HT",
-    )
-    config.add_variable(
-        name="mli_n_jet",
-        expression="mli_n_jet",
-        binning=(11, -0.5, 10.5),
-        x_title="Number of jets",
-    )
-    config.add_variable(
-        name="mli_n_deepjet",
-        expression="mli_n_deepjet",
-        binning=(11, -0.5, 10.5),
-        x_title="Number of b-tagged jets (deepjet medium WP)",
-    )
-    config.add_variable(
-        name="mli_deepjetsum",
-        expression="mli_deepjetsum",
-        binning=(40, 0, 4),
-        x_title="sum of deepjet scores",
-    )
-    config.add_variable(
-        name="mli_b_deepjetsum",
-        expression="mli_b_deepjetsum",
-        binning=(40, 0, 4),
-        x_title="sum of bjet deepjet scores",
-    )
-    config.add_variable(
-        name="mli_l_deepjetsum",
-        expression="mli_l_deepjetsum",
-        binning=(40, 0, 4),
-        x_title="sum of lightjet deepjet scores",
-    )
-    config.add_variable(
-        name="mli_dr_bb",
-        expression="mli_dr_bb",
-        binning=(40, 0, 8),
-        x_title=r"$\Delta R(b,b)$",
-    )
-    config.add_variable(
-        name="mli_dphi_bb",
-        expression="mli_dphi_bb",
-        binning=(40, 0, 3.2),
-        x_title=r"$\Delta\Phi(b,b)$",
-    )
-    config.add_variable(
-        name="mli_mbb",
-        expression="mli_mbb",
-        binning=(40, 0, 400),
-        unit="GeV",
-        x_title=r"m(b,b)",
-    )
-    config.add_variable(
-        name="mli_mindr_lb",
-        expression="mli_mindr_lb",
-        binning=(40, 0, 8),
-        x_title=r"min $\Delta R(l,b)$",
-    )
-    config.add_variable(
         name="mli_dr_jj",
         expression="mli_dr_jj",
         binning=(40, 0, 8),
@@ -242,12 +179,6 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         x_title=r"m(j,j)",
-    )
-    config.add_variable(
-        name="mli_mindr_lj",
-        expression="mli_mindr_lj",
-        binning=(40, 0, 8),
-        x_title=r"min $\Delta R(l,j)$",
     )
     config.add_variable(
         name="mli_dphi_lnu",
@@ -345,26 +276,7 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         log_x=True,
         x_title=r"$S_{min}$",
     )
-    config.add_variable(
-        name="mli_vbf_deta",
-        expression="mli_vbf_deta",
-        binning=(50, 2, 9.5),
-        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
-    )
-    config.add_variable(
-        name="mli_vbf_invmass",
-        expression="mli_vbf_invmass",
-        binning=(50, 400, 4000),
-        unit="GeV",
-        x_title="invarint mass of two vbf jets",
-    )
-    config.add_variable(
-        name="mli_vbf_tag",
-        expression="mli_vbf_tag",
-        binning=(2, -0.5, 1.5),
-        x_title="existence of at least two vbf jets = 1, else 0",
-    )
-# W_jj features
+    # W_jj features
     config.add_variable(
         name="mli_pt_jj",
         expression="mli_pt_jj",
@@ -384,7 +296,7 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$W_{hadron}$ $\phi$ ",
     )
-# W_lnu features
+    # W_lnu features
     config.add_variable(
         name="mli_pt_lnu",
         expression="mli_pt_lnu",
@@ -404,7 +316,7 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$W_{lepton}$ $\phi$ ",
     )
-# H_WW (all) features
+    # H_WW (all) features
     config.add_variable(
         name="mli_pt_jjlnu",
         expression="mli_pt_jjlnu",
@@ -424,14 +336,7 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$H_{WW}$ $\phi$ ",
     )
-# H_bb features
-    config.add_variable(
-        name="mli_pt_bb",
-        expression="mli_pt_bb",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$H_{bb}$ $p_{T}$",
-    )
+    # H_bb features
     config.add_variable(
         name="mli_eta_bb",
         expression="mli_eta_bb",
@@ -444,23 +349,3 @@ def add_sl_res_ml_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"$H_{bb}$ $\phi$ ",
     )
-
-    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
-        for var in ["pt", "eta"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, var),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
-
-    for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "deepTagMD_HbbvsQCD"]:
-            config.add_variable(
-                name=f"mli_{obj}_{var}",
-                expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, var),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )

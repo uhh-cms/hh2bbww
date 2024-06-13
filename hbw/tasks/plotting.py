@@ -1,367 +1,283 @@
 # coding: utf-8
 
 """
-Convenience wrapper tasks to simplify producing results and fetching & deleting their outputs
-e.g. default sets of plots or datacards
+Custom plotting tasks
 """
-
 from __future__ import annotations
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 import law
-import luigi
 import order as od
 
-from columnflow.tasks.framework.base import Requirements
+from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
-    CalibratorsMixin,
+    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
+    CategoriesMixin,
 )
 from columnflow.tasks.framework.plotting import (
-    PlotBase, PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
+    PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
 )
 from columnflow.tasks.framework.decorators import view_output_plots
-from columnflow.tasks.plotting import PlotVariables1D, PlotShiftedVariables1D
-# from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.histograms import MergeHistograms
+from columnflow.util import DotDict, dev_sandbox, maybe_import
+
 from hbw.tasks.base import HBWTask
-
-from columnflow.util import dev_sandbox, DotDict, maybe_import
-
-uproot = maybe_import("uproot")
 
 
 logger = law.logger.get_logger(__name__)
 
 
-class InferencePlots(
-    law.WrapperTask,
-    HBWTask,
-    # pass mixins to directly use plot parameters on command line
-    PlotBase1D,
-    VariablePlotSettingMixin,
-    ProcessPlotSettingMixin,
-    InferenceModelMixin,
-    MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    # law.LocalWorkflow,
-    # RemoteWorkflow,
-):
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+# imports for plot function
 
-    plot_function = PlotVariables1D.plot_function
-
-    # disable some parameters
-    datasets = None
-    processes = None
-    categories = None
-
-    inference_variables = law.CSVParameter(
-        default=("config_variable", "variables_to_plot"),
-        description="Inference category attributes to use to determine which variables to plot",
-    )
-    skip_variables = luigi.BoolParameter(default=False)
-    # skip_data = luigi.BoolParameter(default=False)
-
-    # upstream requirements
-    reqs = Requirements(
-        PlotVariables1D=PlotVariables1D,
-    )
-
-    def requires(self):
-        reqs = {}
-
-        inference_model = self.inference_model_inst
-
-        # NOTE: this is not generally included in an inference model, but only in hbw analysis
-        ml_model_name = inference_model.ml_model_name
-
-        for inference_category in inference_model.categories:
-            # decide which variables to plot based on the inference model and the variables parameter
-            variables = []
-            for attr in self.inference_variables:
-                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
-            if not self.skip_variables:
-                variables.extend(self.variables)
-
-            category = inference_category.config_category
-            processes = inference_category.data_from_processes
-
-            # data_datasets = inference_category.config_data_datasets
-
-            reqs[inference_category.name] = self.reqs.PlotVariables1D.req(
-                self,
-                variables=variables,
-                categories=(category,),
-                processes=processes,
-                ml_models=(ml_model_name,),
-            )
-
-        return reqs
-
-
-class ShiftedInferencePlots(
-    law.WrapperTask,
-    HBWTask,
-    # pass mixins to directly use plot parameters on command line
-    PlotBase1D,
-    VariablePlotSettingMixin,
-    ProcessPlotSettingMixin,
-    InferenceModelMixin,
-    MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-):
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
-
-    plot_function = PlotShiftedVariables1D.plot_function
-
-    # disable some parameters
-    datasets = None
-    processes = None
-    categories = None
-
-    inference_variables = law.CSVParameter(
-        default=("config_variable", "variables_to_plot"),
-        description="Inference category attributes to use to determine which variables to plot",
-    )
-    skip_variables = luigi.BoolParameter(default=False)
-
-    # upstream requirements
-    reqs = Requirements(
-        PlotShiftedVariables1D=PlotShiftedVariables1D,
-    )
-
-    def requires(self):
-        reqs = {}
-
-        inference_model = self.inference_model_inst
-
-        # NOTE: this is not generally included in an inference model, but only in hbw analysis
-        ml_model_name = inference_model.ml_model_name
-
-        for inference_category in inference_model.categories:
-            # decide which variables to plot based on the inference model and the variables parameter
-            variables = []
-            for attr in self.inference_variables:
-                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
-            if not self.skip_variables:
-                variables.extend(self.variables)
-
-            category = inference_category.config_category
-            processes = inference_category.data_from_processes
-
-            for process in processes:
-                inference_process = inference_model.get_process(process, inference_category.name)
-                shifts = [
-                    param.config_shift_source
-                    for param in inference_process.parameters
-                    if param.config_shift_source
-                ]
-                if not shifts:
-                    continue
-
-                for shift in shifts:
-                    branch_name = f"{inference_category.name}_{process}_{shift}"
-
-                    # produce shifted plots for each shift separately
-                    # NOTE: we could also try producing one plot per shift with all processes added
-                    reqs[branch_name] = self.reqs.PlotShiftedVariables1D.req(
-                        self,
-                        variables=variables,
-                        categories=(category,),
-                        processes=(process,),
-                        shift_sources=(shift,),
-                        ml_models=(ml_model_name,),
-                    )
-
-        return reqs
-
-
-def load_hists_uproot(fit_diagnostics_path):
-    """ Helper to load histograms from a fit_diagnostics file """
-    # prepare output dict
-    hists = DotDict()
-    with uproot.open(fit_diagnostics_path) as tfile:
-        keys = [key.split("/") for key in tfile.keys()]
-        for key in keys:
-            if len(key) != 3:
-                continue
-
-            # get the histogram from the tfile
-            h_in = tfile["/".join(key)]
-
-            # unpack key
-            fit, channel, process = key
-            process = process.split(";")[0]
-
-            if "data" not in process:
-                # transform TH1F to hist
-                h_in = h_in.to_hist()
-
-            # set the histogram in a deep dictionary
-            hists = law.util.merge_dicts(hists, DotDict.wrap({fit: {channel: {process: h_in}}}), deep=True)
-
-    return hists
-
-
-# imports regarding plot function
-mpl = maybe_import("matplotlib")
+hist = maybe_import("hist")
 plt = maybe_import("matplotlib.pyplot")
-mplhep = maybe_import("mplhep")
+
 
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
-    prepare_plot_config,
     prepare_style_config,
+    remove_residual_axis,
+    apply_variable_settings,
+    # apply_process_settings,
+    # apply_density_to_hists,
 )
 
 
-def plot_postfit_shapes(
-    hists: OrderedDict,
+def plot_multi_weight_producer(
+    hists: dict[str, OrderedDict[od.Process, hist.Hist]],
     config_inst: od.Config,
     category_inst: od.Category,
     variable_insts: list[od.Variable],
     style_config: dict | None = None,
     density: bool | None = False,
     shape_norm: bool | None = False,
-    yscale: str | None = "",
+    yscale: str | None = "log",
     hide_errors: bool | None = None,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
-) -> tuple(plt.Figure, tuple(plt.Axes)):
-    variable_inst = law.util.make_tuple(variable_insts)[0]
+) -> plt.Figure:
 
-    plot_config = prepare_plot_config(
-        hists,
-        shape_norm=shape_norm,
-        hide_errors=hide_errors,
-    )
+    variable_inst = variable_insts[0]
+
+    # merge over processes
+    for weight_producer, w_hists in hists.items():
+        hists[weight_producer] = sum(w_hists.values())
+
+    remove_residual_axis(hists, "shift")
+    hists = apply_variable_settings(hists, variable_insts, variable_settings)
+
+    plot_config = OrderedDict()
+
+    # add hists
+    for weight_producer, h in hists.items():
+        norm = sum(h.values()) if shape_norm else 1
+        plot_config[weight_producer] = plot_cfg = {
+            "method": "draw_hist",
+            "hist": h,
+            "kwargs": {
+                "norm": norm,
+                "label": weight_producer,
+            },
+            "ratio_kwargs": {
+                "norm": hists[list(hists.keys())[0]].values(),
+                "yerr": None,
+            },
+        }
+        if hide_errors:
+            for key in ("kwargs", "ratio_kwargs"):
+                if key in plot_cfg:
+                    plot_cfg[key]["yerr"] = None
 
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
+    default_style_config["rax_cfg"]["ylabel"] = f"Ratio to {list(hists.keys())[0]}"
 
-    # since we are rebinning, the xlim should be defined based on the histograms itself
-    bin_edges = list(hists.values())[0].axes[0].edges
-    default_style_config["ax_cfg"]["xlim"] = (bin_edges[0], bin_edges[-1])
-
-    style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
-    if shape_norm:
-        style_config["ax_cfg"]["ylabel"] = r"$\Delta N/N$"
-
-    return plot_all(plot_config, style_config, **kwargs)
+    return plot_all(plot_config, default_style_config, **kwargs)
 
 
-class PlotPostfitShapes(
+class PlotVariablesMultiWeightProducer(
     HBWTask,
+    ShiftTask,
+    VariablePlotSettingMixin,
+    ProcessPlotSettingMixin,
     PlotBase1D,
-    # to correctly setup our InferenceModel, we need all these mixins, but hopefully, all these
-    # parameters are automatically resolved correctly
-    InferenceModelMixin,
+    CategoriesMixin,
     MLModelsMixin,
     ProducersMixin,
     SelectorStepsMixin,
     CalibratorsMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
-    """
-    Task that creates Postfit shape plots based on a fit_diagnostics file.
-
-    Work in Progress!
-    TODO:
-    - include data
-    - include correct uncertainty bands
-    - pass correct binning information
-    """
-
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    """sandbox to use for this task. Defaults to *default_columnar_sandbox* from
+    analysis config.
+    """
+
+    weight_producers = law.CSVParameter(
+        default=(),
+        description="Weight producers to use for plotting",
+    )
 
     plot_function = PlotBase.plot_function.copy(
-        default="hbw.tasks.plotting.plot_postfit_shapes",
+        default="hbw.tasks.plotting.plot_multi_weight_producer",
         add_default_to_description=True,
     )
 
-    fit_diagnostics_file = luigi.Parameter(
-        default=law.NO_STR,
-        description="fit_diagnostics file that is used to load histograms",
-    )
-
-    prefit = luigi.BoolParameter(
-        default=False,
-        description="Whether to do prefit or postfit plots; defaults to False",
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeHistograms=MergeHistograms,
     )
 
     def requires(self):
-        return {}
+        return {
+            weight_producer: {
+                d: self.reqs.MergeHistograms.req(
+                    self,
+                    dataset=d,
+                    branch=-1,
+                    weight_producer=weight_producer,
+                    _exclude={"branches"},
+                    _prefer_cli={"variables"},
+                )
+                for d in self.datasets
+            }
+            for weight_producer in self.weight_producers
+        }
 
     def output(self):
-        return {"plots": self.target("plots", dir=True)}
+        b = self.branch_data
+        return {"plots": [
+            self.target(name)
+            for name in self.get_plot_names(f"plot__proc_{self.processes_repr}__cat_{b.category}__var_{b.variable}")
+        ]}
 
+    def get_plot_shifts(self):
+        return [self.global_shift_inst]
+
+    @property
+    def weight_producers_repr(self):
+        return "_".join(self.weight_producers)
+
+    def store_parts(self):
+        parts = super().store_parts()
+        parts.insert_before("version", "plot", f"datasets_{self.datasets_repr}")
+        parts.insert_before("version", "weights", f"weights_{self.weight_producers_repr}")
+        return parts
+
+    def create_branch_map(self):
+        return [
+            DotDict({"category": cat_name, "variable": var_name})
+            for cat_name in sorted(self.categories)
+            for var_name in sorted(self.variables)
+        ]
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["merged_hists"] = self.requires_from_branch()
+
+        return reqs
+
+    @law.decorator.log
     @view_output_plots
     def run(self):
-        logger.warning(
-            f"Note! It is important that the requested inference_model {self.inference_model} "
-            "is identical to the one that has been used to create the datacards",
-        )
-        all_hists = load_hists_uproot(self.fit_diagnostics_file)
+        import hist
 
-        outp = self.output()
-        if self.prefit:
-            fit_type = "prefit"
-        else:
-            fit_type = "fit_s"
+        # get the shifts to extract and plot
+        plot_shifts = law.util.make_list(self.get_plot_shifts())
 
-        all_hists = all_hists[f"shapes_{fit_type}"]
+        # prepare config objects
+        variable_tuple = self.variable_tuples[self.branch_data.variable]
+        variable_insts = [
+            self.config_inst.get_variable(var_name)
+            for var_name in variable_tuple
+        ]
+        category_inst = self.config_inst.get_category(self.branch_data.category)
+        leaf_category_insts = category_inst.get_leaf_categories() or [category_inst]
+        process_insts = list(map(self.config_inst.get_process, self.processes))
+        sub_process_insts = {
+            proc: [sub for sub, _, _ in proc.walk_processes(include_self=True)]
+            for proc in process_insts
+        }
 
-        for channel, hists in all_hists.items():
-            has_category = self.inference_model_inst.has_category(channel)
-            if not has_category:
-                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
+        # histogram data per process
+        hists = defaultdict(OrderedDict)
 
-            for proc_key in list(hists.keys()):
-                # remove unnecessary histograms
-                if "data" in proc_key or "total" in proc_key:
-                    hists.pop(proc_key)
-                    continue
+        with self.publish_step(f"plotting {self.branch_data.variable} in {category_inst.name}"):
+            for weight_producer, inputs in self.input().items():
+                for dataset, inp in inputs.items():
+                    dataset_inst = self.config_inst.get_dataset(dataset)
+                    h_in = inp["collection"][0]["hists"].targets[self.branch_data.variable].load(formatter="pickle")
 
-                proc_inst = None
-                # try getting the config process via InferenceModel
-                if has_category:
-                    # TODO: process customization based on inference process? e.g. scale
-                    inference_process = self.inference_model_inst.get_process(proc_key, channel)
-                    proc_inst = self.config_inst.get_process(inference_process.config_process)
-                else:
-                    # try getting proc inst directly via config
-                    proc_inst = self.config_inst.get_process(proc_key, default=None)
+                    # loop and extract one histogram per process
+                    for process_inst in process_insts:
+                        # skip when the dataset is already known to not contain any sub process
+                        if not any(map(dataset_inst.has_process, sub_process_insts[process_inst])):
+                            continue
 
-                # replace string keys with process instances
-                if proc_inst:
-                    hists[proc_inst] = hists[proc_key]
-                    hists.pop(proc_key)
+                        # work on a copy
+                        h = h_in.copy()
 
-            # try getting the config category and variable via InferenceModel
-            if has_category:
-                # TODO: category/variable customization based on inference model?
-                inference_category = self.inference_model_inst.get_category(channel)
-                config_category = self.config_inst.get_category(inference_category.config_category)
-                variable_inst = self.config_inst.get_variable(inference_category.config_variable)
-            else:
-                # default to dummy Category and Variable
-                config_category = od.Category(channel, id=1)
-                variable_inst = od.Variable("dummy")
+                        # axis selections
+                        h = h[{
+                            "process": [
+                                hist.loc(p.id)
+                                for p in sub_process_insts[process_inst]
+                                if p.id in h.axes["process"]
+                            ],
+                            "category": [
+                                hist.loc(c.id)
+                                for c in leaf_category_insts
+                                if c.id in h.axes["category"]
+                            ],
+                            "shift": [
+                                hist.loc(s.id)
+                                for s in plot_shifts
+                                if s.id in h.axes["shift"]
+                            ],
+                        }]
+
+                        # axis reductions
+                        h = h[{"process": sum, "category": sum}]
+
+                        # add the histogram
+                        if process_inst in hists:
+                            hists[weight_producer][process_inst] += h
+                        else:
+                            hists[weight_producer][process_inst] = h
+
+                # there should be hists to plot
+                if not hists:
+                    raise Exception(
+                        "no histograms found to plot; possible reasons:\n" +
+                        "  - requested variable requires columns that were missing during histogramming\n" +
+                        "  - selected --processes did not match any value on the process axis of the input histogram",
+                    )
+
+                # sort hists by process order
+                hists[weight_producer] = OrderedDict(
+                    (process_inst.copy_shallow(), hists[weight_producer][process_inst])
+                    for process_inst in sorted(hists[weight_producer], key=process_insts.index)
+                )
+
+            hists = dict(hists)
 
             # call the plot function
             fig, _ = self.call_plot_func(
                 self.plot_function,
                 hists=hists,
                 config_inst=self.config_inst,
-                category_inst=config_category,
-                variable_insts=variable_inst,
+                category_inst=category_inst.copy_shallow(),
+                variable_insts=[var_inst.copy_shallow() for var_inst in variable_insts],
                 **self.get_plot_parameters(),
             )
 
-            outp["plots"].child(f"{channel}_{fit_type}.pdf", type="f").dump(fig, formatter="mpl")
+            # save the plot
+            for outp in self.output()["plots"]:
+                outp.dump(fig, formatter="mpl")
