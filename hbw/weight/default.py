@@ -22,6 +22,16 @@ def norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.normalization_weight
 
 
+@weight_producer(uses={"stitched_normalization_weight_brs_from_cmsdb"}, mc_only=True)
+def norm_brs_cmsdb(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+    return events, events.stitched_normalization_weight_brs_from_cmsdb
+
+
+@weight_producer(uses={"stitched_normalization_weight"}, mc_only=True)
+def stitched_norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+    return events, events.stitched_normalization_weight
+
+
 @weight_producer(mc_only=True)
 def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, ak.Array(np.ones(len(events), dtype=np.float32))
@@ -107,7 +117,7 @@ btag_uncs = [
 ]
 
 default_weight_columns = {
-    "normalization_weight": [],
+    "stitched_normalization_weight": [],
     "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
