@@ -46,7 +46,7 @@ class MLClassifierBase(MLModel):
 
     # Class for data loading and it's dependencies.
     data_loader = MLDatasetLoader
-    preml_params: set[str] = {"data_loader", "input_features", "train_val_test_split"}
+    preml_params: set[str] = {"data_loader", "input_features", "train_val_test_split", "processes"}
 
     # NOTE: we split each fold into train, val, test + do k-folding, so we have a 4-way split in total
     # TODO: test whether setting "test" to 0 is working
