@@ -12,6 +12,8 @@ import order as od
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
+logger = law.logger.get_logger(__name__)
+
 
 def create_hbw_analysis(
     name,
@@ -122,5 +124,44 @@ def create_hbw_analysis(
         limit_dataset_files=2,
         add_dataset_extensions=False,
     )
+
+    #
+    # modify store_parts
+    #
+
+    def merged_analysis_parts(task, store_parts):
+        shareable_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
+        if task.task_family not in shareable_tasks:
+            logger.warning(f"task {task.task_family} is not shareable")
+            return store_parts
+
+        if "analysis" in store_parts:
+            # always use the same analysis
+            store_parts["analysis"] = "hbw_merged"
+
+        if "config" in store_parts:
+            # share outputs between limited and non-limited config
+            store_parts["config"] = store_parts["config"].replace("l", "c")
+
+        return store_parts
+
+    def limited_config_shared_parts(task, store_parts):
+        shareable_tasks = ("cf.CalibrateEvents", "cf.SelectEvents", "cf.ReduceEvents")
+
+        if task.task_family not in shareable_tasks:
+            logger.warning(f"task {task.task_family} should not be shared between limited and non-limited config")
+            return store_parts
+
+        if "config" in store_parts:
+            # share outputs between limited and non-limited config
+            store_parts["config"] = store_parts["config"].replace("l", "c")
+
+        return store_parts
+
+    analysis_inst.x.store_parts_modifiers = {
+        "merged_analysis": merged_analysis_parts,
+        "limited_config_shared": limited_config_shared_parts,
+    }
+
 
     return analysis_inst

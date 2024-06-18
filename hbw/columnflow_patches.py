@@ -62,7 +62,8 @@ def patch_all():
     patch_mltraining()
     patch_column_alias_strategy()
 
+    # setting the default version from the law.cfg
     AnalysisTask.version = luigi.Parameter(
-        default="prod2",
+        default=law.config.get_expanded("analysis", "default_version", None),
         description="mandatory version that is encoded into output paths",
     )

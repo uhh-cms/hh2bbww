@@ -626,11 +626,13 @@ def add_config(
         if not selector:
             return version
 
+        default_version = law.config.get_expanded("analysis", "default_version", version)
+
         # set version of "dl1" and "sl1" Producer to "prod2"
         if selector == "dl1":
-            version = "prod2"
+            version = default_version
         elif selector == "sl1":
-            version = "prod2"
+            version = default_version
 
         return version
 
@@ -643,19 +645,19 @@ def add_config(
 
         # set version of Producers that are not affected by the ML pipeline
         if producer == "event_weights":
-            version = "prod2"
+            version = "prod3"
         elif producer == "sl_ml_inputs":
-            version = "prod2"
+            version = "prod3"
         elif producer == "dl_ml_inputs":
-            version = "prod2"
+            version = "prod3"
         elif producer == "pre_ml_cats":
-            version = "prod2"
+            version = "prod3"
 
         return version
 
     # Version of required tasks
     cfg.x.versions = {
-        "cf.CalibrateEvents": "common2",
+        "cf.CalibrateEvents": law.config.get_expanded("analysis", "default_common_version", "common2"),
         "cf.SelectEvents": reduce_version,
         "cf.MergeSelectionStats": reduce_version,
         "cf.MergeSelectionMasks": reduce_version,
@@ -664,6 +666,9 @@ def add_config(
         "cf.MergeReducedEvents": reduce_version,
         "cf.ProduceColumns": produce_version,
     }
+
+
+
 
     # add categories
     add_categories_selection(cfg)
