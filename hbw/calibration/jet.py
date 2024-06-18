@@ -58,22 +58,30 @@ def bjet_regression(
     """
 
     # apply regression only for jet pt > 20 (docu: https://twiki.cern.ch/twiki/bin/view/Main/BJetRegression)
-    default_jet_mask = (events.Jet.pt > 20)
-    if self.btag_wp:
-        btag_wp = self.btag_wp
-        if not try_float(self.btag_wp):
-            btag_wp = self.config_inst.x.btag_working_points[self.b_tagger][self.btag_wp]
-        default_jet_mask = default_jet_mask & (events.Jet[self.b_score_column] > btag_wp)
+    # NOTE: we need to apply bjet regression for each jet variation separately.
+    # the implementation is not super clean since variations are not included in the uses and produces
+    jet_variations = [f for f in events.Jet.fields if f.startswith("pt") and "raw" not in f]
 
-    if jet_mask:
-        jet_mask = jet_mask & default_jet_mask
-    else:
-        jet_mask = default_jet_mask
+    for variation in jet_variations:
+        pt = variation
+        mass = variation.replace("pt", "mass")
 
-    jet_pt = ak.where(jet_mask, events.Jet.pt * events.Jet[self.b_reg_column], events.Jet.pt)
-    jet_mass = ak.where(jet_mask, events.Jet.mass * events.Jet[self.b_reg_column], events.Jet.mass)
-    events = set_ak_column_f32(events, "Jet.pt", jet_pt)
-    events = set_ak_column_f32(events, "Jet.mass", jet_mass)
+        default_jet_mask = (events.Jet[pt] > 20)
+        if self.btag_wp:
+            btag_wp = self.btag_wp
+            if not try_float(self.btag_wp):
+                btag_wp = self.config_inst.x.btag_working_points[self.b_tagger][self.btag_wp]
+            default_jet_mask = default_jet_mask & (events.Jet[self.b_score_column] > btag_wp)
+
+        if jet_mask:
+            combined_jet_mask = jet_mask & default_jet_mask
+        else:
+            combined_jet_mask = default_jet_mask
+
+        jet_pt = ak.where(combined_jet_mask, events.Jet[pt] * events.Jet[self.b_reg_column], events.Jet[pt])
+        jet_mass = ak.where(combined_jet_mask, events.Jet[mass] * events.Jet[self.b_reg_column], events.Jet[mass])
+        events = set_ak_column_f32(events, f"Jet.{pt}", jet_pt)
+        events = set_ak_column_f32(events, f"Jet.{mass}", jet_mass)
 
     return events
 
