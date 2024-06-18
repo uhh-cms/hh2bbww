@@ -560,7 +560,7 @@ def add_config(
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
-    elif year == 2022 and campaign.x.EE == "pre":
+    elif year == 2022:
         cfg.x.external_files.update(DotDict.wrap({
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             "lumi": {
@@ -568,11 +568,20 @@ def add_config(
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
-    elif year == 2022 and campaign.x.EE == "post":
+    elif year == 2023:
         cfg.x.external_files.update(DotDict.wrap({
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             "lumi": {
-                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions23/Cert_Collisions2023_366442_370790_Golden.json", "v1"),  # noqa
+                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+            },
+        }))
+    elif year == 2024:
+        cfg.x.external_files.update(DotDict.wrap({
+            # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
+            "lumi": {
+                # TODO: should be updated at the end of 2024 campaign
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_381417_Golden.json", "v1"),  # noqa
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
