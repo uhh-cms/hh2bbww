@@ -235,7 +235,7 @@ qcd_em = {
         "qcd_em_pt80to120_pythia",
         "qcd_em_pt120to170_pythia",
         "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toInf_pythia",
+        "qcd_em_pt300toinf_pythia",
     ],
     "2022postEE": [
         # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
@@ -244,7 +244,7 @@ qcd_em = {
         "qcd_em_pt80to120_pythia",
         "qcd_em_pt120to170_pythia",
         "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toInf_pythia",
+        "qcd_em_pt300toinf_pythia",
     ],
     "2022preEE": [
         # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
@@ -253,7 +253,7 @@ qcd_em = {
         "qcd_em_pt80to120_pythia",
         "qcd_em_pt120to170_pythia",
         "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toInf_pythia",
+        "qcd_em_pt300toinf_pythia",
     ],
 }
 
@@ -300,8 +300,8 @@ h = {
         "wmh_hzg_zll_powheg",
         "tth_hbb_powheg",
         "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-        "tth_hcc_powheg",
-        "tth_hzz_powheg",
+        # "tth_hcc_powheg",
+        # "tth_hzz_powheg",
         "ttzh_madgraph",
         "ttwh_madgraph",
     ],

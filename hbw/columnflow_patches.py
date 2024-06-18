@@ -12,7 +12,7 @@ from columnflow.tasks.selection import SelectEvents
 from columnflow.tasks.cutflow import CreateCutflowHistograms
 from columnflow.tasks.reduction import ReduceEvents
 from columnflow.tasks.production import ProduceColumns
-# from columnflow.tasks.histograms import CreateHistograms
+from columnflow.tasks.histograms import CreateHistograms
 from columnflow.tasks.ml import MLTraining, PrepareMLEvents, MLEvaluation
 
 logger = law.logger.get_logger(__name__)
@@ -44,7 +44,9 @@ def patch_mltraining():
 
 @memoize
 def patch_column_alias_strategy():
+    # NOTE: not used since checks always fail
     # patch the missing_column_alias_strategy for all tasks
+    # at SelectEvents, the btag_weight alias is missing, therefore the check cannot be used
     SelectEvents.missing_column_alias_strategy = "raise"
     CreateCutflowHistograms.missing_column_alias_strategy = "raise"
     ReduceEvents.missing_column_alias_strategy = "raise"
@@ -52,7 +54,7 @@ def patch_column_alias_strategy():
 
     # I would like to add this tag, but since we need to request column aliases for JEC and cannot
     # apply aliases of the Jet.pt here,
-    # CreateHistograms.missing_column_alias_strategy = "raise"
+    CreateHistograms.missing_column_alias_strategy = "raise"
     PrepareMLEvents.missing_column_alias_strategy = "raise"
     MLEvaluation.missing_column_alias_strategy = "raise"
 
@@ -60,7 +62,7 @@ def patch_column_alias_strategy():
 @memoize
 def patch_all():
     patch_mltraining()
-    patch_column_alias_strategy()
+    # patch_column_alias_strategy()
 
     # setting the default version from the law.cfg
     AnalysisTask.version = luigi.Parameter(

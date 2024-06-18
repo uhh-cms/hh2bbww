@@ -667,9 +667,6 @@ def add_config(
         "cf.ProduceColumns": produce_version,
     }
 
-
-
-
     # add categories
     add_categories_selection(cfg)
 
