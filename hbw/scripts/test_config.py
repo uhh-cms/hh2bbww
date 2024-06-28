@@ -28,7 +28,7 @@ for proc_inst in process_insts:
 print("================= Datasets =======================")
 dataset_insts = cfg.datasets
 for data_inst in dataset_insts:
-    print(f"{data_inst.name}; N_events: {data_inst.n_events:,}")
+    print(f"{data_inst.name}; N_events: {data_inst.n_events:,}, N_files: {data_inst.n_files:,}")
 print(f"Sum of all mc events: {sum([data_inst.n_events for data_inst in dataset_insts]):,}")
 print(f"Number of datasets: {len(dataset_insts)}")
 print(f"Number of dataset files: {sum([data_inst.n_files for data_inst in dataset_insts])}")
