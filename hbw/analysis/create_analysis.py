@@ -163,5 +163,4 @@ def create_hbw_analysis(
         "limited_config_shared": limited_config_shared_parts,
     }
 
-
     return analysis_inst

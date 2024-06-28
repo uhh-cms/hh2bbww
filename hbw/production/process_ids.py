@@ -69,7 +69,7 @@ def hbw_process_ids_init(self: Producer) -> None:
     else:
         raise NotImplementedError(
             f"TODO: implement process Producer for dataset {self.dataset_inst.name} "
-            f"with Processes {self.dataset_inst.processes.names()}"
+            f"with Processes {self.dataset_inst.processes.names()}",
         )
 
     if self.process_producer:
@@ -148,7 +148,7 @@ def get_process_id_from_masks(
             if not dataset_inst.has_process(proc_name):
                 raise Exception(
                     f"Events from dataset {dataset_inst.name} are assigned process {proc_name} "
-                    f"but dataset has only {leaf_procs} registered as leaf processes"
+                    f"but dataset has only {leaf_procs} registered as leaf processes",
                 )
             proc_id = dataset_inst.get_process(proc_name).id
 

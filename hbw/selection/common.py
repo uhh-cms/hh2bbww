@@ -170,7 +170,6 @@ def post_selection(
 ) -> Tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL after calling the selection modules """
 
-
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
 

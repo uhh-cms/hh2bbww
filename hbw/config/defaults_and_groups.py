@@ -198,8 +198,10 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1e__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "sr__1mu__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
         ),
         "SR_sl_resolved": (
-            "sr__1e__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-            "sr__1e__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1e__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1e__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         ),
         "vbfSR_sl_resolved": (
             "sr__1e__resolved__1b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
@@ -211,7 +213,8 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1e__boosted__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__boosted__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         ),
         "vbfSR_sl_boosted": (
-            "sr__1e__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "sr__1mu__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1e__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1mu__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
         ),
         "BR_sl": (
             "sr__1e__ml_tt", "sr__1e__ml_st", "sr__1e__ml_v_lep",

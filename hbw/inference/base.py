@@ -154,7 +154,7 @@ class HBWInferenceModelBase(InferenceModel):
 
             if self.dummy_kl_variation and proc == "hh_ggf_kl1_kt1_hbb_hvvqqlnu":
                 # add hh_ggf kl variations as copies from kl 1
-                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu"):
+                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu"):  # noqa
                     if kl_proc not in self.processes:
                         self.add_process(
                             const.inference_procnames.get(kl_proc, kl_proc),
@@ -165,7 +165,7 @@ class HBWInferenceModelBase(InferenceModel):
 
             if self.dummy_kl_variation and proc == "hh_ggf_kl1_kt1_hbb_hvv2l2nu":
                 # add hh_ggf kl variations as copies from kl 1
-                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvv2l2nu", "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu", "hh_ggf_kl5_kt1_hbb_hvv2l2nu"):
+                for kl_proc in ("hh_ggf_kl0_kt1_hbb_hvv2l2nu", "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu", "hh_ggf_kl5_kt1_hbb_hvv2l2nu"):  # noqa
                     if kl_proc not in self.processes:
                         self.add_process(
                             const.inference_procnames.get(kl_proc, kl_proc),
