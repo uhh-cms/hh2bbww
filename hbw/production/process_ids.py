@@ -62,7 +62,7 @@ def hbw_process_ids_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.process_producer = hh_bbvv_process_producer
-    elif self.dataset_inst.has_tag("is_z_jets"):
+    elif "dy_lep_m50" in self.dataset_inst.name:
         self.process_producer = dy_nlo_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
