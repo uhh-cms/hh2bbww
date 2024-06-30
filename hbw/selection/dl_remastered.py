@@ -9,7 +9,7 @@ from typing import Tuple
 
 from cmsdb.constants import m_z
 
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, DotDict
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
@@ -283,6 +283,7 @@ def dl1(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    hists: DotDict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     # prepare events
@@ -336,7 +337,8 @@ def dl1(
     results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
-    events, results = self[post_selection](events, results, stats, **kwargs)
+    # events, results = self[post_selection](events, results, stats, hists, **kwargs)
+    events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
     return events, results
 
