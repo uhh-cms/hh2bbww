@@ -22,9 +22,9 @@ def norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.normalization_weight
 
 
-@weight_producer(uses={"stitched_normalization_weight_brs_from_cmsdb"}, mc_only=True)
+@weight_producer(uses={"stitched_normalization_weight_brs_from_processes"}, mc_only=True)
 def norm_brs_cmsdb(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
-    return events, events.stitched_normalization_weight_brs_from_cmsdb
+    return events, events.stitched_normalization_weight_brs_from_processes
 
 
 @weight_producer(uses={"stitched_normalization_weight"}, mc_only=True)
