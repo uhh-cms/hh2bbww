@@ -218,6 +218,7 @@ def sl1(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    hists: dict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     # prepare events
@@ -273,7 +274,7 @@ def sl1(
     results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
-    events, results = self[post_selection](events, results, stats, **kwargs)
+    events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
     return events, results
 

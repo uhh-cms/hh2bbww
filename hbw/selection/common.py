@@ -25,6 +25,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
+from hbw.selection.hists import hbw_selection_hists
 
 
 np = maybe_import("numpy")
@@ -49,6 +50,7 @@ def check_columns(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    # hists: dict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     routes = get_ak_routes(events)  # noqa
@@ -155,9 +157,11 @@ def pre_selection_init(self: Selector) -> None:
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     exposed=False,
 )
@@ -166,6 +170,7 @@ def post_selection(
     events: ak.Array,
     results: SelectionResult,
     stats: defaultdict,
+    hists: dict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL after calling the selection modules """
@@ -180,6 +185,7 @@ def post_selection(
     # increment stats
     self[hbw_selection_step_stats](events, results, stats, **kwargs)
     self[hbw_increment_stats](events, results, stats, **kwargs)
+    self[hbw_selection_hists](events, results, hists, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):

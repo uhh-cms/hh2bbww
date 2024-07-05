@@ -109,18 +109,6 @@ def hbw_increment_stats(
                     (events.mc_weight * events[name], event_mask_no_bjet)
                 )
 
-    ht_bin_edges = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400]
-    ht_mask = ak.Array(np.ones(len(events), dtype=str))
-    for i, lower_edge in enumerate(ht_bin_edges):
-        upper_edge = ht_bin_edges[i + 1] if i + 1 < len(ht_bin_edges) else np.inf
-        ht_mask = ak.where(
-            (results.x.ht >= lower_edge) & (results.x.ht < upper_edge),
-            [f"ht{lower_edge}to{upper_edge if upper_edge != np.inf else 'inf'}"],
-            ht_mask,
-        )
-    if ak.any(ht_mask == "1"):
-        raise Exception("ht_mask not filled correctly!")
-
     group_map = {
         "process": {
             "values": events.process_id,
@@ -130,10 +118,6 @@ def hbw_increment_stats(
             "values": results.x.n_central_jets,
             "mask_fn": (lambda v: n_jets == v),
         },
-        "ht": {
-            "values": ht_mask,
-            "mask_fn": (lambda v: ht_mask == v),
-        }
     }
 
     group_combinations = [("process", "njet")]
