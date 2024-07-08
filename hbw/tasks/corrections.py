@@ -107,8 +107,8 @@ class GetBtagNormalizationSF(
 
         # TODO: mode "" (reduce everything to a single bin) not yet working
         for mode in ("ht_njet", "njet", "ht"):
-            den = merged_hists["sum_mc_weight_per_process_ht_njet"]
-            den = self.reduce_hist(den, mode).values()
+            numerator = merged_hists["sum_mc_weight_per_process_ht_njet"]
+            numerator = self.reduce_hist(numerator, mode).values()
 
             for key in merged_hists.keys():
                 if not key.startswith("sum_mc_weight_btag_weight") or not key.endswith("_per_process_ht_njet"):
@@ -120,12 +120,12 @@ class GetBtagNormalizationSF(
                 # create the scale factor histogram
                 h = merged_hists[key]
                 h = self.reduce_hist(h, mode)
-                num = h.values()
+                denominator = h.values()
 
                 # calculate the scale factor and store it as a correctionlib evaluator
                 sf = np.where(
-                    (num > 0) & (den > 0),
-                    num / den,
+                    (numerator > 0) & (denominator > 0),
+                    numerator / denominator,
                     1.0,
                 )
 
