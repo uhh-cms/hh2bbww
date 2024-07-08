@@ -22,6 +22,7 @@ hist = maybe_import("hist")
     },
     # produced columns are defined in the init function below
     mc_only=True,
+    modes=["ht_njet", "njet"],
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
@@ -31,19 +32,25 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
         "n_jets": ak.num(events.Jet.pt, axis=1),
     }
 
-    for weight_name in self[btag_weights].produces:
-        if not weight_name.startswith("btag_weight"):
-            continue
+    for mode in self.modes:
+        if mode not in ("ht_njet", "njet", "ht"):
+            raise NotImplementedError(
+                f"Normalization mode {mode} not implemented (see hbw.tasks.corrections.GetBtagNormalizationSF)",
+            )
+        for weight_name in self[btag_weights].produces:
+            if not weight_name.startswith("btag_weight"):
+                continue
 
-        if weight_name not in self.sf_map:
-            raise KeyError(f"Missing scale factor for {weight_name}")
+            correction_key = f"{mode}_{weight_name}"
+            if correction_key not in set(self.correction_set.keys()):
+                raise KeyError(f"Missing scale factor for {correction_key}")
 
-        sf = self.sf_map[weight_name]
-        inputs = [variable_map[inp.name] for inp in sf.inputs]
+            sf = self.correction_set[correction_key]
+            inputs = [variable_map[inp.name] for inp in sf.inputs]
 
-        norm_weight = sf.evaluate(*inputs)
-        norm_weight = norm_weight * events[weight_name]
-        events = set_ak_column(events, f"normalized_{weight_name}", norm_weight)
+            norm_weight = sf.evaluate(*inputs)
+            norm_weight = norm_weight * events[weight_name]
+            events = set_ak_column(events, f"normalized_{mode}_{weight_name}", norm_weight)
 
     return events
 
@@ -53,69 +60,24 @@ def normalized_btag_weights_init(self: Producer) -> None:
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
             continue
-        self.produces.add(f"normalized_{weight_name}")
+        for mode in self.modes:
+            self.produces.add(f"normalized_{mode}_{weight_name}")
 
 
 @normalized_btag_weights.requires
 def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
-    from columnflow.tasks.selection import MergeSelectionStats
-    reqs["selection_stats"] = MergeSelectionStats.req(
-        self.task,
-        tree_index=0,
-        branch=-1,
-        _exclude=MergeSelectionStats.exclude_params_forest_merge,
-    )
+    from hbw.tasks.corrections import GetBtagNormalizationSF
+    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(self.task)
 
 
 @normalized_btag_weights.setup
 def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
-    """
-    Setup function for the normalized btag weights producer, which extracts the normalization factors
-    from the selection histograms. Histograms are identified via key following the naming format
-    `sum_mc_weight_btag_weight_{weight_name}_per_process_ht_njet`.
-    """
-    # load the selection hists
-    hists = inputs["selection_stats"]["collection"][0]["hists"].load(formatter="pickle")
-
-    # initialize the scale factor map
-    self.sf_map = {}
-
-    den = hists["sum_mc_weight_per_process_ht_njet"][{"process": sum, "steps": "selected_no_bjet"}].values()
-
-    for key in hists.keys():
-        if not key.startswith("sum_mc_weight_btag_weight") or not key.endswith("_per_process_ht_njet"):
-            continue
-
-        # extract the weight name
-        weight_name = key.replace("sum_mc_weight_", "").replace("_per_process_ht_njet", "")
-
-        # create the scale factor histogram
-        h = hists[key][{"process": sum}]
-
-        num = h[{"steps": "selected_no_bjet"}].values()
-
-        # calculate the scale factor and store it as a correctionlib evaluator
-        sf = np.where(
-            (num > 0) & (den > 0),
-            num / den,
-            1.0,
-        )
-
-        sfhist = hist.Hist(*h.axes[1:], data=sf)
-        sfhist.name = f"{weight_name}_renormalization"
-        sfhist.label = "out"
-
-        import correctionlib.convert
-        btag_renormalization = correctionlib.convert.from_histogram(sfhist)
-        btag_renormalization.description = f"{weight_name} re-normalization"
-
-        # set overflow bins behavior (default is to raise an error when out of bounds)
-        # NOTE: claming seems to not work for int axes. Hopefully the number of jets considered to
-        # create these SFs is always large enough to not hit the overflow bin.
-        btag_renormalization.data.flow = "clamp"
-
-        # store the evaluator
-        self.sf_map[weight_name] = btag_renormalization.to_evaluator()
+    # create the corrector
+    import correctionlib
+    correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
+    self.correction_set = correctionlib.CorrectionSet.from_string(
+        inputs["btag_renormalization_sf"]["btag_renormalization_sf"].load(formatter="json"),
+    )
 
 
 @producer(

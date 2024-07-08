@@ -407,11 +407,11 @@ def add_config(
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
-    btag_uncs = [
+    cfg.x.btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
         f"lfstats1_{year}", f"lfstats2_{year}", "cferr1", "cferr2",
     ]
-    for i, unc in enumerate(btag_uncs):
+    for i, unc in enumerate(cfg.x.btag_uncs):
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
         cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
         add_shift_aliases(
