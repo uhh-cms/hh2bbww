@@ -65,8 +65,8 @@ def base_init(self: WeightProducer) -> None:
     if self.dataset_inst.has_tag("skip_scale"):
         # remove dependency towards mur/muf weights
         for column in [
-            "normalized_mur_weight", "normalized_muf_weight", "normalized_murf_envelope_weight",
-            "mur_weight", "muf_weight", "murf_envelope_weight",
+            "normalized_mur_weight", "normalized_muf_weight", "normalized_murmuf_envelope_weight",
+            "mur_weight", "muf_weight", "murmuf_envelope_weight",
         ]:
             self.weight_columns.pop(column, None)
 
@@ -100,7 +100,7 @@ def base_init(self: WeightProducer) -> None:
             if weight_column not in shift.x("column_aliases").keys():
                 # make sure that column aliases are implemented
                 raise Exception(
-                    f"Weight column {weight_column} implements shift {shift}, but does not use it"
+                    f"Weight column {weight_column} implements shift {shift}, but does not use it "
                     f"in 'column_aliases' aux {shift.x('column_aliases')}",
                 )
 
@@ -122,8 +122,8 @@ default_weight_columns = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "normalized_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-    "normalized_murf_envelope_weight": ["murf_envelope"],
+    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
     "normalized_pdf_weight": ["pdf"],
@@ -132,7 +132,7 @@ default_weight_columns = {
 base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 
 weight_columns_execpt_btag = default_weight_columns.copy()
-weight_columns_execpt_btag.pop("normalized_btag_weight")
+weight_columns_execpt_btag.pop("normalized_ht_njet_btag_weight")
 
 base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
@@ -142,4 +142,8 @@ base.derive("btag_not_normalized", cls_dict={"weight_columns": {
 base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("btag_ht_njet_normalized", cls_dict={"weight_columns": {
+    **weight_columns_execpt_btag,
+    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})

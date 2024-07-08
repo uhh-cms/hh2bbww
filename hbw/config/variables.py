@@ -367,7 +367,7 @@ def add_variables(config: od.Config) -> None:
         name="ht_bjet_norm",
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
-        binning=[500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
+        binning=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         unit="GeV",
         x_title="HT",
     )

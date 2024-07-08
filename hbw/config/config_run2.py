@@ -420,8 +420,8 @@ def add_config(
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
+                "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_{unc}_" + "{direction}",
                 "btag_weight": f"btag_weight_{unc}_" + "{direction}",
-                "njet_btag_weight": f"njet_btag_weight_{unc}_" + "{direction}",
             },
         )
 
@@ -435,13 +435,13 @@ def add_config(
     cfg.add_shift(name="pdf_down", id=208, type="shape")
 
     for unc in ["mur", "muf", "murf_envelope", "pdf"]:
-        # add_shift_aliases(cfg, unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"})
+        col = "murmuf_envelope" if unc == "murf_envelope" else unc
         add_shift_aliases(
             cfg,
             unc,
             {
-                f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}",
-                f"{unc}_weight": f"{unc}_weight_" + "{direction}",
+                f"normalized_{col}_weight": f"normalized_{unc}_weight_" + "{direction}",
+                f"{col}_weight": f"{unc}_weight_" + "{direction}",
             },
         )
 
@@ -479,6 +479,7 @@ def add_config(
                     "btag_weight": f"btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_jec_{jec_source}_" + "{direction}",  # noqa
                 },
             )
 
@@ -610,7 +611,7 @@ def add_config(
             "GenPartonTop.pt", "GenVBoson.pt",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
-            "murf_envelope_weight*", "mur_weight*", "muf_weight*",
+            "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "Lightjet", "VBFJet"},
