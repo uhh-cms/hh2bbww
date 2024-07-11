@@ -4,6 +4,8 @@
 Collection of patches of underlying columnflow tasks.
 """
 
+import getpass
+
 import law
 import luigi
 from columnflow.util import memoize
@@ -60,8 +62,25 @@ def patch_column_alias_strategy():
 
 
 @memoize
+def patch_htcondor_workflow_naf_resources():
+    """
+    Patches the HTCondorWorkflow task to declare user-specific resources when running on the NAF.
+    """
+    from columnflow.tasks.framework.remote import HTCondorWorkflow
+
+    def htcondor_job_resources(self, job_num, branches):
+        # one "naf_<username>" resource per job, indendent of the number of branches in the job
+        return {f"naf_{getpass.getuser()}": 1}
+
+    HTCondorWorkflow.htcondor_job_resources = htcondor_job_resources
+
+    logger.debug(f"patched htcondor_job_resources of {HTCondorWorkflow.task_family}")
+
+
+@memoize
 def patch_all():
     patch_mltraining()
+    patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()
 
     # setting the default version from the law.cfg
