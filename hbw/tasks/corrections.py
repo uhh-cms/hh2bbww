@@ -31,6 +31,8 @@ class GetBtagNormalizationSF(
 ):
     reqs = Requirements(MergeSelectionStats=MergeSelectionStats)
 
+    store_as_dict = False
+
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
@@ -153,8 +155,12 @@ class GetBtagNormalizationSF(
             description="btag re-normalization SFs",
             corrections=list(sf_map.values()),
         )
+        cset_json = cset.json(exclude_unset=True)
+        if self.store_as_dict:
+            import json
+            cset_json = json.loads(cset_json)
 
         outputs["btag_renormalization_sf"].dump(
-            cset.json(exclude_unset=True),
+            cset_json,
             formatter="json",
         )

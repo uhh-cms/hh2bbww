@@ -18,11 +18,12 @@ hist = maybe_import("hist")
 
 @producer(
     uses={
-        btag_weights.PRODUCES, "process_id", "Jet.pt",
+        btag_weights.PRODUCES, "process_id", "Jet.pt", "n_jets", "ht",
     },
     # produced columns are defined in the init function below
     mc_only=True,
-    modes=["ht_njet", "njet"],
+    modes=["ht_njet", "njet", "ht"],
+    from_file=True,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
@@ -31,6 +32,12 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
         "ht": ak.sum(events.Jet.pt, axis=1),
         "n_jets": ak.num(events.Jet.pt, axis=1),
     }
+
+    # sanity check
+    for var in ("ht", "n_jets"):
+        consistency_check = np.isclose(events[var], variable_map[var], rtol=0.0001)
+        if not ak.all(consistency_check):
+            raise ValueError(f"Variable {var} is not consistent between before and after event selection")
 
     for mode in self.modes:
         if mode not in ("ht_njet", "njet", "ht"):
@@ -75,9 +82,16 @@ def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, read
     # create the corrector
     import correctionlib
     correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
-    self.correction_set = correctionlib.CorrectionSet.from_string(
-        inputs["btag_renormalization_sf"]["btag_renormalization_sf"].load(formatter="json"),
-    )
+    if self.from_file:
+        # used when the correction is stored as a JSON dict
+        self.correction_set = correctionlib.CorrectionSet.from_file(
+            inputs["btag_renormalization_sf"]["btag_renormalization_sf"].fn,
+        )
+    else:
+        # used when correction is stored as a JSON string
+        self.correction_set = correctionlib.CorrectionSet.from_string(
+            inputs["btag_renormalization_sf"]["btag_renormalization_sf"].load(formatter="json"),
+        )
 
 
 @producer(
