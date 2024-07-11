@@ -147,3 +147,20 @@ base.derive("btag_ht_njet_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
+base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
+    **weight_columns_execpt_btag,
+    "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+
+base.derive("only_btag", cls_dict={"weight_columns": {
+    "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("only_btag_njet", cls_dict={"weight_columns": {
+    "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("only_btag_ht_njet", cls_dict={"weight_columns": {
+    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("only_btag_ht", cls_dict={"weight_columns": {
+    "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
