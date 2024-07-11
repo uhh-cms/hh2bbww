@@ -183,9 +183,9 @@ def post_selection(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
-    self[hbw_selection_step_stats](events, results, stats, **kwargs)
-    self[hbw_increment_stats](events, results, stats, **kwargs)
-    self[hbw_selection_hists](events, results, hists, **kwargs)
+    events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
+    events = self[hbw_increment_stats](events, results, stats, **kwargs)
+    events = self[hbw_selection_hists](events, results, hists, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):

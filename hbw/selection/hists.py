@@ -10,7 +10,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
 from columnflow.production.cms.btag import btag_weights
 from hbw.production.weights import event_weights_to_normalize
-# from columnflow.columnar_util import optional_column as optional
+from columnflow.columnar_util import set_ak_column
 
 from columnflow.util import maybe_import
 from hbw.util import has_tag
@@ -23,6 +23,7 @@ hist = maybe_import("hist")
 
 @selector(
     uses={increment_stats, event_weights_to_normalize},
+    produces={"ht", "n_jets"},
 )
 def hbw_selection_hists(
     self: Selector,
@@ -40,6 +41,10 @@ def hbw_selection_hists(
     event_mask_no_bjet = results.steps.all_but_bjet
     n_jets = results.x.n_central_jets
     ht = results.x.ht
+
+    # store ht and n_jets for consistency checks
+    events = set_ak_column(events, "ht", ht)
+    events = set_ak_column(events, "n_jets", n_jets)
 
     # weight map definition
     weight_map = {
