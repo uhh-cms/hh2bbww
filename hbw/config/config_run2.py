@@ -421,6 +421,7 @@ def add_config(
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
                 "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_{unc}_" + "{direction}",
+                "normalized_ht_btag_weight": f"normalized_ht_btag_weight_{unc}_" + "{direction}",
                 "btag_weight": f"btag_weight_{unc}_" + "{direction}",
             },
         )
@@ -480,6 +481,7 @@ def add_config(
                     "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_jec_{jec_source}_" + "{direction}",  # noqa
+                    "normalized_ht_btag_weight": f"normalized_ht_btag_weight_jec_{jec_source}_" + "{direction}",  # noqa
                 },
             )
 
@@ -514,6 +516,7 @@ def add_config(
 
         # jet energy correction
         "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
+        "jet_veto_map": (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"),
 
         # electron scale factors
         "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
@@ -535,6 +538,7 @@ def add_config(
     if cfg.x.run == 3:
         cfg.x.external_files.pop("met_phi_corr")
 
+    # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     cfg.x.met_filters = {
         "Flag.goodVertices",
         "Flag.globalSuperTightHalo2016Filter",
@@ -613,6 +617,8 @@ def add_config(
             "pu_weight*", "pdf_weight*",
             "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
+            # columns for btag reweighting crosschecks
+            "n_jets", "ht",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
