@@ -59,12 +59,9 @@ def add_config(
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
 
     # add some important tags to the config
+    # TODO: generalize and move to campaign
     cfg.x.cpn_tag = f"{year}{corr_postfix}"
-
-    if year in (2022, 2023):
-        cfg.x.run = 3
-    elif year in (2016, 2017, 2018):
-        cfg.x.run = 2
+    cfg.x.run = cfg.campaign.x.run
 
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
@@ -645,7 +642,7 @@ def add_config(
         default_version = law.config.get_expanded("analysis", "default_version", version)
 
         # set version of "dl1" and "sl1" Producer to "prod2"
-        if selector == "dl1":
+        if selector == "dl1" or selector == "dl1_no_btag":
             version = default_version
         elif selector == "sl1":
             version = default_version
@@ -680,7 +677,7 @@ def add_config(
         "cf.ReduceEvents": reduce_version,
         "cf.MergeReductionStats": reduce_version,
         "cf.MergeReducedEvents": reduce_version,
-        "cf.ProduceColumns": produce_version,
+        # "cf.ProduceColumns": produce_version,
     }
 
     # add categories
