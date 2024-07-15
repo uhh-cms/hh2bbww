@@ -17,6 +17,11 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
+@weight_producer(uses={"mc_weight"}, mc_only=True)
+def mc_weight(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+    return events, events.mc_weight
+
+
 @weight_producer(uses={"normalization_weight"}, mc_only=True)
 def norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.normalization_weight
@@ -152,15 +157,20 @@ base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
 
-base.derive("only_btag", cls_dict={"weight_columns": {
+# weight sets for closure tests
+base.derive("norm_and_btag", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
-base.derive("only_btag_njet", cls_dict={"weight_columns": {
+base.derive("norm_and_btag_njet", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
-base.derive("only_btag_ht_njet", cls_dict={"weight_columns": {
+base.derive("norm_and_btag_ht_njet", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
-base.derive("only_btag_ht", cls_dict={"weight_columns": {
+base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
