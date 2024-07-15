@@ -17,6 +17,7 @@ from columnflow.production.util import attach_coffea_behavior
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.cms.met_filters import met_filters
 from columnflow.selection.cms.json_filter import json_filter
+from columnflow.selection.cms.jets import jet_veto_map
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from hbw.production.process_ids import hbw_process_ids
@@ -78,6 +79,7 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
+        jet_veto_map,
         hbw_met_filters, json_filter, "PV.npvsGood",
         hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
@@ -133,9 +135,16 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
+    # apply jet veto map
+    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
+    results += jet_veto_results
+
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        results.steps.good_vertex & results.steps.met_filter & results.steps.json
+        # results.steps.jet_veto_map &
+        results.steps.good_vertex &
+        results.steps.met_filter &
+        results.steps.json
     )
 
     return events, results
