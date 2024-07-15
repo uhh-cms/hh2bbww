@@ -23,7 +23,7 @@ hist = maybe_import("hist")
     # produced columns are defined in the init function below
     mc_only=True,
     modes=["ht_njet", "njet", "ht"],
-    from_file=True,
+    from_file=False,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 

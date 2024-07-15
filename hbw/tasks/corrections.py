@@ -40,7 +40,8 @@ class GetBtagNormalizationSF(
 
     @cached_property
     def process_insts(self):
-        return [self.config_inst.get_process(process) for process in self.processes]
+        processes = [self.config_inst.get_process(process) for process in self.processes]
+        return processes
 
     @cached_property
     def dataset_insts(self):
@@ -62,6 +63,14 @@ class GetBtagNormalizationSF(
             for dataset in self.dataset_insts
         }
         return reqs
+
+    def store_parts(self):
+        parts = super().store_parts()
+
+        processes_repr = "__".join(self.processes)
+        parts.insert_before("version", "processes", processes_repr)
+
+        return parts
 
     def output(self):
         return {
@@ -91,33 +100,52 @@ class GetBtagNormalizationSF(
         inputs = self.input()
 
         # load the selection merged_hists
-        hists = {
+        hists_per_dataset = {
             dataset: inp["collection"][0]["hists"].load(formatter="pickle")
             for dataset, inp in inputs["selection_stats"].items()
         }
+
+        def safe_div(num, den):
+            return np.where(
+                (num > 0) & (den > 0),
+                num / den,
+                1.0,
+            )
+
+        # rescale the histograms to the cross section
+        for dataset, hists in hists_per_dataset.items():
+            process = self.config_inst.get_dataset(dataset).processes.get_first()
+            xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
+            dataset_factor = xs / hists["sum_mc_weight"][{"steps": "all"}].value
+            for key in tuple(hists.keys()):
+                if "sum" not in key:
+                    continue
+                h = hists[key].copy() * dataset_factor
+                hists[f"rescaled_{key}"] = h
+
         # if necessary, merge the histograms across datasets
-        if len(hists) > 1:
-            from columnflow.tasks.selection import MergeSelectionStats
+        if len(hists_per_dataset) > 1:
             merged_hists = {}
-            for _hists in hists.values():
-                MergeSelectionStats.merge_counts(merged_hists, _hists)
+            from columnflow.tasks.selection import MergeSelectionStats
+            for dataset, hists in hists_per_dataset.items():
+                MergeSelectionStats.merge_counts(merged_hists, hists)
         else:
-            merged_hists = hists[self.dataset_inst.name]
+            merged_hists = hists_per_dataset[self.dataset_insts[0].name]
 
         # initialize the scale factor map
         sf_map = {}
 
         # TODO: mode "" (reduce everything to a single bin) not yet working
         for mode in ("ht_njet", "njet", "ht"):
-            numerator = merged_hists["sum_mc_weight_per_process_ht_njet"]
+            numerator = merged_hists["rescaled_sum_mc_weight_per_process_ht_njet"]
             numerator = self.reduce_hist(numerator, mode).values()
 
             for key in merged_hists.keys():
-                if not key.startswith("sum_mc_weight_btag_weight") or not key.endswith("_per_process_ht_njet"):
+                if not key.startswith("rescaled_sum_mc_weight_btag_weight") or not key.endswith("_per_process_ht_njet"):
                     continue
 
                 # extract the weight name
-                weight_name = key.replace("sum_mc_weight_", "").replace("_per_process_ht_njet", "")
+                weight_name = key.replace("rescaled_sum_mc_weight_", "").replace("_per_process_ht_njet", "")
 
                 # create the scale factor histogram
                 h = merged_hists[key]
@@ -125,11 +153,7 @@ class GetBtagNormalizationSF(
                 denominator = h.values()
 
                 # calculate the scale factor and store it as a correctionlib evaluator
-                sf = np.where(
-                    (numerator > 0) & (denominator > 0),
-                    numerator / denominator,
-                    1.0,
-                )
+                sf = safe_div(numerator, denominator)
 
                 sfhist = hist.Hist(*h.axes, data=sf)
                 sfhist.name = f"{mode}_{weight_name}"
