@@ -72,6 +72,7 @@ def hbw_selection_hists(
                 # skip non-weight columns here
                 continue
             weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
+            weight_map[f"sum_{name}"] = events[name]
 
     for key, weight in weight_map.items():
         if key not in hists:
