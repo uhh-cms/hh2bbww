@@ -100,36 +100,36 @@ tt = {
 
 st = {
     "2017": [
-        "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
+        "st_tchannel_t_4f_powheg",
+        "st_tchannel_tbar_4f_powheg",
         "st_twchannel_t_powheg",
         "st_twchannel_tbar_powheg",
-        "st_schannel_lep_amcatnlo",
-        "st_schannel_had_amcatnlo",
+        "st_schannel_lep_4f_amcatnlo",
+        "st_schannel_had_4f_amcatnlo",
     ],
     "2022preEE": [
-        "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
+        "st_tchannel_t_4f_powheg",
+        "st_tchannel_tbar_4f_powheg",
         "st_twchannel_t_sl_powheg",
         "st_twchannel_tbar_sl_powheg",
         "st_twchannel_t_dl_powheg",
         "st_twchannel_tbar_dl_powheg",
         "st_twchannel_t_fh_powheg",
         "st_twchannel_tbar_fh_powheg",
-        # "st_schannel_lep_amcatnlo",
-        # "st_schannel_had_amcatnlo",
+        # "st_schannel_lep_4f_amcatnlo",
+        # "st_schannel_had_4f_amcatnlo",
     ],
     "2022postEE": [
-        "st_tchannel_t_powheg",
-        "st_tchannel_tbar_powheg",
+        "st_tchannel_t_4f_powheg",
+        "st_tchannel_tbar_4f_powheg",
         "st_twchannel_t_sl_powheg",
         "st_twchannel_tbar_sl_powheg",
         "st_twchannel_t_dl_powheg",
         "st_twchannel_tbar_dl_powheg",
         "st_twchannel_t_fh_powheg",
         "st_twchannel_tbar_fh_powheg",
-        # "st_schannel_lep_amcatnlo",
-        # "st_schannel_had_amcatnlo",
+        # "st_schannel_lep_4f_amcatnlo",
+        # "st_schannel_had_4f_amcatnlo",
     ],
 }
 
@@ -142,7 +142,7 @@ w_lnu = {
         "w_lnu_ht600to800_madgraph",
         "w_lnu_ht800to1200_madgraph",
         "w_lnu_ht1200to2500_madgraph",
-        "w_lnu_ht2500_madgraph",
+        "w_lnu_ht2500toinf_madgraph",
     ],
     "2022postEE": [
         "w_lnu_amcatnlo",
@@ -152,32 +152,32 @@ w_lnu = {
     ],
 }
 
-dy_lep = {  # TODO: stitching
+dy = {  # TODO: stitching
     "2017": [
-        "dy_lep_m50_ht70to100_madgraph",
-        "dy_lep_m50_ht100to200_madgraph",
-        "dy_lep_m50_ht200to400_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-        "dy_lep_m50_ht600to800_madgraph",
-        "dy_lep_m50_ht800to1200_madgraph",
-        "dy_lep_m50_ht1200to2500_madgraph",
-        "dy_lep_m50_ht2500_madgraph",
+        "dy_m50toinf_ht70to100_madgraph",
+        "dy_m50toinf_ht100to200_madgraph",
+        "dy_m50toinf_ht200to400_madgraph",
+        "dy_m50toinf_ht400to600_madgraph",
+        "dy_m50toinf_ht600to800_madgraph",
+        "dy_m50toinf_ht800to1200_madgraph",
+        "dy_m50toinf_ht1200to2500_madgraph",
+        "dy_m50toinf_ht2500toinf_madgraph",
     ],
     "2022postEE": [
-        "dy_lep_m50_amcatnlo",
-        "dy_lep_m10to50_amcatnlo",
-        "dy_lep_m4to10_amcatnlo",
-        "dy_lep_m50_0j_amcatnlo",
-        "dy_lep_m50_1j_amcatnlo",
-        "dy_lep_m50_2j_amcatnlo",
+        "dy_m50toinf_amcatnlo",
+        "dy_m10to50_amcatnlo",
+        "dy_m4to10_amcatnlo",
+        "dy_m50toinf_0j_amcatnlo",
+        "dy_m50toinf_1j_amcatnlo",
+        "dy_m50toinf_2j_amcatnlo",
     ],
     "2022preEE": [
-        "dy_lep_m50_amcatnlo",
-        "dy_lep_m10to50_amcatnlo",
-        "dy_lep_m4to10_amcatnlo",
-        "dy_lep_m50_0j_amcatnlo",
-        "dy_lep_m50_1j_amcatnlo",
-        "dy_lep_m50_2j_amcatnlo",
+        "dy_m50toinf_amcatnlo",
+        "dy_m10to50_amcatnlo",
+        "dy_m4to10_amcatnlo",
+        "dy_m50toinf_0j_amcatnlo",
+        "dy_m50toinf_1j_amcatnlo",
+        "dy_m50toinf_2j_amcatnlo",
     ],
 }
 
@@ -222,7 +222,7 @@ qcd_mu = {
         "qcd_mu_pt470to600_pythia",
         "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000_pythia",
+        "qcd_mu_pt1000toinf_pythia",
     ],
 }
 
@@ -264,7 +264,7 @@ qcd_bctoe = {
         "qcd_bctoe_pt30to80_pythia",
         "qcd_bctoe_pt80to170_pythia",
         "qcd_bctoe_pt170to250_pythia",
-        "qcd_bctoe_pt250toInf_pythia",
+        "qcd_bctoe_pt250toinf_pythia",
     ],
     "2022postEE": [
         # empty for now
@@ -461,7 +461,7 @@ def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str:
         tt=tt.get(cpn_tag, []),
         st=st.get(cpn_tag, []),
         w_lnu=w_lnu.get(cpn_tag, []),
-        dy_lep=dy_lep.get(cpn_tag, []),
+        dy=dy.get(cpn_tag, []),
         qcd_mu=qcd_mu.get(cpn_tag, []),
         qcd_em=qcd_em.get(cpn_tag, []),
         qcd_bctoe=qcd_bctoe.get(cpn_tag, []),
