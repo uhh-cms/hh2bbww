@@ -8,10 +8,10 @@ from hbw.util import build_param_product
 
 
 weights = lambda bkg_weight: {
-    "ggHH_kl_1_kt_1_sl_hbbhww": 1,
-    "ggHH_kl_1_kt_1_sl_hbbhww": 1,
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": 1,
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": 1,
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": 1,
+    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": 1,
+    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": 1,
+    "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu": 1,
     "tt": bkg_weight,
     "st": bkg_weight,
     "v_lep": bkg_weight,

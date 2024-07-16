@@ -24,7 +24,7 @@ def default(self):
     # NOTE: use ML model inst if possible
     ml_model_name = "default"
     ml_model_processes = [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         "tt",
         "st",
         "w_lnu",
@@ -51,21 +51,21 @@ def default(self):
     # processes
     #
 
-    signals_ggHH = [
-        "ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_1_kt_1_sl_hbbhww",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww",
+    signals_hh_ggf = [
+        "hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
     ]
-    signals_qqHH = [
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww",
-        "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww", "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww",
-        "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww", "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww",
+    signals_hh_vbf = [
+        "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu",
+        "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu",
+        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu",
     ]
 
     processes = [
-        "ggHH_kl_0_kt_1_sl_hbbhww",
-        "ggHH_kl_1_kt_1_sl_hbbhww",
-        "ggHH_kl_2p45_kt_1_sl_hbbhww",
-        "ggHH_kl_5_kt_1_sl_hbbhww",
+        "hh_ggf_kl0_kt1_hbb_hvvqqlnu",
+        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu",
+        "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
         "tt",
         # "ttv", "ttvv",
         "st_schannel", "st_tchannel", "st_twchannel",
@@ -120,8 +120,8 @@ def default(self):
         "VH": ["ZH", "WH", "VH"],
         "ttH": ["ttH", "tHq", "tHW"],
         "bbH": ["bbH"],  # contains also pdf and alpha_s
-        # "ggHH": signals_ggHH,  # included in inference model (THU_HH)
-        "qqHH": signals_qqHH,
+        # "hh_ggf": signals_hh_ggf,  # included in inference model (THU_HH)
+        "hh_vbf": signals_hh_vbf,
         "VHH": [],
         "ttHH": [],
     }
@@ -158,8 +158,8 @@ def default(self):
         # "Higgs_qg": [],  # none so far
         "Higgs_ttH": ["ttH", "tHq", "tHW"],
         # "Higgs_bbh": ["bbH"],  # removed
-        "Higgs_ggHH": signals_ggHH,
-        "Higgs_qqHH": signals_qqHH,
+        "Higgs_hh_ggf": signals_hh_ggf,
+        "Higgs_hh_vbf": signals_hh_vbf,
         "Higgs_VHH": ["HHZ", "HHW+", "HHW-"],
         "Higgs_ttHH": ["ttHH"],
     }

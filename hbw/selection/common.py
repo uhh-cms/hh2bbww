@@ -17,14 +17,16 @@ from columnflow.production.util import attach_coffea_behavior
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.cms.met_filters import met_filters
 from columnflow.selection.cms.json_filter import json_filter
+from columnflow.selection.cms.jets import jet_veto_map
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
-from columnflow.production.processes import process_ids
+from hbw.production.process_ids import hbw_process_ids
 from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
+from hbw.selection.hists import hbw_selection_hists
 
 
 np = maybe_import("numpy")
@@ -49,6 +51,7 @@ def check_columns(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    # hists: dict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     routes = get_ak_routes(events)  # noqa
@@ -76,13 +79,14 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
+        jet_veto_map,
         hbw_met_filters, json_filter, "PV.npvsGood",
-        process_ids, attach_coffea_behavior,
+        hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     produces={
         hbw_met_filters, json_filter,
-        process_ids, attach_coffea_behavior,
+        hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     exposed=False,
@@ -99,6 +103,9 @@ def pre_selection(
     # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
     events = ak.fill_none(events, EMPTY_FLOAT)
 
+    # prepare the selection results that are updated at every step
+    results = SelectionResult()
+
     # run deterministic seeds when no Calibrator has been requested
     if not self.task.calibrators:
         events = self[deterministic_seeds](events, **kwargs)
@@ -108,14 +115,15 @@ def pre_selection(
         events = self[mc_weight](events, **kwargs)
         events = self[large_weights_killer](events, **kwargs)
 
+    if self.dataset_inst.is_mc:
+        # get hard gen particles
+        events, results = self[hard_gen_particles](events, results, **kwargs)
+
     # create process ids
-    events = self[process_ids](events, **kwargs)
+    events = self[hbw_process_ids](events, **kwargs)
 
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
-
-    # prepare the selection results that are updated at every step
-    results = SelectionResult()
 
     # apply some general quality criteria on events
     results.steps["good_vertex"] = events.PV.npvsGood >= 1
@@ -127,9 +135,16 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
+    # apply jet veto map
+    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
+    results += jet_veto_results
+
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        results.steps.good_vertex & results.steps.met_filter & results.steps.json
+        # results.steps.jet_veto_map &
+        results.steps.good_vertex &
+        results.steps.met_filter &
+        results.steps.json
     )
 
     return events, results
@@ -141,13 +156,21 @@ def pre_selection_init(self: Selector) -> None:
         self.uses.add(deterministic_seeds)
         self.produces.add(deterministic_seeds)
 
+    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+        return
+
+    self.uses.update({hard_gen_particles})
+    self.produces.update({hard_gen_particles})
+
 
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     exposed=False,
 )
@@ -156,12 +179,10 @@ def post_selection(
     events: ak.Array,
     results: SelectionResult,
     stats: defaultdict,
+    hists: dict,
     **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL after calling the selection modules """
-
-    if self.dataset_inst.is_mc:
-        events, results = self[hard_gen_particles](events, results, **kwargs)
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
@@ -171,8 +192,9 @@ def post_selection(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
-    self[hbw_selection_step_stats](events, results, stats, **kwargs)
-    self[hbw_increment_stats](events, results, stats, **kwargs)
+    events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
+    events = self[hbw_increment_stats](events, results, stats, **kwargs)
+    events = self[hbw_selection_hists](events, results, hists, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):
@@ -199,8 +221,8 @@ def post_selection_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
-    self.uses.update({event_weights_to_normalize, hard_gen_particles})
-    self.produces.update({event_weights_to_normalize, hard_gen_particles})
+    self.uses.update({event_weights_to_normalize})
+    self.produces.update({event_weights_to_normalize})
 
 
 configurable_attributes = {

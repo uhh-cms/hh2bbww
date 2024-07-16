@@ -11,7 +11,10 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
-from columnflow.production.normalization import normalization_weights
+from columnflow.production.normalization import (
+    normalization_weights,
+    stitched_normalization_weights, stitched_normalization_weights_brs_from_processes,
+)
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.btag import btag_weights
@@ -70,7 +73,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
         # compute pdf weights
         events = self[pdf_weights](
             events,
-            outlier_action="remove",
+            outlier_threshold=0.5,
+            outlier_action="ignore",
             outlier_log_mode="warning",
             **kwargs,
         )
@@ -184,12 +188,16 @@ sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
 @producer(
     uses={
         normalization_weights,
+        stitched_normalization_weights,
+        stitched_normalization_weights_brs_from_processes,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
     },
     produces={
         normalization_weights,
+        stitched_normalization_weights,
+        stitched_normalization_weights_brs_from_processes,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
@@ -203,6 +211,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute normalization weights
     events = self[normalization_weights](events, **kwargs)
+    events = self[stitched_normalization_weights](events, **kwargs)
+    events = self[stitched_normalization_weights_brs_from_processes](events, **kwargs)
 
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):

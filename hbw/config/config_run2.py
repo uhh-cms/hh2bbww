@@ -59,12 +59,9 @@ def add_config(
     cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
 
     # add some important tags to the config
+    # TODO: generalize and move to campaign
     cfg.x.cpn_tag = f"{year}{corr_postfix}"
-
-    if year in (2022, 2023):
-        cfg.x.run = 3
-    elif year in (2016, 2017, 2018):
-        cfg.x.run = 2
+    cfg.x.run = cfg.campaign.x.run
 
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
@@ -407,11 +404,11 @@ def add_config(
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
-    btag_uncs = [
+    cfg.x.btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
         f"lfstats1_{year}", f"lfstats2_{year}", "cferr1", "cferr2",
     ]
-    for i, unc in enumerate(btag_uncs):
+    for i, unc in enumerate(cfg.x.btag_uncs):
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
         cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
         add_shift_aliases(
@@ -420,8 +417,9 @@ def add_config(
             {
                 "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
                 "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
+                "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_{unc}_" + "{direction}",
+                "normalized_ht_btag_weight": f"normalized_ht_btag_weight_{unc}_" + "{direction}",
                 "btag_weight": f"btag_weight_{unc}_" + "{direction}",
-                "njet_btag_weight": f"njet_btag_weight_{unc}_" + "{direction}",
             },
         )
 
@@ -435,13 +433,13 @@ def add_config(
     cfg.add_shift(name="pdf_down", id=208, type="shape")
 
     for unc in ["mur", "muf", "murf_envelope", "pdf"]:
-        # add_shift_aliases(cfg, unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"})
+        col = "murmuf_envelope" if unc == "murf_envelope" else unc
         add_shift_aliases(
             cfg,
             unc,
             {
-                f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}",
-                f"{unc}_weight": f"{unc}_weight_" + "{direction}",
+                f"normalized_{col}_weight": f"normalized_{unc}_weight_" + "{direction}",
+                f"{col}_weight": f"{unc}_weight_" + "{direction}",
             },
         )
 
@@ -479,6 +477,8 @@ def add_config(
                     "btag_weight": f"btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
                     "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
+                    "normalized_ht_njet_btag_weight": f"normalized_ht_njet_btag_weight_jec_{jec_source}_" + "{direction}",  # noqa
+                    "normalized_ht_btag_weight": f"normalized_ht_btag_weight_jec_{jec_source}_" + "{direction}",  # noqa
                 },
             )
 
@@ -513,6 +513,7 @@ def add_config(
 
         # jet energy correction
         "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
+        "jet_veto_map": (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"),
 
         # electron scale factors
         "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
@@ -534,6 +535,7 @@ def add_config(
     if cfg.x.run == 3:
         cfg.x.external_files.pop("met_phi_corr")
 
+    # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     cfg.x.met_filters = {
         "Flag.goodVertices",
         "Flag.globalSuperTightHalo2016Filter",
@@ -560,7 +562,7 @@ def add_config(
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
-    elif year == 2022 and campaign.x.EE == "pre":
+    elif year == 2022:
         cfg.x.external_files.update(DotDict.wrap({
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             "lumi": {
@@ -568,11 +570,20 @@ def add_config(
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
-    elif year == 2022 and campaign.x.EE == "post":
+    elif year == 2023:
         cfg.x.external_files.update(DotDict.wrap({
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             "lumi": {
-                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions23/Cert_Collisions2023_366442_370790_Golden.json", "v1"),  # noqa
+                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+            },
+        }))
+    elif year == 2024:
+        cfg.x.external_files.update(DotDict.wrap({
+            # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
+            "lumi": {
+                # TODO: should be updated at the end of 2024 campaign
+                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_381417_Golden.json", "v1"),  # noqa
                 "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
             },
         }))
@@ -601,8 +612,10 @@ def add_config(
             "GenPartonTop.pt", "GenVBoson.pt",
             # weight-related columns
             "pu_weight*", "pdf_weight*",
-            "murf_envelope_weight*", "mur_weight*", "muf_weight*",
+            "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
             "btag_weight*",
+            # columns for btag reweighting crosschecks
+            "n_jets", "ht",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
@@ -626,11 +639,13 @@ def add_config(
         if not selector:
             return version
 
+        default_version = law.config.get_expanded("analysis", "default_version", version)
+
         # set version of "dl1" and "sl1" Producer to "prod2"
-        if selector == "dl1":
-            version = "prod2"
+        if selector == "dl1" or selector == "dl1_no_btag":
+            version = default_version
         elif selector == "sl1":
-            version = "prod2"
+            version = default_version
 
         return version
 
@@ -643,26 +658,26 @@ def add_config(
 
         # set version of Producers that are not affected by the ML pipeline
         if producer == "event_weights":
-            version = "prod2"
+            version = "prod3"
         elif producer == "sl_ml_inputs":
-            version = "prod2"
+            version = "prod3"
         elif producer == "dl_ml_inputs":
-            version = "prod2"
+            version = "prod3"
         elif producer == "pre_ml_cats":
-            version = "prod2"
+            version = "prod3"
 
         return version
 
     # Version of required tasks
     cfg.x.versions = {
-        "cf.CalibrateEvents": "common2",
+        "cf.CalibrateEvents": law.config.get_expanded("analysis", "default_common_version", "common2"),
         "cf.SelectEvents": reduce_version,
         "cf.MergeSelectionStats": reduce_version,
         "cf.MergeSelectionMasks": reduce_version,
         "cf.ReduceEvents": reduce_version,
         "cf.MergeReductionStats": reduce_version,
         "cf.MergeReducedEvents": reduce_version,
-        "cf.ProduceColumns": produce_version,
+        # "cf.ProduceColumns": produce_version,
     }
 
     # add categories

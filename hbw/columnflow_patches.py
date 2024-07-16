@@ -4,6 +4,8 @@
 Collection of patches of underlying columnflow tasks.
 """
 
+import getpass
+
 import law
 import luigi
 from columnflow.util import memoize
@@ -12,7 +14,7 @@ from columnflow.tasks.selection import SelectEvents
 from columnflow.tasks.cutflow import CreateCutflowHistograms
 from columnflow.tasks.reduction import ReduceEvents
 from columnflow.tasks.production import ProduceColumns
-# from columnflow.tasks.histograms import CreateHistograms
+from columnflow.tasks.histograms import CreateHistograms
 from columnflow.tasks.ml import MLTraining, PrepareMLEvents, MLEvaluation
 
 logger = law.logger.get_logger(__name__)
@@ -44,7 +46,9 @@ def patch_mltraining():
 
 @memoize
 def patch_column_alias_strategy():
+    # NOTE: not used since checks always fail
     # patch the missing_column_alias_strategy for all tasks
+    # at SelectEvents, the btag_weight alias is missing, therefore the check cannot be used
     SelectEvents.missing_column_alias_strategy = "raise"
     CreateCutflowHistograms.missing_column_alias_strategy = "raise"
     ReduceEvents.missing_column_alias_strategy = "raise"
@@ -52,17 +56,35 @@ def patch_column_alias_strategy():
 
     # I would like to add this tag, but since we need to request column aliases for JEC and cannot
     # apply aliases of the Jet.pt here,
-    # CreateHistograms.missing_column_alias_strategy = "raise"
+    CreateHistograms.missing_column_alias_strategy = "raise"
     PrepareMLEvents.missing_column_alias_strategy = "raise"
     MLEvaluation.missing_column_alias_strategy = "raise"
 
 
 @memoize
+def patch_htcondor_workflow_naf_resources():
+    """
+    Patches the HTCondorWorkflow task to declare user-specific resources when running on the NAF.
+    """
+    from columnflow.tasks.framework.remote import HTCondorWorkflow
+
+    def htcondor_job_resources(self, job_num, branches):
+        # one "naf_<username>" resource per job, indendent of the number of branches in the job
+        return {f"naf_{getpass.getuser()}": 1}
+
+    HTCondorWorkflow.htcondor_job_resources = htcondor_job_resources
+
+    logger.debug(f"patched htcondor_job_resources of {HTCondorWorkflow.task_family}")
+
+
+@memoize
 def patch_all():
     patch_mltraining()
-    patch_column_alias_strategy()
+    patch_htcondor_workflow_naf_resources()
+    # patch_column_alias_strategy()
 
+    # setting the default version from the law.cfg
     AnalysisTask.version = luigi.Parameter(
-        default="prod2",
+        default=law.config.get_expanded("analysis", "default_version", None),
         description="mandatory version that is encoded into output paths",
     )

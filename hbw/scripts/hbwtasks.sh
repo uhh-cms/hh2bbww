@@ -33,21 +33,21 @@ hbw_selection(){
 #
 
 hbw_calibration(){
-    law run cf.CalibrateEventsWrapper --version $common_version --workers 20 \
+    law run cf.CalibrateEventsWrapper --version $common_version --workers 100 \
 	--shifts nominal \
 	--datasets $datasets \
 	--cf.CalibrateEvents-workflow htcondor \
 	--cf.CalibrateEvents-no-poll \
 	--cf.CalibrateEvents-parallel-jobs 4000 \
 	--cf.CalibrateEvents-retries 1 \
-	--cf.CalibrateEvents-tasks-per-job 1 \
+	--cf.CalibrateEvents-tasks-per-job 2 \
 	--cf.CalibrateEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
 hbw_reduction(){
-    law run cf.ReduceEventsWrapper --version $version --workers 20 \
+    law run cf.ReduceEventsWrapper --version $version --workers 100 \
 	--shifts nominal \
 	--datasets $datasets \
 	--cf.ReduceEvents-workflow htcondor \
@@ -55,14 +55,14 @@ hbw_reduction(){
 	--cf.ReduceEvents-no-poll \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 1 \
+	--cf.ReduceEvents-tasks-per-job 2 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
 }
 
 hbw_merge_reduction(){
-    law run cf.MergeReducedEventsWrapper --version $version --workers 20 \
+    law run cf.MergeReducedEventsWrapper --version $version --workers 100 \
 	--shifts nominal \
 	--datasets $datasets \
     --cf.MergeReducedEvents-workflow htcondor \
@@ -70,7 +70,7 @@ hbw_merge_reduction(){
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 1 \
+	--cf.ReduceEvents-tasks-per-job 2 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -87,7 +87,7 @@ hbw_reduction_status(){
 }
 
 hbw_ml_training(){
-	law run cf.MLTraining --version $version --workers 20 \
+	law run cf.MLTraining --version $version --workers 100 \
 	--workflow htcondor \
 	--htcondor-memory 10000 \
 	--cf.MergeMLEvents-htcondor-memory 4000 \
@@ -106,7 +106,7 @@ hbw_ml_training(){
 }
 
 hbw_plot_ml_training(){
-	law run hbw.PlotMLEvaluationSingleFold --version $version --workers 20 \
+	law run hbw.PlotMLEvaluationSingleFold --version $version --workers 100 \
 	--fold 0 \
 	--workflow htcondor \
 	--htcondor-memory 10000 \
@@ -127,7 +127,7 @@ hbw_plot_ml_training(){
 
 
 hbw_datacards(){
-    law run cf.CreateDatacards --version $version --workers 20 \
+    law run cf.CreateDatacards --version $version --workers 100 \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
@@ -153,7 +153,7 @@ hbw_datacards(){
 
 hbw_rebin_datacards(){
 	# same as `hbw_datacards`, but also runs the rebinning task
-	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 20 \
+	law run hbw.ModifyDatacardsFlatRebin --version $version --workers 100 \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \
@@ -210,7 +210,7 @@ hbw_plot_variables(){
 }
 
 ml_output_variables="mlscore.*"
-ml_categories="resolved,boosted,incl,ml_ggHH_kl_1_kt_1_sl_hbbhww,ml_tt,ml_st,ml_w_lnu,ml_dy_lep"
+ml_categories="resolved,boosted,incl,ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu,ml_tt,ml_st,ml_w_lnu,ml_dy_lep"
 
 hbw_plot_ml_nodes(){
     law run cf.PlotVariables1D --version $version \

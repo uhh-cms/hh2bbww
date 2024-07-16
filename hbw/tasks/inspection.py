@@ -12,7 +12,7 @@ from columnflow.tasks.framework.mixins import (
 )
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import ReducedEventsUser
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import get_ak_routes, update_ak_array
 
 from hbw.tasks.base import HBWTask, ColumnsBaseTask
@@ -25,12 +25,16 @@ class CheckConfig(
     MLModelsMixin,
     ProducersMixin,
     ReducedEventsUser,
+    law.LocalWorkflow,
 ):
     """
     Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.
     It only prints some informations from the config inst.
     Does not require anything, does not output anything.
     """
+    # columnar sandbox is always nice to have :)
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
     version = None
 
     debugger = luigi.BoolParameter(

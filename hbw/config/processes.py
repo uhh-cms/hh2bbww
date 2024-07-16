@@ -4,6 +4,7 @@
 Configuration of the Run 2 HH -> bbWW processes.
 """
 
+import cmsdb
 import order as od
 
 from scinum import Number
@@ -59,6 +60,9 @@ def add_dummy_xsecs(config: od.Config, dummy_xsec: float = 0.1):
 
 
 def configure_hbw_processes(config: od.Config):
+    # add main HH process
+    config.add_process(cmsdb.processes.hh_ggf.copy())
+
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)
 
@@ -115,7 +119,7 @@ def configure_hbw_processes(config: od.Config):
         # Custom signal  process for ML Training, combining multiple kl signal samples
         # NOTE: only built for run 2 because kl variations are missing in run 3
         signal_processes = [
-            config.get_process(f"ggHH_kl_{kl}_kt_1_dl_hbbhww")
+            config.get_process(f"hh_ggf_kl{kl}_kt1_hbb_hvv2l2nu", deep=True)
             for kl in [0, 1, "2p45"]
         ]
         sig = config.add_process(
@@ -138,7 +142,7 @@ def configure_hbw_processes(config: od.Config):
     for proc_inst, _, _ in config.walk_processes():
         is_signal = any([
             signal_tag in proc_inst.name
-            for signal_tag in ("qqHH", "ggHH", "radion", "gravition")
+            for signal_tag in ("hh_vbf", "hh_ggf", "radion", "gravition")
         ])
         if is_signal:
             proc_inst.add_tag("is_signal")

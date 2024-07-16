@@ -113,8 +113,8 @@ rate_systematics = [
     # "QCDScale_VH",
     # "QCDScale_ttH",
     # "QCDScale_bbH",
-    # "QCDScale_ggHH",  # should be included in inference model (THU_HH)
-    # "QCDScale_qqHH",
+    # "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+    # "QCDScale_hh_vbf",
     # "QCDScale_VHH",
     # "QCDScale_ttHH",
     # # # Rate PDF uncertainties
@@ -126,15 +126,15 @@ rate_systematics = [
     # "pdf_Higgs_qg",  # none so far
     # "pdf_Higgs_ttH",
     # "pdf_Higgs_bbH",  # removed
-    # "pdf_Higgs_ggHH",
-    # "pdf_Higgs_qqHH",
+    # "pdf_Higgs_hh_ggf",
+    # "pdf_Higgs_hh_vbf",
     # "pdf_VHH",
     # "pdf_ttHH",
 ]
 
 shape_systematics = [
     # # Shape Scale uncertainties
-    # # "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww",
+    # # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
     # "murf_envelope_tt",
     # "murf_envelope_st_schannel",
     # "murf_envelope_st_tchannel",

@@ -70,7 +70,7 @@ def plot_fit(
 
     .. code-block:: bash
         law run cf.PlotVariables1D --version v1 \
-            --processes ggHH_kl_1_kt_1_sl_hbbhww --variables mli_mbb \
+            --processes hh_ggf_kl1_kt1_hbb_hvvqqlnu --variables mli_mbb \
             --plot-function hbw.plotting.plot_fits.plot_fit \
             --general-settings fit_func=scalable_norm
     """

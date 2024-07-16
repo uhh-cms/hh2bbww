@@ -252,10 +252,43 @@ def add_variables(config: od.Config) -> None:
         discrete_x=True,
     )
 
+    # some variables for testing of different axis types
+    config.add_variable(
+        name="high_jet_pt_strcat",
+        # NOTE: for some reason passing the string directly produces ValueError due to different shapes, e.g.
+        # ValueError: cannot broadcast RegularArray of size 7 with RegularArray of size 264
+        expression=lambda events: ak.where(events.Jet.pt > 50, ["high_pt"], ["low_pt"]),
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "strcat",
+        },
+        x_title="Jet $p_{T}$ string category",
+    )
+    # NOTE: for IntCat, it is important to pick the correct bins via *hist.loc* because the order of bins can be random
+    # h[{"high_jet_pt_intcat": 0}] picks the first bin, independent of which value the bin edge corresponds to
+    # h[{"high_jet_pt_intcat": hist.loc(0)}] picks the bin with value 0
+    config.add_variable(
+        name="high_jet_pt_intcat",
+        expression=lambda events: ak.where(events.Jet.pt > 50, 1, 0),
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "intcat",
+        },
+        x_title="Jet $p_{T}$ integer category",
+    )
+    config.add_variable(
+        name="high_jet_pt_bool",
+        expression=lambda events: events.Jet.pt > 50,
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "bool",
+        },
+        x_title="Jet $p_{T}$ bool category",
+    )
+
     #
     # Simple event properties
     #
-
     config.add_variable(
         name="n_jet",
         expression=lambda events: ak.num(events.Jet.pt, axis=1),
@@ -367,7 +400,7 @@ def add_variables(config: od.Config) -> None:
         name="ht_bjet_norm",
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
-        binning=[500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
+        binning=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         unit="GeV",
         x_title="HT",
     )

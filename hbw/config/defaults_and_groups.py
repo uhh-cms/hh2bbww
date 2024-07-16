@@ -93,8 +93,8 @@ def set_config_defaults_and_groups(config_inst):
     year = config_inst.campaign.x.year
 
     # define the default dataset and process based on the analysis tags
-    signal_tag = "sl" if config_inst.has_tag("is_sl") else "dl"
-    default_signal_process = f"ggHH_kl_1_kt_1_{signal_tag}_hbbhww"
+    signal_tag = "qqlnu" if config_inst.has_tag("is_sl") else "2l2nu"
+    default_signal_process = f"hh_ggf_kl1_kt1_hbb_hvv{signal_tag}"
     signal_generator = "powheg"
 
     if config_inst.has_tag("resonant"):
@@ -134,16 +134,16 @@ def set_config_defaults_and_groups(config_inst):
         "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
         "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
+        "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
+        "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
-        "mldl": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
-        "mlsl": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
+        "mldl": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
+        "mlsl": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu", "tt", "st", "w_lnu", "dy_lep"],
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy_lep"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
@@ -156,15 +156,15 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.dataset_groups = {
         "all": ["*"],
         "default": [default_signal_dataset, "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
+        "inference": ["hh_ggf_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "test": [default_signal_dataset, "tt_sl_powheg"],
         "small": [default_signal_dataset, "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-        "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-        "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "ggHH_*"],
+        "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
+        "ml": ["hh_ggf_kl1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "hh_ggf_*"],
     }
 
     # category groups for conveniently looping over certain categories
@@ -190,28 +190,31 @@ def set_config_defaults_and_groups(config_inst):
         "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
         # Single lepton
         "SR_sl": (
-            "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-            "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1e__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         ),
         "vbfSR_sl": (
-            "sr__1e__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1e__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__1b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "sr__1mu__1b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1e__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "sr__1mu__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
         ),
         "SR_sl_resolved": (
-            "sr__1e__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-            "sr__1e__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1e__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         ),
         "vbfSR_sl_resolved": (
-            "sr__1e__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1mu__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1e__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1mu__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__resolved__1b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__1b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1e__resolved__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1mu__resolved__2b__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
         ),
         "SR_sl_boosted": (
-            "sr__1e__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__boosted__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu", "sr__1mu__boosted__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
         ),
         "vbfSR_sl_boosted": (
-            "sr__1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+            "sr__1mu__ml_boosted_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
         ),
         "BR_sl": (
             "sr__1e__ml_tt", "sr__1e__ml_st", "sr__1e__ml_v_lep",
@@ -219,9 +222,9 @@ def set_config_defaults_and_groups(config_inst):
         ),
         # Dilepton
         "SR_dl": (
-            "sr__2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-            "sr__2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-            "sr__emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+            "sr__2e__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu", "sr__2e__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+            "sr__2mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu", "sr__2mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+            "sr__emu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu", "sr__emu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
         ),
         "BR_dl": (
             "sr__2e__ml_tt", "sr__2e__ml_st", "sr__2e__ml_dy_lep",
@@ -280,19 +283,19 @@ def set_config_defaults_and_groups(config_inst):
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "dilep": {
-            "ggHH_kl_0_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_2p45_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_5_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "hh_ggf_kl0_kt1_hbb_hvv2l2nu": {"scale": 10000, "unstack": True},
+            "hh_ggf_kl1_kt1_hbb_hvv2l2nu": {"scale": 10000, "unstack": True},
+            "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": {"scale": 10000, "unstack": True},
+            "hh_ggf_kl5_kt1_hbb_hvv2l2nu": {"scale": 10000, "unstack": True},
         },
         "dileptest": {
-            "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "hh_ggf_kl1_kt1_hbb_hvv2l2nu": {"scale": 10000, "unstack": True},
         },
         "control": {
-            "ggHH_kl_0_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_2p45_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_5_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+            "hh_ggf_kl0_kt1_hbb_hvvqqlnu": {"scale": 90000, "unstack": True},
+            "hh_ggf_kl1_kt1_hbb_hvvqqlnu": {"scale": 90000, "unstack": True},
+            "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu": {"scale": 90000, "unstack": True},
+            "hh_ggf_kl5_kt1_hbb_hvvqqlnu": {"scale": 90000, "unstack": True},
         },
     }
     # when drawing DY as a line, use a different type of yellow
@@ -347,19 +350,19 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.inference_category_rebin_processes = {
         # Single lepton
-        "SR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "BR_sl": lambda proc_name: "hbbhww" not in proc_name,
+        "SR_sl": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "vbfSR_sl": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "SR_sl_resolved": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "SR_sl_boosted": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "vbfSR_sl_resolved": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "vbfSR_sl_boosted": ("hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu"),
+        "BR_sl": lambda proc_name: "hbb_hvv" not in proc_name,
         # Dilepton
-        "SR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "SR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "SR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
+        "SR_dl": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "vbfSR_dl": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "SR_dl_resolved": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "SR_dl_boosted": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "vbfSR_dl_resolved": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "vbfSR_dl_boosted": ("hh_ggf_kl1_kt1_hbb_hvv2l2nu", "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu"),
+        "BR_dl": lambda proc_name: "hbb_hvv" not in proc_name,
     }

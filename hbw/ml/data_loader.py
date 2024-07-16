@@ -89,7 +89,7 @@ class MLDatasetLoader:
         """
         # TODO: store values of hyperparameters as task output
         # TODO: we could also reuse task outputs for multiple MLModels with same hyperparameters
-        return ("input_features", "train_val_test_split", "input_features_ordered")
+        return ("input_features", "train_val_test_split", "input_features_ordered", "processes")
 
     @property
     def parameters(self):

@@ -45,7 +45,6 @@ def ml_preparation(
         logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining")
         events = events[mask]
 
-    stats["num_events"] += len(events)
     weight_map = {
         "num_events": Ellipsis,  # all events
     }
