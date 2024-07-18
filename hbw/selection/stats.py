@@ -65,7 +65,7 @@ def hbw_increment_stats(
     # collect important information from the results
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
-    n_jets = results.x.n_central_jets
+    # n_jets = results.x.n_central_jets
 
     # weight map definition
     weight_map = {
@@ -97,6 +97,9 @@ def hbw_increment_stats(
             if "weight" not in name:
                 # skip non-weight columns here
                 continue
+            elif name.startswith("btag_weight"):
+                # btag weights are handled via histograms
+                continue
 
             weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], Ellipsis)
 
@@ -114,13 +117,7 @@ def hbw_increment_stats(
             "values": events.process_id,
             "mask_fn": (lambda v: events.process_id == v),
         },
-        "njet": {
-            "values": results.x.n_central_jets,
-            "mask_fn": (lambda v: n_jets == v),
-        },
     }
-
-    group_combinations = [("process", "njet")]
 
     self[increment_stats](
         events,
@@ -128,7 +125,6 @@ def hbw_increment_stats(
         stats,
         weight_map=weight_map,
         group_map=group_map,
-        group_combinations=group_combinations,
         **kwargs,
     )
 
