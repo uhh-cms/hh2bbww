@@ -6,7 +6,6 @@ Collection of helpers
 
 from __future__ import annotations
 
-
 import time
 from typing import Hashable, Iterable, Callable, Any
 from functools import wraps
@@ -14,6 +13,8 @@ import tracemalloc
 
 import law
 
+from columnflow.types import Any
+from columnflow.columnar_util import ArrayFunction, deferred_column
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
@@ -171,15 +172,18 @@ def log_memory(
     logger.info(f"Memory after {message}: {current:.3f}{unit} (peak: {peak:.3f}{unit})")
 
 
-def debugger():
+def debugger(msg: str = ""):
     """
     Small helper to give some more information when starting IPython.embed
+
+    :param msg: Message to be printed when starting the debugger
     """
 
     # get the previous frame to get some infos
     frame = __import__("inspect").currentframe().f_back
 
     header = (
+        f"{msg}\n"
         f"Line: {frame.f_lineno}, Function: {frame.f_code.co_name}, "
         f"File: {frame.f_code.co_filename}"
     )
@@ -352,3 +356,39 @@ def call_func_safe(func, *args, **kwargs) -> Any:
         outp = None
 
     return outp
+
+
+@deferred_column
+def IF_NANO_V9(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 9 else None
+
+
+@deferred_column
+def IF_NANO_V11(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 11 else None
+
+
+@deferred_column
+def IF_NANO_V12(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 12 else None
+
+
+@deferred_column
+def IF_RUN_2(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.run == 2 else None
+
+
+@deferred_column
+def IF_RUN_3(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.run == 3 else None
+
+
+@deferred_column
+def IF_DATASET_HAS_LHE_WEIGHTS(
+    self: ArrayFunction.DeferredColumn,
+    func: ArrayFunction,
+) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return None if func.dataset_inst.has_tag("no_lhe_weights") else self.get()

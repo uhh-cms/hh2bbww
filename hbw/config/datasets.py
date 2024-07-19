@@ -338,16 +338,16 @@ vv = {
     "2017": [
         # empty for now
     ],
-    # "2022preEE": [
-    #     "ww_pythia",
-    #     "wz_pythia",
-    #     "zz_pythia",
-    # ],
-    # "2022postEE": [
-    #     "ww_pythia",
-    #     "wz_pythia",
-    #     "zz_pythia",
-    # ],
+    "2022preEE": [
+        "ww_pythia",
+        "wz_pythia",
+        "zz_pythia",
+    ],
+    "2022postEE": [
+        "ww_pythia",
+        "wz_pythia",
+        "zz_pythia",
+    ],
 }
 
 ttv = {
@@ -624,9 +624,10 @@ def configure_hbw_datasets(
             else:
                 dataset.add_tag("is_hbv_incl")
 
-        if dataset.name.startswith("qcd") or dataset.name.startswith("hh_vbf_"):
+        if dataset.name.endswith("_pythia") or "hh_vbf" in dataset.name:
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
+            dataset.add_tag("no_lhe_weights")
 
         if dataset.has_tag("is_hbv") and "custom" in dataset.name:
             # No PDF weights and 6 scale weights in custom HH samples

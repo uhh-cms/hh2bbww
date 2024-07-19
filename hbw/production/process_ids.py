@@ -62,7 +62,7 @@ def hbw_process_ids_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.process_producer = hh_bbvv_process_producer
-    elif "dy_lep_m50" in self.dataset_inst.name:
+    elif "dy_m50" in self.dataset_inst.name:
         self.process_producer = dy_nlo_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
@@ -202,7 +202,7 @@ def hh_bbvv_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.A
 def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     n_partons = events.LHE.NpNLO
 
-    base_proc_name = "dy_lep_m50"
+    base_proc_name = "dy_m50toinf"
     process_masks = {
         f"{base_proc_name}_0j": n_partons == 0,
         f"{base_proc_name}_1j": n_partons == 1,
