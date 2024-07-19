@@ -617,6 +617,8 @@ def add_config(
             "btag_weight*",
             # columns for btag reweighting crosschecks
             "n_jets", "ht",
+            # HLT columns for trigger studies
+            "HLT.*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
