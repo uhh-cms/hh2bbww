@@ -194,7 +194,7 @@ qcd_mu = {
         "qcd_mu_pt470to600_pythia",
         "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000_pythia",
+        "qcd_mu_pt1000toinf_pythia",
     ],
     "2022postEE": [
         # "qcd_mu_pt15to20_pythia",  # empty after selection
@@ -208,7 +208,7 @@ qcd_mu = {
         "qcd_mu_pt470to600_pythia",
         "qcd_mu_pt600to800_pythia",
         "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000_pythia",
+        "qcd_mu_pt1000toinf_pythia",
     ],
     "2022preEE": [
         "qcd_mu_pt15to20_pythia",
