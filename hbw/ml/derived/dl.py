@@ -27,7 +27,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         "sig",
         "tt",
         "st",
-        "dy_lep",
+        "dy",
     )
 
     ml_process_weights = {
@@ -41,7 +41,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         "v_lep": 2,
         "tt_bkg": 2,
         "w_lnu": 2,
-        "dy_lep": 2,
+        "dy": 2,
     }
 
     input_features = [
@@ -160,7 +160,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
 dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy"],
 })
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
     "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
@@ -171,11 +171,11 @@ dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
 })
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
+    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy"],
 })
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
     "training_configs": lambda self, requested_configs: ["c17"],
-    "processes": ["sig", "tt", "st", "dy_lep"],
+    "processes": ["sig", "tt", "st", "dy"],
 })
 
 # testing of hyperparameter changes

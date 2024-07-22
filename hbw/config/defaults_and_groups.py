@@ -60,7 +60,7 @@ def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
-    default_producers = [ml_inputs_producer(container), "event_weights", "pre_ml_cats"]
+    default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
@@ -127,22 +127,22 @@ def set_config_defaults_and_groups(config_inst):
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
         "all": ["*"],
-        "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
-        "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
-        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
-        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "default": [default_signal_process, "tt", "st", "w_lnu", "dy"],
+        "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy"],
+        "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy"],
+        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy"],
+        "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy"],
+        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy"],
+        "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy"],
+        "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
-        "mldl": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy_lep"],
-        "mlsl": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu", "tt", "st", "w_lnu", "dy_lep"],
+        "mldl": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy"],
+        "mlsl": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu", "tt", "st", "w_lnu", "dy"],
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
-        "bkg": ["tt", "st", "w_lnu", "dy_lep"],
+        "bkg": ["tt", "st", "w_lnu", "dy"],
         "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
@@ -170,12 +170,16 @@ def set_config_defaults_and_groups(config_inst):
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
+        "sl": ["sr__1e", "sr__1mu"],
+        "sl_resolved": ["sr__1e__resolved", "sr__1mu__resolved"],
         "sl_much": ["sr__1mu", "sr__1mu__resolved", "sr__1mu__boosted"],
         "sl_ech": ["sr__1e", "sr__1e__resolved", "sr__1e__boosted"],
         "sl_much_resolved": ["sr__1mu__resolved", "sr__1mu__resolved__1b", "sr__1mu__resolved__2b"],
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
+        "dl": ["sr__2e", "sr__2mu", "sr__emu"],
+        "dl_resolved": ["sr__2e__resolved", "sr__2mu__resolved", "sr__emu__resolved"],
         "dl_2much": ["sr__2mu", "sr__2mu__resolved", "sr__2mu__boosted"],
         "dl_2ech": ["sr__2e", "sr__2e__resolved", "sr__2e__boosted"],
         "dl_emuch": ["sr__emu", "sr__emu__resolved", "sr__emu__boosted"],
@@ -227,9 +231,9 @@ def set_config_defaults_and_groups(config_inst):
             "sr__emu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu", "sr__emu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
         ),
         "BR_dl": (
-            "sr__2e__ml_tt", "sr__2e__ml_st", "sr__2e__ml_dy_lep",
-            "sr__2mu__ml_tt", "sr__2mu__ml_st", "sr__2mu__ml_dy_lep",
-            "sr__emu__ml_tt", "sr__emu__ml_st", "sr__emu__ml_dy_lep",
+            "sr__2e__ml_tt", "sr__2e__ml_st", "sr__2e__ml_dy",
+            "sr__2mu__ml_tt", "sr__2mu__ml_st", "sr__2mu__ml_dy",
+            "sr__emu__ml_tt", "sr__emu__ml_st", "sr__emu__ml_dy",
         ),
     }
 
@@ -299,7 +303,7 @@ def set_config_defaults_and_groups(config_inst):
         },
     }
     # when drawing DY as a line, use a different type of yellow
-    config_inst.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
+    config_inst.x.process_settings_groups["unstack_all"].update({"dy": {"unstack": True, "color": "#e6d800"}})
 
     config_inst.x.variable_settings_groups = {
         "test": {

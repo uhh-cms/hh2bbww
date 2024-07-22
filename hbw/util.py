@@ -7,7 +7,7 @@ Collection of helpers
 from __future__ import annotations
 
 import time
-from typing import Hashable, Iterable, Callable, Any
+from typing import Hashable, Iterable, Callable
 from functools import wraps
 import tracemalloc
 

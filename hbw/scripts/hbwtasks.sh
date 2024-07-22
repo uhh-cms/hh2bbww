@@ -210,7 +210,7 @@ hbw_plot_variables(){
 }
 
 ml_output_variables="mlscore.*"
-ml_categories="resolved,boosted,incl,ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu,ml_tt,ml_st,ml_w_lnu,ml_dy_lep"
+ml_categories="resolved,boosted,incl,ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu,ml_tt,ml_st,ml_w_lnu,ml_dy"
 
 hbw_plot_ml_nodes(){
     law run cf.PlotVariables1D --version $version \

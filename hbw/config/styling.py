@@ -25,7 +25,7 @@ default_process_colors = {
     "higgs": "#984ea3",  # purple
     "st": "#ff7f00",  # orange
     "t_bkg": "#e41a1c",  # orange
-    "dy_lep": "#ffff33",  # yellow
+    "dy": "#ffff33",  # yellow
     "ttV": "#a65628",  # brown
     "VV": "#f781bf",  # pink
     "other": "#999999",  # grey
@@ -71,7 +71,7 @@ ml_labels = {
     "graviton_hh_ggf_bbww_m1000": "grav1000",
     "st": "st",
     "w_lnu": "W",
-    "dy_lep": "DY",
+    "dy": "DY",
     "v_lep": "W+DY",
     "t_bkg": "tt+st",
 }
@@ -101,7 +101,7 @@ short_labels = {
     "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{0.5,1,1} (DL)$",
     "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{1.5,1,1} (DL)$",
     "w_lnu": r"$W \rightarrow l\nu$",
-    "dy_lep": r"$Z \rightarrow ll$",
+    "dy": r"$Z \rightarrow ll$",
     "qcd_mu": r"$QCD \mu$",
     "qcd_ele": r"$QCD e$",
 }
