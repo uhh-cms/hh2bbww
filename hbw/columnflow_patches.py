@@ -16,6 +16,7 @@ from columnflow.tasks.reduction import ReduceEvents
 from columnflow.tasks.production import ProduceColumns
 from columnflow.tasks.histograms import CreateHistograms
 from columnflow.tasks.ml import MLTraining, PrepareMLEvents, MLEvaluation
+from columnflow.columnar_util import TaskArrayFunction
 
 logger = law.logger.get_logger(__name__)
 
@@ -88,3 +89,9 @@ def patch_all():
         default=law.config.get_expanded("analysis", "default_version", None),
         description="mandatory version that is encoded into output paths",
     )
+
+    def TaskArrayFunction_str(self):
+        version_str = f"V{self.version}" if hasattr(self, "version") else ""
+        return f"{self.cls_name}{version_str}"
+
+    TaskArrayFunction.__str__ = TaskArrayFunction_str

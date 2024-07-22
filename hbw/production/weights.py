@@ -203,6 +203,7 @@ sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
         normalized_pu_weights,
     },
     mc_only=True,
+    version=1,
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
