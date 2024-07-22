@@ -4,16 +4,22 @@
 Configuration of the HH -> bbWW analysis.
 """
 
+from __future__ import annotations
+
 import os
+import importlib
 
 import law
 import order as od
+
+from hbw.util import timeit_multiple
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
 
 
+@timeit_multiple
 def create_hbw_analysis(
     name,
     id,
@@ -57,78 +63,63 @@ def create_hbw_analysis(
     analysis_inst.set_aux("config_groups", {})
 
     #
-    # import campaigns and load configs
+    # define configs
     #
 
     from hbw.config.config_run2 import add_config
 
-    import cmsdb.campaigns.run2_2017_nano_v9
-    import cmsdb.campaigns.run3_2022_preEE_nano_v12
-    import cmsdb.campaigns.run3_2022_postEE_nano_v12
+    def add_lazy_config(
+        campaign_module: str,
+        campaign_attr: str,
+        config_name: str,
+        config_id: int,
+        **kwargs,
+    ):
+        def create_factory(
+            config_id: int,
+            limit_dataset_files: int | None = None,
+        ):
+            def factory(configs: od.UniqueObjectIndex):
+                # import the campaign
+                mod = importlib.import_module(campaign_module)
+                campaign = getattr(mod, campaign_attr)
 
-    campaign_run2_2017_nano_v9 = cmsdb.campaigns.run2_2017_nano_v9.campaign_run2_2017_nano_v9
-    campaign_run2_2017_nano_v9.x.run = 2
-    campaign_run2_2017_nano_v9.x.postfix = ""
+                return add_config(
+                    analysis_inst,
+                    campaign.copy(),
+                    config_name=config_name,
+                    config_id=config_id,
+                    **kwargs,
+                )
+            return factory
 
-    campaign_run3_2022_preEE_nano_v12 = cmsdb.campaigns.run3_2022_preEE_nano_v12.campaign_run3_2022_preEE_nano_v12
-    campaign_run3_2022_preEE_nano_v12.x.EE = "pre"
-    campaign_run3_2022_preEE_nano_v12.x.run = 3
-    campaign_run3_2022_preEE_nano_v12.x.postfix = ""
+        limited_config_name = config_name.replace("c", "l")
 
-    campaign_run3_2022_postEE_nano_v12 = cmsdb.campaigns.run3_2022_postEE_nano_v12.campaign_run3_2022_postEE_nano_v12
-    campaign_run3_2022_postEE_nano_v12.x.EE = "post"
-    campaign_run3_2022_postEE_nano_v12.x.run = 3
-    campaign_run3_2022_postEE_nano_v12.x.postfix = "EE"
+        analysis_inst.configs.add_lazy_factory(config_name, create_factory(config_id))
+        analysis_inst.configs.add_lazy_factory(limited_config_name, create_factory(config_id + 1, 2))
 
     # 2017
-    c17 = add_config(  # noqa
-        analysis_inst,
-        campaign_run2_2017_nano_v9.copy(),
-        config_name="c17",
-        config_id=1700,
-        add_dataset_extensions=False,
-    )
-    l17 = add_config(  # noqa
-        analysis_inst,
-        campaign_run2_2017_nano_v9.copy(),
-        config_name="l17",
-        config_id=1701,
-        limit_dataset_files=2,
-        add_dataset_extensions=False,
+    add_lazy_config(
+        "cmsdb.campaigns.run2_2017_nano_v9",
+        "campaign_run2_2017_nano_v9",
+        "c17",
+        1700,
     )
 
     # 2022 preEE
-    c22pre = add_config(  # noqa
-        analysis_inst,
-        campaign_run3_2022_preEE_nano_v12.copy(),
-        config_name="c22pre",
-        config_id=2200,
-        add_dataset_extensions=False,
-    )
-    l22pre = add_config(  # noqa
-        analysis_inst,
-        campaign_run3_2022_preEE_nano_v12.copy(),
-        config_name="l22pre",
-        config_id=2201,
-        limit_dataset_files=2,
-        add_dataset_extensions=False,
+    add_lazy_config(
+        "cmsdb.campaigns.run3_2022_preEE_nano_v12",
+        "campaign_run3_2022_preEE_nano_v12",
+        "c22pre",
+        2200,
     )
 
     # 2022 postEE
-    c22post = add_config(  # noqa
-        analysis_inst,
-        campaign_run3_2022_postEE_nano_v12.copy(),
-        config_name="c22post",
-        config_id=2210,
-        add_dataset_extensions=False,
-    )
-    l22post = add_config(  # noqa
-        analysis_inst,
-        campaign_run3_2022_postEE_nano_v12.copy(),
-        config_name="l22post",
-        config_id=2211,
-        limit_dataset_files=2,
-        add_dataset_extensions=False,
+    add_lazy_config(
+        "cmsdb.campaigns.run3_2022_postEE_nano_v12",
+        "campaign_run3_2022_postEE_nano_v12",
+        "c22post",
+        2210,
     )
 
     #

@@ -21,13 +21,14 @@ from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
-from hbw.util import four_vec
+from hbw.util import four_vec, timeit_multiple
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
 
 
+@timeit_multiple
 def add_config(
     analysis: od.Analysis,
     campaign: od.Campaign,
@@ -38,25 +39,26 @@ def add_config(
 ) -> od.Config:
     # validations
     assert campaign.x.year in [2016, 2017, 2018, 2022]
-    if campaign.x.year == 2016:
-        assert campaign.x.vfp in ["pre", "post"]
-    if campaign.x.year == 2022:
-        assert campaign.x.EE in ["pre", "post"]
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
 
     corr_postfix = ""
-    if year == 2016:
-        corr_postfix = f"{campaign.x.vfp}VFP"
-    elif year == 2022:
-        corr_postfix = f"{campaign.x.EE}EE"
+    if campaign.x.year == 2016:
+        if not campaign.has_tag("preVFP") and not campaign.has_tag("postVFP"):
+            raise ValueError("2016 campaign must have the 'preVFP' or 'postVFP' tag")
+        corr_postfix = "postVFP" if campaign.has_tag("postVFP") else "preVFP"
+    elif campaign.x.year == 2022:
+        if not campaign.has_tag("postEE") and not campaign.has_tag("preEE"):
+            raise ValueError("2022 campaign must have the 'postEE' or 'preEE' tag")
+        corr_postfix = "postEE" if campaign.has_tag("postEE") else "preEE"
 
-    if year != 2017 and year != 2022:
+    if campaign.x.year not in [2017, 2022]:
         raise NotImplementedError("For now, only 2017 and 2022 campaign is implemented")
 
     # create a config by passing the campaign, so id and name will be identical
-    cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    # cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    cfg = od.Config(name=config_name, id=config_id, campaign=campaign, tags=analysis.tags)
 
     # add some important tags to the config
     # TODO: generalize and move to campaign
@@ -111,12 +113,12 @@ def add_config(
         })
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
     elif year == 2022:
-        if campaign.x.EE == "pre":
+        if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(7971, {
                 "lumi_13TeV_2022": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
             })
-        elif campaign.x.EE == "post":
+        elif campaign.has_tag("postEE"):
             cfg.x.luminosity = Number(26337, {
                 "lumi_13TeV_2022": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
@@ -134,11 +136,9 @@ def add_config(
 
     # jec configuration
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
-    jerc_postfix = ""
-    if year == 2016 and campaign.x.vfp == "post":
-        jerc_postfix = "APV"
-    elif year == 2022 and campaign.x.EE == "post":
-        jerc_postfix = "EE"
+    jerc_postfix = campaign.x.postfix
+    if jerc_postfix not in ("", "APV", "EE"):
+        raise ValueError(f"Unknown JERC postfix '{jerc_postfix}'")
 
     if cfg.x.run == 2:
         jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
