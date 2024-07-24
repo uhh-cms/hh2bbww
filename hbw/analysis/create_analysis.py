@@ -75,28 +75,41 @@ def create_hbw_analysis(
         config_id: int,
         **kwargs,
     ):
+        """
+        Helper to add configs to the analysis lazily.
+        Calling *add_lazy_config* will add two configs to the analysis:
+        - one with the given *config_name* and *config_id*,
+        - one with the *config_id* +1 and *config_name* with the character "c" replaced by "l",
+            which is used to limit the number of dataset files to 2 per dataset.
+        """
         def create_factory(
             config_id: int,
+            final_config_name: str,
             limit_dataset_files: int | None = None,
         ):
             def factory(configs: od.UniqueObjectIndex):
                 # import the campaign
                 mod = importlib.import_module(campaign_module)
                 campaign = getattr(mod, campaign_attr)
-
                 return add_config(
                     analysis_inst,
                     campaign.copy(),
-                    config_name=config_name,
+                    config_name=final_config_name,
                     config_id=config_id,
+                    limit_dataset_files=limit_dataset_files,
                     **kwargs,
                 )
             return factory
 
+        analysis_inst.configs.add_lazy_factory(
+            config_name,
+            create_factory(config_id, config_name),
+        )
         limited_config_name = config_name.replace("c", "l")
-
-        analysis_inst.configs.add_lazy_factory(config_name, create_factory(config_id))
-        analysis_inst.configs.add_lazy_factory(limited_config_name, create_factory(config_id + 1, 2))
+        analysis_inst.configs.add_lazy_factory(
+            limited_config_name,
+            create_factory(config_id + 1, limited_config_name, 2),
+        )
 
     # 2017
     add_lazy_config(
