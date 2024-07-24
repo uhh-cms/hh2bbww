@@ -134,7 +134,7 @@ rate_systematics = [
 
 shape_systematics = [
     # # Shape Scale uncertainties
-    # # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    # # "murf_envelope_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     # "murf_envelope_tt",
     # "murf_envelope_st_schannel",
     # "murf_envelope_st_tchannel",

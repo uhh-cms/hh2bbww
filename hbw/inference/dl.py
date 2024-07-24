@@ -18,10 +18,10 @@ ml_model_name = "dense_default_dl"
 
 # All processes to be included in the final datacard
 processes = [
-    "hh_ggf_kl0_kt1_hbb_hvv2l2nu",
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu",
-    "hh_ggf_kl5_kt1_hbb_hvv2l2nu",
+    "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+    "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -35,15 +35,15 @@ processes = [
 
 # All categories to be included in the final datacard
 config_categories = [
-    "sr__2e__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__2e__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu",
+    "sr__2e__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2e__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
     "sr__2e__ml_tt",
     "sr__2e__ml_t_bkg",
     "sr__2e__ml_st",
     "sr__2e__ml_sig",
     "sr__2e__ml_v_lep",
-    "sr__2mu__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__2mu__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu",
+    "sr__2mu__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2mu__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
     "sr__2mu__ml_tt",
     "sr__2mu__ml_tt_bkg",
     "sr__2mu__ml_st",
@@ -90,7 +90,7 @@ rate_systematics = [
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "murf_envelope_tt",
     "murf_envelope_st",
     "murf_envelope_dy",
@@ -139,15 +139,15 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 cls_dict = default_cls_dict.copy()
 
 cls_dict["processes"] = [
-    # "hh_ggf_kl0_kt1_hbb_hvv2l2nu",
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    # "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu",
-    # "hh_ggf_kl5_kt1_hbb_hvv2l2nu",
+    # "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    # "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+    # "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
     "tt",
 ]
 
 cls_dict["config_categories"] = [
-    "2e__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "2e__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "2e__ml_tt",
 ]
 
@@ -165,7 +165,7 @@ dl_test = dl.derive("dl_test", cls_dict=cls_dict)
 #
 
 processes_22 = [
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "tt",
     # "st_schannel",
     "st_tchannel", "st_twchannel",
@@ -175,12 +175,12 @@ processes_22 = [
 
 config_categories_22 = [
     # Signal regions
-    "sr__2e__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__2e__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__2mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__2mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__emu__1b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
-    "sr__emu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     # Background regions
     "sr__2e__ml_tt",
     "sr__2e__ml_st",
@@ -205,11 +205,11 @@ dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
 })
 dl_22_test = dl.derive("dl_22_test", cls_dict={
     "processes": [
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "st_tchannel",
     ],
     "config_categories": [
-        "sr__2mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+        "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "sr__2mu__2b__ml_tt",
         "sr__2mu__2b__ml_st",
     ],

@@ -24,7 +24,7 @@ def default(self):
     # NOTE: use ML model inst if possible
     ml_model_name = "default"
     ml_model_processes = [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         "tt",
         "st",
         "w_lnu",
@@ -52,20 +52,20 @@ def default(self):
     #
 
     signals_hh_ggf = [
-        "hh_ggf_kl0_kt1_hbb_hvvqqlnu", "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu", "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1", "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1", "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
     ]
     signals_hh_vbf = [
-        "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu",
-        "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu",
-        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu", "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1",
+        "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1", "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1",
     ]
 
     processes = [
-        "hh_ggf_kl0_kt1_hbb_hvvqqlnu",
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu",
-        "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
         "tt",
         # "ttv", "ttvv",
         "st_schannel", "st_tchannel", "st_twchannel",

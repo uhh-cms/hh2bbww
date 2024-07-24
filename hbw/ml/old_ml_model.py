@@ -529,7 +529,7 @@ class SimpleDNN(MLModel):
 
 
 processes = [
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "tt",
     "st",
     "w_lnu",
@@ -537,7 +537,7 @@ processes = [
 ]
 
 custom_procweights = {
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": 1,
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": 1,
     "tt": 8,
     "st": 8,
     "w_lnu": 8,
@@ -545,7 +545,7 @@ custom_procweights = {
 }
 
 dataset_names = {
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
     # TTbar
     "tt_sl_powheg",
     "tt_dl_powheg",
@@ -567,14 +567,14 @@ dataset_names = {
     "w_lnu_ht1200To2500_madgraph",
     "w_lnu_ht2500_madgraph",
     # DY
-    "dy_m50_ht70to100_madgraph",
-    "dy_m50_ht100to200_madgraph",
-    "dy_m50_ht200to400_madgraph",
-    "dy_m50_ht400to600_madgraph",
-    "dy_m50_ht600to800_madgraph",
-    "dy_m50_ht800to1200_madgraph",
-    "dy_m50_ht1200to2500_madgraph",
-    "dy_m50_ht2500_madgraph",
+    "dy_m50toinf_ht70to100_madgraph",
+    "dy_m50toinf_ht100to200_madgraph",
+    "dy_m50toinf_ht200to400_madgraph",
+    "dy_m50toinf_ht400to600_madgraph",
+    "dy_m50toinf_ht600to800_madgraph",
+    "dy_m50toinf_ht800to1200_madgraph",
+    "dy_m50toinf_ht1200to2500_madgraph",
+    "dy_m50toinf_ht2500_madgraph",
 }
 
 input_features = [
@@ -622,12 +622,12 @@ cls_dict = default_cls_dict
 cls_dict["epochs"] = 6
 cls_dict["batchsize"] = 2048
 cls_dict["processes"] = [
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "st",
     "w_lnu",
 ]
 cls_dict["dataset_names"] = {
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
     "st_tchannel_t_powheg",
     "w_lnu_ht400To600_madgraph",
 }

@@ -271,9 +271,9 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 
 # TODO: not hard-coded -> use config?
 ml_processes = [
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu", "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "tt", "st", "w_lnu", "dy", "v_lep",
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu", "t_bkg", "sig",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "t_bkg", "sig",
     "graviton_hh_ggf_bbww_m250", "graviton_hh_ggf_bbww_m350", "graviton_hh_ggf_bbww_m450",
     "graviton_hh_ggf_bbww_m600", "graviton_hh_ggf_bbww_m750", "graviton_hh_ggf_bbww_m1000",
 ]

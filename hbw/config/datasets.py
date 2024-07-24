@@ -362,38 +362,38 @@ ttv = {
 hh_ggf_hbb_hvv = {
     "2017": [
         # SL
-        "hh_ggf_kl0_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvvqqlnu_powheg",
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
         # DL
-        "hh_ggf_kl0_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvv2l2nu_powheg",
+        "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
+        "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
     ],
     "2022preEE": [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",  # SL
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",  # DL
-        "hh_ggf_kl1_kt1_hbb_hvv_powheg",  # incl
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",  # SL
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",  # DL
+        "hh_ggf_hbb_hvv_kl1_kt1_powheg",  # incl
 
     ],
     "2022postEE": [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",  # SL
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",  # DL
-        "hh_ggf_kl1_kt1_hbb_hvv_powheg",  # incl
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",  # SL
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",  # DL
+        "hh_ggf_hbb_hvv_kl1_kt1_powheg",  # incl
     ],
 }
 
 hh_vbf_hbb_hvvqqlnu = {
     "2017": [
-        "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1_madgraph",
+        "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1_madgraph",
     ],
     "2022postEE": [
         # empty for now
@@ -402,13 +402,13 @@ hh_vbf_hbb_hvvqqlnu = {
 
 hh_vbf_hbb_hvv2l2nu = {
     "2017": [
-        "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1_madgraph",
+        "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1_madgraph",
     ],
     "2022postEE": [
         # empty for now
@@ -650,9 +650,9 @@ def get_custom_hh_2017_datasets(
     Add custom HH datasets to campaign
     """
     campaign.add_dataset(
-        name="hh_ggf_kl0_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl0_kt1_custom",
         id=10 ** 8 + 14057341,
-        processes=[cmsdb_procs.hh_ggf_kl0_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl0_kt1],
         keys=[
             "chhh0",
         ],
@@ -662,9 +662,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl1_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl1_kt1_custom",
         id=10 ** 8 + 14065482,
-        processes=[cmsdb_procs.hh_ggf_kl1_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl1_kt1],
         keys=[
             "chhh1",
         ],
@@ -674,9 +674,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_custom",
         id=10 ** 8 + 14066581,
-        processes=[cmsdb_procs.hh_ggf_kl2p45_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl2p45_kt1],
         keys=[
             "chhh2p45",
         ],
@@ -686,9 +686,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl5_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl5_kt1_custom",
         id=10 ** 8 + 14058363,
-        processes=[cmsdb_procs.hh_ggf_kl5_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl5_kt1],
         keys=[
             "chhh5",
         ],

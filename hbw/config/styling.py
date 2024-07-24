@@ -29,40 +29,40 @@ default_process_colors = {
     "ttV": "#a65628",  # brown
     "VV": "#f781bf",  # pink
     "other": "#999999",  # grey
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": "#000000",  # black
-    "hh_ggf_kl0_kt1_hbb_hvvqqlnu": "#1b9e77",  # green2
-    "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu": "#d95f02",  # orange2
-    # "hh_ggf_kl5_kt1_hbb_hvvqqlnu": "#e7298a",  # pink2
-    "hh_ggf_kl5_kt1_hbb_hvvqqlnu": "#000080",  # navy
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": "#999999",  # grey
-    # "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": "#e41a1c",  # red
-    "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu": "#377eb8",  # blue
-    "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu": "#4daf4a",  # green
-    "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu": "#984ea3",  # purple
-    "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu": "#ff7f00",  # orange
-    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu": "#a65628",  # brown
-    "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu": "#f781bf",  # pink
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu": "#000000",  # black
-    "hh_ggf_kl0_kt1_hbb_hvv2l2nu": "#1b9e77",  # green2
-    "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": "#d95f02",  # orange2
-    "hh_ggf_kl5_kt1_hbb_hvv2l2nu": "#e7298a",  # pink2
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu": "#999999",  # grey
-    # "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu": "#e41a1c",  # red
-    "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu": "#377eb8",  # blue
-    "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu": "#4daf4a",  # green
-    "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu": "#984ea3",  # purple
-    "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu": "#ff7f00",  # orange
-    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu": "#a65628",  # brown
-    "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu": "#f781bf",  # pink
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "#000000",  # black
+    "hh_ggf_hbb_hvvqqlnu_kl0_kt1": "#1b9e77",  # green2
+    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": "#d95f02",  # orange2
+    # "hh_ggf_hbb_hvvqqlnu_kl5_kt1": "#e7298a",  # pink2
+    "hh_ggf_hbb_hvvqqlnu_kl5_kt1": "#000080",  # navy
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "#999999",  # grey
+    # "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "#e41a1c",  # red
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0": "#377eb8",  # blue
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2": "#4daf4a",  # green
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": "#984ea3",  # purple
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1": "#ff7f00",  # orange
+    "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1": "#a65628",  # brown
+    "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1": "#f781bf",  # pink
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "#000000",  # black
+    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": "#1b9e77",  # green2
+    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": "#d95f02",  # orange2
+    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": "#e7298a",  # pink2
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "#999999",  # grey
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "#e41a1c",  # red
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0": "#377eb8",  # blue
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2": "#4daf4a",  # green
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": "#984ea3",  # purple
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1": "#ff7f00",  # orange
+    "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1": "#a65628",  # brown
+    "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1": "#f781bf",  # pink
     "hh_ggf_bbtautau": "#984ea3",  # purple
 }
 
 ml_labels = {
     "tt": "$t\\bar{t}$",
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": "hh_ggf (sl)",
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu": "hh_ggf (dl)",
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": "hh_vbf (sl)",
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu": "hh_vbf (dl)",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "hh_ggf (sl)",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "hh_ggf (dl)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "hh_vbf (sl)",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "hh_vbf (dl)",
     "graviton_hh_ggf_bbww_m250": "grav250",
     "graviton_hh_ggf_bbww_m350": "grav350",
     "graviton_hh_ggf_bbww_m450": "grav450",
@@ -77,29 +77,29 @@ ml_labels = {
 }
 
 short_labels = {
-    "hh_ggf_kl0_kt1_hbb_hvvqqlnu": r"$HH_{ggf}^{\kappa\lambda=0}$ (SL)",
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu": r"$HH_{ggf}^{\kappa\lambda=1}$ (SL)",
-    "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (SL)",
-    "hh_ggf_kl5_kt1_hbb_hvvqqlnu": r"$HH_{ggf}^{\kappa\lambda=5}$ (SL)",
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{1,1,1} (SL)$",
-    "hh_ggf_kl0_kt1_hbb_hvv2l2nu": r"$HH_{ggf}^{\kappa\lambda=0}$ (DL)",
-    "hh_ggf_kl1_kt1_hbb_hvv2l2nu": r"$HH_{ggf}^{\kappa\lambda=1}$ (DL)",
-    "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (DL)",
-    "hh_ggf_kl5_kt1_hbb_hvv2l2nu": r"$HH_{ggf}^{\kappa\lambda=5}$ (DL)",
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{1,1,1} (SL)$",
-    "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu": r"$HH_{vbf}^{1,1,0} (SL)$",
-    "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu": r"$HH_{vbf}^{1,1,2} (SL)$",
-    "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{1,0,1} (SL)$",
-    "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{1,2,1} (SL)$",
-    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{0.5,1,1} (SL)$",
-    "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu": r"$HH_{vbf}^{1.5,1,1} (SL)$",
-    "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{1,1,1} (DL)$",
-    "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu": r"$HH_{vbf}^{1,1,0} (DL)$",
-    "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu": r"$HH_{vbf}^{1,1,2} (DL)$",
-    "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{1,0,1} (DL)$",
-    "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{1,2,1} (DL)$",
-    "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{0.5,1,1} (DL)$",
-    "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu": r"$HH_{vbf}^{1.5,1,1} (DL)$",
+    "hh_ggf_hbb_hvvqqlnu_kl0_kt1": r"$HH_{ggf}^{\kappa\lambda=0}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": r"$HH_{ggf}^{\kappa\lambda=1}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl5_kt1": r"$HH_{ggf}^{\kappa\lambda=5}$ (SL)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": r"$HH_{ggf}^{\kappa\lambda=0}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"$HH_{ggf}^{\kappa\lambda=1}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": r"$HH_{ggf}^{\kappa\lambda=5}$ (DL)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0": r"$HH_{vbf}^{1,1,0} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2": r"$HH_{vbf}^{1,1,2} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": r"$HH_{vbf}^{1,0,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1": r"$HH_{vbf}^{1,2,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1": r"$HH_{vbf}^{0.5,1,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1": r"$HH_{vbf}^{1.5,1,1} (SL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0": r"$HH_{vbf}^{1,1,0} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2": r"$HH_{vbf}^{1,1,2} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": r"$HH_{vbf}^{1,0,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1": r"$HH_{vbf}^{1,2,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1": r"$HH_{vbf}^{0.5,1,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1": r"$HH_{vbf}^{1.5,1,1} (DL)$",
     "w_lnu": r"$W \rightarrow l\nu$",
     "dy": r"$Z \rightarrow ll$",
     "qcd_mu": r"$QCD \mu$",
