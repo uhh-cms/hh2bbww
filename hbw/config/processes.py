@@ -50,7 +50,7 @@ def add_dummy_xsecs(config: od.Config, dummy_xsec: float = 0.1):
             process_inst.xsecs[ecm] = Number(dummy_xsec)
 
     # # temporary xsecs from XSDB
-    # config.get_process("dy_lep").xsecs[13.6] = Number(67710.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
+    # config.get_process("dy").xsecs[13.6] = Number(67710.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
     # config.get_process("w_lnu").xsecs[13.6] = Number(5558.0)  # https://xsdb-temp.app.cern.ch/xsdb/?columns=37814272&currentPage=0&ordDirection=1&ordFieldName=process_name&pageSize=10&searchQuery=DAS%3DWtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8  # noqa
 
     # temporary xsecs that were missing in xsdb
@@ -93,11 +93,11 @@ def configure_hbw_processes(config: od.Config):
 
     # custom v_lep process for ML Training, combining W+DY
     w_lnu = config.get_process("w_lnu", default=None)
-    dy_lep = config.get_process("dy_lep", default=None)
-    if w_lnu and dy_lep:
+    dy = config.get_process("dy", default=None)
+    if w_lnu and dy:
         v_lep = add_parent_process(  # noqa
             config,
-            [w_lnu, dy_lep],
+            [w_lnu, dy],
             name="v_lep",
             id=64575573,  # random number
             label="W and DY",

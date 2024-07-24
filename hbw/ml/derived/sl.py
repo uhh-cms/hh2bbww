@@ -30,7 +30,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "st",
         "v_lep",
         # "w_lnu",
-        # "dy_lep",
+        # "dy",
     ]
 
     ml_process_weights: dict = {
@@ -40,7 +40,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "st": 2,
         "v_lep": 2,
         "w_lnu": 2,
-        "dy_lep": 2,
+        "dy": 2,
     }
 
     input_features: list = [

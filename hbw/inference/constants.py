@@ -42,7 +42,7 @@ inference_procnames = {
 # mapping, which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
     "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttW", "ttZ"],
-    "V": ["dy_lep", "w_lnu"],
+    "V": ["dy", "w_lnu"],
     "VV": ["WW", "ZZ", "WZ", "qqZZ"],
     "VVV": ["vvv"],
     "ggH": ["ggH"],
@@ -59,7 +59,7 @@ processes_per_QCDScale = {
 # mapping, which processes are used for which pdf (rate) uncertainty
 processes_per_pdf_rate = {
     "gg": ["tt", "ttZ", "ggZZ"],
-    "qqbar": ["st_schannel", "st_tchannel", "dy_lep", "w_lnu", "vvv", "qqZZ", "ttW"],
+    "qqbar": ["st_schannel", "st_tchannel", "dy", "w_lnu", "vvv", "qqZZ", "ttW"],
     "qg": ["st_twchannel"],
     "Higgs_gg": ["ggH"],
     "Higgs_qqbar": ["qqH", "ZH", "WH", "VH"],
@@ -100,7 +100,7 @@ processes_per_shape = {
     "pdf_shape_hh_ggf_kl5_kt1_hbb_hvv2l2nu": ["hh_ggf_kl5_kt1_hbb_hvv2l2nu"],
     "pdf_shape_tt": ["tt"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
-    "pdf_shape_dy": ["dy_lep"],
+    "pdf_shape_dy": ["dy"],
     "pdf_shape_w": ["w_lnu"],
     "murf_envelope_hh_ggf_kl0_kt1_hbb_hvvqqlnu": ["hh_ggf_kl0_kt1_hbb_hvvqqlnu"],
     "murf_envelope_hh_ggf_kl1_kt1_hbb_hvvqqlnu": ["hh_ggf_kl1_kt1_hbb_hvvqqlnu"],
@@ -112,7 +112,7 @@ processes_per_shape = {
     "murf_envelope_hh_ggf_kl5_kt1_hbb_hvv2l2nu": ["hh_ggf_kl5_kt1_hbb_hvv2l2nu"],
     "murf_envelope_tt": ["tt"],
     "murf_envelope_st": ["st_schannel", "st_tchannel", "st_twchannel"],
-    "murf_envelope_dy": ["dy_lep"],
+    "murf_envelope_dy": ["dy"],
     "murf_envelope_w": ["w_lnu"],
 }
 

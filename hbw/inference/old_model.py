@@ -28,7 +28,7 @@ def default(self):
         "tt",
         "st",
         "w_lnu",
-        "dy_lep",
+        "dy",
     ]
 
     for proc in ml_model_processes:
@@ -69,7 +69,7 @@ def default(self):
         "tt",
         # "ttv", "ttvv",
         "st_schannel", "st_tchannel", "st_twchannel",
-        "dy_lep",
+        "dy",
         "w_lnu",
         # "vv",
         # "vvv",
@@ -112,7 +112,7 @@ def default(self):
     # add QCD scale uncertainties to inference model
     proc_QCDscale = {
         "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttW", "ttZ"],
-        "V": ["dy_lep", "w_lnu"],
+        "V": ["dy", "w_lnu"],
         "VV": ["WW", "ZZ", "WZ", "qqZZ"],
         "VVV": ["vvv"],
         "ggH": ["ggH"],
@@ -151,7 +151,7 @@ def default(self):
     # add PDF rate uncertainties to inference model
     proc_pdf = {
         "gg": ["tt", "ttZ", "ggZZ"],
-        "qqbar": ["st_schannel", "st_tchannel", "dy_lep", "w_lnu", "vvv", "qqZZ", "ttW"],
+        "qqbar": ["st_schannel", "st_tchannel", "dy", "w_lnu", "vvv", "qqZZ", "ttW"],
         "qg": ["st_twchannel"],
         "Higgs_gg": ["ggH"],
         "Higgs_qqbar": ["qqH", "ZH", "WH", "VH"],

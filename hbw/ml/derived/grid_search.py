@@ -16,7 +16,7 @@ weights = lambda bkg_weight: {
     "st": bkg_weight,
     "v_lep": bkg_weight,
     "w_lnu": bkg_weight,
-    "dy_lep": bkg_weight,
+    "dy": bkg_weight,
 }
 
 example_grid_search = {  # 4*2*2*1*3*3*1 = 144 trainings
