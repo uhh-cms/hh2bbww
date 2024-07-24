@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import Tuple
 
 import law
+import order as od
 
 from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
@@ -21,7 +22,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
 from hbw.selection.jet import jet_selection
-from hbw.util import four_vec
+from hbw.util import four_vec, call_once_on_config
 
 
 np = maybe_import("numpy")
@@ -220,6 +221,39 @@ def lepton_definition_setup(
     }[self.electron_id]
 
 
+@call_once_on_config()
+def add_nlep_variables(config: od.Config) -> None:
+    """
+    Function to add cutflow variables to the config. Variable names of objects follow the format.
+    """
+
+    # n object variables
+    for var in (
+        "n_loose_electron",
+        "n_loose_muon",
+        "n_fakeable_electron",
+        "n_fakeable_muon",
+        "n_tight_electron",
+        "n_tight_muon",
+        "n_veto_tau"
+    ):
+        config.add_variable(
+            name=f"cf.{var}",
+            expression=f"cutflow.{var}",
+            binning=(11, -0.5, 10.5),
+            x_title=f"Number of {var.split('_')[1]} {var.split('_')[-1]}s",
+        )
+
+    for wp in ("loose", "fakeable", "tight"):
+        config.add_variable(
+            name=f"cf.n_{wp}_lepton",
+            expression=lambda events, wp=wp: events.cutflow[f"n_{wp}_electron"] + events.cutflow[f"n_{wp}_muon"],
+            binning=(11, -0.5, 10.5),
+            x_title=f"Number of {wp} leptons",
+            aux={"inputs": [f"cutflow.n_{wp}_electron", f"cutflow.n_{wp}_muon"]},
+        )
+
+
 @lepton_definition.init
 def lepton_definition_init(self: Selector) -> None:
     # store used muon and electron id and isolation in the config
@@ -275,4 +309,5 @@ def lepton_definition_init(self: Selector) -> None:
         self.produces.add("cutflow.n_tight_muon")
         self.produces.add("cutflow.n_veto_tau")
 
-        # TODO: add cutflow variables aswell
+        # add cutflow variables to config
+        add_nlep_variables(self.config_inst)
