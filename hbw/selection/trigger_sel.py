@@ -79,6 +79,10 @@ def trigger_sel(
 
     # TODO: check if trigger were fired by unprescaled L1 seed
 
+    # add reference trigger to selection steps for use orthogonal categories
+    for channel, ref_trigger in self.config_inst.x.ref_trigger.items():
+        results.steps[f"ref_trigger_{channel}"] = events.HLT[ref_trigger]
+
     # save selection results for different channels
     results.steps["SR_mu"] = (
         results.steps.cleanup &
@@ -139,3 +143,5 @@ def trigger_sel_init(self: Selector) -> None:
         jet_selection,
     }
 
+    for ref_trigger in self.config_inst.x.ref_trigger.values():
+        self.uses.add(f"HLT.{ref_trigger}")

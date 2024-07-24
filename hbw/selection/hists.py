@@ -36,7 +36,7 @@ def hbw_selection_hists(
     Main selector to create and fill histograms for weight normalization.
     """
     # collect important information from the results
-    no_weights = ak.ones_like(events.mc_weight)
+    no_weights = ak.Array(np.ones(len(events)))
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
     n_jets = results.x.n_central_jets

@@ -197,13 +197,13 @@ def add_trigger_categories(config: od.Config) -> None:
         name="trig_mu_orth",
         id=3000,
         selection="catid_trigger_orth_mu",
-        label="Muon\n(orthogonal measurement)",
+        label="Muon\northogonal\nmeasurement",
     )
     cat_trig_ele_orth = config.add_category(  # noqa
         name="trig_ele_orth",
         id=4000,
         selection="catid_trigger_orth_ele",
-        label="Electron\n(orthogonal measurement)",
+        label="Electron\northogonal\nmeasurement",
     )
 
 @call_once_on_config()

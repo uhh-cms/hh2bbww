@@ -740,5 +740,16 @@ def add_config(
             }
     else:
         raise NotImplementedError(f"Trigger for year {year} is not defined.")
+    
+    # short labels for triggers with long names
+    cfg.x.trigger_short = {
+        "Ele30_WPTight_Gsf": "Ele30Tight",
+        "Ele28_eta2p1_WPTight_Gsf_HT150": "Ele28eta2p1TightHT150",
+        "Ele15_IsoVVVL_PFHT450": "Ele15IsoVVVLHT450",
+        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet2Btag",
+        "IsoMu24": "IsoMu24",
+        "Mu50": "Mu50",
+        "Mu15_IsoVVVL_PFHT450": "Mu15IsoVVVLHT450",
+    }
 
     return cfg

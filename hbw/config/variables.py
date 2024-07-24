@@ -392,7 +392,7 @@ def add_variables(config: od.Config) -> None:
         name="ht",
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
-        binning=(40, 0, 1200),
+        binning=(600, 0, 1200),
         unit="GeV",
         x_title="HT",
     )
@@ -412,14 +412,14 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="jets_pt",
         expression="Jet.pt",
-        binning=(40, 0, 400),
+        binning=(600, 0, 400),
         unit="GeV",
         x_title="$p_{T}$ of all jets",
     )
     config.add_variable(
         name="muons_pt",
         expression="Muon.pt",
-        binning=(40, 0, 400),
+        binning=(600, 0, 400),
         unit="GeV",
         x_title="$p_{T}$ of all muons",
     )
@@ -595,7 +595,7 @@ def add_variables(config: od.Config) -> None:
             name=f"{obj.lower()}_pt",
             expression=f"{obj}.pt[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, 0., 350.),
+            binning=(600, 0., 350.),
             unit="GeV",
             x_title=obj + r" $p_{T}$",
         )
@@ -603,21 +603,21 @@ def add_variables(config: od.Config) -> None:
             name=f"{obj.lower()}_phi",
             expression=f"{obj}.phi[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, -3.2, 3.2),
+            binning=(600, -3.2, 3.2),
             x_title=obj + r" $\phi$",
         )
         config.add_variable(
             name=f"{obj.lower()}_eta",
             expression=f"{obj}.eta[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(50, -2.5, 2.5),
+            binning=(600, -2.5, 2.5),
             x_title=obj + r" $\eta$",
         )
         config.add_variable(
             name=f"{obj.lower()}_mass",
             expression=f"{obj}.mass[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, 0, 200),
+            binning=(600, 0, 200),
             x_title=obj + " mass",
         )
 
@@ -638,14 +638,28 @@ def add_variables(config: od.Config) -> None:
 
     # trigger bits to build histograms
     config.add_variable(
-        name="trig_bits",
+        name="trig_bits_mu",
         aux={
             "axis_type": "strcat",
         },
         x_title="Trigger names",
     )
     config.add_variable(
-        name="trig_bits_orth",
+        name="trig_bits_orth_mu",
+        aux={
+            "axis_type": "strcat",
+        },
+        x_title="Trigger names (orthogonal)",
+    )
+    config.add_variable(
+        name="trig_bits_e",
+        aux={
+            "axis_type": "strcat",
+        },
+        x_title="Trigger names",
+    )
+    config.add_variable(
+        name="trig_bits_orth_e",
         aux={
             "axis_type": "strcat",
         },

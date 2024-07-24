@@ -14,19 +14,21 @@ ak = maybe_import("awkward")
 
 
 @producer(
-    produces={"trig_bits", "trig_bits_orth"},
+    produces={"trig_bits_mu", "trig_bits_orth_mu", "trig_bits_e", "trig_bits_orth_e"},
     channel=["mu", "e"],
 )
 def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Produces column where each bin corresponds to a certain trigger
     """
-    
-    trig_bits = ak.Array([["allEvents"]] * len(events))
-    trig_bits_orth = ak.Array([["allEvents"]] * len(events))
 
     for channel in self.channel:
+
+        trig_bits = ak.Array([["allEvents"]] * len(events))
+        trig_bits_orth = ak.Array([["allEvents"]] * len(events))
+
         ref_trig = self.config_inst.x.ref_trigger[channel]
+        
         for trigger in self.config_inst.x.trigger[channel]:
 
             trig_passed = ak.where(events.HLT[trigger], [[trigger]], [[]])
@@ -35,9 +37,8 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             trig_passed_orth = ak.where((events.HLT[ref_trig] & events.HLT[trigger]), [[trigger]], [[]])
             trig_bits_orth = ak.concatenate([trig_bits_orth, trig_passed_orth], axis=1)
 
-
-    events = set_ak_column(events, "trig_bits", trig_bits)
-    events = set_ak_column(events, "trig_bits_orth", trig_bits_orth)
+        events = set_ak_column(events, f"trig_bits_{channel}", trig_bits)
+        events = set_ak_column(events, f"trig_bits_orth_{channel}", trig_bits_orth)
     
     return events
 
@@ -50,5 +51,5 @@ def trigger_prod_init(self: Producer) -> None:
         self.uses.add(f"HLT.{self.config_inst.x.ref_trigger[channel]}")
 
 # producers for single channels
-mu_trigger_prod = trigger_prod.derive("mu_trigger_prod", cls_dict={"channel": ["mu"], "produces": {"trig_bits", "trig_bits_orth"}})
+mu_trigger_prod = trigger_prod.derive("mu_trigger_prod", cls_dict={"channel": ["mu"]})
 ele_trigger_prod = trigger_prod.derive("ele_trigger_prod", cls_dict={"channel": ["e"]})

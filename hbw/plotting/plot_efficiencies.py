@@ -68,7 +68,7 @@ def plot_efficiencies(
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    
+    from hbw.util import debugger; debugger()
     # loop over processes
     for proc_inst, myhist in hists.items():
         
@@ -89,21 +89,27 @@ def plot_efficiencies(
         }
 
         # plot config for the individual triggers
-        for i in myhist.axes[1]:
+        if "bin_sel" in kwargs:
+            mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
+        else :
+            mask_bins = myhist.axes[1]
+        for i in mask_bins:
             if i == "allEvents": continue 
             
-            plot_config[f"hist_{i}"] = {
+            plot_config[f"hist_{proc_inst.label}_{i}"] = {
                 "method": "draw_efficiency",
                 "hist": myhist[:, i],
                 "kwargs": {
                     "norm": norm_hist,
-                    "label": f"{i}",
+                    "label": f"{proc_inst.label}: {config_inst.x.trigger_short[i]}",
                 },
             }
         
         # set legend title to process name
-        default_style_config["legend_cfg"]["title"] = proc_inst.label
-
+        if "title" in default_style_config["legend_cfg"]:
+            default_style_config["legend_cfg"]["title"] += " & " + proc_inst.label
+        else:
+            default_style_config["legend_cfg"]["title"] = proc_inst.label
 
     # plot-function specific changes
     default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
@@ -114,7 +120,10 @@ def plot_efficiencies(
     
     # set correct CMS label TODO: this should be implemented correctly in columnflow by default at one point
     style_config["cms_label_cfg"]["exp"] = ""
-    style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Simulation)"
+    if "data" in proc_inst.name:
+        style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Data)"
+    else:
+        style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Simulation)"
     if "xlim" in kwargs:
         style_config["ax_cfg"]["xlim"] = kwargs["xlim"]
 
