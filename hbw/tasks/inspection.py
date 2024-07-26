@@ -134,7 +134,7 @@ class CheckConfig(
             f"{'=' * 10} Variables ({len(variables)}):\n{variables.names()} \n\n",
         )
 
-        if self.debugger:
+        if not self.skip_debugger:
             self.publish_message("starting debugger ....")
             from hbw.util import debugger
             debugger()
