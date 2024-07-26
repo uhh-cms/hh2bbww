@@ -10,6 +10,7 @@ from typing import Tuple
 from cmsdb.constants import m_z
 
 from columnflow.util import maybe_import, DotDict
+from columnflow.columnar_util import set_ak_column
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
@@ -106,37 +107,34 @@ def dl_lepton_selection(
 
     dilepton = ak.pad_none(lepton, 2)
     dilepton = dilepton[:, 0] + dilepton[:, 1]
+    events = set_ak_column(events, "mll", dilepton.mass)
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        lepton_results.steps.Charge &
-        lepton_results.steps.DiLeptonMass81 &
-        lepton_results.steps.TripleLeptonVeto &
+        # lepton_results.steps.Charge &
+        # lepton_results.steps.TripleLooseLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        lepton_results.steps.TripleLeptonVeto &
-        lepton_results.steps.Charge &
-        lepton_results.steps.DiLeptonMass81 &
+        # lepton_results.steps.TripleLooseLeptonVeto &
+        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        lepton_results.steps.TripleLeptonVeto &
-        lepton_results.steps.Charge &
-        lepton_results.steps.DiLeptonMass81 &
+        # lepton_results.steps.TripleLooseLeptonVeto &
+        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        lepton_results.steps.TripleLeptonVeto &
-        lepton_results.steps.Charge &
-        lepton_results.steps.DiLeptonMass81 &
+        # lepton_results.steps.TripleLooseLeptonVeto &
+        # lepton_results.steps.Charge &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
@@ -205,6 +203,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
 
     # Trigger setup, only required when running SelectEvents
     if self.task and self.task.task_family == "cf.SelectEvents":
+        self.produces.add("mll")
         year = self.config_inst.campaign.x.year
 
         if year == 2017:
@@ -278,7 +277,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=1,
+    version=0,
 )
 def dl1(
     self: Selector,
@@ -320,11 +319,12 @@ def dl1(
         results.steps.cleanup &
         (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
-        results.steps.ll_zmass_veto &
+        # results.steps.ll_zmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
-        results.steps.DiLeptonMass81 &
+        # results.steps.DiLeptonMass81 &  # NOTE: we removed this cut to allow checks on the Z peak
         results.steps.Dilepton &
+        results.steps.SR &  # exactly 2 tight leptons
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )
