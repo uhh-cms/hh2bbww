@@ -36,6 +36,7 @@ logger = law.logger.get_logger(__name__)
 
 @call_once_on_config()
 def add_gen_categories(config: od.Config) -> None:
+    # NOTE: this should instead be covered by process ids if necessary
     gen_0lep = config.add_category(  # noqa
         name="gen_0lep",
         id=100000,
@@ -96,6 +97,34 @@ def add_abcd_categories(config: od.Config) -> None:
         id=6,
         selection="catid_lowmet",
         label=r"MET < 20",
+    )
+
+
+@call_once_on_config()
+def add_mll_categories(config: od.Config) -> None:
+    """
+    Adds categories based on mll.
+    NOTE: this should never be used in combination with the *add_abcd_categories* function
+    """
+    config.add_category(
+        name="sr",
+        id=1,
+        selection="catid_mll_low",
+    )
+    dy_cr = config.add_category(
+        name="dy_cr",
+        id=2,
+        selection="catid_dy_cr",
+    )
+    dy_cr.add_category(
+        name="mll_z",
+        id=3,
+        selection="catid_mll_z",
+    )
+    dy_cr.add_category(
+        name="mll_high",
+        id=4,
+        selection="catid_mll_high",
     )
 
 
@@ -185,10 +214,15 @@ def add_categories_selection(config: od.Config) -> None:
     """
 
     # adds categories based on the existence of gen particles
-    add_gen_categories(config)
+    # NOTE: commented out because we did not use it anyways
+    # add_gen_categories(config)
 
     # adds categories for ABCD background estimation
-    add_abcd_categories(config)
+    # TODO: this might be used in SL analysis, so make this configurable at some point
+    # add_abcd_categories(config)
+
+    # adds categories based on mll
+    add_mll_categories(config)
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -245,7 +279,8 @@ def add_categories_production(config: od.Config) -> None:
     #
 
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "mll": [config.get_category("sr")],  # NOTE: we could also build the product of all mll categories
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
@@ -315,7 +350,8 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "mll": [config.get_category("sr"), config.get_category("dy_cr")],
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],

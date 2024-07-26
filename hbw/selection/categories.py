@@ -189,6 +189,35 @@ def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 #
+# Categorizer for mll categories
+#
+
+
+@categorizer(uses={"mll"}, call_force=True)
+def catid_mll_low(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll < 81)
+    return events, mask
+
+
+@categorizer(uses={"mll"}, call_force=True)
+def catid_dy_cr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 81)
+    return events, mask
+
+
+@categorizer(uses={"mll"}, call_force=True)
+def catid_mll_z(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 81) & (events.mll < 101)
+    return events, mask
+
+
+@categorizer(uses={"mll"}, call_force=True)
+def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 101)
+    return events, mask
+
+
+#
 # SL
 #
 

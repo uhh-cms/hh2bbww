@@ -602,6 +602,7 @@ def configure_hbw_datasets(
         if dataset.name.startswith("dy_"):
             dataset.add_tag("is_v_jets")
             dataset.add_tag("is_z_jets")
+            dataset.add_tag("is_dy")
         if dataset.name.startswith("w_"):
             dataset.add_tag("is_v_jets")
             dataset.add_tag("is_w_jets")

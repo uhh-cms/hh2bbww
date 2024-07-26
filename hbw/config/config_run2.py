@@ -15,6 +15,7 @@ import order as od
 
 from columnflow.util import DotDict
 from columnflow.config_util import add_shift_aliases
+from columnflow.columnar_util import ColumnCollection, skip_column
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
@@ -628,8 +629,9 @@ def add_config(
     })
 
     cfg.x.keep_columns["cf.ReduceEvents"] = {
-        # general event information
+        # general event information, mandatory for reading files with coffea
         "run", "luminosityBlock", "event",
+        ColumnCollection.MANDATORY_COFFEA,
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
         # Gen information (for categorization)
@@ -648,9 +650,12 @@ def add_config(
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight}",
-        "Electron.deltaEtaSC",
+        "Electron.deltaEtaSC", "mll",
         # MET
         "MET.{pt,phi}",
+        # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
+        ColumnCollection.ALL_FROM_SELECTOR,
+        skip_column("cutflow.*"),
     }
 
     # Version of required tasks
