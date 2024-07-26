@@ -149,7 +149,7 @@ def create_hbw_analysis(
         "calibrator", "calibrators", "selector", "producer", "producers",
         "ml_model", "ml_data", "ml_models",
         "weightprod", "inf_model",
-        "plot", "shift_sources", "shifts", "datasets"
+        "plot", "shift_sources", "shifts", "datasets",
         # from hbw
         "processes",
     )
