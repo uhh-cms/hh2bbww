@@ -13,7 +13,8 @@ from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
 from columnflow.production.normalization import (
     normalization_weights,
-    stitched_normalization_weights, stitched_normalization_weights_brs_from_processes,
+    stitched_normalization_weights,
+    stitched_normalization_weights_brs_from_processes,
 )
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights
@@ -190,14 +191,70 @@ sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
         normalization_weights,
         stitched_normalization_weights,
         stitched_normalization_weights_brs_from_processes,
-        top_pt_weight,
-        vjets_weight,
-        normalized_pu_weights,
     },
     produces={
         normalization_weights,
         stitched_normalization_weights,
         stitched_normalization_weights_brs_from_processes,
+    },
+    mc_only=True,
+)
+def all_normalization_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer that calculates each type of normalization weight separately
+    """
+    events = self[normalization_weights](events, **kwargs)
+    events = self[stitched_normalization_weights](events, **kwargs)
+    events = self[stitched_normalization_weights_brs_from_processes](events, **kwargs)
+
+    return events
+
+
+@all_normalization_weights.init
+def all_normalization_weights_init(self: Producer) -> None:
+    self[stitched_normalization_weights].weight_name = "stitched_normalization_weight"
+    self[stitched_normalization_weights_brs_from_processes].weight_name = "stitched_normalization_weight_brs_from_processes"  # noqa: E501
+
+
+@producer
+def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer that decides on a single type of stiched normalization weight per dataset.
+    Reason for implementing this Producer is that we always want to rely on the CMSDB cross sections
+    when stitching our signal samples, but we want to calculate the BRs ourselved for other
+    types of sample stitching (e.g. DY).
+    """
+    events = self[normalization_weights](events, **kwargs)
+    events = self[self.norm_weights_producer](events, **kwargs)
+    return events
+
+
+@combined_normalization_weights.init
+def combined_normalization_weights_init(self: Producer) -> None:
+    if not getattr(self, "dataset_inst", None):
+        return
+
+    self[stitched_normalization_weights].weight_name = "stitched_normalization_weight"
+    self[stitched_normalization_weights_brs_from_processes].weight_name = "stitched_normalization_weight"  # noqa: E501
+
+    if self.dataset_inst.has_tag("is_hbv"):
+        self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
+    else:
+        self.norm_weights_producer = stitched_normalization_weights
+
+    self.uses |= {self.norm_weights_producer, normalization_weights}
+    self.produces |= {self.norm_weights_producer, normalization_weights}
+
+
+@producer(
+    uses={
+        all_normalization_weights,
+        top_pt_weight,
+        vjets_weight,
+        normalized_pu_weights,
+    },
+    produces={
+        all_normalization_weights,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
@@ -211,9 +268,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     # compute normalization weights
-    events = self[normalization_weights](events, **kwargs)
-    events = self[stitched_normalization_weights](events, **kwargs)
-    events = self[stitched_normalization_weights_brs_from_processes](events, **kwargs)
+    events = self[all_normalization_weights](events, **kwargs)
 
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):

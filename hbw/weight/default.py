@@ -121,8 +121,8 @@ btag_uncs = [
     "lfstats1_{year}", "lfstats2_{year}", "cferr1", "cferr2",
 ]
 
-default_weight_columns = {
-    "stitched_normalization_weight": [],
+
+default_correction_weights = {
     "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
@@ -134,7 +134,13 @@ default_weight_columns = {
     "normalized_pdf_weight": ["pdf"],
     "top_pt_weight": ["top_pt"],
 }
+
+default_weight_columns = {
+    "stitched_normalization_weight": [],
+    **default_correction_weights,
+}
 base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+base.derive("unstitched", cls_dict={"weight_columns": {**default_correction_weights, "normalization_weight": []}})
 
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_btag_weight")
