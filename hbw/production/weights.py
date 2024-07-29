@@ -34,6 +34,9 @@ ak = maybe_import("awkward")
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
+stitched_normalization_weights.weight_name = "stitched_normalization_weight"
+stitched_normalization_weights_brs_from_processes.weight_name = "stitched_normalization_weight_brs_from_processes"
+
 
 @producer(
     uses={gen_parton_top, gen_v_boson, pu_weight},

@@ -205,6 +205,12 @@ def add_trigger_categories(config: od.Config) -> None:
         selection="catid_trigger_orth_ele",
         label="Electron\northogonal\nmeasurement",
     )
+    cat_trig_ele_orth_nomatch = config.add_category(  # noqa
+        name="trig_ele_orth_nomatch",
+        id=5000,
+        selection="catid_trigger_orth_e_no_match",
+        label="Electron\northogonal\nmeasurement\nno match",
+    )
 
 @call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:

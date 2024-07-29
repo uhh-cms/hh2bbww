@@ -68,7 +68,7 @@ def plot_efficiencies(
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    from hbw.util import debugger; debugger()
+
     # loop over processes
     for proc_inst, myhist in hists.items():
         

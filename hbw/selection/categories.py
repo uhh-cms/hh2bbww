@@ -354,3 +354,16 @@ def catid_trigger_orth_ele(
         return events, ( results.steps.TrigMuMatch & results.steps.SR_ele & results.steps.ref_trigger_e)
     else:
         raise NotImplementedError(f"Category didn't receive a SelectionResult")
+    
+# test categorizer without matching of trigger and offline object
+@categorizer()
+def catid_trigger_orth_e_no_match(
+    self: Categorizer,
+    events: ak.Array,
+    results: SelectionResult | None = None,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        return events, ( results.steps.SR_ele & results.steps.ref_trigger_e)
+    else:
+        raise NotImplementedError(f"Category didn't receive a SelectionResult")
