@@ -22,6 +22,7 @@ from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_da
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.util import four_vec
+from hbw.trigger.trigger_config import add_trigger_config
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -616,8 +617,6 @@ def add_config(
             "btag_weight*",
             # columns for btag reweighting crosschecks
             "n_jets", "ht",
-            # HLT columns for trigger studies
-            "HLT.*",
         } | four_vec(  # Jets
             {"Jet", "Bjet", "Lightjet", "VBFJet"},
             {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
@@ -706,50 +705,6 @@ def add_config(
         from hbw.config.sl_res import configure_sl_res
         configure_sl_res(cfg)
 
-    # set triggers for trigger studies
-    if year == 2017:
-        cfg.x.trigger = {
-            "e": ["Ele35_WPTight_Gsf"],
-            "mu": ["IsoMu27"],
-        }
-        cfg.x.ref_trigger = {
-            "e": "IsoMu27",
-            "mu": "Ele35_WPTight_Gsf",
-        }
-    elif year == 2018:
-        cfg.x.trigger = {
-            "e": "Ele32_WPTight_Gsf",
-            "mu": "IsoMu24",
-        }
-        cfg.x.ref_trigger = {
-            "e": "IsoMu24",
-            "mu": "Ele32_WPTight_Gsf",
-        }
-    elif year == 2022:
-        cfg.x.trigger = {
-                "e": [
-                    "Ele30_WPTight_Gsf", "Ele28_eta2p1_WPTight_Gsf_HT150", "Ele15_IsoVVVL_PFHT450", "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
-                    ],
-                "mu": [
-                    "IsoMu24", "Mu50", "Mu15_IsoVVVL_PFHT450", "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
-                    ],
-            }
-        cfg.x.ref_trigger = {
-                "e": "IsoMu24",
-                "mu": "Ele30_WPTight_Gsf",
-            }
-    else:
-        raise NotImplementedError(f"Trigger for year {year} is not defined.")
-    
-    # short labels for triggers with long names
-    cfg.x.trigger_short = {
-        "Ele30_WPTight_Gsf": "Ele30Tight",
-        "Ele28_eta2p1_WPTight_Gsf_HT150": "Ele28eta2p1TightHT150",
-        "Ele15_IsoVVVL_PFHT450": "Ele15IsoVVVLHT450",
-        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet2Btag",
-        "IsoMu24": "IsoMu24",
-        "Mu50": "Mu50",
-        "Mu15_IsoVVVL_PFHT450": "Mu15IsoVVVLHT450",
-    }
+    add_trigger_config(cfg, year=year)
 
     return cfg

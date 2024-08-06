@@ -635,33 +635,3 @@ def add_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",
     )
-
-    # trigger bits to build histograms
-    config.add_variable(
-        name="trig_bits_mu",
-        aux={
-            "axis_type": "strcat",
-        },
-        x_title="Trigger names",
-    )
-    config.add_variable(
-        name="trig_bits_orth_mu",
-        aux={
-            "axis_type": "strcat",
-        },
-        x_title="Trigger names (orthogonal)",
-    )
-    config.add_variable(
-        name="trig_bits_e",
-        aux={
-            "axis_type": "strcat",
-        },
-        x_title="Trigger names",
-    )
-    config.add_variable(
-        name="trig_bits_orth_e",
-        aux={
-            "axis_type": "strcat",
-        },
-        x_title="Trigger names (orthogonal)",
-    )

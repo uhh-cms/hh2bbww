@@ -36,7 +36,7 @@ law run cf.PlotVariables1D --version v1 --config l22post \
 --datasets tt_dl_powheg --categories trig_mu \            
 --selector trigger_studies --producers event_weights,trigger_prod \          
 --calibrators "" \           
---plot-function hbw.plotting.plot_efficiencies.plot_efficiencies 
+--plot-function hbw.trigger.plot_efficiencies.plot_efficiencies 
 '''
 
 def plot_efficiencies(

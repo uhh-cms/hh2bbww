@@ -14,7 +14,7 @@ from hbw.selection.common import masked_sorted_indices, configure_selector, pre_
 from hbw.util import four_vec
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection
-from hbw.config.categories import add_trigger_categories
+from hbw.trigger.trigger_config import add_trigger_categories
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")

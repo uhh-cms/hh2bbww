@@ -178,41 +178,6 @@ def add_jet_categories(config: od.Config) -> None:
     )
 
 @call_once_on_config()
-def add_trigger_categories(config: od.Config) -> None:
-    # mc truth categories
-    cat_trig_mu = config.add_category(  # noqa
-        name="trig_mu",
-        id=1000,
-        selection="catid_trigger_mu",
-        label="Muon\n(MC truth)",
-    )
-    cat_trig_ele = config.add_category(  # noqa
-        name="trig_ele",
-        id=2000,
-        selection="catid_trigger_ele",
-        label="Electron\n(MC truth)",
-    )
-    # orthogonal categories
-    cat_trig_mu_orth = config.add_category(  # noqa
-        name="trig_mu_orth",
-        id=3000,
-        selection="catid_trigger_orth_mu",
-        label="Muon\northogonal\nmeasurement",
-    )
-    cat_trig_ele_orth = config.add_category(  # noqa
-        name="trig_ele_orth",
-        id=4000,
-        selection="catid_trigger_orth_ele",
-        label="Electron\northogonal\nmeasurement",
-    )
-    cat_trig_ele_orth_nomatch = config.add_category(  # noqa
-        name="trig_ele_orth_nomatch",
-        id=5000,
-        selection="catid_trigger_orth_e_no_match",
-        label="Electron\northogonal\nmeasurement\nno match",
-    )
-
-@call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
