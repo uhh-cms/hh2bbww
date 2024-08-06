@@ -177,6 +177,7 @@ def add_jet_categories(config: od.Config) -> None:
         label="2b",
     )
 
+
 @call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:
     """

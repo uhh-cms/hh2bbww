@@ -28,7 +28,7 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         trig_bits_orth = ak.Array([["allEvents"]] * len(events))
 
         ref_trig = self.config_inst.x.ref_trigger[channel]
-        
+
         for trigger in self.config_inst.x.trigger[channel]:
 
             trig_passed = ak.where(events.HLT[trigger], [[trigger]], [[]])
@@ -39,16 +39,18 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
         events = set_ak_column(events, f"trig_bits_{channel}", trig_bits)
         events = set_ak_column(events, f"trig_bits_orth_{channel}", trig_bits_orth)
-    
+
     return events
 
-@trigger_prod.init 
+
+@trigger_prod.init
 def trigger_prod_init(self: Producer) -> None:
 
     for channel in self.channel:
         for trigger in self.config_inst.x.trigger[channel]:
             self.uses.add(f"HLT.{trigger}")
         self.uses.add(f"HLT.{self.config_inst.x.ref_trigger[channel]}")
+
 
 # producers for single channels
 mu_trigger_prod = trigger_prod.derive("mu_trigger_prod", cls_dict={"channel": ["mu"]})

@@ -32,12 +32,13 @@ logger = law.logger.get_logger(__name__)
 
 '''
 law run cf.PlotVariables1D --version v1 --config l22post \
---processes tt --variables muon_pt-trig_bits \            
---datasets tt_dl_powheg --categories trig_mu \            
---selector trigger_studies --producers event_weights,trigger_prod \          
---calibrators "" \           
---plot-function hbw.trigger.plot_efficiencies.plot_efficiencies 
+--processes tt --variables muon_pt-trig_bits \
+--datasets tt_dl_powheg --categories trig_mu \
+--selector trigger_studies --producers event_weights,trigger_prod \
+--calibrators "" \
+--plot-function hbw.trigger.plot_efficiencies.plot_efficiencies
 '''
+
 
 def plot_efficiencies(
     hists: OrderedDict,
@@ -71,7 +72,7 @@ def plot_efficiencies(
 
     # loop over processes
     for proc_inst, myhist in hists.items():
-        
+
         # get normalisation from first histogram (all events)
         norm_hist = np.array(myhist[:, 0].values())
 
@@ -91,11 +92,12 @@ def plot_efficiencies(
         # plot config for the individual triggers
         if "bin_sel" in kwargs:
             mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
-        else :
+        else:
             mask_bins = myhist.axes[1]
         for i in mask_bins:
-            if i == "allEvents": continue 
-            
+            if i == "allEvents":
+                continue
+
             plot_config[f"hist_{proc_inst.label}_{i}"] = {
                 "method": "draw_efficiency",
                 "hist": myhist[:, i],
@@ -104,7 +106,7 @@ def plot_efficiencies(
                     "label": f"{proc_inst.label}: {config_inst.x.trigger_short[i]}",
                 },
             }
-        
+
         # set legend title to process name
         if "title" in default_style_config["legend_cfg"]:
             default_style_config["legend_cfg"]["title"] += " & " + proc_inst.label
@@ -117,7 +119,7 @@ def plot_efficiencies(
     kwargs["skip_ratio"] = True
 
     style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
-    
+
     # set correct CMS label TODO: this should be implemented correctly in columnflow by default at one point
     style_config["cms_label_cfg"]["exp"] = ""
     if "data" in proc_inst.name:

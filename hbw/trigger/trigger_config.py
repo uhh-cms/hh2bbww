@@ -12,6 +12,7 @@ from hbw.util import call_once_on_config
 
 logger = law.logger.get_logger(__name__)
 
+
 @call_once_on_config()
 def add_trigger_columns(config: od.Config) -> None:
     """
@@ -46,6 +47,7 @@ def add_trigger_columns(config: od.Config) -> None:
         x_title="Trigger names (orthogonal)",
     )
 
+
 @call_once_on_config()
 def add_trigger_categories(config: od.Config) -> None:
     """
@@ -78,6 +80,7 @@ def add_trigger_categories(config: od.Config) -> None:
         label="Electron\northogonal\nmeasurement",
     )
 
+
 @call_once_on_config()
 def add_trigger_config(config: od.Config, **kwargs) -> None:
     """
@@ -107,20 +110,26 @@ def add_trigger_config(config: od.Config, **kwargs) -> None:
         }
     elif year == 2022:
         config.x.trigger = {
-                "e": [
-                    "Ele30_WPTight_Gsf", "Ele28_eta2p1_WPTight_Gsf_HT150", "Ele15_IsoVVVL_PFHT450", "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
-                    ],
-                "mu": [
-                    "IsoMu24", "Mu50", "Mu15_IsoVVVL_PFHT450", "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
-                    ],
-            }
+            "e": [
+                "Ele30_WPTight_Gsf",
+                "Ele28_eta2p1_WPTight_Gsf_HT150",
+                "Ele15_IsoVVVL_PFHT450",
+                "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+            ],
+            "mu": [
+                "IsoMu24",
+                "Mu50",
+                "Mu15_IsoVVVL_PFHT450",
+                "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+            ],
+        }
         config.x.ref_trigger = {
-                "e": "IsoMu24",
-                "mu": "Ele30_WPTight_Gsf",
-            }
+            "e": "IsoMu24",
+            "mu": "Ele30_WPTight_Gsf",
+        }
     else:
         raise NotImplementedError(f"Trigger for year {year} is not defined.")
-    
+
     # short labels for triggers with long names
     config.x.trigger_short = {
         "Ele30_WPTight_Gsf": "Ele30Tight",
