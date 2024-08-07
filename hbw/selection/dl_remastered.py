@@ -107,7 +107,7 @@ def dl_lepton_selection(
 
     dilepton = ak.pad_none(lepton, 2)
     dilepton = dilepton[:, 0] + dilepton[:, 1]
-    events = set_ak_column(events, "mll", dilepton.mass)
+    events = set_ak_column(events, "mll", dilepton.mass, value_type=np.float32)
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (

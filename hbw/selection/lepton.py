@@ -235,7 +235,7 @@ def add_nlep_variables(config: od.Config) -> None:
         "n_fakeable_muon",
         "n_tight_electron",
         "n_tight_muon",
-        "n_veto_tau"
+        "n_veto_tau",
     ):
         config.add_variable(
             name=f"cf.{var}",

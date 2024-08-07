@@ -32,12 +32,16 @@ class DumpAnalysisSummary(
         description="Keys of interest to be printed in the summary",
     )
 
+    @property
+    def keys_repr(self):
+        return "_".join(sorted(self.keys_of_interest))
+
     def requires(self):
         return {}
 
     def output(self):
         output = {
-            "dataset_summary": self.target("dataset_summary.txt"),
+            "dataset_summary": self.target(f"dataset_summary_{self.keys_repr}.txt"),
         }
         return output
 
@@ -52,6 +56,7 @@ class DumpAnalysisSummary(
                 "n_events": "Number of events",
                 "n_files": "Number of files",
                 "das_keys": "DAS keys",
+                "rucio": "Rucio DAS keys",
                 "process": "Process name",
                 "xsec": "Cross section [pb]",
                 "xsec_unc": "Cross section +- unc [pb]",
@@ -66,6 +71,7 @@ class DumpAnalysisSummary(
                         "n_events": dataset.n_events,
                         "n_files": dataset.n_files,
                         "das_keys": dataset.get_info("nominal").keys[0],
+                        "rucio": "cms:" + dataset.get_info("nominal").keys[0],
                         "process": dataset.processes.get_first().name,
                         "xsec": round_sig(xsec.nominal, 4) if xsec else "0",
                         "xsec_unc": xsec.str("pdg", combine_uncs="all") if xsec else "0",

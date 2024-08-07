@@ -58,8 +58,8 @@ def jet_selection(
         (events.Jet.jetId >= 2)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
     )
 
-    electron = events.Electron[lepton_results.objects.Electron.FakeableElectron]
-    muon = events.Muon[lepton_results.objects.Muon.FakeableMuon]
+    electron = events.Electron[lepton_results.objects.Electron.LooseElectron]
+    muon = events.Muon[lepton_results.objects.Muon.LooseMuon]
 
     jet_mask = (
         (events.Jet.pt >= self.jet_pt) &
@@ -293,9 +293,9 @@ def sl_boosted_jet_selection(
 
     # get separation info between FatJets and AK4 Jets
     dr_fatjet_ak4 = events.FatJet.metric_table(ak4_jets)
-    events = set_ak_column(events, "FatJet.n_subjets", ak.sum(dr_fatjet_ak4 < 0.8, axis=2))
-    events = set_ak_column(events, "FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
-    events = set_ak_column(events, "FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.n_subjets", ak.sum(dr_fatjet_ak4 < 0.8, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
 
     # baseline fatjet selection
     fatjet_mask = (
@@ -400,11 +400,7 @@ def sl_boosted_jet_selection_init(self: Selector) -> None:
 
     # add produced variables to *produces* only when requested
     if self.config_inst.x("do_cutflow_features", False):
-        self.produces |= {"cutflow.n_fatjet", "cutflow.n_hbbjet"} | four_vec(
-            {"FatJet", "HbbJet"},
-            {"n_subjets", "n_separated_jets", "max_dr_ak4"},
-            skip_defaults=True,
-        )
+        self.produces |= {"cutflow.{n_fatjet,n_hbbjet}", "cutflow.FatJet.{n_subjets,n_separated_jets,max_dr_ak4}"}
 
 
 # boosted selection for the DL channel (only one parameter needs to be changed)
