@@ -94,7 +94,6 @@ catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
 # Categorizer called as part of cf.SelectEvents
 #
 
-
 # SL
 @categorizer(uses={"event"}, call_force=True)
 def catid_selection_1e(
@@ -136,7 +135,6 @@ def catid_selection_emu(
     mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 1) & (ak.num(results.objects.Muon.Muon, axis=-1) == 1)
     return events, mask
 
-
 #
 # Categorizer called as part of cf.ProduceColumns
 #
@@ -145,6 +143,8 @@ def catid_selection_emu(
 #
 # Categorizer for ABCD (either during cf.SelectEvents or cf.ProduceColumns)
 #
+
+
 @categorizer(uses={"Electron.is_tight", "Muon.is_tight"}, call_force=True)
 def catid_sr(
     self: Categorizer,
@@ -277,6 +277,26 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     for the H->bb decay
     """
     mask = (ak.sum(events.HbbJet.pt > 0, axis=-1) == 0)
+    return events, mask
+
+
+@categorizer(uses={"Jet.pt"}, call_force=True)
+def catid_njet1(
+    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        return events, results.steps.nJet1
+    mask = ak.num(events.Jet.pt, axis=-1) >= 1
+    return events, mask
+
+
+@categorizer(uses={"Jet.pt"}, call_force=True)
+def catid_njet3(
+    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        return events, results.steps.nJet3
+    mask = ak.num(events.Jet.pt, axis=-1) >= 3
     return events, mask
 
 

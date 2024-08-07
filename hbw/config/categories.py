@@ -179,6 +179,22 @@ def add_lepton_categories(config: od.Config) -> None:
 
 
 @call_once_on_config()
+def add_njet_categories(config: od.Config) -> None:
+    config.add_category(
+        name="njet1",
+        id=100001,
+        selection="catid_njet1",
+        label=r"N_{jet} >= 1",
+    )
+    config.add_category(
+        name="njet3",
+        id=100003,
+        selection="catid_njet3",
+        label=r"N_{jet} >= 3",
+    )
+
+
+@call_once_on_config()
 def add_jet_categories(config: od.Config) -> None:
     cat_resolved = config.add_category(  # noqa
         name="resolved",
