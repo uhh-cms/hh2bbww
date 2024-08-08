@@ -51,10 +51,10 @@ def catid_trigger_orth_mu(
 ) -> tuple[ak.Array, ak.Array]:
     if results:
         return events, (
-                    results.steps.TrigEleMatch &
-                    results.steps.SR_mu &
-                    results.steps.ref_trigger_mu
-                    )
+            results.steps.TrigEleMatch &
+            results.steps.SR_mu &
+            results.steps.ref_trigger_mu
+        )
     else:
         raise NotImplementedError("Category didn't receive a SelectionResult")
 
@@ -69,9 +69,9 @@ def catid_trigger_orth_ele(
 ) -> tuple[ak.Array, ak.Array]:
     if results:
         return events, (
-                    results.steps.TrigMuMatch &
-                    results.steps.SR_ele &
-                    results.steps.ref_trigger_e
-                    )
+            results.steps.TrigMuMatch &
+            results.steps.SR_ele &
+            results.steps.ref_trigger_e
+        )
     else:
         raise NotImplementedError("Category didn't receive a SelectionResult")
