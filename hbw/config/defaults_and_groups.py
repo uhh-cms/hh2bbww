@@ -163,7 +163,7 @@ def set_config_defaults_and_groups(config_inst):
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
         "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
-        "ml": ["hh_ggf_kl1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "ml": ["hh_ggf*kl1_kt1", "tt_*", "st_*", "dy_*", "w_lnu_*"],
         "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "hh_ggf_*"],
     }
 

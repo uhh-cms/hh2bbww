@@ -119,7 +119,7 @@ def configure_hbw_processes(config: od.Config):
         # Custom signal  process for ML Training, combining multiple kl signal samples
         # NOTE: only built for run 2 because kl variations are missing in run 3
         signal_processes = [
-            config.get_process(f"hh_ggf_kl{kl}_kt1_hbb_hvv2l2nu", deep=True)
+            config.get_process(f"hh_ggf_hbb_hvv2l2nu_kl{kl}_kt1", deep=True)
             for kl in [0, 1, "2p45"]
         ]
         sig = config.add_process(
