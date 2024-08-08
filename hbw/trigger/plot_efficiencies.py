@@ -6,14 +6,13 @@ Examples for custom plot functions.
 
 from __future__ import annotations
 
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 
 import law
 
 from columnflow.util import maybe_import
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
-    prepare_plot_config,
     prepare_style_config,
     remove_residual_axis,
     apply_variable_settings,
@@ -32,11 +31,11 @@ logger = law.logger.get_logger(__name__)
 
 '''
 law run cf.PlotVariables1D --version v1 --config l22post \
---processes tt --variables muon_pt-trig_bits \
---datasets tt_dl_powheg --categories trig_mu \
---selector trigger_studies --producers event_weights,trigger_prod \
---calibrators "" \
---plot-function hbw.trigger.plot_efficiencies.plot_efficiencies
+--processes tt_dl --variables electron_pt-trig_bits --categories trig_mu \
+--selector trigger_sel --producers event_weights,trigger_prod \
+--plot-function hbw.trigger.plot_efficiencies.plot_efficiencies \
+--variable-settings "electron_pt,rebin=5,x_min=0,x_max=100" \
+--general-settings "bin_sel=Ele30_WPTight_Gsf;"
 '''
 
 

@@ -19,8 +19,9 @@ from hbw.trigger.trigger_config import add_trigger_categories
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
+
 @selector(
-    uses=(four_vec({"Muon", "Electron"})) | {"TrigObj.*",},
+    uses=(four_vec({"Muon", "Electron"})) | {"TrigObj.*", },
     exposed=True,
 )
 def trigger_sel(
@@ -29,7 +30,7 @@ def trigger_sel(
         stats: defaultdict,
         **kwargs,
 ) -> Tuple[ak.Array, SelectionResult]:
-    
+
     # get preselection and object definition
     events, results = self[pre_selection](events, stats, **kwargs)
 
@@ -44,22 +45,30 @@ def trigger_sel(
     muons = events.Muon[results.aux["mu_mask_tight"]]
     electrons = events.Electron[results.aux["e_mask_tight"]]
 
-    muon_mask = ak.sum(muons.pt > 15, axis=1) >= 1 # muon SFs are only available for muons with pt > 15
-    electron_mask = ak.sum(electrons.pt > 15, axis=1) >= 1 # electron threshold could be lower, for now set to same value as muon pt
+    # muon SFs are only available for muons with pt > 15 GeV
+    # electron threshold could be lower, for now set to same value as muon pt
+    muon_mask = ak.sum(muons.pt > 15, axis=1) >= 1
+    electron_mask = ak.sum(electrons.pt > 15, axis=1) >= 1
 
     results.steps["TrigMuMask"] = muon_mask
     results.steps["TrigEleMask"] = electron_mask
 
     # set lepton objects (these will be the objects used after cf.ReduceColumns)
-    results.objects["Muon"]["Muon"] = masked_sorted_indices((results.aux["mu_mask_tight"] & (events.Muon.pt > 15)), events.Muon.pt)
-    results.objects["Electron"]["Electron"] = masked_sorted_indices((results.aux["e_mask_tight"] & (events.Electron.pt > 15)), events.Electron.pt)
+    results.objects["Muon"]["Muon"] = masked_sorted_indices(
+        (results.aux["mu_mask_tight"] & (events.Muon.pt > 15)),
+        events.Muon.pt
+    )
+    results.objects["Electron"]["Electron"] = masked_sorted_indices(
+        (results.aux["e_mask_tight"] & (events.Electron.pt > 15)),
+        events.Electron.pt
+    )
 
     # check for match between offline and HLT objects
     hlt_muon_obj_mask = events.TrigObj.id == 13
     hlt_electron_obj_mask = events.TrigObj.id == 11
 
-    hlt_muon_mask = hlt_muon_obj_mask & ((events.TrigObj.filterBits & (1<<3)) > 0) 
-    hlt_electron_mask = hlt_electron_obj_mask & ((events.TrigObj.filterBits & (1<<1)) > 0) 
+    hlt_muon_mask = hlt_muon_obj_mask & ((events.TrigObj.filterBits & (1 << 3)) > 0)
+    hlt_electron_mask = hlt_electron_obj_mask & ((events.TrigObj.filterBits & (1 << 1)) > 0)
     hlt_muon = events.TrigObj[hlt_muon_mask]
     hlt_electron = events.TrigObj[hlt_electron_mask]
     mu_combo = ak.cartesian({"offl": muons, "trigobj": hlt_muon}, nested=True)
@@ -99,13 +108,13 @@ def trigger_sel(
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
         results.steps.nJet3 &
-        (results.steps.TrigMuMask | results.steps.TrigEleMask )
+        (results.steps.TrigMuMask | results.steps.TrigEleMask)
     )
 
     results.steps["all"] = results.event = (
         results.steps.SR_ele | results.steps.SR_mu
     )
-    
+
     # some categories not used for the trigger studies (a.t.m.) need additional selection steps
     # at some point it probably makes sense to completely use the object definition and categories of the main analysis
     results.steps["SR"] = results.steps.SR_ele | results.steps.SR_mu
@@ -116,13 +125,14 @@ def trigger_sel(
 
     return events, results
 
+
 @trigger_sel.init
 def trigger_sel_init(self: Selector) -> None:
 
     # init gets called multiple times, so we need to check if the config and dataset instances are already set
-    if not getattr(self, "config_inst", None): 
+    if not getattr(self, "config_inst", None):
         return
-    
+
     # add categories used for trigger studies
     add_trigger_categories(self.config_inst)
 
@@ -134,12 +144,12 @@ def trigger_sel_init(self: Selector) -> None:
     self.uses.add(pre_selection)
     self.uses.add(post_selection)
     self.uses.add(lepton_definition)
-    self.uses.add(jet_selection) 
+    self.uses.add(jet_selection)
 
     self.produces = {
-        pre_selection, 
-        post_selection, 
-        lepton_definition, 
+        pre_selection,
+        post_selection,
+        lepton_definition,
         jet_selection,
     }
 
