@@ -61,6 +61,33 @@ def add_config(
     # cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
     cfg = od.Config(name=config_name, id=config_id, campaign=campaign, tags=analysis.tags)
 
+    # helper to enable processes / datasets only for a specific era
+    def if_era(
+        *,
+        run: int | None = None,
+        year: int | None = None,
+        postfix: str | None = None,
+        tag: str | None = None,
+        values: list[str] | None = None,
+    ) -> list[str]:
+        """
+        Helper function to enable processes / datasets only for a specific era
+        :param run: LHC Run, either 2 or 3
+        :param year: Year of the data-taking campaign, e.g. 2017
+        :param postfix: Additional postfix for the campaign, e.g. "EE"
+        :param tag: Additional tag for the campaign, e.g. "postEE"
+        :return: All values if the era matches, otherwise an empty list
+        """
+        match = (
+            (run is None or campaign.x.run == run) and
+            (year is None or campaign.x.year == year) and
+            (postfix is None or campaign.x.postfix == postfix) and
+            (tag is None or campaign.has_tag(tag))
+        )
+        return (values or []) if match else []
+
+    cfg.x.if_era = if_era
+
     # add some important tags to the config
     # TODO: generalize and move to campaign
     cfg.x.cpn_tag = f"{year}{corr_postfix}"
