@@ -21,7 +21,7 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    uses=(four_vec({"Muon", "Electron"})) | {"TrigObj.*", },
+    uses=(four_vec({"Muon", "Electron"})) | {"TrigObj.*"},
     exposed=True,
 )
 def trigger_sel(
@@ -56,11 +56,11 @@ def trigger_sel(
     # set lepton objects (these will be the objects used after cf.ReduceColumns)
     results.objects["Muon"]["Muon"] = masked_sorted_indices(
         (results.aux["mu_mask_tight"] & (events.Muon.pt > 15)),
-        events.Muon.pt
+        events.Muon.pt,
     )
     results.objects["Electron"]["Electron"] = masked_sorted_indices(
         (results.aux["e_mask_tight"] & (events.Electron.pt > 15)),
-        events.Electron.pt
+        events.Electron.pt,
     )
 
     # check for match between offline and HLT objects
