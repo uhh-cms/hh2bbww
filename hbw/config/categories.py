@@ -3,7 +3,7 @@
 """
 Definition of categories.
 
-Categorizer modules (used to determine category masks) are defined in hbw.selection.categories
+Categorizer modules (used to determine category masks) are defined in hbw.categorization.categories
 
 Ids for combinations of categories are built as the sum of category ids.
 To avoid reusing category ids, each category block (e.g. leptons, jets, ...) uses ids of a different

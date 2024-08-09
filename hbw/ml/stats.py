@@ -13,7 +13,7 @@ from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
-from hbw.selection.categories import catid_sr
+from hbw.categorization.categories import catid_sr
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -51,7 +51,7 @@ def ml_preparation(
 
     if self.task.dataset_inst.is_mc:
         weight = events["normalization_weight"]
-        stats["sum_weights"] += ak.sum(weight, axis=0)
+        stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
         weight_map["sum_abs_weights"] = (weight, weight > 0)
         weight_map["sum_pos_weights"] = np.abs(weight)
@@ -78,7 +78,6 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
-
     return events
 
 
