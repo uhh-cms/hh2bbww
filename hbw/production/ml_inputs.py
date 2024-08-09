@@ -181,6 +181,7 @@ def common_ml_inputs_init(self: Producer) -> None:
     uses={common_ml_inputs},
     produces={common_ml_inputs},
     # produced columns set in the init function
+    version=1,
 )
 def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

@@ -215,3 +215,21 @@ dl_22_test = dl.derive("dl_22_test", cls_dict={
     ],
     "ml_model_name": "dl_22",
 })
+
+dl_22post_limited = dl_22.derive("dl_22post_limited", cls_dict={
+    "ml_model_name": "dl_22post_limited",
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+    "config_categories": [
+        # Signal regions
+        "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        # Background regions
+        "sr__2e__ml_st_tchannel_t",
+        "sr__2mu__ml_st_tchannel_t",
+        "sr__emu__ml_st_tchannel_t",
+    ],
+})

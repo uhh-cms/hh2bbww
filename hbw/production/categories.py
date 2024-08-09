@@ -44,6 +44,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     uses={category_ids},
     produces={category_ids},
     ml_model_name=None,
+    version=1,
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

@@ -277,7 +277,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=1,
+    version=0,
 )
 def dl1(
     self: Selector,

@@ -178,7 +178,6 @@ def hh_bbvv_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.A
     n_w = events.n_gen.w
     base_proc_name = self.dataset_inst.name.split("_hbb_h")[0]
     k_params = "k" + self.dataset_inst.processes.get_first().name.split("_k", 1)[1]
-    print(k_params)
     process_masks = {
         f"{base_proc_name}_hbb_hww2l2nu_{k_params}": (n_clep == 2) & (n_w == 2),
         f"{base_proc_name}_hbb_hwwqqlnu_{k_params}": (n_clep == 1) & (n_w == 2),

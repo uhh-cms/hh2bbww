@@ -173,6 +173,14 @@ dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt", "st", "dy"],
 })
+dl_22_test = DenseClassifierDL.derive("dl_22_test", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt"],
+})
+dl_22_full = DenseClassifierDL.derive("dl_22_full", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv", "hh_vbf_hbb_hvv", "tt", "st", "dy", "h"],
+})
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
     "training_configs": lambda self, requested_configs: ["c17"],
     "processes": ["sig", "tt", "st", "dy"],
