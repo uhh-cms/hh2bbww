@@ -168,6 +168,8 @@ def create_hbw_analysis(
         "ml_model", "ml_data", "ml_models",
         "weightprod", "inf_model",
         "plot", "shift_sources", "shifts", "datasets",
+        # MLTraining
+        "calib", "sel", "prod",
         # from hbw
         "processes",
     )
@@ -215,9 +217,9 @@ def create_hbw_analysis(
         # define order of parts as we want them
         parts_order_start = [
             "analysis",
-            "calibrator", "calibrators",
-            "selector",
-            "producer", "producers",
+            "calibrator", "calibrators", "calib",
+            "selector", "sel",
+            "producer", "producers", "prod",
             "ml_data", "ml_model", "ml_models",
             "weightprod", "inf_model",
             "task_family",
