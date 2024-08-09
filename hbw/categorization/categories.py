@@ -242,16 +242,23 @@ def catid_njet3(
     return events, mask
 
 
-@categorizer(uses={"Jet.btagDeepFlavB"})
+from hbw.util import BTAG_COLUMN
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (n_deepjet == 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.btagDeepFlavB"})
+@categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (n_deepjet >= 2)
     return events, mask
 
