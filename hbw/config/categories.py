@@ -138,42 +138,42 @@ def add_lepton_categories(config: od.Config) -> None:
     config.add_category(
         name="incl",
         id=0,
-        selection="catid_selection_incl",
+        selection="catid_incl",
         label="Inclusive",
     )
 
     cat_1e = config.add_category(  # noqa
         name="1e",
         id=10,
-        selection="catid_selection_1e",
+        selection="catid_1e",
         label="1 Electron",
     )
 
     cat_1mu = config.add_category(  # noqa
         name="1mu",
         id=20,
-        selection="catid_selection_1mu",
+        selection="catid_1mu",
         label="1 Muon",
     )
     # dl categories
     cat_2e = config.add_category(  # noqa
         name="2e",
         id=30,
-        selection="catid_selection_2e",
+        selection="catid_2e",
         label="2 Electron",
     )
 
     cat_2mu = config.add_category(  # noqa
         name="2mu",
         id=40,
-        selection="catid_selection_2mu",
+        selection="catid_2mu",
         label="2 Muon",
     )
 
     cat_emu = config.add_category(  # noqa
         name="emu",
         id=50,
-        selection="catid_selection_emu",
+        selection="catid_emu",
         label="1 Electron 1 Muon",
     )
 
@@ -233,12 +233,12 @@ def add_categories_selection(config: od.Config) -> None:
     # NOTE: commented out because we did not use it anyways
     # add_gen_categories(config)
 
-    # adds categories for ABCD background estimation
-    # TODO: this might be used in SL analysis, so make this configurable at some point
-    # add_abcd_categories(config)
-
-    # adds categories based on mll
-    add_mll_categories(config)
+    if config.x.lepton_tag == "sl":
+        # adds categories for ABCD background estimation
+        add_abcd_categories(config)
+    elif config.x.lepton_tag == "dl":
+        # adds categories based on mll
+        add_mll_categories(config)
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -269,24 +269,6 @@ def add_categories_production(config: od.Config) -> None:
         logger.warning("We should not call *add_categories_production* when also building ML categories")
         # when ML categories already exist, don't do anything
         return
-    #
-    # switch existing categories to different production module
-    #
-
-    cat_1e = config.get_category("1e")
-    cat_1e.selection = "catid_1e"
-
-    cat_1mu = config.get_category("1mu")
-    cat_1mu.selection = "catid_1mu"
-
-    cat_2e = config.get_category("2e")
-    cat_2e.selection = "catid_2e"
-
-    cat_2mu = config.get_category("2mu")
-    cat_2mu.selection = "catid_2mu"
-
-    cat_emu = config.get_category("emu")
-    cat_emu.selection = "catid_emu"
 
     add_jet_categories(config)
 

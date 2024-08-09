@@ -18,7 +18,7 @@ ak = maybe_import("awkward")
 
 
 @categorizer(uses={"event"}, call_force=True)
-def catid_selection_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def catid_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = ak.ones_like(events.event) > 0
     return events, mask
 
@@ -91,53 +91,37 @@ catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
 
 
 #
-# Categorizer called as part of cf.SelectEvents
+# Categorizers based on lepton multiplicity
 #
 
-# SL
-@categorizer(uses={"event"}, call_force=True)
-def catid_selection_1e(
-    self: Categorizer, events: ak.Array, results: SelectionResult, **kwargs,
+@categorizer(
+    uses={"{Muon,Electron}.pt"},
+    call_force=True,
+    n_muon=0,
+    n_electron=0,
+)
+def catid_lep(
+    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 1) & (ak.num(results.objects.Muon.Muon, axis=-1) == 0)
+    print(self.cls_name, self.n_muon, self.n_electron)
+    if results:
+        mask = (
+            (ak.num(results.objects.Electron.Electron, axis=-1) == self.n_electron) &
+            (ak.num(results.objects.Muon.Muon, axis=-1) == self.n_muon)
+        )
+    else:
+        mask = (
+            (ak.sum(events.Electron.pt > 0, axis=-1) == self.n_electron) &
+            (ak.sum(events.Muon.pt > 0, axis=-1) == self.n_muon)
+        )
     return events, mask
 
 
-@categorizer(uses={"event"}, call_force=True)
-def catid_selection_1mu(
-    self: Categorizer, events: ak.Array, results: SelectionResult, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 0) & (ak.num(results.objects.Muon.Muon, axis=-1) == 1)
-    return events, mask
-
-
-# DL
-@categorizer(uses={"event"}, call_force=True)
-def catid_selection_2e(
-    self: Categorizer, events: ak.Array, results: SelectionResult, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 2) & (ak.num(results.objects.Muon.Muon, axis=-1) == 0)
-    return events, mask
-
-
-@categorizer(uses={"event"}, call_force=True)
-def catid_selection_2mu(
-    self: Categorizer, events: ak.Array, results: SelectionResult, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 0) & (ak.num(results.objects.Muon.Muon, axis=-1) == 2)
-    return events, mask
-
-
-@categorizer(uses={"event"}, call_force=True)
-def catid_selection_emu(
-    self: Categorizer, events: ak.Array, results: SelectionResult, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    mask = (ak.num(results.objects.Electron.Electron, axis=-1) == 1) & (ak.num(results.objects.Muon.Muon, axis=-1) == 1)
-    return events, mask
-
-#
-# Categorizer called as part of cf.ProduceColumns
-#
+catid_1e = catid_lep.derive("catid_1e", cls_dict={"n_electron": 1, "n_muon": 0})
+catid_1mu = catid_lep.derive("catid_1mu", cls_dict={"n_electron": 0, "n_muon": 1})
+catid_2e = catid_lep.derive("catid_2e", cls_dict={"n_electron": 2, "n_muon": 0})
+catid_2mu = catid_lep.derive("catid_2mu", cls_dict={"n_electron": 0, "n_muon": 2})
+catid_emu = catid_lep.derive("catid_emu", cls_dict={"n_electron": 1, "n_muon": 1})
 
 
 #
@@ -214,45 +198,6 @@ def catid_mll_z(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array
 @categorizer(uses={"mll"}, call_force=True)
 def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 101)
-    return events, mask
-
-
-#
-# SL
-#
-
-
-@categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
-def catid_1e(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0))
-    return events, mask
-
-
-@categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
-def catid_1mu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1))
-    return events, mask
-
-#
-# DL
-#
-
-
-@categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
-def catid_2e(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 2) & (ak.sum(events.Muon.pt > 0, axis=-1) == 0))
-    return events, mask
-
-
-@categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
-def catid_2mu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 0) & (ak.sum(events.Muon.pt > 0, axis=-1) == 2))
-    return events, mask
-
-
-@categorizer(uses={"Electron.pt", "Muon.pt"}, call_force=True)
-def catid_emu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = ((ak.sum(events.Electron.pt > 0, axis=-1) == 1) & (ak.sum(events.Muon.pt > 0, axis=-1) == 1))
     return events, mask
 
 
