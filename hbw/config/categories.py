@@ -135,13 +135,6 @@ def add_lepton_categories(config: od.Config) -> None:
         "dl": ("2e", "2mu", "emu"),
     }[config.x.lepton_tag]
 
-    config.add_category(
-        name="incl",
-        id=0,
-        selection="catid_incl",
-        label="Inclusive",
-    )
-
     cat_1e = config.add_category(  # noqa
         name="1e",
         id=10,
@@ -228,6 +221,14 @@ def add_categories_selection(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
     """
+
+    # inclusive category separate from all other categories (important for cross checks)
+    config.add_category(
+        name="incl",
+        id=0,
+        selection="catid_incl",
+        label="Inclusive",
+    )
 
     # adds categories based on the existence of gen particles
     # NOTE: commented out because we did not use it anyways

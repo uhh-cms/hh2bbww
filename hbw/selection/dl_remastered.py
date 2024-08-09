@@ -10,7 +10,7 @@ from typing import Tuple
 from cmsdb.constants import m_z
 
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
@@ -107,7 +107,7 @@ def dl_lepton_selection(
 
     dilepton = ak.pad_none(lepton, 2)
     dilepton = dilepton[:, 0] + dilepton[:, 1]
-    events = set_ak_column(events, "mll", dilepton.mass, value_type=np.float32)
+    events = set_ak_column(events, "mll", ak.fill_none(dilepton.mass, EMPTY_FLOAT), value_type=np.float32)
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
@@ -277,7 +277,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=0,
+    version=1,
 )
 def dl1(
     self: Selector,

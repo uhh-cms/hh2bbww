@@ -17,7 +17,7 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-@categorizer(uses={"event"}, call_force=True)
+@categorizer(uses={"event"})
 def catid_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = ak.ones_like(events.event) > 0
     return events, mask
@@ -31,7 +31,6 @@ def catid_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     uses=optional_column("HardGenPart.pdgId", "GenPart.pdgId", "GenPart.statusFlags"),
     gp_dict={},  # dict with (tuple of) pdgId + number of required prompt particles with this pdgId
     ignore_charge=True,
-    call_force=True,
     _operator="eq",
 )
 def catid_n_gen_particles(
@@ -96,14 +95,12 @@ catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
 
 @categorizer(
     uses={"{Muon,Electron}.pt"},
-    call_force=True,
     n_muon=0,
     n_electron=0,
 )
 def catid_lep(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    print(self.cls_name, self.n_muon, self.n_electron)
     if results:
         mask = (
             (ak.num(results.objects.Electron.Electron, axis=-1) == self.n_electron) &
@@ -129,7 +126,7 @@ catid_emu = catid_lep.derive("catid_emu", cls_dict={"n_electron": 1, "n_muon": 1
 #
 
 
-@categorizer(uses={"Electron.is_tight", "Muon.is_tight"}, call_force=True)
+@categorizer(uses={"Electron.is_tight", "Muon.is_tight"})
 def catid_sr(
     self: Categorizer,
     events: ak.Array,
@@ -145,7 +142,7 @@ def catid_sr(
     return events, mask
 
 
-@categorizer(uses={"Electron.is_tight", "Muon.is_tight"}, call_force=True)
+@categorizer(uses={"Electron.is_tight", "Muon.is_tight"})
 def catid_fake(
     self: Categorizer,
     events: ak.Array,
@@ -161,13 +158,13 @@ def catid_fake(
     return events, mask
 
 
-@categorizer(uses={"MET.pt"}, call_force=True)
+@categorizer(uses={"MET.pt"})
 def catid_highmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = events.MET.pt >= 20
     return events, mask
 
 
-@categorizer(uses={"MET.pt"}, call_force=True)
+@categorizer(uses={"MET.pt"})
 def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = events.MET.pt < 20
     return events, mask
@@ -177,25 +174,25 @@ def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
 #
 
 
-@categorizer(uses={"mll"}, call_force=True)
+@categorizer(uses={"mll"})
 def catid_mll_low(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll < 81)
     return events, mask
 
 
-@categorizer(uses={"mll"}, call_force=True)
+@categorizer(uses={"mll"})
 def catid_dy_cr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 81)
     return events, mask
 
 
-@categorizer(uses={"mll"}, call_force=True)
+@categorizer(uses={"mll"})
 def catid_mll_z(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 81) & (events.mll < 101)
     return events, mask
 
 
-@categorizer(uses={"mll"}, call_force=True)
+@categorizer(uses={"mll"})
 def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 101)
     return events, mask
@@ -205,7 +202,7 @@ def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
 # Jet categorization
 #
 
-@categorizer(uses={"Jet.pt", "HbbJet.pt"}, call_force=True)
+@categorizer(uses={"Jet.pt", "HbbJet.pt"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
@@ -215,7 +212,7 @@ def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "HbbJet.pt"}, call_force=True)
+@categorizer(uses={"Jet.pt", "HbbJet.pt"})
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the resolved category: presence of no AK8 jet candidate
@@ -225,7 +222,7 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     return events, mask
 
 
-@categorizer(uses={"Jet.pt"}, call_force=True)
+@categorizer(uses={"Jet.pt"})
 def catid_njet1(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
@@ -235,7 +232,7 @@ def catid_njet1(
     return events, mask
 
 
-@categorizer(uses={"Jet.pt"}, call_force=True)
+@categorizer(uses={"Jet.pt"})
 def catid_njet3(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
@@ -245,14 +242,14 @@ def catid_njet3(
     return events, mask
 
 
-@categorizer(uses={"Jet.btagDeepFlavB"}, call_force=True)
+@categorizer(uses={"Jet.btagDeepFlavB"})
 def catid_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
     mask = (n_deepjet == 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.btagDeepFlavB"}, call_force=True)
+@categorizer(uses={"Jet.btagDeepFlavB"})
 def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     n_deepjet = ak.sum(events.Jet.btagDeepFlavB >= self.config_inst.x.btag_working_points.deepjet.medium, axis=-1)
     mask = (n_deepjet >= 2)
@@ -278,7 +275,6 @@ for proc in ml_processes:
         proc_col_name=f"{proc}",
         # skip check because we don't know which ML processes were used from the MLModel
         check_used_columns=False,
-        call_force=True,
     )
     def dnn_mask(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
         """

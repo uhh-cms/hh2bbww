@@ -22,6 +22,7 @@ logger = law.logger.get_logger(__name__)
 @producer(
     uses={category_ids},
     produces={category_ids},
+    version=1,
 )
 def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
