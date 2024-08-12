@@ -384,6 +384,18 @@ def IF_RUN_3(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | s
 
 
 @deferred_column
+def IF_SL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_sl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "sl" else None
+
+
+@deferred_column
+def IF_DL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_dl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
 def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
     This helper allows adding the correct btag column based on the b_tagger configuration.
