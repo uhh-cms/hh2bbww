@@ -76,7 +76,7 @@ def sensitivity_analysis(model, inputs, output_node: int = 0, input_features: li
     """
     Sensitivity analysis of *model* between batch-normalized *inputs* and pre-softmax output *output_node*
     """
-    gradients = get_gradients(model, inputs, output_node)
+    gradients = get_gradients(model, inputs, output_node, skip_batch_norm=True)
 
     sum_gradients = np.sum(np.abs(gradients), axis=0)
     sum_gradients = dict(zip(input_features, sum_gradients))
@@ -89,7 +89,7 @@ def gradient_times_input(model, inputs, output_node: int = 0, input_features: li
     """
     Gradient * Input of *model* between batch-normalized *inputs* and pre-softmax output *output_node*
     """
-    gradients = get_gradients(model, inputs, output_node)
+    gradients = get_gradients(model, inputs, output_node, skip_batch_norm=True)
     inputs = get_input_post_batchnorm(model, inputs)
 
     # NOTE: remove np.abs?
@@ -109,7 +109,6 @@ def shap_ranking(model, inputs, output_node: int = 0, input_features: list | Non
     # calculate shap values
     shap_values = explainer(inputs[:20])
     shap_values.feature_names = list(input_features)
-    shap_values.shape
 
     shap_ranking = dict(zip(shap_values.feature_names, shap_values[:, :, output_node].abs.mean(axis=0).values))
     shap_ranking = dict(sorted(shap_ranking.items(), key=lambda x: abs(x[1]), reverse=True))
