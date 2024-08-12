@@ -323,7 +323,7 @@ def sl_boosted_jet_selection(
     if self.single_lepton_selector:
         hbbJet_mask = (
             hbbJet_mask &
-            (events.FatJet.n_separated_jets >= 1)
+            (events.cutflow.FatJet.n_separated_jets >= 1)
         )
 
     # create temporary object with fatjet mask applied and get the subjets
