@@ -7,71 +7,64 @@ from __future__ import annotations
 
 from columnflow.util import maybe_import
 from columnflow.categorization import Categorizer, categorizer
-from columnflow.selection import SelectionResult
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
 # categorizer muon channel
-@categorizer()
+@categorizer(uses={"Muon.pt"}, call_force=True)
 def catid_trigger_mu(
     self: Categorizer,
     events: ak.Array,
-    results: SelectionResult | None = None,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    if results:
-        return events, results.steps.SR_mu
-    else:
-        raise NotImplementedError("Category didn't receive a SelectionResult")
+
+    mask = (ak.sum(events.Muon.pt > 15, axis=1) >= 1)
+    return events, mask
 
 
 # categorizer electron channel
-@categorizer()
+@categorizer(uses={"Electron.pt"}, call_force=True)
 def catid_trigger_ele(
     self: Categorizer,
     events: ak.Array,
-    results: SelectionResult | None = None,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    if results:
-        return events, results.steps.SR_ele
-    else:
-        raise NotImplementedError("Category didn't receive a SelectionResult")
+
+    mask = (ak.sum(events.Electron.pt > 15, axis=1) >= 1)
+    return events, mask
 
 
 # categorizer for orthogonal measurement (muon channel)
-@categorizer()
+@categorizer(uses={"Jet.pt", "Muon.pt", "Electron.pt", "HLT.*"}, call_force=True)
 def catid_trigger_orth_mu(
     self: Categorizer,
     events: ak.Array,
-    results: SelectionResult | None = None,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    if results:
-        return events, (
-            results.steps.TrigEleMatch &
-            results.steps.SR_mu &
-            results.steps.ref_trigger_mu
-        )
-    else:
-        raise NotImplementedError("Category didn't receive a SelectionResult")
+
+    mask = (
+        (ak.sum(events.Muon.pt > 15, axis=1) >= 1) &
+        (ak.sum(events.Electron.pt > 15, axis=1) >= 1) &
+        (ak.sum(events.Jet.pt > 25, axis=1) >= 3) &
+        (events.HLT[self.config_inst.x.ref_trigger["mu"]])
+    )
+    return events, mask
 
 
 # categorizer for orthogonal measurement (electron channel)
-@categorizer()
+@categorizer(uses={"Jet.pt", "Muon.pt", "Electron.pt", "HLT.*"}, call_force=True)
 def catid_trigger_orth_ele(
     self: Categorizer,
     events: ak.Array,
-    results: SelectionResult | None = None,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    if results:
-        return events, (
-            results.steps.TrigMuMatch &
-            results.steps.SR_ele &
-            results.steps.ref_trigger_e
-        )
-    else:
-        raise NotImplementedError("Category didn't receive a SelectionResult")
+
+    mask = (
+        (ak.sum(events.Muon.pt > 15, axis=1) >= 1) &
+        (ak.sum(events.Electron.pt > 15, axis=1) >= 1) &
+        (ak.sum(events.Jet.pt > 25, axis=1) >= 3) &
+        (events.HLT[self.config_inst.x.ref_trigger["e"]])
+    )
+    return events, mask

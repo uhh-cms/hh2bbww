@@ -14,7 +14,6 @@ from hbw.selection.common import masked_sorted_indices, configure_selector, pre_
 from hbw.util import four_vec
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection
-from hbw.trigger.trigger_config import add_trigger_categories
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -88,26 +87,22 @@ def trigger_sel(
 
     # TODO: check if trigger were fired by unprescaled L1 seed
 
-    # add reference trigger to selection steps for use orthogonal categories
-    for channel, ref_trigger in self.config_inst.x.ref_trigger.items():
-        results.steps[f"ref_trigger_{channel}"] = events.HLT[ref_trigger]
-
     # save selection results for different channels
     results.steps["SR_mu"] = (
         results.steps.cleanup &
-        results.steps.nJet3 &
+        results.steps.nJet1 &
         results.steps.nBjet1 &
         results.steps.TrigMuMask
     )
     results.steps["SR_ele"] = (
         results.steps.cleanup &
-        results.steps.nJet3 &
+        results.steps.nJet1 &
         results.steps.nBjet1 &
         results.steps.TrigEleMask
     )
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
-        results.steps.nJet3 &
+        results.steps.nJet1 &
         (results.steps.TrigMuMask | results.steps.TrigEleMask)
     )
 
@@ -133,9 +128,6 @@ def trigger_sel_init(self: Selector) -> None:
     if not getattr(self, "config_inst", None):
         return
 
-    # add categories used for trigger studies
-    add_trigger_categories(self.config_inst)
-
     if not getattr(self, "dataset_inst", None):
         return
 
@@ -152,6 +144,3 @@ def trigger_sel_init(self: Selector) -> None:
         lepton_definition,
         jet_selection,
     }
-
-    for ref_trigger in self.config_inst.x.ref_trigger.values():
-        self.uses.add(f"HLT.{ref_trigger}")

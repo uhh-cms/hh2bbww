@@ -8,6 +8,9 @@ Column production methods related trigger studies
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
+from columnflow.production.categories import category_ids
+
+from hbw.trigger.trigger_config import add_trigger_categories
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -55,3 +58,23 @@ def trigger_prod_init(self: Producer) -> None:
 # producers for single channels
 mu_trigger_prod = trigger_prod.derive("mu_trigger_prod", cls_dict={"channel": ["mu"]})
 ele_trigger_prod = trigger_prod.derive("ele_trigger_prod", cls_dict={"channel": ["e"]})
+
+
+@producer(
+    uses=category_ids,
+    produces=category_ids,
+)
+def trig_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Produces category ids for trigger studies
+    """
+
+    events = self[category_ids](events, **kwargs)
+
+    return events
+
+
+@trig_cats.init
+def trig_cats_init(self: Producer) -> None:
+
+    add_trigger_categories(self.config_inst)
