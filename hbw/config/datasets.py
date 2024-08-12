@@ -147,12 +147,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
             "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
             "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
-            *config.x.if_era(run=3, values=[
-                "hh_ggf_hbb_hvv_kl0_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl1_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl5_kt1_powheg",
-            ]),
+            # *config.x.if_era(run=3, values=[
+            #     "hh_ggf_hbb_hvv_kl0_kt1_powheg",
+            #     "hh_ggf_hbb_hvv_kl1_kt1_powheg",
+            #     "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
+            #     "hh_ggf_hbb_hvv_kl5_kt1_powheg",
+            # ]),
         ],
         "hh_vbf_hbb_hvv": [
             *config.x.if_era(run=2, values=[

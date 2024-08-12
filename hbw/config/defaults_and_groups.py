@@ -12,7 +12,8 @@ def default_calibrator(container):
 
 def default_selector(container):
     if container.has_tag("is_sl"):
-        selector = "sl1"
+        #selector = "sl1"
+        selector = "sl1_no_trig"
     elif container.has_tag("is_dl"):
         selector = "dl1"
 
