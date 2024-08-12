@@ -145,20 +145,25 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 
 # minimal model for quick test purposes
 cls_dict_test = {
-    "ml_model_name": "dense_test",
+    "ml_model_name": "dense_22post_test",
     "processes": [
         "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
-        "st_tchannel",
+        "tt",
     ],
     "config_categories": [
-        "1e__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
-        "1e__ml_st",
+        "sr__1e__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "sr__1e__ml_tt",
     ],
     "systematics": [
+        "lumi_13TeV_2016",
         "lumi_13TeV_2017",
+        "lumi_13TeV_1718",
+        "lumi_13TeV_2022",
+        "lumi_13TeV_2023",
+        "lumi_13TeV_correlated",
     ],
 }
-test = default.derive("test", cls_dict=cls_dict_test)
+sl_22post_test = default.derive("sl_22post_test", cls_dict=cls_dict_test)
 
 # model but with different fit variable
 jet1_pt = default.derive("jet1_pt", cls_dict={

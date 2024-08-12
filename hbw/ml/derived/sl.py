@@ -163,7 +163,9 @@ dense_22post = DenseClassifierSL.derive("dense_22post", cls_dict={
     "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
 })
 dense_22post_test = dense_22post.derive("dense_22post_test", cls_dict={
-    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st_tchannel_t"],
+    "training_configs": lambda self, requested_configs: ["l22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt"],
+    "epochs": 10,
 })
 dense_22 = DenseClassifierSL.derive("dense_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],

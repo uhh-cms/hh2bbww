@@ -349,7 +349,8 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        "mll": [config.get_category("sr"), config.get_category("dy_cr")],
+        # "mll": [config.get_category("sr"), config.get_category("dy_cr")],
+        "mll": [config.get_category("sr")],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
