@@ -112,7 +112,11 @@ def sl_lepton_selection(
 
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
-        trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        if trigger_columns:
+            trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        else:
+            # if no trigger is defined, we assume that the event passes the trigger
+            trigger_mask = np.ones(len(events), dtype=np.bool)
         lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
@@ -324,3 +328,10 @@ def sl1_init(self: Selector) -> None:
 
 
 sl1_no_btag = sl1.derive("sl1_no_btag", cls_dict={"n_btag": 0, "b_tagger": "deepjet"})
+sl1_trigger_studies = sl1.derive("sl1_trigger_studies", cls_dict={
+    "trigger": {"e": [], "mu": []},
+    "mu_pt": 15.,
+    "mu2_pt": 15.,
+    "ele_pt": 15.,
+    "ele2_pt": 15.,
+})

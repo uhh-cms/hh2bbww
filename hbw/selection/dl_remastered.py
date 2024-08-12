@@ -154,7 +154,11 @@ def dl_lepton_selection(
 
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
-        trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        if trigger_columns:
+            trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+        else:
+            # if no trigger is defined, we assume that the event passes the trigger
+            trigger_mask = np.ones(len(events), dtype=np.bool)
         lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
