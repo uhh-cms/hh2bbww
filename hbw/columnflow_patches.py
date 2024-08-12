@@ -16,13 +16,13 @@ from columnflow.tasks.reduction import ReduceEvents
 from columnflow.tasks.production import ProduceColumns
 from columnflow.tasks.histograms import CreateHistograms
 from columnflow.tasks.ml import MLTraining, PrepareMLEvents, MLEvaluation
+from columnflow.columnar_util import TaskArrayFunction
 
 logger = law.logger.get_logger(__name__)
 
 
 @memoize
 def patch_mltraining():
-    logger.info("Patching MLTraining to use NestedSiblingFileCollection and remove unnecessary requires...")
     from columnflow.tasks.framework.remote import RemoteWorkflow
 
     # patch the MLTraining output collection
@@ -42,6 +42,7 @@ def patch_mltraining():
 
     MLTraining.requires = requires
     MLTraining.workflow_requires = workflow_requires
+    logger.info("patched MLTraining to use NestedSiblingFileCollection and remove unnecessary requires")
 
 
 @memoize
@@ -78,13 +79,37 @@ def patch_htcondor_workflow_naf_resources():
 
 
 @memoize
+def patch_csp_versioning():
+    """
+    Patches the TaskArrayFunction to add the version to the string representation of the task.
+    """
+    def TaskArrayFunction_str(self):
+        version_str = f"V{self.version}" if hasattr(self, "version") else ""
+        return f"{self.cls_name}{version_str}"
+
+    TaskArrayFunction.__str__ = TaskArrayFunction_str
+    logger.info(
+        "patched TaskArrayFunction.__str__ to include the CSP version attribute "
+        "(NOTE that this currently does not work for the "
+        "MLTrainingMixin tasks (e.g. MLPreTraining and MLTraining))",
+    )
+
+
+@memoize
+def patch_default_version():
+    # setting the default version from the law.cfg
+    default_version = law.config.get_expanded("analysis", "default_version", None)
+    AnalysisTask.version = luigi.Parameter(
+        default=default_version,
+        description="mandatory version that is encoded into output paths",
+    )
+    logger.info(f"using default version '{default_version}' for all AnalysisTasks")
+
+
+@memoize
 def patch_all():
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()
-
-    # setting the default version from the law.cfg
-    AnalysisTask.version = luigi.Parameter(
-        default=law.config.get_expanded("analysis", "default_version", None),
-        description="mandatory version that is encoded into output paths",
-    )
+    patch_csp_versioning()
+    patch_default_version()

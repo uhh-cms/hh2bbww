@@ -13,7 +13,8 @@ from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
-from hbw.selection.categories import catid_sr
+from hbw.categorization.categories import catid_sr, catid_mll_low
+from hbw.util import IF_SL, IF_DL
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -25,7 +26,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={catid_sr, increment_stats, "process_id", "fold_indices"},
+    uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
     # produces={"fold_indices"},
 )
 def ml_preparation(
@@ -40,9 +41,10 @@ def ml_preparation(
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
     if self.task.task_family == "cf.PrepareMLEvents":
-        # pass category mask to not use the full phase space in training
-        events, mask = self[catid_sr](events, **kwargs)
-        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining")
+        # pass category mask to only use events that belong to the main "signal region"
+        sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
+        events, mask = self[sr_categorizer](events, **kwargs)
+        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
         events = events[mask]
 
     weight_map = {
@@ -51,7 +53,7 @@ def ml_preparation(
 
     if self.task.dataset_inst.is_mc:
         weight = events["normalization_weight"]
-        stats["sum_weights"] += ak.sum(weight, axis=0)
+        stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
         weight_map["sum_abs_weights"] = (weight, weight > 0)
         weight_map["sum_pos_weights"] = np.abs(weight)
@@ -78,7 +80,6 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
-
     return events
 
 

@@ -31,10 +31,10 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
     )
 
     ml_process_weights = {
-        "hh_ggf_kl0_kt1_hbb_hvv2l2nu": 1,
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu": 1,
-        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu": 1,
-        "hh_ggf_kl5_kt1_hbb_hvv2l2nu": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl0_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
         "sig": 1,
         "tt": 2,
         "st": 2,
@@ -160,18 +160,26 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
 dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt", "st", "dy"],
 })
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
 })
 dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
 })
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "tt", "st", "dy"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt", "st", "dy"],
+})
+dl_22_test = DenseClassifierDL.derive("dl_22_test", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt"],
+})
+dl_22_full = DenseClassifierDL.derive("dl_22_full", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv", "hh_vbf_hbb_hvv", "tt", "st", "dy", "h"],
 })
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
     "training_configs": lambda self, requested_configs: ["c17"],
@@ -187,5 +195,5 @@ dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
 dl_22.derive("dl_22_v1")
 dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
-    "processes": ["hh_ggf_kl1_kt1_hbb_hvv2l2nu", "st_tchannel_t"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
 })

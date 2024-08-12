@@ -213,6 +213,7 @@ def sl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
+    version=1,
 )
 def sl1(
     self: Selector,

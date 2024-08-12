@@ -10,14 +10,81 @@ import luigi
 from columnflow.tasks.framework.mixins import (
     ProducersMixin, MLModelsMixin,
 )
+from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import ReducedEventsUser
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import get_ak_routes, update_ak_array
 
 from hbw.tasks.base import HBWTask, ColumnsBaseTask
+from hbw.util import round_sig
 
 ak = maybe_import("awkward")
+
+
+class DumpAnalysisSummary(
+    HBWTask,
+    ConfigTask,
+):
+
+    keys_of_interest = law.CSVParameter(
+        default=tuple(),
+        description="Keys of interest to be printed in the summary",
+    )
+
+    @property
+    def keys_repr(self):
+        return "_".join(sorted(self.keys_of_interest))
+
+    def requires(self):
+        return {}
+
+    def output(self):
+        output = {
+            "dataset_summary": self.target(f"dataset_summary_{self.keys_repr}.txt"),
+        }
+        return output
+
+    def write_dataset_summary(self, outp):
+        import csv
+        outp.touch()
+        with open(outp.path, "w") as f:
+            writer = csv.writer(f)
+            keys_of_interest = self.keys_of_interest or ["das_keys", "process", "xsec"]
+            header_map = {
+                "name": "Dataset name",
+                "n_events": "Number of events",
+                "n_files": "Number of files",
+                "das_keys": "DAS keys",
+                "rucio": "Rucio DAS keys",
+                "process": "Process name",
+                "xsec": "Cross section [pb]",
+                "xsec_unc": "Cross section +- unc [pb]",
+                "xsec_full": "Cross section +- unc [pb]",
+            }
+            writer.writerow([header_map[key] for key in keys_of_interest])
+            for dataset in self.config_inst.datasets:
+                xsec = dataset.processes.get_first().xsecs.get(13.6, None)
+                try:
+                    dataset_summary = {
+                        "name": dataset.name,
+                        "n_events": dataset.n_events,
+                        "n_files": dataset.n_files,
+                        "das_keys": dataset.get_info("nominal").keys[0],
+                        "rucio": "cms:" + dataset.get_info("nominal").keys[0],
+                        "process": dataset.processes.get_first().name,
+                        "xsec": round_sig(xsec.nominal, 4) if xsec else "0",
+                        "xsec_unc": xsec.str("pdg", combine_uncs="all") if xsec else "0",
+                        # "xsec_full": xsec.str("pdg") if xsec else "",
+                    }
+                except Exception as e:
+                    from hbw.util import debugger
+                    debugger("Failed to get dataset summary", e)
+                writer.writerow([dataset_summary[key] for key in keys_of_interest])
+
+    def run(self):
+        output = self.output()
+        self.write_dataset_summary(output["dataset_summary"])
 
 
 class CheckConfig(
@@ -37,9 +104,9 @@ class CheckConfig(
 
     version = None
 
-    debugger = luigi.BoolParameter(
-        default=True,
-        description="Whether to start a ipython debugger session or not; default: True",
+    skip_debugger = luigi.BoolParameter(
+        default=False,
+        description="Whether to start a ipython debugger session or not; default: False",
     )
 
     settings = SettingsParameter(default={})
@@ -48,7 +115,10 @@ class CheckConfig(
         return {}
 
     def output(self):
-        return {"always_incomplete_dummy": self.target("dummy.txt")}
+        output = {
+            "always_incomplete_dummy": self.target("dummy.txt"),
+        }
+        return output
 
     def run(self):
         config = self.config_inst
@@ -69,7 +139,8 @@ class CheckConfig(
             f"{'=' * 10} Leaf Categories ({len(leaf_cats)}):\n{[cat.name for cat in leaf_cats]} \n\n"
             f"{'=' * 10} Variables ({len(variables)}):\n{variables.names()} \n\n",
         )
-        if self.debugger:
+
+        if not self.skip_debugger:
             self.publish_message("starting debugger ....")
             from hbw.util import debugger
             debugger()

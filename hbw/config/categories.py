@@ -3,7 +3,7 @@
 """
 Definition of categories.
 
-Categorizer modules (used to determine category masks) are defined in hbw.selection.categories
+Categorizer modules (used to determine category masks) are defined in hbw.categorization.categories
 
 Ids for combinations of categories are built as the sum of category ids.
 To avoid reusing category ids, each category block (e.g. leptons, jets, ...) uses ids of a different
@@ -36,6 +36,7 @@ logger = law.logger.get_logger(__name__)
 
 @call_once_on_config()
 def add_gen_categories(config: od.Config) -> None:
+    # NOTE: this should instead be covered by process ids if necessary
     gen_0lep = config.add_category(  # noqa
         name="gen_0lep",
         id=100000,
@@ -100,52 +101,89 @@ def add_abcd_categories(config: od.Config) -> None:
 
 
 @call_once_on_config()
+def add_mll_categories(config: od.Config) -> None:
+    """
+    Adds categories based on mll.
+    NOTE: this should never be used in combination with the *add_abcd_categories* function
+    """
+    config.add_category(
+        name="sr",
+        id=1,
+        selection="catid_mll_low",
+    )
+    dy_cr = config.add_category(
+        name="dy_cr",
+        id=2,
+        selection="catid_dy_cr",
+    )
+    dy_cr.add_category(
+        name="mll_z",
+        id=3,
+        selection="catid_mll_z",
+    )
+    dy_cr.add_category(
+        name="mll_high",
+        id=4,
+        selection="catid_mll_high",
+    )
+
+
+@call_once_on_config()
 def add_lepton_categories(config: od.Config) -> None:
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
         "dl": ("2e", "2mu", "emu"),
     }[config.x.lepton_tag]
 
-    config.add_category(
-        name="incl",
-        id=0,
-        selection="catid_selection_incl",
-        label="Inclusive",
-    )
-
     cat_1e = config.add_category(  # noqa
         name="1e",
         id=10,
-        selection="catid_selection_1e",
+        selection="catid_1e",
         label="1 Electron",
     )
 
     cat_1mu = config.add_category(  # noqa
         name="1mu",
         id=20,
-        selection="catid_selection_1mu",
+        selection="catid_1mu",
         label="1 Muon",
     )
     # dl categories
     cat_2e = config.add_category(  # noqa
         name="2e",
         id=30,
-        selection="catid_selection_2e",
+        selection="catid_2e",
         label="2 Electron",
     )
 
     cat_2mu = config.add_category(  # noqa
         name="2mu",
         id=40,
-        selection="catid_selection_2mu",
+        selection="catid_2mu",
         label="2 Muon",
     )
 
     cat_emu = config.add_category(  # noqa
         name="emu",
         id=50,
-        selection="catid_selection_emu",
+        selection="catid_emu",
         label="1 Electron 1 Muon",
+    )
+
+
+@call_once_on_config()
+def add_njet_categories(config: od.Config) -> None:
+    config.add_category(
+        name="njet1",
+        id=100001,
+        selection="catid_njet1",
+        label=r"N_{jet} >= 1",
+    )
+    config.add_category(
+        name="njet3",
+        id=100003,
+        selection="catid_njet3",
+        label=r"N_{jet} >= 3",
     )
 
 
@@ -184,11 +222,24 @@ def add_categories_selection(config: od.Config) -> None:
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
     """
 
-    # adds categories based on the existence of gen particles
-    add_gen_categories(config)
+    # inclusive category separate from all other categories (important for cross checks)
+    config.add_category(
+        name="incl",
+        id=0,
+        selection="catid_incl",
+        label="Inclusive",
+    )
 
-    # adds categories for ABCD background estimation
-    add_abcd_categories(config)
+    # adds categories based on the existence of gen particles
+    # NOTE: commented out because we did not use it anyways
+    # add_gen_categories(config)
+
+    if config.x.lepton_tag == "sl":
+        # adds categories for ABCD background estimation
+        add_abcd_categories(config)
+    elif config.x.lepton_tag == "dl":
+        # adds categories based on mll
+        add_mll_categories(config)
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -219,24 +270,6 @@ def add_categories_production(config: od.Config) -> None:
         logger.warning("We should not call *add_categories_production* when also building ML categories")
         # when ML categories already exist, don't do anything
         return
-    #
-    # switch existing categories to different production module
-    #
-
-    cat_1e = config.get_category("1e")
-    cat_1e.selection = "catid_1e"
-
-    cat_1mu = config.get_category("1mu")
-    cat_1mu.selection = "catid_1mu"
-
-    cat_2e = config.get_category("2e")
-    cat_2e.selection = "catid_2e"
-
-    cat_2mu = config.get_category("2mu")
-    cat_2mu.selection = "catid_2mu"
-
-    cat_emu = config.get_category("emu")
-    cat_emu.selection = "catid_emu"
 
     add_jet_categories(config)
 
@@ -245,7 +278,8 @@ def add_categories_production(config: od.Config) -> None:
     #
 
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "mll": [config.get_category("sr")],  # NOTE: we could also build the product of all mll categories
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
@@ -315,7 +349,8 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        "lepid": [config.get_category("sr"), config.get_category("fake")],
+        "mll": [config.get_category("sr"), config.get_category("dy_cr")],
+        # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],

@@ -384,6 +384,38 @@ def IF_RUN_3(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | s
 
 
 @deferred_column
+def IF_SL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_sl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "sl" else None
+
+
+@deferred_column
+def IF_DL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_dl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
+def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    This helper allows adding the correct btag column based on the b_tagger configuration.
+    Requires the b_tagger aux to be set in the config. Example usecase:
+
+    .. code-block:: python
+
+        @producer(uses={BTAG_COLUMN("Jet")})
+        def my_producer(self, events):
+            btag_score = events.Jet[self.config_inst.x.btag_column]
+            ...
+            return events
+    """
+    btag_column = func.config_inst.x("btag_column", None)
+    if not btag_column:
+        raise Exception("the btag_column has not been configured")
+    return f"{self.get()}.{btag_column}"
+
+
+@deferred_column
 def IF_DATASET_HAS_LHE_WEIGHTS(
     self: ArrayFunction.DeferredColumn,
     func: ArrayFunction,

@@ -289,6 +289,14 @@ def add_variables(config: od.Config) -> None:
     #
     # Simple event properties
     #
+
+    config.add_variable(
+        name="mll",
+        binning=(40, 0., 200.),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+    )
+
     config.add_variable(
         name="n_jet",
         expression=lambda events: ak.num(events.Jet.pt, axis=1),

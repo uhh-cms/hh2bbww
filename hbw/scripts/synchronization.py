@@ -104,7 +104,7 @@ def sync_exercise():
         config="c22pre",
         calibrators="",
         selector="sl1",
-        dataset="hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
+        dataset="hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
         branch=3,
         walltime="1h",
         remove_output="1,a,y",

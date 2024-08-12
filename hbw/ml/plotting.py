@@ -31,8 +31,8 @@ def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights:
     The first sub-directory is used for the sorting of variables.
     :param normalize_weights: whether to normalize the sum of weights per ranking to 1.
     """
-    fig, ax = plt.subplots(figsize=(8, 10))
     plt.style.use("seaborn-v0_8")
+    fig, ax = plt.subplots(figsize=(8, 10))
 
     num_dicts = len(dict_of_rankings.keys())
     num_labels = len(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())

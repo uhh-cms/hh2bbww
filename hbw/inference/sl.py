@@ -19,10 +19,10 @@ ml_model_name = "dense_default"
 
 # All processes to be included in the final datacard
 processes = [
-    "hh_ggf_kl0_kt1_hbb_hvvqqlnu",
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu",
-    "hh_ggf_kl5_kt1_hbb_hvvqqlnu",
+    "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
@@ -36,15 +36,15 @@ processes = [
 
 # All config categories to be included in the final datacard
 config_categories = [
-    "sr__1e__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1e__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1e__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+    "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1e__ml_tt",
     "sr__1e__ml_st",
     "sr__1e__ml_v_lep",
-    "sr__1mu__ml_hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu",
+    "sr__1mu__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1mu__ml_tt",
     "sr__1mu__ml_st",
     "sr__1mu__ml_v_lep",
@@ -89,7 +89,7 @@ rate_systematics = [
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_hh_ggf_kl1_kt1_hbb_hvv2l2nu",
+    # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "murf_envelope_tt",
     "murf_envelope_st",
     "murf_envelope_dy",
@@ -147,11 +147,11 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 cls_dict_test = {
     "ml_model_name": "dense_test",
     "processes": [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         "st_tchannel",
     ],
     "config_categories": [
-        "1e__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+        "1e__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         "1e__ml_st",
     ],
     "systematics": [
@@ -172,7 +172,7 @@ jet1_pt = default.derive("jet1_pt", cls_dict={
 #
 
 processes_22 = [
-    "hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "tt",
     # "st_schannel",
     "st_tchannel", "st_twchannel",
@@ -182,10 +182,10 @@ processes_22 = [
 
 config_categories_22 = [
     # Signal regions
-    "sr__1e__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1e__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1mu__1b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
-    "sr__1mu__2b__ml_hh_ggf_kl1_kt1_hbb_hvvqqlnu",
+    "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     # Background regions
     "sr__1e__ml_tt",
     "sr__1e__ml_st",

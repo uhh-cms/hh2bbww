@@ -21,459 +21,245 @@ from columnflow.config_util import get_root_processes_from_campaign
 logger = law.logger.get_logger(__name__)
 
 
-#
-# Collection of process names and their corresponding datasets for each year
-#
+def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
+    if config.campaign.x.run == 2:
+        data_streams = ["mu", "e"]
+    elif config.campaign.x.run == 3:
+        data_streams = ["mu", "egamma", "muoneg"]
 
+    data_eras = {
+        "2017": "cdef",
+        "2022preEE": "cd",
+        "2022postEE": "efg",
+    }[config.x.cpn_tag]
 
-data_mu = {
-    "2017": [
-        # "data_mu_b",  # missing triggers in DL
-        "data_mu_c",
-        "data_mu_d",
-        "data_mu_e",
-        "data_mu_f",
-    ],
-    "2022preEE": [
-        "data_mu_c",
-        "data_mu_d",
-    ],
-    "2022postEE": [
-        "data_mu_e",
-        "data_mu_f",
-        "data_mu_g",
-    ],
-}
+    data_datasets = {
+        f"data_{stream}": [
+            f"data_{stream}_{era}"
+            for era in data_eras
+        ]
+        for stream in data_streams
+    }
 
-data_e = {
-    "2017": [
-        # "data_e_b",  # missing triggers in DL
-        "data_e_c",
-        "data_e_d",
-        "data_e_e",
-        "data_e_f",
-    ],
-}
+    dataset_names = DotDict.wrap({
+        **data_datasets,
+        "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
+        "st": [
+            # "st_schannel_lep_4f_amcatnlo",
+            # "st_schannel_had_4f_amcatnlo",
+            "st_tchannel_t_4f_powheg",
+            "st_tchannel_tbar_4f_powheg",
+            *config.x.if_era(run=2, values=[
+                "st_twchannel_t_powheg",
+                "st_twchannel_tbar_powheg",
+            ]),
+            *config.x.if_era(run=3, values=[
+                "st_twchannel_t_sl_powheg",
+                "st_twchannel_tbar_sl_powheg",
+                "st_twchannel_t_dl_powheg",
+                "st_twchannel_tbar_dl_powheg",
+                "st_twchannel_t_fh_powheg",
+                "st_twchannel_tbar_fh_powheg",
+            ]),
+        ],
+        "dy": [
+            *config.x.if_era(run=2, values=[  # TODO: update to amcatnlo aswell
+                "dy_m50toinf_ht70to100_madgraph",
+                "dy_m50toinf_ht100to200_madgraph",
+                "dy_m50toinf_ht200to400_madgraph",
+                "dy_m50toinf_ht400to600_madgraph",
+                "dy_m50toinf_ht600to800_madgraph",
+                "dy_m50toinf_ht800to1200_madgraph",
+                "dy_m50toinf_ht1200to2500_madgraph",
+                "dy_m50toinf_ht2500toinf_madgraph",
+            ]),
+            *config.x.if_era(run=3, values=[
+                "dy_m50toinf_amcatnlo",
+                "dy_m10to50_amcatnlo",
+                "dy_m4to10_amcatnlo",
+                "dy_m50toinf_0j_amcatnlo",
+                "dy_m50toinf_1j_amcatnlo",
+                "dy_m50toinf_2j_amcatnlo",
+            ]),
+        ],
+        "w_lnu": [
+            *config.x.if_era(run=2, values=[  # TODO: update to amcatnlo aswell
+                "w_lnu_ht70to100_madgraph",
+                "w_lnu_ht100to200_madgraph",
+                "w_lnu_ht200to400_madgraph",
+                "w_lnu_ht400to600_madgraph",
+                "w_lnu_ht600to800_madgraph",
+                "w_lnu_ht800to1200_madgraph",
+                "w_lnu_ht1200to2500_madgraph",
+                "w_lnu_ht2500toinf_madgraph",
+            ]),
+            *config.x.if_era(run=3, values=[
+                "w_lnu_amcatnlo",
+            ]),
+        ],
+        "vv": [
+            *config.x.if_era(run=3, values=[
+                "ww_pythia",
+                "wz_pythia",
+                "zz_pythia",
+            ]),
+        ],
+        "ttv": [],  # empty for now
+        "h": [
+            *config.x.if_era(run=3, values=[
+                # TODO: remove whatever is not really necessary
+                "h_ggf_hbb_powheg",
+                "h_ggf_hww2l2nu_powheg",
+                "h_vbf_hbb_powheg",
+                "h_vbf_hww2l2nu_powheg",
+                "zh_zqq_hbb_powheg",
+                "zh_zll_hbb_powheg",
+                "zh_zll_hcc_powheg",
+                "zh_hww2l2nu_powheg",
+                "zh_gg_zll_hbb_powheg",
+                "zh_gg_zqq_hbb_powheg",
+                "zh_gg_znunu_hbb_powheg",
+                "zh_gg_zll_hcc_powheg",
+                "wph_wqq_hbb_powheg",
+                "wph_wlnu_hbb_powheg",
+                "wph_wqq_hcc_powheg",
+                "wph_wlnu_hcc_powheg",
+                "wph_hzg_zll_powheg",
+                "wmh_wqq_hbb_powheg",
+                "wmh_wlnu_hbb_powheg",
+                "wmh_wqq_hcc_powheg",
+                "wmh_wlnu_hcc_powheg",
+                "wmh_hzg_zll_powheg",
+                "tth_hbb_powheg",
+                "tth_hnonbb_powheg",  # overlap with other samples, so be careful
+                "ttzh_madgraph",
+                "ttwh_madgraph",
+            ]),
+        ],
+        "hh_ggf_hbb_hvv": [
+            # SL
+            "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
+            "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
+            "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
+            "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
+            # DL
+            "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
+            "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
+            "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
+            "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
+            *config.x.if_era(run=3, values=[
+                "hh_ggf_hbb_hvv_kl0_kt1_powheg",
+                "hh_ggf_hbb_hvv_kl1_kt1_powheg",
+                "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
+                "hh_ggf_hbb_hvv_kl5_kt1_powheg",
+            ]),
+        ],
+        "hh_vbf_hbb_hvv": [
+            *config.x.if_era(run=2, values=[
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1_madgraph",
+            ]),
+            *config.x.if_era(run=3, values=[
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kv1p74_k2v1p37_kl14p4_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm0p012_k2v0p03_kl10p2_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm0p758_k2v1p44_klm19p3_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39_madgraph",
+                "hh_vbf_hbb_hvvqqlnu_kvm2p12_k2v3p87_klm5p96_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39_madgraph",
+                "hh_vbf_hbb_hvv2l2nu_kvm2p12_k2v3p87_klm5p96_madgraph",
+                "hh_vbf_hbb_hvv_kv1_k2v1_kl1_madgraph",
+                "hh_vbf_hbb_hvv_kv1_k2v0_kl1_madgraph",
+                "hh_vbf_hbb_hvv_kv1p74_k2v1p37_kl14p4_madgraph",
+                "hh_vbf_hbb_hvv_kvm0p012_k2v0p03_kl10p2_madgraph",
+                "hh_vbf_hbb_hvv_kvm0p758_k2v1p44_klm19p3_madgraph",
+                "hh_vbf_hbb_hvv_kvm0p962_k2v0p959_klm1p43_madgraph",
+                "hh_vbf_hbb_hvv_kvm1p21_k2v1p94_klm0p94_madgraph",
+                "hh_vbf_hbb_hvv_kvm1p6_k2v2p72_klm1p36_madgraph",
+                "hh_vbf_hbb_hvv_kvm1p83_k2v3p57_klm3p39_madgraph",
+                "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
+            ]),
+        ],
+        "graviton_hh_ggf_bbww": [
+            *config.x.if_era(run=2, values=[
+                f"graviton_hh_ggf_bbww_m{mass}_madgraph"
+                for mass in [
+                    250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+                    550, 600, 650, 700, 750, 800, 850, 900, 1000,
+                    1250, 1500, 1750, 2000, 2500, 3000,
+                ]
+            ]),
+        ],
+        "radion_hh_ggf_bbww": [
+            *config.x.if_era(run=2, values=[
+                f"radion_hh_ggf_bbww_m{mass}_madgraph"
+                for mass in [
+                    250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+                    550, 600, 650, 700, 750, 800, 850, 900, 1000,
+                    1250, 1500, 1750, 2000, 2500, 3000,
+                ]
+            ]),
+        ],
+        "qcd_mu": [
+            # "qcd_mu_pt15to20_pythia",
+            "qcd_mu_pt20to30_pythia",
+            "qcd_mu_pt30to50_pythia",
+            "qcd_mu_pt50to80_pythia",
+            "qcd_mu_pt80to120_pythia",
+            "qcd_mu_pt120to170_pythia",
+            "qcd_mu_pt170to300_pythia",
+            "qcd_mu_pt300to470_pythia",
+            "qcd_mu_pt470to600_pythia",
+            "qcd_mu_pt600to800_pythia",
+            "qcd_mu_pt800to1000_pythia",
+            "qcd_mu_pt1000toinf_pythia",
+        ],
+        "qcd_em": [
+            # "qcd_em_pt15to20_pythia",
+            # "qcd_em_pt20to30_pythia",
+            "qcd_em_pt30to50_pythia",
+            "qcd_em_pt50to80_pythia",
+            "qcd_em_pt80to120_pythia",
+            "qcd_em_pt120to170_pythia",
+            "qcd_em_pt170to300_pythia",
+            "qcd_em_pt300toinf_pythia",
+        ],
+        "qcd_bctoe": [
+            *config.x.if_era(run=2, values=[
+                # "qcd_bctoe_pt15to20_pythia",
+                "qcd_bctoe_pt20to30_pythia",
+                "qcd_bctoe_pt30to80_pythia",
+                "qcd_bctoe_pt80to170_pythia",
+                "qcd_bctoe_pt170to250_pythia",
+                "qcd_bctoe_pt250toinf_pythia",
+            ]),
+        ],
 
-data_egamma = {
-    "2022preEE": [
-        "data_egamma_c",
-        "data_egamma_d",
-    ],
-    "2022postEE": [
-        "data_egamma_e",
-        "data_egamma_f",
-        "data_egamma_g",
-    ],
-}
-
-# commented out because of empty datasets
-data_muoneg = {
-    "2022preEE": [
-        "data_muoneg_c",
-        "data_muoneg_d",
-    ],
-    "2022postEE": [
-        "data_muoneg_e",
-        "data_muoneg_f",
-        "data_muoneg_g",
-    ],
-}
-
-tt = {
-    "2017": [
-        "tt_sl_powheg",
-        "tt_dl_powheg",
-        "tt_fh_powheg",
-    ],
-    "2022preEE": [
-        "tt_sl_powheg",
-        "tt_dl_powheg",
-        "tt_fh_powheg",
-    ],
-    "2022postEE": [
-        "tt_sl_powheg",
-        "tt_dl_powheg",
-        "tt_fh_powheg",
-    ],
-}
-
-st = {
-    "2017": [
-        "st_tchannel_t_4f_powheg",
-        "st_tchannel_tbar_4f_powheg",
-        "st_twchannel_t_powheg",
-        "st_twchannel_tbar_powheg",
-        "st_schannel_lep_4f_amcatnlo",
-        "st_schannel_had_4f_amcatnlo",
-    ],
-    "2022preEE": [
-        "st_tchannel_t_4f_powheg",
-        "st_tchannel_tbar_4f_powheg",
-        "st_twchannel_t_sl_powheg",
-        "st_twchannel_tbar_sl_powheg",
-        "st_twchannel_t_dl_powheg",
-        "st_twchannel_tbar_dl_powheg",
-        "st_twchannel_t_fh_powheg",
-        "st_twchannel_tbar_fh_powheg",
-        # "st_schannel_lep_4f_amcatnlo",
-        # "st_schannel_had_4f_amcatnlo",
-    ],
-    "2022postEE": [
-        "st_tchannel_t_4f_powheg",
-        "st_tchannel_tbar_4f_powheg",
-        "st_twchannel_t_sl_powheg",
-        "st_twchannel_tbar_sl_powheg",
-        "st_twchannel_t_dl_powheg",
-        "st_twchannel_tbar_dl_powheg",
-        "st_twchannel_t_fh_powheg",
-        "st_twchannel_tbar_fh_powheg",
-        # "st_schannel_lep_4f_amcatnlo",
-        # "st_schannel_had_4f_amcatnlo",
-    ],
-}
-
-w_lnu = {
-    "2017": [
-        "w_lnu_ht70to100_madgraph",
-        "w_lnu_ht100to200_madgraph",
-        "w_lnu_ht200to400_madgraph",
-        "w_lnu_ht400to600_madgraph",
-        "w_lnu_ht600to800_madgraph",
-        "w_lnu_ht800to1200_madgraph",
-        "w_lnu_ht1200to2500_madgraph",
-        "w_lnu_ht2500toinf_madgraph",
-    ],
-    "2022postEE": [
-        "w_lnu_amcatnlo",
-    ],
-    "2022preEE": [
-        "w_lnu_amcatnlo",
-    ],
-}
-
-dy = {  # TODO: stitching
-    "2017": [
-        "dy_m50toinf_ht70to100_madgraph",
-        "dy_m50toinf_ht100to200_madgraph",
-        "dy_m50toinf_ht200to400_madgraph",
-        "dy_m50toinf_ht400to600_madgraph",
-        "dy_m50toinf_ht600to800_madgraph",
-        "dy_m50toinf_ht800to1200_madgraph",
-        "dy_m50toinf_ht1200to2500_madgraph",
-        "dy_m50toinf_ht2500toinf_madgraph",
-    ],
-    "2022postEE": [
-        "dy_m50toinf_amcatnlo",
-        "dy_m10to50_amcatnlo",
-        "dy_m4to10_amcatnlo",
-        "dy_m50toinf_0j_amcatnlo",
-        "dy_m50toinf_1j_amcatnlo",
-        "dy_m50toinf_2j_amcatnlo",
-    ],
-    "2022preEE": [
-        "dy_m50toinf_amcatnlo",
-        "dy_m10to50_amcatnlo",
-        "dy_m4to10_amcatnlo",
-        "dy_m50toinf_0j_amcatnlo",
-        "dy_m50toinf_1j_amcatnlo",
-        "dy_m50toinf_2j_amcatnlo",
-    ],
-}
-
-qcd_mu = {
-    "2017": [
-        "qcd_mu_pt15to20_pythia",
-        "qcd_mu_pt20to30_pythia",
-        "qcd_mu_pt30to50_pythia",
-        "qcd_mu_pt50to80_pythia",
-        "qcd_mu_pt80to120_pythia",
-        "qcd_mu_pt120to170_pythia",
-        "qcd_mu_pt170to300_pythia",
-        "qcd_mu_pt300to470_pythia",
-        "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",
-        "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000toinf_pythia",
-    ],
-    "2022postEE": [
-        # "qcd_mu_pt15to20_pythia",  # empty after selection
-        "qcd_mu_pt20to30_pythia",
-        "qcd_mu_pt30to50_pythia",
-        "qcd_mu_pt50to80_pythia",
-        "qcd_mu_pt80to120_pythia",
-        "qcd_mu_pt120to170_pythia",
-        "qcd_mu_pt170to300_pythia",
-        "qcd_mu_pt300to470_pythia",
-        "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",
-        "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000toinf_pythia",
-    ],
-    "2022preEE": [
-        "qcd_mu_pt15to20_pythia",
-        # "qcd_mu_pt20to30_pythia",  # file stuck
-        "qcd_mu_pt30to50_pythia",
-        "qcd_mu_pt50to80_pythia",
-        "qcd_mu_pt80to120_pythia",
-        "qcd_mu_pt120to170_pythia",
-        "qcd_mu_pt170to300_pythia",
-        "qcd_mu_pt300to470_pythia",
-        "qcd_mu_pt470to600_pythia",
-        "qcd_mu_pt600to800_pythia",
-        "qcd_mu_pt800to1000_pythia",
-        "qcd_mu_pt1000toinf_pythia",
-    ],
-}
-
-qcd_em = {
-    "2017": [
-        "qcd_em_pt15to20_pythia",
-        "qcd_em_pt20to30_pythia",
-        "qcd_em_pt30to50_pythia",
-        "qcd_em_pt50to80_pythia",
-        "qcd_em_pt80to120_pythia",
-        "qcd_em_pt120to170_pythia",
-        "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toinf_pythia",
-    ],
-    "2022postEE": [
-        # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
-        "qcd_em_pt30to50_pythia",  # empty after selection
-        "qcd_em_pt50to80_pythia",
-        "qcd_em_pt80to120_pythia",
-        "qcd_em_pt120to170_pythia",
-        "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toinf_pythia",
-    ],
-    "2022preEE": [
-        # "qcd_em_pt10to30_pythia",  # missing process + probably empty anyways
-        "qcd_em_pt30to50_pythia",
-        "qcd_em_pt50to80_pythia",
-        "qcd_em_pt80to120_pythia",
-        "qcd_em_pt120to170_pythia",
-        "qcd_em_pt170to300_pythia",
-        "qcd_em_pt300toinf_pythia",
-    ],
-}
-
-qcd_bctoe = {
-    "2017": [
-        "qcd_bctoe_pt15to20_pythia",
-        "qcd_bctoe_pt20to30_pythia",
-        "qcd_bctoe_pt30to80_pythia",
-        "qcd_bctoe_pt80to170_pythia",
-        "qcd_bctoe_pt170to250_pythia",
-        "qcd_bctoe_pt250toinf_pythia",
-    ],
-    "2022postEE": [
-        # empty for now
-    ],
-}
-
-h = {
-    "2017": [
-        # empty for now
-    ],
-    "2022postEE": [
-        "h_ggf_hbb_powheg",
-        "h_ggf_hww2l2nu_powheg",
-        "h_vbf_hbb_powheg",
-        "h_vbf_hww2l2nu_powheg",
-        "zh_zqq_hbb_powheg",
-        "zh_zll_hbb_powheg",
-        "zh_zll_hcc_powheg",
-        "zh_hww2l2nu_powheg",
-        "zh_gg_zll_hbb_powheg",
-        "zh_gg_zqq_hbb_powheg",
-        "zh_gg_znunu_hbb_powheg",
-        "zh_gg_zll_hcc_powheg",
-        "wph_wqq_hbb_powheg",
-        "wph_wlnu_hbb_powheg",
-        "wph_wqq_hcc_powheg",
-        "wph_wlnu_hcc_powheg",
-        "wph_hzg_zll_powheg",
-        "wmh_wqq_hbb_powheg",
-        "wmh_wlnu_hbb_powheg",
-        "wmh_wqq_hcc_powheg",
-        "wmh_wlnu_hcc_powheg",
-        "wmh_hzg_zll_powheg",
-        "tth_hbb_powheg",
-        "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-        "ttzh_madgraph",
-        "ttwh_madgraph",
-    ],
-    "2022preEE": [
-        "h_ggf_hbb_powheg",
-        "h_ggf_hww2l2nu_powheg",
-        "h_vbf_hbb_powheg",
-        "h_vbf_hww2l2nu_powheg",
-        "zh_zqq_hbb_powheg",
-        "zh_zll_hbb_powheg",
-        "zh_zll_hcc_powheg",
-        "zh_hww2l2nu_powheg",
-        "zh_gg_zll_hbb_powheg",
-        "zh_gg_zqq_hbb_powheg",
-        "zh_gg_znunu_hbb_powheg",
-        "zh_gg_zll_hcc_powheg",
-        "wph_wqq_hbb_powheg",
-        "wph_wlnu_hbb_powheg",
-        "wph_wqq_hcc_powheg",
-        "wph_wlnu_hcc_powheg",
-        "wph_hzg_zll_powheg",
-        "wmh_wqq_hbb_powheg",
-        "wmh_wlnu_hbb_powheg",
-        "wmh_wqq_hcc_powheg",
-        "wmh_wlnu_hcc_powheg",
-        "wmh_hzg_zll_powheg",
-        "tth_hbb_powheg",
-        "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-        "ttzh_madgraph",
-        "ttwh_madgraph",
-    ],
-}
-
-# cross sections still missing
-vv = {
-    "2017": [
-        # empty for now
-    ],
-    "2022preEE": [
-        "ww_pythia",
-        "wz_pythia",
-        "zz_pythia",
-    ],
-    "2022postEE": [
-        "ww_pythia",
-        "wz_pythia",
-        "zz_pythia",
-    ],
-}
-
-ttv = {
-    "2017": [
-        # empty for now
-    ],
-    "2022postEE": [
-        # empty for now
-    ],
-}
-
-hh_ggf_hbb_hvv = {
-    "2017": [
-        # SL
-        "hh_ggf_kl0_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvvqqlnu_powheg",
-        # DL
-        "hh_ggf_kl0_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl2p45_kt1_hbb_hvv2l2nu_powheg",
-        "hh_ggf_kl5_kt1_hbb_hvv2l2nu_powheg",
-    ],
-    "2022preEE": [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",  # SL
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",  # DL
-        "hh_ggf_kl1_kt1_hbb_hvv_powheg",  # incl
-
-    ],
-    "2022postEE": [
-        "hh_ggf_kl1_kt1_hbb_hvvqqlnu_powheg",  # SL
-        "hh_ggf_kl1_kt1_hbb_hvv2l2nu_powheg",  # DL
-        "hh_ggf_kl1_kt1_hbb_hvv_powheg",  # incl
-    ],
-}
-
-hh_vbf_hbb_hvvqqlnu = {
-    "2017": [
-        "hh_vbf_kv1_k2v1_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v1_kl0_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v1_kl2_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v0_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1_k2v2_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
-        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvvqqlnu_madgraph",
-    ],
-    "2022postEE": [
-        # empty for now
-    ],
-}
-
-hh_vbf_hbb_hvv2l2nu = {
-    "2017": [
-        "hh_vbf_kv1_k2v1_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v1_kl0_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v1_kl2_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v0_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1_k2v2_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv0p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
-        "hh_vbf_kv1p5_k2v1_kl1_hbb_hvv2l2nu_madgraph",
-    ],
-    "2022postEE": [
-        # empty for now
-    ],
-}
-
-graviton_hh_ggf_bbww = {
-    "2017": [f"graviton_hh_ggf_bbww_m{mass}_madgraph" for mass in [
-        250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
-        550, 600, 650, 700, 750, 800, 850, 900, 1000,
-        1250, 1500, 1750, 2000, 2500, 3000,
-    ]],
-    "2022postEE": [
-        # empty for now
-    ],
-}
-radion_hh_ggf_bbww = {
-    "2017": [f"radion_hh_ggf_bbww_m{mass}_madgraph" for mass in [
-        250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
-        550, 600, 650, 700, 750, 800, 850, 900, 1000,
-        1250, 1500, 1750, 2000, 2500, 3000,
-    ]],
-    "2022postEE": [
-    ],
-}
-
-
-def get_dataset_names(cpn_tag: int | str, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
-    """
-    Central definition of datasets used in the hbb_hvv analysis based on the *cpn_tag*.
-    As a default, it creates one DotDict of process names mapped to the corresponding dataset names.
-    When *as_list* is True, a single list of all datasets is returned
-
-    :param cpn_tag: String or integer of which data-taking campaign is used.
-    :param as_list: Bool parameter to decide whether to return a list or a DotDict.
-    :return: List or DotDict containing all dataset names.
-    """
-
-    cpn_tag = str(cpn_tag)
-
-    #
-    # Combine all process datasets into a single DotDict
-    #
-
-    dataset_names = DotDict.wrap(
-        data_mu=data_mu.get(cpn_tag, []),
-        data_e=data_e.get(cpn_tag, []),
-        data_egamma=data_egamma.get(cpn_tag, []),
-        data_muoneg=data_muoneg.get(cpn_tag, []),
-        tt=tt.get(cpn_tag, []),
-        st=st.get(cpn_tag, []),
-        w_lnu=w_lnu.get(cpn_tag, []),
-        dy=dy.get(cpn_tag, []),
-        qcd_mu=qcd_mu.get(cpn_tag, []),
-        qcd_em=qcd_em.get(cpn_tag, []),
-        qcd_bctoe=qcd_bctoe.get(cpn_tag, []),
-        h=h.get(cpn_tag, []),
-        vv=vv.get(cpn_tag, []),
-        ttv=ttv.get(cpn_tag, []),
-        hh_ggf_hbb_hvv=hh_ggf_hbb_hvv.get(cpn_tag, []),
-        hh_vbf_hbb_hvvqqlnu=hh_vbf_hbb_hvvqqlnu.get(cpn_tag, []),
-        hh_vbf_hbb_hvv2l2nu=hh_vbf_hbb_hvv2l2nu.get(cpn_tag, []),
-        graviton_hh_ggf_bbww=graviton_hh_ggf_bbww.get(cpn_tag, []),
-        radion_hh_ggf_bbww=radion_hh_ggf_bbww.get(cpn_tag, []),
-    )
+    })
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
 
@@ -485,22 +271,22 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
     get all relevant dataset names and modify them based on the config and campaign
     """
 
-    cpn_tag = str(config.x.cpn_tag)
-    dataset_names = get_dataset_names(cpn_tag, as_list)
+    dataset_names = hbw_dataset_names(config)
+
     # optionally switch to custom signal processes (only implemented for hh_ggf_sl)
     if config.has_tag("custom_signals"):
         dataset_names.hh_ggf_hbb_hvvqqlnu = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
 
     if not config.has_tag("is_resonant"):
         # remove all resonant signal processes/datasets
-        dataset_names.pop("graviton_hh_ggf_bbww")
-        dataset_names.pop("radion_hh_ggf_bbww")
+        dataset_names.pop("graviton_hh_ggf_bbww", None)
+        dataset_names.pop("radion_hh_ggf_bbww", None)
 
     if not config.has_tag("is_sl"):
         # remove qcd datasets from DL
-        dataset_names.pop("qcd_mu")
-        dataset_names.pop("qcd_em")
-        dataset_names.pop("qcd_bctoe")
+        dataset_names.pop("qcd_mu", None)
+        dataset_names.pop("qcd_em", None)
+        dataset_names.pop("qcd_bctoe", None)
 
     if not config.has_tag("is_nonresonant"):
         # remove all nonresonant signal processes/datasets
@@ -551,7 +337,6 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
-
     # # add leaf signal processes directly to the config
     # for signal_proc in ("hh_ggf_hbb_hvvqqlnu", "hh_ggf_hbb_hvv2l2nu", "hh_vbf_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
     #     for dataset_name in dataset_names[signal_proc]:
@@ -602,6 +387,7 @@ def configure_hbw_datasets(
         if dataset.name.startswith("dy_"):
             dataset.add_tag("is_v_jets")
             dataset.add_tag("is_z_jets")
+            dataset.add_tag("is_dy")
         if dataset.name.startswith("w_"):
             dataset.add_tag("is_v_jets")
             dataset.add_tag("is_w_jets")
@@ -650,9 +436,9 @@ def get_custom_hh_2017_datasets(
     Add custom HH datasets to campaign
     """
     campaign.add_dataset(
-        name="hh_ggf_kl0_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl0_kt1_custom",
         id=10 ** 8 + 14057341,
-        processes=[cmsdb_procs.hh_ggf_kl0_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl0_kt1],
         keys=[
             "chhh0",
         ],
@@ -662,9 +448,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl1_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl1_kt1_custom",
         id=10 ** 8 + 14065482,
-        processes=[cmsdb_procs.hh_ggf_kl1_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl1_kt1],
         keys=[
             "chhh1",
         ],
@@ -674,9 +460,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl2p45_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_custom",
         id=10 ** 8 + 14066581,
-        processes=[cmsdb_procs.hh_ggf_kl2p45_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl2p45_kt1],
         keys=[
             "chhh2p45",
         ],
@@ -686,9 +472,9 @@ def get_custom_hh_2017_datasets(
     )
 
     campaign.add_dataset(
-        name="hh_ggf_kl5_kt1_hbb_hvvqqlnu_custom",
+        name="hh_ggf_hbb_hvvqqlnu_kl5_kt1_custom",
         id=10 ** 8 + 14058363,
-        processes=[cmsdb_procs.hh_ggf_kl5_kt1_hbb_hvvqqlnu],
+        processes=[cmsdb_procs.hh_ggf_hbb_hvvqqlnu_kl5_kt1],
         keys=[
             "chhh5",
         ],
