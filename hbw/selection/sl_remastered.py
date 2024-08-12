@@ -328,7 +328,7 @@ def sl1_init(self: Selector) -> None:
 
 
 sl1_no_btag = sl1.derive("sl1_no_btag", cls_dict={"n_btag": 0, "b_tagger": "deepjet"})
-sl1_trigger_studies = sl1.derive("sl1_trigger_studies", cls_dict={
+sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
     "trigger": {"e": [], "mu": []},
     "mu_pt": 15.,
     "mu2_pt": 15.,
