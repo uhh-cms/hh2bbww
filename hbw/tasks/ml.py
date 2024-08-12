@@ -437,6 +437,7 @@ class MLEvaluationSingleFold(
         reqs["training"] = self.reqs.MLTraining.req_different_branching(
             self,
             branches=(self.fold,),
+            branch=self.fold,
             configs=(self.config_inst.name,),
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
