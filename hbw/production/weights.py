@@ -234,13 +234,12 @@ def combined_normalization_weights_init(self: Producer) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
-    self[stitched_normalization_weights].weight_name = "stitched_normalization_weight"
-    self[stitched_normalization_weights_brs_from_processes].weight_name = "stitched_normalization_weight"  # noqa: E501
-
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
     else:
         self.norm_weights_producer = stitched_normalization_weights
+
+    self.norm_weights_producer.weight_name = "stitched_normalization_weight"
 
     self.uses |= {self.norm_weights_producer, normalization_weights}
     self.produces |= {self.norm_weights_producer, normalization_weights}
@@ -248,13 +247,13 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
 @producer(
     uses={
-        all_normalization_weights,
+        combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
     },
     produces={
-        all_normalization_weights,
+        combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
         normalized_pu_weights,
@@ -268,7 +267,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     # compute normalization weights
-    events = self[all_normalization_weights](events, **kwargs)
+    events = self[combined_normalization_weights](events, **kwargs)
 
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
