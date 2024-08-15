@@ -589,6 +589,12 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
+    # TOPO trigger
+    L1NN_base_path = "/nfs/dust/cms/user/ebelingl/hh2bbww/model"
+    add_external("L1NN_infos", (f"{L1NN_base_path}/info.yml", "v1"))
+    add_external("L1NN_network", (f"{L1NN_base_path}/model.h5", "v1"))
+    add_external("L1NN_scaler", (f"{L1NN_base_path}/scaler.pkl", "v1"))
+
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
