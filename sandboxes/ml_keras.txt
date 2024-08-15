@@ -1,0 +1,8 @@
+# version 0
+
+-r ../modules/columnflow/sandboxes/columnar.txt
+
+scikit-learn
+keras
+tensorflow
+numpy==1.26.4
