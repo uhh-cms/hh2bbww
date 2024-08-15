@@ -260,6 +260,28 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
 
     })
+    
+    ## custom l1nano datasets
+    if config.has_tag("is_l1nano"): 
+        config.x.get_dataset_lfns = get_dataset_lfns_l1nano
+        dataset_names = DotDict.wrap({
+            "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
+            "qcd": [
+                "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
+                "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
+                "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
+                "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
+                "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
+                "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000toinf_pythia",
+            ],
+            "hh_vbf_hbb_hvv": [
+                "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
+                "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
+                "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
+                "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
+            ],
+        })
+
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
 
@@ -512,3 +534,23 @@ def get_dataset_lfns_2017(
         lfn_base.child(basename, type="f").path
         for basename in lfn_base.listdir(pattern="*.root")
     ]
+
+
+def get_dataset_lfns_l1nano(
+    dataset_inst: od.Dataset,
+    shift_inst: od.Shift,
+    dataset_key: str,
+) -> list[str]:
+    """
+    Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn
+    """
+    import glob
+
+    print("dataset name:", dataset_inst.name)
+    print("dataset_key:", dataset_key)
+
+    dataset_name = dataset_key.split("/")[1]
+
+    # no idea if this is clean, but I could not get the LocalDirectoryTarget to give me these paths :D
+    # this is why I'm just globbing here
+    return glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
