@@ -53,13 +53,21 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_powheg",
                 "st_twchannel_tbar_powheg",
             ]),
-            *config.x.if_era(run=3, values=[
+            *config.x.if_era(run=3, cfg_tag="is_sl", values=[
+                "st_twchannel_t_fh_powheg",
+                "st_twchannel_tbar_fh_powheg",
                 "st_twchannel_t_sl_powheg",
                 "st_twchannel_tbar_sl_powheg",
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
-                "st_twchannel_t_fh_powheg",
-                "st_twchannel_tbar_fh_powheg",
+            ]),
+            *config.x.if_era(run=3, cfg_tag="is_dl", values=[
+                # "st_twchannel_t_fh_powheg",  # (almost) empty in DL
+                # "st_twchannel_tbar_fh_powheg",  # (almost) empty in DL
+                "st_twchannel_t_sl_powheg",
+                "st_twchannel_tbar_sl_powheg",
+                "st_twchannel_t_dl_powheg",
+                "st_twchannel_tbar_dl_powheg",
             ]),
         ],
         "dy": [
@@ -108,7 +116,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
-                "h_ggf_hbb_powheg",
+                # "h_ggf_hbb_powheg",  # empty in DL
                 "h_ggf_hww2l2nu_powheg",
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
@@ -205,7 +213,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "graviton_hh_ggf_bbww": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"graviton_hh_ggf_bbww_m{mass}_madgraph"
                 for mass in [
                     250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
@@ -215,7 +223,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "radion_hh_ggf_bbww": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"radion_hh_ggf_bbww_m{mass}_madgraph"
                 for mass in [
                     250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
@@ -225,31 +233,35 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "qcd_mu": [
-            # "qcd_mu_pt15to20_pythia",
-            "qcd_mu_pt20to30_pythia",
-            "qcd_mu_pt30to50_pythia",
-            "qcd_mu_pt50to80_pythia",
-            "qcd_mu_pt80to120_pythia",
-            "qcd_mu_pt120to170_pythia",
-            "qcd_mu_pt170to300_pythia",
-            "qcd_mu_pt300to470_pythia",
-            "qcd_mu_pt470to600_pythia",
-            "qcd_mu_pt600to800_pythia",
-            "qcd_mu_pt800to1000_pythia",
-            "qcd_mu_pt1000toinf_pythia",
+            *config.x.if_era(cfg_tag="is_sl", values=[
+                # "qcd_mu_pt15to20_pythia",
+                "qcd_mu_pt20to30_pythia",
+                "qcd_mu_pt30to50_pythia",
+                "qcd_mu_pt50to80_pythia",
+                "qcd_mu_pt80to120_pythia",
+                "qcd_mu_pt120to170_pythia",
+                "qcd_mu_pt170to300_pythia",
+                "qcd_mu_pt300to470_pythia",
+                "qcd_mu_pt470to600_pythia",
+                "qcd_mu_pt600to800_pythia",
+                "qcd_mu_pt800to1000_pythia",
+                "qcd_mu_pt1000toinf_pythia",
+            ]),
         ],
         "qcd_em": [
-            # "qcd_em_pt15to20_pythia",
-            # "qcd_em_pt20to30_pythia",
-            "qcd_em_pt30to50_pythia",
-            "qcd_em_pt50to80_pythia",
-            "qcd_em_pt80to120_pythia",
-            "qcd_em_pt120to170_pythia",
-            "qcd_em_pt170to300_pythia",
-            "qcd_em_pt300toinf_pythia",
+            *config.x.if_era(cfg_tag="is_sl", values=[
+                # "qcd_em_pt15to20_pythia",
+                # "qcd_em_pt20to30_pythia",
+                "qcd_em_pt30to50_pythia",
+                "qcd_em_pt50to80_pythia",
+                "qcd_em_pt80to120_pythia",
+                "qcd_em_pt120to170_pythia",
+                "qcd_em_pt170to300_pythia",
+                "qcd_em_pt300toinf_pythia",
+            ]),
         ],
         "qcd_bctoe": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_sl", values=[
                 # "qcd_bctoe_pt15to20_pythia",
                 "qcd_bctoe_pt20to30_pythia",
                 "qcd_bctoe_pt30to80_pythia",

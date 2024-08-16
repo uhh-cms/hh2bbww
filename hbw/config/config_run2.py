@@ -68,6 +68,7 @@ def add_config(
         year: int | None = None,
         postfix: str | None = None,
         tag: str | None = None,
+        cfg_tag: str | None = None,
         values: list[str] | None = None,
     ) -> list[str]:
         """
@@ -82,7 +83,8 @@ def add_config(
             (run is None or campaign.x.run == run) and
             (year is None or campaign.x.year == year) and
             (postfix is None or campaign.x.postfix == postfix) and
-            (tag is None or campaign.has_tag(tag))
+            (tag is None or campaign.has_tag(tag)) and
+            (cfg_tag is None or cfg.has_tag(cfg_tag))
         )
         return (values or []) if match else []
 

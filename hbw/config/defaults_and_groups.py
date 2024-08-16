@@ -144,6 +144,9 @@ def set_config_defaults_and_groups(config_inst):
         "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy"],
         "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
+        "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
+        "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
+        "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
