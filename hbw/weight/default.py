@@ -139,7 +139,7 @@ default_weight_columns = {
     "stitched_normalization_weight": [],
     **default_correction_weights,
 }
-base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+default_weight_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 base.derive("unstitched", cls_dict={"weight_columns": {**default_correction_weights, "normalization_weight": []}})
 
 weight_columns_execpt_btag = default_weight_columns.copy()

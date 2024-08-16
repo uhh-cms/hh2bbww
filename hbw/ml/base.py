@@ -268,6 +268,8 @@ class MLClassifierBase(MLModel):
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
         columns.add("normalization_weight")
+        columns.add("stitched_normalization_weight")
+        columns.add("event_weight")
         return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:

@@ -132,7 +132,7 @@ class MLDatasetLoader:
     @property
     def weights(self) -> np.ndarray:
         if not hasattr(self, "_weights"):
-            self._weights = ak.to_numpy(self._events.normalization_weight).astype(np.float32)
+            self._weights = ak.to_numpy(self._events.event_weight).astype(np.float32)
 
         return self._weights
 
