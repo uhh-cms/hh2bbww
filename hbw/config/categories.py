@@ -111,20 +111,23 @@ def add_mll_categories(config: od.Config) -> None:
         id=1,
         selection="catid_mll_low",
     )
-    dy_cr = config.add_category(
-        name="dy_cr",
+    cr = config.add_category(
+        name="cr",
         id=2,
-        selection="catid_dy_cr",
+        selection="catid_cr",
+        label=r"m_{\ell\ell} \geq 81",
     )
-    dy_cr.add_category(
-        name="mll_z",
+    cr.add_category(
+        name="dycr",
         id=3,
         selection="catid_mll_z",
+        label=r"81 \leq m_{\ell\ell} < 101",
     )
-    dy_cr.add_category(
-        name="mll_high",
+    cr.add_category(
+        name="ttcr",
         id=4,
         selection="catid_mll_high",
+        label=r"m_{\ell\ell} \geq 101",
     )
 
 
@@ -278,7 +281,7 @@ def add_categories_production(config: od.Config) -> None:
     #
 
     category_blocks = OrderedDict({
-        "mll": [config.get_category("sr")],  # NOTE: we could also build the product of all mll categories
+        "mll": [config.get_category("sr"), config.get_category("dycr"), config.get_category("ttcr")],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
@@ -347,10 +350,11 @@ def add_categories_ml(config, ml_model_inst):
     # create combination of categories
     #
 
+    main_categories = ["sr", "dycr", "ttcr"] if config.x.lepton_tag == "dl" else ["sr", "fake"]
+
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        # "mll": [config.get_category("sr"), config.get_category("dy_cr")],
-        "mll": [config.get_category("sr")],
+        "mll": [config.get_category(cat) for cat in main_categories],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
