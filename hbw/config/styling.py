@@ -26,36 +26,27 @@ default_process_colors = {
     "st": "#ff7f00",  # orange
     "t_bkg": "#e41a1c",  # orange
     "dy": "#ffff33",  # yellow
+    "dy_m50toinf": "#ffff33",  # yellow
+    "dy_m10to50": "#a65628",  # brown
+    "dy_m4to10": "#f781bf",  # pink
     "ttV": "#a65628",  # brown
     "VV": "#f781bf",  # pink
     "other": "#999999",  # grey
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "#000000",  # black
-    "hh_ggf_hbb_hvvqqlnu_kl0_kt1": "#1b9e77",  # green2
-    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": "#d95f02",  # orange2
-    # "hh_ggf_hbb_hvvqqlnu_kl5_kt1": "#e7298a",  # pink2
-    "hh_ggf_hbb_hvvqqlnu_kl5_kt1": "#000080",  # navy
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "#999999",  # grey
-    # "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "#e41a1c",  # red
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0": "#377eb8",  # blue
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2": "#4daf4a",  # green
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": "#984ea3",  # purple
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1": "#ff7f00",  # orange
-    "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1": "#a65628",  # brown
-    "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1": "#f781bf",  # pink
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "#000000",  # black
-    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": "#1b9e77",  # green2
-    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": "#d95f02",  # orange2
-    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": "#e7298a",  # pink2
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "#999999",  # grey
-    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "#e41a1c",  # red
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0": "#377eb8",  # blue
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2": "#4daf4a",  # green
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": "#984ea3",  # purple
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1": "#ff7f00",  # orange
-    "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1": "#a65628",  # brown
-    "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1": "#f781bf",  # pink
-    "hh_ggf_bbtautau": "#984ea3",  # purple
+    "hh_ggf_hbb_htt": "#984ea3",  # purple
 }
+for decay in ("", "qqlnu", "2l2nu"):
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"  # green2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"  # orange2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"  # pink2
+
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"  # blue
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"  # green
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v0_kl1"] = "#984ea3"  # purple
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v2_kl1"] = "#ff7f00"  # orange
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv0p5_k2v1_kl1"] = "#a65628"  # brown
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1p5_k2v1_kl1"] = "#f781bf"  # pink
 
 ml_labels = {
     "tt": "$t\\bar{t}$",
