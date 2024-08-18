@@ -141,6 +141,8 @@ def add_common_ml_variables(config: od.Config) -> None:
 
     for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
         for var in ["pt", "eta", "phi"]:
+            if var == "eta" and obj == "met":
+                continue
             if var == "phi" and obj != "met":
                 continue
             config.add_variable(
