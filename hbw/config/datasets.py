@@ -116,26 +116,28 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
-                # "h_ggf_hbb_powheg",  # empty in DL
+                # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
+                # "h_ggf_htt_amcatnlo",  # TODO: check if empty
+                # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",
                 "zh_zll_hbb_powheg",
                 "zh_zll_hcc_powheg",
                 "zh_hww2l2nu_powheg",
                 "zh_gg_zll_hbb_powheg",
                 "zh_gg_zqq_hbb_powheg",
-                "zh_gg_znunu_hbb_powheg",
+                # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "zh_gg_zll_hcc_powheg",
-                "wph_wqq_hbb_powheg",
+                # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hbb_powheg",
-                "wph_wqq_hcc_powheg",
+                # "wph_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hcc_powheg",
                 "wph_hzg_zll_powheg",
-                "wmh_wqq_hbb_powheg",
+                # "wmh_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hbb_powheg",
-                "wmh_wqq_hcc_powheg",
+                # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hcc_powheg",
                 "wmh_hzg_zll_powheg",
                 "tth_hbb_powheg",
