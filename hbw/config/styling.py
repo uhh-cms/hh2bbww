@@ -14,32 +14,83 @@ from columnflow.columnar_util import EMPTY_FLOAT
 # Processes
 #
 
+cms_color_palette_1 = {
+    "blue": "#5790fc",  # Blueberry
+    "yellow": "#f89c20",  # Marigold
+    "red": "#e42536",  # Alizarin Crimson
+    "purple": "#964a8b",  # Plum
+    "grey": "#9c9ca1",  # Manatee
+    "violet": "#7a21dd",  # Blue-Violet
+    "black": "#000000",
+}
+
+cms_color_palette_2 = {
+    "blue": "#3f90da",  # Tufts Blue
+    "yellow": "#ffa90e",  # Dark Tangerine
+    "red": "#bd1f01",  # International Orange (Engineering)
+    "grey": "#94a4a2",  # Morning Blue
+    "purple": "#832db6",  # Grape
+    "brown": "#a96b59",  # Blast-Off Bronze
+    "orange": "#e76300",  # Spanish Orange
+    "green": "#b9ac70",  # Misty Moss
+    "darkgrey": "#717581",  # AuroMetalSaurus
+    "turqoise": "#92dadd",  # Pale Robin Egg Blue
+    "black": "#000000",
+}
+
+# tt: red
+# dy: yellow
+# st: orange
+# vv
+# ttV ?
+# w_lnu
+# h
+# qcd: blue
+
+color_palette_1 = {
+    "black": "#000000",
+    "red": "#e41a1c",
+    "blue": "#377eb8",
+    "green": "#4daf4a",
+    "purple": "#984ea3",
+    "orange": "#ff7f00",
+    "yellow": "#ffff33",
+    "brown": "#a65628",
+    "pink": "#f781bf",
+    "grey": "#999999",
+}
+
+color_palette = cms_color_palette_2
+
 default_process_colors = {
-    "data": "#000000",  # black
-    "tt": "#e41a1c",  # red
-    "qcd": "#377eb8",  # blue
-    "qcd_mu": "#377eb8",  # blue
-    "qcd_ele": "#377eb8",  # blue
-    "w_lnu": "#4daf4a",  # green
-    "v_lep": "#4daf4a",  # green
-    "higgs": "#984ea3",  # purple
-    "st": "#ff7f00",  # orange
-    "t_bkg": "#e41a1c",  # orange
-    "dy": "#ffff33",  # yellow
-    "dy_m50toinf": "#ffff33",  # yellow
-    "dy_m10to50": "#a65628",  # brown
-    "dy_m4to10": "#f781bf",  # pink
-    "ttV": "#a65628",  # brown
-    "VV": "#f781bf",  # pink
-    "other": "#999999",  # grey
-    "hh_ggf_hbb_htt": "#984ea3",  # purple
+    "data": color_palette["black"],
+    "tt": color_palette["red"],
+    "qcd": color_palette["blue"],
+    "qcd_mu": color_palette["blue"],
+    "qcd_ele": color_palette["blue"],
+    "w_lnu": color_palette["green"],
+    "v_lep": color_palette["green"],
+    "h": color_palette["purple"],
+    "st": color_palette["orange"],
+    "t_bkg": color_palette["orange"],
+    # "dy": color_palette["yellow"],
+    "dy": color_palette["yellow"],
+    "dy_m50toinf": color_palette["yellow"],
+    "dy_m10to50": color_palette["brown"],
+    "dy_m4to10": color_palette["darkgrey"],
+    "ttV": color_palette["brown"],
+    "VV": color_palette["darkgrey"],
+    "other": color_palette["grey"],
+    "hh_ggf_hbb_htt": color_palette["grey"],
 }
 for decay in ("", "qqlnu", "2l2nu"):
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}"] = "#000000"  # black
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"  # green2
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"  # orange2
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"  # pink2
 
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}"] = "#999999"  # grey
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"  # blue
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"  # green
@@ -50,6 +101,8 @@ for decay in ("", "qqlnu", "2l2nu"):
 
 ml_labels = {
     "tt": "$t\\bar{t}$",
+    "hh_ggf_hbb_hvv": r"hh_{ggf}",
+    "hh_vbf_hbb_hvv": r"hh_{vbf}",
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "hh_ggf (sl)",
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "hh_ggf (dl)",
     "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "hh_vbf (sl)",
@@ -63,6 +116,7 @@ ml_labels = {
     "st": "st",
     "w_lnu": "W",
     "dy": "DY",
+    "h": "H",
     "v_lep": "W+DY",
     "t_bkg": "tt+st",
 }
