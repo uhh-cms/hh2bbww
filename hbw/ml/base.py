@@ -242,7 +242,7 @@ class MLClassifierBase(MLModel):
             # get datasets corresponding to this process
             dataset_insts = [
                 dataset_inst for dataset_inst in
-                get_datasets_from_process(config_inst, proc, strategy="inclusive")
+                get_datasets_from_process(config_inst, proc, strategy="all")
             ]
 
             # store assignment of datasets and processes in the instances
