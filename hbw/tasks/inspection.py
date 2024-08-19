@@ -28,6 +28,27 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
+def create_table_from_csv(csv_file_path):
+    import csv
+    from tabulate import tabulate
+
+    # Read the CSV file
+    with open(csv_file_path, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        data = list(reader)
+
+    # Optionally, if you want to use the first row as headers
+    headers = data[0]  # First row as headers
+    table_data = data[1:]  # Rest as table data
+
+    # Generate the table using tabulate
+    table = tabulate(table_data, headers=headers, tablefmt='grid')
+
+    # Print the table
+    print(table)
+    return table
+
+
 class SelectionSummary(
     HBWTask,
     DatasetsProcessesMixin,
@@ -66,7 +87,8 @@ class SelectionSummary(
 
     def output(self):
         output = {
-            "selection_summary": self.target("selection_summary.txt"),
+            "selection_summary_csv": self.target("selection_summary.csv"),
+            "selection_summary_table": self.target("selection_summary.txt"),
         }
         return output
 
@@ -117,26 +139,28 @@ class SelectionSummary(
                 selection_summary = {
                     "xsec": xsec.nominal,
                     "empty": True if stats["num_events_selected"] == 0 else False,
-                    "selection_eff": selection_eff,
-                    "expected_yield": expected_yield.nominal,
+                    "selection_eff": round_sig(selection_eff, 4),
+                    "expected_yield": round_sig(expected_yield.nominal, 4),
                 }
                 for key in keys_of_interest:
                     if key in selection_summary.keys():
                         continue
                     if key in stats:
-                        selection_summary[key] = stats[key]
+                        selection_summary[key] = round_sig(stats[key], 4)
                     else:  # default to empty string
                         selection_summary[key] = ""
 
                 row = [dataset] + [selection_summary[key] for key in keys_of_interest]
-                print(row)
-                writer.writerow([dataset] + [selection_summary[key] for key in keys_of_interest])
+                writer.writerow(row)
 
         self.publish_message(f"Empty datasets: {empty_datasets}")
 
     def run(self):
         output = self.output()
-        self.write_selection_summary(output["selection_summary"])
+        self.write_selection_summary(output["selection_summary_csv"])
+
+        table = create_table_from_csv(output["selection_summary_csv"].path)
+        output["selection_summary_table"].dump(table, formatter="text")
 
 
 class DumpAnalysisSummary(
