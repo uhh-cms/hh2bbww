@@ -57,7 +57,7 @@ class MLDatasetLoader:
     - processes: A tuple of strings representing the processes. Can be parallelized over.
     """
 
-    input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights", "target", "labels")
+    input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
     def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
@@ -82,14 +82,13 @@ class MLDatasetLoader:
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
 
     @property
-    def hyperparameter_deps(self):
+    def hyperparameter_deps(self) -> set:
         """
         Hyperparameters that are required to be set in the MLModel class. If they are changed,
         then tasks using this class need to be re-run.
         """
         # TODO: store values of hyperparameters as task output
-        # TODO: we could also reuse task outputs for multiple MLModels with same hyperparameters
-        return ("input_features", "train_val_test_split", "input_features_ordered", "processes")
+        return {"input_features", "train_val_test_split", "input_features_ordered"}
 
     @property
     def parameters(self):
@@ -221,6 +220,10 @@ class MLDatasetLoader:
 
     @property
     def labels(self) -> np.ndarray:
+        raise Exception(
+            "This should not be used anymore since we now create the labels during training/evaluation"
+            "to allow sharing these outputs between ML models with different sets of processes.",
+        )
         if hasattr(self, "_labels"):
             return self._labels
 
@@ -241,6 +244,10 @@ class MLDatasetLoader:
 
     @property
     def target(self) -> np.ndarray:
+        raise Exception(
+            "This should not be used anymore since we now create the labels during training/evaluation"
+            "to allow sharing these outputs between ML models with different sets of processes.",
+        )
         if hasattr(self, "_target"):
             return self._target
 
@@ -411,11 +418,47 @@ class MLProcessData:
         # do not load prediction because it can only be loaded after training
         # self.prediction
 
+    def load_file(self, data_str, data_split, process, fold):
+        """
+        Load a file from the input dictionary.
+        """
+        return self._input[data_str][data_split][process][fold].load(formatter="numpy")
+
+    def load_labels(self, data_split, process, fold):
+        """
+        Load the labels for a given process and fold.
+        """
+        proc_inst = self._ml_model_inst.config_inst.get_process(process)
+        if not proc_inst.has_aux("ml_id"):
+            logger.warning(
+                f"Process {process} does not have an ml_id. Label will be set to -1.",
+            )
+            ml_id = -1
+        else:
+            ml_id = proc_inst.x.ml_id
+
+        # load any column to get the array length
+        weights = self.load_file("weights", data_split, process, fold)
+
+        labels = np.ones(len(weights), dtype=np.int32) * ml_id
+        return labels
+
     def load_data(self, data_str: str) -> np.ndarray:
+        """
+        Load data from the input dictionary. Options for data_str are "features", "weights", "train_weights",
+        "equal_weights", "labels", and "prediction".
+        When the data is loaded, it is concatenated over all processes and folds.
+        When the *shuffle* attribute is set to True, the data is shuffled using the *shuffle_indices* attribute.
+        """
+        if data_str not in ("features", "weights", "train_weights", "equal_weights", "labels", "prediction"):
+            logger.warning(f"Unknown data string {data_str} for MLProcessData.")
         data = []
         for process in self._processes:
             for fold in self.folds:
-                fold_data = self._input[data_str][self._data_split][process][fold].load(formatter="numpy")
+                if data_str == "labels":
+                    fold_data = self.load_labels(self._data_split, process, fold)
+                else:
+                    fold_data = self.load_file(data_str, self._data_split, process, fold)
                 if np.any(~np.isfinite(fold_data)):
                     raise Exception(f"Found non-finite values in {data_str} for {process} in fold {fold}.")
                 data.append(fold_data)
@@ -486,7 +529,9 @@ class MLProcessData:
         if hasattr(self, "_target"):
             return self._target
 
-        target = self.load_data("target")
+        # use the labels to create the target array
+        labels = self.labels
+        target = np.eye(len(self._ml_model_inst.processes))[labels]
 
         # handling of negative weights based on the ml_model_inst.negative_weights parameter
         if self._ml_model_inst.negative_weights == "handle":
