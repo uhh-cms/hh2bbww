@@ -37,6 +37,72 @@ from hbw.tasks.base import HBWTask
 logger = law.logger.get_logger(__name__)
 
 
+class SimpleMergeMLEvents(
+    MLModelDataMixin,
+    ProducersMixin,
+    SelectorMixin,
+    CalibratorsMixin,
+    DatasetTask,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    Custom reimplementation of the MergeMLEvents without ForestMerge
+    took 2m 40s for 6 files, all 5 folds
+    MergeMLEvents: 1m 40s for 6 files, 1 fold
+    """
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    # disable the shift parameter
+    shift = None
+    effective_shift = None
+    allow_empty_shift = True
+
+    allow_empty_ml_model = False
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        PrepareMLEvents=PrepareMLEvents,
+    )
+
+    def create_branch_map(self):
+        return {0: None}
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(self, branch=-1)
+        return reqs
+
+    def requires(self):
+        reqs = {}
+        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(self, branch=-1)
+        return reqs
+
+    def output(self):
+        k = self.ml_model_inst.folds
+        return {
+            "mlevents": [
+                self.target(f"mlevents_f{i}of{k}.parquet")
+                for i in range(k)
+            ],
+        }
+
+    @law.decorator.timeit()
+    def run(self):
+        inputs = self.input()
+        outputs = self.output()
+
+        fold_paths = defaultdict(list)
+        for inp in inputs["mlevents"]["collection"].targets.values():
+            for i, target in enumerate(inp["mlevents"].targets):
+                fold_paths[i].append(target.path)
+
+        for i, paths in fold_paths.items():
+            with self.publish_step(f"merge fold {i} from dataset {self.dataset} ({len(paths)} files)"):
+                law.pyarrow.merge_parquet_files(paths, outputs["mlevents"][i].path)
+
+
 class MLOptimizer(
     HBWTask,
     MLModelsMixin,
