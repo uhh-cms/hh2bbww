@@ -64,7 +64,6 @@ def default_producers(cls, container, task_params):
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
-        default_producers.remove("pre_ml_cats")
         return default_producers
 
     # check if a mlmodel has been set

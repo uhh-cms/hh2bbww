@@ -215,7 +215,7 @@ class MLClassifierBase(MLModel):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return [config_inst.x.ml_inputs_producer, "event_weights"]
+        return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
