@@ -16,7 +16,7 @@ from collections import defaultdict
 import law
 import luigi
 
-from columnflow.tasks.framework.base import Requirements
+from columnflow.tasks.framework.base import Requirements, DatasetTask
 from columnflow.tasks.framework.mixins import (
     SelectorMixin,
     CalibratorsMixin,
@@ -24,13 +24,14 @@ from columnflow.tasks.framework.mixins import (
     MLModelTrainingMixin,
     MLModelMixin,
     MLModelsMixin,
+    MLModelDataMixin,
     SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.framework.decorators import view_output_plots
 from columnflow.util import dev_sandbox, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT
-from columnflow.tasks.ml import MergeMLEvents, MergeMLStats, MLTraining
+from columnflow.tasks.ml import PrepareMLEvents, MergeMLEvents, MergeMLStats, MLTraining
 from hbw.tasks.base import HBWTask
 
 logger = law.logger.get_logger(__name__)
@@ -369,6 +370,8 @@ class MLPreTraining(
 
 
 class MLEvaluationSingleFold(
+    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
+    # is implemented
     HBWTask,
     MLModelMixin,
     ProducersMixin,
@@ -425,7 +428,15 @@ class MLEvaluationSingleFold(
             selectors=(self.selector,),
             producers=(self.producers,),
         )
-        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
+            self,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+            branch=-1
+        )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
 
         return reqs
 
@@ -443,7 +454,15 @@ class MLEvaluationSingleFold(
             selectors=(self.selector,),
             producers=(self.producers,),
         )
-        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
+            self,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+            branch=-1
+        )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
         return reqs
 
     def output(self):
@@ -501,6 +520,8 @@ class MLEvaluationSingleFold(
 
 
 class PlotMLResultsSingleFold(
+    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
+    # is implemented
     HBWTask,
     MLModelMixin,
     ProducersMixin,
@@ -570,7 +591,14 @@ class PlotMLResultsSingleFold(
             ),
         }
 
-        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
+            self,
+            configs=(self.config_inst.name,),
+            calibrators=(self.calibrators,),
+            selectors=(self.selector,),
+            producers=(self.producers,),
+            branch=-1
+        )
         reqs["mlpred"] = {
             data_split:
             self.reqs.MLEvaluationSingleFold.req_different_branching(self, data_split=data_split, branch=-1)
