@@ -20,6 +20,7 @@ from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
 )
 from columnflow.tasks.plotting import PlotVariables1D, PlotShiftedVariables1D
+from columnflow.tasks.yields import CreateYieldTable
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from hbw.tasks.base import HBWTask
 
@@ -54,6 +55,11 @@ class ControlPlots(
                 categories=(f"{lepton_tag}_{l_channel}ch",),
                 yscale="log",
                 cms_label="pw",
+            )
+            reqs[f"yields_{l_channel}"] = CreateYieldTable.req(
+                self,
+                processes=(f"d{l_channel}ch",),
+                categories=(f"{lepton_tag}_{l_channel}ch",),
             )
             if self.split_resolved_boosted:
                 for j_channel in ("resolved", "boosted"):

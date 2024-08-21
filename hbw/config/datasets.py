@@ -348,6 +348,9 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # get all root processes
     config.x.procs = procs = get_root_processes_from_campaign(campaign)
 
+    # processes only for the config
+    config.add_process(procs.n.data)
+
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
