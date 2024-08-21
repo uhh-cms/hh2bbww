@@ -57,6 +57,9 @@ class MLDatasetLoader:
     - processes: A tuple of strings representing the processes. Can be parallelized over.
     """
 
+    # shuffle the data in *load_split_data* method
+    shuffle: bool = True
+
     input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
@@ -296,6 +299,10 @@ class MLDatasetLoader:
         if isinstance(data, str):
             data = getattr(self, data)
         train_end, val_end = self.get_data_split
+
+        if self.shuffle:
+            data = data[self.shuffle_indices]
+
         return data[:train_end], data[train_end:val_end], data[val_end:]
 
 
