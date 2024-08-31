@@ -500,7 +500,7 @@ class MLEvaluationSingleFold(
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
             producers=(self.producers,),
-            branch=-1
+            branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
 
@@ -526,7 +526,7 @@ class MLEvaluationSingleFold(
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
             producers=(self.producers,),
-            branch=-1
+            branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
         return reqs
@@ -663,7 +663,7 @@ class PlotMLResultsSingleFold(
             calibrators=(self.calibrators,),
             selectors=(self.selector,),
             producers=(self.producers,),
-            branch=-1
+            branch=-1,
         )
         reqs["mlpred"] = {
             data_split:

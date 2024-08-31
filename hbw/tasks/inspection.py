@@ -33,7 +33,7 @@ def create_table_from_csv(csv_file_path):
     from tabulate import tabulate
 
     # Read the CSV file
-    with open(csv_file_path, mode='r', newline='') as file:
+    with open(csv_file_path, mode="r", newline="") as file:
         reader = csv.reader(file)
         data = list(reader)
 
@@ -42,7 +42,7 @@ def create_table_from_csv(csv_file_path):
     table_data = data[1:]  # Rest as table data
 
     # Generate the table using tabulate
-    table = tabulate(table_data, headers=headers, tablefmt='grid')
+    table = tabulate(table_data, headers=headers, tablefmt="grid")
 
     # Print the table
     print(table)

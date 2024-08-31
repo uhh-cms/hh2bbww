@@ -248,7 +248,7 @@ dl_22_procs1_w0_inp1 = DenseClassifierDL.derive("dl_22_procs1_w0_inp1", cls_dict
         f"mli_{obj}_{var}"
         for obj in ["lep", "lep2"]
         for var in ["pt", "eta"]
-    ]
+    ],
 })
 
 
