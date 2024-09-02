@@ -46,7 +46,8 @@ class MLClassifierBase(MLModel):
 
     # Class for data loading and it's dependencies.
     data_loader = MLDatasetLoader
-    preml_params: set[str] = {"data_loader", "input_features", "train_val_test_split", "processes"}
+    # NOTE: we might want to use the data_loader.hyperparameter_deps instead
+    preml_params: set[str] = {"data_loader", "input_features", "train_val_test_split"}
 
     # NOTE: we split each fold into train, val, test + do k-folding, so we have a 4-way split in total
     # TODO: test whether setting "test" to 0 is working
@@ -215,7 +216,7 @@ class MLClassifierBase(MLModel):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return [config_inst.x.ml_inputs_producer, "event_weights"]
+        return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
@@ -242,7 +243,7 @@ class MLClassifierBase(MLModel):
             # get datasets corresponding to this process
             dataset_insts = [
                 dataset_inst for dataset_inst in
-                get_datasets_from_process(config_inst, proc, strategy="inclusive")
+                get_datasets_from_process(config_inst, proc, strategy="all")
             ]
 
             # store assignment of datasets and processes in the instances
@@ -268,6 +269,8 @@ class MLClassifierBase(MLModel):
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
         columns.add("normalization_weight")
+        columns.add("stitched_normalization_weight")
+        columns.add("event_weight")
         return columns
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:

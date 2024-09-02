@@ -175,12 +175,88 @@ dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
 })
 dl_22_test = DenseClassifierDL.derive("dl_22_test", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "dy"],
+    # "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt"],
 })
-dl_22_full = DenseClassifierDL.derive("dl_22_full", cls_dict={
+
+#
+# setups with different processes (0: baseline, 1: add SM vbf + single H, 2: add SL+all HH variations)
+# NOTE: we should decide which signal processes exactly to use:
+# kl5 might confuse our DNN, and we should not use all vbf variations
+#
+
+dl_22_procs0 = DenseClassifierDL.derive("dl_22_procs0", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt", "st", "dy"],
+})
+dl_22_procs1 = DenseClassifierDL.derive("dl_22_procs1", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "tt", "st", "dy", "h"],
+})
+dl_22_procs1_w0 = dl_22_procs1.derive("dl_22_procs1_w1", cls_dict={
+    "ml_process_weights": {
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "tt": 2,
+        "st": 2,
+        "dy": 2,
+        "h": 2,
+    },
+})
+dl_22_procs1_w1 = dl_22_procs1.derive("dl_22_procs1_w1", cls_dict={
+    "ml_process_weights": {
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "tt": 16,
+        "st": 2,
+        "dy": 2,
+        "h": 2,
+    },
+})
+dl_22_procs1_w0_inp1 = DenseClassifierDL.derive("dl_22_procs1_w0_inp1", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "tt", "st", "dy", "h"],
+    "ml_process_weights": {
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "tt": 2,
+        "st": 2,
+        "dy": 2,
+        "h": 2,
+    },
+    "input_features": [
+        # event features
+        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
+        "mli_b_score_sum",
+        # bb system
+        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
+        "mli_mindr_lb",
+        # ll system
+        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+        "mli_min_dr_llbb",
+        "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
+        "mli_mbbllMET", "mli_dr_bb_llMET",
+        # VBF features
+        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        # low-level features
+        "mli_met_pt",
+    ] + [
+        f"mli_{obj}_{var}"
+        for obj in ["b1", "b2", "j1"]
+        for var in ["pt", "eta", "b_score"]
+    ] + [
+        f"mli_{obj}_{var}"
+        for obj in ["lep", "lep2"]
+        for var in ["pt", "eta"]
+    ],
+})
+
+
+dl_22_procs2 = DenseClassifierDL.derive("dl_22_procs2", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
     "processes": ["hh_ggf_hbb_hvv", "hh_vbf_hbb_hvv", "tt", "st", "dy", "h"],
 })
+
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
     "training_configs": lambda self, requested_configs: ["c17"],
     "processes": ["sig", "tt", "st", "dy"],

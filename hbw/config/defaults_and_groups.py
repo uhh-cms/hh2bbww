@@ -64,7 +64,6 @@ def default_producers(cls, container, task_params):
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
-        default_producers.remove("pre_ml_cats")
         return default_producers
 
     # check if a mlmodel has been set
@@ -94,7 +93,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # define the default dataset and process based on the analysis tags
     signal_tag = "qqlnu" if config_inst.has_tag("is_sl") else "2l2nu"
-    default_signal_process = f"hh_ggf_hbb_hvv_kl1_kt1{signal_tag}"
+    default_signal_process = "hh_ggf_hbb_hvv_kl1_kt1"
     signal_generator = "powheg"
 
     if config_inst.has_tag("resonant"):
@@ -130,9 +129,9 @@ def set_config_defaults_and_groups(config_inst):
         "default": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy"],
         "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy"],
-        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy"],
-        "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy"],
-        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy"],
+        "2much": [default_signal_process, "tt", "dy", "st", "w_lnu", "h"],
+        "ech": [default_signal_process, "tt", "dy", "qcd_ele", "st", "w_lnu", "h"],
+        "2ech": [default_signal_process, "tt", "dy", "st", "w_lnu", "h"],
         "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
@@ -143,7 +142,28 @@ def set_config_defaults_and_groups(config_inst):
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
         "bkg": ["tt", "st", "w_lnu", "dy"],
-        "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
+        "signal": ["hh_ggf_*", "hh_vbf_*"],
+        "hbv": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1"],
+        "hbw": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"],
+        "hbz": ["hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1"],
+        "hbv_ggf": ["hh_ggf_hbb_hvv_kl*_kt1"], "hbv_vbf": ["hh_vbf_hbb_hvv_*"],
+        "hbv_ggf_dl": ["hh_ggf_hbb_hvv2l2nu_kl*_kt1"],
+        "hbv_ggf_sl": ["hh_ggf_hbb_hvvqqlnu_kl*_kt1"],
+        "hbv_vbf_dl": ["hh_vbf_hbb_hvv2l2nu_*"],
+        "hbv_vbf_sl": ["hh_vbf_hbb_hvvqqlnu_*"],
+        "hbw_ggf": ["hh_ggf_hbb_hww_kl*_kt1"], "hbw_vbf": ["hh_vbf_hbb_hww_*"],
+        "hbw_ggf_dl": ["hh_ggf_hbb_hww2l2nu_kl*_kt1"],
+        "hbw_ggf_sl": ["hh_ggf_hbb_hwwqqlnu_kl*_kt1"],
+        "hbw_vbf_dl": ["hh_vbf_hbb_hww2l2nu_*"],
+        "hbw_vbf_sl": ["hh_vbf_hbb_hwwqqlnu_*"],
+        "hbz_ggf": ["hh_ggf_hbb_hzz_kl*_kt1"], "hbz_vbf": ["hh_vbf_hbb_hzz_*"],
+        "hbz_ggf_dl": ["hh_ggf_hbb_hzz2l2nu_kl*_kt1"],
+        "hbz_ggf_sl": ["hh_ggf_hbb_hzzqqlnu_kl*_kt1"],
+        "hbz_vbf_dl": ["hh_vbf_hbb_hzz2l2nu_*"],
+        "hbz_vbf_sl": ["hh_vbf_hbb_hzzqqlnu_*"],
+        "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
+        "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
+        "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
     }
     config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
     config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
@@ -172,17 +192,17 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.category_groups = {
         "sl": ["sr__1e", "sr__1mu"],
         "sl_resolved": ["sr__1e__resolved", "sr__1mu__resolved"],
-        "sl_much": ["sr__1mu", "sr__1mu__resolved", "sr__1mu__boosted"],
-        "sl_ech": ["sr__1e", "sr__1e__resolved", "sr__1e__boosted"],
+        "sl_much": ["sr__1mu", "sr__1mu__1b", "sr__1mu__2b"],
+        "sl_ech": ["sr__1e", "sr__1e__1b", "sr__1e__2b"],
         "sl_much_resolved": ["sr__1mu__resolved", "sr__1mu__resolved__1b", "sr__1mu__resolved__2b"],
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
         "dl": ["sr__2e", "sr__2mu", "sr__emu"],
         "dl_resolved": ["sr__2e__resolved", "sr__2mu__resolved", "sr__emu__resolved"],
-        "dl_2much": ["sr__2mu", "sr__2mu__resolved", "sr__2mu__boosted"],
-        "dl_2ech": ["sr__2e", "sr__2e__resolved", "sr__2e__boosted"],
-        "dl_emuch": ["sr__emu", "sr__emu__resolved", "sr__emu__boosted"],
+        "dl_2much": ["sr__2mu", "sr__2mu__1b", "sr__2mu__2b"],
+        "dl_2ech": ["sr__2e", "sr__2e__1b", "sr__2e__2b"],
+        "dl_emuch": ["sr__emu", "sr__emu__1b", "sr__emu__2b"],
         "dl_2much_resolved": ["sr__2mu__resolved", "sr__2mu__resolved__1b", "sr__2mu__resolved__2b"],
         "dl_2ech_resolved": ["sr__2e__resolved", "sr__2e__resolved__1b", "sr__2e__resolved__2b"],
         "dl_emuch_resolved": ["sr__emu__resolved", "sr__emu__resolved__1b", "sr__emu__resolved__2b"],
@@ -284,6 +304,10 @@ def set_config_defaults_and_groups(config_inst):
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
             proc.name: {"unstack": True, "scale": 10000}
+            for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
+        },
+        "scale_signal1": {
+            proc.name: {"unstack": True, "scale": "stack"}
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "dilep": {

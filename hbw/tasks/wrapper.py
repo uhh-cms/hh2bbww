@@ -20,6 +20,7 @@ from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
 )
 from columnflow.tasks.plotting import PlotVariables1D, PlotShiftedVariables1D
+from columnflow.tasks.yields import CreateYieldTable
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from hbw.tasks.base import HBWTask
 
@@ -35,6 +36,8 @@ class ControlPlots(
     SelectorStepsMixin,
     CalibratorsMixin,
 ):
+    split_resolved_boosted = False
+
     """
     Helper task to produce default set of control plots
     """
@@ -42,17 +45,33 @@ class ControlPlots(
         lepton_tag = self.config_inst.x.lepton_tag
         lepton_channels = self.config_inst.x.lepton_channels
         reqs = {}
+
         for l_channel in lepton_channels:
-            for j_channel in ("resolved", "boosted"):
-                reqs[f"control_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
-                    self,
-                    processes=(f"d{l_channel}ch",),
-                    process_settings=[["scale_signal"]],
-                    variables=[f"{lepton_tag}_{j_channel}"],
-                    categories=(f"{lepton_tag}_{l_channel}ch_{j_channel}",),
-                    yscale="log",
-                    cms_label="pw",
-                )
+            reqs[f"control_plots_{l_channel}"] = PlotVariables1D.req(
+                self,
+                processes=(f"d{l_channel}ch",),
+                process_settings=[["scale_signal"]],
+                variables=[f"{lepton_tag}"],
+                categories=(f"{lepton_tag}_{l_channel}ch",),
+                yscale="log",
+                cms_label="pw",
+            )
+            reqs[f"yields_{l_channel}"] = CreateYieldTable.req(
+                self,
+                processes=(f"d{l_channel}ch",),
+                categories=(f"{lepton_tag}_{l_channel}ch",),
+            )
+            if self.split_resolved_boosted:
+                for j_channel in ("resolved", "boosted"):
+                    reqs[f"control_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
+                        self,
+                        processes=(f"d{l_channel}ch",),
+                        process_settings=[["scale_signal"]],
+                        variables=[f"{lepton_tag}_{j_channel}"],
+                        categories=(f"{lepton_tag}_{l_channel}ch_{j_channel}",),
+                        yscale="log",
+                        cms_label="pw",
+                    )
 
         return reqs
 
@@ -78,16 +97,15 @@ class MLInputPlots(
         reqs = {}
 
         for l_channel in lepton_channels:
-            for j_channel in ("resolved", "boosted"):
-                reqs[f"ml_input_plots_{l_channel}_{j_channel}"] = PlotVariables1D.req(
-                    self,
-                    processes=(f"{l_channel}ch",),
-                    # process_settings=[["scale_signal"]],
-                    variables=["mli_*"],
-                    categories=(f"{lepton_tag}_{l_channel}ch_{j_channel}",),
-                    yscale="log",
-                    cms_label="simpw",
-                )
+            reqs[f"ml_input_plots_{l_channel}"] = PlotVariables1D.req(
+                self,
+                processes=(f"d{l_channel}ch",),
+                # process_settings=[["scale_signal"]],
+                variables=["mli_*"],
+                categories=(f"{lepton_tag}_{l_channel}ch",),
+                yscale="log",
+                cms_label="simpw",
+            )
 
         return reqs
 

@@ -53,13 +53,21 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_powheg",
                 "st_twchannel_tbar_powheg",
             ]),
-            *config.x.if_era(run=3, values=[
+            *config.x.if_era(run=3, cfg_tag="is_sl", values=[
+                "st_twchannel_t_fh_powheg",
+                "st_twchannel_tbar_fh_powheg",
                 "st_twchannel_t_sl_powheg",
                 "st_twchannel_tbar_sl_powheg",
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
-                "st_twchannel_t_fh_powheg",
-                "st_twchannel_tbar_fh_powheg",
+            ]),
+            *config.x.if_era(run=3, cfg_tag="is_dl", values=[
+                # "st_twchannel_t_fh_powheg",  # (almost) empty in DL
+                # "st_twchannel_tbar_fh_powheg",  # (almost) empty in DL
+                "st_twchannel_t_sl_powheg",
+                "st_twchannel_tbar_sl_powheg",
+                "st_twchannel_t_dl_powheg",
+                "st_twchannel_tbar_dl_powheg",
             ]),
         ],
         "dy": [
@@ -108,26 +116,28 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
-                "h_ggf_hbb_powheg",
+                # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
+                # "h_ggf_htt_amcatnlo",  # TODO: check if empty
+                # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",
                 "zh_zll_hbb_powheg",
                 "zh_zll_hcc_powheg",
                 "zh_hww2l2nu_powheg",
                 "zh_gg_zll_hbb_powheg",
                 "zh_gg_zqq_hbb_powheg",
-                "zh_gg_znunu_hbb_powheg",
+                # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "zh_gg_zll_hcc_powheg",
-                "wph_wqq_hbb_powheg",
+                # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hbb_powheg",
-                "wph_wqq_hcc_powheg",
+                # "wph_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hcc_powheg",
                 "wph_hzg_zll_powheg",
-                "wmh_wqq_hbb_powheg",
+                # "wmh_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hbb_powheg",
-                "wmh_wqq_hcc_powheg",
+                # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hcc_powheg",
                 "wmh_hzg_zll_powheg",
                 "tth_hbb_powheg",
@@ -205,7 +215,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "graviton_hh_ggf_bbww": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"graviton_hh_ggf_bbww_m{mass}_madgraph"
                 for mass in [
                     250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
@@ -215,7 +225,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "radion_hh_ggf_bbww": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"radion_hh_ggf_bbww_m{mass}_madgraph"
                 for mass in [
                     250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
@@ -225,31 +235,35 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "qcd_mu": [
-            # "qcd_mu_pt15to20_pythia",
-            "qcd_mu_pt20to30_pythia",
-            "qcd_mu_pt30to50_pythia",
-            "qcd_mu_pt50to80_pythia",
-            "qcd_mu_pt80to120_pythia",
-            "qcd_mu_pt120to170_pythia",
-            "qcd_mu_pt170to300_pythia",
-            "qcd_mu_pt300to470_pythia",
-            "qcd_mu_pt470to600_pythia",
-            "qcd_mu_pt600to800_pythia",
-            "qcd_mu_pt800to1000_pythia",
-            "qcd_mu_pt1000toinf_pythia",
+            *config.x.if_era(cfg_tag="is_sl", values=[
+                # "qcd_mu_pt15to20_pythia",
+                "qcd_mu_pt20to30_pythia",
+                "qcd_mu_pt30to50_pythia",
+                "qcd_mu_pt50to80_pythia",
+                "qcd_mu_pt80to120_pythia",
+                "qcd_mu_pt120to170_pythia",
+                "qcd_mu_pt170to300_pythia",
+                "qcd_mu_pt300to470_pythia",
+                "qcd_mu_pt470to600_pythia",
+                "qcd_mu_pt600to800_pythia",
+                "qcd_mu_pt800to1000_pythia",
+                "qcd_mu_pt1000toinf_pythia",
+            ]),
         ],
         "qcd_em": [
-            # "qcd_em_pt15to20_pythia",
-            # "qcd_em_pt20to30_pythia",
-            "qcd_em_pt30to50_pythia",
-            "qcd_em_pt50to80_pythia",
-            "qcd_em_pt80to120_pythia",
-            "qcd_em_pt120to170_pythia",
-            "qcd_em_pt170to300_pythia",
-            "qcd_em_pt300toinf_pythia",
+            *config.x.if_era(cfg_tag="is_sl", values=[
+                # "qcd_em_pt15to20_pythia",
+                # "qcd_em_pt20to30_pythia",
+                "qcd_em_pt30to50_pythia",
+                "qcd_em_pt50to80_pythia",
+                "qcd_em_pt80to120_pythia",
+                "qcd_em_pt120to170_pythia",
+                "qcd_em_pt170to300_pythia",
+                "qcd_em_pt300toinf_pythia",
+            ]),
         ],
         "qcd_bctoe": [
-            *config.x.if_era(run=2, values=[
+            *config.x.if_era(run=2, cfg_tag="is_sl", values=[
                 # "qcd_bctoe_pt15to20_pythia",
                 "qcd_bctoe_pt20to30_pythia",
                 "qcd_bctoe_pt30to80_pythia",
@@ -333,6 +347,9 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
 
     # get all root processes
     config.x.procs = procs = get_root_processes_from_campaign(campaign)
+
+    # processes only for the config
+    config.add_process(procs.n.data)
 
     # add processes to config
     for proc_name in process_names:

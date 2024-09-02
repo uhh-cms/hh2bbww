@@ -215,6 +215,8 @@ def create_hbw_analysis(
         store_parts.insert_before("analysis", "PLACEHOLDER", "DUMMY")
 
         # define order of parts as we want them
+        # TODO: move "producer" after "task_family" since it is used in ProduceColumn
+        # to be decided for "ml_data", "ml_model", "inf_model" (used for multiple tasks)
         parts_order_start = [
             "analysis",
             "calibrator", "calibrators", "calib",
