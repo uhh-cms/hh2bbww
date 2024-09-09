@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import time
 from typing import Hashable, Iterable, Callable
-from functools import wraps
+from functools import wraps, reduce
 import tracemalloc
 
 import law
 
 from columnflow.types import Any
-from columnflow.columnar_util import ArrayFunction, deferred_column
+from columnflow.columnar_util import ArrayFunction, deferred_column, get_ak_routes
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
@@ -31,10 +31,22 @@ def ak_any(masks: list[ak.Array], **kwargs) -> ak.Array:
     param masks: list of masks to be combined via logical "or"
     return: ak.Array of logical "or" of all masks
     """
-    mask = masks[0]
-    for _mask in masks[1:]:
-        mask = mask | _mask
-    return mask
+    if not masks:
+        return False
+    return reduce(lambda a, b: a | b, masks)
+
+
+def ak_all(masks: list[ak.Array], **kwargs) -> ak.Array:
+    """
+    Apparently, ak.all is very slow, so just do the "and" of all masks in a loop.
+    This is more than 100x faster than doing `ak.all(masks, axis=0)`.
+
+    param masks: list of masks to be combined via logical "and"
+    return: ak.Array of logical "and" of all masks
+    """
+    if not masks:
+        return False
+    return reduce(lambda a, b: a & b, masks)
 
 
 def has_tag(tag, *container, operator: callable = any) -> bool:
@@ -252,6 +264,9 @@ def four_vec(
     Helper to quickly get a set of 4-vector component string for all collections in *collections*.
     Additional columns can be added wih the optional *columns* parameter.
 
+    TODO: this function is not really needed anymore, since we can just pass
+    uses={Jet.{pt,eta,phi,mass}} instead, so we should deprecate this function.
+
     Example:
 
     .. code-block:: python
@@ -332,6 +347,15 @@ def timeit_multiple(func):
         _logger.info(f"{func.__name__} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
         return result
     return timeit_wrapper
+
+
+def print_array_sums(events: ak.Array) -> None:
+    """
+    Helper to print the sum of all (nested) columns in an awkward array
+    """
+    routes = get_ak_routes(events)
+    for route in routes:
+        print(route.string_column, ak.sum(route.apply(events)))
 
 
 def call_func_safe(func, *args, **kwargs) -> Any:

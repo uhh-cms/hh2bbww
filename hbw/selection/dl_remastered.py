@@ -4,8 +4,9 @@
 Selection modules for HH -> bbWW(lnulnu).
 """
 
+from importlib import import_module
+
 from collections import defaultdict
-from typing import Tuple
 
 from cmsdb.constants import m_z
 
@@ -16,7 +17,9 @@ from columnflow.selection import Selector, SelectionResult, selector
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.trigger import hbw_trigger_selection
 from hbw.production.weights import event_weights_to_normalize
+
 from hbw.util import ak_any
 
 np = maybe_import("numpy")
@@ -30,11 +33,11 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
     produces={lepton_definition},
 )
 def dl_lepton_selection(
-        self: Selector,
-        events: ak.Array,
-        stats: defaultdict,
-        **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
+    self: Selector,
+    events: ak.Array,
+    stats: defaultdict,
+    **kwargs,
+) -> tuple[ak.Array, SelectionResult]:
     """
     Lepton Selector for the DL channel. Produces:
 
@@ -152,28 +155,29 @@ def dl_lepton_selection(
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
     )
 
+    # TODO: do some rough cross checks, then remove this code
     for channel, trigger_columns in self.config_inst.x.trigger.items():
         # apply the "or" of all triggers of this channel
         if trigger_columns:
             trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
         else:
             # if no trigger is defined, we assume that the event passes the trigger
-            trigger_mask = np.ones(len(events), dtype=np.bool)
-        lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
+            trigger_mask = np.ones(len(events), dtype=np.bool_)
+        lepton_results.steps[f"OldTrigger_{channel}"] = trigger_mask
 
         # ensure that Lepton channel is in agreement with trigger
-        lepton_results.steps[f"TriggerAndLep_{channel}"] = (
-            lepton_results.steps[f"Trigger_{channel}"] & lepton_results.steps[f"Lep_{channel}"]
+        lepton_results.steps[f"OldTriggerAndLep_{channel}"] = (
+            lepton_results.steps[f"OldTrigger_{channel}"] & lepton_results.steps[f"Lep_{channel}"]
         )
 
     # combine results of each individual channel
-    lepton_results.steps["Trigger"] = ak_any([
-        lepton_results.steps[f"Trigger_{channel}"]
+    lepton_results.steps["OldTrigger"] = ak_any([
+        lepton_results.steps[f"OldTrigger_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
-    lepton_results.steps["TriggerAndLep"] = ak_any([
-        lepton_results.steps[f"TriggerAndLep_{channel}"]
+    lepton_results.steps["OldTriggerAndLep"] = ak_any([
+        lepton_results.steps[f"OldTriggerAndLep_{channel}"]
         for channel in self.config_inst.x.trigger.keys()
     ], axis=0)
 
@@ -208,6 +212,8 @@ def dl_lepton_selection_init(self: Selector) -> None:
     # Trigger setup, only required when running SelectEvents
     if self.task and self.task.task_family == "cf.SelectEvents":
         self.produces.add("mll")
+
+        # TODO: remove all this config stuff
         year = self.config_inst.campaign.x.year
 
         if year == 2017:
@@ -271,17 +277,20 @@ def dl_lepton_selection_init(self: Selector) -> None:
 @selector(
     exposed=True,
     # configurable attributes
+    # object selection requirements
     mu_pt=None,
     ele_pt=None,
     mu2_pt=None,
     ele2_pt=None,
-    trigger=None,
     jet_pt=None,
+    # function to configure the self.config_inst.x.triggers aux data
+    trigger_config_func=lambda self: getattr(import_module("hbw.config.trigger"), "add_triggers")(self.config_inst),
+    # jet selection requirements
     n_jet=None,
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=0,
+    version=1,
 )
 def dl1(
     self: Selector,
@@ -289,13 +298,17 @@ def dl1(
     stats: defaultdict,
     hists: DotDict,
     **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
+) -> tuple[ak.Array, SelectionResult]:
     # prepare events
     events, results = self[pre_selection](events, stats, **kwargs)
 
     # lepton selection
     events, lepton_results = self[dl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
+
+    # # trigger selection
+    events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
+    results += trigger_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
@@ -321,12 +334,11 @@ def dl1(
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
+        results.steps.data_double_counting &
         (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
-        # results.steps.ll_zmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
-        # results.steps.DiLeptonMass81 &  # NOTE: we removed this cut to allow checks on the Z peak
         results.steps.Dilepton &
         results.steps.SR &  # exactly 2 tight leptons
         results.steps.Trigger &
@@ -342,7 +354,6 @@ def dl1(
     results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
-    # events, results = self[post_selection](events, results, stats, hists, **kwargs)
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
     return events, results
@@ -365,12 +376,14 @@ def dl1_init(self: Selector) -> None:
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
+        hbw_trigger_selection,
         post_selection,
     }
     self.produces = {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
+        hbw_trigger_selection,
         post_selection,
     }
 
@@ -393,3 +406,4 @@ def dl1_init(self: Selector) -> None:
 
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
+dl1_test = dl1.derive("dl1_test")
