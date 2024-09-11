@@ -165,11 +165,9 @@ def set_config_defaults_and_groups(config_inst):
         "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
     }
-    config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
-    config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
-    config_inst.x.process_groups["dech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
-    config_inst.x.process_groups["d2ech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
-    config_inst.x.process_groups["demuch"] = ["data_muoneg"] + config_inst.x.process_groups["ech"]
+    for group in ("much", "2much", "ech", "2ech", "emuch"):
+        # thanks to double counting removal, we can (and should) now use all datasets in each channel
+        config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
@@ -260,10 +258,12 @@ def set_config_defaults_and_groups(config_inst):
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
+        "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
-        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
+        "dl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll"],
+        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll"],
+        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet

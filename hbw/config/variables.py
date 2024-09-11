@@ -296,6 +296,7 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$m_{ll}$",
     )
+    # TODO: add ptll variable (needs behaviour or running producers)
 
     config.add_variable(
         name="n_jet",
@@ -405,6 +406,16 @@ def add_variables(config: od.Config) -> None:
         x_title="HT",
     )
     config.add_variable(
+        name="lt",
+        expression=lambda events: (
+            ak.sum(events.Muon.pt, axis=1) + ak.sum(events.Muon.pt, axis=1) + events.MET.pt
+        ),
+        aux={"inputs": {"Muon.pt", "Electron.pt", "MET.pt"}},
+        binning=(40, 0, 1200),
+        unit="GeV",
+        x_title="LT",
+    )
+    config.add_variable(
         name="ht_bjet_norm",
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
@@ -423,13 +434,6 @@ def add_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         x_title="$p_{T}$ of all jets",
-    )
-    config.add_variable(
-        name="muons_pt",
-        expression="Muon.pt",
-        binning=(40, 0, 400),
-        unit="GeV",
-        x_title="$p_{T}$ of all muons",
     )
 
     # Jets (4 pt-leading jets)
