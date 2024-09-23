@@ -83,8 +83,12 @@ def patch_csp_versioning():
     """
     Patches the TaskArrayFunction to add the version to the string representation of the task.
     """
+
     def TaskArrayFunction_str(self):
-        version_str = f"V{self.version}" if hasattr(self, "version") else ""
+        version = self.version() if callable(getattr(self, "version", None)) else getattr(self, "version", None)
+        if version and not isinstance(version, int):
+            raise Exception(f"version must be an integer, but is {version}")
+        version_str = f"V{version}" if version is not None else ""
         return f"{self.cls_name}{version_str}"
 
     TaskArrayFunction.__str__ = TaskArrayFunction_str

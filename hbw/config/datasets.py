@@ -22,10 +22,12 @@ logger = law.logger.get_logger(__name__)
 
 
 def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
+    # define data streams based on the run
+    # NOTE: the order of the streams is important for data trigger filtering (removing double counting)
     if config.campaign.x.run == 2:
-        data_streams = ["mu", "e"]
+        config.x.data_streams = ["mu", "e"]
     elif config.campaign.x.run == 3:
-        data_streams = ["mu", "egamma", "muoneg"]
+        config.x.data_streams = ["mu", "egamma", "muoneg"]
 
     data_eras = {
         "2017": "cdef",
@@ -38,7 +40,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             f"data_{stream}_{era}"
             for era in data_eras
         ]
-        for stream in data_streams
+        for stream in config.x.data_streams
     }
 
     dataset_names = DotDict.wrap({
