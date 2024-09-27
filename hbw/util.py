@@ -448,3 +448,8 @@ def IF_DATASET_HAS_LHE_WEIGHTS(
         return self.get()
 
     return None if func.dataset_inst.has_tag("no_lhe_weights") else self.get()
+
+
+@deferred_column
+def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.dataset_inst.is_mc else None

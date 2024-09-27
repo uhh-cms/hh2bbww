@@ -10,6 +10,7 @@ from columnflow.util import maybe_import
 from columnflow.weight import WeightProducer, weight_producer
 from columnflow.config_util import get_shifts_from_sources
 from columnflow.columnar_util import Route
+from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -43,12 +44,19 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @weight_producer(
+    uses={prepare_objects},
     # both used columns and dependent shifts are defined in init below
     weight_columns=None,
     # only run on mc
-    mc_only=True,
+    mc_only=False,
 )
 def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+    # apply behavior (for variable reconstruction)
+    events = self[prepare_objects](events, **kwargs)
+
+    if self.dataset_inst.is_data:
+        return events, ak.Array(np.ones(len(events), dtype=np.float32))
+
     # build the full event weight
     weight = ak.Array(np.ones(len(events), dtype=np.float32))
     for column in self.weight_columns.keys():
@@ -60,6 +68,9 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 @base.init
 def base_init(self: WeightProducer) -> None:
     if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
+        return
+
+    if self.dataset_inst.is_data:
         return
 
     year = self.config_inst.campaign.x.year

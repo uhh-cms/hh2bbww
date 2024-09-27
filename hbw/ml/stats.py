@@ -14,7 +14,7 @@ from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
-from hbw.util import IF_SL, IF_DL
+from hbw.util import IF_SL, IF_DL, IF_MC
 from hbw.weight.default import default_weight_producer
 
 
@@ -29,7 +29,7 @@ logger = law.logger.get_logger(__name__)
 
 @producer(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
-    produces={"event_weight"},
+    produces={IF_MC("event_weight")},
 )
 def ml_preparation(
     self: Producer,
