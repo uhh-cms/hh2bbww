@@ -22,6 +22,8 @@ from columnflow.tasks.cms.inference import CreateDatacards
 from columnflow.util import dev_sandbox, maybe_import
 from hbw.tasks.base import HBWTask
 
+# import hbw.inference.constants as const
+
 array = maybe_import("array")
 
 
@@ -68,11 +70,11 @@ def get_rebin_values(hist, N_bins_final: int = 10):
     """
     N_bins_input = hist.GetNbinsX()
 
-    # replace empty bin values (TODO: remove as soon as we can disable the empty bin filling)
-    EMPTY_BIN_VALUE = 1e-5
-    for i in range(1, N_bins_input + 1):
-        if hist.GetBinContent(i) == EMPTY_BIN_VALUE:
-            hist.SetBinContent(i, 0)
+    # # replace empty bin values (TODO: remove as soon as we can disable the empty bin filling)
+    # EMPTY_BIN_VALUE = 1e-5
+    # for i in range(1, N_bins_input + 1):
+    #     if hist.GetBinContent(i) == EMPTY_BIN_VALUE:
+    #         hist.SetBinContent(i, 0)
 
     # determine events per bin the final histogram should have
     events_per_bin = hist.Integral() / N_bins_final
@@ -265,27 +267,32 @@ class ModifyDatacardsFlatRebin(
         Defaults to all processes of the current category.
         """
         config_category = self.branch_data.config_category
-        proc_names = [proc.name for proc in self.branch_data.processes]
+        processes = self.branch_data.processes.copy()
+        # inf_proc_names = [self.inference_model_inst.inf_proc(proc.name) for proc in self.branch_data.processes]
 
         rebin_process_condition = self.inference_category_rebin_processes.get(config_category, None)
         if not rebin_process_condition:
             logger.warning(
                 f"No rebin condition found for category {config_category}; rebinning will be flat "
-                f"on all processes {proc_names}",
+                f"on all processes {[proc.config_process for proc in processes]}",
             )
-            return proc_names
+            return processes
 
         # transform `rebin_process_condition` into Callable if required
         if not isinstance(rebin_process_condition, Callable):
-            _rebin_processes = law.util.make_tuple(rebin_process_condition)
+            _rebin_processes = list(rebin_process_condition)
             rebin_process_condition = lambda _proc_name: _proc_name in _rebin_processes
 
-        for proc_name in proc_names.copy():
+        for proc in processes.copy():
+            proc_name = proc.config_process
             # check for each process if the *rebin_process_condition*  is fulfilled
             if not rebin_process_condition(proc_name):
-                proc_names.remove(proc_name)
-        logger.info(f"Category {config_category} will be rebinned flat in processes {proc_names}")
-        return proc_names
+                processes.remove(proc)
+        logger.info(
+            f"Category {config_category} will be rebinned flat in processes "
+            f"{[proc.config_process for proc in processes]}",
+        )
+        return processes
 
     def create_branch_map(self):
         return list(self.inference_model_inst.categories)
@@ -332,7 +339,7 @@ class ModifyDatacardsFlatRebin(
         outputs["card"].dump(datacard, formatter="text")
 
         with uproot.open(inp_shapes.fn) as file:
-            logger.info(f"File keys: {file.keys()}")
+            # logger.info(f"File keys: {file.keys()}")
             # determine which histograms are present
             cat_names, proc_names, syst_names = get_cat_proc_syst_names(file)
 
@@ -354,12 +361,13 @@ class ModifyDatacardsFlatRebin(
 
             # determine all processes required for the category *cat_name* to determine the rebin values
             rebin_processes = self.get_rebin_processes()
+            rebin_inf_proc_names = [proc.name for proc in rebin_processes]
 
-            if diff := set(rebin_processes).difference(nominal_hists.keys()):
+            if diff := set(rebin_inf_proc_names).difference(nominal_hists.keys()):
                 raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
                 "nominal histograms found")
 
-            hists = [nominal_hists[proc_name] for proc_name in rebin_processes]
+            hists = [nominal_hists[proc_name] for proc_name in rebin_inf_proc_names]
 
             hist = hists[0]
             for h in hists[1:]:

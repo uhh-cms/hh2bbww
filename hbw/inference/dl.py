@@ -13,7 +13,7 @@ from hbw.inference.base import HBWInferenceModelBase
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dense_default_dl"
+ml_model_name = "dl_22_procs1_w0_inp1"
 # default_producers = [f"ml_{ml_model_name}", "event_weights"]
 
 # All processes to be included in the final datacard
@@ -22,33 +22,37 @@ processes = [
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
     "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",  # TODO
     "tt",
-    # "ttv", "ttvv",
-    "st_schannel", "st_tchannel", "st_twchannel",
+    # "ttv",  # TODO
+    # "ttvv",  # TODO
+    # "st_schannel",  # Not datasets anyways
+    # TODO: merge st_schannel, st_tchannel
+    "st_tchannel",
+    "st_twchannel",
     "dy",
     "w_lnu",
-    # "vv",
-    # "vvv",
-    # "qcd",
-    # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
+    "vv",
+    # "vvv",  # TODO
+    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    # TODO: add thq, thw, bbh
+    # "qcd",  # probably not needed
 ]
 
 # All categories to be included in the final datacard
 config_categories = [
-    "sr__2e__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2e__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-    "sr__2e__ml_tt",
-    "sr__2e__ml_t_bkg",
-    "sr__2e__ml_st",
-    "sr__2e__ml_sig",
-    "sr__2e__ml_v_lep",
-    "sr__2mu__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2mu__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-    "sr__2mu__ml_tt",
-    "sr__2mu__ml_tt_bkg",
-    "sr__2mu__ml_st",
-    "sr__2mu__ml_sig",
-    "sr__2mu__ml_v_lep",
+    "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+    "sr__1b__ml_tt",
+    "sr__1b__ml_st",
+    "sr__1b__ml_dy",
+    "sr__1b__ml_h",
+    "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+    "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+    "sr__2b__ml_tt",
+    "sr__2b__ml_st",
+    "sr__2b__ml_dy",
+    "sr__2b__ml_h",
 ]
 
 rate_systematics = [
@@ -95,15 +99,17 @@ shape_systematics = [
     "murf_envelope_st",
     "murf_envelope_dy",
     "murf_envelope_w_lnu",
-    "murf_envelope_ttV",
-    "murf_envelope_VV",
+    # "murf_envelope_ttv",
+    # "murf_envelope_vv",
+    # "murf_envelope_h",
     # Shape PDF Uncertainties
     "pdf_shape_tt",
     "pdf_shape_st",
     "pdf_shape_dy",
     "pdf_shape_w_lnu",
-    "pdf_shape_ttV",
-    "pdf_shape_VV",
+    # "pdf_shape_ttv",
+    # "pdf_shape_vv",
+    # "pdf_shape_h",
     # Scale Factors (TODO)
     "btag_hf",
     "btag_lf",
@@ -136,100 +142,166 @@ default_cls_dict = {
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 
-cls_dict = default_cls_dict.copy()
-
-cls_dict["processes"] = [
-    # "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    # "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-    # "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-    "tt",
-]
-
-cls_dict["config_categories"] = [
-    "2e__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "2e__ml_tt",
-]
-
-cls_dict["systematics"] = [
-    "lumi_13TeV_2017",
-]
-
-cls_dict["ml_model_name"] = "dense_test_dl"
-
-# minimal model for quick test purposes
-dl_test = dl.derive("dl_test", cls_dict=cls_dict)
-
-#
-# 2022
-#
-
-processes_22 = [
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "tt",
-    # "st_schannel",
-    "st_tchannel", "st_twchannel",
-    "dy",
-    "w_lnu",
-]
-
-config_categories_22 = [
-    # Signal regions
-    "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    # Background regions
-    "sr__2e__ml_tt",
-    "sr__2e__ml_st",
-    "sr__2e__ml_dy",
-    "sr__2mu__ml_tt",
-    "sr__2mu__ml_st",
-    "sr__2mu__ml_dy",
-    "sr__emu__ml_tt",
-    "sr__emu__ml_st",
-    "sr__emu__ml_dy",
-]
-
-dl_22 = dl.derive("dl_22", cls_dict={
-    "dummy_kl_variation": True,
-    "processes": processes_22,
-    "config_categories": config_categories_22,
-    "ml_model_name": "dl_22",
-    "systematics": rate_systematics,
-})
-dl_22_shapes = dl_22.derive("dl_22_shapes", cls_dict={
-    "systematics": rate_systematics + shape_systematics,
-})
-dl_22_test = dl.derive("dl_22_test", cls_dict={
+dl.derive("dl_hww_and_hzz", cls_dict={
     "processes": [
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "st_tchannel",
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        "hh_ggf_hbb_hzz_kl0_kt1",
+        "hh_ggf_hbb_hzz_kl1_kt1",
+        "hh_ggf_hbb_hzz_kl2p45_kt1",
+        "hh_ggf_hbb_hzz_kl5_kt1",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
+})
+dl.derive("dl_lch", cls_dict={
+    "processes": [
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
     ],
     "config_categories": [
+        "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
         "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2mu__2b__ml_tt",
-        "sr__2mu__2b__ml_st",
+        "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "sr__1b__ml_tt",
+        "sr__1b__ml_st",
+        "sr__1b__ml_dy",
+        "sr__1b__ml_h",
+        "sr__2b__ml_tt",
+        "sr__2b__ml_st",
+        "sr__2b__ml_dy",
+        "sr__2b__ml_h",
     ],
-    "ml_model_name": "dl_22",
+})
+dl.derive("dl_hww2l2nu", cls_dict={
+    "processes": [
+        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
+})
+dl.derive("dl_hww_v1", cls_dict={
+    "processes": [
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
 })
 
-dl_22post_limited = dl_22.derive("dl_22post_limited", cls_dict={
-    "ml_model_name": "dl_22post_limited",
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
-    "config_categories": [
-        # Signal regions
-        "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        # Background regions
-        "sr__2e__ml_st_tchannel_t",
-        "sr__2mu__ml_st_tchannel_t",
-        "sr__emu__ml_st_tchannel_t",
+dl.derive("dl_dummy_vbf_variation", cls_dict={
+    "processes": [
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        "hh_ggf_hbb_hzz_kl0_kt1",
+        "hh_ggf_hbb_hzz_kl1_kt1",
+        "hh_ggf_hbb_hzz_kl2p45_kt1",
+        "hh_ggf_hbb_hzz_kl5_kt1",
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
+    "dummy_vbf_variation": True,
+})
+dl.derive("dl_with_vbf2", cls_dict={
+    "processes": [
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
+        "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
+        "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",
+        "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hww_kvm2p12_k2v3p87_klm5p96",
+        # "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
+        # "hh_vbf_hbb_hzz_kv1_k2v0_kl1",
+        # "hh_vbf_hbb_hzz_kv1p74_k2v1p37_kl14p4",
+        # "hh_vbf_hbb_hzz_kvm0p012_k2v0p03_kl10p2",
+        # "hh_vbf_hbb_hzz_kvm0p758_k2v1p44_klm19p3",
+        # "hh_vbf_hbb_hzz_kvm0p962_k2v0p959_klm1p43",
+        # "hh_vbf_hbb_hzz_kvm1p21_k2v1p94_klm0p94",
+        # "hh_vbf_hbb_hzz_kvm1p6_k2v2p72_klm1p36",
+        # "hh_vbf_hbb_hzz_kvm1p83_k2v3p57_klm3p39",
+        # "hh_vbf_hbb_hzz_kvm2p12_k2v3p87_klm5p96",
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        # "hh_ggf_hbb_hzz_kl0_kt1",
+        # "hh_ggf_hbb_hzz_kl1_kt1",
+        # "hh_ggf_hbb_hzz_kl2p45_kt1",
+        # "hh_ggf_hbb_hzz_kl5_kt1",
+        # "hh_vbf_hbb_hvv_kv1_k2v1_kl1",  # TODO
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
     ],
 })
+
+
+dl.derive("dl_tmp", cls_dict={
+    "processes": [
+        "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+        "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+        # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",  # TODO
+        "tt",
+        "dy",
+        "w_lnu",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
+})
+
+
+dl.derive("dl_test", cls_dict={
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+    "categories": [
+        "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "sr__2b__ml_st",
+    ],
+    "systematics": rate_systematics},
+)
+dl.derive("dl_rates_only", cls_dict={"systematics": rate_systematics})
