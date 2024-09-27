@@ -16,7 +16,7 @@ from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
-from hbw.util import four_vec
+
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
@@ -24,6 +24,16 @@ np = maybe_import("numpy")
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 ZERO_PADDING_VALUE = -10
+
+
+@producer(uses={"*"}, produces={"dummy"})
+def check_columns(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Check that all columns are present in the events.
+    """
+    from hbw.util import debugger
+    debugger()
+    return events
 
 
 def check_variable_existence(self: Producer) -> None:
@@ -49,9 +59,9 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     uses={
         prepare_objects,
         "HbbJet.msoftdrop",
-    } | four_vec(
-        {"Electron", "Muon", "MET", "Jet", "Bjet", "Lightjet", "HbbJet", "VBFJet"},
-    ),
+        "{Electron,Muon,Jet,Bjet,Lightjet,VBFJet,HbbJet}.{pt,eta,phi,mass}",
+        "MET.{pt,phi}",
+    },
     # produced columns set in the init function
 )
 def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

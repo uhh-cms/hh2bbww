@@ -9,11 +9,9 @@ import law
 from columnflow.production import Producer, producer
 from columnflow.selection import SelectionResult
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, optional_column
+from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 # from columnflow.production.util import attach_coffea_behavior
-
-from hbw.util import four_vec
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -85,12 +83,8 @@ def apply_object_results(events: ak.Array, results: SelectionResult = None):
 
 
 @producer(
-    # This producer only requires 4-vector properties,
-    # but all columns required by the main Selector/Producer will be considered
-    uses=(
-        {attach_coffea_behavior} | four_vec({"Electron", "Muon", "MET"}) |
-        optional_column(four_vec("Jet", "btagDeepFlavB"))
-    ),
+    # collections are only created when needed by someone else
+    uses={attach_coffea_behavior},
     # no produces since we do not want to permanently produce columns
 )
 def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult = None, **kwargs) -> ak.Array:
@@ -104,12 +98,6 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # coffea behavior for relevant objects
     events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
-    if "Bjet" not in events.fields and "Jet" in events.fields:
-        logger.warning("Bjet collection is missing: will be defined using the Jet collection")
-        # define b-jets as the two b-score leading jets, b-score sorted
-        bjet_indices = ak.argsort(events.Jet.btagDeepFlavB, axis=-1, ascending=False)
-        events = set_ak_column(events, "Bjet", events.Jet[bjet_indices[:, :2]])
-
     if "VetoLepton" not in events.fields and "VetoElectron" in events.fields and "VetoMuon" in events.fields:
         # combine VetoElectron and VetoMuon into a single object (VetoLepton)
         veto_lepton = ak.concatenate([events.VetoMuon * 1, events.VetoElectron * 1], axis=-1)
@@ -121,8 +109,9 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
 
     # transform MET into 4-vector
-    events["MET"] = set_ak_column(events.MET, "mass", 0)
-    events["MET"] = set_ak_column(events.MET, "eta", 0)
-    events["MET"] = ak.with_name(events["MET"], "PtEtaPhiMLorentzVector")
+    if "MET" in events.fields:
+        events["MET"] = set_ak_column(events.MET, "mass", 0)
+        events["MET"] = set_ak_column(events.MET, "eta", 0)
+        events["MET"] = ak.with_name(events["MET"], "PtEtaPhiMLorentzVector")
 
     return events
