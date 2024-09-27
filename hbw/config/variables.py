@@ -347,7 +347,7 @@ def add_variables(config: od.Config) -> None:
         aux={
             "rebin": 10,
             "x_max": 50,
-        }
+        },
     )
 
     config.add_variable(
