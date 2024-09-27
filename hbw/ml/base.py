@@ -216,7 +216,11 @@ class MLClassifierBase(MLModel):
 
     def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
-        return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
+        # NOTE: might be nice to keep the "pre_ml_cats" for consistency, but running two
+        # categorization Producers in the same workflow is messy, so we skip it for now
+        # return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
+        # return requested_producers or ["event_weights", config_inst.x.ml_inputs_producer]
+        return ["event_weights", config_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
@@ -450,11 +454,11 @@ class MLClassifierBase(MLModel):
 
         ml_dataset = self.data_loader(self, process_inst, events)
 
-        # store the ml truth label in the events
-        events = set_ak_column(
-            events, f"{self.cls_name}.ml_truth_label",
-            ml_dataset.labels,
-        )
+        # # store the ml truth label in the events
+        # events = set_ak_column(
+        #     events, f"{self.cls_name}.ml_truth_label",
+        #     ml_dataset.labels,
+        # )
 
         # check that all MLTrainings were started with the same set of parameters
         parameters = [model["parameters"] for model in models]
