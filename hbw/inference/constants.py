@@ -34,17 +34,6 @@ inference_procnames = {
     # "w_lnu": "W",
     # "dy": "DY",
     # "vv": "VV",
-    # di higgs (required name conventions)
-    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": "ggHH_kl_0_kt_1_hbb_hvv2l2nu",
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "ggHH_kl_1_kt_1_hbb_hvv2l2nu",
-    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": "ggHH_kl_2p45_kt_1_hbb_hvv2l2nu",
-    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": "ggHH_kl_5_kt_1_hbb_hvv2l2nu",
-    "hh_ggf_hbb_hvvqqlnu_kl0_kt1": "ggHH_kl_0_kt_1_hbb_hvvqqlnu",
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "ggHH_kl_1_kt_1_hbb_hvvqqlnu",
-    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": "ggHH_kl_2p45_kt_1_hbb_hvvqqlnu",
-    "hh_ggf_hbb_hvvqqlnu_kl5_kt1": "ggHH_kl_5_kt_1_hbb_hvvqqlnu",
-    "hh_ggf_{decay}_{params}": "ggHH_{params}_{decay}",
-    "hh_vbf_{decay}_{params}": "qqHH_{params}_{decay}",
     # single higgs (required name conventions)
     "h_ggf": "ggH",
     "h_vbf": "qqH",
