@@ -166,12 +166,54 @@ def add_top_reco_variables(config: od.Config) -> None:
             )
 
 
+def add_debug_variable(config: od.Config) -> None:
+    """
+    Variable for debugging, opens a debugger when the `expression` is evaluated, e.g. when calling:
+    law run cf.CreateHistograms --variables debugger
+    """
+    def dbg(events):
+        from hbw.util import debugger
+        debugger()
+
+    config.add_variable(
+        name="debugger",
+        expression=dbg,
+        aux={"inputs": {"{Electron,Muon,Jet}.{pt,eta,phi,mass}"}},
+        binning=(1, 0, 1),
+    )
+
+
 @call_once_on_config()
 def add_variables(config: od.Config) -> None:
     """
     Adds all variables to a *config* that are present after `ReduceEvents`
     without calling any producer
     """
+    # from columnflow.columnar_util import set_ak_column
+
+    # def with_behavior(custom_expression: callable) -> callable:
+    #     def expression(events):
+    #         from hbw.production.prepare_objects import custom_collections
+    #         from columnflow.production.util import attach_coffea_behavior
+    #         events = attach_coffea_behavior.call_func(None, events, collections=custom_collections)
+
+    #         # add Lepton collection if possible
+    #         if "Lepton" not in events.fields and "Electron" in events.fields and "Muon" in events.fields:
+    #             lepton = ak.concatenate([events.Muon * 1, events.Electron * 1], axis=-1)
+    #             events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
+
+    #         return custom_expression(events)
+
+    #     return expression
+
+    # config.add_variable(
+    #     name="mll_test",
+    #     expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).mass,
+    #     binning=(40, 0., 200.),
+    #     unit="GeV",
+    #     x_title=r"$m_{ll}$",
+    #     aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"}},
+    # )
 
     # (the "event", "run" and "lumi" variables are required for some cutflow plotting task,
     # and also correspond to the minimal set of columns that coffea's nano scheme requires)
@@ -296,7 +338,27 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$m_{ll}$",
     )
-    # TODO: add ptll variable (needs behaviour or running producers)
+    config.add_variable(
+        name="mll_manybins",
+        expression="mll",
+        binning=(2400, 0., 240.),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+        aux={
+            "rebin": 10,
+            "x_max": 50,
+        }
+    )
+
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in WeightProducer
+        name="ptll",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"$p_{T}^{ll}$",
+        aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"}},
+    )
 
     config.add_variable(
         name="n_jet",
