@@ -189,6 +189,7 @@ class MLPreTraining(
     reqs = Requirements(
         RemoteWorkflow.reqs,
         MergeMLEvents=MergeMLEvents,
+        SimpleMergeMLEvents=SimpleMergeMLEvents,
         MergeMLStats=MergeMLStats,
     )
 
@@ -217,21 +218,41 @@ class MLPreTraining(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
+        # reqs["events"] = {
+        #     config_inst.name: {
+        #         dataset_inst.name: [
+        #             self.reqs.MergeMLEvents.req(
+        #                 self,
+        #                 config=config_inst.name,
+        #                 dataset=dataset_inst.name,
+        #                 calibrators=_calibrators,
+        #                 selector=_selector,
+        #                 producers=_producers,
+        #                 fold=f,
+        #                 tree_index=-1,
+        #             )
+        #             for f in range(self.ml_model_inst.folds)
+        #         ]
+        #         for dataset_inst in dataset_insts
+        #     }
+        #     for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+        #         self.ml_model_inst.used_datasets.items(),
+        #         self.calibrators,
+        #         self.selectors,
+        #         self.producers,
+        #     )
+        # }
         reqs["events"] = {
             config_inst.name: {
-                dataset_inst.name: [
-                    self.reqs.MergeMLEvents.req(
-                        self,
-                        config=config_inst.name,
-                        dataset=dataset_inst.name,
-                        calibrators=_calibrators,
-                        selector=_selector,
-                        producers=_producers,
-                        fold=f,
-                        tree_index=-1,
-                    )
-                    for f in range(self.ml_model_inst.folds)
-                ]
+                dataset_inst.name: self.reqs.SimpleMergeMLEvents.req_different_branching(
+                    self,
+                    config=config_inst.name,
+                    dataset=dataset_inst.name,
+                    calibrators=_calibrators,
+                    selector=_selector,
+                    producers=_producers,
+                    branch=-1,
+                )
                 for dataset_inst in dataset_insts
             }
             for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
@@ -271,16 +292,37 @@ class MLPreTraining(
 
         process = self.branch_data["process"]
         # load events only for specified process and fold
+        # reqs["events"] = {
+        #     config_inst.name: {
+        #         dataset_inst.name: self.reqs.MergeMLEvents.req(
+        #             self,
+        #             config=config_inst.name,
+        #             dataset=dataset_inst.name,
+        #             calibrators=_calibrators,
+        #             selector=_selector,
+        #             producers=_producers,
+        #             fold=self.fold,
+        #         )
+        #         for dataset_inst in dataset_insts
+        #         if dataset_inst.x.ml_process == process
+        #     }
+        #     for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
+        #         self.ml_model_inst.used_datasets.items(),
+        #         self.calibrators,
+        #         self.selectors,
+        #         self.producers,
+        #     )
+        # }
         reqs["events"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLEvents.req(
+                dataset_inst.name: self.reqs.SimpleMergeMLEvents.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
                     calibrators=_calibrators,
                     selector=_selector,
                     producers=_producers,
-                    fold=self.fold,
+                    branch=-1,
                 )
                 for dataset_inst in dataset_insts
                 if dataset_inst.x.ml_process == process
@@ -385,7 +427,8 @@ class MLPreTraining(
         for config_inst in self.ml_model_inst.config_insts:
             used_datasets = inputs["events"][config_inst.name].keys()
             for dataset in used_datasets:
-                input_target = inputs["events"][config_inst.name][dataset]["mlevents"]
+                input_target = inputs["events"][config_inst.name][dataset].collection[0]["mlevents"][self.fold]
+                # input_target = inputs["events"][config_inst.name][dataset]["mlevents"]
                 process = config_inst.get_dataset(dataset).x.ml_process
                 events[process].append(ak.from_parquet(input_target.path))
 
