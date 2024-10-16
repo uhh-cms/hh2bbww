@@ -61,6 +61,8 @@ hbw_reduction(){
 	$@
 }
 
+# NOTE: this function is dangerous because it will start ReduceEvents per dataset twice
+# (artifact of the MergeReductionStats task)
 hbw_merge_reduction(){
     law run cf.MergeReducedEventsWrapper --version $version --workers 100 \
 	--shifts nominal \

@@ -13,7 +13,6 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 # from cmsdb.constants import m_w
 
-from hbw.util import four_vec
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.variables import add_neutrino_variables, add_top_reco_variables
 
@@ -30,7 +29,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 @producer(
     uses=prepare_objects,
-    produces=four_vec(["Neutrino", "Neutrino1", "Neutrino2"]),
+    produces={"{Neutrino,Neutrino1,Neutrino2}.{pt,eta,phi,mass}"},
 )
 def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -129,8 +128,8 @@ def neutrino_reconstruction_init(self: Producer) -> None:
 
 
 @producer(
-    uses={neutrino_reconstruction, prepare_objects} | four_vec("Bjet"),
-    produces={neutrino_reconstruction} | four_vec({"tlep_hyp1", "tlep_hyp2"}),
+    uses={neutrino_reconstruction, prepare_objects, "Bjet.{pt,eta,phi,mass}"},
+    produces={neutrino_reconstruction, "{tlep_hyp1,tlep_hyp2}.{pt,eta,phi,mass}"},
 )
 def top_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

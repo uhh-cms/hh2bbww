@@ -79,10 +79,11 @@ default_process_colors = {
     "dy_m10to50": color_palette["brown"],
     "dy_m4to10": color_palette["darkgrey"],
     "ttV": color_palette["brown"],
-    "VV": color_palette["darkgrey"],
+    "vv": color_palette["blue"],
     "other": color_palette["grey"],
     "hh_ggf_hbb_htt": color_palette["grey"],
 }
+
 for decay in ("", "qqlnu", "2l2nu"):
     default_process_colors[f"hh_ggf_hbb_hvv{decay}"] = "#000000"  # black
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
@@ -91,7 +92,9 @@ for decay in ("", "qqlnu", "2l2nu"):
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"  # pink2
 
     default_process_colors[f"hh_vbf_hbb_hvv{decay}"] = "#999999"  # grey
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["darkgrey"]
+    # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["brown"]
+    # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"  # blue
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"  # green
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v0_kl1"] = "#984ea3"  # purple
@@ -99,14 +102,33 @@ for decay in ("", "qqlnu", "2l2nu"):
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv0p5_k2v1_kl1"] = "#a65628"  # brown
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1p5_k2v1_kl1"] = "#f781bf"  # pink
 
+
+default_labels = {
+    "dy_m50toinf": "DY ($M > 50$)",
+    "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
+    "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
+    "dy_m50toinf_2j": "DY ($M > 50$, 2 jets)",
+    "dy_m10to50": "DY ($10 < M < 50$)",
+    "dy_m4to10": "DY ($4 < M < 10$)",
+    "st_tchannel_t": "st (t-channel, t)",
+    "st_tchannel_tbar": r"st (t-channel, $\bar{t}$)",
+    "st_twchannel_t_sl": "tW (t, sl)",
+    "st_twchannel_tbar_sl": r"tW ($\bar{t}$, sl)",
+    "st_twchannel_t_dl": "tW (t, dl)",
+    "st_twchannel_tbar_dl": r"tW ($\bar{t}$, dl)",
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"hh_{vbf} (dl)",
+}
+
 ml_labels = {
     "tt": "$t\\bar{t}$",
     "hh_ggf_hbb_hvv": r"hh_{ggf}",
     "hh_vbf_hbb_hvv": r"hh_{vbf}",
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": "hh_ggf (sl)",
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": "hh_ggf (dl)",
-    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": "hh_vbf (sl)",
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": "hh_vbf (dl)",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": r"hh_{ggf} (sl)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"hh_{vbf} (sl)",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"ggHH",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"qqHH",
+    # "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"hh_{ggf} (dl)",
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"hh_{vbf} (dl)",
     "graviton_hh_ggf_bbww_m250": "grav250",
     "graviton_hh_ggf_bbww_m350": "grav350",
     "graviton_hh_ggf_bbww_m450": "grav450",
@@ -163,6 +185,9 @@ def stylize_processes(config: od.Config) -> None:
         # set default colors
         if color := default_process_colors.get(proc.name, None):
             proc.color1 = color
+
+        if label := default_labels.get(proc.name, None):
+            proc.label = label
 
         if short_label := short_labels.get(proc.name, None):
             proc.short_label = short_label

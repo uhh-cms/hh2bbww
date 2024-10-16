@@ -17,7 +17,7 @@ from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import four_vec, call_once_on_config
+from hbw.util import call_once_on_config
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -26,7 +26,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @selector(
-    uses=four_vec("Jet", {"jetId"}) | {optional("Jet.puId")},
+    uses={"Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")},
     exposed=True,
 )
 def jet_selection(
@@ -182,7 +182,7 @@ def jet_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses={jet_selection} | four_vec("Jet"),
+    uses={jet_selection, "Jet.{pt,eta,phi,mass}"},
     exposed=False,
 )
 def vbf_jet_selection(
@@ -256,17 +256,12 @@ def vbf_jet_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses=(
-        {
-            jet_selection,
-        } |
-        four_vec(
-            {"Jet", "Electron", "Muon"},
-        ) | {"Jet.jetId"} |
-        four_vec(
-            "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subJetIdx2", "tau1", "tau2"},
-        )
-    ),
+    uses={
+        jet_selection,
+        "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",
+        "Jet.{jetId}",
+        "FatJet.{msoftdrop,jetId,subJetIdx1,subJetIdx2,tau1,tau2}",
+    },
     exposed=False,
     single_lepton_selector=True,
 )

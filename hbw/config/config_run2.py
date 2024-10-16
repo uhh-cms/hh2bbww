@@ -22,6 +22,7 @@ from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
+from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
@@ -678,7 +679,7 @@ def add_config(
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
         # Leptons
-        "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight}",
+        "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.deltaEtaSC", "mll",
         # MET
         "MET.{pt,phi}",
@@ -697,6 +698,9 @@ def add_config(
 
     # add variables
     add_variables(cfg)
+
+    # add hist hooks
+    add_hist_hooks(cfg)
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL

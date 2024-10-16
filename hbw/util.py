@@ -301,6 +301,17 @@ def four_vec(
     return outp
 
 
+def has_four_vec(
+    events: ak.Array,
+    collection_name: str,
+):
+    """
+    Check if the collection has the fields required for a 4-vector.
+    """
+    four_vec_cols = {"pt", "eta", "phi", "mass"}
+    return collection_name in events.fields and four_vec_cols.issubset(events[collection_name].fields)
+
+
 def call_once_on_config(include_hash=False):
     """
     Parametrized decorator to ensure that function *func* is only called once for the config *config*
@@ -448,3 +459,8 @@ def IF_DATASET_HAS_LHE_WEIGHTS(
         return self.get()
 
     return None if func.dataset_inst.has_tag("no_lhe_weights") else self.get()
+
+
+@deferred_column
+def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.dataset_inst.is_mc else None

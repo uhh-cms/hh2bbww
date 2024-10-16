@@ -46,6 +46,16 @@ class ControlPlots(
         lepton_channels = self.config_inst.x.lepton_channels
         reqs = {}
 
+        reqs[f"control_plots_{lepton_tag}"] = PlotVariables1D.req(
+            self,
+            processes=(f"d{lepton_tag}",),
+            process_settings=[["scale_signal"]],
+            variables=[f"{lepton_tag}"],
+            categories=(f"{lepton_tag}",),
+            yscale="log",
+            cms_label="pw",
+        )
+
         for l_channel in lepton_channels:
             reqs[f"control_plots_{l_channel}"] = PlotVariables1D.req(
                 self,
@@ -96,6 +106,16 @@ class MLInputPlots(
         lepton_channels = self.config_inst.x.lepton_channels
         reqs = {}
 
+        reqs[f"ml_input_plots_{lepton_tag}"] = PlotVariables1D.req(
+            self,
+            processes=(f"d{lepton_tag}",),
+            process_settings=[["scale_signal"]],
+            variables=["mli_*"],
+            categories=(f"{lepton_tag}",),
+            yscale="log",
+            cms_label="pw",
+        )
+
         for l_channel in lepton_channels:
             reqs[f"ml_input_plots_{l_channel}"] = PlotVariables1D.req(
                 self,
@@ -104,7 +124,7 @@ class MLInputPlots(
                 variables=["mli_*"],
                 categories=(f"{lepton_tag}_{l_channel}ch",),
                 yscale="log",
-                cms_label="simpw",
+                cms_label="pw",
             )
 
         return reqs

@@ -24,8 +24,6 @@ from hbw.util import ak_any
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-coffea = maybe_import("coffea")
-maybe_import("coffea.nanoevents.methods.nanoaod")
 
 
 @selector(
@@ -198,15 +196,16 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TripleLooseLeptonVeto": r"$N_{lepton}^{loose} \leq 2$",
         "TripleFakeableLeptonVeto": r"$N_{lepton}^{fakeable} \leq 2$",
         "TripleTightLeptonVeto": r"$N_{lepton}^{tight} \leq 2$",
-        "Charge": r"Opposite-charge leptons",
+        "Charge": r"$\sum q_{\ell} = 0$",
         "Dilepton": r"$N_{lepton} = 2$",
+        "DiLeptonMass81": r"$m_{\ell\ell} < 81$",
         "Lep_mm": r"$N_{\mu} = 2$ and $N_{e} = 0$",
         "Lep_ee": r"$N_{\mu} = 0$ and $N_{e} = 2$",
         "Lep_emu": r"Leading e, subleading $\mu$",
         "Lep_mue": r"Leading $\mu$, subleading e",
         "Fake": r"$N_{lepton}^{tight} \leq 1$",
         "SR": r"$N_{lepton}^{tight} = 2$",
-        "TriggerAndLep": "Trigger matches Lepton Channel",
+        "TriggerAndLep": "Trigger+Lep",
     })
 
     # Trigger setup, only required when running SelectEvents

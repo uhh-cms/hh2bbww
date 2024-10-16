@@ -35,16 +35,15 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2022postEE": "efg",
     }[config.x.cpn_tag]
 
-    data_datasets = {
-        f"data_{stream}": [
-            f"data_{stream}_{era}"
-            for era in data_eras
-        ]
+    data_datasets = [
+        f"data_{stream}_{era}"
+        for era in data_eras
         for stream in config.x.data_streams
-    }
+    ]
 
     dataset_names = DotDict.wrap({
-        **data_datasets,
+        # **data_datasets,
+        "data": data_datasets,
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
             # "st_schannel_lep_4f_amcatnlo",
@@ -287,7 +286,7 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
     get all relevant dataset names and modify them based on the config and campaign
     """
 
-    dataset_names = hbw_dataset_names(config)
+    config.x.dataset_names = dataset_names = hbw_dataset_names(config)
 
     # optionally switch to custom signal processes (only implemented for hh_ggf_sl)
     if config.has_tag("custom_signals"):
@@ -349,9 +348,6 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
 
     # get all root processes
     config.x.procs = procs = get_root_processes_from_campaign(campaign)
-
-    # processes only for the config
-    config.add_process(procs.n.data)
 
     # add processes to config
     for proc_name in process_names:

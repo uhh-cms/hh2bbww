@@ -61,6 +61,12 @@ def gen_v_boson(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         dilepton_pdg_id,
     )
     dilepton_pair["pdgId"] = dilepton_pdg_id
+
+    # check if the V boson type is consistent
+    unique_pdg_id = (set(abs(v_boson.pdgId)) | set(dilepton_pair.pdgId)) - {None}
+    if len(unique_pdg_id) != 1:
+        raise Exception(f"found multiple boson types: {unique_pdg_id}")
+
     # save the column
     for field in self.produced_v_columns:
         value = ak.where(

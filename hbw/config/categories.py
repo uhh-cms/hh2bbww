@@ -121,13 +121,13 @@ def add_mll_categories(config: od.Config) -> None:
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        label=r"81 \leq m_{\ell\ell} < 101",
+        # label=r"81 \leq m_{\ell\ell} < 101",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        label=r"m_{\ell\ell} \geq 101",
+        # label=r"m_{\ell\ell} \geq 101",
     )
 
 
@@ -305,24 +305,10 @@ def add_categories_production(config: od.Config) -> None:
 def add_categories_ml(config, ml_model_inst):
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
+
     #
     # prepare non-ml categories
     #
-
-    cat_1e = config.get_category("1e")
-    cat_1e.selection = "catid_1e"
-
-    cat_1mu = config.get_category("1mu")
-    cat_1mu.selection = "catid_1mu"
-
-    cat_2e = config.get_category("2e")
-    cat_2e.selection = "catid_2e"
-
-    cat_2mu = config.get_category("2mu")
-    cat_2mu.selection = "catid_2mu"
-
-    cat_emu = config.get_category("emu")
-    cat_emu.selection = "catid_emu"
 
     add_jet_categories(config)
 
@@ -339,13 +325,15 @@ def add_categories_ml(config, ml_model_inst):
     #       we can reconfigure our MLModel after having created these categories
     ml_categories = []
     for i, proc in enumerate(ml_model_inst.processes):
+        cat_label = config.get_process(proc).x.ml_label
         ml_categories.append(config.add_category(
             # NOTE: name and ID is unique as long as we don't use
             #       multiple ml_models simutaneously
             name=f"ml_{proc}",
             id=(i + 1) * 1000,
             selection=f"catid_ml_{proc}",
-            label=f"ml_{proc}",
+            label=f"{cat_label} category",
+            aux={"ml_proc": proc},
         ))
 
     #
@@ -354,7 +342,9 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
-        "main": [config.get_category(cat) for cat in config.x.main_categories],
+        # NOTE: when building DNN categories, we do not need the control regions
+        "main": [config.get_category("sr")],
+        # "main": [config.get_category(cat) for cat in config.x.main_categories],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],

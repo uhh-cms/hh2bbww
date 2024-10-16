@@ -85,7 +85,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         expression="mli_mbb",
         binning=(40, 0, 400),
         unit="GeV",
-        x_title=r"m(b,b)",
+        x_title=r"$m_{bb}$",
     )
     config.add_variable(
         name="mli_mindr_lb",
@@ -162,6 +162,9 @@ def add_common_ml_variables(config: od.Config) -> None:
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
+
+        b1_pt = config.get_variable("mli_b1_pt")
+        b1_pt.x_title = r"$p_{T}^{b1}$"
 
 
 @call_once_on_config()

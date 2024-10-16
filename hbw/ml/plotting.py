@@ -11,6 +11,7 @@ import order as od
 from hbw.util import round_sig, timeit
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, DotDict
+from columnflow.plotting.plot_util import get_position
 
 
 np = maybe_import("numpy")
@@ -20,7 +21,11 @@ hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
 
-cms_llabel = "Simulation Work in progress"
+cms_label_kwargs = {
+    "data": False,
+    "llabel": "Private work (CMS simulation)",
+    "exp": "",
+}
 
 
 def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
@@ -119,7 +124,7 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False)
+    mplhep.cms.label(ax=ax, **cms_label_kwargs)
 
     plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -204,7 +209,7 @@ def plot_confusion(
     ConfusionMatrixDisplay(confusion, display_labels=labels).plot(ax=ax)
 
     ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
-    mplhep.cms.label(ax=ax, llabel=cms_llabel, fontsize=20, data=False, loc=0)
+    mplhep.cms.label(ax=ax, fontsize=20, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     plt.tight_layout()
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
@@ -266,7 +271,6 @@ def plot_roc_ovr(
         # create the plot
         ax.plot(fpr, tpr)
 
-    ax.set_title(f"ROC OvR, {input_type} set")
     ax.set_xlabel("Background selection efficiency (FPR)")
     ax.set_ylabel("Signal selection efficiency (TPR)")
 
@@ -277,9 +281,10 @@ def plot_roc_ovr(
     )
     ax.legend(
         [f"Signal: {labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
+        title=f"ROC OvR, {input_type} set",
         loc="lower right",
     )
-    mplhep.cms.label(ax=ax, llabel="Simulation\nWork in progress", data=False, loc=2)
+    mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -353,16 +358,16 @@ def plot_roc_ovo(
                 auc_score = round_sig(auc_score, 4, float)
                 stats[f"AUC_{input_type}_{process_insts[i].name}_vs_{process_insts[j].name}"] = auc_score
 
-        ax.set_title(f"ROC OvO, {input_type} set")
         ax.set_xlabel("Background selection efficiency (FPR)")
         ax.set_ylabel(f"{labels[i]} selection efficiency (TPR)")
 
         # legend
         ax.legend(
             [f"Background: {labels[j]} (AUC: {auc_score:.4f})" for j, auc_score in auc_scores.items()],
+            title=f"ROC OvO, {input_type} set",
             loc="lower right",
         )
-        mplhep.cms.label(ax=ax, llabel="Simulation\nWork in progress", data=False, loc=2)
+        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
 
@@ -437,27 +442,30 @@ def plot_output_nodes(
         (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs)
 
         # legend
-        ax.legend(loc="best")
+        ax.legend(loc="best", ncols=2)
 
         # axis styling
         ax_kwargs = {
-            "ylabel": "Entries",
+            "ylabel": r"$\Delta N/N$" if shape_norm else "Entries",
             "xlim": (0, 1),
             "yscale": "log" if y_log else "linear",
         }
         # set y_lim to appropriate ranges based on the yscale
-        y_max = ax.get_ylim()[1]
-        if y_log:
-            ax_kwargs["ylim"] = (y_max * 1e-4, y_max * 2)
-        else:
-            ax_kwargs["ylim"] = (0.00001, y_max)
+        magnitudes = 4
+        whitespace_fraction = 0.3
+        ax_ymin = ax.get_ylim()[1] / 10**magnitudes if y_log else 0.0000001
+        ax_ymax = get_position(ax_ymin, ax.get_ylim()[1], factor=1 / (1 - whitespace_fraction), logscale=y_log)
+
+        ax_kwargs["ylim"] = (ax_ymin, ax_ymax)
 
         ax.set(**ax_kwargs)
 
         # plot validation scores, scaled to train dataset
         (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
 
-        mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False, loc=0)
+        # ax.set_xlabel("")
+
+        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -535,7 +543,7 @@ def plot_input_features(
 
         # axis styling
         ax_kwargs = {
-            "ylabel": "Entries",
+            "ylabel": r"$\Delta N/N$" if shape_norm else "Entries",
             "xlim": (variable_inst.x_min, variable_inst.x_max),
             "yscale": "log" if y_log else "linear",
         }
@@ -551,7 +559,7 @@ def plot_input_features(
         # plot validation scores, scaled to train dataset
         (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
 
-        mplhep.cms.label(ax=ax, llabel=cms_llabel, data=False, loc=0)
+        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         try:
             output.child(f"Input_{feature_name}.pdf", type="f").dump(fig, formatter="mpl")
         except Exception:
