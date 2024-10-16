@@ -22,7 +22,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
 from hbw.selection.jet import jet_selection
-from hbw.util import four_vec, call_once_on_config
+from hbw.util import call_once_on_config
 
 
 np = maybe_import("numpy")
@@ -32,18 +32,14 @@ logger = law.logger.get_logger(__name__)
 
 
 @selector(
-    uses=(
-        # {muon_weights, electron_weights} |  # we could load muon and electron weights producer for checks
-        four_vec("Electron", {
-            "dxy", "dz", "cutBased",
-        }) | four_vec("Muon", {
-            "dxy", "dz", "looseId", "pfIsoId",
-        }) | four_vec("Tau", {
-            "dz", "idDeepTau2017v2p1VSe", "idDeepTau2017v2p1VSmu", "idDeepTau2017v2p1VSjet", "decayMode",
-        }) | {
-            jet_selection,  # the jet_selection init needs to be run to set the correct b_tagger
-        }
-    ),
+    uses={
+        # muon_weights, electron_weights  # we could load muon and electron weights producer for checks
+        "{Electron,Muon,Tau}.{pt,eta,phi,mass}",
+        "Electron.{dxy,dz,cutBased}",
+        "Muon.{dxy,dz,looseId,pfIsoId}",
+        "Tau.{dz,idDeepTau2017v2p1VSe,idDeepTau2017v2p1VSmu,idDeepTau2017v2p1VSjet,decayMode}",
+        jet_selection,
+    },
     produces={
         "Muon.is_tight", "Electron.is_tight",
     },

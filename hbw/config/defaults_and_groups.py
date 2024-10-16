@@ -133,9 +133,10 @@ def set_config_defaults_and_groups(config_inst):
         "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl1": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
+        "dl1": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
         "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],  # noqa: E501
+        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        "dlmajor": [default_signal_process, "tt", "dy", "st"],
         "2much": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
         "2ech": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
         "emuch": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
