@@ -12,6 +12,7 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 from columnflow.production.util import attach_coffea_behavior
 # from columnflow.production.util import attach_coffea_behavior
+from hbw.util import has_four_vec
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -92,18 +93,18 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     Producer that defines objects in a convenient way.
     When used as part of `SelectEvents`, be careful since it may override the original NanoAOD columns.
     """
+
     # apply results if given to create new collections
     events = apply_object_results(events, results)
 
     # coffea behavior for relevant objects
     events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
-    if "VetoLepton" not in events.fields and "VetoElectron" in events.fields and "VetoMuon" in events.fields:
-        # combine VetoElectron and VetoMuon into a single object (VetoLepton)
-        veto_lepton = ak.concatenate([events.VetoMuon * 1, events.VetoElectron * 1], axis=-1)
-        events = set_ak_column(events, "VetoLepton", veto_lepton[ak.argsort(veto_lepton.pt, ascending=False)])
-
-    if "Lepton" not in events.fields and "Electron" in events.fields and "Muon" in events.fields:
+    if (
+        "Lepton" not in events.fields and
+        has_four_vec(events, "Muon") and
+        has_four_vec(events, "Electron")
+    ):
         # combine Electron and Muon into a single object (Lepton)
         lepton = ak.concatenate([events.Muon * 1, events.Electron * 1], axis=-1)
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])

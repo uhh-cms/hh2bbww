@@ -301,6 +301,17 @@ def four_vec(
     return outp
 
 
+def has_four_vec(
+    events: ak.Array,
+    collection_name: str,
+):
+    """
+    Check if the collection has the fields required for a 4-vector.
+    """
+    four_vec_cols = {"pt", "eta", "phi", "mass"}
+    return collection_name in events.fields and four_vec_cols.issubset(events[collection_name].fields)
+
+
 def call_once_on_config(include_hash=False):
     """
     Parametrized decorator to ensure that function *func* is only called once for the config *config*
