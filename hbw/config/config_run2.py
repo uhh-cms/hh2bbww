@@ -679,7 +679,7 @@ def add_config(
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
         # Leptons
-        "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight}",
+        "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.deltaEtaSC", "mll",
         # MET
         "MET.{pt,phi}",

@@ -694,6 +694,22 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0, 200),
             x_title=obj + " mass",
         )
+        config.add_variable(
+            name=f"{obj.lower()}_dxy",
+            expression=f"{obj}.dxy[:,0]",
+            null_value=EMPTY_FLOAT,
+            binning=(240, 0, 1.2),
+            aux={"x_max": 0.2},
+            x_title=obj + " dxy",
+        )
+        config.add_variable(
+            name=f"{obj.lower()}_dz",
+            expression=f"{obj}.dz[:,0]",
+            null_value=EMPTY_FLOAT,
+            binning=(240, 0, 1.2),
+            aux={"x_max": 0.6},
+            x_title=obj + " dz",
+        )
 
     # MET
     config.add_variable(
