@@ -6,6 +6,8 @@ Collection of helpers for styling, e.g.
 - functions to quickly create variable insts in a predefined way
 """
 
+import re
+
 import order as od
 
 from columnflow.columnar_util import EMPTY_FLOAT
@@ -188,6 +190,11 @@ def stylize_processes(config: od.Config) -> None:
 
         if label := default_labels.get(proc.name, None):
             proc.label = label
+        elif "hh_vbf" in proc.name:
+            label = proc.label
+            pattern = r"hh_vbf_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)\s?(.*)"
+            replacement = r"$HH_{vbf}^{\1,\2,\3}$\4"
+            proc.label = re.sub(pattern, replacement, label)
 
         if short_label := short_labels.get(proc.name, None):
             proc.short_label = short_label
