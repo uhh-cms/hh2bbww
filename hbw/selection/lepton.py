@@ -67,19 +67,19 @@ def lepton_definition(
     #
     # loose masks
     # TODO: the loose id + iso reqs might depend on the requested (tight) id + iso
-    #
+    #NOTE: we might need to re-apply some dxy/dz cut later on (categories)
     e_mask_loose = (
         (electron.pt >= 7) &
         (abs(electron.eta) <= 2.5) &
-        (abs(electron.dxy) <= 0.05) &
-        (abs(electron.dz) <= 0.1) &
+        # (abs(electron.dxy) <= 0.05) &
+        # (abs(electron.dz) <= 0.1) &
         (electron.cutBased >= 1)  # veto Id
     )
     mu_mask_loose = (
         (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
-        (abs(muon.dxy) <= 0.05) &  # muon efficiencies are computed with dxy < 0.2; loosen?
-        (abs(muon.dz) <= 0.1) &  # muon efficiencies are computed with dz < 0.5; loosen?
+        # (abs(muon.dxy) <= 0.05) &  # muon efficiencies are computed with dxy < 0.2; loosen?
+        # (abs(muon.dz) <= 0.1) &  # muon efficiencies are computed with dz < 0.5; loosen?
         (muon.looseId) &  # loose Id
         (muon.pfIsoId >= 2)  # loose Isolation
     )

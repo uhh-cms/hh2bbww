@@ -22,8 +22,8 @@ hist = maybe_import("hist")
 
 
 @selector(
-    uses={increment_stats, event_weights_to_normalize},
-    produces={"ht", "n_jets"},
+    uses={increment_stats, event_weights_to_normalize, "Jet.hadronFlavour"},
+    produces={"ht", "n_jets", "n_heavy_flavour"},
 )
 def hbw_selection_hists(
     self: Selector,
@@ -42,9 +42,13 @@ def hbw_selection_hists(
     n_jets = results.x.n_central_jets
     ht = results.x.ht
 
+    hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
+    n_heavy_flavour = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
+
     # store ht and n_jets for consistency checks
     events = set_ak_column(events, "ht", ht)
     events = set_ak_column(events, "n_jets", n_jets)
+    events = set_ak_column(events, "n_heavy_flavour", n_heavy_flavour)
 
     # weight map definition
     weight_map = {
@@ -86,6 +90,14 @@ def hbw_selection_hists(
                     self.n_jet_variable,
                 )
 
+                hists[f"{key}_per_process_ht_njet_nhf"] = create_columnflow_hist(
+                    self.steps_variable,
+                    self.process_variable,
+                    self.ht_variable,
+                    self.n_jet_variable,
+                    self.n_heavy_flavour_variable,
+                )
+
         for step, mask in (
             ("all", ak.ones_like(event_mask)),
             ("selected_no_bjet", event_mask_no_bjet),
@@ -104,6 +116,15 @@ def hbw_selection_hists(
                     weight=weight[mask],
                 )
 
+                hists[f"{key}_per_process_ht_njet_nhf"].fill(
+                    steps=step_arr,
+                    process=events.process_id[mask],
+                    ht=ht[mask],
+                    n_jets=n_jets[mask],
+                    n_heavy_flavour=n_heavy_flavour[mask],
+                    weight=weight[mask],
+                )
+    #TODO: check on limited stats that we can use this as it is
     return events
 
 
@@ -126,6 +147,14 @@ def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_t
     self.n_jet_variable = od.Variable(
         name="n_jets",
         binning=[0, 1, 2, 3, 4, 5, 6, 7, 8],
+        aux={
+            "axis_type": "integer",
+            "axis_kwargs": {"growth": True},
+        },
+    )
+    self.n_heavy_flavour_variable = od.Variable(
+        name="n_heavy_flavour",
+        binning=[0, 1, 2, 3, 4, 5, 6],
         aux={
             "axis_type": "integer",
             "axis_kwargs": {"growth": True},
