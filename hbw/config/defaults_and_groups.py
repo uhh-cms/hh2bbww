@@ -283,6 +283,7 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
             "sr__2b__ml_tt", "sr__2b__ml_st", "sr__2b__ml_dy", "sr__2b__ml_h",
             "sr__ml_tt", "sr__ml_st", "sr__ml_dy", "sr__ml_h",
+            "sr__1b__ml_dy_m50toinf", "sr__2b__ml_dy_m50toinf",
         ),
     }
 

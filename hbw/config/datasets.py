@@ -215,6 +215,13 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
             ]),
         ],
+        # TODO: add bbtautau to cmsdb in 2022
+        # "hh_ggf_hbb_htt": [
+        #     "hh_ggf_hbb_htt_kl1_kt1_madgraph",
+        # ],
+        # "hh_vbf_hbb_htt": [
+        #     "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
+        # ],
         "graviton_hh_ggf_bbww": [
             *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"graviton_hh_ggf_bbww_m{mass}_madgraph"

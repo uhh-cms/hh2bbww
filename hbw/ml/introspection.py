@@ -107,7 +107,7 @@ def shap_ranking(model, inputs, output_node: int = 0, input_features: list | Non
     explainer = shap.Explainer(predict, X100)
 
     # calculate shap values
-    shap_values = explainer(inputs[:20])
+    shap_values = explainer(inputs[:100])
     shap_values.feature_names = list(input_features)
 
     shap_ranking = dict(zip(shap_values.feature_names, shap_values[:, :, output_node].abs.mean(axis=0).values))

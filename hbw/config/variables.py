@@ -178,7 +178,7 @@ def add_debug_variable(config: od.Config) -> None:
     config.add_variable(
         name="debugger",
         expression=dbg,
-        aux={"inputs": {"{Electron,Muon,Jet}.{pt,eta,phi,mass}"}},
+        aux={"inputs": {"*"}},
         binning=(1, 0, 1),
     )
 
@@ -189,6 +189,8 @@ def add_variables(config: od.Config) -> None:
     Adds all variables to a *config* that are present after `ReduceEvents`
     without calling any producer
     """
+
+    add_debug_variable(config)
     # from columnflow.columnar_util import set_ak_column
 
     # def with_behavior(custom_expression: callable) -> callable:
@@ -354,10 +356,14 @@ def add_variables(config: od.Config) -> None:
         # NOTE: only works when running `prepare_objects` in WeightProducer
         name="ptll",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
-        binning=(40, 0., 400.),
+        binning=(240, 0., 1200.),
         unit="GeV",
         x_title=r"$p_{T}^{ll}$",
-        aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"}},
+        aux={
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"},
+            "rebin": 2,
+            "x_max": 400,
+        },
     )
 
     config.add_variable(
