@@ -725,3 +725,8 @@ def add_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",
     )
+    config.add_variable(
+        name="trigger_ids",
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )

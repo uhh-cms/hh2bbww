@@ -48,7 +48,7 @@ def trigger_selection(
 
     NOTE: to use this selector, the *triggers* auxiliary must be set in the config.
     """
-    trigger_ids = []
+    trigger_ids = ak.Array([[0]] * len(events))
 
     trigger_data = ak.Array({
         "any_fired": ak.zeros_like(events.run, dtype=np.bool_),
@@ -121,10 +121,10 @@ def trigger_selection(
             fired_and_all_legs_match,
         )
         ids = ak.where(fired_and_all_legs_match, np.float32(trigger.id), np.float32(np.nan))
-        trigger_ids.append(ak.singletons(ak.nan_to_none(ids)))
+        trigger_ids = ak.concatenate([trigger_ids, ak.singletons(ak.nan_to_none(ids))], axis=1)
 
     # store the fired trigger ids
-    trigger_ids = ak.concatenate(trigger_ids, axis=1)
+    # trigger_ids = ak.concatenate(trigger_ids, axis=1)
     events = set_ak_int32(events, "trigger_ids", trigger_ids)
 
     return events, SelectionResult(
