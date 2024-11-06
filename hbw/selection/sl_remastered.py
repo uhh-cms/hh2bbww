@@ -7,7 +7,7 @@ Selection modules for HH -> bbWW(qqlnu).
 from collections import defaultdict
 from typing import Tuple
 
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
@@ -269,10 +269,11 @@ def sl1(
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )
+    __import__("IPython").embed()
     if self.is_l1nano:
         events, l1_results = self[NN_trigger_selection](events, stats, **kwargs)
         results += l1_results
-
+    __import__("IPython").embed()
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets

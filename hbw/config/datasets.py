@@ -575,4 +575,11 @@ def get_dataset_lfns_l1nano(
 
     # no idea if this is clean, but I could not get the LocalDirectoryTarget to give me these paths :D
     # this is why I'm just globbing here
-    return glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
+    
+    #files =  glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
+    #print(80*'#',files)
+    search_path = f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root"
+    print("Searching for files at path:", search_path)
+    files = glob.glob(search_path)
+    print("Found files:", files)
+    return files

@@ -11,18 +11,20 @@ from columnflow.production import Producer, producer
 
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.cutflow_variables import add_cutflow_variables
+from hbw.selection.nn_trigger import NN_trigger_inference
 
 ak = maybe_import("awkward")
 
 
 @producer(
     # used and produced columns per object are defined in init function
-    uses={prepare_objects, "PV.npvs", optional("Pileup.nTrueInt"), optional("Pileup.nPU")},
+    uses={prepare_objects, NN_trigger_inference, "PV.npvs", optional("Pileup.nTrueInt"), optional("Pileup.nPU")},
     produces={
         "cutflow.n_electron", "cutflow.n_muon", "cutflow.n_lepton",
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",
         "cutflow.n_veto_tau",
         "cutflow.npvs", "cutflow.npu_true", "cutflow.npu",
+        "cutflow.L1NNscore",
     },
     # skip the checking existence of used/produced columns for now because some columns are not there
     check_used_columns=False,
@@ -68,6 +70,9 @@ def cutflow_features(self: Producer, events: ak.Array, results: SelectionResult,
     events = set_ak_column(events, "cutflow.VetoElectron", arr.VetoElectron[:, :2])
     events = set_ak_column(events, "cutflow.VetoMuon", arr.VetoMuon[:, :2])
 
+    # L1 NN score
+    events = self[NN_trigger_inference](events, **kwargs)
+    events = set_ak_column(events, "cutflow.L1NNscore", events.L1NNscore)
     return events
 
 
