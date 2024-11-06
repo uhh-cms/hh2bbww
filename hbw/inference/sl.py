@@ -19,10 +19,10 @@ ml_model_name = "dense_default"
 
 # All processes to be included in the final datacard
 processes = [
-    "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
-    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
-    "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl0_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",

@@ -13,6 +13,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.nn_trigger import NN_trigger_selection
 from hbw.production.weights import event_weights_to_normalize
 from hbw.util import ak_any
 
@@ -217,6 +218,7 @@ def sl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
+    is_l1nano = False,
     version=1,
 )
 def sl1(
@@ -267,6 +269,9 @@ def sl1(
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )
+    if self.is_l1nano:
+        events, l1_results = self[NN_trigger_selection](events, stats, **kwargs)
+        results += l1_results
 
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
@@ -301,13 +306,13 @@ def sl1_init(self: Selector) -> None:
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
-        post_selection,
+        post_selection, NN_trigger_selection,
     }
     self.produces = {
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
-        post_selection,
+        post_selection,NN_trigger_selection,
     }
 
     # define mapping from selector step to labels used in cutflow plots
@@ -334,4 +339,5 @@ sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
     "mu2_pt": 15.,
     "ele_pt": 15.,
     "ele2_pt": 15.,
+    "is_l1nano": True,
 })
