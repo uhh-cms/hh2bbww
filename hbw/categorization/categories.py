@@ -22,6 +22,7 @@ def catid_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     mask = ak.ones_like(events.event) > 0
     return events, mask
 
+
 #
 # Categorizers based on gen info
 #
@@ -102,15 +103,16 @@ def catid_lep(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
     if results:
-        mask = (
-            (ak.num(results.objects.Electron.Electron, axis=-1) == self.n_electron) &
-            (ak.num(results.objects.Muon.Muon, axis=-1) == self.n_muon)
-        )
+        electron = events.Electron[results.objects.Electron.Electron]
+        muon = events.Muon[results.objects.Muon.Muon]
     else:
-        mask = (
-            (ak.sum(events.Electron.pt > 0, axis=-1) == self.n_electron) &
-            (ak.sum(events.Muon.pt > 0, axis=-1) == self.n_muon)
-        )
+        electron = events.Electron
+        muon = events.Muon
+
+    mask = (
+        (ak.sum(electron.pt > 0, axis=-1) == self.n_electron) &
+        (ak.sum(muon.pt > 0, axis=-1) == self.n_muon)
+    )
     return events, mask
 
 
