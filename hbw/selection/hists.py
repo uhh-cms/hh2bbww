@@ -23,7 +23,7 @@ hist = maybe_import("hist")
 
 @selector(
     uses={increment_stats, event_weights_to_normalize, "Jet.hadronFlavour"},
-    produces={"ht", "n_jets", "n_heavy_flavour"},
+    produces={"ht", "njet", "nhf"},
 )
 def hbw_selection_hists(
     self: Selector,
@@ -39,16 +39,16 @@ def hbw_selection_hists(
     no_weights = ak.Array(np.ones(len(events)))
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
-    n_jets = results.x.n_central_jets
+    njet = results.x.n_central_jets
     ht = results.x.ht
 
     hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
-    n_heavy_flavour = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
+    nhf = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
 
-    # store ht and n_jets for consistency checks
+    # store ht, njet, and nhf for consistency checks
     events = set_ak_column(events, "ht", ht)
-    events = set_ak_column(events, "n_jets", n_jets)
-    events = set_ak_column(events, "n_heavy_flavour", n_heavy_flavour)
+    events = set_ak_column(events, "njet", njet)
+    events = set_ak_column(events, "nhf", nhf)
 
     # weight map definition
     weight_map = {
@@ -83,19 +83,12 @@ def hbw_selection_hists(
             hists[key] = create_columnflow_hist(self.steps_variable)
             hists[f"{key}_per_process"] = create_columnflow_hist(self.steps_variable, self.process_variable)
             if key == "sum_mc_weight" or "btag_weight" in key:
-                hists[f"{key}_per_process_ht_njet"] = create_columnflow_hist(
-                    self.steps_variable,
-                    self.process_variable,
-                    self.ht_variable,
-                    self.n_jet_variable,
-                )
-
                 hists[f"{key}_per_process_ht_njet_nhf"] = create_columnflow_hist(
                     self.steps_variable,
                     self.process_variable,
                     self.ht_variable,
-                    self.n_jet_variable,
-                    self.n_heavy_flavour_variable,
+                    self.njet_variable,
+                    self.nhf_variable,
                 )
 
         for step, mask in (
@@ -108,23 +101,16 @@ def hbw_selection_hists(
             hists[key].fill(steps=step_arr, weight=weight[mask])
             hists[f"{key}_per_process"].fill(steps=step_arr, process=events.process_id[mask], weight=weight[mask])
             if key == "sum_mc_weight" or "btag_weight" in key:
-                hists[f"{key}_per_process_ht_njet"].fill(
-                    steps=step_arr,
-                    process=events.process_id[mask],
-                    ht=ht[mask],
-                    n_jets=n_jets[mask],
-                    weight=weight[mask],
-                )
 
                 hists[f"{key}_per_process_ht_njet_nhf"].fill(
                     steps=step_arr,
                     process=events.process_id[mask],
                     ht=ht[mask],
-                    n_jets=n_jets[mask],
-                    n_heavy_flavour=n_heavy_flavour[mask],
+                    njet=njet[mask],
+                    nhf=nhf[mask],
                     weight=weight[mask],
                 )
-    #TODO: check on limited stats that we can use this as it is
+    # NOTE: computationally expensive?
     return events
 
 
@@ -144,16 +130,16 @@ def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_t
         binning=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         aux={"axis_type": "variable"},
     )
-    self.n_jet_variable = od.Variable(
-        name="n_jets",
+    self.njet_variable = od.Variable(
+        name="njet",
         binning=[0, 1, 2, 3, 4, 5, 6, 7, 8],
         aux={
             "axis_type": "integer",
             "axis_kwargs": {"growth": True},
         },
     )
-    self.n_heavy_flavour_variable = od.Variable(
-        name="n_heavy_flavour",
+    self.nhf_variable = od.Variable(
+        name="nhf",
         binning=[0, 1, 2, 3, 4, 5, 6],
         aux={
             "axis_type": "integer",

@@ -481,6 +481,7 @@ def add_config(
                     "normalized_btag_weight",
                     "normalized_njet_btag_weight",
                     "normalized_ht_njet_btag_weight",
+                    "normalized_ht_njet_nhf_btag_weight",
                     "normalized_ht_btag_weight",
                 )
             },
@@ -543,6 +544,7 @@ def add_config(
                         "normalized_btag_weight",
                         "normalized_njet_btag_weight",
                         "normalized_ht_njet_btag_weight",
+                        "normalized_ht_njet_nhf_btag_weight",
                         "normalized_ht_btag_weight",
                     )
                 },
@@ -673,7 +675,7 @@ def add_config(
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
         "btag_weight*",
         # columns for btag reweighting crosschecks
-        "n_jets", "ht",
+        "njets", "ht", "nhf",
         # Jets
         "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets

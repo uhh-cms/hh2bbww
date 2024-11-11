@@ -18,11 +18,11 @@ hist = maybe_import("hist")
 
 @producer(
     uses={
-        btag_weights.PRODUCES, "process_id", "Jet.pt", "n_jets", "ht",
+        btag_weights.PRODUCES, "process_id", "Jet.pt", "njet", "ht", "nhf",
     },
     # produced columns are defined in the init function below
     mc_only=True,
-    modes=["ht_njet", "njet", "ht"],
+    modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
     from_file=False,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -30,17 +30,18 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     variable_map = {
         # NOTE: might be cleaner to use the ht and njet reconstructed during the selection (and also compare?)
         "ht": ak.sum(events.Jet.pt, axis=1),
-        "n_jets": ak.num(events.Jet.pt, axis=1),
+        "njet": ak.num(events.Jet.pt, axis=1),
+        "nhf": events.nhf,
     }
 
     # sanity check
-    for var in ("ht", "n_jets"):
+    for var in ("ht", "njet"):
         consistency_check = np.isclose(events[var], variable_map[var], rtol=0.0001)
         if not ak.all(consistency_check):
             raise ValueError(f"Variable {var} is not consistent between before and after event selection")
 
     for mode in self.modes:
-        if mode not in ("ht_njet", "njet", "ht"):
+        if mode not in ("ht_njet_nhf", "ht_njet", "njet", "ht"):
             raise NotImplementedError(
                 f"Normalization mode {mode} not implemented (see hbw.tasks.corrections.GetBtagNormalizationSF)",
             )
