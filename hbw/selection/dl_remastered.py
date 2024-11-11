@@ -20,8 +20,6 @@ from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_s
 from hbw.selection.trigger import hbw_trigger_selection
 from hbw.production.weights import event_weights_to_normalize
 
-from hbw.util import ak_any
-
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -153,32 +151,6 @@ def dl_lepton_selection(
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 2)
     )
 
-    # TODO: do some rough cross checks, then remove this code
-    for channel, trigger_columns in self.config_inst.x.trigger.items():
-        # apply the "or" of all triggers of this channel
-        if trigger_columns:
-            trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
-        else:
-            # if no trigger is defined, we assume that the event passes the trigger
-            trigger_mask = np.ones(len(events), dtype=np.bool_)
-        lepton_results.steps[f"OldTrigger_{channel}"] = trigger_mask
-
-        # ensure that Lepton channel is in agreement with trigger
-        lepton_results.steps[f"OldTriggerAndLep_{channel}"] = (
-            lepton_results.steps[f"OldTrigger_{channel}"] & lepton_results.steps[f"Lep_{channel}"]
-        )
-
-    # combine results of each individual channel
-    lepton_results.steps["OldTrigger"] = ak_any([
-        lepton_results.steps[f"OldTrigger_{channel}"]
-        for channel in self.config_inst.x.trigger.keys()
-    ], axis=0)
-
-    lepton_results.steps["OldTriggerAndLep"] = ak_any([
-        lepton_results.steps[f"OldTriggerAndLep_{channel}"]
-        for channel in self.config_inst.x.trigger.keys()
-    ], axis=0)
-
     return events, lepton_results
 
 
@@ -212,64 +184,6 @@ def dl_lepton_selection_init(self: Selector) -> None:
     if self.task and self.task.task_family == "cf.SelectEvents":
         self.produces.add("mll")
 
-        # TODO: remove all this config stuff
-        year = self.config_inst.campaign.x.year
-
-        if year == 2017:
-            self.config_inst.x.trigger = self.config_inst.x("trigger", {
-                "mm": [
-                    "IsoMu27",
-                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",
-                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",
-                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
-                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8",
-                ],
-                "ee": [
-                    "Ele35_WPTight_Gsf",
-                    "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-                ],
-                "emu": [
-                    "IsoMu27",
-                    "Ele35_WPTight_Gsf",
-                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
-                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                ],
-                "mue": [
-                    "IsoMu27",
-                    "Ele35_WPTight_Gsf",
-                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
-                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
-                ],
-            })
-        elif year == 2022:
-            self.config_inst.x.trigger = self.config_inst.x("trigger", {
-                "mm": [
-                    "IsoMu24",
-                    "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
-                ],
-                "ee": [
-                    "Ele30_WPTight_Gsf",
-                    "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
-                ],
-                "emu": [
-                    "IsoMu24",
-                    "Ele30_WPTight_Gsf",
-                    "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
-                ],
-                "mue": [
-                    "IsoMu24",
-                    "Ele30_WPTight_Gsf",
-                    "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",  # TODO: recommentations (unprescaled?)
-                ],
-            })
-        else:
-            raise Exception(f"Dilepton trigger not implemented for year {year}")
-
-        # add all required trigger to the uses
-        for trigger_columns in self.config_inst.x.trigger.values():
-            for column in trigger_columns:
-                self.uses.add(f"HLT.{column}")
-
     return
 
 
@@ -289,7 +203,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=2,
+    version=3,
 )
 def dl1(
     self: Selector,
