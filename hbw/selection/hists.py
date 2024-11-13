@@ -36,9 +36,12 @@ def hbw_selection_hists(
     Main selector to create and fill histograms for weight normalization.
     """
     # collect important information from the results
-    no_weights = ak.Array(np.ones(len(events)))
-    event_mask = results.event
-    event_mask_no_bjet = results.steps.all_but_bjet
+    no_weights = ak.values_astype(ak.Array(np.ones(len(events))), np.int64)
+    event_masks = {
+        "Initial": no_weights,
+        "selected_no_bjet": results.steps.all_but_bjet,
+        "selected": results.event,
+    }
     njet = results.x.n_central_jets
     ht = results.x.ht
 
@@ -57,9 +60,6 @@ def hbw_selection_hists(
     }
 
     if self.dataset_inst.is_mc:
-        weight_map["num_negative_weights"] = (events.mc_weight < 0)
-        weight_map["num_pu_0"] = (events.pu_weight == 0)
-        weight_map["num_pu_100"] = (events.pu_weight >= 100)
         # "sum" operations
         weight_map["sum_mc_weight"] = events.mc_weight  # weights of all events
 
@@ -75,13 +75,17 @@ def hbw_selection_hists(
             if "weight" not in name:
                 # skip non-weight columns here
                 continue
-            weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
-            weight_map[f"sum_{name}"] = events[name]
 
-    for key, weight in weight_map.items():
-        if key not in hists:
-            hists[key] = create_columnflow_hist(self.steps_variable)
-            hists[f"{key}_per_process"] = create_columnflow_hist(self.steps_variable, self.process_variable)
+            # TODO: decide whether to keep mc_weight * weight or just weight
+            weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
+            # weight_map[f"sum_{name}"] = events[name]
+
+    # initialize histograms (only on first chunk)
+    if getattr(self, "first_chunk", True):
+        for key, weight in weight_map.items():
+            if "btag_weight" not in key:
+                hists[key] = create_columnflow_hist(self.steps_variable)
+                hists[f"{key}_per_process"] = create_columnflow_hist(self.steps_variable, self.process_variable)
             if key == "sum_mc_weight" or "btag_weight" in key:
                 hists[f"{key}_per_process_ht_njet_nhf"] = create_columnflow_hist(
                     self.steps_variable,
@@ -91,17 +95,16 @@ def hbw_selection_hists(
                     self.nhf_variable,
                 )
 
-        for step, mask in (
-            ("all", ak.ones_like(event_mask)),
-            ("selected_no_bjet", event_mask_no_bjet),
-            ("selected", event_mask),
-        ):
-            # TODO: how can I fill with single value instead of array?
-            step_arr = [step] * ak.sum(mask)
-            hists[key].fill(steps=step_arr, weight=weight[mask])
-            hists[f"{key}_per_process"].fill(steps=step_arr, process=events.process_id[mask], weight=weight[mask])
-            if key == "sum_mc_weight" or "btag_weight" in key:
-
+    # fill histograms
+    for key, weight in weight_map.items():
+        for step, mask in event_masks.items():
+            # TODO: can I fill with single value instead of array of strings?
+            step_arr = np.array([step] * ak.sum(mask))
+            if "btag_weight" not in key:
+                hists[key].fill(steps=step_arr, weight=weight[mask])
+                hists[f"{key}_per_process"].fill(steps=step_arr, process=events.process_id[mask], weight=weight[mask])
+            if step == "selected_no_bjet" and (key == "sum_mc_weight" or "btag_weight" in key):
+                # to reduce computing time, only fill the selected_no_bjet mask for btag weights
                 hists[f"{key}_per_process_ht_njet_nhf"].fill(
                     steps=step_arr,
                     process=events.process_id[mask],
@@ -110,7 +113,8 @@ def hbw_selection_hists(
                     nhf=nhf[mask],
                     weight=weight[mask],
                 )
-    # NOTE: computationally expensive?
+
+    self.first_chunk = False
     return events
 
 
@@ -140,7 +144,7 @@ def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_t
     )
     self.nhf_variable = od.Variable(
         name="nhf",
-        binning=[0, 1, 2, 3, 4, 5, 6],
+        binning=[0, 1, 2, 3, 4],
         aux={
             "axis_type": "integer",
             "axis_kwargs": {"growth": True},

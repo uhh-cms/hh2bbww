@@ -33,13 +33,16 @@ class GetBtagNormalizationSF(
 
     store_as_dict = False
 
-    rescale_mode = "xs"
+    rescale_mode = "nevents"
 
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    processes = law.CSVParameter(default=("tt_dl",), description="Processes to consider for the scale factors")
-    # processes = law.CSVParameter(default=("tt", "dy"), description="Processes to consider for the scale factors")
+    processes = law.CSVParameter(
+        # default=("tt_dl",),
+        default=("tt", "dy_m50toinf", "dy_m10to50"),
+        description="Processes to consider for the scale factors",
+    )
 
     @cached_property
     def process_insts(self):
@@ -121,13 +124,13 @@ class GetBtagNormalizationSF(
         for dataset, hists in hists_per_dataset.items():
             process = self.config_inst.get_dataset(dataset).processes.get_first()
             if self.rescale_mode == "xs":
-                # scale such that the sum of weights is the cross section (NOTE: "all" --> "selected_no_btag"?)
+                # scale such that the sum of weights is the cross section
                 xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
-                dataset_factor = xs / hists["sum_mc_weight"][{"steps": "all"}].value
+                dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
             elif self.rescale_mode == "nevents":
                 # scale such that mean weight is 1
-                n_events = hists["num_events"][{"steps": "selected_no_btag"}].value
-                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": "selected_no_btag"}].value
+                n_events = hists["num_events"][{"steps": "selected_no_bjet"}].value
+                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": "selected_no_bjet"}].value
             else:
                 raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
             for key in tuple(hists.keys()):
@@ -178,7 +181,6 @@ class GetBtagNormalizationSF(
 
                 # calculate the scale factor and store it as a correctionlib evaluator
                 sf = safe_div(numerator, denominator)
-
                 sfhist = hist.Hist(*h.axes, data=sf)
                 sfhist.name = f"{mode_str}_{weight_name}"
                 sfhist.label = "out"
