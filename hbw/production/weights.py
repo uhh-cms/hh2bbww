@@ -224,7 +224,10 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
     when stitching our signal samples, but we want to calculate the BRs ourselved for other
     types of sample stitching (e.g. DY).
     """
-    events = self[normalization_weights](events, **kwargs)
+    # NOTE: I would like to produce the unstitched normalization weights for cross checks,
+    # but for DY, this is not possible at the moment, since we assign processes (hf/lf) for which no
+    # xsecs are available
+    # events = self[normalization_weights](events, **kwargs)
     events = self[self.norm_weights_producer](events, **kwargs)
     return events
 
@@ -241,8 +244,8 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     self.norm_weights_producer.weight_name = "stitched_normalization_weight"
 
-    self.uses |= {self.norm_weights_producer, normalization_weights}
-    self.produces |= {self.norm_weights_producer, normalization_weights}
+    self.uses |= {self.norm_weights_producer}
+    self.produces |= {self.norm_weights_producer}
 
 
 @producer(

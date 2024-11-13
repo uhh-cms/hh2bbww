@@ -9,6 +9,8 @@ import order as od
 
 from scinum import Number
 
+from cmsdb.util import add_decay_process
+
 
 def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwargs):
     """
@@ -146,3 +148,40 @@ def configure_hbw_processes(config: od.Config):
         ])
         if is_signal:
             proc_inst.add_tag("is_signal")
+
+    decay_map = {
+        "lf": {
+            "name": "lf",
+            "id": 50,
+            "label": "(lf)",
+            "br": -1,
+        },
+        "hf": {
+            "name": "hf",
+            "id": 60,
+            "label": "(hf)",
+            "br": -1,
+        },
+    }
+
+    # add heavy flavour and light flavour dy processes
+    for proc in (
+        "dy",
+        "dy_m4to10", "dy_m10to50",
+        "dy_m50toinf",
+        "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j",
+    ):
+        dy_proc_inst = config.get_process(proc, default=None)
+        if dy_proc_inst:
+            add_production_mode_parent = proc != "dy"
+            for flavour in ("hf", "lf"):
+                # the 'add_decay_process' function helps us to create all parent-daughter relationships
+                add_decay_process(
+                    dy_proc_inst,
+                    decay_map[flavour],
+                    add_production_mode_parent=add_production_mode_parent,
+                    name_func=lambda parent_name, decay_name: f"{parent_name}_{decay_name}",
+                    label_func=lambda parent_label, decay_label: f"{parent_label} {decay_label}",
+                    xsecs=None,
+                    aux={"flavour": flavour},
+                )
