@@ -67,6 +67,7 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 
 @base.init
 def base_init(self: WeightProducer) -> None:
+    # NOTE: this might be called multiple times, might be quite inefficient
     if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
         return
 
@@ -168,6 +169,10 @@ base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
 base.derive("btag_ht_njet_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("btag_ht_njet_nhf_normalized", cls_dict={"weight_columns": {
+    **weight_columns_execpt_btag,
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
 base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,

@@ -246,48 +246,49 @@ def add_variables(config: od.Config) -> None:
     #
 
     # TODO: implement tags in columnflow; meanwhile leave these variables commented out (as they only work for mc)
-    """
-    config.add_variable(
-        name="mc_weight",
-        expression="mc_weight",
-        binning=list(np.logspace(1.2, 5, 200)),
-        log_x=True,
-        x_title="MC weight",
-        tags={"mc_only"},
-    )
-    config.add_variable(
-        name="normalization_weight",
-        binning=list(np.logspace(0, 6, 100)),
-        log_x=True,
-        x_title="normalization weight",
-        tags={"mc_only"},
-    )
-    config.add_variable(
-        name="event_weight",
-        binning=list(np.logspace(0, 6, 100)),
-        log_x=True,
-        x_title="event weight",
-        tags={"mc_only"},
-    )
 
-    for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
-        # NOTE: would be nice to not use the event weight for these variables
-        config.add_variable(
-            name=f"{weight}_weight",
-            expression=f"{weight}_weight",
-            binning=(40, -2, 2),
-            x_title=f"{weight} weight",
-            tags={"mc_only"},
-        )
-        config.add_variable(
-            name=f"{weight}_weight_log",
-            expression=f"{weight}_weight",
-            binning=list(np.logspace(-2, 2, 100)),
-            log_x=True,
-            x_title=f"{weight} weight",
-            tags={"mc_only"},
-        )
-    """
+    # config.add_variable(
+    #     name="mc_weight",
+    #     expression="mc_weight",
+    #     binning=list(np.logspace(1.2, 5, 200)),
+    #     log_x=True,
+    #     x_title="MC weight",
+    #     tags={"mc_only"},
+    # )
+    # config.add_variable(
+    #     name="normalization_weight",
+    #     binning=list(np.logspace(0, 6, 100)),
+    #     log_x=True,
+    #     x_title="normalization weight",
+    #     tags={"mc_only"},
+    # )
+    # config.add_variable(
+    #     name="event_weight",
+    #     binning=list(np.logspace(0, 6, 100)),
+    #     log_x=True,
+    #     x_title="event weight",
+    #     tags={"mc_only"},
+    # )
+
+    # for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
+    #     for shift in ("_up", "_down", ""):
+    #         # NOTE: would be nice to not use the event weight for these variables
+    #         config.add_variable(
+    #             name=f"{weight}_weight{shift}",
+    #             expression=f"{weight}_weight{shift}",
+    #             binning=(40, -2, 2),
+    #             x_title=f"{weight} weight {shift.replace('_', '')}",
+    #             tags={"mc_only"},
+    #         )
+    #         config.add_variable(
+    #             name=f"{weight}_weight{shift}_log",
+    #             expression=f"{weight}_weight{shift}",
+    #             binning=list(np.logspace(-2, 2, 100)),
+    #             log_x=True,
+    #             x_title=f"{weight} weight {shift.replace('_', '')}",
+    #             tags={"mc_only"},
+    #         )
+
     config.add_variable(
         name="npvs",
         expression="PV.npvs",

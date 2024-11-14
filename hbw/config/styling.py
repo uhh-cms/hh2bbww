@@ -77,6 +77,8 @@ default_process_colors = {
     "t_bkg": color_palette["orange"],
     # "dy": color_palette["yellow"],
     "dy": color_palette["yellow"],
+    "dy_hf": color_palette["yellow"],
+    "dy_lf": color_palette["brown"],
     "dy_m50toinf": color_palette["yellow"],
     "dy_m10to50": color_palette["brown"],
     "dy_m4to10": color_palette["darkgrey"],

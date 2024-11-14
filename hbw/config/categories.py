@@ -11,7 +11,7 @@ power of 10.
 
 power of 10 | category block
 
-0: free (only used for inclusive category)
+0: sr vs fake (SL), sr vs dycr vs ttcr (DL)
 1: jet (resolved vs boosted)
 2: bjet (1 vs geq 2)
 3: lepton
@@ -37,7 +37,7 @@ logger = law.logger.get_logger(__name__)
 @call_once_on_config()
 def add_gen_categories(config: od.Config) -> None:
     # NOTE: this should instead be covered by process ids if necessary
-    gen_0lep = config.add_category(  # noqa
+    gen_0lep = config.add_category(  # noqa: F841
         name="gen_0lep",
         id=100000,
         selection="catid_gen_0lep",  # this should not be called!
@@ -66,7 +66,7 @@ def add_gen_categories(config: od.Config) -> None:
         selection="catid_gen_1tau",
         label="1 gen tau",
     )
-    gen_2lep = config.add_category(  # noqa
+    gen_2lep = config.add_category(  # noqa: F841
         name="gen_geq2lep",
         id=600000,
         selection="catid_geq_2_gen_leptons",
@@ -138,35 +138,35 @@ def add_lepton_categories(config: od.Config) -> None:
         "dl": ("2e", "2mu", "emu"),
     }[config.x.lepton_tag]
 
-    cat_1e = config.add_category(  # noqa
+    cat_1e = config.add_category(  # noqa: F841
         name="1e",
         id=10,
         selection="catid_1e",
         label="1 Electron",
     )
 
-    cat_1mu = config.add_category(  # noqa
+    cat_1mu = config.add_category(  # noqa: F841
         name="1mu",
         id=20,
         selection="catid_1mu",
         label="1 Muon",
     )
     # dl categories
-    cat_2e = config.add_category(  # noqa
+    cat_2e = config.add_category(  # noqa: F841
         name="2e",
         id=30,
         selection="catid_2e",
         label="2 Electron",
     )
 
-    cat_2mu = config.add_category(  # noqa
+    cat_2mu = config.add_category(  # noqa: F841
         name="2mu",
         id=40,
         selection="catid_2mu",
         label="2 Muon",
     )
 
-    cat_emu = config.add_category(  # noqa
+    cat_emu = config.add_category(  # noqa: F841
         name="emu",
         id=50,
         selection="catid_emu",
@@ -192,26 +192,26 @@ def add_njet_categories(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_jet_categories(config: od.Config) -> None:
-    cat_resolved = config.add_category(  # noqa
+    cat_resolved = config.add_category(  # noqa: F841
         name="resolved",
         id=100,
         selection="catid_resolved",
         label="resolved",
     )
-    cat_boosted = config.add_category(  # noqa
+    cat_boosted = config.add_category(  # noqa: F841
         name="boosted",
         id=200,
         selection="catid_boosted",
         label="boosted",
     )
 
-    cat_1b = config.add_category(  # noqa
+    cat_1b = config.add_category(  # noqa: F841
         name="1b",
         id=300,
         selection="catid_1b",
         label="1b",
     )
-    cat_2b = config.add_category(  # noqa
+    cat_2b = config.add_category(  # noqa: F841
         name="2b",
         id=600,
         selection="catid_2b",

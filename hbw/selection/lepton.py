@@ -57,6 +57,13 @@ def lepton_definition(
 ) -> Tuple[ak.Array, SelectionResult]:
     """
     Central definition of Leptons in HH(bbWW)
+
+    Electron ID cuts and dxy/dz recommendations:
+    https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun3?rev=6
+
+    Muon ID definitions:
+    https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2?rev=59
+
     """
     # initialize dicts for the selection steps
     steps = DotDict()
@@ -67,19 +74,15 @@ def lepton_definition(
     #
     # loose masks
     # TODO: the loose id + iso reqs might depend on the requested (tight) id + iso
-    #
     e_mask_loose = (
         (electron.pt >= 7) &
         (abs(electron.eta) <= 2.5) &
-        (abs(electron.dxy) <= 0.05) &
-        (abs(electron.dz) <= 0.1) &
+        (abs(electron.dz) <= 1) &
         (electron.cutBased >= 1)  # veto Id
     )
     mu_mask_loose = (
         (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
-        (abs(muon.dxy) <= 0.05) &  # muon efficiencies are computed with dxy < 0.2; loosen?
-        (abs(muon.dz) <= 0.1) &  # muon efficiencies are computed with dz < 0.5; loosen?
         (muon.looseId) &  # loose Id
         (muon.pfIsoId >= 2)  # loose Isolation
     )
@@ -90,12 +93,18 @@ def lepton_definition(
 
     e_mask_fakeable = (
         e_mask_loose &
-        (electron.pt >= 10)
+        (electron.pt >= 10) &
+        ak.where(
+            abs(electron.eta) < 1.479,
+            (electron.dxy < 0.05) & (electron.dz < 0.1),  # barrel
+            (electron.dxy < 0.1) & (electron.dz < 0.2),  # endcaps
+        )
     )
 
     mu_mask_fakeable = (
         mu_mask_loose &
         (muon.pt >= 10) &
+        # muon id also covers dxy/dz cuts
         self.muon_id_req(muon)
     )
 

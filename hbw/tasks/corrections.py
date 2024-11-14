@@ -33,10 +33,16 @@ class GetBtagNormalizationSF(
 
     store_as_dict = False
 
+    rescale_mode = "nevents"
+
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    processes = law.CSVParameter(default=("tt",), description="Processes to consider for the scale factors")
+    processes = law.CSVParameter(
+        # default=("tt_dl",),
+        default=("tt", "dy_m50toinf", "dy_m10to50"),
+        description="Processes to consider for the scale factors",
+    )
 
     @cached_property
     def process_insts(self):
@@ -77,21 +83,23 @@ class GetBtagNormalizationSF(
             "btag_renormalization_sf": self.target("btag_renormalization_sf.json"),
         }
 
-    def reduce_hist(self, hist, mode):
+    def reduce_hist(self, hist, mode: list[str]):
         """
         Helper function that reduces the histogram to the requested axes based on the mode.
         """
         hist = hist[{"process": sum, "steps": "selected_no_bjet"}]
-        if mode == "ht_njet":
-            return hist
-        elif mode == "njet":
-            return hist[{"ht": sum}]
-        elif mode == "ht":
-            return hist[{"n_jets": sum}]
-        elif mode == "":
-            return hist[{"ht": sum, "n_jets": sum}]
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
+
+        # check validity of mode
+        ax_names = [ax.name for ax in hist.axes]
+        if not all(ax in ax_names for ax in mode):
+            raise ValueError(f"Invalid mode {mode} for axes {ax_names}")
+
+        # remove axes not in mode
+        for ax in hist.axes:
+            if ax.name not in mode:
+                hist = hist[{ax.name: sum}]
+
+        return hist
 
     def run(self):
         import correctionlib
@@ -112,11 +120,19 @@ class GetBtagNormalizationSF(
                 1.0,
             )
 
-        # rescale the histograms to the cross section
+        # rescale the histograms
         for dataset, hists in hists_per_dataset.items():
             process = self.config_inst.get_dataset(dataset).processes.get_first()
-            xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
-            dataset_factor = xs / hists["sum_mc_weight"][{"steps": "all"}].value
+            if self.rescale_mode == "xs":
+                # scale such that the sum of weights is the cross section
+                xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
+                dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
+            elif self.rescale_mode == "nevents":
+                # scale such that mean weight is 1
+                n_events = hists["num_events"][{"steps": "selected_no_bjet"}].value
+                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": "selected_no_bjet"}].value
+            else:
+                raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
             for key in tuple(hists.keys()):
                 if "sum" not in key:
                     continue
@@ -136,16 +152,27 @@ class GetBtagNormalizationSF(
         sf_map = {}
 
         # TODO: mode "" (reduce everything to a single bin) not yet working
-        for mode in ("ht_njet", "njet", "ht"):
-            numerator = merged_hists["rescaled_sum_mc_weight_per_process_ht_njet"]
+        for mode in (
+            ("ht", "njet", "nhf"),
+            ("ht", "njet"),
+            ("ht",),
+            ("njet",),
+            ("nhf",),
+            # ("",),
+        ):
+            mode_str = "_".join(mode)
+            numerator = merged_hists["rescaled_sum_mc_weight_per_process_ht_njet_nhf"]
             numerator = self.reduce_hist(numerator, mode).values()
 
             for key in merged_hists.keys():
-                if not key.startswith("rescaled_sum_mc_weight_btag_weight") or not key.endswith("_per_process_ht_njet"):
+                if (
+                    not key.startswith("rescaled_sum_mc_weight_btag_weight") or
+                    not key.endswith("_per_process_ht_njet_nhf")
+                ):
                     continue
 
                 # extract the weight name
-                weight_name = key.replace("rescaled_sum_mc_weight_", "").replace("_per_process_ht_njet", "")
+                weight_name = key.replace("rescaled_sum_mc_weight_", "").replace("_per_process_ht_njet_nhf", "")
 
                 # create the scale factor histogram
                 h = merged_hists[key]
@@ -154,14 +181,13 @@ class GetBtagNormalizationSF(
 
                 # calculate the scale factor and store it as a correctionlib evaluator
                 sf = safe_div(numerator, denominator)
-
                 sfhist = hist.Hist(*h.axes, data=sf)
-                sfhist.name = f"{mode}_{weight_name}"
+                sfhist.name = f"{mode_str}_{weight_name}"
                 sfhist.label = "out"
 
                 # import correctionlib.convert
                 btag_renormalization = correctionlib.convert.from_histogram(sfhist)
-                btag_renormalization.description = f"{weight_name} per {mode} re-normalization"
+                btag_renormalization.description = f"{weight_name} per {mode_str} re-normalization"
 
                 # set overflow bins behavior (default is to raise an error when out of bounds)
                 # NOTE: claming seems to not work for int axes. Hopefully the number of jets considered to
