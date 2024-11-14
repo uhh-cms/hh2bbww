@@ -74,8 +74,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
         # compute pdf weights
         events = self[pdf_weights](
             events,
-            outlier_threshold=0.5,
-            outlier_action="ignore",
+            outlier_threshold=0.99,
+            outlier_action="remove",  #NOTE: change to "remove"?
             outlier_log_mode="warning",
             **kwargs,
         )
