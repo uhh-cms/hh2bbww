@@ -224,19 +224,11 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
         reqs["stats"] = {
             config_inst.name: {
@@ -244,19 +236,11 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     tree_index=-1,
                 )
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
         return reqs
 
@@ -275,20 +259,12 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     branch=-1,
                 )
                 for dataset_inst in dataset_insts
                 if dataset_inst.x.ml_process == process
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
 
         # load stats for all processes
@@ -298,18 +274,10 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     tree_index=-1)
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
 
         return reqs
@@ -489,16 +457,10 @@ class MLEvaluationSingleFold(
             self,
             branches=(self.fold,),
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
@@ -515,16 +477,10 @@ class MLEvaluationSingleFold(
             branches=(self.fold,),
             branch=self.fold,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
@@ -649,9 +605,6 @@ class PlotMLResultsSingleFold(
             "training": self.reqs.MLTraining.req_different_branching(
                 self,
                 configs=(self.config_inst.name,),
-                calibrators=(self.calibrators,),
-                selectors=(self.selector,),
-                producers=(self.producers,),
                 branches=(self.fold,),
             ),
         }
@@ -659,9 +612,6 @@ class PlotMLResultsSingleFold(
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         reqs["mlpred"] = {

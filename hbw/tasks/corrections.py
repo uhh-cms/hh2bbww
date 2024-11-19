@@ -6,7 +6,7 @@ import law
 
 from functools import cached_property
 
-from columnflow.tasks.framework.base import Requirements
+from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
     SelectorMixin, CalibratorsMixin,
 )
@@ -25,6 +25,7 @@ logger = law.logger.get_logger(__name__)
 
 class GetBtagNormalizationSF(
     HBWTask,
+    ConfigTask,
     SelectorMixin,
     CalibratorsMixin,
     # law.LocalWorkflow,

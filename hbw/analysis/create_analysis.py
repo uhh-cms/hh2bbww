@@ -19,6 +19,12 @@ thisdir = os.path.dirname(os.path.abspath(__file__))
 logger = law.logger.get_logger(__name__)
 
 
+from hbw.config.defaults_and_groups import (
+    default_calibrator, default_selector, default_producers, default_ml_model,
+    ml_inputs_producer,
+)
+
+
 @timeit_multiple
 def create_hbw_analysis(
     name,
@@ -61,6 +67,13 @@ def create_hbw_analysis(
     # config groups for conveniently looping over certain configs
     # (used in wrapper_factory)
     analysis_inst.set_aux("config_groups", {})
+
+    analysis_inst.x.default_calibrator = default_calibrator(analysis_inst)
+    analysis_inst.x.default_selector = default_selector(analysis_inst)
+    analysis_inst.x.default_producer = default_producers
+    analysis_inst.x.default_weight_producer = "default"
+    analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
+    analysis_inst.x.default_ml_model = default_ml_model
 
     #
     # define configs

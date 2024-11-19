@@ -107,15 +107,16 @@ def set_config_defaults_and_groups(config_inst):
     # Defaults
     #
 
+    # NOTE: many of these have been moved to analysis_inst, TODO cleanup
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    config_inst.x.default_calibrator = default_calibrator(config_inst)
-    config_inst.x.default_selector = default_selector(config_inst)
+    # config_inst.x.default_calibrator = default_calibrator(config_inst)
+    # config_inst.x.default_selector = default_selector(config_inst)
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
-    config_inst.x.default_producer = default_producers
-    config_inst.x.default_weight_producer = "default"
-    # config_inst.x.default_weight_producer = "btag_not_normalized"
-    config_inst.x.default_ml_model = default_ml_model
+    # config_inst.x.default_producer = default_producers
+    # config_inst.x.default_weight_producer = "default"
+    # # config_inst.x.default_weight_producer = "btag_not_normalized"
+    # config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl"]
     config_inst.x.default_variables = ["jet1_pt"]
@@ -205,6 +206,10 @@ def set_config_defaults_and_groups(config_inst):
         "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "hh_ggf_*"],
         "h": ["h_ggf_*", "h_vbf_*", "zh_*", "wph_*", "wmh_*", "tth_*", "ttzh_*", "ttwh_*"],
     }
+    if config_inst.name == "l22post":
+        config_inst.x.dataset_groups["test123"] = ["tt_dl_powheg", "tt_sl_powheg"]
+    elif config_inst.name == "l22pre":
+        config_inst.x.dataset_groups["test123"] = ["tt_dl_powheg"]
 
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
