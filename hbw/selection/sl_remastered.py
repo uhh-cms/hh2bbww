@@ -218,7 +218,7 @@ def sl_lepton_selection_init(self: Selector) -> None:
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    is_l1nano = False,
+    is_l1nano=False,
     version=1,
 )
 def sl1(
@@ -234,6 +234,10 @@ def sl1(
     # lepton selection
     events, lepton_results = self[sl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
+
+    if self.is_l1nano:
+        events, l1_results = self[NN_trigger_selection](events, stats, **kwargs)
+        results += l1_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
@@ -267,13 +271,10 @@ def sl1(
         results.steps.Lepton &
         results.steps.VetoTau &
         results.steps.Trigger &
-        results.steps.TriggerAndLep
+        results.steps.TriggerAndLep 
+        #results.steps.L1NNcut
     )
-    __import__("IPython").embed()
-    if self.is_l1nano:
-        events, l1_results = self[NN_trigger_selection](events, stats, **kwargs)
-        results += l1_results
-    __import__("IPython").embed()
+
     # combined event selection after all steps
     # NOTE: we only apply the b-tagging step when no AK8 Jet is present; if some event with AK8 jet
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets

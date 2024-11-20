@@ -100,6 +100,8 @@ def add_config(
         cfg.x.lepton_tag = "sl"
     elif cfg.has_tag("is_dl"):
         cfg.x.lepton_tag = "dl"
+    #elif cfg.has_tag("is_l1nano"):
+    #    cfg.x.lepton_tag = "sl"
     else:
         raise Exception(f"config {cfg.name} needs either the 'is_sl' or 'is_dl' tag")
 
@@ -402,6 +404,9 @@ def add_config(
 
         # central trigger SF, only possible for SL
         if cfg.x.lepton_tag == "sl":
+            # TODO: this should be year-dependent and setup in the selector
+            cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")       
+        if cfg.x.lepton_tag == "l1nano":
             # TODO: this should be year-dependent and setup in the selector
             cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")
 

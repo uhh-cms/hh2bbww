@@ -80,14 +80,13 @@ def NN_trigger_inference(
 
     #objects = self.info["model_settings"]["objects"]
     objects = self.info["objects"]
-
     dataList = [] 
     for obj in objects: 
         dat, names = getPadNParr(events, obj["key"], obj["n_obj"], obj["fields"], obj["cuts"] if "cuts" in obj else None, obj["name"] )
         dataList.append(dat)
 
     inputs = np.concatenate(dataList, axis = 0).T
-
+    
     # scaling the input vector
     scaled_inputs = self.scaler.transform(inputs)
 
@@ -96,7 +95,7 @@ def NN_trigger_inference(
 
     # returning the inference results
     events = set_ak_column(events, "L1NNscore", predictions)
-
+    __import__("IPython").embed()
     return events
 
     
@@ -140,7 +139,8 @@ def NN_trigger_selection(
 
     # add L1NN score
     events = self[NN_trigger_inference](events, **kwargs)
-
+    # Here we need a function that calculates the optimal threshold for a pure rate of 1 kHz  
+    # for now we can just use 0.987 or something like that 
     threshold = 0.5
     greater = True
 

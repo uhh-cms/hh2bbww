@@ -144,6 +144,7 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 
 
 # minimal model for quick test purposes
+# This is what we need for the ml-model
 cls_dict_test = {
     "ml_model_name": "dense_22post_test",
     "processes": [
@@ -163,7 +164,37 @@ cls_dict_test = {
         "lumi_13TeV_correlated",
     ],
 }
+
+# das rufen wir auf zum produzieren der datacards - als inference-model 
 sl_22post_test = default.derive("sl_22post_test", cls_dict=cls_dict_test)
+
+#same for 2017 data
+cls_dict_test_17 = {
+    "ml_model_name": "dense_17post_test",  # Name of the 2017-specific model
+    "processes": [
+        "hh_ggf_hbb_hwwqqlnu_kl0_kt1",
+        "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
+        "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
+        "tt",
+    ],
+    "config_categories": [
+        "sr__1e__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",  # Ensure these categories exist for 2017
+        "sr__1e__ml_tt",
+    ],
+    "systematics": [
+        "lumi_13TeV_2016",  # Keep if relevant for cross-year analysis
+        "lumi_13TeV_2017",  # Include for 2017 data
+        "lumi_13TeV_1718",  # If using combined 2017 and 2018
+        "lumi_13TeV_2022",  # If comparing with 2022 data
+        "lumi_13TeV_2023",  # If 2023 data is relevant
+        "lumi_13TeV_correlated",  # If using correlated systematics
+    ],
+}
+
+# Creating the 2017-specific test model for producing datacards
+sl_17post_test = default.derive("sl_17post_test", cls_dict=cls_dict_test_17)
+
 
 # model but with different fit variable
 jet1_pt = default.derive("jet1_pt", cls_dict={

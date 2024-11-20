@@ -579,7 +579,107 @@ def get_dataset_lfns_l1nano(
     #files =  glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
     #print(80*'#',files)
     search_path = f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root"
+    #search_path = f"/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root"
+
+    #fs = "local_fs"
     print("Searching for files at path:", search_path)
     files = glob.glob(search_path)
+    print("Found files:", files)
+    return files
+
+
+def get_dataset_lfns_l1nano_gpt(
+    dataset_inst: od.Dataset,
+    shift_inst: od.Shift,
+    dataset_key: str,
+) -> list[str]:
+    """
+    Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn.
+    """
+    # Wenn kein benutzerdefinierter Pfad existiert, eine alternative Methode verwenden
+    if not dataset_inst.x("custom", None):
+        return GetDatasetLFNs.get_dataset_lfns_dasgoclient(
+            GetDatasetLFNs, dataset_inst=dataset_inst, shift_inst=shift_inst, dataset_key=dataset_key,
+        )
+
+    # Datasetname und Basisverzeichnis definieren
+    print("dataset name:", dataset_inst.name)
+    print("dataset_key:", dataset_key)
+    
+    dataset_name = dataset_key.split("/")[1]
+    
+    # Definiere das Basisverzeichnis für `LocalDirectoryTarget` mit dem lokalen Dateisystem
+    lfn_base = LocalDirectoryTarget(
+        f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}",
+        fs="local_fs",
+    )
+    
+    # Liste der Pfade der ROOT-Dateien im Verzeichnis abrufen
+    lfns = [
+        lfn_base.child(basename, type="f").path
+        for basename in lfn_base.listdir(pattern="/*/*/*/*.root")
+    ]
+
+    print("Final list of LFNs:", lfns)
+    return lfns
+
+def get_dataset_lfns_l1nano_schrott(
+    dataset_inst: od.Dataset,
+    shift_inst: od.Shift,
+    dataset_key: str,
+) -> list[str]:
+    """
+    Custom method to obtain custom NanoAOD datasets
+    """
+
+
+    #if not dataset_inst.x("custom", None):
+    #    return GetDatasetLFNs.get_dataset_lfns_dasgoclient(
+    #        GetDatasetLFNs, dataset_inst=dataset_inst, shift_inst=shift_inst, dataset_key=dataset_key,
+    #    )
+    print("dataset name:", dataset_inst.name)
+    print("dataset_key:", dataset_key)
+    dataset_name = dataset_key.split("/")[1]
+    print("dataset name:", dataset_name)
+    # NOTE: this currently simply takes samples from a hard-coded local path. Should be improved
+    #       when all files are stored somewhere remote
+    lfn_base = law.LocalDirectoryTarget(
+        f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/",
+        fs="local_desy_dcache",
+    )
+
+    # loop though files and interpret paths as lfns
+    return [
+        lfn_base.child(basename, type="f").path
+        for basename in lfn_base.listdir(pattern="crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/*.root")
+    ]
+
+def get_dataset_lfns_l1nano_test2(
+    dataset_inst: od.Dataset,
+    shift_inst: od.Shift,
+    dataset_key: str,
+) -> list[str]:
+    """
+    Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn
+    """
+    import glob
+
+    print("dataset name:", dataset_inst.name)
+    print("dataset_key:", dataset_key)
+
+    #dataset_name = dataset_key.split("/")[1]
+
+    # no idea if this is clean, but I could not get the LocalDirectoryTarget to give me these paths :D
+    # this is why I'm just globbing here
+    
+    #files =  glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
+    #print(80*'#',files)
+    #search_path = f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/GluGluToHHTo2B2VLNu2J_node_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/output_12.root"
+    search_path = f"/store/user/flabe/custom_L1_Nano/sixthproduction//GluGluToHHTo2B2VLNu2J_node_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/output_12.root"
+
+    #fs = "local_fs"
+    print("Searching for files at path:", search_path)
+    #files = glob.glob(search_path)
+    files = search_path
     print("Found files:", files)
     return files

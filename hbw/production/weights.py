@@ -127,10 +127,10 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: self.config_inst.x.muon_id_sf_names),
 })
-muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
-    "weight_name": "muon_trigger_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_trigger_sf_names),
-})
+#Lara muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
+#Lara     "weight_name": "muon_trigger_weight",
+#Lara    "get_muon_config": (lambda self: self.config_inst.x.muon_trigger_sf_names),
+#Lara})
 
 
 @producer(
@@ -148,7 +148,7 @@ def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     return events
 
-
+'''Lara
 @producer(
     uses={muon_trigger_weights},
 )
@@ -169,6 +169,7 @@ def sl_trigger_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     del trigger_sf_events
 
     return events
+'''
 
 
 def sl_trigger_weights_skip_func(self: Producer) -> bool:
@@ -183,7 +184,7 @@ def sl_trigger_weights_skip_func(self: Producer) -> bool:
         return True
 
 
-sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
+#Lara sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
 
 
 @producer(
@@ -288,9 +289,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[muon_id_iso_weights](events, **kwargs)
 
-        if self.config_inst.x.lepton_tag == "sl":
+        #Lara if self.config_inst.x.lepton_tag == "sl":
             # compute single lepton trigger SF weights
-            events = self[sl_trigger_weights](events, **kwargs)
+        #Lara   events = self[sl_trigger_weights](events, **kwargs)
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
@@ -317,8 +318,8 @@ def event_weights_init(self: Producer) -> None:
         self.uses |= {muon_id_iso_weights}
         self.produces |= {muon_id_iso_weights}
 
-        self.uses |= {sl_trigger_weights}
-        self.produces |= {sl_trigger_weights}
+        #Lara self.uses |= {sl_trigger_weights}
+        #Lara self.produces |= {sl_trigger_weights}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights, normalized_btag_weights}

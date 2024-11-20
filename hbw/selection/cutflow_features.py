@@ -18,7 +18,7 @@ ak = maybe_import("awkward")
 
 @producer(
     # used and produced columns per object are defined in init function
-    uses={prepare_objects, NN_trigger_inference, "PV.npvs", optional("Pileup.nTrueInt"), optional("Pileup.nPU")},
+    uses={prepare_objects, NN_trigger_inference, "PV.npvs", "cutflow.L1NNscore", optional("Pileup.nTrueInt"), optional("Pileup.nPU")},
     produces={
         "cutflow.n_electron", "cutflow.n_muon", "cutflow.n_lepton",
         "cutflow.n_veto_electron", "cutflow.n_veto_muon", "cutflow.n_veto_lepton",

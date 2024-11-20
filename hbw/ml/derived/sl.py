@@ -157,6 +157,19 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 #
 # derived MLModels
 #
+#dense_17post = DenseClassifierSL.derive("dense_17post", cls_dict={
+#    "training_configs": lambda self, requested_configs: ["c17post"],
+#    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
+#})
+dense_17post_test = DenseClassifierSL.derive("dense_17post_test", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l17"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt"],
+    "epochs": 10,
+})
+#dense_17 = DenseClassifierSL.derive("dense_17", cls_dict={
+#    "training_configs": lambda self, requested_configs: ["c17post", "c17pre"],
+#    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
+#})
 
 dense_22post = DenseClassifierSL.derive("dense_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
