@@ -22,7 +22,6 @@ from columnflow.tasks.framework.mixins import (
     CalibratorsMixin,
     ProducersMixin,
     MLModelTrainingMixin,
-    MLModelMixin,
     MLModelsMixin,
     MLModelDataMixin,
     SelectorStepsMixin,
@@ -403,13 +402,9 @@ class MLPreTraining(
 
 
 class MLEvaluationSingleFold(
-    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
-    # is implemented
+    # NOTE: mixins might need fixing, needs to be checked
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
@@ -541,13 +536,9 @@ class MLEvaluationSingleFold(
 
 
 class PlotMLResultsSingleFold(
-    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
-    # is implemented
+    # NOTE: mixins might need fixing, needs to be checked
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
