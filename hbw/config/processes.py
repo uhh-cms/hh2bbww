@@ -11,6 +11,8 @@ from scinum import Number
 
 from cmsdb.util import add_decay_process
 
+from hbw.config.styling import color_palette
+
 
 def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwargs):
     """
@@ -185,3 +187,15 @@ def configure_hbw_processes(config: od.Config):
                     xsecs=None,
                     aux={"flavour": flavour},
                 )
+
+    # create main background process
+    background = config.add_process(
+        name="background",
+        id=99999,
+        label="background",
+        color=color_palette["blue"],
+    )
+    for bg in ["tt", "dy", "st", "vv", "w_lnu", "h"]:
+        if config.has_process(bg):
+            bg = config.get_process(bg)
+            background.add_process(bg)
