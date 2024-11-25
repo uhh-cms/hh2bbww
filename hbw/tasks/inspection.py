@@ -4,20 +4,228 @@
 Custom tasks for inspecting the configuration or certain task outputs.
 """
 
+# from functools import cached_property
+
 import law
 import luigi
 
 from columnflow.tasks.framework.mixins import (
     ProducersMixin, MLModelsMixin,
 )
+from columnflow.tasks.framework.base import ConfigTask, Requirements
+from columnflow.tasks.framework.mixins import DatasetsProcessesMixin, SelectorMixin, CalibratorsMixin
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import ReducedEventsUser
-from columnflow.util import maybe_import
+from columnflow.tasks.selection import MergeSelectionStats
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import get_ak_routes, update_ak_array
 
 from hbw.tasks.base import HBWTask, ColumnsBaseTask
+from hbw.util import round_sig
 
 ak = maybe_import("awkward")
+
+logger = law.logger.get_logger(__name__)
+
+
+def create_table_from_csv(csv_file_path):
+    import csv
+    from tabulate import tabulate
+
+    # Read the CSV file
+    with open(csv_file_path, mode="r", newline="") as file:
+        reader = csv.reader(file)
+        data = list(reader)
+
+    # Optionally, if you want to use the first row as headers
+    headers = data[0]  # First row as headers
+    table_data = data[1:]  # Rest as table data
+
+    # Generate the table using tabulate
+    table = tabulate(table_data, headers=headers, tablefmt="grid")
+
+    # Print the table
+    print(table)
+    return table
+
+
+class SelectionSummary(
+    HBWTask,
+    DatasetsProcessesMixin,
+    SelectorMixin,
+    CalibratorsMixin,
+):
+    reqs = Requirements(MergeSelectionStats=MergeSelectionStats)
+
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    keys_of_interest = law.CSVParameter(
+        # default=("num_events", "num_events_per_process", "sum_mc_weight", "sum_mc_weigth_per_process"),
+        default=tuple(),
+    )
+
+    # @cached_property
+    # def datasets(self):
+    #     return [dataset.name for dataset in self.config_inst.datasets]
+
+    def requires(self):
+        print("SelectionSummary requires")
+        reqs = {}
+        for dataset in self.datasets:
+            reqs[dataset] = self.reqs.MergeSelectionStats.req(
+                self,
+                dataset=dataset,
+                tree_index=0,
+                branch=-1,
+                _exclude=self.reqs.MergeSelectionStats.exclude_params_forest_merge,
+            )
+        return reqs
+
+    @property
+    def keys_repr(self):
+        return "_".join(sorted(self.keys_of_interest))
+
+    def output(self):
+        output = {
+            "selection_summary_csv": self.target("selection_summary.csv"),
+            "selection_summary_table": self.target("selection_summary.txt"),
+        }
+        return output
+
+    def write_selection_summary(self, outp):
+        import csv
+        outp.touch()
+        lumi = self.config_inst.x.luminosity
+        inputs = self.input()
+
+        empty_datasets = []
+
+        keys_of_interest = self.keys_of_interest or ["selection_eff", "expected_yield", "num_events_selected"]
+        header_map = {
+            "xsec": "CrossSection [pb]",
+            "empty": "Empty?",
+            "selection_eff": "Efficiency",
+            "expected_yield": "Yields",
+            "num_events_selected": "NSelected",
+        }
+
+        with open(outp.path, "w") as f:
+            writer = csv.writer(f)
+
+            writer.writerow(["Dataset"] + [header_map.get(key, key) for key in keys_of_interest])
+            for dataset in self.datasets:
+                stats = inputs[dataset]["collection"][0]["stats"].load(formatter="json")
+                # hists = inputs[dataset]["collection"][0]["hists"].load(formatter="pickle")
+
+                xsec = self.config_inst.get_dataset(dataset).processes.get_first().xsecs.get(
+                    self.config_inst.campaign.ecm, None,
+                )
+
+                def safe_div(num, den):
+                    return num / den if den != 0 else 0
+
+                missing_keys = {"sum_mc_weight", "sum_mc_weight_selected"} - set(stats.keys())
+                if missing_keys:
+                    logger.warning(f"Missing keys in stats in dataset {dataset}: {missing_keys}")
+                    continue
+
+                selection_eff = safe_div(stats["sum_mc_weight_selected"], stats["sum_mc_weight"])
+                if xsec is not None:
+                    expected_yield = xsec * selection_eff * lumi
+
+                if stats["num_events_selected"] == 0:
+                    empty_datasets.append(dataset)
+
+                selection_summary = {
+                    "xsec": xsec.nominal,
+                    "empty": True if stats["num_events_selected"] == 0 else False,
+                    "selection_eff": round_sig(selection_eff, 4),
+                    "expected_yield": round_sig(expected_yield.nominal, 4),
+                }
+                for key in keys_of_interest:
+                    if key in selection_summary.keys():
+                        continue
+                    if key in stats:
+                        selection_summary[key] = round_sig(stats[key], 4)
+                    else:  # default to empty string
+                        selection_summary[key] = ""
+
+                row = [dataset] + [selection_summary[key] for key in keys_of_interest]
+                writer.writerow(row)
+
+        self.publish_message(f"Empty datasets: {empty_datasets}")
+
+    def run(self):
+        output = self.output()
+        self.write_selection_summary(output["selection_summary_csv"])
+
+        table = create_table_from_csv(output["selection_summary_csv"].path)
+        output["selection_summary_table"].dump(table, formatter="text")
+
+
+class DumpAnalysisSummary(
+    HBWTask,
+    ConfigTask,
+):
+
+    keys_of_interest = law.CSVParameter(
+        default=tuple(),
+        description="Keys of interest to be printed in the summary",
+    )
+
+    @property
+    def keys_repr(self):
+        return "_".join(sorted(self.keys_of_interest))
+
+    def requires(self):
+        return {}
+
+    def output(self):
+        output = {
+            "dataset_summary": self.target(f"dataset_summary_{self.keys_repr}.txt"),
+        }
+        return output
+
+    def write_dataset_summary(self, outp):
+        import csv
+        outp.touch()
+        with open(outp.path, "w") as f:
+            writer = csv.writer(f)
+            keys_of_interest = self.keys_of_interest or ["das_keys", "process", "xsec"]
+            header_map = {
+                "name": "Dataset name",
+                "n_events": "Number of events",
+                "n_files": "Number of files",
+                "das_keys": "DAS keys",
+                "rucio": "Rucio DAS keys",
+                "process": "Process name",
+                "xsec": "Cross section [pb]",
+                "xsec_unc": "Cross section +- unc [pb]",
+                "xsec_full": "Cross section +- unc [pb]",
+            }
+            writer.writerow([header_map[key] for key in keys_of_interest])
+            for dataset in self.config_inst.datasets:
+                xsec = dataset.processes.get_first().xsecs.get(13.6, None)
+                try:
+                    dataset_summary = {
+                        "name": dataset.name,
+                        "n_events": dataset.n_events,
+                        "n_files": dataset.n_files,
+                        "das_keys": dataset.get_info("nominal").keys[0],
+                        "rucio": "cms:" + dataset.get_info("nominal").keys[0],
+                        "process": dataset.processes.get_first().name,
+                        "xsec": round_sig(xsec.nominal, 4) if xsec else "0",
+                        "xsec_unc": xsec.str("pdg", combine_uncs="all") if xsec else "0",
+                        # "xsec_full": xsec.str("pdg") if xsec else "",
+                    }
+                except Exception as e:
+                    from hbw.util import debugger
+                    debugger("Failed to get dataset summary", e)
+                writer.writerow([dataset_summary[key] for key in keys_of_interest])
+
+    def run(self):
+        output = self.output()
+        self.write_dataset_summary(output["dataset_summary"])
 
 
 class CheckConfig(
@@ -25,17 +233,21 @@ class CheckConfig(
     MLModelsMixin,
     ProducersMixin,
     ReducedEventsUser,
+    law.LocalWorkflow,
 ):
     """
     Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.
     It only prints some informations from the config inst.
     Does not require anything, does not output anything.
     """
+    # columnar sandbox is always nice to have :)
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
     version = None
 
-    debugger = luigi.BoolParameter(
-        default=True,
-        description="Whether to start a ipython debugger session or not; default: True",
+    skip_debugger = luigi.BoolParameter(
+        default=False,
+        description="Whether to start a ipython debugger session or not; default: False",
     )
 
     settings = SettingsParameter(default={})
@@ -44,7 +256,10 @@ class CheckConfig(
         return {}
 
     def output(self):
-        return {"always_incomplete_dummy": self.target("dummy.txt")}
+        output = {
+            "always_incomplete_dummy": self.target("dummy.txt"),
+        }
+        return output
 
     def run(self):
         config = self.config_inst
@@ -65,7 +280,8 @@ class CheckConfig(
             f"{'=' * 10} Leaf Categories ({len(leaf_cats)}):\n{[cat.name for cat in leaf_cats]} \n\n"
             f"{'=' * 10} Variables ({len(variables)}):\n{variables.names()} \n\n",
         )
-        if self.debugger:
+
+        if not self.skip_debugger:
             self.publish_message("starting debugger ....")
             from hbw.util import debugger
             debugger()

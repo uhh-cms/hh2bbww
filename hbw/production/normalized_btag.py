@@ -13,6 +13,86 @@ from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+hist = maybe_import("hist")
+
+
+@producer(
+    uses={
+        btag_weights.PRODUCES, "process_id", "Jet.pt", "njet", "ht", "nhf",
+    },
+    # produced columns are defined in the init function below
+    mc_only=True,
+    modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
+    from_file=False,
+)
+def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    variable_map = {
+        # NOTE: might be cleaner to use the ht and njet reconstructed during the selection (and also compare?)
+        "ht": ak.sum(events.Jet.pt, axis=1),
+        "njet": ak.num(events.Jet.pt, axis=1),
+        "nhf": events.nhf,
+    }
+
+    # sanity check
+    for var in ("ht", "njet"):
+        consistency_check = np.isclose(events[var], variable_map[var], rtol=0.0001)
+        if not ak.all(consistency_check):
+            raise ValueError(f"Variable {var} is not consistent between before and after event selection")
+
+    for mode in self.modes:
+        if mode not in ("ht_njet_nhf", "ht_njet", "njet", "ht"):
+            raise NotImplementedError(
+                f"Normalization mode {mode} not implemented (see hbw.tasks.corrections.GetBtagNormalizationSF)",
+            )
+        for weight_name in self[btag_weights].produces:
+            if not weight_name.startswith("btag_weight"):
+                continue
+
+            correction_key = f"{mode}_{weight_name}"
+            if correction_key not in set(self.correction_set.keys()):
+                raise KeyError(f"Missing scale factor for {correction_key}")
+
+            sf = self.correction_set[correction_key]
+            inputs = [variable_map[inp.name] for inp in sf.inputs]
+
+            norm_weight = sf.evaluate(*inputs)
+            norm_weight = norm_weight * events[weight_name]
+            events = set_ak_column(events, f"normalized_{mode}_{weight_name}", norm_weight)
+
+    return events
+
+
+@normalized_btag_weights.init
+def normalized_btag_weights_init(self: Producer) -> None:
+    for weight_name in self[btag_weights].produces:
+        if not weight_name.startswith("btag_weight"):
+            continue
+        for mode in self.modes:
+            self.produces.add(f"normalized_{mode}_{weight_name}")
+
+
+@normalized_btag_weights.requires
+def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
+    from hbw.tasks.corrections import GetBtagNormalizationSF
+    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(self.task)
+
+
+@normalized_btag_weights.setup
+def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+    # create the corrector
+    import correctionlib
+    correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
+    if self.from_file:
+        # used when the correction is stored as a JSON dict
+        self.correction_set = correctionlib.CorrectionSet.from_file(
+            inputs["btag_renormalization_sf"]["btag_renormalization_sf"].fn,
+        )
+    else:
+        # used when correction is stored as a JSON string
+        self.correction_set = correctionlib.CorrectionSet.from_string(
+            inputs["btag_renormalization_sf"]["btag_renormalization_sf"].load(formatter="json"),
+        )
 
 
 @producer(
@@ -22,7 +102,7 @@ ak = maybe_import("awkward")
     # produced columns are defined in the init function below
     mc_only=True,
 )
-def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def normalized_btag_weights_from_json(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
@@ -53,8 +133,8 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     return events
 
 
-@normalized_btag_weights.init
-def normalized_btag_weights_init(self: Producer) -> None:
+@normalized_btag_weights_from_json.init
+def normalized_btag_weights_from_json_init(self: Producer) -> None:
     for weight_name in self[btag_weights].produces:
         if not weight_name.startswith("btag_weight"):
             continue
@@ -63,8 +143,8 @@ def normalized_btag_weights_init(self: Producer) -> None:
         self.produces.add(f"normalized_njet_{weight_name}")
 
 
-@normalized_btag_weights.requires
-def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
+@normalized_btag_weights_from_json.requires
+def normalized_btag_weights_from_json_requires(self: Producer, reqs: dict) -> None:
     from columnflow.tasks.selection import MergeSelectionStats
     reqs["selection_stats"] = MergeSelectionStats.req(
         self.task,
@@ -74,8 +154,10 @@ def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
     )
 
 
-@normalized_btag_weights.setup
-def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+@normalized_btag_weights_from_json.setup
+def normalized_btag_weights_from_json_setup(
+    self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict,
+) -> None:
     # load the selection stats
     stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")
 

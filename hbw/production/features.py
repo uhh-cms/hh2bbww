@@ -13,7 +13,6 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.variables import add_feature_variables
 from hbw.config.dl.variables import add_dl_variables
-from hbw.util import four_vec
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -26,7 +25,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses=four_vec("Jet"),
+    uses={"Jet.{pt,eta,phi,mass}"},
     produces={"m_jj", "jj_pt", "deltaR_jj"},
 )
 def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -45,8 +44,8 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={
-        "HbbJet.msoftdrop",
-    } | four_vec("Bjet"),
+        "HbbJet.msoftdrop", "Jet.{pt,eta,phi,mass}",
+    },
     produces={"m_bb", "bb_pt", "deltaR_bb", "m_bb_combined"},
 )
 def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -131,7 +130,8 @@ def features_init(self: Producer) -> None:
 
 
 @producer(
-    uses=four_vec({"Electron", "Muon", "Bjet", "MET"}) | {
+    uses={
+        "{Electron,Muon,Bjet}.{pt,eta,phi,mass}", "MET.{pt,phi}",
         features,
         "Electron.charge", "Muon.charge",
     },

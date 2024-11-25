@@ -60,7 +60,7 @@ def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
-    default_producers = [ml_inputs_producer(container), "event_weights", "pre_ml_cats"]
+    default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
@@ -93,8 +93,8 @@ def set_config_defaults_and_groups(config_inst):
     year = config_inst.campaign.x.year
 
     # define the default dataset and process based on the analysis tags
-    signal_tag = "sl" if config_inst.has_tag("is_sl") else "dl"
-    default_signal_process = f"ggHH_kl_1_kt_1_{signal_tag}_hbbhww"
+    signal_tag = "qqlnu" if config_inst.has_tag("is_sl") else "2l2nu"
+    default_signal_process = "hh_ggf_hbb_hvv_kl1_kt1"
     signal_generator = "powheg"
 
     if config_inst.has_tag("resonant"):
@@ -114,6 +114,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
     config_inst.x.default_weight_producer = "default"
+    # config_inst.x.default_weight_producer = "btag_not_normalized"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl"]
@@ -127,58 +128,103 @@ def set_config_defaults_and_groups(config_inst):
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
         "all": ["*"],
-        "default": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "with_qcd": [default_signal_process, "tt", "qcd", "st", "w_lnu", "dy_lep"],
-        "much": [default_signal_process, "tt", "qcd_mu", "st", "w_lnu", "dy_lep"],
-        "2much": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "ech": [default_signal_process, "tt", "qcd_ele", "st", "w_lnu", "dy_lep"],
-        "2ech": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "emuch": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
-        "inference": ["ggHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "k2v": ["qqHH_*", "tt", "st", "w_lnu", "dy_lep", "qcd_*"],
-        "ml": [default_signal_process, "tt", "st", "w_lnu", "dy_lep"],
+        "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
+        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
+        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
+        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
+        "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
+        "dl1": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],  # noqa: E501
+        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        "dlmajor": [default_signal_process, "tt", "dy", "st"],
+        "2much": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        "2ech": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        "emuch": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        # "dl": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        # "2much": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        # "2ech": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        # "emuch": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
-        "mldl": ["ggHH_kl_1_kt_1_dl_hbbhww", "tt", "st", "dy_lep"],
-        "mlsl": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "w_lnu", "dy_lep"],
+        "mldl": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt", "st", "dy"],
+        "mlsl": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "w_lnu", "dy"],
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
-        "bkg": ["tt", "st", "w_lnu", "dy_lep"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
+        "bkg": ["tt", "st", "w_lnu", "dy"],
+        # signal groups
+        "signal": ["hh_ggf_*", "hh_vbf_*"],
+        "hbv": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1"],
+        "hbw": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"],
+        "hbz": ["hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1"],
+        "hbv_ggf": ["hh_ggf_hbb_hvv_kl*_kt1"], "hbv_vbf": ["hh_vbf_hbb_hvv_*"],
+        "hbv_ggf_dl": ["hh_ggf_hbb_hvv2l2nu_kl*_kt1"],
+        "hbv_ggf_sl": ["hh_ggf_hbb_hvvqqlnu_kl*_kt1"],
+        "hbv_vbf_dl": ["hh_vbf_hbb_hvv2l2nu_*"],
+        "hbv_vbf_sl": ["hh_vbf_hbb_hvvqqlnu_*"],
+        "hbw_ggf": ["hh_ggf_hbb_hww_kl*_kt1"], "hbw_vbf": ["hh_vbf_hbb_hww_*"],
+        "hbw_ggf_dl": ["hh_ggf_hbb_hww2l2nu_kl*_kt1"],
+        "hbw_ggf_sl": ["hh_ggf_hbb_hwwqqlnu_kl*_kt1"],
+        "hbw_vbf_dl": ["hh_vbf_hbb_hww2l2nu_*"],
+        "hbw_vbf_sl": ["hh_vbf_hbb_hwwqqlnu_*"],
+        "hbz_ggf": ["hh_ggf_hbb_hzz_kl*_kt1"], "hbz_vbf": ["hh_vbf_hbb_hzz_*"],
+        "hbz_ggf_dl": ["hh_ggf_hbb_hzz2l2nu_kl*_kt1"],
+        "hbz_ggf_sl": ["hh_ggf_hbb_hzzqqlnu_kl*_kt1"],
+        "hbz_vbf_dl": ["hh_vbf_hbb_hzz2l2nu_*"],
+        "hbz_vbf_sl": ["hh_vbf_hbb_hzzqqlnu_*"],
+        # background groups (separated for plotting)
+        "dy_m": ["dy_m4to10", "dy_m10to50", "dy_m50toinf"],
+        # background groups (for yield tables)
+        "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
+        "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
+        "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
+        "h_all": ["h", "h_ggf", "h_vbf", "vh", "zh", "zh_gg", "wh", "tth", "ttvh"],
     }
-    config_inst.x.process_groups["dmuch"] = ["data_mu"] + config_inst.x.process_groups["much"]
-    config_inst.x.process_groups["d2much"] = ["data_mu"] + config_inst.x.process_groups["much"]
-    config_inst.x.process_groups["dech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
-    config_inst.x.process_groups["d2ech"] = ["data_e", "data_egamma"] + config_inst.x.process_groups["ech"]
-    config_inst.x.process_groups["demuch"] = ["data_muoneg"] + config_inst.x.process_groups["ech"]
+    for proc, datasets in config_inst.x.dataset_names.items():
+        remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
+        config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
+
+    for group in ("dl2", "dl1", "dl", "much", "2much", "ech", "2ech", "emuch"):
+        # thanks to double counting removal, we can (and should) now use all datasets in each channel
+        config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
     # (used in wrapper_factory and during plotting)
     config_inst.x.dataset_groups = {
         "all": ["*"],
         "default": [default_signal_dataset, "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["ggHH_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
+        "inference": ["hh_ggf_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "test": [default_signal_dataset, "tt_sl_powheg"],
         "small": [default_signal_dataset, "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
         "tt": ["tt_*"], "st": ["st_*"], "w": ["w_lnu_*"], "dy": ["dy_*"],
         "qcd": ["qcd_*"], "qcd_mu": ["qcd_mu*"], "qcd_ele": ["qcd_em*", "qcd_bctoe*"],
-        "signal": ["ggHH_*", "qqHH_*"], "gghh": ["ggHH_*"], "qqhh": ["qqHH_*"],
-        "ml": ["ggHH_kl_1*", "tt_*", "st_*", "dy_*", "w_lnu_*"],
-        "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "ggHH_*"],
+        "signal": ["hh_ggf_*", "hh_vbf_*"], "hh_ggf": ["hh_ggf_*"], "hh_vbf": ["hh_vbf_*"],
+        "ml": ["hh_ggf*kl1_kt1", "tt_*", "st_*", "dy_*", "w_lnu_*"],
+        "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "hh_ggf_*"],
+        "h": ["h_ggf_*", "h_vbf_*", "zh_*", "wph_*", "wmh_*", "tth_*", "ttzh_*", "ttwh_*"],
     }
 
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
-        "sl_much": ["sr__1mu", "sr__1mu__resolved", "sr__1mu__boosted"],
-        "sl_ech": ["sr__1e", "sr__1e__resolved", "sr__1e__boosted"],
+        "sl": ["sr__1e", "sr__1mu"],
+        "sl_resolved": ["sr__1e__resolved", "sr__1mu__resolved"],
+        "sl_much": ["sr__1mu", "sr__1mu__1b", "sr__1mu__2b"],
+        "sl_ech": ["sr__1e", "sr__1e__1b", "sr__1e__2b"],
         "sl_much_resolved": ["sr__1mu__resolved", "sr__1mu__resolved__1b", "sr__1mu__resolved__2b"],
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
-        "dl_2much": ["sr__2mu", "sr__2mu__resolved", "sr__2mu__boosted"],
-        "dl_2ech": ["sr__2e", "sr__2e__resolved", "sr__2e__boosted"],
-        "dl_emuch": ["sr__emu", "sr__emu__resolved", "sr__emu__boosted"],
+        "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
+        "dl_ttcr": ["ttcr", "ttcr__1b", "ttcr__2b", "ttcr__2e", "ttcr__2mu", "ttcr__emu"],
+        "dl_dycr": ["dycr", "dycr__1b", "dycr__2b", "dycr__2e", "dycr__2mu", "dycr__emu"],
+        "dl_sr": ["sr", "sr__1b", "sr__2b", "sr__2e", "sr__2mu", "sr__emu"],
+        "dl_resolved": ["sr__resolved", "sr__2e__resolved", "sr__2mu__resolved", "sr__emu__resolved"],
+        "dl_2much": ["sr__2mu", "sr__2mu__1b", "sr__2mu__2b", "dycr__2mu", "dycr__2mu__1b", "dycr__2mu__2b", "ttcr__2mu", "ttcr__2mu__1b", "ttcr__2mu__2b"],  # noqa: E501
+        "dl_2ech": ["sr__2e", "sr__2e__1b", "sr__2e__2b", "dycr__2e", "dycr__2e__1b", "dycr__2e__2b", "ttcr__2e", "ttcr__2e__1b", "ttcr__2e__2b"],  # noqa: E501
+        "dl_emuch": ["sr__emu", "sr__emu__1b", "sr__emu__2b", "dycr__emu", "dycr__emu__1b", "dycr__emu__2b", "ttcr__emu", "ttcr__emu__1b", "ttcr__emu__2b"],  # noqa: E501
         "dl_2much_resolved": ["sr__2mu__resolved", "sr__2mu__resolved__1b", "sr__2mu__resolved__2b"],
         "dl_2ech_resolved": ["sr__2e__resolved", "sr__2e__resolved__1b", "sr__2e__resolved__2b"],
         "dl_emuch_resolved": ["sr__emu__resolved", "sr__emu__resolved__1b", "sr__emu__resolved__2b"],
@@ -190,28 +236,31 @@ def set_config_defaults_and_groups(config_inst):
         "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
         # Single lepton
         "SR_sl": (
-            "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-            "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1", "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+            "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1", "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         ),
         "vbfSR_sl": (
-            "sr__1e__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1e__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__1b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1", "sr__1mu__1b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+            "sr__1e__2b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1", "sr__1mu__2b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         ),
         "SR_sl_resolved": (
-            "sr__1e__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-            "sr__1e__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__resolved__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__resolved__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+            "sr__1mu__resolved__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+            "sr__1e__resolved__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+            "sr__1mu__resolved__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         ),
         "vbfSR_sl_resolved": (
-            "sr__1e__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1mu__resolved__1b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1e__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
-            "sr__1mu__resolved__2b__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__resolved__1b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+            "sr__1mu__resolved__1b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+            "sr__1e__resolved__2b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+            "sr__1mu__resolved__2b__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         ),
         "SR_sl_boosted": (
-            "sr__1e__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww", "sr__1mu__boosted__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+            "sr__1e__boosted__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1", "sr__1mu__boosted__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
         ),
         "vbfSR_sl_boosted": (
-            "sr__1e__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww", "sr__1mu__ml_boosted_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+            "sr__1e__ml_boosted_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+            "sr__1mu__ml_boosted_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         ),
         "BR_sl": (
             "sr__1e__ml_tt", "sr__1e__ml_st", "sr__1e__ml_v_lep",
@@ -219,24 +268,35 @@ def set_config_defaults_and_groups(config_inst):
         ),
         # Dilepton
         "SR_dl": (
-            "sr__2e__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2e__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-            "sr__2mu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__2mu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
-            "sr__emu__1b__ml_ggHH_kl_1_kt_1_dl_hbbhww", "sr__emu__2b__ml_ggHH_kl_1_kt_1_dl_hbbhww",
+            "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+            "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+            "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+            "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        ),
+        "vbfSR_dl": (
+            "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+            "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+            "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+            "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
         ),
         "BR_dl": (
-            "sr__2e__ml_tt", "sr__2e__ml_st", "sr__2e__ml_dy_lep",
-            "sr__2mu__ml_tt", "sr__2mu__ml_st", "sr__2mu__ml_dy_lep",
-            "sr__emu__ml_tt", "sr__emu__ml_st", "sr__emu__ml_dy_lep",
+            "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
+            "sr__2b__ml_tt", "sr__2b__ml_st", "sr__2b__ml_dy", "sr__2b__ml_h",
+            "sr__ml_tt", "sr__ml_st", "sr__ml_dy", "sr__ml_h",
+            "sr__1b__ml_dy_m50toinf", "sr__2b__ml_dy_m50toinf",
         ),
     }
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
+        "mli": ["mli_*"],
+        "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
-        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
+        "dl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
+        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
+        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
         "test": ["n_jet", "n_electron", "jet1_pt"],
         "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
@@ -273,30 +333,32 @@ def set_config_defaults_and_groups(config_inst):
     }
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},
-        "unstack_all": {proc.name: {"unstack": True} for proc in config_inst.processes},
+        "unstack_all": {proc.name: {"unstack": True} for proc, _, _ in config_inst.walk_processes()},
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
             proc.name: {"unstack": True, "scale": 10000}
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
+        "scale_signal1": {
+            proc.name: {"unstack": True, "scale": "stack"}
+            for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
+        },
         "dilep": {
-            "ggHH_kl_0_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_2p45_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
-            "ggHH_kl_5_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "hh_ggf_hbb_hvv2l2nu_kl0_kt1": {"scale": 10000, "unstack": True},
+            "hh_ggf_hbb_hvv2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
+            "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": {"scale": 10000, "unstack": True},
+            "hh_ggf_hbb_hvv2l2nu_kl5_kt1": {"scale": 10000, "unstack": True},
         },
         "dileptest": {
-            "ggHH_kl_1_kt_1_dl_hbbhww": {"scale": 10000, "unstack": True},
+            "hh_ggf_hbb_hvv2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
         },
         "control": {
-            "ggHH_kl_0_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_1_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_2p45_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
-            "ggHH_kl_5_kt_1_sl_hbbhww": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hvvqqlnu_kl0_kt1": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hvvqqlnu_kl1_kt1": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hvvqqlnu_kl5_kt1": {"scale": 90000, "unstack": True},
         },
     }
-    # when drawing DY as a line, use a different type of yellow
-    config_inst.x.process_settings_groups["unstack_all"].update({"dy_lep": {"unstack": True, "color": "#e6d800"}})
 
     config_inst.x.variable_settings_groups = {
         "test": {
@@ -309,6 +371,10 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.custom_style_config_groups = {
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16},
+        },
+        "no_cat_label": {
+            "legend_cfg": {"ncols": 2, "fontsize": 20},
+            "annotate_cfg": {"text": ""},
         },
         "example": {
             "legend_cfg": {"title": "my custom legend title", "ncols": 2},
@@ -345,21 +411,30 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": 3,
     }
 
+    is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
+    # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
+    # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
+    # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
+    # is_signal_vbf_kl1 = lambda proc_name: "kv1_k2v1_kl1" in proc_name and "hh_vbf" in proc_name
+    is_background = lambda proc_name: (
+        "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and "hbb_hzz" not in proc_name
+    )
+
     config_inst.x.inference_category_rebin_processes = {
         # Single lepton
-        "SR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "SR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl_resolved": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "vbfSR_sl_boosted": ("ggHH_kl_1_kt_1_sl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww"),
-        "BR_sl": lambda proc_name: "hbbhww" not in proc_name,
+        "SR_sl": is_signal_sm,
+        "vbfSR_sl": is_signal_sm,
+        "SR_sl_resolved": is_signal_sm,
+        "SR_sl_boosted": is_signal_sm,
+        "vbfSR_sl_resolved": is_signal_sm,
+        "vbfSR_sl_boosted": is_signal_sm,
+        "BR_sl": is_background,
         # Dilepton
-        "SR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "SR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "SR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl_resolved": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "vbfSR_dl_boosted": ("ggHH_kl_1_kt_1_dl_hbbhww", "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww"),
-        "BR_dl": lambda proc_name: "hbbhww" not in proc_name,
+        "SR_dl": is_signal_sm,
+        "vbfSR_dl": is_signal_sm,
+        "SR_dl_resolved": is_signal_sm,
+        "SR_dl_boosted": is_signal_sm,
+        "vbfSR_dl_resolved": is_signal_sm,
+        "vbfSR_dl_boosted": is_signal_sm,
+        "BR_dl": is_background,
     }

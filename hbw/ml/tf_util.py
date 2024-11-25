@@ -81,7 +81,7 @@ class MultiDataset(object):
         self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
         gc.collect()
 
-        for proc_inst, batch_size, count, weights in zip(self.processes, self.batch_sizes, self.counts, self.weights):
+        for proc_inst, batch_size, count, weight in zip(self.processes, self.batch_sizes, self.counts, self.weights):
             logger.info(
                 f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen completely "
                 f"(count {count}, weight {weight}, batch size {batch_size})",

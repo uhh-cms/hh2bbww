@@ -6,14 +6,15 @@ Collection of helpers
 
 from __future__ import annotations
 
-
 import time
-from typing import Hashable, Iterable, Callable, Any
-from functools import wraps
+from typing import Hashable, Iterable, Callable
+from functools import wraps, reduce
 import tracemalloc
 
 import law
 
+from columnflow.types import Any
+from columnflow.columnar_util import ArrayFunction, deferred_column, get_ak_routes
 from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
@@ -30,10 +31,22 @@ def ak_any(masks: list[ak.Array], **kwargs) -> ak.Array:
     param masks: list of masks to be combined via logical "or"
     return: ak.Array of logical "or" of all masks
     """
-    mask = masks[0]
-    for _mask in masks[1:]:
-        mask = mask | _mask
-    return mask
+    if not masks:
+        return False
+    return reduce(lambda a, b: a | b, masks)
+
+
+def ak_all(masks: list[ak.Array], **kwargs) -> ak.Array:
+    """
+    Apparently, ak.all is very slow, so just do the "and" of all masks in a loop.
+    This is more than 100x faster than doing `ak.all(masks, axis=0)`.
+
+    param masks: list of masks to be combined via logical "and"
+    return: ak.Array of logical "and" of all masks
+    """
+    if not masks:
+        return False
+    return reduce(lambda a, b: a & b, masks)
 
 
 def has_tag(tag, *container, operator: callable = any) -> bool:
@@ -171,15 +184,18 @@ def log_memory(
     logger.info(f"Memory after {message}: {current:.3f}{unit} (peak: {peak:.3f}{unit})")
 
 
-def debugger():
+def debugger(msg: str = ""):
     """
     Small helper to give some more information when starting IPython.embed
+
+    :param msg: Message to be printed when starting the debugger
     """
 
     # get the previous frame to get some infos
     frame = __import__("inspect").currentframe().f_back
 
     header = (
+        f"{msg}\n"
         f"Line: {frame.f_lineno}, Function: {frame.f_code.co_name}, "
         f"File: {frame.f_code.co_filename}"
     )
@@ -248,6 +264,9 @@ def four_vec(
     Helper to quickly get a set of 4-vector component string for all collections in *collections*.
     Additional columns can be added wih the optional *columns* parameter.
 
+    TODO: this function is not really needed anymore, since we can just pass
+    uses={Jet.{pt,eta,phi,mass}} instead, so we should deprecate this function.
+
     Example:
 
     .. code-block:: python
@@ -280,6 +299,17 @@ def four_vec(
     outp = outp.difference({"MET.eta", "MET.mass"})
 
     return outp
+
+
+def has_four_vec(
+    events: ak.Array,
+    collection_name: str,
+):
+    """
+    Check if the collection has the fields required for a 4-vector.
+    """
+    four_vec_cols = {"pt", "eta", "phi", "mass"}
+    return collection_name in events.fields and four_vec_cols.issubset(events[collection_name].fields)
 
 
 def call_once_on_config(include_hash=False):
@@ -330,6 +360,15 @@ def timeit_multiple(func):
     return timeit_wrapper
 
 
+def print_array_sums(events: ak.Array) -> None:
+    """
+    Helper to print the sum of all (nested) columns in an awkward array
+    """
+    routes = get_ak_routes(events)
+    for route in routes:
+        print(route.string_column, ak.sum(route.apply(events)))
+
+
 def call_func_safe(func, *args, **kwargs) -> Any:
     """
     Small helper to make sure that our training does not fail due to plotting
@@ -352,3 +391,76 @@ def call_func_safe(func, *args, **kwargs) -> Any:
         outp = None
 
     return outp
+
+
+@deferred_column
+def IF_NANO_V9(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 9 else None
+
+
+@deferred_column
+def IF_NANO_V11(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 11 else None
+
+
+@deferred_column
+def IF_NANO_V12(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.version == 12 else None
+
+
+@deferred_column
+def IF_RUN_2(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.run == 2 else None
+
+
+@deferred_column
+def IF_RUN_3(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.campaign.x.run == 3 else None
+
+
+@deferred_column
+def IF_SL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_sl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "sl" else None
+
+
+@deferred_column
+def IF_DL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_dl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
+def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    This helper allows adding the correct btag column based on the b_tagger configuration.
+    Requires the b_tagger aux to be set in the config. Example usecase:
+
+    .. code-block:: python
+
+        @producer(uses={BTAG_COLUMN("Jet")})
+        def my_producer(self, events):
+            btag_score = events.Jet[self.config_inst.x.btag_column]
+            ...
+            return events
+    """
+    btag_column = func.config_inst.x("btag_column", None)
+    if not btag_column:
+        raise Exception("the btag_column has not been configured")
+    return f"{self.get()}.{btag_column}"
+
+
+@deferred_column
+def IF_DATASET_HAS_LHE_WEIGHTS(
+    self: ArrayFunction.DeferredColumn,
+    func: ArrayFunction,
+) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return None if func.dataset_inst.has_tag("no_lhe_weights") else self.get()
+
+
+@deferred_column
+def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.dataset_inst.is_mc else None

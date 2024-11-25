@@ -6,6 +6,8 @@ Collection of helpers for styling, e.g.
 - functions to quickly create variable insts in a predefined way
 """
 
+import re
+
 import order as od
 
 from columnflow.columnar_util import EMPTY_FLOAT
@@ -14,55 +16,123 @@ from columnflow.columnar_util import EMPTY_FLOAT
 # Processes
 #
 
+cms_color_palette_1 = {
+    "blue": "#5790fc",  # Blueberry
+    "yellow": "#f89c20",  # Marigold
+    "red": "#e42536",  # Alizarin Crimson
+    "purple": "#964a8b",  # Plum
+    "grey": "#9c9ca1",  # Manatee
+    "violet": "#7a21dd",  # Blue-Violet
+    "black": "#000000",
+}
+
+cms_color_palette_2 = {
+    "blue": "#3f90da",  # Tufts Blue
+    "yellow": "#ffa90e",  # Dark Tangerine
+    "red": "#bd1f01",  # International Orange (Engineering)
+    "grey": "#94a4a2",  # Morning Blue
+    "purple": "#832db6",  # Grape
+    "brown": "#a96b59",  # Blast-Off Bronze
+    "orange": "#e76300",  # Spanish Orange
+    "green": "#b9ac70",  # Misty Moss
+    "darkgrey": "#717581",  # AuroMetalSaurus
+    "turqoise": "#92dadd",  # Pale Robin Egg Blue
+    "black": "#000000",
+}
+
+# tt: red
+# dy: yellow
+# st: orange
+# vv
+# ttV ?
+# w_lnu
+# h
+# qcd: blue
+
+color_palette_1 = {
+    "black": "#000000",
+    "red": "#e41a1c",
+    "blue": "#377eb8",
+    "green": "#4daf4a",
+    "purple": "#984ea3",
+    "orange": "#ff7f00",
+    "yellow": "#ffff33",
+    "brown": "#a65628",
+    "pink": "#f781bf",
+    "grey": "#999999",
+}
+
+color_palette = cms_color_palette_2
+
 default_process_colors = {
-    "data": "#000000",  # black
-    "tt": "#e41a1c",  # red
-    "qcd": "#377eb8",  # blue
-    "qcd_mu": "#377eb8",  # blue
-    "qcd_ele": "#377eb8",  # blue
-    "w_lnu": "#4daf4a",  # green
-    "v_lep": "#4daf4a",  # green
-    "higgs": "#984ea3",  # purple
-    "st": "#ff7f00",  # orange
-    "t_bkg": "#e41a1c",  # orange
-    "dy_lep": "#ffff33",  # yellow
-    "ttV": "#a65628",  # brown
-    "VV": "#f781bf",  # pink
-    "other": "#999999",  # grey
-    "ggHH_kl_1_kt_1_sl_hbbhww": "#000000",  # black
-    "ggHH_kl_0_kt_1_sl_hbbhww": "#1b9e77",  # green2
-    "ggHH_kl_2p45_kt_1_sl_hbbhww": "#d95f02",  # orange2
-    # "ggHH_kl_5_kt_1_sl_hbbhww": "#e7298a",  # pink2
-    "ggHH_kl_5_kt_1_sl_hbbhww": "#000080",  # navy
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#999999",  # grey
-    # "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "#e41a1c",  # red
-    "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": "#377eb8",  # blue
-    "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": "#4daf4a",  # green
-    "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": "#984ea3",  # purple
-    "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": "#ff7f00",  # orange
-    "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": "#a65628",  # brown
-    "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": "#f781bf",  # pink
-    "ggHH_kl_1_kt_1_dl_hbbhww": "#000000",  # black
-    "ggHH_kl_0_kt_1_dl_hbbhww": "#1b9e77",  # green2
-    "ggHH_kl_2p45_kt_1_dl_hbbhww": "#d95f02",  # orange2
-    "ggHH_kl_5_kt_1_dl_hbbhww": "#e7298a",  # pink2
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#999999",  # grey
-    # "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "#e41a1c",  # red
-    "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww": "#377eb8",  # blue
-    "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww": "#4daf4a",  # green
-    "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww": "#984ea3",  # purple
-    "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww": "#ff7f00",  # orange
-    "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww": "#a65628",  # brown
-    "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww": "#f781bf",  # pink
-    "hh_ggf_bbtautau": "#984ea3",  # purple
+    "data": color_palette["black"],
+    "tt": color_palette["red"],
+    "qcd": color_palette["blue"],
+    "qcd_mu": color_palette["blue"],
+    "qcd_ele": color_palette["blue"],
+    "w_lnu": color_palette["green"],
+    "v_lep": color_palette["green"],
+    "h": color_palette["purple"],
+    "st": color_palette["orange"],
+    "t_bkg": color_palette["orange"],
+    # "dy": color_palette["yellow"],
+    "dy": color_palette["yellow"],
+    "dy_hf": color_palette["yellow"],
+    "dy_lf": color_palette["brown"],
+    "dy_m50toinf": color_palette["yellow"],
+    "dy_m10to50": color_palette["brown"],
+    "dy_m4to10": color_palette["darkgrey"],
+    "ttV": color_palette["brown"],
+    "vv": color_palette["blue"],
+    "other": color_palette["grey"],
+    "hh_ggf_hbb_htt": color_palette["grey"],
+}
+
+for decay in ("", "qqlnu", "2l2nu"):
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}"] = "#000000"  # black
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"  # green2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"  # orange2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"  # pink2
+
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}"] = "#999999"  # grey
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["darkgrey"]
+    # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["brown"]
+    # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"  # blue
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"  # green
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v0_kl1"] = "#984ea3"  # purple
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v2_kl1"] = "#ff7f00"  # orange
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv0p5_k2v1_kl1"] = "#a65628"  # brown
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1p5_k2v1_kl1"] = "#f781bf"  # pink
+
+
+default_labels = {
+    "dy_m50toinf": "DY ($M > 50$)",
+    "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
+    "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
+    "dy_m50toinf_2j": "DY ($M > 50$, 2 jets)",
+    "dy_m10to50": "DY ($10 < M < 50$)",
+    "dy_m4to10": "DY ($4 < M < 10$)",
+    "st_tchannel_t": "st (t-channel, t)",
+    "st_tchannel_tbar": r"st (t-channel, $\bar{t}$)",
+    "st_twchannel_t_sl": "tW (t, sl)",
+    "st_twchannel_tbar_sl": r"tW ($\bar{t}$, sl)",
+    "st_twchannel_t_dl": "tW (t, dl)",
+    "st_twchannel_tbar_dl": r"tW ($\bar{t}$, dl)",
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"hh_{vbf} (dl)",
 }
 
 ml_labels = {
     "tt": "$t\\bar{t}$",
-    "ggHH_kl_1_kt_1_sl_hbbhww": "ggHH (sl)",
-    "ggHH_kl_1_kt_1_dl_hbbhww": "ggHH (dl)",
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": "qqHH (sl)",
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": "qqHH (dl)",
+    "hh_ggf_hbb_hvv": r"hh_{ggf}",
+    "hh_vbf_hbb_hvv": r"hh_{vbf}",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": r"hh_{ggf} (sl)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"hh_{vbf} (sl)",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"ggHH",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"qqHH",
+    # "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"hh_{ggf} (dl)",
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"hh_{vbf} (dl)",
     "graviton_hh_ggf_bbww_m250": "grav250",
     "graviton_hh_ggf_bbww_m350": "grav350",
     "graviton_hh_ggf_bbww_m450": "grav450",
@@ -71,37 +141,38 @@ ml_labels = {
     "graviton_hh_ggf_bbww_m1000": "grav1000",
     "st": "st",
     "w_lnu": "W",
-    "dy_lep": "DY",
+    "dy": "DY",
+    "h": "H",
     "v_lep": "W+DY",
     "t_bkg": "tt+st",
 }
 
 short_labels = {
-    "ggHH_kl_0_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=0}$ (SL)",
-    "ggHH_kl_1_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=1}$ (SL)",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (SL)",
-    "ggHH_kl_5_kt_1_sl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=5}$ (SL)",
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,1,1} (SL)$",
-    "ggHH_kl_0_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=0}$ (DL)",
-    "ggHH_kl_1_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=1}$ (DL)",
-    "ggHH_kl_2p45_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (DL)",
-    "ggHH_kl_5_kt_1_dl_hbbhww": r"$HH_{ggf}^{\kappa\lambda=5}$ (DL)",
-    "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,1,1} (SL)$",
-    "qqHH_CV_1_C2V_1_kl_0_sl_hbbhww": r"$HH_{vbf}^{1,1,0} (SL)$",
-    "qqHH_CV_1_C2V_1_kl_2_sl_hbbhww": r"$HH_{vbf}^{1,1,2} (SL)$",
-    "qqHH_CV_1_C2V_0_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,0,1} (SL)$",
-    "qqHH_CV_1_C2V_2_kl_1_sl_hbbhww": r"$HH_{vbf}^{1,2,1} (SL)$",
-    "qqHH_CV_0p5_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{0.5,1,1} (SL)$",
-    "qqHH_CV_1p5_C2V_1_kl_1_sl_hbbhww": r"$HH_{vbf}^{1.5,1,1} (SL)$",
-    "qqHH_CV_1_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,1,1} (DL)$",
-    "qqHH_CV_1_C2V_1_kl_0_dl_hbbhww": r"$HH_{vbf}^{1,1,0} (DL)$",
-    "qqHH_CV_1_C2V_1_kl_2_dl_hbbhww": r"$HH_{vbf}^{1,1,2} (DL)$",
-    "qqHH_CV_1_C2V_0_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,0,1} (DL)$",
-    "qqHH_CV_1_C2V_2_kl_1_dl_hbbhww": r"$HH_{vbf}^{1,2,1} (DL)$",
-    "qqHH_CV_0p5_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{0.5,1,1} (DL)$",
-    "qqHH_CV_1p5_C2V_1_kl_1_dl_hbbhww": r"$HH_{vbf}^{1.5,1,1} (DL)$",
+    "hh_ggf_hbb_hvvqqlnu_kl0_kt1": r"$HH_{ggf}^{\kappa\lambda=0}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1": r"$HH_{ggf}^{\kappa\lambda=1}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (SL)",
+    "hh_ggf_hbb_hvvqqlnu_kl5_kt1": r"$HH_{ggf}^{\kappa\lambda=5}$ (SL)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": r"$HH_{ggf}^{\kappa\lambda=0}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": r"$HH_{ggf}^{\kappa\lambda=1}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": r"$HH_{ggf}^{\kappa\lambda=2.45}$ (DL)",
+    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": r"$HH_{ggf}^{\kappa\lambda=5}$ (DL)",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0": r"$HH_{vbf}^{1,1,0} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2": r"$HH_{vbf}^{1,1,2} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": r"$HH_{vbf}^{1,0,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1": r"$HH_{vbf}^{1,2,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1": r"$HH_{vbf}^{0.5,1,1} (SL)$",
+    "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1": r"$HH_{vbf}^{1.5,1,1} (SL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0": r"$HH_{vbf}^{1,1,0} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2": r"$HH_{vbf}^{1,1,2} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": r"$HH_{vbf}^{1,0,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1": r"$HH_{vbf}^{1,2,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1": r"$HH_{vbf}^{0.5,1,1} (DL)$",
+    "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1": r"$HH_{vbf}^{1.5,1,1} (DL)$",
     "w_lnu": r"$W \rightarrow l\nu$",
-    "dy_lep": r"$Z \rightarrow ll$",
+    "dy": r"$Z \rightarrow ll$",
     "qcd_mu": r"$QCD \mu$",
     "qcd_ele": r"$QCD e$",
 }
@@ -118,6 +189,14 @@ def stylize_processes(config: od.Config) -> None:
         # set default colors
         if color := default_process_colors.get(proc.name, None):
             proc.color1 = color
+
+        if label := default_labels.get(proc.name, None):
+            proc.label = label
+        elif "hh_vbf" in proc.name:
+            label = proc.label
+            pattern = r"hh_vbf_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)\s?(.*)"
+            replacement = r"$HH_{vbf}^{\1,\2,\3}$\4"
+            proc.label = re.sub(pattern, replacement, label)
 
         if short_label := short_labels.get(proc.name, None):
             proc.short_label = short_label

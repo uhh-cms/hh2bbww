@@ -17,7 +17,7 @@ from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import four_vec, call_once_on_config
+from hbw.util import call_once_on_config
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -26,7 +26,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @selector(
-    uses=four_vec("Jet", {"jetId"}) | {optional("Jet.puId")},
+    uses={"Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")},
     exposed=True,
 )
 def jet_selection(
@@ -58,8 +58,8 @@ def jet_selection(
         (events.Jet.jetId >= 2)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
     )
 
-    electron = events.Electron[lepton_results.objects.Electron.FakeableElectron]
-    muon = events.Muon[lepton_results.objects.Muon.FakeableMuon]
+    electron = events.Electron[lepton_results.objects.Electron.LooseElectron]
+    muon = events.Muon[lepton_results.objects.Muon.LooseMuon]
 
     jet_mask = (
         (events.Jet.pt >= self.jet_pt) &
@@ -125,6 +125,7 @@ def jet_selection(
         aux={
             "jet_mask": jet_mask,
             "n_central_jets": ak.num(jet_indices),
+            "ht": ak.sum(events.Jet.pt[jet_mask], axis=1),
         },
     )
 
@@ -181,7 +182,7 @@ def jet_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses={jet_selection} | four_vec("Jet"),
+    uses={jet_selection, "Jet.{pt,eta,phi,mass}"},
     exposed=False,
 )
 def vbf_jet_selection(
@@ -255,17 +256,12 @@ def vbf_jet_selection_init(self: Selector) -> None:
 
 
 @selector(
-    uses=(
-        {
-            jet_selection,
-        } |
-        four_vec(
-            {"Jet", "Electron", "Muon"},
-        ) | {"Jet.jetId"} |
-        four_vec(
-            "FatJet", {"msoftdrop", "jetId", "subJetIdx1", "subJetIdx2", "tau1", "tau2"},
-        )
-    ),
+    uses={
+        jet_selection,
+        "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",
+        "Jet.{jetId}",
+        "FatJet.{msoftdrop,jetId,subJetIdx1,subJetIdx2,tau1,tau2}",
+    },
     exposed=False,
     single_lepton_selector=True,
 )
@@ -292,9 +288,9 @@ def sl_boosted_jet_selection(
 
     # get separation info between FatJets and AK4 Jets
     dr_fatjet_ak4 = events.FatJet.metric_table(ak4_jets)
-    events = set_ak_column(events, "FatJet.n_subjets", ak.sum(dr_fatjet_ak4 < 0.8, axis=2))
-    events = set_ak_column(events, "FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
-    events = set_ak_column(events, "FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.n_subjets", ak.sum(dr_fatjet_ak4 < 0.8, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
+    events = set_ak_column(events, "cutflow.FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
 
     # baseline fatjet selection
     fatjet_mask = (
@@ -322,7 +318,7 @@ def sl_boosted_jet_selection(
     if self.single_lepton_selector:
         hbbJet_mask = (
             hbbJet_mask &
-            (events.FatJet.n_separated_jets >= 1)
+            (events.cutflow.FatJet.n_separated_jets >= 1)
         )
 
     # create temporary object with fatjet mask applied and get the subjets
@@ -399,11 +395,7 @@ def sl_boosted_jet_selection_init(self: Selector) -> None:
 
     # add produced variables to *produces* only when requested
     if self.config_inst.x("do_cutflow_features", False):
-        self.produces |= {"cutflow.n_fatjet", "cutflow.n_hbbjet"} | four_vec(
-            {"FatJet", "HbbJet"},
-            {"n_subjets", "n_separated_jets", "max_dr_ak4"},
-            skip_defaults=True,
-        )
+        self.produces |= {"cutflow.{n_fatjet,n_hbbjet}", "cutflow.FatJet.{n_subjets,n_separated_jets,max_dr_ak4}"}
 
 
 # boosted selection for the DL channel (only one parameter needs to be changed)

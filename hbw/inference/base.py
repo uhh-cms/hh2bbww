@@ -4,6 +4,8 @@
 Collection of helper functions for creating inference models
 """
 
+import re
+
 import law
 import order as od
 
@@ -40,7 +42,64 @@ class HBWInferenceModelBase(InferenceModel):
     # customization of channels
     mc_stats: bool = True
     skip_data: bool = True
-    dummy_kl_variation: bool = False
+
+    # dummy variations when some datasets are missing
+    dummy_ggf_variation: bool = False
+    dummy_vbf_variation: bool = False
+
+    version = 1
+
+    #
+    # helper functions and properties
+    #
+
+    def inf_proc(self, proc):
+        """
+        Helper function that translates our process names to the inference model process names
+        """
+        if proc in const.inference_procnames:
+            return const.inference_procnames[proc]
+        elif proc.startswith("hh_ggf_"):
+            pattern = r"hh_ggf_([a-zA-Z\d]+)_([a-zA-Z\d]+)_kl([mp\d]+)_kt([mp\d]+)"
+            replacement = r"ggHH_kl_\3_kt_\4_\1\2"
+            return re.sub(pattern, replacement, proc)
+        elif proc.startswith("hh_vbf_"):
+            pattern = r"hh_vbf_([a-zA-Z\d]+)_([a-zA-Z\d]+)_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)"
+            replacement = r"qqHH_CV_\3_C2V_\4_kl_\5_\1\2"
+            return re.sub(pattern, replacement, proc)
+        else:
+            return proc
+
+    # inf_proc = lambda self, proc: const.inference_procnames.get(proc, proc)
+
+    @property
+    def inf_processes(self):
+        return [self.inf_proc(proc) for proc in self.processes]
+
+    def cat_name(self: InferenceModel, config_cat_inst: od.Category):
+        """ Function to determine inference category name from config category """
+        # NOTE: the name of the inference category cannot start with a Number
+        # -> use config category with single letter added at the start?
+        return f"cat_{config_cat_inst.name}"
+
+    def config_variable(self: InferenceModel, config_cat_inst: od.Config):
+        """ Function to determine inference variable name from config category """
+        root_cats = config_cat_inst.x.root_cats
+        if dnn_cat := root_cats.get("dnn"):
+            dnn_proc = dnn_cat.replace("ml_", "")
+            return f"mlscore.{dnn_proc}_manybins"
+        else:
+            return "mli_mbb"
+
+    def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
+        """ Function to allow customizing the inference category """
+        # root_cats = config_cat_inst.x.root_cats
+        # variables = ["jet1_pt"]
+        # if dnn_cat := root_cats.get("dnn"):
+        #     dnn_proc = dnn_cat.replace("ml_", "")
+        #     variables.append(f"mlscore.{dnn_proc}")
+        # cat_inst.variables_to_plot = variables
+        return
 
     def __init__(self, config_inst: od.Config, *args, **kwargs):
         super().__init__(config_inst)
@@ -66,63 +125,63 @@ class HBWInferenceModelBase(InferenceModel):
             print(f"Processes {[p.name for p in cat.processes]}")
             print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
 
-    def cat_name(self: InferenceModel, config_cat_inst: od.Category):
-        """ Function to determine inference category name from config category """
-        # Note: the name of the inference category cannot start with a Number
-        # -> use config category with single letter added at the start?
-        return f"cat_{config_cat_inst.name}"
-
-    def config_variable(self: InferenceModel, config_cat_inst: od.Config):
-        """ Function to determine inference variable name from config category """
-        root_cats = config_cat_inst.x.root_cats
-        if dnn_cat := root_cats.get("dnn"):
-            dnn_proc = dnn_cat.replace("ml_", "")
-            return f"mlscore.{dnn_proc}_manybins"
-        else:
-            return "mli_mbb"
-
-    def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
-        """ Function to allow customizing the inference category """
-        # root_cats = config_cat_inst.x.root_cats
-        # variables = ["jet1_pt"]
-        # if dnn_cat := root_cats.get("dnn"):
-        #     dnn_proc = dnn_cat.replace("ml_", "")
-        #     variables.append(f"mlscore.{dnn_proc}")
-        # cat_inst.variables_to_plot = variables
-        return
-
     def add_inference_categories(self: InferenceModel):
         """
         This function creates categories for the inference model
         """
-
         # get the MLModel inst
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
         for config_category in self.config_categories:
             cat_inst = self.config_inst.get_category(config_category)
-            root_cats = cat_inst.x.root_cats
-            lep_channel = root_cats.get("lep")
-            if lep_channel not in self.config_inst.x.lepton_channels:
-                raise Exception(
-                    "Each inference category needs to be categorized based on number of leptons; "
-                    f"Options: {self.config_inst.x.lepton_channels}",
-                )
+            # root_cats = cat_inst.x.root_cats
 
             cat_name = self.cat_name(cat_inst)
             cat_kwargs = dict(
                 config_category=config_category,
                 config_variable=self.config_variable(cat_inst),
                 mc_stats=self.mc_stats,
+                flow_strategy="move",
+                empty_bin_value=0.0,  # NOTE: remove this when removing custom rebin task
             )
             if self.skip_data:
-                cat_kwargs["data_from_processes"] = self.processes
+                cat_kwargs["data_from_processes"] = self.inf_processes
             else:
-                cat_kwargs["config_data_datasets"] = const.data_datasets[lep_channel]
+                cat_kwargs["config_data_datasets"] = [
+                    dataset_inst.name for dataset_inst in
+                    get_datasets_from_process(self.config_inst, "data", strategy="all")
+                ]
 
+            # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
 
             # do some customization of the inference category
             self.customize_category(self.get_category(cat_name), cat_inst)
+
+    def add_dummy_variation(self, proc, datasets):
+        if self.dummy_ggf_variation and "_kl1_kt1" in proc:
+            for missing_kl_variations in ("_kl0_kt1", "_kl2p45_kt1", "_kl5_kt1"):
+                missing_proc = proc.replace("_kl1_kt1", missing_kl_variations)
+                if missing_proc not in self.processes:
+                    self.add_process(
+                        self.inf_proc(missing_proc),
+                        config_process=self.inf_proc(proc),
+                        is_signal=("hh_" in proc.lower()),
+                        config_mc_datasets=datasets,
+                    )
+
+        if self.dummy_vbf_variation and "_kv1_k2v1_kl1" in proc:
+            for missing_vbf_variations in (
+                "_kv1_k2v1_kl0", "_kv1_k2v1_kl2", "_kv1_k2v2_kl1", "_kv1_k2v0_kl1",
+                "_kv1p5_k2v1_kl1", "_kv0p5_k2v1_kl1",
+            ):
+                missing_proc = proc.replace("_kv1_k2v1_kl1", missing_vbf_variations)
+                if missing_proc not in self.processes:
+                    self.add_process(
+                        self.inf_proc(missing_proc),
+                        config_process=proc,
+                        is_signal=("hh_" in proc.lower()),
+                        config_mc_datasets=datasets,
+                    )
 
     def add_inference_processes(self: InferenceModel):
         """
@@ -137,42 +196,27 @@ class HBWInferenceModelBase(InferenceModel):
             # get datasets corresponding to this process
             datasets = [
                 d.name for d in
-                get_datasets_from_process(self.config_inst, proc, strategy="inclusive")
+                get_datasets_from_process(self.config_inst, proc, strategy="all", check_deep=True, only_first=False)
             ]
+
+            if not datasets:
+                raise Exception(f"No datasets found for process {proc}")
+            logger.debug(f"Process {proc} was assigned datasets: {datasets}")
 
             # check that no dataset is used multiple times
             if datasets_already_used := used_datasets.intersection(datasets):
-                raise Exception(f"{datasets_already_used} datasets are used for multiple processes")
+                logger.warning(f"{datasets_already_used} datasets are used for multiple processes")
             used_datasets |= set(datasets)
 
             self.add_process(
-                const.inference_procnames.get(proc, proc),
+                self.inf_proc(proc),
                 config_process=proc,
-                is_signal=("HH_" in proc),
+                is_signal=("hh_" in proc.lower()),
                 config_mc_datasets=datasets,
             )
 
-            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_sl_hbbhww":
-                # add ggHH kl variations as copies from kl 1
-                for kl_proc in ("ggHH_kl_0_kt_1_sl_hbbhww", "ggHH_kl_2p45_kt_1_sl_hbbhww", "ggHH_kl_5_kt_1_sl_hbbhww"):
-                    if kl_proc not in self.processes:
-                        self.add_process(
-                            const.inference_procnames.get(kl_proc, kl_proc),
-                            config_process=proc,
-                            is_signal=("HH_" in proc),
-                            config_mc_datasets=datasets,
-                        )
-
-            if self.dummy_kl_variation and proc == "ggHH_kl_1_kt_1_dl_hbbhww":
-                # add ggHH kl variations as copies from kl 1
-                for kl_proc in ("ggHH_kl_0_kt_1_dl_hbbhww", "ggHH_kl_2p45_kt_1_dl_hbbhww", "ggHH_kl_5_kt_1_dl_hbbhww"):
-                    if kl_proc not in self.processes:
-                        self.add_process(
-                            const.inference_procnames.get(kl_proc, kl_proc),
-                            config_process=proc,
-                            is_signal=("HH_" in proc),
-                            config_mc_datasets=datasets,
-                        )
+            # add dummy variations if requested
+            self.add_dummy_variation(proc, datasets)
 
     def add_inference_parameters(self: InferenceModel):
         """
@@ -225,7 +269,7 @@ class HBWInferenceModelBase(InferenceModel):
                     continue
                 self.add_parameter(
                     syst_name,
-                    process=const.inference_procnames.get(proc, proc),
+                    process=self.inf_proc(proc),
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),
@@ -249,7 +293,7 @@ class HBWInferenceModelBase(InferenceModel):
 
                 self.add_parameter(
                     f"pdf_{k}",
-                    process=const.inference_procnames.get(proc, proc),
+                    process=self.inf_proc(proc),
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),

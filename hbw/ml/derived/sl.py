@@ -24,23 +24,23 @@ logger = law.logger.get_logger(__name__)
 class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
     # NOTE: the order of processes is crucial and should never be changed after having trained
     processes: list = [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         "tt",
         "st",
         "v_lep",
         # "w_lnu",
-        # "dy_lep",
+        # "dy",
     ]
 
     ml_process_weights: dict = {
-        "ggHH_kl_1_kt_1_sl_hbbhww": 1,
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1": 1,
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": 1,
         "tt": 2,
         "st": 2,
         "v_lep": 2,
         "w_lnu": 2,
-        "dy_lep": 2,
+        "dy": 2,
     }
 
     input_features: list = [
@@ -160,14 +160,16 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
 
 dense_22post = DenseClassifierSL.derive("dense_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
 })
 dense_22post_test = dense_22post.derive("dense_22post_test", cls_dict={
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "st_tchannel_t"],
+    "training_configs": lambda self, requested_configs: ["l22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt"],
+    "epochs": 10,
 })
 dense_22 = DenseClassifierSL.derive("dense_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
-    "processes": ["ggHH_kl_1_kt_1_sl_hbbhww", "tt", "st", "v_lep"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
 })
 
 # copies of the default DenseClassifierSL for testing hard-coded changes
@@ -177,8 +179,8 @@ for i in range(0):
 cls_dict_test = {
     "epochs": 4,
     "processes": [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
-        "qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         "tt_dl",
         "st_tchannel_t",
     ],
@@ -246,7 +248,7 @@ dense_max_iter = DenseClassifierSL.derive("dense_max_iter", cls_dict=cls_dict)
 # # for testing different weights between signal and backgrounds
 # for bkg_weight in (1, 2, 4, 8, 16):
 #     ml_process_weights = {proc_name: bkg_weight for proc_name in DenseClassifierSL.processes}
-#     ml_process_weights["ggHH_kl_1_kt_1_sl_hbbhww"] = 1
+#     ml_process_weights["hh_ggf_hbb_hvvqqlnu_kl1_kt1"] = 1
 #     _dnn = DenseClassifierSL.derive(
 #         f"dense_bkgw_{str(bkg_weight)}",
 #         cls_dict={"ml_process_weights": ml_process_weights},

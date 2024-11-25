@@ -7,24 +7,26 @@ Selection modules for HH(bbWW) that are used for both SL and DL.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Tuple
+from columnflow.types import Callable
 
 import law
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT, get_ak_routes
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.cms.met_filters import met_filters
 from columnflow.selection.cms.json_filter import json_filter
+from columnflow.selection.cms.jets import jet_veto_map
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
-from columnflow.production.processes import process_ids
+from hbw.production.process_ids import hbw_process_ids
 from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
+from hbw.selection.hists import hbw_selection_hists
 
 
 np = maybe_import("numpy")
@@ -49,8 +51,9 @@ def check_columns(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    # hists: dict,
     **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
+) -> tuple[ak.Array, SelectionResult]:
     routes = get_ak_routes(events)  # noqa
     from hbw.util import debugger
     debugger()
@@ -76,13 +79,14 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
+        jet_veto_map,
         hbw_met_filters, json_filter, "PV.npvsGood",
-        process_ids, attach_coffea_behavior,
+        hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     produces={
         hbw_met_filters, json_filter,
-        process_ids, attach_coffea_behavior,
+        hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
     },
     exposed=False,
@@ -92,12 +96,15 @@ def pre_selection(
     events: ak.Array,
     stats: defaultdict,
     **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
+) -> tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL before calling the selection modules """
 
     # temporary fix for optional types from Calibration (e.g. events.Jet.pt --> ?float32)
     # TODO: remove as soon as possible as it might lead to weird bugs when there are none entries in inputs
     events = ak.fill_none(events, EMPTY_FLOAT)
+
+    # prepare the selection results that are updated at every step
+    results = SelectionResult()
 
     # run deterministic seeds when no Calibrator has been requested
     if not self.task.calibrators:
@@ -108,14 +115,15 @@ def pre_selection(
         events = self[mc_weight](events, **kwargs)
         events = self[large_weights_killer](events, **kwargs)
 
+    if self.dataset_inst.is_mc:
+        # get hard gen particles
+        events, results = self[hard_gen_particles](events, results, **kwargs)
+
     # create process ids
-    events = self[process_ids](events, **kwargs)
+    events = self[hbw_process_ids](events, **kwargs)
 
     # ensure coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
-
-    # prepare the selection results that are updated at every step
-    results = SelectionResult()
 
     # apply some general quality criteria on events
     results.steps["good_vertex"] = events.PV.npvsGood >= 1
@@ -127,9 +135,16 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
+    # apply jet veto map
+    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
+    results += jet_veto_results
+
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        results.steps.good_vertex & results.steps.met_filter & results.steps.json
+        # results.steps.jet_veto_map &
+        results.steps.good_vertex &
+        results.steps.met_filter &
+        results.steps.json
     )
 
     return events, results
@@ -141,13 +156,21 @@ def pre_selection_init(self: Selector) -> None:
         self.uses.add(deterministic_seeds)
         self.produces.add(deterministic_seeds)
 
+    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+        return
+
+    self.uses.update({hard_gen_particles})
+    self.produces.update({hard_gen_particles})
+
 
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
+        hbw_selection_hists,
     },
     exposed=False,
 )
@@ -156,12 +179,10 @@ def post_selection(
     events: ak.Array,
     results: SelectionResult,
     stats: defaultdict,
+    hists: dict,
     **kwargs,
-) -> Tuple[ak.Array, SelectionResult]:
+) -> tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL after calling the selection modules """
-
-    if self.dataset_inst.is_mc:
-        events, results = self[hard_gen_particles](events, results, **kwargs)
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
@@ -171,8 +192,9 @@ def post_selection(
         events = self[event_weights_to_normalize](events, results=results, **kwargs)
 
     # increment stats
-    self[hbw_selection_step_stats](events, results, stats, **kwargs)
-    self[hbw_increment_stats](events, results, stats, **kwargs)
+    events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
+    events = self[hbw_increment_stats](events, results, stats, **kwargs)
+    events = self[hbw_selection_hists](events, results, hists, **kwargs)
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):
@@ -199,8 +221,8 @@ def post_selection_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
-    self.uses.update({event_weights_to_normalize, hard_gen_particles})
-    self.produces.update({event_weights_to_normalize, hard_gen_particles})
+    self.uses.update({event_weights_to_normalize})
+    self.produces.update({event_weights_to_normalize})
 
 
 configurable_attributes = {
@@ -209,7 +231,9 @@ configurable_attributes = {
     "ele_pt": float,
     "mu2_pt": float,
     "ele2_pt": float,
+    # trigger selection
     "trigger": dict,  # dict[str, list[str]]
+    "trigger_config_func": Callable,
     # jet selection
     "jet_pt": float,
     "n_jet": int,
@@ -223,27 +247,58 @@ configurable_attributes = {
 def configure_selector(self: Selector):
     """
     Helper to configure the selector with the configurable attributes.
+
+    This function should be called in the main Selector's __init__ method.
+    The configuration is stored in the main config_inst under the key "selector_config".
+    The configurable attributes and their expected types are defined in the `configurable_attributes` dict.
+
+    The configuration is performed as follows:
+    - The confugation is performed once per config_inst as soon as a config_inst is available. This is ensured by
+        checking if the config_inst has the aux key "selector_config".
+    - If the attribute is a Callable, it is called. This function can directly set config attributes or
+        return the value to be set. When None is returned, the attribute is skipped.
+    - If the attribute is None, it is skipped.
+    - If the attribute is not of the expected type, a TypeError is raised.
+    - If the attribute is already set in the config_inst, a warning is issued.
+    - The configuration is stored in the config_inst under the key "selector_config".
+    - The configuration is also stored in the config_inst under the key of the attribute name (to be removed).
+    - The btag_sf, btag_column, and btag_wp are set based on the b_tagger attribute.
     """
+    # ensure calling just once
+    if not hasattr(self, "config_inst") or self.config_inst.has_aux("selector_config"):
+        return
+
+    self.config_inst.set_aux("selector_config", DotDict())
+
     for attr_name, attr_type in configurable_attributes.items():
-        if hasattr(self, attr_name):
-            attr = getattr(self, attr_name)
+        if not hasattr(self, attr_name):
+            continue
 
-            if attr is None:
-                continue
+        attr = getattr(self, attr_name)
 
-            if not isinstance(attr, attr_type):
-                raise TypeError(f"Attribute '{attr_name}' must be of type '{attr_type}' or None")
+        if isinstance(attr, Callable):
+            logger.info(f"Calling config function '{attr_name}'")
+            attr = attr()
 
-            if attr_name in self.config_inst.aux and attr != self.config_inst.get_aux(attr_name):
-                logger.info(
-                    f"Selector {self.cls_name} is overwriting config attribute '{attr_name}' "
-                    f"(replaces '{self.config_inst.get_aux(attr_name)}' with '{attr}')",
-                )
+        if attr is None:
+            continue
 
-            self.config_inst.set_aux(attr_name, attr)
+        if not isinstance(attr, attr_type):
+            raise TypeError(f"Attribute '{attr_name}' must be of type '{attr_type}' or None")
+
+        if attr_name in self.config_inst.aux and attr != self.config_inst.get_aux(attr_name):
+            logger.info(
+                f"Selector {self.cls_name} is overwriting config attribute '{attr_name}' "
+                f"(replaces '{self.config_inst.get_aux(attr_name)}' with '{attr}')",
+            )
+
+        # TODO: only use the "selector_config" and remove the direct config aux
+        self.config_inst.set_aux(attr_name, attr)
+        self.config_inst.x.selector_config[attr_name] = attr
 
     # define config for b-tagging SFs (this needs to be done by the main Selector, because this
     # needs to be setup before running the init of the btag Producer)
+    # NOTE we could try using the BTagSFConfig instead of this overly complicated setup:
     if self.config_inst.x.b_tagger == "deepjet":
         self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
         self.config_inst.x.btag_column = "btagDeepFlavB"

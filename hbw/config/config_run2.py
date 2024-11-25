@@ -15,19 +15,22 @@ import order as od
 
 from columnflow.util import DotDict
 from columnflow.config_util import add_shift_aliases
+from columnflow.columnar_util import ColumnCollection, skip_column
 from hbw.config.styling import stylize_processes
 from hbw.config.categories import add_categories_selection
 from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
-from hbw.util import four_vec
+from hbw.config.hist_hooks import add_hist_hooks
+from hbw.util import timeit_multiple
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
 
 
+@timeit_multiple
 def add_config(
     analysis: od.Analysis,
     campaign: od.Campaign,
@@ -38,33 +41,60 @@ def add_config(
 ) -> od.Config:
     # validations
     assert campaign.x.year in [2016, 2017, 2018, 2022]
-    if campaign.x.year == 2016:
-        assert campaign.x.vfp in ["pre", "post"]
-    if campaign.x.year == 2022:
-        assert campaign.x.EE in ["pre", "post"]
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
 
     corr_postfix = ""
-    if year == 2016:
-        corr_postfix = f"{campaign.x.vfp}VFP"
-    elif year == 2022:
-        corr_postfix = f"{campaign.x.EE}EE"
+    if campaign.x.year == 2016:
+        if not campaign.has_tag("preVFP") and not campaign.has_tag("postVFP"):
+            raise ValueError("2016 campaign must have the 'preVFP' or 'postVFP' tag")
+        corr_postfix = "postVFP" if campaign.has_tag("postVFP") else "preVFP"
+    elif campaign.x.year == 2022:
+        if not campaign.has_tag("postEE") and not campaign.has_tag("preEE"):
+            raise ValueError("2022 campaign must have the 'postEE' or 'preEE' tag")
+        corr_postfix = "postEE" if campaign.has_tag("postEE") else "preEE"
 
-    if year != 2017 and year != 2022:
+    if campaign.x.year not in [2017, 2022]:
         raise NotImplementedError("For now, only 2017 and 2022 campaign is implemented")
 
     # create a config by passing the campaign, so id and name will be identical
-    cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    # cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
+    cfg = od.Config(name=config_name, id=config_id, campaign=campaign, tags=analysis.tags)
+
+    # helper to enable processes / datasets only for a specific era
+    def if_era(
+        *,
+        run: int | None = None,
+        year: int | None = None,
+        postfix: str | None = None,
+        tag: str | None = None,
+        cfg_tag: str | None = None,
+        values: list[str] | None = None,
+    ) -> list[str]:
+        """
+        Helper function to enable processes / datasets only for a specific era
+        :param run: LHC Run, either 2 or 3
+        :param year: Year of the data-taking campaign, e.g. 2017
+        :param postfix: Additional postfix for the campaign, e.g. "EE"
+        :param tag: Additional tag for the campaign, e.g. "postEE"
+        :return: All values if the era matches, otherwise an empty list
+        """
+        match = (
+            (run is None or campaign.x.run == run) and
+            (year is None or campaign.x.year == year) and
+            (postfix is None or campaign.x.postfix == postfix) and
+            (tag is None or campaign.has_tag(tag)) and
+            (cfg_tag is None or cfg.has_tag(cfg_tag))
+        )
+        return (values or []) if match else []
+
+    cfg.x.if_era = if_era
 
     # add some important tags to the config
+    # TODO: generalize and move to campaign
     cfg.x.cpn_tag = f"{year}{corr_postfix}"
-
-    if year in (2022, 2023):
-        cfg.x.run = 3
-    elif year in (2016, 2017, 2018):
-        cfg.x.run = 2
+    cfg.x.run = cfg.campaign.x.run
 
     if cfg.has_tag("is_sl"):
         cfg.x.lepton_tag = "sl"
@@ -81,6 +111,12 @@ def add_config(
             1250, 1500, 1750, 2000, 2500, 3000,
         )
 
+    ################################################################################################
+    #
+    # processes and datasets
+    #
+    ################################################################################################
+
     # add relevant processes and datasets to config
     add_hbw_processes_and_datasets(cfg, campaign)
 
@@ -92,6 +128,15 @@ def add_config(
 
     # configure datasets in config
     configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
+
+    # whether to validate the number of obtained LFNs in GetDatasetLFNs
+    cfg.x.validate_dataset_lfns = limit_dataset_files is None
+
+    ################################################################################################
+    #
+    # Luminosity
+    #
+    ################################################################################################
 
     # lumi values in inverse pb
     # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
@@ -114,12 +159,12 @@ def add_config(
         })
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
     elif year == 2022:
-        if campaign.x.EE == "pre":
+        if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(7971, {
                 "lumi_13TeV_2022": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
             })
-        elif campaign.x.EE == "post":
+        elif campaign.has_tag("postEE"):
             cfg.x.luminosity = Number(26337, {
                 "lumi_13TeV_2022": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
@@ -132,16 +177,17 @@ def add_config(
     # TODO: changes in Run3?
     cfg.x.minbias_xs = Number(69.2, 0.046j)
 
-    # whether to validate the number of obtained LFNs in GetDatasetLFNs
-    cfg.x.validate_dataset_lfns = limit_dataset_files is None
+    ################################################################################################
+    #
+    # jet settings
+    #
+    ################################################################################################
 
-    # jec configuration
+    # JEC
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
-    jerc_postfix = ""
-    if year == 2016 and campaign.x.vfp == "post":
-        jerc_postfix = "APV"
-    elif year == 2022 and campaign.x.EE == "post":
-        jerc_postfix = "EE"
+    jerc_postfix = campaign.x.postfix
+    if jerc_postfix not in ("", "APV", "EE"):
+        raise ValueError(f"Unknown JERC postfix '{jerc_postfix}'")
 
     if cfg.x.run == 2:
         jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
@@ -218,7 +264,6 @@ def add_config(
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
-    # TODO: get jerc working for Run3
     cfg.x.jer = DotDict.wrap({
         "campaign": jerc_campaign,
         "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
@@ -322,7 +367,11 @@ def add_config(
         },
     })
 
-    # electron and muon SFs (TODO: we should add these config entries as part of the selector init)
+    ################################################################################################
+    #
+    # electron and muon SFs (NOTE: we could add these config entries as part of the selector init)
+    #
+    ################################################################################################
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
@@ -356,8 +405,13 @@ def add_config(
             # TODO: this should be year-dependent and setup in the selector
             cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")
 
+    ################################################################################################
+    #
+    # shifts
+    #
+    ################################################################################################
+
     # register shifts
-    # TODO: make shifts year-dependent
     cfg.add_shift(name="nominal", id=0)
     cfg.add_shift(name="tune_up", id=1, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
@@ -386,6 +440,7 @@ def add_config(
     cfg.add_shift(name="vjets_down", id=12, type="shape")
     add_shift_aliases(cfg, "vjets", {"vjets_weight": "vjets_weight_{direction}"})
 
+    # electron scale factor uncertainties
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
@@ -397,6 +452,7 @@ def add_config(
     # cfg.add_shift(name="mu_sf_down", id=51, type="shape")
     # add_shift_aliases(cfg, "mu_sf", {"muon_weight": "muon_weight_{direction}"})
 
+    # muon scale factor uncertainties
     cfg.add_shift(name="mu_trig_sf_up", id=52, type="shape")
     cfg.add_shift(name="mu_trig_sf_down", id=53, type="shape")
     cfg.add_shift(name="mu_id_sf_up", id=54, type="shape")
@@ -407,21 +463,27 @@ def add_config(
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
-    btag_uncs = [
+    # b-tagging scale factor uncertainties
+    cfg.x.btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
         f"lfstats1_{year}", f"lfstats2_{year}", "cferr1", "cferr2",
     ]
-    for i, unc in enumerate(btag_uncs):
+    for i, unc in enumerate(cfg.x.btag_uncs):
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
         cfg.add_shift(name=f"btag_{unc}_down", id=101 + 2 * i, type="shape")
         add_shift_aliases(
             cfg,
             f"btag_{unc}",
             {
-                "normalized_btag_weight": f"normalized_btag_weight_{unc}_" + "{direction}",
-                "normalized_njet_btag_weight": f"normalized_njet_btag_weight_{unc}_" + "{direction}",
-                "btag_weight": f"btag_weight_{unc}_" + "{direction}",
-                "njet_btag_weight": f"njet_btag_weight_{unc}_" + "{direction}",
+                btag_weight: f"{btag_weight}_{unc}_" + "{direction}"
+                for btag_weight in (
+                    "btag_weight",
+                    "normalized_btag_weight",
+                    "normalized_njet_btag_weight",
+                    "normalized_ht_njet_btag_weight",
+                    "normalized_ht_njet_nhf_btag_weight",
+                    "normalized_ht_btag_weight",
+                )
             },
         )
 
@@ -435,13 +497,13 @@ def add_config(
     cfg.add_shift(name="pdf_down", id=208, type="shape")
 
     for unc in ["mur", "muf", "murf_envelope", "pdf"]:
-        # add_shift_aliases(cfg, unc, {f"{unc}_weight": f"{unc}_weight_" + "{direction}"})
+        col = "murmuf_envelope" if unc == "murf_envelope" else unc
         add_shift_aliases(
             cfg,
             unc,
             {
-                f"normalized_{unc}_weight": f"normalized_{unc}_weight_" + "{direction}",
-                f"{unc}_weight": f"{unc}_weight_" + "{direction}",
+                f"normalized_{col}_weight": f"normalized_{unc}_weight_" + "{direction}",
+                f"{col}_weight": f"{unc}_weight_" + "{direction}",
             },
         )
 
@@ -476,9 +538,15 @@ def add_config(
                 cfg,
                 f"jec_{jec_source}",
                 {
-                    "btag_weight": f"btag_weight_jec_{jec_source}_" + "{direction}",
-                    "normalized_btag_weight": f"normalized_btag_weight_jec_{jec_source}_" + "{direction}",
-                    "normalized_njet_btag_weight": f"normalized_njet_btag_weight_jec_{jec_source}_" + "{direction}",
+                    btag_weight: f"{btag_weight}_jec_{jec_source}_" + "{direction}"
+                    for btag_weight in (
+                        "btag_weight",
+                        "normalized_btag_weight",
+                        "normalized_njet_btag_weight",
+                        "normalized_ht_njet_btag_weight",
+                        "normalized_ht_njet_nhf_btag_weight",
+                        "normalized_ht_btag_weight",
+                    )
                 },
             )
 
@@ -486,20 +554,20 @@ def add_config(
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
     add_shift_aliases(cfg, "jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
 
-    def make_jme_filename(jme_aux, sample_type, name, era=None):
-        """
-        Convenience function to compute paths to JEC files.
-        """
-        # normalize and validate sample type
-        sample_type = sample_type.upper()
-        if sample_type not in ("DATA", "MC"):
-            raise ValueError(f"invalid sample type '{sample_type}', expected either 'DATA' or 'MC'")
-
-        jme_full_version = "_".join(s for s in (jme_aux.campaign, era, jme_aux.version, sample_type) if s)
-
-        return f"{jme_aux.source}/{jme_full_version}/{jme_full_version}_{name}_{jme_aux.jet_type}.txt"
-
+    ################################################################################################
+    #
     # external files
+    #
+    ################################################################################################
+
+    cfg.x.external_files = DotDict()
+
+    # helper
+    def add_external(name, value):
+        if isinstance(value, dict):
+            value = DotDict.wrap(value)
+        cfg.x.external_files[name] = value
+
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a332cfa"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
@@ -507,75 +575,78 @@ def add_config(
     elif cfg.x.run == 3:
         corr_tag = f"{year}_Summer22{jerc_postfix}"
 
-    cfg.x.external_files = DotDict.wrap({
-        # pileup weight corrections
-        "pu_sf": (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"),
+    # pileup weight correction
+    add_external("pu_sf", (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"))
+    # jet energy correction
+    add_external("jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"))
+    # jet veto map
+    add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
+    # electron scale factors
+    add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
+    # muon scale factors
+    add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
+    # btag scale factor
+    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
+    # V+jets reweighting (still unused and not centrally produced)
+    add_external("vjets_reweighting", f"{json_mirror}/data/json/vjets_reweighting.json.gz")
+    if cfg.x.run == 2:
+        # met phi corrector (still unused and missing in Run3)
+        add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
-        # jet energy correction
-        "jet_jerc": (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"),
-
-        # electron scale factors
-        "electron_sf": (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"),
-
-        # muon scale factors
-        "muon_sf": (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"),
-
-        # btag scale factor
-        "btag_sf_corr": (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"),
-
-        # met phi corrector
-        "met_phi_corr": (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"),
-
-        # V+jets reweighting
-        "vjets_reweighting": f"{json_mirror}/data/json/vjets_reweighting.json.gz",
-    })
-
-    # temporary fix due to missing corrections in run 3
-    if cfg.x.run == 3:
-        cfg.x.external_files.pop("met_phi_corr")
-
-    cfg.x.met_filters = {
-        "Flag.goodVertices",
-        "Flag.globalSuperTightHalo2016Filter",
-        "Flag.HBHENoiseFilter",
-        "Flag.HBHENoiseIsoFilter",
-        "Flag.EcalDeadCellTriggerPrimitiveFilter",
-        "Flag.BadPFMuonFilter",
-        "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
-        "Flag.eeBadScFilter",
-    }
-    # if cfg.x.run == 3:
-    #     cfg.x.met_filters.add("ecalBadCalibFilter")
+    # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
+    if cfg.x.run == 2:
+        cfg.x.met_filters = {
+            "Flag.goodVertices",
+            "Flag.globalSuperTightHalo2016Filter",
+            "Flag.HBHENoiseFilter",
+            "Flag.HBHENoiseIsoFilter",
+            "Flag.EcalDeadCellTriggerPrimitiveFilter",
+            "Flag.BadPFMuonFilter",
+            "Flag.BadPFMuonDzFilter",  # this filter does not work with our EOY Signal samples
+            "Flag.eeBadScFilter",
+        }
+    else:  # run == 3
+        # NOTE: the "Flag.ecalBadCalibFilter" is currently missing in NanoAOD,
+        # there is a receipe we might want to apply instead
+        cfg.x.met_filters = {
+            "Flag.goodVertices",
+            "Flag.globalSuperTightHalo2016Filter",
+            "Flag.EcalDeadCellTriggerPrimitiveFilter",
+            "Flag.BadPFMuonFilter",
+            "Flag.BadPFMuonDzFilter",
+            "Flag.hfNoisyHitsFilter",
+            "Flag.eeBadScFilter",
+        }
 
     # external files with more complex year dependence
-    # TODO: generalize to different years
     if year not in (2017, 2022):
         raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
     if year == 2017:
-        cfg.x.external_files.update(DotDict.wrap({
+        add_external("lumi", {
             # files from TODO
-            "lumi": {
-                "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
-                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
-            },
-        }))
-    elif year == 2022 and campaign.x.EE == "pre":
-        cfg.x.external_files.update(DotDict.wrap({
+            "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
+            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+        })
+    elif year == 2022:
+        add_external("lumi", {
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
-            "lumi": {
-                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
-                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
-            },
-        }))
-    elif year == 2022 and campaign.x.EE == "post":
-        cfg.x.external_files.update(DotDict.wrap({
+            "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
+            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+        })
+    elif year == 2023:
+        add_external("lumi", {
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
-            "lumi": {
-                "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions22/Cert_Collisions2022_355100_362760_Golden.json", "v1"),  # noqa
-                "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
-            },
-        }))
+            "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions23/Cert_Collisions2023_366442_370790_Golden.json", "v1"),  # noqa
+            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+        })
+    elif year == 2024:
+        add_external("lumi", {
+            # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
+            # TODO: should be updated at the end of 2024 campaign
+            "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_381417_Golden.json", "v1"),  # noqa
+            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+        })
     else:
         raise NotImplementedError(f"No lumi and pu files provided for year {year}")
 
@@ -589,80 +660,39 @@ def add_config(
         },
     })
 
-    cfg.x.keep_columns["cf.ReduceEvents"] = (
-        {
-            # general event information
-            "run", "luminosityBlock", "event",
-            # columns added during selection, required in general
-            "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
-            # Gen information (for categorization)
-            "HardGenPart.pdgId",
-            # Gen information for pt reweighting
-            "GenPartonTop.pt", "GenVBoson.pt",
-            # weight-related columns
-            "pu_weight*", "pdf_weight*",
-            "murf_envelope_weight*", "mur_weight*", "muf_weight*",
-            "btag_weight*",
-        } | four_vec(  # Jets
-            {"Jet", "Bjet", "Lightjet", "VBFJet"},
-            {"btagDeepFlavB", "btagPNetB", "hadronFlavour", "qgl"},
-        ) | four_vec(  # FatJets
-            {"FatJet", "HbbJet"},
-            {
-                "msoftdrop", "tau1", "tau2", "tau3",
-                "btagHbb", "deepTagMD_HbbvsQCD", "particleNet_HbbvsQCD",
-            },
-        ) | four_vec(  # Leptons
-            {"Electron", "Muon"},
-            {"charge", "pdgId", "jetRelIso", "is_tight"},
-        ) | {"Electron.deltaEtaSC", "MET.pt", "MET.phi"}
-    )
-
-    def reduce_version(cls, inst, params):
-        # per default, use the version set on the command line
-        version = inst.version  # same as params.get("version") ?
-
-        selector = params.get("selector")
-        if not selector:
-            return version
-
-        # set version of "dl1" and "sl1" Producer to "prod2"
-        if selector == "dl1":
-            version = "prod2"
-        elif selector == "sl1":
-            version = "prod2"
-
-        return version
-
-    def produce_version(cls, inst, params):
-        version = inst.version
-
-        producer = params.get("producer")
-        if not producer:
-            return version
-
-        # set version of Producers that are not affected by the ML pipeline
-        if producer == "event_weights":
-            version = "prod2"
-        elif producer == "sl_ml_inputs":
-            version = "prod2"
-        elif producer == "dl_ml_inputs":
-            version = "prod2"
-        elif producer == "pre_ml_cats":
-            version = "prod2"
-
-        return version
+    cfg.x.keep_columns["cf.ReduceEvents"] = {
+        # general event information, mandatory for reading files with coffea
+        "run", "luminosityBlock", "event",
+        ColumnCollection.MANDATORY_COFFEA,
+        # columns added during selection, required in general
+        "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+        # Gen information (for categorization)
+        "HardGenPart.pdgId",
+        # Gen information for pt reweighting
+        "GenPartonTop.pt", "GenVBoson.pt",
+        # weight-related columns
+        "pu_weight*", "pdf_weight*",
+        "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
+        "btag_weight*",
+        # columns for btag reweighting crosschecks
+        "njets", "ht", "nhf",
+        # Jets
+        "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        # FatJets
+        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
+        # Leptons
+        "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
+        "Electron.deltaEtaSC", "mll",
+        # MET
+        "MET.{pt,phi}",
+        # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
+        ColumnCollection.ALL_FROM_SELECTOR,
+        skip_column("cutflow.*"),
+    }
 
     # Version of required tasks
     cfg.x.versions = {
-        "cf.CalibrateEvents": "common2",
-        "cf.SelectEvents": reduce_version,
-        "cf.MergeSelectionStats": reduce_version,
-        "cf.MergeSelectionMasks": reduce_version,
-        "cf.ReduceEvents": reduce_version,
-        "cf.MergeReductionStats": reduce_version,
-        "cf.MergeReducedEvents": reduce_version,
-        "cf.ProduceColumns": produce_version,
+        "cf.CalibrateEvents": law.config.get_expanded("analysis", "default_common_version", "common2"),
     }
 
     # add categories
@@ -670,6 +700,9 @@ def add_config(
 
     # add variables
     add_variables(cfg)
+
+    # add hist hooks
+    add_hist_hooks(cfg)
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL

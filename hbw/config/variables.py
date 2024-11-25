@@ -166,12 +166,56 @@ def add_top_reco_variables(config: od.Config) -> None:
             )
 
 
+def add_debug_variable(config: od.Config) -> None:
+    """
+    Variable for debugging, opens a debugger when the `expression` is evaluated, e.g. when calling:
+    law run cf.CreateHistograms --variables debugger
+    """
+    def dbg(events):
+        from hbw.util import debugger
+        debugger()
+
+    config.add_variable(
+        name="debugger",
+        expression=dbg,
+        aux={"inputs": {"*"}},
+        binning=(1, 0, 1),
+    )
+
+
 @call_once_on_config()
 def add_variables(config: od.Config) -> None:
     """
     Adds all variables to a *config* that are present after `ReduceEvents`
     without calling any producer
     """
+
+    add_debug_variable(config)
+    # from columnflow.columnar_util import set_ak_column
+
+    # def with_behavior(custom_expression: callable) -> callable:
+    #     def expression(events):
+    #         from hbw.production.prepare_objects import custom_collections
+    #         from columnflow.production.util import attach_coffea_behavior
+    #         events = attach_coffea_behavior.call_func(None, events, collections=custom_collections)
+
+    #         # add Lepton collection if possible
+    #         if "Lepton" not in events.fields and "Electron" in events.fields and "Muon" in events.fields:
+    #             lepton = ak.concatenate([events.Muon * 1, events.Electron * 1], axis=-1)
+    #             events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
+
+    #         return custom_expression(events)
+
+    #     return expression
+
+    # config.add_variable(
+    #     name="mll_test",
+    #     expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).mass,
+    #     binning=(40, 0., 200.),
+    #     unit="GeV",
+    #     x_title=r"$m_{ll}$",
+    #     aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"}},
+    # )
 
     # (the "event", "run" and "lumi" variables are required for some cutflow plotting task,
     # and also correspond to the minimal set of columns that coffea's nano scheme requires)
@@ -202,48 +246,49 @@ def add_variables(config: od.Config) -> None:
     #
 
     # TODO: implement tags in columnflow; meanwhile leave these variables commented out (as they only work for mc)
-    """
-    config.add_variable(
-        name="mc_weight",
-        expression="mc_weight",
-        binning=list(np.logspace(1.2, 5, 200)),
-        log_x=True,
-        x_title="MC weight",
-        tags={"mc_only"},
-    )
-    config.add_variable(
-        name="normalization_weight",
-        binning=list(np.logspace(0, 6, 100)),
-        log_x=True,
-        x_title="normalization weight",
-        tags={"mc_only"},
-    )
-    config.add_variable(
-        name="event_weight",
-        binning=list(np.logspace(0, 6, 100)),
-        log_x=True,
-        x_title="event weight",
-        tags={"mc_only"},
-    )
 
-    for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
-        # NOTE: would be nice to not use the event weight for these variables
-        config.add_variable(
-            name=f"{weight}_weight",
-            expression=f"{weight}_weight",
-            binning=(40, -2, 2),
-            x_title=f"{weight} weight",
-            tags={"mc_only"},
-        )
-        config.add_variable(
-            name=f"{weight}_weight_log",
-            expression=f"{weight}_weight",
-            binning=list(np.logspace(-2, 2, 100)),
-            log_x=True,
-            x_title=f"{weight} weight",
-            tags={"mc_only"},
-        )
-    """
+    # config.add_variable(
+    #     name="mc_weight",
+    #     expression="mc_weight",
+    #     binning=list(np.logspace(1.2, 5, 200)),
+    #     log_x=True,
+    #     x_title="MC weight",
+    #     tags={"mc_only"},
+    # )
+    # config.add_variable(
+    #     name="normalization_weight",
+    #     binning=list(np.logspace(0, 6, 100)),
+    #     log_x=True,
+    #     x_title="normalization weight",
+    #     tags={"mc_only"},
+    # )
+    # config.add_variable(
+    #     name="event_weight",
+    #     binning=list(np.logspace(0, 6, 100)),
+    #     log_x=True,
+    #     x_title="event weight",
+    #     tags={"mc_only"},
+    # )
+
+    # for weight in ["pu", "pdf", "mur", "muf", "murf_envelope"]:
+    #     for shift in ("_up", "_down", ""):
+    #         # NOTE: would be nice to not use the event weight for these variables
+    #         config.add_variable(
+    #             name=f"{weight}_weight{shift}",
+    #             expression=f"{weight}_weight{shift}",
+    #             binning=(40, -2, 2),
+    #             x_title=f"{weight} weight {shift.replace('_', '')}",
+    #             tags={"mc_only"},
+    #         )
+    #         config.add_variable(
+    #             name=f"{weight}_weight{shift}_log",
+    #             expression=f"{weight}_weight{shift}",
+    #             binning=list(np.logspace(-2, 2, 100)),
+    #             log_x=True,
+    #             x_title=f"{weight} weight {shift.replace('_', '')}",
+    #             tags={"mc_only"},
+    #         )
+
     config.add_variable(
         name="npvs",
         expression="PV.npvs",
@@ -252,9 +297,75 @@ def add_variables(config: od.Config) -> None:
         discrete_x=True,
     )
 
+    # some variables for testing of different axis types
+    config.add_variable(
+        name="high_jet_pt_strcat",
+        # NOTE: for some reason passing the string directly produces ValueError due to different shapes, e.g.
+        # ValueError: cannot broadcast RegularArray of size 7 with RegularArray of size 264
+        expression=lambda events: ak.where(events.Jet.pt > 50, ["high_pt"], ["low_pt"]),
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "strcat",
+        },
+        x_title="Jet $p_{T}$ string category",
+    )
+    # NOTE: for IntCat, it is important to pick the correct bins via *hist.loc* because the order of bins can be random
+    # h[{"high_jet_pt_intcat": 0}] picks the first bin, independent of which value the bin edge corresponds to
+    # h[{"high_jet_pt_intcat": hist.loc(0)}] picks the bin with value 0
+    config.add_variable(
+        name="high_jet_pt_intcat",
+        expression=lambda events: ak.where(events.Jet.pt > 50, 1, 0),
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "intcat",
+        },
+        x_title="Jet $p_{T}$ integer category",
+    )
+    config.add_variable(
+        name="high_jet_pt_bool",
+        expression=lambda events: events.Jet.pt > 50,
+        aux={
+            "inputs": {"Jet.pt"},
+            "axis_type": "bool",
+        },
+        x_title="Jet $p_{T}$ bool category",
+    )
+
     #
     # Simple event properties
     #
+
+    config.add_variable(
+        name="mll",
+        binning=(40, 0., 200.),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+    )
+    config.add_variable(
+        name="mll_manybins",
+        expression="mll",
+        binning=(2400, 0., 240.),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+        aux={
+            "rebin": 10,
+            "x_max": 50,
+        },
+    )
+
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in WeightProducer
+        name="ptll",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=(240, 0., 1200.),
+        unit="GeV",
+        x_title=r"$p_{T}^{ll}$",
+        aux={
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"},
+            "rebin": 2,
+            "x_max": 400,
+        },
+    )
 
     config.add_variable(
         name="n_jet",
@@ -364,10 +475,20 @@ def add_variables(config: od.Config) -> None:
         x_title="HT",
     )
     config.add_variable(
+        name="lt",
+        expression=lambda events: (
+            ak.sum(events.Muon.pt, axis=1) + ak.sum(events.Muon.pt, axis=1) + events.MET.pt
+        ),
+        aux={"inputs": {"Muon.pt", "Electron.pt", "MET.pt"}},
+        binning=(40, 0, 1200),
+        unit="GeV",
+        x_title="LT",
+    )
+    config.add_variable(
         name="ht_bjet_norm",
         expression=lambda events: ak.sum(events.Jet.pt, axis=1),
         aux={"inputs": {"Jet.pt"}},
-        binning=[500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
+        binning=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         unit="GeV",
         x_title="HT",
     )
@@ -382,13 +503,6 @@ def add_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         x_title="$p_{T}$ of all jets",
-    )
-    config.add_variable(
-        name="muons_pt",
-        expression="Muon.pt",
-        binning=(40, 0, 400),
-        unit="GeV",
-        x_title="$p_{T}$ of all muons",
     )
 
     # Jets (4 pt-leading jets)
@@ -586,6 +700,22 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 200),
             x_title=obj + " mass",
+        )
+        config.add_variable(
+            name=f"{obj.lower()}_dxy",
+            expression=f"{obj}.dxy[:,0]",
+            null_value=EMPTY_FLOAT,
+            binning=(240, 0, 1.2),
+            aux={"x_max": 0.2},
+            x_title=obj + " dxy",
+        )
+        config.add_variable(
+            name=f"{obj.lower()}_dz",
+            expression=f"{obj}.dz[:,0]",
+            null_value=EMPTY_FLOAT,
+            binning=(240, 0, 1.2),
+            aux={"x_max": 0.6},
+            x_title=obj + " dz",
         )
 
     # MET

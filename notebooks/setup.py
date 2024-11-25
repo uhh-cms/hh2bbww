@@ -22,5 +22,5 @@ def setup():
     law.config.add_section("analysis")
     law.config.set("analysis", "default_analysis", "hbw.analysis.hbw_sl.hbw_sl")
     law.config.set("analysis", "default_config", "c17")
-    law.config.set("analysis", "default_dataset", "ggHH_kl_1_kt_1_sl_hbbhww_powheg")
+    law.config.set("analysis", "default_dataset", "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg")
     law.config.set("analysis", "default_columnar_sandbox", "bash::$CF_BASE/sandboxes/venv_columnar.sh")

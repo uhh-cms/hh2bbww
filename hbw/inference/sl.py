@@ -19,14 +19,14 @@ ml_model_name = "dense_default"
 
 # All processes to be included in the final datacard
 processes = [
-    "ggHH_kl_0_kt_1_sl_hbbhww",
-    "ggHH_kl_1_kt_1_sl_hbbhww",
-    "ggHH_kl_2p45_kt_1_sl_hbbhww",
-    "ggHH_kl_5_kt_1_sl_hbbhww",
+    "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+    "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
     "tt",
     # "ttv", "ttvv",
     "st_schannel", "st_tchannel", "st_twchannel",
-    "dy_lep",
+    "dy",
     "w_lnu",
     # "vv",
     # "vvv",
@@ -36,15 +36,15 @@ processes = [
 
 # All config categories to be included in the final datacard
 config_categories = [
-    "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1e__ml_tt",
     "sr__1e__ml_st",
     "sr__1e__ml_v_lep",
-    "sr__1mu__ml_qqHH_CV_1_C2V_1_kl_1_sl_hbbhww",
+    "sr__1mu__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1mu__ml_tt",
     "sr__1mu__ml_st",
     "sr__1mu__ml_v_lep",
@@ -68,8 +68,8 @@ rate_systematics = [
     "QCDScale_VH",
     "QCDScale_ttH",
     "QCDScale_bbH",
-    "QCDScale_ggHH",  # should be included in inference model (THU_HH)
-    "QCDScale_qqHH",
+    "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+    "QCDScale_hh_vbf",
     "QCDScale_VHH",
     "QCDScale_ttHH",
     # Rate PDF uncertainties
@@ -81,25 +81,25 @@ rate_systematics = [
     "pdf_Higgs_qg",  # none so far
     "pdf_Higgs_ttH",
     "pdf_Higgs_bbH",  # removed
-    "pdf_Higgs_ggHH",
-    "pdf_Higgs_qqHH",
+    "pdf_Higgs_hh_ggf",
+    "pdf_Higgs_hh_vbf",
     "pdf_VHH",
     "pdf_ttHH",
 ]
 
 shape_systematics = [
     # Shape Scale uncertainties
-    # "murf_envelope_ggHH_kl_1_kt_1_dl_hbbhww",
+    # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
     "murf_envelope_tt",
     "murf_envelope_st",
-    "murf_envelope_dy_lep",
+    "murf_envelope_dy",
     "murf_envelope_w_lnu",
     "murf_envelope_ttV",
     "murf_envelope_VV",
     # Shape PDF Uncertainties
     "pdf_shape_tt",
     "pdf_shape_st",
-    "pdf_shape_dy_lep",
+    "pdf_shape_dy",
     "pdf_shape_w_lnu",
     "pdf_shape_ttV",
     "pdf_shape_VV",
@@ -145,20 +145,25 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 
 # minimal model for quick test purposes
 cls_dict_test = {
-    "ml_model_name": "dense_test",
+    "ml_model_name": "dense_22post_test",
     "processes": [
-        "ggHH_kl_1_kt_1_sl_hbbhww",
-        "st_tchannel",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "tt",
     ],
     "config_categories": [
-        "1e__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-        "1e__ml_st",
+        "sr__1e__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "sr__1e__ml_tt",
     ],
     "systematics": [
+        "lumi_13TeV_2016",
         "lumi_13TeV_2017",
+        "lumi_13TeV_1718",
+        "lumi_13TeV_2022",
+        "lumi_13TeV_2023",
+        "lumi_13TeV_correlated",
     ],
 }
-test = default.derive("test", cls_dict=cls_dict_test)
+sl_22post_test = default.derive("sl_22post_test", cls_dict=cls_dict_test)
 
 # model but with different fit variable
 jet1_pt = default.derive("jet1_pt", cls_dict={
@@ -172,20 +177,20 @@ jet1_pt = default.derive("jet1_pt", cls_dict={
 #
 
 processes_22 = [
-    "ggHH_kl_1_kt_1_sl_hbbhww",
+    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "tt",
     # "st_schannel",
     "st_tchannel", "st_twchannel",
-    "dy_lep",
+    "dy",
     "w_lnu",
 ]
 
 config_categories_22 = [
     # Signal regions
-    "sr__1e__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1e__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__1b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
-    "sr__1mu__2b__ml_ggHH_kl_1_kt_1_sl_hbbhww",
+    "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     # Background regions
     "sr__1e__ml_tt",
     "sr__1e__ml_st",

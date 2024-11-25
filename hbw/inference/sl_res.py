@@ -52,7 +52,7 @@ processes = [
     "graviton_hh_ggf_bbww_m600",
     "tt",
     "st",
-    "dy_lep",
+    "dy",
     "w_lnu",
     # "v_lep",
     # "t_bkg",
@@ -64,7 +64,7 @@ config_categories = [
     "cat__1e_graviton_hh_ggf_bbww_m600",
     # "1e__ml_tt",
     # "1e__ml_st",
-    # "1e__ml_dy_lep",
+    # "1e__ml_dy",
     # "1e__ml_w_lnu",
     "1e__ml_v_lep",
     "1e__ml_t_bkg",
@@ -72,7 +72,7 @@ config_categories = [
     "1mu__ml_graviton_hh_ggf_bbww_m600",
     # "1mu__ml_tt",
     # "1mu__ml_st",
-    # "1mu__ml_dy_lep",
+    # "1mu__ml_dy",
     # "1mu__ml_w_lnu",
     "1mu__ml_v_lep",
     "1mu__ml_t_bkg",
@@ -83,7 +83,7 @@ config_categories_not_ml = [
     "1e_graviton_hh_ggf_bbww_m600",
     # "1e__ml_tt",
     # "1e__ml_st",
-    # "1e__ml_dy_lep",
+    # "1e__ml_dy",
     # "1e__ml_w_lnu",
     "1e__ml_v_lep",
     "1e__ml_t_bkg",
@@ -91,7 +91,7 @@ config_categories_not_ml = [
     "1mu__ml_graviton_hh_ggf_bbww_m600",
     # "1mu__ml_tt",
     # "1mu__ml_st",
-    # "1mu__ml_dy_lep",
+    # "1mu__ml_dy",
     # "1mu__ml_w_lnu",
     "1mu__ml_v_lep",
     "1mu__ml_t_bkg",
@@ -113,8 +113,8 @@ rate_systematics = [
     # "QCDScale_VH",
     # "QCDScale_ttH",
     # "QCDScale_bbH",
-    # "QCDScale_ggHH",  # should be included in inference model (THU_HH)
-    # "QCDScale_qqHH",
+    # "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+    # "QCDScale_hh_vbf",
     # "QCDScale_VHH",
     # "QCDScale_ttHH",
     # # # Rate PDF uncertainties
@@ -126,20 +126,20 @@ rate_systematics = [
     # "pdf_Higgs_qg",  # none so far
     # "pdf_Higgs_ttH",
     # "pdf_Higgs_bbH",  # removed
-    # "pdf_Higgs_ggHH",
-    # "pdf_Higgs_qqHH",
+    # "pdf_Higgs_hh_ggf",
+    # "pdf_Higgs_hh_vbf",
     # "pdf_VHH",
     # "pdf_ttHH",
 ]
 
 shape_systematics = [
     # # Shape Scale uncertainties
-    # # "murf_envelope_ggHH_kl_1_kt_1_sl_hbbhww",
+    # # "murf_envelope_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     # "murf_envelope_tt",
     # "murf_envelope_st_schannel",
     # "murf_envelope_st_tchannel",
     # "murf_envelope_st_twchannel",
-    # "murf_envelope_dy_lep",
+    # "murf_envelope_dy",
     # "murf_envelope_w_lnu",
     # "murf_envelope_ttV",
     # "murf_envelope_VV",
@@ -148,7 +148,7 @@ shape_systematics = [
     # "pdf_shape_st_schannel",
     # "pdf_shape_st_tchannel",
     # "pdf_shape_st_twchannel",
-    # "pdf_shape_dy_lep",
+    # "pdf_shape_dy",
     # "pdf_shape_w_lnu",
     # "pdf_shape_ttV",
     # "pdf_shape_VV",
@@ -193,7 +193,7 @@ for m in [250, 350, 450, 600, 750, 1000]:
         f"graviton_hh_ggf_bbww_m{m}",
         "tt",
         "st",
-        "dy_lep",
+        "dy",
         "w_lnu",
     ]
 
@@ -215,12 +215,12 @@ for m in [250, 350, 450, 600, 750, 1000]:
         f"1e__ml_graviton_hh_ggf_bbww_m{m}",
         "1e__ml_tt",
         "1e__ml_st",
-        "1e__ml_dy_lep",
+        "1e__ml_dy",
         "1e__ml_w_lnu",
         f"1mu__ml_graviton_hh_ggf_bbww_m{m}",
         "1mu__ml_tt",
         "1mu__ml_st",
-        "1mu__ml_dy_lep",
+        "1mu__ml_dy",
         "1mu__ml_w_lnu",
     ]
     ml_model_name = f"dense_graviton{m}"

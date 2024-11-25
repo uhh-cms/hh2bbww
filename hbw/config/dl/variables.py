@@ -177,7 +177,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         expression="mli_ll_pt",
         binning=(40, 0, 200),
         unit="GeV",
-        x_title=r"$ll p_T$",
+        x_title=r"$p_{T}^{\ell\ell}$",
     )
 
     for obj in ["lep2"]:

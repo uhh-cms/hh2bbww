@@ -62,6 +62,9 @@ def plot_multi_weight_producer(
 
     variable_inst = variable_insts[0]
 
+    # take processes from the first weight producer (they should always be the same)
+    processes = list(list(hists.values())[0].keys())
+
     # merge over processes
     for weight_producer, w_hists in hists.items():
         hists[weight_producer] = sum(w_hists.values())
@@ -95,6 +98,10 @@ def plot_multi_weight_producer(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
     default_style_config["rax_cfg"]["ylabel"] = f"Ratio to {list(hists.keys())[0]}"
+
+    # set process label as legend title
+    process_label = processes[0].label if len(processes) == 1 else "Processes"
+    default_style_config["legend_cfg"]["title"] = process_label
 
     return plot_all(plot_config, default_style_config, **kwargs)
 
@@ -247,8 +254,8 @@ class PlotVariablesMultiWeightProducer(
                         h = h[{"process": sum, "category": sum}]
 
                         # add the histogram
-                        if process_inst in hists:
-                            hists[weight_producer][process_inst] += h
+                        if weight_producer in hists and process_inst in hists[weight_producer]:
+                            hists[weight_producer][process_inst] = hists[weight_producer][process_inst] + h
                         else:
                             hists[weight_producer][process_inst] = h
 

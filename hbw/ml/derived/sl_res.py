@@ -29,7 +29,7 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "tt",
         # "st",
         # "w_lnu",
-        # "dy_lep",
+        # "dy",
         "t_bkg",
         "v_lep",
 
@@ -40,7 +40,7 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # "tt": 8,
         # "st": 8,
         # "w_lnu": 8,
-        # "dy_lep": 8,
+        # "dy": 8,
         "t_bkg": 1,
         "v_lep": 1,
     }
@@ -68,14 +68,14 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "w_lnu_ht1200To2500_madgraph",
         "w_lnu_ht2500_madgraph",
         # DY
-        "dy_lep_m50_ht70to100_madgraph",
-        "dy_lep_m50_ht100to200_madgraph",
-        "dy_lep_m50_ht200to400_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-        "dy_lep_m50_ht600to800_madgraph",
-        "dy_lep_m50_ht800to1200_madgraph",
-        "dy_lep_m50_ht1200to2500_madgraph",
-        "dy_lep_m50_ht2500_madgraph",
+        "dy_m50toinf_ht70to100_madgraph",
+        "dy_m50toinf_ht100to200_madgraph",
+        "dy_m50toinf_ht200to400_madgraph",
+        "dy_m50toinf_ht400to600_madgraph",
+        "dy_m50toinf_ht600to800_madgraph",
+        "dy_m50toinf_ht800to1200_madgraph",
+        "dy_m50toinf_ht1200to2500_madgraph",
+        "dy_m50toinf_ht2500_madgraph",
     }
 
     input_features = [
@@ -220,7 +220,7 @@ for m in [250, 350, 450, 600, 750, 1000]:
         # "tt",
         # "st",
         # "w_lnu",
-        # "dy_lep",
+        # "dy",
         "t_bkg",
         "v_lep",
     ]
@@ -229,7 +229,7 @@ for m in [250, 350, 450, 600, 750, 1000]:
         # "tt": 8,
         # "st": 8,
         # "w_lnu": 8,
-        # "dy_lep": 8,
+        # "dy": 8,
         "t_bkg": 1,
         "v_lep": 1,
     }
@@ -256,14 +256,14 @@ for m in [250, 350, 450, 600, 750, 1000]:
         "w_lnu_ht1200To2500_madgraph",
         "w_lnu_ht2500_madgraph",
         # DY
-        "dy_lep_m50_ht70to100_madgraph",
-        "dy_lep_m50_ht100to200_madgraph",
-        "dy_lep_m50_ht200to400_madgraph",
-        "dy_lep_m50_ht400to600_madgraph",
-        "dy_lep_m50_ht600to800_madgraph",
-        "dy_lep_m50_ht800to1200_madgraph",
-        "dy_lep_m50_ht1200to2500_madgraph",
-        "dy_lep_m50_ht2500_madgraph",
+        "dy_m50toinf_ht70to100_madgraph",
+        "dy_m50toinf_ht100to200_madgraph",
+        "dy_m50toinf_ht200to400_madgraph",
+        "dy_m50toinf_ht400to600_madgraph",
+        "dy_m50toinf_ht600to800_madgraph",
+        "dy_m50toinf_ht800to1200_madgraph",
+        "dy_m50toinf_ht1200to2500_madgraph",
+        "dy_m50toinf_ht2500_madgraph",
     }
     cls_dict_res = {
         "processes": processes,

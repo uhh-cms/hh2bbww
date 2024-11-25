@@ -8,7 +8,7 @@ import functools
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from hbw.util import four_vec
+
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
 np = maybe_import("numpy")
@@ -19,7 +19,10 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses=four_vec({"Electron", "Muon", "Bjet", "MET", "Lightjet"}),
+    uses={
+        "{Electron,Muon,Bjet,Lightjet}.{pt,eta,phi,mass}"
+        "MET.{pt,phi}",
+    },
     produces={
         "eta_Whadron", "eta_Wlepton", "eta_Higgs_WW", "eta_Higgs_bb", "eta_Higgs_bb",
         "phi_Whadron", "phi_Wlepton", "phi_Higgs_WW", "phi_Higgs_bb", "phi_Heavy_Higgs",
