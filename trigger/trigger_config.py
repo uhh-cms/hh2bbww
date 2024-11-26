@@ -11,7 +11,6 @@ import law
 from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT
 from hbw.util import call_once_on_config
-from hbw.trigger.trigger import Trigger, TriggerLeg
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -137,33 +136,3 @@ def add_trigger_config(config: od.Config, **kwargs) -> None:
 
     # add trigger columns
     add_trigger_columns(config)
-
-
-# add trigger for dl scale factors
-@call_once_on_config()
-def add_ref_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
-    """
-    Adds reference triggers for the trigger scale factors
-    """
-    single_mu = Trigger(
-        name="HLT_IsoMu24",
-        id=101,
-        legs=[
-            TriggerLeg(
-                pdg_id=13,
-                min_pt=25.0,
-                # filter names:
-                # hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p08 (1mu + Iso)
-                trigger_bits=2**1 + 2**3,  # Iso (bit 1) + 1mu (bit 3)
-            ),
-        ],
-        aux={
-            "channels": ["mu", "mm", "emu", "mue", "mixed"],
-            "data_stream": "data_mu",
-        },
-        tags={"single_trigger", "single_mu"},
-    )
-
-    config.x.triggers = od.UniqueObjectIndex(Trigger, [
-            single_mu,
-        ])

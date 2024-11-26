@@ -730,3 +730,10 @@ def add_variables(config: od.Config) -> None:
         aux={"axis_type": "intcat"},
         x_title="Trigger IDs",
     )
+
+    # trigger ids für scale factors
+    config.add_variable(
+        name="trig_ids",
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
+    )

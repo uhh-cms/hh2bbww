@@ -33,13 +33,13 @@ def catid_trigger_mu(
 ) -> tuple[ak.Array, ak.Array]:
 
     mask = (
-        (ak.sum(events.Muon.pt > 15, axis=1) >= 1)
+        (ak.sum(events.Muon.pt > 0, axis=1) > 1)
     )
     return events, mask
 
 
 # muon channel, orthogonal
-@categorizer(uses={"Muon.pt", "Electron.pt", "HLT.*"})
+@categorizer(uses={"Muon.pt", "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"})
 def catid_trigger_orth_mu(
     self: Categorizer,
     events: ak.Array,
@@ -49,9 +49,8 @@ def catid_trigger_orth_mu(
     # TODO: check for match between Electron and trigger objects
 
     mask = (
-        (ak.sum(events.Muon.pt > 15, axis=1) >= 1) &
-        (ak.sum(events.Electron.pt > 15, axis=1) >= 1) &
-        (events.HLT[self.config_inst.x.ref_trigger["mu"]])
+        (ak.sum(events.Muon.pt > 0, axis=1) > 1) &
+        (events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight)
     )
     return events, mask
 
@@ -68,13 +67,13 @@ def catid_trigger_ele(
 ) -> tuple[ak.Array, ak.Array]:
 
     mask = (
-        (ak.sum(events.Electron.pt > 15, axis=1) >= 1)
+        (ak.sum(events.Electron.pt > 0, axis=1) > 1)
     )
     return events, mask
 
 
 # electron channel, orthogonal
-@categorizer(uses={"Electron.pt", "Muon.pt", "HLT.*"})
+@categorizer(uses={"Electron.pt", "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"})
 def catid_trigger_orth_ele(
     self: Categorizer,
     events: ak.Array,
@@ -84,11 +83,12 @@ def catid_trigger_orth_ele(
     # TODO: check for match between Muon and trigger object
 
     mask = (
-        (ak.sum(events.Electron.pt > 15, axis=1) >= 1) &
-        (ak.sum(events.Muon.pt > 15, axis=1) >= 1) &
-        (events.HLT[self.config_inst.x.ref_trigger["e"]])
+        (ak.sum(events.Electron.pt > 0, axis=1) > 1) &
+        (events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight)
     )
     return events, mask
+
+# TODO: add categories for mixed channel
 
 
 ####################################################################################################

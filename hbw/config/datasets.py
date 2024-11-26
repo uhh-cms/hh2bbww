@@ -41,9 +41,20 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         for stream in config.x.data_streams
     ]
 
+    data_jetmet_eras = {
+        "2022preEE": "cd",
+        "2022postEE": "efg",
+    }[config.x.cpn_tag]
+
+    data_jetmet_datasets = [
+        f"data_jethtmet_{era}"
+        for era in data_jetmet_eras
+    ]
+
     dataset_names = DotDict.wrap({
         # **data_datasets,
         "data": data_datasets,
+        "data_jethtmet": data_jetmet_datasets,
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
             # "st_schannel_lep_4f_amcatnlo",

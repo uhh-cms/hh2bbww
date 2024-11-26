@@ -20,9 +20,9 @@ ak = maybe_import("awkward")
 
 # produce trigger column for triggers included in the NanoAOD
 @producer(
-    produces={"trig_bits_mu", "trig_bits_e"},
-    channel=["mu", "e"],
-    version=1,
+    produces={"trig_ids"},
+    channel=["mm", "ee", "mixed"],
+    version=2,
 )
 def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -31,17 +31,20 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     # TODO: check if trigger were fired by unprescaled L1 seed
+    trig_ids = ak.Array([["allEvents"]] * len(events))
 
     for channel in self.channel:
 
-        trig_bits = ak.Array([["allEvents"]] * len(events))
+        channel_trigger = ak.Array([0] * len(events))
 
-        for trigger in self.config_inst.x.trigger[channel]:
+        for trigger in self.config_inst.x.triggers:
+            if channel in trigger.x.channels:
+                channel_trigger = channel_trigger | events.HLT[trigger.hlt_field]
 
-            trig_passed = ak.where(events.HLT[trigger], [[trigger]], [[]])
-            trig_bits = ak.concatenate([trig_bits, trig_passed], axis=1)
+        trig_passed = ak.where(channel_trigger, [[channel]], [[]])
+        trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
-        events = set_ak_column(events, f"trig_bits_{channel}", trig_bits)
+    events = set_ak_column(events, "trig_ids", trig_ids)
 
     return events
 
@@ -50,10 +53,8 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @trigger_prod.init
 def trigger_prod_init(self: Producer) -> None:
 
-    for channel in self.channel:
-        for trigger in self.config_inst.x.trigger[channel]:
-            self.uses.add(f"HLT.{trigger}")
-        self.uses.add(f"HLT.{self.config_inst.x.ref_trigger[channel]}")
+    for trigger in self.config_inst.x.triggers:
+        self.uses.add(f"HLT.{trigger.hlt_field}")
 
 
 # producers for single channels
@@ -65,7 +66,7 @@ ele_trigger_prod = trigger_prod.derive("ele_trigger_prod", cls_dict={"channel": 
 @producer(
     uses=category_ids,
     produces=category_ids,
-    version=1,
+    version=2,
 )
 def trig_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

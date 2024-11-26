@@ -69,10 +69,20 @@ def plot_efficiencies(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
 
-    # loop over processes
+    # switch trigger and processes when plotting efficiency of one trigger for multiple processes
+    proc_as_label = False
+    if len(hists.keys()) > 1:
+        if "bin_sel" in kwargs:
+            mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
+            if len(mask_bins) == 1:
+                legend_title = f"{mask_bins[0]}"
+                proc_as_label = True
+
+    # loop over processeslabel
     for proc_inst, myhist in hists.items():
 
         # get normalisation from first histogram (all events)
+        # TODO: this could be possibly be a CLI option
         norm_hist = myhist[:, 0]
 
         # plot config for the background distribution
@@ -97,12 +107,10 @@ def plot_efficiencies(
             if i == 0:
                 continue
 
-            # check if config has an attribute containing the trigger names
-            try:
-                label = config_inst.x.triggers.get(i).name
-            except Exception as e:
-                logger.error(f"Could not find trigger name for bin {i}: {e}")
-                label = f"{i}"
+            if proc_as_label:
+                label = f"{proc_inst.label}"
+            else:
+                label = i
 
             plot_config[f"hist_{proc_inst.label}_{i}"] = {
                 "method": "draw_efficiency",
@@ -114,10 +122,13 @@ def plot_efficiencies(
             }
 
         # set legend title to process name
-        if "title" in default_style_config["legend_cfg"]:
-            default_style_config["legend_cfg"]["title"] += " & " + proc_inst.label
+        if proc_as_label:
+            default_style_config["legend_cfg"]["title"] = legend_title
         else:
-            default_style_config["legend_cfg"]["title"] = proc_inst.label
+            if "title" in default_style_config["legend_cfg"]:
+                default_style_config["legend_cfg"]["title"] += " & " + proc_inst.label
+            else:
+                default_style_config["legend_cfg"]["title"] = proc_inst.label
 
     # plot-function specific changes
     default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
@@ -127,11 +138,11 @@ def plot_efficiencies(
     style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
 
     # set correct CMS label TODO: this should be implemented correctly in columnflow by default at one point
-    style_config["cms_label_cfg"]["exp"] = ""
-    if "data" in proc_inst.name:
-        style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Data)"
-    else:
-        style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Simulation)"
+    # style_config["cms_label_cfg"]["exp"] = ""
+    # if "data" in proc_inst.name:
+    #     style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Data)"
+    # else:
+    #     style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Simulation)"
     if "xlim" in kwargs:
         style_config["ax_cfg"]["xlim"] = kwargs["xlim"]
 

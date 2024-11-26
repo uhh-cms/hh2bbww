@@ -664,6 +664,11 @@ def add_config(
         ColumnCollection.MANDATORY_COFFEA,
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+        # columns for trigger studies
+        "HLT.IsoMu24", "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+        "HLT.Ele30_WPTight_Gsf", "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+        "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         # Gen information (for categorization)
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
