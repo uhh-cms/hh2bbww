@@ -36,6 +36,8 @@ class GetBtagNormalizationSF(
 
     rescale_mode = "nevents"
 
+    reweighting_step = "selected_no_bjet"
+
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
@@ -88,7 +90,7 @@ class GetBtagNormalizationSF(
         """
         Helper function that reduces the histogram to the requested axes based on the mode.
         """
-        hist = hist[{"process": sum, "steps": "selected_no_bjet"}]
+        hist = hist[{"process": sum, "steps": self.reweighting_step}]
 
         # check validity of mode
         ax_names = [ax.name for ax in hist.axes]
@@ -130,8 +132,8 @@ class GetBtagNormalizationSF(
                 dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
             elif self.rescale_mode == "nevents":
                 # scale such that mean weight is 1
-                n_events = hists["num_events"][{"steps": "selected_no_bjet"}].value
-                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": "selected_no_bjet"}].value
+                n_events = hists["num_events"][{"steps": self.reweighting_step}].value
+                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": self.reweighting_step}].value
             else:
                 raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
             for key in tuple(hists.keys()):
@@ -180,9 +182,19 @@ class GetBtagNormalizationSF(
                 h = self.reduce_hist(h, mode)
                 denominator = h.values()
 
+                # get axes for the output histogram
+                out_axes = []
+                for ax in h.axes:
+                    if isinstance(ax, hist.axis.Variable):
+                        out_axes.append(ax)
+                    elif isinstance(ax, hist.axis.Integer):
+                        out_axes.append(hist.axis.Variable(ax.edges, name=ax.name, label=ax.label))
+                    else:
+                        raise ValueError(f"Unsupported axis type {type(ax)}")
+
                 # calculate the scale factor and store it as a correctionlib evaluator
                 sf = safe_div(numerator, denominator)
-                sfhist = hist.Hist(*h.axes, data=sf)
+                sfhist = hist.Hist(*out_axes, data=sf)
                 sfhist.name = f"{mode_str}_{weight_name}"
                 sfhist.label = "out"
 
@@ -193,7 +205,7 @@ class GetBtagNormalizationSF(
                 # set overflow bins behavior (default is to raise an error when out of bounds)
                 # NOTE: claming seems to not work for int axes. Hopefully the number of jets considered to
                 # create these SFs is always large enough to not hit the overflow bin.
-                if any(isinstance(ax, hist.axis.Variable) for ax in h.axes):
+                if any(isinstance(ax, hist.axis.Variable) for ax in out_axes):
                     btag_renormalization.data.flow = "clamp"
 
                 # store the evaluator
