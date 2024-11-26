@@ -71,18 +71,20 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @producer(
     uses={
         prepare_objects,
-        bb_features, jj_features,
-        "Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
-        "Muon.charge", "Electron.charge",
-        "Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.btagPNetB",
-        "Bjet.pt",
-        "HbbJet.pt",
-        "FatJet.pt", "FatJet.tau1", "FatJet.tau2",
+        #bb_features, jj_features,
+        #"Electron.pt", "Electron.eta", "Muon.pt", "Muon.eta",
+        #"Muon.charge", "Electron.charge",
+        #"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB", "Jet.btagPNetB",
+        #"Bjet.pt",
+        #"HbbJet.pt",
+       # "FatJet.pt", "FatJet.tau1", "FatJet.tau2", 
+       "L1NNscore",
     },
     produces={
-        bb_features, jj_features,
-        "ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet",
-        "FatJet.tau21", "n_bjet",
+        #bb_features, jj_features,
+        #"ht", "n_jet", "n_electron", "n_muon", "n_deepjet", "n_fatjet", "n_hbbjet",
+        #"FatJet.tau21", "n_bjet", 
+        "L1NNscore",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -91,34 +93,35 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[prepare_objects](events, **kwargs)
 
     # object padding
-    events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
-    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
-    events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
-    events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
+    #events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
+    #events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    #events = set_ak_column(events, "FatJet", ak.pad_none(events.FatJet, 1))
+    #events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
 
     # ht and number of objects (safe for None entries)
-    events = set_ak_column_f32(events, "ht", ak.sum(events.Jet.pt, axis=1))
-    events = set_ak_column(events, "n_jet", ak.sum(events.Jet.pt > 0, axis=1))
-    events = set_ak_column(events, "n_bjet", ak.sum(events.Bjet.pt > 0, axis=1))
-    events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
-    events = set_ak_column(events, "n_muon", ak.sum(events.Muon.pt > 0, axis=1))
-    wp_med_deepjet = self.config_inst.x.btag_working_points.deepjet.medium
-    events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > wp_med_deepjet, axis=1))
-    wp_med_particlenet = self.config_inst.x.btag_working_points.particlenet.medium
-    events = set_ak_column(events, "n_particlenet", ak.sum(events.Jet.btagPNetB > wp_med_particlenet, axis=1))
-    events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
-    events = set_ak_column(events, "n_hbbjet", ak.sum(events.HbbJet.pt > 0, axis=1))
+    #events = set_ak_column_f32(events, "ht", ak.sum(events.Jet.pt, axis=1))
+    #events = set_ak_column(events, "n_jet", ak.sum(events.Jet.pt > 0, axis=1))
+    #events = set_ak_column(events, "n_bjet", ak.sum(events.Bjet.pt > 0, axis=1))
+    #events = set_ak_column(events, "n_electron", ak.sum(events.Electron.pt > 0, axis=1))
+    #events = set_ak_column(events, "n_muon", ak.sum(events.Muon.pt > 0, axis=1))
+    #wp_med_deepjet = self.config_inst.x.btag_working_points.deepjet.medium
+    #events = set_ak_column(events, "n_deepjet", ak.sum(events.Jet.btagDeepFlavB > wp_med_deepjet, axis=1))
+    #wp_med_particlenet = self.config_inst.x.btag_working_points.particlenet.medium
+    #events = set_ak_column(events, "n_particlenet", ak.sum(events.Jet.btagPNetB > wp_med_particlenet, axis=1))
+    #events = set_ak_column(events, "n_fatjet", ak.sum(events.FatJet.pt > 0, axis=1))
+    #events = set_ak_column(events, "n_hbbjet", ak.sum(events.HbbJet.pt > 0, axis=1))
 
     # Subjettiness
-    events = set_ak_column_f32(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
+    #events = set_ak_column_f32(events, "FatJet.tau21", events.FatJet.tau2 / events.FatJet.tau1)
 
     # bb and jj features
-    events = self[bb_features](events, **kwargs)
-    events = self[jj_features](events, **kwargs)
-
+    #events = self[bb_features](events, **kwargs)
+    #events = self[jj_features](events, **kwargs)
+    # TOPO
+    events = set_ak_column(events, "L1NNscore", events.L1NNscore)
     # undo object padding (remove None entries)
-    for obj in ["Jet", "Bjet", "FatJet"]:
-        events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
+    #for obj in ["Jet", "Bjet", "FatJet"]:
+    #    events = set_ak_column(events, obj, events[obj][~ak.is_none(events[obj], axis=1)])
 
     return events
 

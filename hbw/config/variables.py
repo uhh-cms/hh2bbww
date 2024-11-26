@@ -115,6 +115,12 @@ def add_feature_variables(config: od.Config) -> None:
         binning=(40, 0, 5),
         x_title=r"$\Delta R(j_{1},j_{2})$",
     )
+    config.add_variable(
+        name="L1NNscore",
+        binning=(20, -1., 1),
+        x_title=r"L1NNscore",
+        unit="a.u.",
+    )
 
     # FatJet features
     for i in range(2):

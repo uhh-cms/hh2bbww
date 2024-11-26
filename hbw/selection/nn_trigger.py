@@ -95,7 +95,6 @@ def NN_trigger_inference(
 
     # returning the inference results
     events = set_ak_column(events, "L1NNscore", predictions)
-    __import__("IPython").embed()
     return events
 
     
