@@ -10,10 +10,10 @@ from collections import OrderedDict, defaultdict
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, MultiConfigTask
+from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
-    CategoriesMixin,
+    CategoriesMixin, DatasetsProcessesMixin
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
@@ -112,13 +112,14 @@ class PlotVariablesMultiWeightProducer(
     PlotShiftMixin,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
+    DatasetsProcessesMixin,
     PlotBase1D,
     CategoriesMixin,
     MLModelsMixin,
     ProducersMixin,
     SelectorStepsMixin,
     CalibratorsMixin,
-    MultiConfigTask,
+    ConfigTask,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
