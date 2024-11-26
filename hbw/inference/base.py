@@ -36,7 +36,7 @@ class HBWInferenceModelBase(InferenceModel):
 
     # list of all processes/channels/systematics to include in the datacards
     processes: list = []
-    channels: list = []
+    config_categories: list = []
     systematics: list = []
 
     # customization of channels
@@ -153,7 +153,6 @@ class HBWInferenceModelBase(InferenceModel):
 
             # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
-
             # do some customization of the inference category
             self.customize_category(self.get_category(cat_name), cat_inst)
 
