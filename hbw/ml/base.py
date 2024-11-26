@@ -196,31 +196,32 @@ class MLClassifierBase(MLModel):
         # NOTE: since these variables are only used in ConfigTasks,
         #       we do not need to add these variables to all configs
         for proc in self.processes:
-            if f"mlscore.{proc}" not in self.config_inst.variables:
-                self.config_inst.add_variable(
-                    name=f"mlscore.{proc}",
-                    null_value=-1,
-                    binning=(1000, 0., 1.),
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
-                )
+            for config_inst in self.config_insts:
+                if f"mlscore.{proc}" not in config_inst.variables:
+                    config_inst.add_variable(
+                        name=f"mlscore.{proc}",
+                        null_value=-1,
+                        binning=(1000, 0., 1.),
+                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                        aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
+                    )
 
-    def preparation_producer(self: MLModel, config_inst: od.Config):
+    def preparation_producer(self: MLModel, analysis_inst: od.Analysis):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
         return "ml_preparation"
 
-    def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
+    def training_calibrators(self, analysis_inst: od.Analysis, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         # NOTE: since automatic resolving is not working here, we do it ourselves
-        return requested_calibrators or [config_inst.x.default_calibrator]
+        return requested_calibrators or [analysis_inst.x.default_calibrator]
 
-    def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
+    def training_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         # NOTE: might be nice to keep the "pre_ml_cats" for consistency, but running two
         # categorization Producers in the same workflow is messy, so we skip it for now
-        # return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
-        # return requested_producers or ["event_weights", config_inst.x.ml_inputs_producer]
-        return ["event_weights", config_inst.x.ml_inputs_producer]
+        # return requested_producers or ["event_weights", "pre_ml_cats", analysis_inst.x.ml_inputs_producer]
+        # return requested_producers or ["event_weights", analysis_inst.x.ml_inputs_producer]
+        return ["event_weights", analysis_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)

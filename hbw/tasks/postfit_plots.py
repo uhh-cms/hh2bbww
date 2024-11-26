@@ -12,6 +12,7 @@ import law
 import luigi
 import order as od
 
+from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.mixins import (
     InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
     CalibratorsMixin,
@@ -107,6 +108,7 @@ def plot_postfit_shapes(
 
 
 class PlotPostfitShapes(
+    # NOTE: mixins might be wrong and could (should?) be extended to MultiConfigTask
     HBWTask,
     PlotBase1D,
     # to correctly setup our InferenceModel, we need all these mixins, but hopefully, all these
@@ -116,6 +118,7 @@ class PlotPostfitShapes(
     ProducersMixin,
     SelectorStepsMixin,
     CalibratorsMixin,
+    ConfigTask,
 ):
     """
     Task that creates Postfit shape plots based on a fit_diagnostics file.

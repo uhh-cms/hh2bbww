@@ -14,10 +14,11 @@ import law
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin,
-    CalibratorsMixin,
-    ProducersMixin,
-    MLModelMixin,
+    # SelectorMixin,
+    # CalibratorsMixin,
+    # ProducersMixin,
+    # MLModelMixin,
+    MLModelTrainingMixin,
 )
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.util import DotDict
@@ -97,12 +98,11 @@ class GetAUCScores(PlotMLResultsSingleFold):
 
 
 class Optimizer(
+    # NOTE: mixins might need fixing, needs to be tested
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
+    # RemoteWorkflow,
 ):
     """
     Workflow that runs optimization. Needs to be run from within the sandbox
@@ -191,12 +191,11 @@ class Optimizer(
 
 
 class Objective(
+    # NOTE: mixins might need fixing, needs to be tested
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
+    # RemoteWorkflow,
 ):
     """
     Objective to optimize.
@@ -281,11 +280,9 @@ class Objective(
 
 
 class DummyObjective(
+    # NOTE: mixins might need fixing, needs to be tested
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
     # RemoteWorkflow,
 ):

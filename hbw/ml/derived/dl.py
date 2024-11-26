@@ -136,22 +136,23 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         # NOTE: since these variables are only used in ConfigTasks,
         #       we do not need to add these variables to all configs
         for proc in self.processes:
-            if f"mlscore.{proc}_manybins" not in self.config_inst.variables:
-                self.config_inst.add_variable(
-                    name=f"mlscore.{proc}_manybins",
-                    expression=f"mlscore.{proc}",
-                    null_value=-1,
-                    binning=(1000, 0., 1.),
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                    aux={"rebin": 40},
-                )
-                self.config_inst.add_variable(
-                    name=f"mlscore40.{proc}",
-                    expression=f"mlscore.{proc}",
-                    null_value=-1,
-                    binning=(40, 0., 1.),
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                )
+            for config_inst in self.config_insts:
+                if f"mlscore.{proc}_manybins" not in config_inst.variables:
+                    config_inst.add_variable(
+                        name=f"mlscore.{proc}_manybins",
+                        expression=f"mlscore.{proc}",
+                        null_value=-1,
+                        binning=(1000, 0., 1.),
+                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                        aux={"rebin": 40},
+                    )
+                    config_inst.add_variable(
+                        name=f"mlscore40.{proc}",
+                        expression=f"mlscore.{proc}",
+                        null_value=-1,
+                        binning=(40, 0., 1.),
+                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                    )
 
 
 #
@@ -271,5 +272,6 @@ dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
 dl_22.derive("dl_22_v1")
 dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+    "epochs": 4,
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt_dl"],
 })

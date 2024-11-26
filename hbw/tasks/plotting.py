@@ -10,13 +10,14 @@ from collections import OrderedDict, defaultdict
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, ShiftTask
+from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
-    CategoriesMixin,
+    CategoriesMixin, DatasetsProcessesMixin
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
+    PlotShiftMixin,
 )
 from columnflow.tasks.framework.decorators import view_output_plots
 from columnflow.tasks.framework.remote import RemoteWorkflow
@@ -108,15 +109,17 @@ def plot_multi_weight_producer(
 
 class PlotVariablesMultiWeightProducer(
     HBWTask,
-    ShiftTask,
+    PlotShiftMixin,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
+    DatasetsProcessesMixin,
     PlotBase1D,
     CategoriesMixin,
     MLModelsMixin,
     ProducersMixin,
     SelectorStepsMixin,
     CalibratorsMixin,
+    ConfigTask,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
