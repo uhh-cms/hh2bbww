@@ -13,7 +13,7 @@ import order as od
 from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
-    CategoriesMixin, DatasetsProcessesMixin
+    CategoriesMixin, DatasetsProcessesMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,

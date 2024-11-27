@@ -296,7 +296,7 @@ dl.derive("dl_tmp", cls_dict={
 })
 
 
-dl.derive("dl_test", cls_dict={
+dl.derive("dl_22_limited", cls_dict={
     "ml_model_name": "dl_22_limited",
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt_dl"],
     "config_categories": [
