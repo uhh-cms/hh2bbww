@@ -22,7 +22,8 @@ hist = maybe_import("hist")
     },
     # produced columns are defined in the init function below
     mc_only=True,
-    modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
+    modes=["ht_njet_nhf"],
+    # modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
     from_file=False,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -58,7 +59,7 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
             norm_weight = sf.evaluate(*inputs)
             norm_weight = norm_weight * events[weight_name]
-            events = set_ak_column(events, f"normalized_{mode}_{weight_name}", norm_weight)
+            events = set_ak_column(events, f"normalized_{mode}_{weight_name}", norm_weight, value_type=np.float32)
 
     return events
 
