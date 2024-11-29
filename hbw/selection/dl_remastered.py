@@ -187,6 +187,9 @@ def dl_lepton_selection_init(self: Selector) -> None:
     return
 
 
+from hbw.util import timeit
+
+
 @selector(
     exposed=True,
     # configurable attributes
@@ -205,6 +208,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
     n_btag=None,
     version=1,
 )
+@timeit
 def dl1(
     self: Selector,
     events: ak.Array,
@@ -319,4 +323,4 @@ def dl1_init(self: Selector) -> None:
 
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
-dl1_test = dl1.derive("dl1_test")
+test_dl = dl1.derive("test_dl")
