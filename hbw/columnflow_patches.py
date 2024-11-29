@@ -111,6 +111,30 @@ def patch_default_version():
 
 
 @memoize
+def patch_materialization_strategy():
+    """
+    Simple patch function to switch to the PARTITIONS materialization strategy for DaskArrayReader.
+    We might want to try in the future if this improves memory usage, but this requires us to
+    reproduce all existing outputs with this type of partitioning.
+    """
+    from columnflow.columnar_util import DaskArrayReader
+
+    # Save the original __init__ method
+    _original_init = DaskArrayReader.__init__
+
+    def patched_init(self, *args, **kwargs):
+        logger.debug(f"patched DaskArrayReader.__init__ with {DaskArrayReader.MaterializationStrategy.PARTITIONS}")
+        # Modify the materialization_strategy before calling the original __init__
+        kwargs["materialization_strategy"] = (
+            DaskArrayReader.MaterializationStrategy.PARTITIONS
+        )
+        _original_init(self, *args, **kwargs)
+
+    # Replace the original __init__ with the patched version
+    DaskArrayReader.__init__ = patched_init
+
+
+@memoize
 def patch_all():
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
