@@ -10,6 +10,7 @@ import order as od
 from scinum import Number
 
 from cmsdb.util import add_decay_process
+from columnflow.util import DotDict
 
 from hbw.config.styling import color_palette
 
@@ -199,3 +200,23 @@ def configure_hbw_processes(config: od.Config):
         if config.has_process(bg):
             bg = config.get_process(bg)
             background.add_process(bg)
+
+
+from random import randint
+
+
+def create_combined_proc_forML(config: od.Config, proc_name: str, proc_dict: dict, color=None):
+
+    combining_proc = []
+    for proc in proc_dict.sub_processes:
+        combining_proc.append(config.get_process(proc, default=None))
+    proc_name = add_parent_process(config,
+        combining_proc,
+        name=proc_name,
+        id=randint(10000000, 99999999),
+        # TODO: random number (could by chance be a already used number --> should be checked)
+        label=proc_dict.get("label", "combined custom process"),
+        color=proc_dict.get("color", None),
+    )
+    ml_config = DotDict({"weighting": proc_dict.get("weighting", None), "sub_processes": proc_dict.sub_processes})
+    proc_name.x.ml_config = ml_config

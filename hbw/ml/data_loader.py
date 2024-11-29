@@ -19,6 +19,60 @@ np = maybe_import("numpy")
 logger = law.logger.get_logger(__name__)
 
 
+def get_proc_mask(
+    events: ak.Array,
+    proc: str | od.Process,
+    config_inst: od.Config | None = None,
+) -> np.ndarray:
+    """
+    Creates a list of the Ids of all subprocesses and teh corresponding mask for all events.
+
+    :param events: Event array
+    :param config_inst: An instance of the Config, can be None if Porcess instance is given.
+    :param proc: Either string or process instance.
+    """
+    # get process instance
+    if config_inst:
+        proc_inst = config_inst.get_process(proc)
+    elif isinstance(proc, od.Process):
+        proc_inst = proc
+
+    proc_id = events.process_id
+    unique_proc_ids = set(proc_id)
+
+    # get list of Ids that are belonging to the process and are present in the event array
+    sub_id = [
+        proc_inst.id
+        for proc_inst, _, _ in proc_inst.walk_processes(include_self=True)
+        if proc_inst.id in unique_proc_ids
+    ]
+
+    # Create process mask
+    proc_mask = np.isin(proc_id, sub_id)
+    return proc_mask, sub_id
+
+
+def del_sub_proc_stats(
+    stats: dict,
+    proc: str,
+    sub_id: list,
+) -> np.ndarray:
+    """
+    Function deletes dict keys which are not part of the requested process
+
+    :param stats: Dictionaire containing ML stats for each process.
+    :param proc: String of the process.
+    :param sub_id: List of ids of sub processes that should be reatined (!).
+    """
+    id_list = list(stats[proc]["num_events_per_process"].keys())
+    item_list = list(stats[proc].keys())
+    for id in id_list:
+        if int(id) not in sub_id:
+            for item in item_list:
+                if "per_process" in item:
+                    del stats[proc][item][id]
+
+
 def input_features_sanity_checks(ml_model_inst: MLModel, input_features: list[str]):
     """
     Perform sanity checks on the input features.
@@ -61,6 +115,8 @@ class MLDatasetLoader:
     shuffle: bool = True
 
     input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights")
+    # input_arrays: tuple = ("features", "weights", _
+    #         _ "equal_train_weights", "xsec_train_weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
     def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
@@ -78,8 +134,12 @@ class MLDatasetLoader:
         """
         self._ml_model_inst = ml_model_inst
         self._process = process
+
+        proc_mask, _ = get_proc_mask(events, process, ml_model_inst.config_inst)
+        # TODO: die ohne _per_process müssen auch noch, still, per fold never make sense then anymore -> DISCUSS
         self._stats = stats
-        self._events = events
+        # del_sub_proc_stats(process, sub_id)
+        self._events = events[proc_mask]
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
@@ -185,10 +245,70 @@ class MLDatasetLoader:
         self._shuffle_indices = np.random.permutation(self.n_events)
         return self._shuffle_indices
 
+    def get_xsec_train_weights(self) -> np.ndarray:
+        """
+        Weighting such that each event has roughly the same weight,
+        sub processes are weighted accoridng to their cross section
+        """
+        if hasattr(self, "_xsec_train_weights"):
+            return self._xsec_train_weights
+
+        if not self.stats:
+            raise Exception("cannot determine train weights without stats")
+
+        _, sub_id = get_proc_mask(self._events, self.process, self.ml_model_inst.config_inst)
+        sum_abs_weights = np.sum([self.stats[self.process]["sum_abs_weights_per_process"][str(id)] for id in sub_id])
+        num_events = np.sum([self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id])
+
+        xsec_train_weights = self.weights / sum_abs_weights * num_events
+
+        return xsec_train_weights
+
+    def get_equal_train_weights(self) -> np.ndarray:
+        """
+        Weighting such that events of each sub processes are weighted equally
+        """
+        if hasattr(self, "_equally_train_weights"):
+            return self._equal_train_weights
+
+        if not self.stats:
+            raise Exception("cannot determine train weights without stats")
+
+        combined_proc_inst = self.ml_model_inst.config_inst.get_process(self.process)
+        targeted_sum_of_weights_per_process = (
+            self.stats[self.process]["num_events"] / len(combined_proc_inst.x.ml_config.sub_processes)
+        )
+        equal_train_weights = ak.full_like(self.weights, 1.)
+        sub_class_factors = {}
+
+        for proc in combined_proc_inst.x.ml_config.sub_processes:
+            proc_mask, sub_id = get_proc_mask(self._events, proc, self.ml_model_inst.config_inst)
+            sum_pos_weights_per_sub_proc = 0.
+            sum_pos_weights_per_proc = self.stats[self.process]["sum_pos_weights_per_process"]
+
+            for id in sub_id:
+                id = str(id)
+                if id in self.stats[self.process]["num_events_per_process"]:
+                    sum_pos_weights_per_sub_proc += sum_pos_weights_per_proc[id]
+
+            if sum_pos_weights_per_sub_proc == 0:
+                norm_const_per_proc = 1.
+                logger.info(
+                    f"No weight sum found in stats for sub process {proc}."
+                    f"Normalization constant set to 1 but results are probably not correct.")
+            else:
+                norm_const_per_proc = targeted_sum_of_weights_per_process / sum_pos_weights_per_sub_proc
+                logger.info(f"Normalizing constant for {proc} is {norm_const_per_proc}")
+
+            sub_class_factors[proc] = norm_const_per_proc
+            equal_train_weights = np.where(proc_mask, self.weights * norm_const_per_proc, equal_train_weights)
+
+        return equal_train_weights
+
     @property
     def train_weights(self) -> np.ndarray:
         """
-        Weighting such that each event has roughly the same weight
+        Weighting according to the parameters set in the ML model config
         """
         if hasattr(self, "_train_weights"):
             return self._train_weights
@@ -196,10 +316,19 @@ class MLDatasetLoader:
         if not self.stats:
             raise Exception("cannot determine train weights without stats")
 
-        sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
-        num_events = self.stats[self.process]["num_events"]
+        # TODO: hier muss np.float gemacht werden
+        proc = self.process
+        proc_inst = self.ml_model_inst.config_inst.get_process(proc)
+        if proc_inst.x("ml_config", None) and proc_inst.x.ml_config.weighting == "equal":
+            train_weights = self.get_equal_train_weights()
+        else:
+            train_weights = self.get_xsec_train_weights()
+        #     self._train_weights = self.get_equal_train_weights()
+        # else:
+        #     self._train_weights = self.get_xsec_train_weights()
 
-        self._train_weights = self.weights / sum_abs_weights * num_events
+        self._train_weights = ak.to_numpy(train_weights).astype(np.float32)
+
         return self._train_weights
 
     @property
@@ -213,11 +342,26 @@ class MLDatasetLoader:
         if not self.stats:
             raise Exception("cannot determine val weights without stats")
 
+        # TODO: per process pls [done] and now please tidy up
         processes = self.ml_model_inst.processes
-        sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
-        num_events_per_process = {proc: self.stats[proc]["num_events"] for proc in processes}
+        num_events_per_process = {}
+        for proc in processes:
+            id_list = list(self.stats[proc]["num_events_per_process"].keys())
+            proc_inst = self.ml_model_inst.config_inst.get_process(proc)
+            sub_id = [
+                p_inst.id
+                for p_inst, _, _ in proc_inst.walk_processes(include_self=True)
+                if str(p_inst.id) in id_list
+            ]
+            if proc == self.process:
+                sum_abs_weights = np.sum([self.stats[self.process]["sum_abs_weights_per_process"][str(id)] for id in sub_id])
+            num_events_per_proc = np.sum([self.stats[proc]["num_events_per_process"][str(id)] for id in sub_id])
+            num_events_per_process[proc] = num_events_per_proc
 
-        self._validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
+        # sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
+        # num_events_per_process = {proc: self.stats[proc]["num_events"] for proc in processes}
+        validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
+        self._validation_weights = ak.to_numpy(validation_weights).astype(np.float32)
 
         return self._validation_weights
 
@@ -544,6 +688,7 @@ class MLProcessData:
         if self._ml_model_inst.negative_weights == "handle":
             target[self.m_negative_weights] = 1 - target[self.m_negative_weights]
 
+        # NOTE: I think here the targets are somehow 64floats... Maybe check that
         self._target = target
         return self._target
 

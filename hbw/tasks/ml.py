@@ -13,6 +13,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+import numpy as np
+
+from hbw.ml.data_loader import get_proc_mask
 import law
 import luigi
 
@@ -161,6 +164,7 @@ class MLOptimizer(
         self.output()["model_summary"].dump(model_summary, formatter="yaml")
 
 
+# TODO: Cross check if the trian weights work as intended --> by reading out porcess_id
 class MLPreTraining(
     HBWTask,
     MLModelTrainingMixin,
@@ -380,6 +384,22 @@ class MLPreTraining(
 
         # initialize the DatasetLoader
         ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+        # NOTE: Almost closure
+        sum_train_weights = np.sum(ml_dataset.train_weights)
+        n_events_per_fold = len(ml_dataset.train_weights)
+        logger.info(f"Sum of traing weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
+
+        if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
+
+            if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
+                for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
+                    proc_mask, sub_id = get_proc_mask(events, sub_proc, self.ml_model_inst.config_inst)
+                    xcheck_weight_sum = np.sum(ml_dataset.train_weights[proc_mask])
+                    xcheck_n_events = len(ml_dataset.train_weights[proc_mask])
+                    logger.info(
+                        f"For the equal weighting method the sum of weights for {sub_proc} is {xcheck_weight_sum} "
+                        f"(No. of events: {xcheck_n_events})",
+                    )
 
         for input_array in self.ml_model_inst.data_loader.input_arrays:
             logger.info(f"loading data for input array {input_array}")
@@ -392,7 +412,6 @@ class MLPreTraining(
             outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
 
             outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")
-
         # dump parameters of the DatasetLoader
         outputs["parameters"].dump(ml_dataset.parameters, formatter="yaml")
 
@@ -669,6 +688,8 @@ class PlotMLResultsSingleFold(
             "val": MLProcessData(self.ml_model_inst, input_files, "val", self.ml_model_inst.processes, self.fold),
             "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
         })
+
+        # ML WEIGHTING data.train.equal_weights
 
         # create plots
         # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since
