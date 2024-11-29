@@ -13,7 +13,7 @@ from hbw.production.weights import event_weights_to_normalize
 from columnflow.columnar_util import set_ak_column
 
 from columnflow.util import maybe_import
-from hbw.util import has_tag
+from hbw.util import has_tag, IF_MC
 from hbw.hist_util import create_columnflow_hist
 
 np = maybe_import("numpy")
@@ -22,8 +22,8 @@ hist = maybe_import("hist")
 
 
 @selector(
-    uses={increment_stats, event_weights_to_normalize, "Jet.hadronFlavour"},
-    produces={"ht", "njet", "nhf"},
+    uses={increment_stats, event_weights_to_normalize, IF_MC("Jet.hadronFlavour")},
+    produces=IF_MC({"ht", "njet", "nhf"}),
 )
 def hbw_selection_hists(
     self: Selector,
@@ -45,13 +45,14 @@ def hbw_selection_hists(
     njet = results.x.n_central_jets
     ht = results.x.ht
 
-    hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
-    nhf = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
-
     # store ht, njet, and nhf for consistency checks
     events = set_ak_column(events, "ht", ht)
     events = set_ak_column(events, "njet", njet)
-    events = set_ak_column(events, "nhf", nhf)
+
+    if self.dataset_inst.is_mc:
+        hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
+        nhf = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
+        events = set_ak_column(events, "nhf", nhf)
 
     # weight map definition
     weight_map = {
@@ -157,8 +158,12 @@ def hbw_selection_hists_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
+    if self.dataset_inst.is_data:
+        return
+
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights}
 
     if self.dataset_inst.is_mc:
-        self.uses |= {"mc_weight"}
+        self.uses |= {"mc_weight", "Jet.hadronFlavour"}
+        self.produces |= {"ht", "njet", "nhf"}

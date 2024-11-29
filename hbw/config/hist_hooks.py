@@ -79,10 +79,10 @@ def add_hist_hooks(config: od.Config) -> None:
 
         # edges for 2b channel
         edges = {
-            "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1_manybins": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
-            "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_manybins": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
-            "mlscore.tt_manybins": [0.0, 0.533, 0.669, 1.0],
-            "mlscore.h_manybins": [0.0, 0.494, 0.651, 1.0],
+            "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
+            "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
+            "mlscore.tt": [0.0, 0.533, 0.669, 1.0],
+            "mlscore.h": [0.0, 0.494, 0.651, 1.0],
         }
 
         h_rebinned = DotDict()

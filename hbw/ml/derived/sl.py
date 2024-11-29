@@ -136,9 +136,9 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         # NOTE: since these variables are only used in ConfigTasks,
         #       we do not need to add these variables to all configs
         for proc in self.processes:
-            if f"mlscore.{proc}_manybins" not in self.config_inst.variables:
+            if f"mlscore.{proc}" not in self.config_inst.variables:
                 self.config_inst.add_variable(
-                    name=f"mlscore.{proc}_manybins",
+                    name=f"mlscore.{proc}",
                     expression=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(1000, 0., 1.),

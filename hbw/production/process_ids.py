@@ -200,7 +200,7 @@ def hh_bbvv_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
 
 @producer(
-    uses={"LHE.NpNLO", "GenJet.pt", "GenJet.hadronFlavour"},
+    uses={"LHE.NpNLO", "GenJet.{pt,eta,hadronFlavour}"},
     produces={"process_id"},
 )
 def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -212,7 +212,8 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     """
     n_partons = events.LHE.NpNLO
 
-    genjet = events.GenJet[events.GenJet.pt >= 20]
+    genjet_mask = (events.GenJet.pt >= 20) & (abs(events.GenJet.eta) < 2.4)
+    genjet = (events.GenJet[genjet_mask])
     hf_genjet_mask = (genjet.hadronFlavour == 4) | (genjet.hadronFlavour == 5)
     is_hf = ak.any(hf_genjet_mask, axis=1)
 

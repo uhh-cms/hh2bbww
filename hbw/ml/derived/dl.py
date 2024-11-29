@@ -137,9 +137,9 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         #       we do not need to add these variables to all configs
         for proc in self.processes:
             for config_inst in self.config_insts:
-                if f"mlscore.{proc}_manybins" not in config_inst.variables:
+                if f"mlscore.{proc}" not in config_inst.variables:
                     config_inst.add_variable(
-                        name=f"mlscore.{proc}_manybins",
+                        name=f"mlscore.{proc}",
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
@@ -271,7 +271,7 @@ dl_22.derive("dl_22_steps1000", cls_dict={"steps_per_epoch": 1000})
 # model for testing
 dl_22.derive("dl_22_v1")
 dl_22_limited = dl_22post.derive("dl_22_limited", cls_dict={
-    "training_configs": lambda self, requested_configs: ["l22pre", "l22post"],
+    "training_configs": lambda self, requested_configs: ["l22post"],
     "epochs": 4,
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt_dl"],
 })

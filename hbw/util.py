@@ -463,4 +463,7 @@ def IF_DATASET_HAS_LHE_WEIGHTS(
 
 @deferred_column
 def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
     return self.get() if func.dataset_inst.is_mc else None

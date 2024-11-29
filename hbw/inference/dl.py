@@ -296,11 +296,12 @@ dl.derive("dl_tmp", cls_dict={
 })
 
 
-dl.derive("dl_test", cls_dict={
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
-    "categories": [
+dl.derive("dl_22_limited", cls_dict={
+    "ml_model_name": "dl_22_limited",
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt_dl"],
+    "config_categories": [
         "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2b__ml_st",
+        "sr__2b__ml_tt_dl",
     ],
     "systematics": rate_systematics},
 )
