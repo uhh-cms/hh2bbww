@@ -96,6 +96,10 @@ def base_init(self: WeightProducer) -> None:
         # remove dependency towards top pt weights
         self.weight_columns.pop("top_pt_weight", None)
 
+    if not self.dataset_inst.has_tag("is_v_jets"):
+        # remove dependency towards vjets weights
+        self.weight_columns.pop("vjets_weight", None)
+
     self.shifts = set()
 
     # when jec sources are known btag SF source, then propagate the shift to the WeightProducer
@@ -139,7 +143,7 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
@@ -152,10 +156,17 @@ default_weight_columns = {
     **default_correction_weights,
 }
 default_weight_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
-base.derive("unstitched", cls_dict={"weight_columns": {**default_correction_weights, "normalization_weight": []}})
+with_vjets_weight = default_weight_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "vjets_weight": [],  # TODO: corrections/shift missing
+    "stitched_normalization_weight": [],
+}})
+base.derive("unstitched", cls_dict={"weight_columns": {
+    **default_correction_weights, "normalization_weight": [],
+}})
 
 weight_columns_execpt_btag = default_weight_columns.copy()
-weight_columns_execpt_btag.pop("normalized_ht_njet_btag_weight")
+weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
