@@ -357,14 +357,28 @@ def add_config(
 
     # V+jets reweighting
     cfg.x.vjets_reweighting = DotDict.wrap({
-        "w": {
-            "value": "wjets_kfactor_value",
-            "error": "wjets_kfactor_error",
-        },
         "z": {
-            "value": "zjets_kfactor_value",
-            "error": "zjets_kfactor_error",
+            "value": "eej_pTV_kappa_NLO_EW",
+            "ew": "eej_pTV_kappa_NLO_EW",
+            "error": "eej_pTV_d1kappa_EW",  # NOTE: not sure if this is correct to use as error (d2,d3?)
+            "d2": "eej_pTV_d2kappa_EW",
+            "d3": "eej_pTV_d3kappa_EW",
         },
+        "w": {
+            "value": "aj_pTV_kappa_NLO_EW",
+            "ew": "aj_pTV_kappa_NLO_EW",
+            "error": "aj_pTV_d1kappa_EW",  # NOTE: not sure if this is correct to use as error (d2,d3?)
+            "d2": "aj_pTV_d2kappa_EW",
+            "d3": "aj_pTV_d3kappa_EW",
+        },
+        # "w": {
+        #     "value": "wjets_kfactor_value",
+        #     "error": "wjets_kfactor_error",
+        # },
+        # "z": {
+        #     "value": "zjets_kfactor_value",
+        #     "error": "zjets_kfactor_error",
+        # },
     })
 
     ################################################################################################
@@ -587,8 +601,10 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
-    # V+jets reweighting (still unused and not centrally produced)
-    add_external("vjets_reweighting", f"{json_mirror}/data/json/vjets_reweighting.json.gz")
+    # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
+    # ROOT files (eej.root and aj.root) taken from here:
+    # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
+    add_external("vjets_reweighting", (f"{json_mirror}/data/json/vjets_pt.json.gz", "v1"))
     if cfg.x.run == 2:
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
