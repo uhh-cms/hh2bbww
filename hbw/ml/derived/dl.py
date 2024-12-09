@@ -153,7 +153,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', '')}",
                         aux={"rebin": 40},
                     )
                     config_inst.add_variable(
@@ -161,7 +161,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(40, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', '')}",
                     )
 
 
@@ -221,12 +221,12 @@ dl_22post_sigtest = dl_22post.derive("dl_22post_sigtest", cls_dict={
     "processes": ["sig_01", "sig_25"],
 })
 
-dl_22post_test = dl_22post.derive("dl_22post_sigtest", cls_dict={
+dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "combine_processes": {
         "signal": {
             # "name": "tt_and_st",
-            "label": "signal_kl0_1",
+            "label": "signal",
             "sub_processes": [
                 "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
                 "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -237,12 +237,113 @@ dl_22post_test = dl_22post.derive("dl_22post_sigtest", cls_dict={
         },
         "top": {
             # "name": "tt_and_st",
-            "label": "signal_kl2p45_5",
+            "label": "top_induced",
             "sub_processes": ["st", "tt"],
             "weighting": "equal",
         },
     },
     "processes": ["signal", "top"],
+})
+
+dl_22post_test2 = dl_22post.derive("dl_22post_test2", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "combine_processes": {
+        "signal": {
+            # "name": "tt_and_st",
+            "label": "signal",
+            "sub_processes": [
+                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+            ],
+            "weighting": "xsec",
+        },
+        "top": {
+            # "name": "tt_and_st",
+            "label": "top_induced",
+            "sub_processes": ["st", "tt"],
+            "weighting": "xsec",
+        },
+    },
+    "processes": ["signal", "top"],
+})
+
+dl_22post_ml_study_1 = dl_22post.derive("dl_22post_ml_study_1", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "combine_processes": {
+        "signal_ggf": {
+            # "name": "tt_and_st",
+            "label": "Signal GGF",
+            "sub_processes": [
+                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+            ],
+            "weighting": "xsec",
+        },
+        "signal_vbf": {
+            # "name": "tt_and_st",
+            "label": "Signal VBF",
+            "sub_processes": [
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+            ],
+            "weighting": "xsec",
+        },
+    },
+    "processes": [
+        "signal_ggf",
+        "signal_vbf",
+        "tt",
+        "st",
+        "dy",
+        "h",
+    ],
+})
+
+dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "combine_processes": {
+        "signal_ggf2": {
+            # "name": "tt_and_st",
+            "label": "Signal GGF",
+            "sub_processes": [
+                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+            ],
+            "weighting": "equal",
+        },
+        "signal_vbf2": {
+            # "name": "tt_and_st",
+            "label": "Signal VBF",
+            "sub_processes": [
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+
+            ],
+            "weighting": "xsec",
+        },
+    },
+    "processes": [
+        "signal_ggf2",
+        "signal_vbf2",
+        "tt",
+        "st",
+        "dy",
+        "h",
+    ],
 })
 #
 # setups with different processes (0: baseline, 1: add SM vbf + single H, 2: add SL+all HH variations)
