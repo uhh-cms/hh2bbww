@@ -323,16 +323,17 @@ def add_categories_ml(config, ml_model_inst):
     # add ml categories directly to the config
     # NOTE: this is a bit dangerous, because our ID depends on the MLModel, but
     #       we can reconfigure our MLModel after having created these categories
+    # TODO: config is empty and therefore fails
     ml_categories = []
     for i, proc in enumerate(ml_model_inst.processes):
-        cat_label = config.get_process(proc).x.ml_label
+        # cat_label = config.get_process(proc).x.ml_label
         ml_categories.append(config.add_category(
             # NOTE: name and ID is unique as long as we don't use
             #       multiple ml_models simutaneously
             name=f"ml_{proc}",
             id=(i + 1) * 1000,
             selection=f"catid_ml_{proc}",
-            label=f"{cat_label} category",
+            # label=f"{cat_label} category",
             aux={"ml_proc": proc},
         ))
 

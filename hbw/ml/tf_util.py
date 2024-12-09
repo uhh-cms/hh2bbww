@@ -41,6 +41,7 @@ class MultiDataset(object):
 
         for proc_inst, arrays in data.items():
             arrays = (arrays.features, arrays.target, arrays.train_weights)
+            # ML WEIGHTING
             self.tuple_length = len(arrays)
             self.datasets.append(tf.data.Dataset.from_tensor_slices(arrays))
             self.counts.append(len(arrays[0]))
@@ -135,7 +136,6 @@ class MultiDataset(object):
                 continue
             if do_break:
                 break
-
             yield tuple(tf.concat([batch[i] for batch in dataset_batches], axis=0) for i in range(self.tuple_length))
 
             self.batches_seen += 1
