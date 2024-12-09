@@ -127,7 +127,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mindr_jj", ak.min(dr, axis=1))
 
     # hbb features
-    hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
+    hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
     events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
     events = set_ak_column_f32(events, "mli_mbb", hbb.mass)
 
@@ -318,8 +318,7 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_min_dr_llbb", min_dr_llbb)
 
     # hh system
-    hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
-
+    hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
     events = set_ak_column_f32(events, "mli_mbbllMET", (hll + hbb + events.MET[:]).mass)
     events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(hll + events.MET[:]))
     events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))

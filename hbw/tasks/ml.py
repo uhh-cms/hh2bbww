@@ -211,6 +211,10 @@ class MLPreTraining(
             return None
         return self.branch_data["fold"]
 
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def create_branch_map(self):
         return [
             DotDict({"fold": fold, "process": process})
@@ -341,6 +345,17 @@ class MLPreTraining(
                 # gather stats per ml process
                 stats = inputs["stats"][config_inst.name][dataset]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
+                proc_inst = config_inst.get_process(process)
+                sub_id = [
+                    proc_inst.id
+                    for proc_inst, _, _ in proc_inst.walk_processes(include_self=True)
+                ]
+
+                for id in list(stats["num_events_per_process"].keys()):
+                    if int(id) not in sub_id:
+                        for key in list(stats.keys()):
+                            stats[key].pop(id, None)
+
                 MergeMLStats.merge_counts(merged_stats[process], stats)
 
         return merged_stats
@@ -451,6 +466,10 @@ class MLEvaluationSingleFold(
         default="test",
         description="the data split to evaluate; must be one of 'train', 'val', 'test'; default: 'test'",
     )
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
 
     def create_branch_map(self):
         return [
@@ -593,6 +612,10 @@ class PlotMLResultsSingleFold(
     )
 
     data_splits = ("test", "val", "train")
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
 
     def create_branch_map(self):
         return {0: None}

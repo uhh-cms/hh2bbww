@@ -275,8 +275,10 @@ class MLDatasetLoader:
             raise Exception("cannot determine train weights without stats")
 
         combined_proc_inst = self.ml_model_inst.config_inst.get_process(self.process)
+        _, sub_id_proc = get_proc_mask(self._events, self.process, self.ml_model_inst.config_inst)
+        num_events = np.sum([self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id_proc])
         targeted_sum_of_weights_per_process = (
-            self.stats[self.process]["num_events"] / len(combined_proc_inst.x.ml_config.sub_processes)
+            num_events / len(combined_proc_inst.x.ml_config.sub_processes)
         )
         equal_train_weights = ak.full_like(self.weights, 1.)
         sub_class_factors = {}
@@ -354,7 +356,9 @@ class MLDatasetLoader:
                 if str(p_inst.id) in id_list
             ]
             if proc == self.process:
-                sum_abs_weights = np.sum([self.stats[self.process]["sum_abs_weights_per_process"][str(id)] for id in sub_id])
+                sum_abs_weights = np.sum([
+                    self.stats[self.process]["sum_abs_weights_per_process"][str(id)] for id in sub_id
+                ])
             num_events_per_proc = np.sum([self.stats[proc]["num_events_per_process"][str(id)] for id in sub_id])
             num_events_per_process[proc] = num_events_per_proc
 
