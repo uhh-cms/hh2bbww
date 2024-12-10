@@ -137,6 +137,8 @@ class BuildCampaignSummary(
                 dataset_inst.x.campaign = campaign_inst.name
                 hbw_campaign_inst.add_dataset(dataset_inst)
 
+        hbw_campaign_inst.x.campaigns = list(self.campaigns)
+
         return hbw_campaign_inst
 
     from hbw.util import timeit_multiple
