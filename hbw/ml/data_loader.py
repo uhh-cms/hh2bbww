@@ -115,8 +115,6 @@ class MLDatasetLoader:
     shuffle: bool = True
 
     input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights")
-    # input_arrays: tuple = ("features", "weights", _
-    #         _ "equal_train_weights", "xsec_train_weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
     def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
