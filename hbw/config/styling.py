@@ -82,7 +82,7 @@ default_process_colors = {
     "dy_m50toinf": color_palette["yellow"],
     "dy_m10to50": color_palette["brown"],
     "dy_m4to10": color_palette["darkgrey"],
-    "ttV": color_palette["brown"],
+    "ttv": color_palette["brown"],
     "vv": color_palette["blue"],
     "other": color_palette["grey"],
     "hh_ggf_hbb_htt": color_palette["grey"],
