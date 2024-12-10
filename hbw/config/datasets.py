@@ -83,6 +83,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_ht2500toinf_madgraph",
             ]),
             *config.x.if_era(run=3, values=[
+                # NLO samples
                 "dy_m50toinf_amcatnlo",
                 "dy_m10to50_amcatnlo",
                 "dy_m4to10_amcatnlo",
@@ -113,7 +114,13 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "zz_pythia",
             ]),
         ],
-        "ttv": [],  # empty for now
+        "ttv": [
+            "ttw_wlnu_amcatnlo",
+            "ttz_zll_m4to50_amcatnlo",
+            "ttz_zll_m50toinf_amcatnlo",
+            "ttz_znunu_amcatnlo",
+            "ttz_zqq_amcatnlo",
+        ],
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
