@@ -404,8 +404,8 @@ class MLPreTraining(
         n_events_per_fold = len(ml_dataset.train_weights)
         logger.info(f"Sum of traing weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
 
+        # check that equal weighting works as intended
         if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
-
             if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
                 for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
                     proc_mask, sub_id = get_proc_mask(events, sub_proc, self.ml_model_inst.config_inst)
@@ -711,8 +711,6 @@ class PlotMLResultsSingleFold(
             "val": MLProcessData(self.ml_model_inst, input_files, "val", self.ml_model_inst.processes, self.fold),
             "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
         })
-
-        # ML WEIGHTING data.train.equal_weights
 
         # create plots
         # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since

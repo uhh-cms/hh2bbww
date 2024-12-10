@@ -23,13 +23,14 @@ def get_proc_mask(
     events: ak.Array,
     proc: str | od.Process,
     config_inst: od.Config | None = None,
-) -> np.ndarray:
+) -> tuple(np.ndarray, list):
     """
-    Creates a list of the Ids of all subprocesses and teh corresponding mask for all events.
+    Creates the mask selecting events belonging to the process *proc* and a list of all ids belonging to this process.
 
-    :param events: Event array
-    :param config_inst: An instance of the Config, can be None if Porcess instance is given.
+    :param events: Event array    
     :param proc: Either string or process instance.
+    :param config_inst: An instance of the Config, can be None if Porcess instance is given.
+    :return process mask and the corresponding process ids
     """
     # get process instance
     if config_inst:
@@ -50,27 +51,6 @@ def get_proc_mask(
     # Create process mask
     proc_mask = np.isin(proc_id, sub_id)
     return proc_mask, sub_id
-
-
-def del_sub_proc_stats(
-    stats: dict,
-    proc: str,
-    sub_id: list,
-) -> np.ndarray:
-    """
-    Function deletes dict keys which are not part of the requested process
-
-    :param stats: Dictionaire containing ML stats for each process.
-    :param proc: String of the process.
-    :param sub_id: List of ids of sub processes that should be reatined (!).
-    """
-    id_list = list(stats[proc]["num_events_per_process"].keys())
-    item_list = list(stats[proc].keys())
-    for id in id_list:
-        if int(id) not in sub_id:
-            for item in item_list:
-                if "per_process" in item:
-                    del stats[proc][item][id]
 
 
 def input_features_sanity_checks(ml_model_inst: MLModel, input_features: list[str]):
@@ -134,9 +114,7 @@ class MLDatasetLoader:
         self._process = process
 
         proc_mask, _ = get_proc_mask(events, process, ml_model_inst.config_inst)
-        # TODO: die ohne _per_process müssen auch noch, still, per fold never make sense then anymore -> DISCUSS
         self._stats = stats
-        # del_sub_proc_stats(process, sub_id)
         self._events = events[proc_mask]
 
     def __repr__(self):
@@ -323,9 +301,6 @@ class MLDatasetLoader:
             train_weights = self.get_equal_train_weights()
         else:
             train_weights = self.get_xsec_train_weights()
-        #     self._train_weights = self.get_equal_train_weights()
-        # else:
-        #     self._train_weights = self.get_xsec_train_weights()
 
         self._train_weights = ak.to_numpy(train_weights).astype(np.float32)
 
@@ -360,8 +335,6 @@ class MLDatasetLoader:
             num_events_per_proc = np.sum([self.stats[proc]["num_events_per_process"][str(id)] for id in sub_id])
             num_events_per_process[proc] = num_events_per_proc
 
-        # sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
-        # num_events_per_process = {proc: self.stats[proc]["num_events"] for proc in processes}
         validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
         self._validation_weights = ak.to_numpy(validation_weights).astype(np.float32)
 
