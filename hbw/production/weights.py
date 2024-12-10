@@ -5,6 +5,7 @@ Column production methods related to generic event weights.
 """
 
 import functools
+import law
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
@@ -25,6 +26,7 @@ from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weigh
 from hbw.production.gen_v import gen_v_boson, vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
+from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.util import has_tag
 
 
@@ -224,11 +226,11 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
     when stitching our signal samples, but we want to calculate the BRs ourselved for other
     types of sample stitching (e.g. DY).
     """
-    # NOTE: I would like to produce the unstitched normalization weights for cross checks,
-    # but for DY, this is not possible at the moment, since we assign processes (hf/lf) for which no
-    # xsecs are available
-    # events = self[normalization_weights](events, **kwargs)
     events = self[self.norm_weights_producer](events, **kwargs)
+
+    # very simple Producer that creates normalization weight without any stitching
+    # (can only be used when there is a one-to-one mapping between datasets and processes)
+    events = self[dataset_normalization_weight](events, **kwargs)
     return events
 
 
@@ -244,8 +246,8 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     self.norm_weights_producer.weight_name = "stitched_normalization_weight"
 
-    self.uses |= {self.norm_weights_producer}
-    self.produces |= {self.norm_weights_producer}
+    self.uses |= {self.norm_weights_producer, dataset_normalization_weight}
+    self.produces |= {self.norm_weights_producer, dataset_normalization_weight}
 
 
 @producer(
@@ -262,7 +264,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=1,
+    version=law.config.get_expanded("analysis", "event_weights_version", 1),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
