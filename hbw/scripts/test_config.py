@@ -9,7 +9,6 @@ from columnflow.tasks.framework.base import AnalysisTask
 
 default_analysis = law.config.get_expanded("analysis", "default_analysis")
 default_config = law.config.get_expanded("analysis", "default_config")
-default_config = "c22uhhpost"
 analysis_inst = ana = AnalysisTask.get_analysis_inst(default_analysis)
 config_inst = cfg = ana.get_config(default_config)
 

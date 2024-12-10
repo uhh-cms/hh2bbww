@@ -280,33 +280,33 @@ def filter_unchanged_keys(d1: dict, d2: dict):
     return filtered if filtered else None
 
 
-def dict_diff_filtered(dict1: dict, dict2: dict):
+def dict_diff_filtered(old_dict: dict, new_dict: dict):
     """Return the differences between two dictionaries with nested filtering of unchanged keys."""
     diff = {}
 
     # Check keys present in either dict
-    all_keys = set(dict1.keys()).union(set(dict2.keys()))
+    all_keys = set(old_dict.keys()).union(set(new_dict.keys()))
 
     for key in all_keys:
-        if key in dict1 and key in dict2:
-            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+        if key in old_dict and key in new_dict:
+            if isinstance(old_dict[key], dict) and isinstance(new_dict[key], dict):
                 # Recur for nested dictionaries and get filtered diff
-                nested_diff = filter_unchanged_keys(dict1[key], dict2[key])
+                nested_diff = filter_unchanged_keys(old_dict[key], new_dict[key])
                 if nested_diff:
                     diff[key] = nested_diff
-            elif dict1[key] != dict2[key]:
-                diff[key] = {"old": dict1[key], "new": dict2[key]}
-        elif key in dict1:
-            diff[key] = {"old": dict1[key], "new": None}
+            elif old_dict[key] != new_dict[key]:
+                diff[key] = {"old": old_dict[key], "new": new_dict[key]}
+        elif key in old_dict:
+            diff[key] = {"old": old_dict[key], "new": None}
         else:
-            diff[key] = {"old": None, "new": dict2[key]}
+            diff[key] = {"old": None, "new": new_dict[key]}
 
     return diff
 
 
-def gather_dict_diff(dict1: dict, dict2: dict) -> str:
+def gather_dict_diff(old_dict: dict, new_dict: dict) -> str:
     """Gather the differences between two dictionaries and return them as a formatted string."""
-    diff = filter_unchanged_keys(dict1, dict2)
+    diff = filter_unchanged_keys(old_dict, new_dict)
     lines = []
 
     if not diff:

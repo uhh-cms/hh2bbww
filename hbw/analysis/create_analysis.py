@@ -111,8 +111,7 @@ def create_hbw_analysis(
                     )
                 else:
                     logger.warning(
-                        f"Campaign used for {config_name} has been changed since last initialization."
-                        "Difference: \n",
+                        f"Campaign used for {config_name} is being reinitialized: \n",
                     )
                     cpn_task.run()
 
