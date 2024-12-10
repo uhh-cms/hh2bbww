@@ -273,6 +273,7 @@ class MLClassifierBase(MLModel):
         columns = {"mli_*"}
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
+        columns.add("process_id")
         columns.add("normalization_weight")
         columns.add("stitched_normalization_weight")
         columns.add("event_weight")

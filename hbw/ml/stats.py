@@ -27,6 +27,22 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 logger = law.logger.get_logger(__name__)
 
 
+def del_sub_proc_stats(
+    stats: dict,
+    proc: str,
+) -> np.ndarray:
+    """
+    Function deletes dict keys which are not part of the requested process
+
+    :param stats: Dictionaire containing ML stats for each process.
+    :param proc: String of the process.
+    :param sub_id: List of ids of sub processes that should be reatined (!).
+    """
+    item_list = list(stats.weight_map.keys())
+    for item in item_list:
+        stats[item].pop()
+
+
 @producer(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
     produces={IF_MC("event_weight")},
@@ -78,6 +94,7 @@ def ml_preparation(
         "fold": {
             "values": events.fold_indices,
             "mask_fn": (lambda v: events.fold_indices == v),
+            "combinations_only": True,
         },
     }
 
@@ -92,6 +109,12 @@ def ml_preparation(
         group_combinations=group_combinations,
         **kwargs,
     )
+
+    key_list = list(weight_map.keys())
+    for key in key_list:
+        stats.pop(key, None)
+        # TODO: pop 'num_fold_events'
+
     return events
 
 
