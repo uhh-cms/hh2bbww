@@ -110,10 +110,11 @@ def create_hbw_analysis(
                         f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
                     )
                 else:
-                    logger.warning(
-                        f"Campaign used for {config_name} is being reinitialized: \n",
+                    raise ValueError(
+                        f"Campaign used for {config_name} is not yet initialized; to initialize, run: \n",
+                        f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
                     )
-                    cpn_task.run()
+                    # cpn_task.run()
 
                 hbw_campaign_inst = cpn_task.output()["hbw_campaign_inst"].load(formatter="pickle")
                 return add_config(
