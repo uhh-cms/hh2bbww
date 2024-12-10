@@ -146,9 +146,9 @@ class BuildCampaignSummary(
         output = self.output()
 
         # cross check if the dataset summary did change
-        backup_dataset_summary = self.target("backup_dataset_summary.yaml")
-        if backup_dataset_summary.exists():
-            backup_dataset_summary = backup_dataset_summary.load(formatter="yaml")
+        backup_target = self.target("backup_dataset_summary.yaml")
+        if backup_target.exists():
+            backup_dataset_summary = backup_target.load(formatter="yaml")
             if backup_dataset_summary != self.dataset_summary:
                 from hbw.util import gather_dict_diff
                 logger.warning(
@@ -157,7 +157,7 @@ class BuildCampaignSummary(
                 )
                 if self.recreate_backup_summary:
                     logger.warning("Recreating backup dataset summary")
-                    backup_dataset_summary.dump(self.dataset_summary, formatter="yaml")
+                    backup_target.dump(self.dataset_summary, formatter="yaml")
                 else:
                     logger.warning(
                         "Run the following command to recreate the backup dataset summary:\n"
@@ -165,7 +165,7 @@ class BuildCampaignSummary(
                     )
         else:
             logger.warning("No backup dataset summary found, creating one now")
-            backup_dataset_summary.dump(self.dataset_summary, formatter="yaml")
+            backup_target.dump(self.dataset_summary, formatter="yaml")
 
         output["dataset_summary"].dump(self.dataset_summary, formatter="yaml")
         output["campaign_summary"].dump(self.campaign_summary, formatter="yaml")
