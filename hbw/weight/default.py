@@ -139,7 +139,7 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
@@ -155,7 +155,7 @@ default_weight_producer = base.derive("default", cls_dict={"weight_columns": def
 base.derive("unstitched", cls_dict={"weight_columns": {**default_correction_weights, "normalization_weight": []}})
 
 weight_columns_execpt_btag = default_weight_columns.copy()
-weight_columns_execpt_btag.pop("normalized_ht_njet_btag_weight")
+weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
