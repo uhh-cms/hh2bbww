@@ -4,6 +4,7 @@ import law
 
 from columnflow.inference import InferenceModel
 from columnflow.tasks.framework.base import RESOLVE_DEFAULT
+from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
@@ -134,9 +135,10 @@ def set_config_defaults_and_groups(config_inst):
         "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl1": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
+        "dl1": [default_signal_process, "tt", "dy", "st", "ttv", "vv", "w_lnu", "h"],
+        "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
+        "dl3": [default_signal_process, "tt", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
+        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],
         "dlmajor": [default_signal_process, "tt", "dy", "st"],
         "2much": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
         "2ech": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
@@ -186,7 +188,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl2", "dl1", "dl", "much", "2much", "ech", "2ech", "emuch"):
+    for group in ("dl3", "dl2", "dl1", "dl", "much", "2much", "ech", "2ech", "emuch"):
         # thanks to double counting removal, we can (and should) now use all datasets in each channel
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
@@ -299,7 +301,14 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "dl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
+        "dl": bracket_expansion([
+            "n_{jet,bjet,electron,muon,fatjet,hbbjet}",
+            "lepton{0,1}_{pt,eta,phi}",
+            "met_{pt,phi}",
+            "jet{0,1,2,3}_{pt,eta,phi,mass,btagPNetB}",
+            "bjet{0,1}_{pt,eta,phi,mass,btagPNetB}",
+            "ht", "lt", "mll", "ptll",
+        ]),
         "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
         "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],
         "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....

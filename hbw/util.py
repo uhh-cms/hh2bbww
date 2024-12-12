@@ -6,6 +6,8 @@ Collection of helpers
 
 from __future__ import annotations
 
+import re
+import itertools
 import time
 from typing import Hashable, Iterable, Callable
 from functools import wraps, reduce
@@ -376,6 +378,34 @@ def four_vec(
     outp = outp.difference({"MET.eta", "MET.mass"})
 
     return outp
+
+
+def bracket_expansion(inputs: list):
+    """
+    Expands a list of strings with bracket notation into all possible combinations.
+
+    Example:
+    bracket_expansion(["{Jet,Muon}.{pt,eta}", "{Electron,Photon}.{phi}"]) -->
+    {"Jet.pt", "Jet.eta", "Muon.pt", "Muon.eta", "Electron.phi", "Photon.phi"}
+
+    NOTE: similar implementation might be somewhere in columnflow.
+    """
+    pattern = re.compile(r'\{([^{}]+)\}')
+    outp = set()
+
+    for inp in inputs:
+        # Find all bracketed groups and extract options by splitting on ','
+        matches = pattern.findall(inp)
+        options = [match.split(',') for match in matches]
+
+        # Replace each bracketed group with a placeholder '{}'
+        template = pattern.sub('{}', inp)
+
+        # Generate all possible combinations and add to the output set
+        combinations = itertools.product(*options)
+        outp.update(template.format(*combo) for combo in combinations)
+
+    return sorted(outp)
 
 
 def has_four_vec(
