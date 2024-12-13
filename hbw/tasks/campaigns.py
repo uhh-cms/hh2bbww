@@ -115,7 +115,7 @@ class BuildCampaignSummary(
         return dict(dataset_summary)
 
     @cached_property
-    def campaign_summary(self,):
+    def campaign_summary(self):
         campaign_summary = {
             campaign.name: {} for campaign in self.campaign_insts
         }

@@ -390,16 +390,16 @@ def bracket_expansion(inputs: list):
 
     NOTE: similar implementation might be somewhere in columnflow.
     """
-    pattern = re.compile(r'\{([^{}]+)\}')
+    pattern = re.compile(r"\{([^{}]+)\}")
     outp = set()
 
     for inp in inputs:
-        # Find all bracketed groups and extract options by splitting on ','
+        # Find all bracketed groups and extract options by splitting on ","
         matches = pattern.findall(inp)
-        options = [match.split(',') for match in matches]
+        options = [match.split(",") for match in matches]
 
-        # Replace each bracketed group with a placeholder '{}'
-        template = pattern.sub('{}', inp)
+        # Replace each bracketed group with a placeholder "{}"
+        template = pattern.sub("{}", inp)
 
         # Generate all possible combinations and add to the output set
         combinations = itertools.product(*options)

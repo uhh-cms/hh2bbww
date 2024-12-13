@@ -216,7 +216,7 @@ class MLClassifierBase(MLModel):
                             "rebin_config": {
                                 "processes": [proc],
                                 "n_bins": 4,
-                            }
+                            },
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
 
