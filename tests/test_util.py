@@ -53,15 +53,15 @@ class TestDictDiff(unittest.TestCase):
             "name": "Alice",
             "skills": {
                 "python": "intermediate",
-                "sql": "beginner"
-            }
+                "sql": "beginner",
+            },
         }
         dict2 = {
             "name": "Alice",
             "skills": {
                 "python": "advanced",
-                "sql": "beginner"
-            }
+                "sql": "beginner",
+            },
         }
         result = gather_dict_diff(dict1, dict2)
         expected_output = (
@@ -76,15 +76,15 @@ class TestDictDiff(unittest.TestCase):
         dict1 = {
             "name": "Alice",
             "skills": {
-                "python": "intermediate"
-            }
+                "python": "intermediate",
+            },
         }
         dict2 = {
             "name": "Alice",
             "skills": {
                 "python": "intermediate",
-                "docker": "beginner"
-            }
+                "docker": "beginner",
+            },
         }
         result = gather_dict_diff(dict1, dict2)
         expected_output = (
