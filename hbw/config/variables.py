@@ -670,7 +670,7 @@ def add_variables(config: od.Config) -> None:
     for i in range(2):
         config.add_variable(
             name=f"lepton{i}_pt",
-            expression="Lepton[:, i].pt",
+            expression=f"Lepton[:, {i}].pt",
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
@@ -680,7 +680,7 @@ def add_variables(config: od.Config) -> None:
         )
         config.add_variable(
             name=f"lepton{i}_eta",
-            expression="Lepton[:, i].eta",
+            expression=f"Lepton[:, {i}].eta",
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
@@ -690,7 +690,7 @@ def add_variables(config: od.Config) -> None:
         )
         config.add_variable(
             name=f"lepton{i}_phi",
-            expression="Lepton[:, i].phi",
+            expression=f"Lepton[:, {i}].phi",
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
@@ -700,7 +700,7 @@ def add_variables(config: od.Config) -> None:
         )
         config.add_variable(
             name=f"lepton{i}_mass",
-            expression="Lepton[:, i].mass",
+            expression=f"Lepton[:, {i}].mass",
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
