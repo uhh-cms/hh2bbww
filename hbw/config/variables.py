@@ -541,7 +541,7 @@ def add_variables(config: od.Config) -> None:
         )
         if config.x.run == 2:
             config.add_variable(
-                name=f"jet{i}_btagDeepFlavB",
+                name=f"jet{i}_btagDeepFlavB".lower(),
                 expression=f"Jet.btagDeepFlavB[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 1),
@@ -549,7 +549,7 @@ def add_variables(config: od.Config) -> None:
             )
         if config.x.run == 3:
             config.add_variable(
-                name=f"jet{i}_btagPNetB",
+                name=f"jet{i}_btagPNetB".lower(),
                 expression=f"Jet.btagPNetB[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 1),
@@ -590,7 +590,7 @@ def add_variables(config: od.Config) -> None:
             )
             if config.x.run == 3:
                 config.add_variable(
-                    name=f"{obj}{i}_btagPNetB",
+                    name=f"{obj}{i}_btagPNetB".lower(),
                     expression=f"{obj}.btagPNetB[:,{i}]",
                     null_value=EMPTY_FLOAT,
                     binning=(40, 0, 1),
@@ -652,14 +652,14 @@ def add_variables(config: od.Config) -> None:
             x_title=r"FatJet %i $\tau_2$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i}_btagHbb",
+            name=f"fatjet{i}_btagHbb".lower(),
             expression=f"FatJet.btagHbb[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
             x_title=r"FatJet %i btagHbb" % i,
         )
         config.add_variable(
-            name=f"fatjet{i}_deepTagMD_HbbvsQCD",
+            name=f"fatjet{i}_deepTagMD_HbbvsQCD".lower(),
             expression=f"FatJet.deepTagMD_HbbvsQCD[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),

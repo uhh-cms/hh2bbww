@@ -37,7 +37,8 @@ def jj_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "deltaR_jj", deltaR_jj)
 
     # fill none values
-    for col in self.produces:
+    for route in self.produced_columns:
+        col = route.string_column
         events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
     return events
 
@@ -62,7 +63,8 @@ def bb_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "m_bb_combined", m_bb_combined)
 
     # fill none values
-    for col in self.produces:
+    for route in self.produced_columns:
+        col = route.string_column
         events = set_ak_column_f32(events, col, ak.fill_none(events[col], EMPTY_FLOAT))
 
     return events
