@@ -463,13 +463,56 @@ def timeit_multiple(func):
     def timeit_wrapper(*args, **kwargs):
         func.total_calls = getattr(func, "total_calls", 0) + 1
         _repr = func.__name__
+
         if len(args) >= 1 and hasattr(args[0], "__name__"):
+            # some classmethod
             _repr = f"{args[0].__name__}.{_repr}"
 
-        if len(args) >= 3 and isinstance(args[2], dict):
+            if len(args) >= 2 and isinstance(args[1], dict):
+                params = args[1]
+            elif len(args) >= 3 and isinstance(args[2], dict):
+                params = args[2]
+            else:
+                params = {}
+
             for param in ("branch", "dataset"):
-                if param in args[2]:
-                    _repr = f"{_repr} ({param} {args[2][param]})"
+                if param in params:
+                    _repr = f"{_repr} ({param} {params[param]})"
+
+        elif len(args) >= 1 and hasattr(args[0], "cls_name"):
+            # probably a CSP function
+            inst = args[0]
+            params = {}
+            _repr = f"{inst.cls_name}.{_repr}"
+            if hasattr(inst, "config_inst"):
+                _repr = f"{_repr} ({inst.config_inst.name})"
+            if hasattr(inst, "dataset_inst"):
+                _repr = f"{_repr} ({inst.dataset_inst.name})"
+            if hasattr(inst, "shift_inst"):
+                _repr = f"{_repr} ({inst.shift_inst.name})"
+
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        func.total_time = getattr(func, "total_time", 0) + total_time
+        log_func(f"{_repr} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
+        return result
+
+    return timeit_wrapper
+
+
+def timeit_multiple_plain(func):
+    """ Wrapper to measure the number of execution calls and the added execution time of a function """
+    log_method = "info"
+    log_func = getattr(_logger, log_method)
+
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        func.total_calls = getattr(func, "total_calls", 0) + 1
+        _repr = func.__name__
+        if len(args) >= 1 and hasattr(args[0], "__name__"):
+            _repr = f"{args[0].__name__}.{_repr}"
 
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
