@@ -6,7 +6,7 @@ Event weight producer.
 
 import law
 
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, InsertableDict
 from columnflow.weight import WeightProducer, weight_producer
 from columnflow.config_util import get_shifts_from_sources
 from columnflow.columnar_util import Route
@@ -59,46 +59,65 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 
     # build the full event weight
     weight = ak.Array(np.ones(len(events), dtype=np.float32))
-    for column in self.weight_columns.keys():
+    for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
 
     return events, weight
 
 
+@base.setup
+def base_setup(
+    self: WeightProducer,
+    reqs: dict,
+    inputs: dict,
+    reader_targets: InsertableDict,
+) -> None:
+    logger.info(
+        f"WeightProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
+        f"{', '.join(self.weight_columns.keys())}",
+    )
+
+
 @base.init
 def base_init(self: WeightProducer) -> None:
     # NOTE: this might be called multiple times, might be quite inefficient
-    if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
+    # if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
+    #     return
+
+    if not getattr(self, "config_inst"):
         return
 
-    if self.dataset_inst.is_data:
+    dataset_inst = getattr(self, "dataset_inst", None)
+
+    if dataset_inst and dataset_inst.is_data:
         return
 
     year = self.config_inst.campaign.x.year
 
     if not self.weight_columns:
         raise Exception("weight_columns not set")
+    self.local_weight_columns = self.weight_columns.copy()
 
-    if self.dataset_inst.has_tag("skip_scale"):
+    if dataset_inst and dataset_inst.has_tag("skip_scale"):
         # remove dependency towards mur/muf weights
         for column in [
             "normalized_mur_weight", "normalized_muf_weight", "normalized_murmuf_envelope_weight",
             "mur_weight", "muf_weight", "murmuf_envelope_weight",
         ]:
-            self.weight_columns.pop(column, None)
+            self.local_weight_columns.pop(column, None)
 
-    if self.dataset_inst.has_tag("skip_pdf"):
+    if dataset_inst and dataset_inst.has_tag("skip_pdf"):
         # remove dependency towards pdf weights
         for column in ["pdf_weight", "normalized_pdf_weight"]:
-            self.weight_columns.pop(column, None)
+            self.local_weight_columns.pop(column, None)
 
-    if not self.dataset_inst.has_tag("is_ttbar"):
+    if dataset_inst and not dataset_inst.has_tag("is_ttbar"):
         # remove dependency towards top pt weights
-        self.weight_columns.pop("top_pt_weight", None)
+        self.local_weight_columns.pop("top_pt_weight", None)
 
-    if not self.dataset_inst.has_tag("is_v_jets"):
+    if dataset_inst and not dataset_inst.has_tag("is_v_jets"):
         # remove dependency towards vjets weights
-        self.weight_columns.pop("vjets_weight", None)
+        self.local_weight_columns.pop("vjets_weight", None)
 
     self.shifts = set()
 
@@ -106,14 +125,14 @@ def base_init(self: WeightProducer) -> None:
     # TODO: we should do this somewhere centrally
     btag_sf_jec_sources = (
         (set(self.config_inst.x.btag_sf_jec_sources) | {"Total"}) &
-        set(self.config_inst.x.jec["uncertainty_sources"])
+        set(self.config_inst.x.jec.Jet["uncertainty_sources"])
     )
     self.shifts |= set(get_shifts_from_sources(
         self.config_inst,
         *[f"jec_{jec_source}" for jec_source in btag_sf_jec_sources],
     ))
 
-    for weight_column, shift_sources in self.weight_columns.items():
+    for weight_column, shift_sources in self.local_weight_columns.items():
         shift_sources = law.util.make_list(shift_sources)
         shift_sources = [s.format(year=year) for s in shift_sources]
         shifts = get_shifts_from_sources(self.config_inst, *shift_sources)
@@ -129,7 +148,7 @@ def base_init(self: WeightProducer) -> None:
             self.shifts |= set(shifts)
 
     # store column names referring to weights to multiply
-    self.uses |= self.weight_columns.keys()
+    self.uses |= self.local_weight_columns.keys()
 
 
 btag_uncs = [
