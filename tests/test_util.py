@@ -8,7 +8,7 @@ import unittest
 
 from columnflow.util import maybe_import
 
-from hbw.util import build_param_product, round_sig, dict_diff, four_vec, call_once_on_config, gather_dict_diff
+from hbw.util import build_param_product, round_sig, dict_diff, four_vec, call_once_on_config
 
 import order as od
 
@@ -16,119 +16,7 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-class TestDictDiff(unittest.TestCase):
-    def test_no_difference(self):
-        dict1 = {"name": "Alice", "age": 25}
-        dict2 = {"name": "Alice", "age": 25}
-        result = gather_dict_diff(dict1, dict2)
-        self.assertEqual(result, "✅ No differences found.")
-
-    def test_simple_modification(self):
-        dict1 = {"name": "Alice", "age": 25}
-        dict2 = {"name": "Alice", "age": 26}
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = (
-            "🔄 Modified: age:\n"
-            "    - Old: 25\n"
-            "    - New: 26"
-        )
-        self.assertEqual(result, expected_output)
-
-    def test_addition(self):
-        dict1 = {"name": "Alice"}
-        dict2 = {"name": "Alice", "hobby": "cycling"}
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = "🔹 Added: hobby: cycling"
-        self.assertEqual(result, expected_output)
-
-    def test_removal(self):
-        dict1 = {"name": "Alice", "hobby": "cycling"}
-        dict2 = {"name": "Alice"}
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = "🔻 Removed: hobby: cycling"
-        self.assertEqual(result, expected_output)
-
-    def test_nested_modification(self):
-        dict1 = {
-            "name": "Alice",
-            "skills": {
-                "python": "intermediate",
-                "sql": "beginner",
-            },
-        }
-        dict2 = {
-            "name": "Alice",
-            "skills": {
-                "python": "advanced",
-                "sql": "beginner",
-            },
-        }
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = (
-            "🔄 Modified: skills:\n"
-            "    🔄 Modified: python:\n"
-            "        - Old: intermediate\n"
-            "        - New: advanced"
-        )
-        self.assertEqual(result, expected_output)
-
-    def test_nested_addition(self):
-        dict1 = {
-            "name": "Alice",
-            "skills": {
-                "python": "intermediate",
-            },
-        }
-        dict2 = {
-            "name": "Alice",
-            "skills": {
-                "python": "intermediate",
-                "docker": "beginner",
-            },
-        }
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = (
-            "🔄 Modified: skills:\n"
-            "    🔹 Added: docker: beginner"
-        )
-        self.assertEqual(result, expected_output)
-
-    def test_complex_diff(self):
-        dict1 = {
-            "name": "Alice",
-            "age": 25,
-            "skills": {
-                "python": "intermediate",
-                "sql": "beginner",
-            },
-        }
-        dict2 = {
-            "name": "Alice",
-            "age": 26,
-            "skills": {
-                "python": "advanced",
-                "sql": "beginner",
-                "docker": "beginner",
-            },
-            "hobby": "cycling",
-        }
-        result = gather_dict_diff(dict1, dict2)
-        expected_output = (
-            "🔄 Modified: skills:\n"
-            "    🔹 Added: docker: beginner\n"
-            "    🔄 Modified: python:\n"
-            "        - Old: intermediate\n"
-            "        - New: advanced\n"
-            "🔹 Added: hobby: cycling"
-            "🔄 Modified: age:\n"
-            "    - Old: 25\n"
-            "    - New: 26\n"
-        )
-        self.assertEqual(result, expected_output)
-
-
 class HbwUtilTest(
-    TestDictDiff,
     unittest.TestCase,
 ):
 
