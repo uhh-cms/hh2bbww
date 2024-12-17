@@ -114,15 +114,15 @@ class TestDictDiff(unittest.TestCase):
         }
         result = gather_dict_diff(dict1, dict2)
         expected_output = (
-            "🔄 Modified: age:\n"
-            "    - Old: 25\n"
-            "    - New: 26\n"
             "🔄 Modified: skills:\n"
+            "    🔹 Added: docker: beginner\n"
             "    🔄 Modified: python:\n"
             "        - Old: intermediate\n"
             "        - New: advanced\n"
-            "    🔹 Added: docker: beginner\n"
             "🔹 Added: hobby: cycling"
+            "🔄 Modified: age:\n"
+            "    - Old: 25\n"
+            "    - New: 26\n"
         )
         self.assertEqual(result, expected_output)
 
