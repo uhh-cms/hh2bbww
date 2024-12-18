@@ -75,6 +75,8 @@ def create_hbw_analysis(
     analysis_inst.x.default_weight_producer = "default"
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
     analysis_inst.x.default_ml_model = default_ml_model
+    analysis_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
+    analysis_inst.x.default_categories = ["incl", "sr", "ttcr", "dycr"]
 
     #
     # define configs

@@ -196,7 +196,7 @@ def add_config(
         jerc_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         jet_type = "AK4PFPuppi"
 
-    cfg.x.jec = DotDict.wrap({
+    cfg.x.jec = DotDict.wrap({"Jet": {
         "campaign": jerc_campaign,
         "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
         "jet_type": jet_type,
@@ -260,15 +260,15 @@ def add_config(
             "CorrelationGroupFlavor",
             "CorrelationGroupUncorrelated",
         ],
-    })
+    }})
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
-    cfg.x.jer = DotDict.wrap({
+    cfg.x.jer = DotDict.wrap({"Jet": {
         "campaign": jerc_campaign,
         "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
         "jet_type": jet_type,
-    })
+    }})
 
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
@@ -524,7 +524,7 @@ def add_config(
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
 
-    for jec_source in cfg.x.jec["uncertainty_sources"]:
+    for jec_source in cfg.x.jec.Jet["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
         cfg.add_shift(
             name=f"jec_{jec_source}_up",

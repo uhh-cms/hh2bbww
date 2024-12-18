@@ -119,8 +119,8 @@ def set_config_defaults_and_groups(config_inst):
     # # config_inst.x.default_weight_producer = "btag_not_normalized"
     # config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
-    config_inst.x.default_categories = ["incl"]
-    config_inst.x.default_variables = ["jet1_pt"]
+    # config_inst.x.default_categories = ["incl"]
+    # config_inst.x.default_variables = ["jet1_pt"]
 
     #
     # Groups
