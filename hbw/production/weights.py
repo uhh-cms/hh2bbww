@@ -18,7 +18,7 @@ from columnflow.production.normalization import (
     stitched_normalization_weights_brs_from_processes,
 )
 from columnflow.production.cms.electron import electron_weights
-from columnflow.production.cms.muon import muon_weights
+from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
@@ -123,15 +123,15 @@ normalized_pu_weights = normalized_weight_factory(
 
 muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
     "weight_name": "muon_id_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_iso_sf_names),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_iso_sf_names)),
 })
 muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_id_sf_names),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
 })
 muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
     "weight_name": "muon_trigger_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_trigger_sf_names),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_trigger_sf_names)),
 })
 
 
