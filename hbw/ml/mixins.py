@@ -55,7 +55,7 @@ class DenseModelMixin(object):
         import tensorflow.keras as keras
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
-        from hbw.ml.tf_util import cumulated_crossentropy
+        # from hbw.ml.tf_util import cumulated_crossentropy, categorical_crossentropy
 
         n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
@@ -97,16 +97,24 @@ class DenseModelMixin(object):
             epsilon=1e-6, amsgrad=False,
         )
 
-        model.compile(
-            loss=cumulated_crossentropy,
-            # NOTE: we'd preferrably use the Keras CCE, but it does not work when assigning one event
-            #       to multiple classes (target with multiple entries != 0)
-            # loss ="categorical_crossentropy",
-            # loss=tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE),
-            optimizer=optimizer,
-            metrics=["categorical_accuracy"],
-            weighted_metrics=["categorical_accuracy"],
-        )
+        if self.negative_weights == "ignore":
+            model.compile(
+                # NOTE: we'd preferrably use the Keras CCE, but it does not work when assigning one event
+                #       to multiple classes (target with multiple entries != 0)
+                loss="categorical_crossentropy",
+                optimizer=optimizer,
+                metrics=["categorical_accuracy"],
+                weighted_metrics=["categorical_accuracy"],
+            )
+        else:
+            model.compile(
+                # NOTE: we'd preferrably use the Keras CCE, but it does not work when assigning one event
+                #       to multiple classes (target with multiple entries != 0)
+                loss="cumulated_crossentropy",
+                optimizer=optimizer,
+                metrics=["categorical_accuracy"],
+                weighted_metrics=["categorical_accuracy"],
+            )
 
         return model
 

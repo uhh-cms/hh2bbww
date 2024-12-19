@@ -119,7 +119,14 @@ class MLDatasetLoader:
     #         _ "equal_train_weights", "xsec_train_weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
-    def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
+    def __init__(
+        self,
+        ml_model_inst: MLModel,
+        process: "str",
+        events: ak.Array,
+        stats: dict | None = None,
+        skip_mask=False,
+    ):
         """
         Initializes the MLDatasetLoader with the given parameters.
 
@@ -136,10 +143,13 @@ class MLDatasetLoader:
         self._process = process
 
         proc_mask, _ = get_proc_mask(events, process, ml_model_inst.config_inst)
-        # TODO: die ohne _per_process müssen auch noch, still, per fold never make sense then anymore -> DISCUSS
         self._stats = stats
         # del_sub_proc_stats(process, sub_id)
-        self._events = events[proc_mask]
+        if not skip_mask:
+            self._events = events[proc_mask]
+            self._events = events[events.event_weight >= 0.0]
+        else:
+            self._events = events
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
@@ -718,4 +728,4 @@ class MLProcessData:
                 raise Exception("No trained model found in the MLModel instance. Cannot calculate prediction.")
             self._prediction = predict_numpy_on_batch(self._ml_model_inst.trained_model, self.features)
 
-        return self._prediction
+        return self._prediction  # TODO ML best model

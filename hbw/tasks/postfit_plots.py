@@ -35,12 +35,13 @@ def load_hists_uproot(fit_diagnostics_path):
     """ Helper to load histograms from a fit_diagnostics file """
     # prepare output dict
     hists = DotDict()
+    __import__("IPython").embed()
     with uproot.open(fit_diagnostics_path) as tfile:
         keys = [key.split("/") for key in tfile.keys()]
         for key in keys:
             if len(key) != 3:
                 continue
-
+            __import__("IPython").embed()
             # get the histogram from the tfile
             h_in = tfile["/".join(key)]
 
@@ -166,6 +167,8 @@ class PlotPostfitShapes(
             fit_type = "prefit"
         else:
             fit_type = "fit_s"
+
+        __import__("IPython").embed()
 
         all_hists = all_hists[f"shapes_{fit_type}"]
 

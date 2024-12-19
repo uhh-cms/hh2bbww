@@ -166,6 +166,11 @@ def _cumulated_crossenropy_from_logits(y_true, y_pred, axis):
 
 
 @tf.function
+def categorical_crossentropy():
+    return tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+
+
+@tf.function
 def cumulated_crossentropy(y_true, y_pred, from_logits=False, axis=-1):
     if from_logits:
         return _cumulated_crossenropy_from_logits(y_true, y_pred, axis=axis)

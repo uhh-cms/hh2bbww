@@ -398,17 +398,24 @@ class MLPreTraining(
         outputs["stats"].dump(stats, formatter="json")
 
         # initialize the DatasetLoader
-        ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
-        # NOTE: Almost closure
+        if self.ml_model_inst.negative_weights == "ignore":
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+            logger.info(
+                f"{self.ml_model_inst.negative_weights} method chosen to hanlde negative weights:",
+                " All negative weights will be removed from training.",
+            )
+        else:
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats, skip_mask=True)
+
         sum_train_weights = np.sum(ml_dataset.train_weights)
         n_events_per_fold = len(ml_dataset.train_weights)
-        logger.info(f"Sum of traing weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
+        logger.info(f"Sum of training weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
 
         if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
 
             if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
                 for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
-                    proc_mask, sub_id = get_proc_mask(events, sub_proc, self.ml_model_inst.config_inst)
+                    proc_mask, _ = get_proc_mask(ml_dataset._events, sub_proc, self.ml_model_inst.config_inst)
                     xcheck_weight_sum = np.sum(ml_dataset.train_weights[proc_mask])
                     xcheck_n_events = len(ml_dataset.train_weights[proc_mask])
                     logger.info(

@@ -128,6 +128,28 @@ def set_config_defaults_and_groups(config_inst):
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
+        "ml_study": [
+            "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
+            "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+            "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
+            "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
+            "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+            "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
+            "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+            "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+            "hh_ggf_hbb_hww2l2nu_kl0_kt1",
+            "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+            "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+            "hh_ggf_hbb_hww2l2nu_kl5_kt1",
+            "st",
+            "tt",
+            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "w_lnu",
+            "vv",
+            "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+        ],
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
@@ -273,6 +295,10 @@ def set_config_defaults_and_groups(config_inst):
         ),
         # Dilepton
         "SR_dl": (
+            "sr__1b__ml_signal_ggf", "sr__1b__ml_signal_ggf2", "sr__2b__ml_signal_ggf", "sr__2b__ml_signal_ggf2",
+            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
+            "sr__1b__ml_signal_ggf4", "sr__1b__ml_signal_ggf5", "sr__2b__ml_signal_ggf4", "sr__2b__ml_signal_ggf5",
+            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
             "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -442,4 +468,5 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_resolved": is_signal_sm,
         "vbfSR_dl_boosted": is_signal_sm,
         "BR_dl": is_background,
+
     }
