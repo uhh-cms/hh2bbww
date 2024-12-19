@@ -25,6 +25,7 @@ campaign_map = {
     "c22pre": {
         "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
         "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
+        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
     },
     "c22post": {
         "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
@@ -163,7 +164,7 @@ class BuildCampaignSummary(
                 else:
                     logger.warning(
                         "Run the following command to recreate the backup dataset summary:\n"
-                        f"law run {self.task_family} --recreate_backup_summary --config {self.config} --remove-output 0,a,y",  # noqa
+                        f"law run {self.task_family} --recreate-backup-summary --config {self.config} --remove-output 0,a,y",  # noqa
                     )
         else:
             logger.warning("No backup dataset summary found, creating one now")
