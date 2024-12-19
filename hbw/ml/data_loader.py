@@ -27,7 +27,7 @@ def get_proc_mask(
     """
     Creates the mask selecting events belonging to the process *proc* and a list of all ids belonging to this process.
 
-    :param events: Event array    
+    :param events: Event array
     :param proc: Either string or process instance.
     :param config_inst: An instance of the Config, can be None if Porcess instance is given.
     :return process mask and the corresponding process ids

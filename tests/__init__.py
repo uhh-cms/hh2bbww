@@ -16,4 +16,5 @@ sys.path.append(base)
 import hbw  # noqa
 
 # import all tests
-# ...
+from .test_util import *
+from .test_workflow import *

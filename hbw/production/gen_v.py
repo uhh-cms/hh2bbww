@@ -178,9 +178,10 @@ def vjets_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         kfactor[key] = get_kfactor(boson, key, events.GenVBoson)
 
     weights = {
-        "nominal": kfactor.value,
-        "up": kfactor.value + kfactor.error,
-        "down": kfactor.value - kfactor.error,
+        # NOTE: 1-kfactor for "ew" correction
+        "nominal": 1 - kfactor.value,
+        "up": 1 - kfactor.value + kfactor.error,
+        "down": 1 - kfactor.value - kfactor.error,
     }
 
     # save the weights
@@ -232,6 +233,7 @@ def vjets_weight_setup(self: Producer, reqs: dict, inputs: dict, reader_targets:
         self.get_vjets_reweighting_file(bundle.files).load(formatter="gzip").decode("utf-8"),
     )
     corrections = self.get_vjets_reweighting_config()
+
     self.vjets_reweighting_evaluators = {
         obj_name: {
             key: correction_set[correction_name]

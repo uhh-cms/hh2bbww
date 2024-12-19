@@ -9,7 +9,6 @@ from columnflow.tasks.framework.base import AnalysisTask
 
 default_analysis = law.config.get_expanded("analysis", "default_analysis")
 default_config = law.config.get_expanded("analysis", "default_config")
-
 analysis_inst = ana = AnalysisTask.get_analysis_inst(default_analysis)
 config_inst = cfg = ana.get_config(default_config)
 
@@ -110,11 +109,11 @@ print("Type:", shift_inst.type)
 print("Direction:", shift_inst.direction)
 print("Aliases:", shift_inst.x.column_aliases)
 
-# get some exemplary aux (all 3 methods get you the same result)
-default_selector = cfg.get_aux("default_selector")
-default_selector = cfg.aux["default_selector"]
-default_selector = cfg.x.default_selector
-print("================= default selector:", default_selector, "=======")
+# # get some exemplary aux (all 3 methods get you the same result)
+# default_selector = cfg.get_aux("default_selector")
+# default_selector = cfg.aux["default_selector"]
+# default_selector = cfg.x.default_selector
+# print("================= default selector:", default_selector, "=======")
 
 # set some exemplary aux youself
 cfg.set_aux("example", "test")

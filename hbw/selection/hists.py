@@ -14,7 +14,7 @@ from columnflow.columnar_util import set_ak_column
 
 from columnflow.util import maybe_import
 from hbw.util import has_tag, IF_MC
-from hbw.hist_util import create_columnflow_hist
+from columnflow.hist_util import create_hist_from_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -85,10 +85,10 @@ def hbw_selection_hists(
     if getattr(self, "first_chunk", True):
         for key, weight in weight_map.items():
             if "btag_weight" not in key:
-                hists[key] = create_columnflow_hist(self.steps_variable)
-                hists[f"{key}_per_process"] = create_columnflow_hist(self.steps_variable, self.process_variable)
+                hists[key] = create_hist_from_variables(self.steps_variable)
+                hists[f"{key}_per_process"] = create_hist_from_variables(self.steps_variable, self.process_variable)
             if key == "sum_mc_weight" or "btag_weight" in key:
-                hists[f"{key}_per_process_ht_njet_nhf"] = create_columnflow_hist(
+                hists[f"{key}_per_process_ht_njet_nhf"] = create_hist_from_variables(
                     self.steps_variable,
                     self.process_variable,
                     self.ht_variable,

@@ -21,14 +21,14 @@ action() {
     if [ -z "${sandbox}" ]; then
         echo "testing ${mod} ..."
         (
-            cd "${cf_dir}" && \
-            python -m unittest "tests.${mod}"
+            cd "${this_dir}" && \
+            python -m unittest "${mod}"
         )
     else
         echo "testing ${mod} ..."
         (
-            cd "${cf_dir}" && \
-            cf_sandbox "${sandbox}" "python -m unittest tests.${mod}"
+            cd "${this_dir}" && \
+            cf_sandbox "${sandbox}" "python -m unittest ${mod}"
         )
     fi
 }

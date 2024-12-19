@@ -7,7 +7,6 @@ Configuration of the HH -> bbWW analysis.
 from __future__ import annotations
 
 import os
-import importlib
 
 import law
 import order as od
@@ -23,6 +22,8 @@ from hbw.config.defaults_and_groups import (
     default_calibrator, default_selector, default_producers, default_ml_model,
     ml_inputs_producer,
 )
+
+from hbw.tasks.campaigns import BuildCampaignSummary
 
 
 @timeit_multiple
@@ -74,6 +75,8 @@ def create_hbw_analysis(
     analysis_inst.x.default_weight_producer = "default"
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
     analysis_inst.x.default_ml_model = default_ml_model
+    analysis_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
+    analysis_inst.x.default_categories = ["incl", "sr", "ttcr", "dycr"]
 
     #
     # define configs
@@ -82,7 +85,6 @@ def create_hbw_analysis(
     from hbw.config.config_run2 import add_config
 
     def add_lazy_config(
-        campaigns: dict[str, str],
         config_name: str,
         config_id: int,
         **kwargs,
@@ -101,22 +103,22 @@ def create_hbw_analysis(
         ):
             @timeit_multiple
             def analysis_factory(configs: od.UniqueObjectIndex):
-                hbw_campaign_inst = None
+                cpn_task = BuildCampaignSummary(
+                    config=config_name,
+                )
+                if cpn_task.complete():
+                    logger.warning(
+                        f"Using pickled campaign for config {config_name}; to re-initialize, run:\n"
+                        f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
+                    )
+                else:
+                    raise ValueError(
+                        f"Campaign used for {config_name} is not yet initialized; to initialize, run: \n",
+                        f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
+                    )
+                    # cpn_task.run()
 
-                for mod, campaign in campaigns.items():
-                    # import the campaign
-                    mod = importlib.import_module(mod)
-                    if not hbw_campaign_inst:
-                        # copy the main campaign
-                        hbw_campaign_inst = getattr(mod, campaign).copy()
-                    else:
-                        # add datasets to the main campaign
-                        campaign_inst = getattr(mod, campaign).copy()
-                        for dataset in list(campaign_inst.datasets):
-                            dataset.x.campaign = campaign
-                            if not hbw_campaign_inst.has_dataset(dataset.name):
-                                hbw_campaign_inst.add_dataset(dataset)
-
+                hbw_campaign_inst = cpn_task.output()["hbw_campaign_inst"].load(formatter="pickle")
                 return add_config(
                     analysis_inst,
                     hbw_campaign_inst,
@@ -139,29 +141,30 @@ def create_hbw_analysis(
 
     # 2017
     add_lazy_config(
-        {
-            "cmsdb.campaigns.run2_2017_nano_v9": "campaign_run2_2017_nano_v9",
-        },
+        # {
+        #     "cmsdb.campaigns.run2_2017_nano_v9": "campaign_run2_2017_nano_v9",
+        # },
         "c17",
         1700,
     )
 
     # 2022 preEE
     add_lazy_config(
-        {
-            "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
-            "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
-        },
+        # {
+        #     "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
+        #     "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
+        # },
         "c22pre",
         2200,
     )
 
     # 2022 postEE
     add_lazy_config(
-        {
-            "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
-            "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
-        },
+        # {
+        #     "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
+        #     "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
+        #     "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
+        # },
         "c22post",
         2210,
     )

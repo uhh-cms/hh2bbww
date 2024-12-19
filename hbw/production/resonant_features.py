@@ -98,7 +98,8 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "m_Heavy_Higgs", events.Heavy_Higgs.mass)
     events = set_ak_column_f32(events, "eta_Heavy_Higgs", events.Heavy_Higgs.eta)
     events = set_ak_column_f32(events, "phi_Heavy_Higgs", events.Heavy_Higgs.phi)
-    for col in self.produces:
+    for route in self.produced_columns:
+        col = route.string_column
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
     # undo object padding

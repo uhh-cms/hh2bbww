@@ -10,12 +10,11 @@ from columnflow.types import Union
 
 import law
 
-from columnflow.util import maybe_import, DotDict
+from columnflow.util import maybe_import
 
 from hbw.ml.base import MLClassifierBase
 from hbw.ml.mixins import DenseModelMixin, ModelFitMixin
 
-from hbw.config.processes import create_combined_proc_forML
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -135,34 +134,8 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
     def cast_ml_param_values(self):
         super().cast_ml_param_values()
 
-    def setup(self):
-        # dynamically add variables for the quantities produced by this model
-        # NOTE: since these variables are only used in ConfigTasks,
-        #       we do not need to add these variables to all configs
-        for proc in self.combine_processes:
-            if proc not in self.config_inst.processes:
-                proc_name = str(proc)
-                proc_dict = DotDict(self.combine_processes[proc])
-                create_combined_proc_forML(self.config_inst, proc_name, proc_dict)
-
-        for proc in self.processes:
-            for config_inst in self.config_insts:
-                if f"mlscore.{proc}" not in config_inst.variables:
-                    config_inst.add_variable(
-                        name=f"mlscore.{proc}",
-                        expression=f"mlscore.{proc}",
-                        null_value=-1,
-                        binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', '')}",
-                        aux={"rebin": 40},
-                    )
-                    config_inst.add_variable(
-                        name=f"mlscore40.{proc}",
-                        expression=f"mlscore.{proc}",
-                        null_value=-1,
-                        binning=(40, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', '')}",
-                    )
+    def setup(self) -> None:
+        super().setup()
 
 
 #

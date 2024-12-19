@@ -4,15 +4,16 @@
 Custom tasks for inspecting the configuration or certain task outputs.
 """
 
-# from functools import cached_property
+from collections import defaultdict
 
 import law
 import luigi
 
+
 from columnflow.tasks.framework.mixins import (
     ProducersMixin, MLModelsMixin,
 )
-from columnflow.tasks.framework.base import ConfigTask, Requirements
+from columnflow.tasks.framework.base import MultiConfigTask, ConfigTask, Requirements
 from columnflow.tasks.framework.mixins import DatasetsProcessesMixin, SelectorMixin, CalibratorsMixin
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import ReducedEventsUser
@@ -285,6 +286,35 @@ class CheckConfig(
             self.publish_message("starting debugger ....")
             from hbw.util import debugger
             debugger()
+
+
+class DatasetSummary(
+    HBWTask,
+    MultiConfigTask,
+):
+    def requires(self):
+        return {}
+
+    def output(self):
+        output = {
+            "dataset_summary": self.target("dataset_summary.yaml"),
+        }
+        return output
+
+    def run(self):
+        multi_config_dataset_summary = {}
+        for config in self.config_insts:
+            dataset_summary = defaultdict(dict)
+            cpn_name = config.campaign.name
+            for dataset in config.datasets:
+                dataset_campaign = dataset.x("campaign", cpn_name)
+                dataset_summary[dataset_campaign][dataset.name] = {
+                    "n_events": dataset.n_events,
+                    "n_files": dataset.n_files,
+                }
+            multi_config_dataset_summary[config.name] = dict(dataset_summary)
+
+        self.output()["dataset_summary"].dump(multi_config_dataset_summary, formatter="yaml")
 
 
 class CheckColumns(
