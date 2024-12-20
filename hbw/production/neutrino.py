@@ -39,6 +39,7 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
     TODO: reference
     """
+    met_name = self.config_inst.x.met_name
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
 
@@ -49,9 +50,9 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     E_l = events.Lepton.E[:, 0]
     pt_l = events.Lepton.pt[:, 0]
     pz_l = events.Lepton.pz[:, 0]
-    pt_nu = events.MET.pt
+    pt_nu = events[met_name].pt
 
-    delta_phi = abs(events.Lepton[:, 0].delta_phi(events.MET))
+    delta_phi = abs(events.Lepton[:, 0].delta_phi(events[met_name]))
     mu = w_mass**2 / 2 + pt_nu * pt_l * np.cos(delta_phi)
 
     # Neutrino pz will be calculated as: pz_nu = A +- sqrt(B-C)
@@ -86,7 +87,7 @@ def neutrino_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
         p_nu_1 = np.sqrt(pt_nu**2 + pz_nu**2)
         eta_nu_1 = np.log((p_nu_1 + pz_nu) / (p_nu_1 - pz_nu)) / 2
         # store Neutrino 4 vector components
-        events[f"Neutrino{i}"] = events.MET
+        events[f"Neutrino{i}"] = events[met_name]
         events = set_ak_column_f32(events, f"Neutrino{i}.eta", eta_nu_1)
 
         # sanity check: Neutrino pz should be the same as pz_nu within rounding errors

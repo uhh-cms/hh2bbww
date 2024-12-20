@@ -365,10 +365,11 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title="HT",
     )
+    met_name = config.x.met_name
     config.add_variable(
         name="lt",
         expression=lambda events: (
-            ak.sum(events.Muon.pt, axis=1) + ak.sum(events.Muon.pt, axis=1) + events.MET.pt
+            ak.sum(events.Muon.pt, axis=1) + ak.sum(events.Muon.pt, axis=1) + events[met_name].pt
         ),
         aux={"inputs": {"Muon.pt", "Electron.pt", "MET.pt"}},
         binning=(40, 0, 1200),
@@ -646,16 +647,17 @@ def add_variables(config: od.Config) -> None:
         )
 
     # MET
+
     config.add_variable(
         name="met_pt",
-        expression="MET.pt",
+        expression=f"{met_name}.pt",
         binning=(40, 0., 400.),
         unit="GeV",
-        x_title=r"MET $p_{T}$",
+        x_title=r"{met_name} $p_{{T}}$".format(met_name=met_name),
     )
     config.add_variable(
         name="met_phi",
-        expression="MET.phi",
+        expression=f"{met_name}.phi",
         binning=(40, -3.2, 3.2),
-        x_title=r"MET $\phi$",
+        x_title=r"{met_name} $\phi$".format(met_name=met_name),
     )

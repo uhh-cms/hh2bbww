@@ -17,6 +17,8 @@ from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
 
+from hbw.util import MET_COLUMN
+
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
@@ -60,7 +62,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         prepare_objects,
         "HbbJet.msoftdrop",
         "{Electron,Muon,Jet,Bjet,Lightjet,VBFJet,HbbJet}.{pt,eta,phi,mass}",
-        "MET.{pt,phi}",
+        MET_COLUMN("pt"), MET_COLUMN("phi"),
     },
     # produced columns set in the init function
 )
@@ -70,6 +72,8 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
+
+    met_name = self.config_inst.x.met_name
 
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
@@ -99,12 +103,12 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
     events = set_ak_column_f32(events, "mli_lep_eta", events.Lepton[:, 0].eta)
-    events = set_ak_column_f32(events, "mli_met_pt", events.MET.pt)
-    events = set_ak_column_f32(events, "mli_met_phi", events.MET.phi)
+    events = set_ak_column_f32(events, "mli_met_pt", events[met_name].pt)
+    events = set_ak_column_f32(events, "mli_met_phi", events[met_name].phi)
 
     # general
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
-    events = set_ak_column_f32(events, "mli_lt", ak.sum(events.Lepton.pt, axis=1) + events.MET.pt)
+    events = set_ak_column_f32(events, "mli_lt", ak.sum(events.Lepton.pt, axis=1) + events[met_name].pt)
     events = set_ak_column_f32(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
 
     # vbf jet pair features
@@ -197,6 +201,7 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer used for ML Training in the SL analysis.
     """
+    met_name = self.config_inst.x.met_name
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
 
@@ -209,9 +214,9 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # wlnu features
     # NOTE: we might want to consider neutrino reconstruction or transverse masses instead when including MET
-    wlnu = events.MET + events.Lepton[:, 0]
+    wlnu = events[met_name] + events.Lepton[:, 0]
     events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
-    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
+    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events[met_name])))
     events = set_ak_column_f32(events, "mli_dphi_wl", abs(wlnu.delta_phi(events.Lepton[:, 0])))
 
     # hww features
@@ -230,8 +235,8 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dphi_bb_jjl", abs(hbb.delta_phi(hww_vis)))
     events = set_ak_column_f32(events, "mli_dr_bb_jjl", hbb.delta_r(hww_vis))
 
-    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
-    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events.MET)))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
+    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events[met_name])))
     events = set_ak_column_f32(events, "mli_dr_bb_l", hbb.delta_r(events.Lepton[:, 0]))
     events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events.Lepton[:, 0]))
 
@@ -243,8 +248,8 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mbbjjl", hh_vis.mass)
 
     s_min = (
-        2 * events.MET.pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
-        hh_vis.pt * np.cos(hh_vis.delta_phi(events.MET)) + hh_vis.mass ** 2)
+        2 * events[met_name].pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
+        hh_vis.pt * np.cos(hh_vis.delta_phi(events[met_name])) + hh_vis.mass ** 2)
     ) ** 0.5
     events = set_ak_column_f32(events, "mli_s_min", s_min)
 
@@ -294,6 +299,7 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer used for ML Training in the DL analysis.
     """
+    met_name = self.config_inst.x.met_name
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
 
@@ -307,7 +313,7 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     hll = (events.Lepton[:, 0] + events.Lepton[:, 1])
     events = set_ak_column_f32(events, "mli_ll_pt", hll.pt)
     events = set_ak_column_f32(events, "mli_mll", hll.mass)
-    events = set_ak_column_f32(events, "mli_mllMET", (hll + events.MET[:]).mass)
+    events = set_ak_column_f32(events, "mli_mllMET", (hll + events[met_name][:]).mass)
     events = set_ak_column_f32(events, "mli_dr_ll", events.Lepton[:, 0].delta_r(events.Lepton[:, 1]))
     events = set_ak_column_f32(events, "mli_dphi_ll", events.Lepton[:, 0].delta_phi(events.Lepton[:, 1]))
 
@@ -319,10 +325,10 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # hh system
     hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
-    events = set_ak_column_f32(events, "mli_mbbllMET", (hll + hbb + events.MET[:]).mass)
-    events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(hll + events.MET[:]))
-    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
-    events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(hll + events.MET[:]))
+    events = set_ak_column_f32(events, "mli_mbbllMET", (hll + hbb + events[met_name][:]).mass)
+    events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(hll + events[met_name][:]))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
+    events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(hll + events[met_name][:]))
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
@@ -363,6 +369,7 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer used for ML Training in the SL analysis.
     """
+    met_name = self.config_inst.x.met_name
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
 
@@ -382,8 +389,8 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_phi_jj", wjj.phi)
 
     # wlnu features
-    wlnu = events.MET + events.Lepton[:, 0]
-    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events.MET)))
+    wlnu = events[met_name] + events.Lepton[:, 0]
+    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events[met_name])))
     # NOTE: this column can be set to nan value
     events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
     events = set_ak_column_f32(events, "mli_pt_lnu", wlnu.pt)
@@ -410,10 +417,10 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dphi_bb_jjl", abs(hbb.delta_phi(hww_vis)))
     events = set_ak_column_f32(events, "mli_dr_bb_jjl", hbb.delta_r(hww_vis))
 
-    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events.MET)))
-    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events.MET)))
-    events = set_ak_column_f32(events, "mli_dr_bb_l", hbb.delta_r(events.MET))
-    events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events.MET))
+    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
+    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events[met_name])))
+    events = set_ak_column_f32(events, "mli_dr_bb_l", hbb.delta_r(events[met_name]))
+    events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events[met_name]))
 
     # hh features
     hh = hbb + hww
@@ -423,8 +430,8 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mbbjjl", hh_vis.mass)
 
     s_min = (
-        2 * events.MET.pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
-        hh_vis.pt * np.cos(hh_vis.delta_phi(events.MET)) + hh_vis.mass ** 2)
+        2 * events[met_name].pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
+        hh_vis.pt * np.cos(hh_vis.delta_phi(events[met_name])) + hh_vis.mass ** 2)
     ) ** 0.5
     events = set_ak_column_f32(events, "mli_s_min", s_min)
 

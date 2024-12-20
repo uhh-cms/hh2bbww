@@ -616,6 +616,26 @@ def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any 
 
 
 @deferred_column
+def MET_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    This helper allows adding the correct btag column based on the b_tagger configuration.
+    Requires the b_tagger aux to be set in the config. Example usecase:
+
+    .. code-block:: python
+
+        @producer(uses={MET_COLUMN("pt")})
+        def my_producer(self, events):
+            met_pt = events[self.config_inst.x.met_name].pt
+            ...
+            return events
+    """
+    met_name = func.config_inst.x("met_name", None)
+    if not met_name:
+        raise Exception("the met_name has not been configured")
+    return f"{met_name}.{self.get()}"
+
+
+@deferred_column
 def IF_DATASET_HAS_LHE_WEIGHTS(
     self: ArrayFunction.DeferredColumn,
     func: ArrayFunction,
