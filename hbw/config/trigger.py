@@ -364,7 +364,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["e", "ee", "emu", "mue", "mixed"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
-        }
+        },
     )
     di_e33_noniso = Trigger(
         name="HLT_DoubleEle33_CaloIdL_MW",
@@ -386,7 +386,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["ee"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
-        }
+        },
     )
     mixed_mue = Trigger(
         name="HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
