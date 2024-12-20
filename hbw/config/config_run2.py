@@ -196,7 +196,7 @@ def add_config(
         jerc_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         jet_type = "AK4PFPuppi"
 
-    cfg.x.jec = DotDict.wrap({
+    cfg.x.jec = DotDict.wrap({"Jet": {
         "campaign": jerc_campaign,
         "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
         "jet_type": jet_type,
@@ -260,15 +260,15 @@ def add_config(
             "CorrelationGroupFlavor",
             "CorrelationGroupUncorrelated",
         ],
-    })
+    }})
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
-    cfg.x.jer = DotDict.wrap({
+    cfg.x.jer = DotDict.wrap({"Jet": {
         "campaign": jerc_campaign,
         "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
         "jet_type": jet_type,
-    })
+    }})
 
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
@@ -357,14 +357,28 @@ def add_config(
 
     # V+jets reweighting
     cfg.x.vjets_reweighting = DotDict.wrap({
-        "w": {
-            "value": "wjets_kfactor_value",
-            "error": "wjets_kfactor_error",
-        },
         "z": {
-            "value": "zjets_kfactor_value",
-            "error": "zjets_kfactor_error",
+            "value": "eej_pTV_kappa_NLO_EW",
+            "ew": "eej_pTV_kappa_NLO_EW",
+            "error": "eej_pTV_d1kappa_EW",  # NOTE: not sure if this is correct to use as error (d2,d3?)
+            "d2": "eej_pTV_d2kappa_EW",
+            "d3": "eej_pTV_d3kappa_EW",
         },
+        "w": {
+            "value": "aj_pTV_kappa_NLO_EW",
+            "ew": "aj_pTV_kappa_NLO_EW",
+            "error": "aj_pTV_d1kappa_EW",  # NOTE: not sure if this is correct to use as error (d2,d3?)
+            "d2": "aj_pTV_d2kappa_EW",
+            "d3": "aj_pTV_d3kappa_EW",
+        },
+        # "w": {
+        #     "value": "wjets_kfactor_value",
+        #     "error": "wjets_kfactor_error",
+        # },
+        # "z": {
+        #     "value": "zjets_kfactor_value",
+        #     "error": "zjets_kfactor_error",
+        # },
     })
 
     ################################################################################################
@@ -507,10 +521,20 @@ def add_config(
             },
         )
 
+    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=209, type="shape")
+    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=210, type="shape")
+    add_shift_aliases(
+        cfg,
+        f"dummy_{cfg.x.cpn_tag}",
+        {
+            "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
+        },
+    )
+
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
 
-    for jec_source in cfg.x.jec["uncertainty_sources"]:
+    for jec_source in cfg.x.jec.Jet["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
         cfg.add_shift(
             name=f"jec_{jec_source}_up",
@@ -587,8 +611,10 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
-    # V+jets reweighting (still unused and not centrally produced)
-    add_external("vjets_reweighting", f"{json_mirror}/data/json/vjets_reweighting.json.gz")
+    # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
+    # ROOT files (eej.root and aj.root) taken from here:
+    # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
+    add_external("vjets_reweighting", (f"{json_mirror}/data/json/vjets_pt.json.gz", "v1"))
     if cfg.x.run == 2:
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
@@ -684,7 +710,7 @@ def add_config(
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.deltaEtaSC", "mll",
         # MET
-        "MET.{pt,phi}",
+        "{MET,PuppiMET}.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),

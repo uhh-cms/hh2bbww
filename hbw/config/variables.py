@@ -17,117 +17,6 @@ from hbw.config.styling import default_var_binning, default_var_unit
 
 
 @call_once_on_config()
-def add_feature_variables(config: od.Config) -> None:
-    """
-    Adds variables to a *config* that are produced as part of the `features` producer.
-    """
-
-    # Event properties
-    config.add_variable(
-        name="features_n_jet",
-        expression=lambda events: ak.num(events.Jet.pt, axis=1),
-        binning=(12, -0.5, 11.5),
-        x_title="Number of jets",
-        aux={"inputs": {"Jet.pt"}},
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_deepjet",
-        binning=(11, -0.5, 10.5),
-        x_title="Number of deepjets",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_fatjet",
-        binning=(7, -0.5, 6.5),
-        x_title="Number of fatjets",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_hbbjet",
-        binning=(4, -0.5, 3.5),
-        x_title="Number of hbbjets",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_electron",
-        binning=(4, -0.5, 3.5),
-        x_title="Number of electrons",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_muon",
-        binning=(4, -0.5, 3.5),
-        x_title="Number of muons",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_n_bjet",
-        binning=(4, -0.5, 3.5),
-        x_title="Number of bjets",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="features_ht",
-        binning=(40, 0, 1500),
-        x_title="HT",
-    )
-
-    # bb features
-    config.add_variable(
-        name="m_bb",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$m_{bb}$",
-    )
-    config.add_variable(
-        name="m_bb_combined",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$m_{bb}$ combined",
-    )
-    config.add_variable(
-        name="bb_pt",
-        binning=(40, 0., 350),
-        x_title=r"$p_T^{bb}$",
-        unit="GeV",
-    )
-    config.add_variable(
-        name="deltaR_bb",
-        binning=(40, 0, 5),
-        x_title=r"$\Delta R(b,b)$",
-    )
-    # jj features
-    config.add_variable(
-        name="m_jj",
-        binning=(40, 0., 400.),
-        unit="GeV",
-        x_title=r"$m_{jj}$",
-    )
-    config.add_variable(
-        name="jj_pt",
-        binning=(40, 0., 350),
-        x_title=r"$p_T^{jj}$",
-        unit="GeV",
-    )
-    config.add_variable(
-        name="deltaR_jj",
-        binning=(40, 0, 5),
-        x_title=r"$\Delta R(j_{1},j_{2})$",
-    )
-
-    # FatJet features
-    for i in range(2):
-        config.add_variable(
-            name=f"fatjet{i+1}_tau21",
-            expression=f"FatJet.tau21[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"FatJet %i $\tau_{21}$" % (i + 1),
-        )
-
-
-@call_once_on_config()
 def add_neutrino_variables(config: od.Config) -> None:
     """
     Adds variables to a *config* that are produced as part of the `neutrino_reconstruction` producer.
@@ -375,31 +264,33 @@ def add_variables(config: od.Config) -> None:
         x_title="Number of jets",
         discrete_x=True,
     )
-    deepjet_wps = config.x.btag_working_points.deepjet
-    config.add_variable(
-        name="n_deepjet_loose",
-        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
-        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
-        binning=(7, -0.5, 6.5),
-        x_title="Number of deepjets (loose WP)",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="n_deepjet_medium",
-        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
-        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
-        binning=(7, -0.5, 6.5),
-        x_title="Number of deepjets (medium WP)",
-        discrete_x=True,
-    )
-    config.add_variable(
-        name="n_deepjet_tight",
-        expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
-        aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
-        binning=(7, -0.5, 6.5),
-        x_title="Number of deepjets (tight WP)",
-        discrete_x=True,
-    )
+
+    if config.x.run == 2:
+        deepjet_wps = config.x.btag_working_points.deepjet
+        config.add_variable(
+            name="n_deepjet_loose",
+            expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of deepjets (loose WP)",
+            discrete_x=True,
+        )
+        config.add_variable(
+            name="n_deepjet_medium",
+            expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of deepjets (medium WP)",
+            discrete_x=True,
+        )
+        config.add_variable(
+            name="n_deepjet_tight",
+            expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            binning=(7, -0.5, 6.5),
+            x_title="Number of deepjets (tight WP)",
+            discrete_x=True,
+        )
     if config.x.run == 3:
         particlenet_wps = config.x.btag_working_points.particlenet
         config.add_variable(
@@ -508,169 +399,205 @@ def add_variables(config: od.Config) -> None:
     # Jets (4 pt-leading jets)
     for i in range(4):
         config.add_variable(
-            name=f"jet{i+1}_pt",
+            name=f"jet{i}_pt",
             expression=f"Jet.pt[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"Jet %i $p_{T}$" % (i + 1),
+            x_title=r"Jet %i $p_{T}$" % i,
         )
         config.add_variable(
-            name=f"jet{i+1}_eta",
+            name=f"jet{i}_eta",
             expression=f"Jet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, -2.5, 2.5),
-            x_title=r"Jet %i $\eta$" % (i + 1),
+            x_title=r"Jet %i $\eta$" % i,
         )
         config.add_variable(
-            name=f"jet{i+1}_phi",
+            name=f"jet{i}_phi",
             expression=f"Jet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Jet %i $\phi$" % (i + 1),
+            x_title=r"Jet %i $\phi$" % i,
         )
         config.add_variable(
-            name=f"jet{i+1}_mass",
+            name=f"jet{i}_mass",
             expression=f"Jet.mass[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 200),
             unit="GeV",
-            x_title=r"Jet %i mass" % (i + 1),
+            x_title=r"Jet %i mass" % i,
         )
-        # config.add_variable(
-        #     name=f"jet{i+1}_btagDeepB",
-        #     expression=f"Jet.btagDeepB[:,{i}]",
-        #     null_value=EMPTY_FLOAT,
-        #     binning=(40, 0, 1),
-        #     x_title=r"Jet %i DeepCSV b+bb tag" % (i + 1),
-        # )
-        config.add_variable(
-            name=f"jet{i+1}_btagDeepFlavB",
-            expression=f"Jet.btagDeepFlavB[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % (i + 1),
-        )
+        if config.x.run == 2:
+            config.add_variable(
+                name=f"jet{i}_btagDeepFlavB".lower(),
+                expression=f"Jet.btagDeepFlavB[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % i,
+            )
         if config.x.run == 3:
             config.add_variable(
-                name=f"jet{i+1}_btagPNetB",
+                name=f"jet{i}_btagPNetB".lower(),
                 expression=f"Jet.btagPNetB[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 1),
-                x_title=r"Jet %i ParticleNet score" % (i + 1),
+                x_title=r"Jet %i ParticleNet score" % i,
             )
 
     # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
     for i in range(2):
         for obj in ["Bjet", "Lightjet"]:
             config.add_variable(
-                name=f"{obj}{i+1}_pt".lower(),
+                name=f"{obj}{i}_pt".lower(),
                 expression=f"{obj}.pt[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0., 300.),
                 unit="GeV",
-                x_title=obj + r" %i $p_{T}$" % (i + 1),
+                x_title=obj + r" %i $p_{T}$" % i,
             )
             config.add_variable(
-                name=f"{obj}{i+1}_eta".lower(),
+                name=f"{obj}{i}_eta".lower(),
                 expression=f"{obj}.eta[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(50, -2.5, 2.5),
-                x_title=obj + r" %i $\eta$" % (i + 1),
+                x_title=obj + r" %i $\eta$" % i,
             )
             config.add_variable(
-                name=f"{obj}{i+1}_phi".lower(),
+                name=f"{obj}{i}_phi".lower(),
                 expression=f"{obj}.phi[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, -3.2, 3.2),
-                x_title=obj + r" %i $\phi$" % (i + 1),
+                x_title=obj + r" %i $\phi$" % i,
             )
             config.add_variable(
-                name=f"{obj}{i+1}_mass".lower(),
+                name=f"{obj}{i}_mass".lower(),
                 expression=f"{obj}.mass[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 200),
-                x_title=obj + r" %i mass" % (i + 1),
+                x_title=obj + r" %i mass" % i,
             )
             if config.x.run == 3:
                 config.add_variable(
-                    name=f"{obj}{i+1}_btagPNetB",
+                    name=f"{obj}{i}_btagPNetB".lower(),
                     expression=f"{obj}.btagPNetB[:,{i}]",
                     null_value=EMPTY_FLOAT,
                     binning=(40, 0, 1),
-                    x_title=obj + r" %i ParticleNet score" % (i + 1),
+                    x_title=obj + r" %i ParticleNet score" % i,
                 )
 
     # FatJets (2 pt-leading fatjets)
     for i in range(2):
         config.add_variable(
-            name=f"fatjet{i+1}_pt",
+            name=f"fatjet{i}_pt",
             expression=f"FatJet.pt[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 170., 500.),
             unit="GeV",
-            x_title=r"FatJet %i $p_{T}$" % (i + 1),
+            x_title=r"FatJet %i $p_{T}$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_eta",
+            name=f"fatjet{i}_eta",
             expression=f"FatJet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, -2.5, 2.5),
-            x_title=r"FatJet %i $\eta$" % (i + 1),
+            x_title=r"FatJet %i $\eta$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_phi",
+            name=f"fatjet{i}_phi",
             expression=f"FatJet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"FatJet %i $\phi$" % (i + 1),
+            x_title=r"FatJet %i $\phi$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_mass",
+            name=f"fatjet{i}_mass",
             expression=f"FatJet.mass[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 250),
             unit="GeV",
-            x_title=r"FatJet %i mass" % (i + 1),
+            x_title=r"FatJet %i mass" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_msoftdrop",
+            name=f"fatjet{i}_msoftdrop",
             expression=f"FatJet.msoftdrop[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 250),
             unit="GeV",
-            x_title=r"FatJet %i softdrop mass" % (i + 1),
+            x_title=r"FatJet %i softdrop mass" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_tau1",
+            name=f"fatjet{i}_tau1",
             expression=f"FatJet.tau1[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet %i $\tau_1$" % (i + 1),
+            x_title=r"FatJet %i $\tau_1$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_tau2",
+            name=f"fatjet{i}_tau2",
             expression=f"FatJet.tau2[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet %i $\tau_2$" % (i + 1),
+            x_title=r"FatJet %i $\tau_2$" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_btagHbb",
+            name=f"fatjet{i}_btagHbb".lower(),
             expression=f"FatJet.btagHbb[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet %i btagHbb" % (i + 1),
+            x_title=r"FatJet %i btagHbb" % i,
         )
         config.add_variable(
-            name=f"fatjet{i+1}_deepTagMD_HbbvsQCD",
+            name=f"fatjet{i}_deepTagMD_HbbvsQCD".lower(),
             expression=f"FatJet.deepTagMD_HbbvsQCD[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 1),
-            x_title=r"FatJet %i deepTagMD_HbbvsQCD " % (i + 1),
+            x_title=r"FatJet %i deepTagMD_HbbvsQCD " % i,
         )
 
     # Leptons
+    for i in range(2):
+        config.add_variable(
+            name=f"lepton{i}_pt",
+            expression=f"Lepton[:, {i}].pt",
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(40, 0., 400.),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+        )
+        config.add_variable(
+            name=f"lepton{i}_eta",
+            expression=f"Lepton[:, {i}].eta",
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(40, -3.2, 3.2),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+        )
+        config.add_variable(
+            name=f"lepton{i}_phi",
+            expression=f"Lepton[:, {i}].phi",
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(50, -2.5, 2.5),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+        )
+        config.add_variable(
+            name=f"lepton{i}_mass",
+            expression=f"Lepton[:, {i}].mass",
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(40, 0., 400.),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+        )
+
     for obj in ["Electron", "Muon"]:
         config.add_variable(
             name=f"{obj.lower()}_pt",

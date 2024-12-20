@@ -46,7 +46,8 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             raise NotImplementedError(
                 f"Normalization mode {mode} not implemented (see hbw.tasks.corrections.GetBtagNormalizationSF)",
             )
-        for weight_name in self[btag_weights].produces:
+        for weight_route in self[btag_weights].produced_columns:
+            weight_name = weight_route.string_column
             if not weight_name.startswith("btag_weight"):
                 continue
 
@@ -66,7 +67,8 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
 @normalized_btag_weights.init
 def normalized_btag_weights_init(self: Producer) -> None:
-    for weight_name in self[btag_weights].produces:
+    for weight_route in self[btag_weights].produced_columns:
+        weight_name = weight_route.string_column
         if not weight_name.startswith("btag_weight"):
             continue
         for mode in self.modes:

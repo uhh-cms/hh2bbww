@@ -86,8 +86,8 @@ def patch_csp_versioning():
 
     def TaskArrayFunction_str(self):
         version = self.version() if callable(getattr(self, "version", None)) else getattr(self, "version", None)
-        if version and not isinstance(version, int):
-            raise Exception(f"version must be an integer, but is {version}")
+        if version and not isinstance(version, (int, str)):
+            raise Exception(f"version must be an integer or string, but is {version} ({type(version)})")
         version_str = f"V{version}" if version is not None else ""
         return f"{self.cls_name}{version_str}"
 

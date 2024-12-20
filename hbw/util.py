@@ -6,6 +6,8 @@ Collection of helpers
 
 from __future__ import annotations
 
+import re
+import itertools
 import time
 from typing import Hashable, Iterable, Callable
 from functools import wraps, reduce
@@ -230,29 +232,106 @@ def traceback_function(depth: int = 1):
 
 
 def make_dict_hashable(d: dict, deep: bool = True):
-    """ small helper that converts dict into hashable dict"""
+    """Small helper that converts dict into a hashable representation."""
     d_out = d.copy()
     for key, value in d.items():
         if isinstance(value, Hashable):
-            # skip values that are already hashable
+            # Skip values that are already hashable
             continue
         elif isinstance(value, dict):
-            # convert dictionary items to hashable and use items of resulting dict
+            # Convert nested dictionaries to a hashable form
             if deep:
                 value = make_dict_hashable(value)
             d_out[key] = tuple(value)
         else:
-            # hopefully, everything else can be cast to a tuple
+            # Convert other types to tuples
             d_out[key] = law.util.make_tuple(value)
 
     return d_out.items()
 
 
 def dict_diff(dict1: dict, dict2: dict):
+    """Return the differences between two dictionaries."""
     set1 = set(make_dict_hashable(dict1))
     set2 = set(make_dict_hashable(dict2))
 
     return set1 ^ set2
+
+
+def filter_unchanged_keys(d1: dict, d2: dict):
+    """Recursively remove unchanged keys from nested dictionaries and return modified values."""
+    if not isinstance(d1, dict) or not isinstance(d2, dict):
+        return {"old": d1, "new": d2} if d1 != d2 else None
+
+    filtered = {}
+    all_keys = set(d1.keys()).union(set(d2.keys()))
+
+    for key in all_keys:
+        val1 = d1.get(key)
+        val2 = d2.get(key)
+
+        if isinstance(val1, dict) and isinstance(val2, dict):
+            # Recur for nested dictionaries
+            nested_diff = filter_unchanged_keys(val1, val2)
+            if nested_diff:
+                filtered[key] = nested_diff
+        elif val1 != val2:
+            # Value changed or key added/removed
+            filtered[key] = {"old": val1, "new": val2}
+
+    return filtered if filtered else None
+
+
+def dict_diff_filtered(old_dict: dict, new_dict: dict):
+    """Return the differences between two dictionaries with nested filtering of unchanged keys."""
+    diff = {}
+
+    # Check keys present in either dict
+    all_keys = set(old_dict.keys()).union(set(new_dict.keys()))
+
+    for key in all_keys:
+        if key in old_dict and key in new_dict:
+            if isinstance(old_dict[key], dict) and isinstance(new_dict[key], dict):
+                # Recur for nested dictionaries and get filtered diff
+                nested_diff = filter_unchanged_keys(old_dict[key], new_dict[key])
+                if nested_diff:
+                    diff[key] = nested_diff
+            elif old_dict[key] != new_dict[key]:
+                diff[key] = {"old": old_dict[key], "new": new_dict[key]}
+        elif key in old_dict:
+            diff[key] = {"old": old_dict[key], "new": None}
+        else:
+            diff[key] = {"old": None, "new": new_dict[key]}
+
+    return diff
+
+
+def gather_dict_diff(old_dict: dict, new_dict: dict) -> str:
+    """Gather the differences between two dictionaries and return them as a formatted string."""
+    diff = filter_unchanged_keys(old_dict, new_dict)
+    lines = []
+
+    if not diff:
+        return "✅ No differences found."
+
+    def process_diff(diff, indent=0):
+        indentation = "    " * indent
+        for key, value in diff.items():
+            if isinstance(value, dict) and "old" in value and "new" in value:
+                if value["old"] is None:
+                    lines.append(f"{indentation}🔹 Added: {key}: {value['new']}")
+                elif value["new"] is None:
+                    lines.append(f"{indentation}🔻 Removed: {key}: {value['old']}")
+                else:
+                    lines.append(f"{indentation}🔄 Modified: {key}:")
+                    lines.append(f"{indentation}    - Old: {value['old']}")
+                    lines.append(f"{indentation}    - New: {value['new']}")
+            elif isinstance(value, dict):
+                lines.append(f"{indentation}🔄 Modified: {key}:")
+                process_diff(value, indent + 1)
+
+    process_diff(diff)
+    return "\n".join(lines)
 
 
 def four_vec(
@@ -301,6 +380,34 @@ def four_vec(
     return outp
 
 
+def bracket_expansion(inputs: list):
+    """
+    Expands a list of strings with bracket notation into all possible combinations.
+
+    Example:
+    bracket_expansion(["{Jet,Muon}.{pt,eta}", "{Electron,Photon}.{phi}"]) -->
+    {"Jet.pt", "Jet.eta", "Muon.pt", "Muon.eta", "Electron.phi", "Photon.phi"}
+
+    NOTE: similar implementation might be somewhere in columnflow.
+    """
+    pattern = re.compile(r"\{([^{}]+)\}")
+    outp = set()
+
+    for inp in inputs:
+        # Find all bracketed groups and extract options by splitting on ","
+        matches = pattern.findall(inp)
+        options = [match.split(",") for match in matches]
+
+        # Replace each bracketed group with a placeholder "{}"
+        template = pattern.sub("{}", inp)
+
+        # Generate all possible combinations and add to the output set
+        combinations = itertools.product(*options)
+        outp.update(template.format(*combo) for combo in combinations)
+
+    return sorted(outp)
+
+
 def has_four_vec(
     events: ak.Array,
     collection_name: str,
@@ -333,7 +440,9 @@ def call_once_on_config(include_hash=False):
 
 
 def timeit(func):
-    """ Simple wrapper to measure execution time of a function """
+    """
+    Simple wrapper to measure execution time of a function.
+    """
     @wraps(func)
     def timeit_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
@@ -347,16 +456,72 @@ def timeit(func):
 
 def timeit_multiple(func):
     """ Wrapper to measure the number of execution calls and the added execution time of a function """
+    log_method = "info"
+    log_func = getattr(_logger, log_method)
+
     @wraps(func)
     def timeit_wrapper(*args, **kwargs):
         func.total_calls = getattr(func, "total_calls", 0) + 1
+        _repr = func.__name__
+
+        if len(args) >= 1 and hasattr(args[0], "__name__"):
+            # some classmethod
+            _repr = f"{args[0].__name__}.{_repr}"
+
+            if len(args) >= 2 and isinstance(args[1], dict):
+                params = args[1]
+            elif len(args) >= 3 and isinstance(args[2], dict):
+                params = args[2]
+            else:
+                params = {}
+
+            for param in ("branch", "dataset"):
+                if param in params:
+                    _repr = f"{_repr} ({param} {params[param]})"
+
+        elif len(args) >= 1 and hasattr(args[0], "cls_name"):
+            # probably a CSP function
+            inst = args[0]
+            params = {}
+            _repr = f"{inst.cls_name}.{_repr}"
+            if hasattr(inst, "config_inst"):
+                _repr = f"{_repr} ({inst.config_inst.name})"
+            if hasattr(inst, "dataset_inst"):
+                _repr = f"{_repr} ({inst.dataset_inst.name})"
+            if hasattr(inst, "shift_inst"):
+                _repr = f"{_repr} ({inst.shift_inst.name})"
+
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         total_time = end_time - start_time
         func.total_time = getattr(func, "total_time", 0) + total_time
-        _logger.info(f"{func.__name__} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
+        log_func(f"{_repr} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
         return result
+
+    return timeit_wrapper
+
+
+def timeit_multiple_plain(func):
+    """ Wrapper to measure the number of execution calls and the added execution time of a function """
+    log_method = "info"
+    log_func = getattr(_logger, log_method)
+
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        func.total_calls = getattr(func, "total_calls", 0) + 1
+        _repr = func.__name__
+        if len(args) >= 1 and hasattr(args[0], "__name__"):
+            _repr = f"{args[0].__name__}.{_repr}"
+
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        func.total_time = getattr(func, "total_time", 0) + total_time
+        log_func(f"{_repr} has been run {func.total_calls} times ({round_sig(func.total_time)} seconds)")
+        return result
+
     return timeit_wrapper
 
 

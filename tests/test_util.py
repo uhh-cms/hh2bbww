@@ -16,7 +16,9 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-class HbwUtilTest(unittest.TestCase):
+class HbwUtilTest(
+    unittest.TestCase,
+):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -97,3 +99,7 @@ class HbwUtilTest(unittest.TestCase):
 
         # on second call, function should not be called -> returns None
         self.assertEqual(some_config_function(self.config_inst), None)
+
+
+if __name__ == "__main__":
+    unittest.main()

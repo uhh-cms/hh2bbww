@@ -83,6 +83,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_ht2500toinf_madgraph",
             ]),
             *config.x.if_era(run=3, values=[
+                # NLO samples
                 "dy_m50toinf_amcatnlo",
                 "dy_m10to50_amcatnlo",
                 "dy_m4to10_amcatnlo",
@@ -113,7 +114,13 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "zz_pythia",
             ]),
         ],
-        "ttv": [],  # empty for now
+        "ttv": [
+            "ttw_wlnu_amcatnlo",
+            "ttz_zll_m4to50_amcatnlo",
+            "ttz_zll_m50toinf_amcatnlo",
+            "ttz_znunu_amcatnlo",
+            "ttz_zqq_amcatnlo",
+        ],
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
@@ -390,6 +397,9 @@ def configure_hbw_datasets(
     limit_dataset_files: int | None = None,
     add_dataset_extensions: bool = False,
 ):
+    # allow usage of UHH campaign
+    enable_uhh_campaign_usage(config)
+
     for dataset in config.datasets:
         if add_dataset_extensions:
             add_dataset_extension_to_nominal(dataset)
@@ -534,3 +544,43 @@ def get_dataset_lfns_2017(
         lfn_base.child(basename, type="f").path
         for basename in lfn_base.listdir(pattern="*.root")
     ]
+
+
+def enable_uhh_campaign_usage(cfg: od.Config) -> None:
+    # custom lfn retrieval method in case the underlying campaign is custom uhh
+    def get_dataset_lfns_uhh(
+        dataset_inst: od.Dataset,
+        shift_inst: od.Shift,
+        dataset_key: str,
+    ) -> list[str]:
+        if "uhh" not in dataset_inst.x("campaign", ""):
+            # for non-uhh datasets, use default GetDatasetLFNs method
+            return GetDatasetLFNs.get_dataset_lfns_dasgoclient(
+                GetDatasetLFNs, dataset_inst=dataset_inst, shift_inst=shift_inst, dataset_key=dataset_key,
+            )
+        cpn_name = dataset_inst.x.campaign
+        # destructure dataset_key into parts and create the lfn base directory
+        dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
+        main_campaign, sub_campaign = full_campaign.split("-", 1)
+        lfn_base = law.wlcg.WLCGDirectoryTarget(
+            f"/store/{dataset_inst.data_source}/{main_campaign}/{dataset_id}/{tier}/{sub_campaign}/0",
+            # fs=f"wlcg_fs_{cfg.campaign.x.custom['name']}",
+            fs=f"wlcg_fs_{cpn_name}",
+        )
+
+        # loop though files and interpret paths as lfns
+        return [
+            lfn_base.child(basename, type="f").path
+            for basename in lfn_base.listdir(pattern="*.root")
+        ]
+
+    if any("uhh" in cpn_name for cpn_name in cfg.campaign.x("campaigns", [])):
+        # define the lfn retrieval function
+        cfg.x.get_dataset_lfns = get_dataset_lfns_uhh
+
+        # define custom remote fs's to look at
+        cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
+            None if "uhh" not in dataset_inst.x("campaign", "") else [
+                f"local_fs_{dataset_inst.x.campaign}",
+                f"wlcg_fs_{dataset_inst.x.campaign}",
+            ])
