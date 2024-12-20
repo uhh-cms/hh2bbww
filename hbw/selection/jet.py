@@ -294,9 +294,9 @@ def sl_boosted_jet_selection(
 
     # baseline fatjet selection
     fatjet_mask = (
-        (events.FatJet.pt > 200) &
+        (events.FatJet.pt > 170) &
         (abs(events.FatJet.eta) < 2.4) &
-        (events.FatJet.jetId == 6) &
+        (events.FatJet.jetId >= 6) &
         (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
         (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
     )
@@ -305,6 +305,7 @@ def sl_boosted_jet_selection(
     # H->bb fatjet definition based on Aachen analysis
     hbbJet_mask = (
         fatjet_mask &
+        (events.FatJet.pt > 200) &
         (events.FatJet.msoftdrop > 30) &
         (events.FatJet.msoftdrop < 210) &
         (events.FatJet.subJetIdx1 >= 0) &
