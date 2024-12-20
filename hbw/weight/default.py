@@ -62,6 +62,12 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
 
+    # implement dummy shift by varying weight by factor of 2
+    if "dummy" in self.local_shift_inst.name:
+        logger.warning("Applying dummy weight shift (should never be use for real analysis)")
+        variation = self.local_shift_inst.name.split("_")[-1]
+        weight = weight * {"up": 2.0, "down": 0.5}[variation]
+
     return events, weight
 
 
@@ -93,6 +99,7 @@ def base_init(self: WeightProducer) -> None:
         return
 
     year = self.config_inst.campaign.x.year
+    cpn_tag = self.config_inst.x.cpn_tag
 
     if not self.weight_columns:
         raise Exception("weight_columns not set")
@@ -134,7 +141,7 @@ def base_init(self: WeightProducer) -> None:
 
     for weight_column, shift_sources in self.local_weight_columns.items():
         shift_sources = law.util.make_list(shift_sources)
-        shift_sources = [s.format(year=year) for s in shift_sources]
+        shift_sources = [s.format(year=year, cpn_tag=cpn_tag) for s in shift_sources]
         shifts = get_shifts_from_sources(self.config_inst, *shift_sources)
         for shift in shifts:
             if weight_column not in shift.x("column_aliases").keys():
@@ -147,6 +154,9 @@ def base_init(self: WeightProducer) -> None:
             # declare shifts that the produced event weight depends on
             self.shifts |= set(shifts)
 
+    # remove dummy column from weight columns and uses
+    self.local_weight_columns.pop("dummy_weight")
+
     # store column names referring to weights to multiply
     self.uses |= self.local_weight_columns.keys()
 
@@ -158,6 +168,7 @@ btag_uncs = [
 
 
 default_correction_weights = {
+    "dummy_weight": ["dummy_{cpn_tag}"],
     "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],

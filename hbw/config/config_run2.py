@@ -521,6 +521,16 @@ def add_config(
             },
         )
 
+    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=209, type="shape")
+    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=210, type="shape")
+    add_shift_aliases(
+        cfg,
+        f"dummy_{cfg.x.cpn_tag}",
+        {
+            "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
+        },
+    )
+
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
 
@@ -700,7 +710,7 @@ def add_config(
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.deltaEtaSC", "mll",
         # MET
-        "MET.{pt,phi}",
+        "{MET,PuppiMET}.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
