@@ -75,6 +75,11 @@ class BuildCampaignSummary(
         Otherwise, return False.
         (not currently used, but could be used to prioritize e.g. the central tt dataset (less stats))
         """
+        if "v12" in campaign.name and "uhh" not in campaign.name:
+            # Take data from the central v12 campaign
+            if "data" in dataset_name:
+                return True
+
         return False
 
     def output(self):
