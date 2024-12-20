@@ -113,7 +113,7 @@ def create_hbw_analysis(
                     )
                 else:
                     raise ValueError(
-                        f"Campaign used for {config_name} is not yet initialized; to initialize, run: \n",
+                        f"Campaign used for {config_name} is not yet initialized; to initialize, run: \n"
                         f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
                     )
                     # cpn_task.run()
@@ -176,7 +176,7 @@ def create_hbw_analysis(
     software_tasks = ("cf.BundleBashSandbox", "cf.BundleCMSSWSandbox", "cf.BundleSoftware")
     shareable_analysis_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
-    skip_new_version_schema = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
+    skip_new_version_schema = ()
     known_parts = (
         # from cf
         "analysis", "task_family", "config", "configs", "dataset", "shift", "version",
@@ -237,11 +237,13 @@ def create_hbw_analysis(
             "analysis",
             "calibrator", "calibrators", "calib",
             "selector", "sel",
-            "producer", "producers", "prod",
+            "config", "configs",
+            "producers", "prod",
             "ml_data", "ml_model", "ml_models",
             "weightprod", "inf_model",
             "task_family",
-            "config", "dataset", "shift",
+            "calibrator", "producer",
+            "shift", "dataset",
         ]
         parts_order_end = ["version"]
 
