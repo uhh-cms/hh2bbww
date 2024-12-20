@@ -116,10 +116,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         "ttv": [
             "ttw_wlnu_amcatnlo",
-            "ttz_zll_m4to50_amcatnlo",
-            "ttz_zll_m50toinf_amcatnlo",
-            "ttz_znunu_amcatnlo",
-            "ttz_zqq_amcatnlo",
+            *config.x.if_era(run=3, values=[
+                "ttz_zll_m4to50_amcatnlo",
+                "ttz_zll_m50toinf_amcatnlo",
+                "ttz_znunu_amcatnlo",
+                "ttz_zqq_amcatnlo",
+            ]),
         ],
         "h": [
             *config.x.if_era(run=3, values=[
