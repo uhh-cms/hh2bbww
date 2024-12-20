@@ -7,11 +7,12 @@ Calibration methods.
 import law
 
 from columnflow.calibration import Calibrator, calibrator
+from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.util import maybe_import
 
-from hbw.calibration.jet import jec_nominal, bjet_regression
+from hbw.calibration.jet import bjet_regression
 
 ak = maybe_import("awkward")
 
@@ -20,12 +21,66 @@ logger = law.logger.get_logger(__name__)
 
 
 @calibrator(
+    # jec uncertainty_sources: set to None to use config default
+    jec_sources=["Total"],
+    version=1,
+)
+def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    FatJet calibrator, combining JEC and JER.
+    """
+    if self.task.local_shift != "nominal":
+        raise Exception("FatJet Calibrator should not be run for shifts other than nominal")
+
+    # apply the fatjet JEC and JER
+    events = self[self.fatjet_jec_cls](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[self.fatjet_jer_cls](events, **kwargs)
+
+    return events
+
+
+@fatjet.init
+def fatjet_init(self: Calibrator) -> None:
+    if not getattr(self, "dataset_inst", None):
+        return
+
+    # list of calibrators to apply (in that order)
+    self.calibrators = []
+
+    fatjet_jec_cls_dict = {
+        "jet_name": "FatJet",
+        "gen_jet_name": "GenJetAK8",
+        # MET propagation is performed in AK4 jet calibrator; fatjet should never use any MET columns
+        "propagate_met": False,
+        "met_name": "DO_NOT_USE",
+        "raw_met_name": "DO_NOT_USE",
+    }
+    fatjet_jer_cls_dict = fatjet_jec_cls_dict.copy()
+    # NOTE: deterministic FatJet seeds are not yet possible to produce
+    # fatjet_jer_cls_dict["deterministic_seed_index"] = 0
+
+    uncertainty_sources = [] if self.dataset_inst.is_data else self.jec_sources
+    jec_cls_name = f"fatjet_jec{'_nominal' if uncertainty_sources == [] else ''}"
+    self.fatjet_jec_cls = jec.derive(jec_cls_name, cls_dict={
+        **fatjet_jec_cls_dict,
+        "uncertainty_sources": uncertainty_sources,
+    })
+    self.fatjet_jer_cls = jer.derive("deterministic_fatjet_jer", cls_dict=fatjet_jer_cls_dict)
+
+    self.uses |= {self.fatjet_jec_cls, self.fatjet_jer_cls}
+    self.produces |= {self.fatjet_jec_cls, self.fatjet_jer_cls}
+
+
+@calibrator(
     uses={deterministic_seeds},
     produces={deterministic_seeds},
-    skip_jecunc=True,
+    # jec uncertainty_sources: set to None to use config default
+    jec_sources=["Total"],
     bjet_regression=True,
+    version=1,
 )
-def base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
 
     logger.info(f"Running calibrators '{[calib.cls_name for calib in self.calibrators]}' (in that order)")
@@ -35,31 +90,50 @@ def base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-@base.init
-def base_init(self: Calibrator) -> None:
+@jet_base.init
+def jet_base_init(self: Calibrator) -> None:
     if not getattr(self, "dataset_inst", None):
         return
+
+    met_name = self.config_inst.x.met_name
+    raw_met_name = self.config_inst.x.raw_met_name
 
     # list of calibrators to apply (in that order)
     self.calibrators = []
 
-    if self.dataset_inst.is_data or self.skip_jecunc:
-        self.calibrators.append(jec_nominal)
-    else:
-        self.calibrators.append(jec)
+    uncertainty_sources = [] if self.dataset_inst.is_data else self.jec_sources
+    jec_cls_name = f"ak4_jec{'_nominal' if uncertainty_sources == [] else ''}"
+
+    jec_cls = jec.derive(
+        jec_cls_name,
+        cls_dict={
+            "uncertainty_sources": uncertainty_sources,
+            "met_name": met_name,
+            "raw_met_name": raw_met_name,
+        },
+    )
+    self.calibrators.append(jec_cls)
 
     if self.bjet_regression:
         self.calibrators.append(bjet_regression)
 
     # run JER only on MC
     if self.dataset_inst.is_mc:
-        self.calibrators.append(jer)
+        # version of jer that uses the first random number from deterministic_seeds
+        deterministic_jer_cls = jer.derive(
+            "deterministic_jer",
+            cls_dict={"deterministic_seed_index": 0, "met_name": met_name},
+        )
+        self.calibrators.append(deterministic_jer_cls)
+
+    if self.config_inst.x.run == 2:
+        # derive met_phi calibrator (currently only for run 2)
+        met_phi_cls = met_phi.derive("met_phi", cls_dict={"met_name": met_name})
+        self.calibrators.append(met_phi_cls)
 
     self.uses |= set(self.calibrators)
     self.produces |= set(self.calibrators)
 
 
-default = base.derive("default", cls_dict=dict(skip_jecunc=False, bjet_regression=False))
-skip_jecunc = base.derive("skip_jecunc", cls_dict=dict(skip_jecunc=True, bjet_regression=False))
-with_b_reg = base.derive("with_b_reg", cls_dict=dict(skip_jecunc=True, bjet_regression=True))
-full = base.derive("full", cls_dict=dict(skip_jecunc=False, bjet_regression=True))
+skip_jecunc = jet_base.derive("skip_jecunc", cls_dict=dict(bjet_regression=False))
+with_b_reg = jet_base.derive("with_b_reg", cls_dict=dict(bjet_regression=True))

@@ -192,83 +192,62 @@ def add_config(
     if cfg.x.run == 2:
         jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
         jet_type = "AK4PFchs"
+        fatjet_type = "AK8PFchs"
     elif cfg.x.run == 3:
         jerc_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         jet_type = "AK4PFPuppi"
+        fatjet_type = "AK8PFPuppi"
 
-    cfg.x.jec = DotDict.wrap({"Jet": {
-        "campaign": jerc_campaign,
-        "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
-        "jet_type": jet_type,
-        "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
-        "levels_for_type1_met": ["L1FastJet"],
-        "uncertainty_sources": [
-            # "AbsoluteStat",
-            # "AbsoluteScale",
-            # "AbsoluteSample",
-            # "AbsoluteFlavMap",
-            # "AbsoluteMPFBias",
-            # "Fragmentation",
-            # "SinglePionECAL",
-            # "SinglePionHCAL",
-            # "FlavorQCD",
-            # "TimePtEta",
-            # "RelativeJEREC1",
-            # "RelativeJEREC2",
-            # "RelativeJERHF",
-            # "RelativePtBB",
-            # "RelativePtEC1",
-            # "RelativePtEC2",
-            # "RelativePtHF",
-            # "RelativeBal",
-            # "RelativeSample",
-            # "RelativeFSR",
-            # "RelativeStatFSR",
-            # "RelativeStatEC",
-            # "RelativeStatHF",
-            # "PileUpDataMC",
-            # "PileUpPtRef",
-            # "PileUpPtBB",
-            # "PileUpPtEC1",
-            # "PileUpPtEC2",
-            # "PileUpPtHF",
-            # "PileUpMuZero",
-            # "PileUpEnvelope",
-            # "SubTotalPileUp",
-            # "SubTotalRelative",
-            # "SubTotalPt",
-            # "SubTotalScale",
-            # "SubTotalAbsolute",
-            # "SubTotalMC",
-            "Total",
-            # "TotalNoFlavor",
-            # "TotalNoTime",
-            # "TotalNoFlavorNoTime",
-            # "FlavorZJet",
-            # "FlavorPhotonJet",
-            # "FlavorPureGluon",
-            # "FlavorPureQuark",
-            # "FlavorPureCharm",
-            # "FlavorPureBottom",
-            # "TimeRunA",
-            # "TimeRunB",
-            # "TimeRunC",
-            # "TimeRunD",
-            "CorrelationGroupMPFInSitu",
-            "CorrelationGroupIntercalibration",
-            "CorrelationGroupbJES",
-            "CorrelationGroupFlavor",
-            "CorrelationGroupUncorrelated",
-        ],
-    }})
+    jec_uncertainties = [
+        # NOTE: there are many more sources available, but it is likely that we only need Total
+        "Total",
+        # "CorrelationGroupMPFInSitu",
+        # "CorrelationGroupIntercalibration",
+        # "CorrelationGroupbJES",
+        # "CorrelationGroupFlavor",
+        # "CorrelationGroupUncorrelated",
+    ]
+
+    cfg.x.jec = DotDict.wrap({
+        # NOTE: currently, we set the uncertainty_sources in the calibrator itself
+        "Jet": {
+            "campaign": jerc_campaign,
+            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+            "jet_type": jet_type,
+            "external_file_key": "jet_jerc",
+            "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
+            "levels_for_type1_met": ["L1FastJet"],
+            "uncertainty_sources": jec_uncertainties,
+        },
+        "FatJet": {
+            "campaign": jerc_campaign,
+            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+            "jet_type": fatjet_type,
+            "external_file_key": "fat_jet_jerc",
+            "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
+            "levels_for_type1_met": ["L1FastJet"],
+            "uncertainty_sources": jec_uncertainties,
+        },
+    })
 
     # JER
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
-    cfg.x.jer = DotDict.wrap({"Jet": {
-        "campaign": jerc_campaign,
-        "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
-        "jet_type": jet_type,
-    }})
+    cfg.x.jer = DotDict.wrap({
+        "Jet": {
+            "campaign": jerc_campaign,
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
+            "jet_type": jet_type,
+            "external_file_key": "jet_jerc",
+        },
+        "FatJet": {
+            "campaign": jerc_campaign,
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
+            # "jet_type": "fatjet_type",
+            # JER info only for AK4 jets, stored in AK4 file
+            "jet_type": jet_type,
+            "external_file_key": "jet_jerc",
+        },
+    })
 
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
@@ -343,6 +322,16 @@ def add_config(
         3: "particlenet",
     }[cfg.x.run]
     cfg.x.btag_wp = "medium"
+
+    # met configuration
+    cfg.x.met_name = {
+        2: "MET",
+        3: "PuppiMET",
+    }[cfg.x.run]
+    cfg.x.raw_met_name = {
+        2: "RawMET",
+        3: "RawPuppiMET",
+    }[cfg.x.run]
 
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
@@ -603,6 +592,7 @@ def add_config(
     add_external("pu_sf", (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"))
     # jet energy correction
     add_external("jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"))
+    add_external("fat_jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/fatJet_jerc.json.gz", "v1"))
     # jet veto map
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
