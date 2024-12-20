@@ -114,7 +114,7 @@ class CalculateTriggerScaleFactors(
             for variable in self.variables:
                 h_in = self.load_histogram(dataset, variable)
                 h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
-
+                h_in = h_in[{"category": sum}]
                 # apply variable settings
                 for var in self.variable_settings:
                     if var in h_in.axes.name:
@@ -128,11 +128,11 @@ class CalculateTriggerScaleFactors(
                     hists[variable] = h_in
 
         # calculate efficiencies
-        efficiencies = calculate_efficiencies(hists[self.variables[0]][0, :, 0, ..., :], self.trigger)  # category, process, shift, variable, bin # noqa
+        efficiencies = calculate_efficiencies(hists[self.variables[0]][:, 0, ..., :], self.trigger)  # process, shift, variable, bin # noqa
         # calculate scale factors and store them as a correctionlib evaluator
         scale_factors = safe_div(efficiencies[0], efficiencies[1])
 
-        sfhist = hist.Hist(*hists[self.variables[0]][0, 0, 0, ..., 0].axes, data=scale_factors)
+        sfhist = hist.Hist(*hists[self.variables[0]][0, 0, ..., 0].axes, data=scale_factors)
         sfhist.name = f"sf_{self.trigger}_{self.variables[0]}"
         sfhist.label = "out"
 
@@ -159,7 +159,13 @@ class CalculateTriggerScaleFactors(
         if len(sfhist.axes.size) <= 2:
             # use CMS plotting style
             plt.style.use(mplhep.style.CMS)
-            fig, ax = plt.subplots()
+
+            if len(sfhist.axes.size) == 2:
+                fig, ax = plt.subplots()
+            else:
+                fig, axs = plt.subplots(2, 1, gridspec_kw=dict(height_ratios=[3, 1], hspace=0), sharex=True)
+                (ax, rax) = axs
+
             cms_label_kwargs = {
                 "ax": ax,
                 "llabel": "Private work (CMS data/simulation)",
@@ -174,10 +180,22 @@ class CalculateTriggerScaleFactors(
             if len(sfhist.axes.size) == 2:
                 sfhist.plot2d(ax=ax)
             else:
-                sfhist.plot1d(ax=ax, yerr=False, label=f"{self.trigger} scale factors")
+                ax.errorbar(x=sfhist.axes[0].centers, y=efficiencies[0], fmt="o", label=f"{self.trigger} data")
+                ax.errorbar(x=sfhist.axes[0].centers, y=efficiencies[1], fmt="o", label=f"{self.trigger} MC")
+                rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), fmt="o")
+                rax.axhline(y=1.0, linestyle="dashed", color="gray")
+                rax_kwargs = {
+                    "ylim": (0.85, 1.15),
+                    "ylabel": "Scale factors",
+                    "xlabel": f"{sfhist.axes[0].label}",
+                    "yscale": "linear",
+                }
+                rax.set(**rax_kwargs)
+                ax.set_ylabel("Efficiency")
+                ax.set_ylim(0, 1.04)
 
-            plt.legend()
-            plt.tight_layout()
+            ax.legend()
+            fig.tight_layout()
 
             outputs["trigger_sf_plot"].dump(
                 fig,
@@ -257,10 +275,16 @@ class CalculateAlphaFactors(
         if len(sfhist.axes.size) <= 2:
             # use CMS plotting style
             plt.style.use(mplhep.style.CMS)
-            fig, ax = plt.subplots()
+
+            if len(sfhist.axes.size) == 2:
+                fig, ax = plt.subplots()
+            else:
+                fig, axs = plt.subplots(2, 1, gridspec_kw=dict(height_ratios=[3, 1], hspace=0), sharex=True)
+                (ax, rax) = axs
+
             cms_label_kwargs = {
                 "ax": ax,
-                "llabel": "Private work (CMS data/simulation)",
+                "llabel": "Private work (CMS simulation)",
                 "fontsize": 22,
                 "data": False,
                 "exp": "",
@@ -272,10 +296,24 @@ class CalculateAlphaFactors(
             if len(sfhist.axes.size) == 2:
                 sfhist.plot2d(ax=ax)
             else:
-                sfhist.plot1d(ax=ax, yerr=False, label=f"{self.trigger} alpha factors")
+                ax.errorbar(x=sfhist.axes[0].centers, y=efficiencies[0], fmt="o",
+                            label=f"{self.config_inst.categories.get(self.categories[0]).label}")
+                ax.errorbar(x=sfhist.axes[0].centers, y=efficiencies[1], fmt="o",
+                            label=f"{self.config_inst.categories.get(self.categories[1]).label}")
+                rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), fmt="o")
+                rax.axhline(y=1.0, linestyle="dashed", color="gray")
+                rax_kwargs = {
+                    "ylim": (0.85, 1.15),
+                    "ylabel": r"$\alpha$",
+                    "xlabel": f"{sfhist.axes[0].label}",
+                    "yscale": "linear",
+                }
+                rax.set(**rax_kwargs)
+                ax.set_ylabel("Efficiency")
+                ax.set_ylim(0, 1.04)
 
-            plt.legend()
-            plt.tight_layout()
+            ax.legend(title=f"{self.trigger}, {self.processes[0]}")
+            fig.tight_layout()
 
             outputs["trigger_a_plot"].dump(
                 fig,

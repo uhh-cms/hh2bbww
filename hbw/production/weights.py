@@ -259,7 +259,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=1,
+    version=2,
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

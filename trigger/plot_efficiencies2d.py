@@ -117,7 +117,7 @@ def plot_efficiencies2d(
         h_view = hist.Hist(*h_sum[:, :, 0].axes, data=eff_2d)
 
     # check histogram value range
-    vmin, vmax = np.nanmin(h_sum.values()), np.nanmax(h_sum.values())
+    vmin, vmax = np.nanmin(h_view.values()), np.nanmax(h_view.values())
     vmin, vmax = np.nan_to_num(np.array([vmin, vmax]), 0)
 
     # default to full z range
@@ -129,11 +129,11 @@ def plot_efficiencies2d(
 
     # if requested, hide or clip bins outside specified plot range
     if extremes == "hide":
-        h_view.value[h_view.value < zlim[0]] = np.nan
-        h_view.value[h_view.value > zlim[1]] = np.nan
+        h_view.values()[h_view.values() < zlim[0]] = np.nan
+        h_view.values()[h_view.values() > zlim[1]] = np.nan
     elif extremes == "clip":
-        h_view.value[h_view.value < zlim[0]] = zlim[0]
-        h_view.value[h_view.value > zlim[1]] = zlim[1]
+        h_view.values()[h_view.values() < zlim[0]] = zlim[0]
+        h_view.values()[h_view.values() > zlim[1]] = zlim[1]
 
     # update histogram values from view
     h_sum = h_view

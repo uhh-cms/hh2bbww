@@ -306,8 +306,8 @@ def dl1(
     results += lepton_results
 
     # trigger selection
-    # events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
-    # results += trigger_results
+    events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
+    results += trigger_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
@@ -345,15 +345,15 @@ def dl1(
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
-        # results.steps.data_double_counting &
+        results.steps.data_double_counting &
         (jet_step | results.steps.HbbJet_no_bjet) &
         results.steps.ll_lowmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &
-        results.steps.SR  # &  # exactly 2 tight leptons
-        # results.steps.Trigger &
-        # results.steps.TriggerAndLep
+        results.steps.SR &  # exactly 2 tight leptons
+        results.steps.Trigger &
+        results.steps.TriggerAndLep
     )
 
     # combined event selection after all steps
@@ -387,14 +387,14 @@ def dl1_init(self: Selector) -> None:
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
-        # hbw_trigger_selection,
+        hbw_trigger_selection,
         post_selection,
     }
     self.produces = {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
-        # hbw_trigger_selection,
+        hbw_trigger_selection,
         post_selection,
     }
 

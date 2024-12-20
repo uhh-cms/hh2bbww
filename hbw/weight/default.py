@@ -49,8 +49,15 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight_columns=None,
     # only run on mc
     mc_only=False,
+    # mask to apply to events
+    mask_fn=None,
+    mask_columns=None,
 )
 def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+    # apply mask
+    if self.mask_fn:
+        events = events[self.mask_fn(events)]
+
     # apply behavior (for variable reconstruction)
     events = self[prepare_objects](events, **kwargs)
 
@@ -69,6 +76,10 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 def base_init(self: WeightProducer) -> None:
     if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
         return
+
+    if self.mask_columns:
+        for col in self.mask_columns:
+            self.uses.add(col)
 
     if self.dataset_inst.is_data:
         return
@@ -173,6 +184,12 @@ base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
+
+ref_cut = base.derive("ref_cut", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight,
+    "mask_columns": ["HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"],
+    })
 
 # weight sets for closure tests
 base.derive("norm_and_btag", cls_dict={"weight_columns": {

@@ -669,7 +669,7 @@ def add_variables(config: od.Config) -> None:
             name=f"{obj.lower()}_pt",
             expression=f"{obj}.pt[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, 0., 350.),
+            binning=[0, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100, 120, 150, 200, 350],
             unit="GeV",
             x_title=obj + r" $p_{T}$",
         )

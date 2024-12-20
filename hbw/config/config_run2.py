@@ -669,6 +669,7 @@ def add_config(
         "HLT.Ele30_WPTight_Gsf", "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
         "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
+        "HLT.Ele115_CaloIdVT_GsfTrkIdT", "HLT.Ele50_CaloIdVT_GsfTrkIdT_PFJet165", "HLT.DoubleEle33_CaloIdL_MW",
         # Gen information (for categorization)
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
