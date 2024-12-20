@@ -42,6 +42,10 @@ def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 @fatjet.init
 def fatjet_init(self: Calibrator) -> None:
+    if not self.task or self.task.task_family != "cf.CalibrateEvents":
+        # init only required for task itself
+        return
+
     if not getattr(self, "dataset_inst", None):
         return
 
@@ -92,6 +96,10 @@ def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 @jet_base.init
 def jet_base_init(self: Calibrator) -> None:
+    if not self.task or self.task.task_family != "cf.CalibrateEvents":
+        # init only required for task itself
+        return
+
     if not getattr(self, "dataset_inst", None):
         return
 
@@ -122,7 +130,10 @@ def jet_base_init(self: Calibrator) -> None:
         # version of jer that uses the first random number from deterministic_seeds
         deterministic_jer_cls = jer.derive(
             "deterministic_jer",
-            cls_dict={"deterministic_seed_index": 0, "met_name": met_name},
+            cls_dict={
+                "deterministic_seed_index": 0,
+                "met_name": met_name,
+            },
         )
         self.calibrators.append(deterministic_jer_cls)
 
