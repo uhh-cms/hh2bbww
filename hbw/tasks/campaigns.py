@@ -23,14 +23,14 @@ campaign_map = {
         "cmsdb.campaigns.run2_2017_nano_v9": "campaign_run2_2017_nano_v9",
     },
     "c22pre": {
+        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
         "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
         "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
-        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
     },
     "c22post": {
+        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
         "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
         "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
-        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
     },
 }
 
@@ -69,25 +69,12 @@ class BuildCampaignSummary(
             for mod, campaign in self.campaigns.items()
         ]
 
-    dataset_from_uhh_identifier = {
-        # TODO: use DY from uhh campaign
-        # "dy_m10to50_amcatnlo",
-        # "dy_m4to10_amcatnlo",
-        "ttw_",
-        "ttz_",
-    }
-
     def get_dataset_prio(self, dataset_name, campaign):
         """
         If dataset should be overwritten from this campaign, return True.
         Otherwise, return False.
+        (not currently used, but could be used to prioritize e.g. the central tt dataset (less stats))
         """
-        if "uhh" in campaign.name and any(
-            dataset_identifier in dataset_name
-            for dataset_identifier in self.dataset_from_uhh_identifier
-        ):
-            return True
-
         return False
 
     def output(self):
