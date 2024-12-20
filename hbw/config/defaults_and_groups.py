@@ -8,7 +8,7 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    return "with_b_reg"
+    return ["with_b_reg", "fatjet"]
 
 
 def default_selector(container):
