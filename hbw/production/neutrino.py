@@ -167,7 +167,7 @@ def top_reconstruction(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         # replace nan, none, and inf values with EMPTY_FLOAT
         col = route.apply(events)
         col = ak.fill_none(ak.nan_to_none(route.apply(events)), EMPTY_FLOAT)
-        col = ak.where(np.isinf(col), EMPTY_FLOAT, col)
+        col = ak.where(~np.isfinite(col), EMPTY_FLOAT, col)
 
         events = set_ak_column(events, route.string_column, col)
 

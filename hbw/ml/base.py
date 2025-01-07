@@ -110,6 +110,7 @@ class MLClassifierBase(MLModel):
 
         for param in self.settings_parameters:
             # overwrite the default value with the value from the parameters
+            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
             setattr(self, param, self.parameters.get(param, getattr(self, param)))
 
         # cast the ml parameters to the correct types if necessary
