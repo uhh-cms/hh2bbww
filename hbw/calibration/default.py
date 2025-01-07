@@ -10,11 +10,13 @@ from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer
 from columnflow.production.cms.seeds import deterministic_seeds
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, try_float
+from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 from hbw.calibration.jet import bjet_regression
 
 ak = maybe_import("awkward")
+np = maybe_import("numpy")
 
 
 logger = law.logger.get_logger(__name__)
@@ -24,6 +26,9 @@ logger = law.logger.get_logger(__name__)
     # jec uncertainty_sources: set to None to use config default
     jec_sources=["Total"],
     version=1,
+    # add dummy produces such that this calibrator will always be run when requested
+    # (temporary workaround until init's are only run as often as necessary)
+    produces={"FatJet.pt"},
 )
 def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -87,9 +92,28 @@ def fatjet_init(self: Calibrator) -> None:
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
 
+    # keep a copy of non-propagated MET to replace infinite values
+    pre_calib_met = events[self.config_inst.x.met_name]
+
     logger.info(f"Running calibrators '{[calib.cls_name for calib in self.calibrators]}' (in that order)")
     for calibrator_inst in self.calibrators:
         events = self[calibrator_inst](events, **kwargs)
+
+    # workaround for infinite values in MET pt/phi
+    for route in self.produced_columns:
+        col = route.string_column
+        m = ~np.isfinite(route.apply(events))
+        if ak.any(m):
+            # replace infinite values
+            replace_value = EMPTY_FLOAT
+            if self.config_inst.x.met_name in col:
+                # use pre-calibrated MET to replace infinite values of MET pt/phi
+                replace_value = pre_calib_met[col.split(".")[-1].split("_")[0]]
+            logger.info(
+                f"Found infinite values in {col}; Values will be replaced with "
+                f"{replace_value if try_float(replace_value) else replace_value[m]}"
+            )
+            events = set_ak_column(events, col, ak.where(m, replace_value, route.apply(events)))
 
     return events
 

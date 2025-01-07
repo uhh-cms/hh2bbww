@@ -636,6 +636,17 @@ def MET_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any |
 
 
 @deferred_column
+def RAW_MET_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Similar to MET_COLUMN, see MET_COLUMN for more information.
+    """
+    raw_met_name = func.config_inst.x("raw_met_name", None)
+    if not raw_met_name:
+        raise Exception("the raw_met_name has not been configured")
+    return f"{raw_met_name}.{self.get()}"
+
+
+@deferred_column
 def IF_DATASET_HAS_LHE_WEIGHTS(
     self: ArrayFunction.DeferredColumn,
     func: ArrayFunction,

@@ -11,7 +11,7 @@ from hbw.production.weights import event_weights_to_normalize
 from columnflow.columnar_util import optional_column as optional
 
 from columnflow.util import maybe_import
-from hbw.util import has_tag
+from hbw.util import has_tag, RAW_MET_COLUMN
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -50,7 +50,7 @@ def hbw_selection_step_stats(
 
 
 @selector(
-    uses={increment_stats, event_weights_to_normalize},
+    uses={increment_stats, event_weights_to_normalize, RAW_MET_COLUMN("pt")},
 )
 def hbw_increment_stats(
     self: Selector,
@@ -79,6 +79,10 @@ def hbw_increment_stats(
         weight_map["num_negative_weights"] = (events.mc_weight < 0)
         weight_map["num_pu_0"] = (events.pu_weight == 0)
         weight_map["num_pu_100"] = (events.pu_weight >= 100)
+
+        raw_puppi_met = events[self.config_inst.x.raw_met_name]
+        weight_map["num_raw_met_isinf"] = (~np.isfinite(raw_puppi_met.pt))
+        weight_map["num_raw_met_isinf_selected"] = (~np.isfinite(raw_puppi_met.pt) & event_mask)
         # "sum" operations
         weight_map["sum_mc_weight"] = events.mc_weight  # weights of all events
         weight_map["sum_mc_weight_selected"] = (events.mc_weight, event_mask)  # weights of selected events
