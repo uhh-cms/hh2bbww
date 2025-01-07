@@ -570,10 +570,13 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
             fs=f"wlcg_fs_{cpn_name}",
         )
 
+        broken_files = dataset_inst[shift_inst.name].get_aux("broken_files", [])
+        print(broken_files)
         # loop though files and interpret paths as lfns
         return [
             lfn_base.child(basename, type="f").path
             for basename in lfn_base.listdir(pattern="*.root")
+            if lfn_base.child(basename, type="f").path not in broken_files
         ]
 
     if any("uhh" in cpn_name for cpn_name in cfg.campaign.x("campaigns", [])):

@@ -62,12 +62,37 @@ class BuildCampaignSummary(
             raise ValueError(f"Unknown config {self.config}")
         return campaign_map[self.config]
 
+    def modify_campaign(self, campaign_inst):
+        """
+        Modify the campaign instance, e.g. by adding datasets or changing dataset properties.
+        """
+        if campaign_inst.name == "run3_2022_postEE_nano_uhh_v12":
+            # remove broken files
+            dy_m10to50_nominal = campaign_inst.get_dataset("dy_m10to50_amcatnlo").info["nominal"]
+            dy_m10to50_nominal.x.broken_files = [
+                # missing scale weights
+                "/store/mc/Run3Summer22EEMiniAODv4_NanoAODv12UHH/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/0/4B7063C8-D7B7-A45F-0B56-817AECEAFB43.root",  # noqa: E501
+            ]
+            dy_m10to50_nominal.n_files = dy_m10to50_nominal.n_files - 1
+            dy_m10to50_nominal.n_events = dy_m10to50_nominal.n_events - 1651814
+
+            dy_m50toinf_nominal = campaign_inst.get_dataset("dy_m50toinf_amcatnlo").info["nominal"]
+            dy_m50toinf_nominal.x.broken_files = [
+                # broken file
+                "/store/mc/Run3Summer22EEMiniAODv4_NanoAODv12UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6_ext1-v1/0/3FE6B8C0-4234-4EE4-5BEA-E232539E0D85.root",  # noqa: E501
+            ]
+            dy_m50toinf_nominal.n_files = dy_m50toinf_nominal.n_files - 1
+            dy_m50toinf_nominal.n_events = -1
+            # dy_m50toinf.x.n_events = dy_m50toinf.x.n_events - ????
+
     @cached_property
     def campaign_insts(self):
-        return [
-            getattr(importlib.import_module(mod), campaign).copy()
-            for mod, campaign in self.campaigns.items()
-        ]
+        campaign_insts = []
+        for mod, campaign in self.campaigns.items():
+            campaign_inst = getattr(importlib.import_module(mod), campaign).copy()
+            self.modify_campaign(campaign_inst)
+            campaign_insts.append(campaign_inst)
+        return campaign_insts
 
     def get_dataset_prio(self, dataset_name, campaign):
         """
