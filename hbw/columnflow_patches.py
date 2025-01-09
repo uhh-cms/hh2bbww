@@ -136,6 +136,10 @@ def patch_materialization_strategy():
 
 @memoize
 def patch_all():
+    # change the "retries" parameter default
+    from columnflow.tasks.framework.remote import RemoteWorkflow
+    RemoteWorkflow.retries = RemoteWorkflow.retries.copy(default=2)
+
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()
