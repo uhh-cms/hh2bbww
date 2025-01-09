@@ -709,7 +709,7 @@ def add_config(
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
-        "Electron.deltaEtaSC", "mll",
+        "Electron.{deltaEtaSC,r9,seedGain}", "mll",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
