@@ -141,32 +141,29 @@ def create_hbw_analysis(
 
     # 2017
     add_lazy_config(
-        # {
-        #     "cmsdb.campaigns.run2_2017_nano_v9": "campaign_run2_2017_nano_v9",
-        # },
         "c17",
         1700,
     )
 
     # 2022 preEE
     add_lazy_config(
-        # {
-        #     "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
-        #     "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
-        # },
         "c22pre",
         2200,
     )
 
     # 2022 postEE
     add_lazy_config(
-        # {
-        #     "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
-        #     "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
-        #     "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
-        # },
         "c22post",
         2210,
+    )
+
+    add_lazy_config(
+        "c22pre_das",
+        2201,
+    )
+    add_lazy_config(
+        "c22post_das",
+        2211,
     )
 
     #

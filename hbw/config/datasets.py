@@ -571,13 +571,13 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         )
 
         broken_files = dataset_inst[shift_inst.name].get_aux("broken_files", [])
-        print(broken_files)
+
         # loop though files and interpret paths as lfns
-        return [
+        lfns = [
             lfn_base.child(basename, type="f").path
             for basename in lfn_base.listdir(pattern="*.root")
-            if lfn_base.child(basename, type="f").path not in broken_files
         ]
+        return [lfn for lfn in lfns if lfn not in broken_files]
 
     if any("uhh" in cpn_name for cpn_name in cfg.campaign.x("campaigns", [])):
         # define the lfn retrieval function
@@ -586,6 +586,6 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         # define custom remote fs's to look at
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
-                f"local_fs_{dataset_inst.x.campaign}",
                 f"wlcg_fs_{dataset_inst.x.campaign}",
+                f"local_fs_{dataset_inst.x.campaign}",
             ])

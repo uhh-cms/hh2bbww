@@ -169,6 +169,17 @@ def add_config(
                 "lumi_13TeV_2022": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
             })
+    elif year == 2023:
+        if campaign.has_tag("preBPix"):
+            cfg.x.luminosity = Number(17.794, {
+                "lumi_13TeV_2023": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
+        elif campaign.has_tag("postBPix"):
+            cfg.x.luminosity = Number(9.451, {
+                "lumi_13TeV_2023": 0.01j,
+                "lumi_13TeV_correlated": 0.006j,
+            })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
 
@@ -737,5 +748,11 @@ def add_config(
     if cfg.has_tag("is_sl") and cfg.has_tag("is_resonant"):
         from hbw.config.sl_res import configure_sl_res
         configure_sl_res(cfg)
+
+    # sanity check: sometimes the process is not the same as the one in the dataset
+    p1 = cfg.get_process("dy_m50toinf")
+    p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
+    if p1 != p2:
+        raise Exception(f"Processes are not the same: {repr(p1)} != {repr(p2)}")
 
     return cfg
