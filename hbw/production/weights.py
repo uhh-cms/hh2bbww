@@ -27,7 +27,7 @@ from hbw.production.gen_v import gen_v_boson, vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
-from hbw.util import has_tag
+from hbw.util import has_tag, IF_DY, IF_TOP
 
 
 np = maybe_import("numpy")
@@ -39,8 +39,8 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses={gen_parton_top, gen_v_boson, pu_weight},
-    produces={gen_parton_top, gen_v_boson, pu_weight},
+    uses={IF_TOP(gen_parton_top), IF_DY(gen_v_boson), pu_weight},
+    produces={IF_TOP(gen_parton_top), IF_DY(gen_v_boson), pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
