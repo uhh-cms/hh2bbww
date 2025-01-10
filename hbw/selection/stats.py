@@ -50,7 +50,7 @@ def hbw_selection_step_stats(
 
 
 @selector(
-    uses={increment_stats, event_weights_to_normalize, RAW_MET_COLUMN("pt")},
+    uses={increment_stats, event_weights_to_normalize, RAW_MET_COLUMN("{pt,phi}")},
 )
 def hbw_increment_stats(
     self: Selector,

@@ -317,9 +317,11 @@ def add_variables(config: od.Config) -> None:
             x_title="Number of pnet jets (tight WP)",
             discrete_x=True,
         )
+    # NOTE: there is some issue when loading columns via aux, but not loading all 4-vector components
+    # but no error is raised, when changing to the `object["pt"]` notation
     config.add_variable(
         name="n_fatjet",
-        expression=lambda events: ak.num(events.FatJet.pt, axis=1),
+        expression=lambda events: ak.num(events.FatJet["pt"], axis=1),
         aux={"inputs": {"FatJet.pt"}},
         binning=(7, -0.5, 6.5),
         x_title="Number of fatjets",
@@ -327,7 +329,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_hbbjet",
-        expression=lambda events: ak.num(events.HbbJet.pt, axis=1),
+        expression=lambda events: ak.num(events.HbbJet["pt"], axis=1),
         aux={"inputs": {"HbbJet.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of hbbjets",
@@ -335,7 +337,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_electron",
-        expression=lambda events: ak.num(events.Electron.pt, axis=1),
+        expression=lambda events: ak.num(events.Electron["pt"], axis=1),
         aux={"inputs": {"Electron.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of electrons",
@@ -343,7 +345,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_muon",
-        expression=lambda events: ak.num(events.Muon.pt, axis=1),
+        expression=lambda events: ak.num(events.Muon["pt"], axis=1),
         aux={"inputs": {"Muon.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of muons",
@@ -351,7 +353,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="n_bjet",
-        expression=lambda events: ak.num(events.Bjet.pt, axis=1),
+        expression=lambda events: ak.num(events.Bjet["pt"], axis=1),
         aux={"inputs": {"Bjet.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of bjets",
@@ -359,7 +361,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="ht",
-        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
+        expression=lambda events: ak.sum(events.Jet["pt"], axis=1),
         aux={"inputs": {"Jet.pt"}},
         binning=(40, 0, 1200),
         unit="GeV",
@@ -369,7 +371,7 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="lt",
         expression=lambda events: (
-            ak.sum(events.Muon.pt, axis=1) + ak.sum(events.Muon.pt, axis=1) + events[met_name].pt
+            ak.sum(events.Muon["pt"], axis=1) + ak.sum(events.Muon["pt"], axis=1) + events[met_name]["pt"]
         ),
         aux={"inputs": {"Muon.pt", "Electron.pt", "MET.pt"}},
         binning=(40, 0, 1200),
@@ -378,7 +380,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="ht_bjet_norm",
-        expression=lambda events: ak.sum(events.Jet.pt, axis=1),
+        expression=lambda events: ak.sum(events.Jet["pt"], axis=1),
         aux={"inputs": {"Jet.pt"}},
         binning=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1450, 1700, 2400],
         unit="GeV",

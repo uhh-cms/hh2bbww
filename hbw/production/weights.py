@@ -241,7 +241,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
-    elif "dy_m50toinf" in self.dataset_inst.name:
+    elif "dy_" in self.dataset_inst.name:
         self.norm_weights_producer = stitched_normalization_weights
     else:
         self.norm_weights_producer = normalization_weights
