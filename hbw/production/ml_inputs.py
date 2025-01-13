@@ -147,7 +147,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     check_column_bookkeeping(self, events)
 
@@ -257,7 +257,7 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     check_column_bookkeeping(self, events)
     return events
@@ -332,7 +332,7 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     check_column_bookkeeping(self, events)
     return events
@@ -358,6 +358,9 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # add variable instances to config
     add_dl_ml_variables(self.config_inst)
     check_variable_existence(self)
+
+
+test_dl_ml_inputs = dl_ml_inputs.derive("test_dl_ml_inputs")
 
 
 @producer(
@@ -437,7 +440,7 @@ def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
-        events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     check_column_bookkeeping(self, events)
     return events
