@@ -569,6 +569,7 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0., 400.),
             unit="GeV",
             null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} $p_{{T}}$",
         )
         config.add_variable(
             name=f"lepton{i}_eta",
@@ -579,6 +580,7 @@ def add_variables(config: od.Config) -> None:
             binning=(40, -3.2, 3.2),
             unit="GeV",
             null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} $\eta$",
         )
         config.add_variable(
             name=f"lepton{i}_phi",
@@ -589,6 +591,7 @@ def add_variables(config: od.Config) -> None:
             binning=(50, -2.5, 2.5),
             unit="GeV",
             null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} $\phi$",
         )
         config.add_variable(
             name=f"lepton{i}_mass",
@@ -599,6 +602,7 @@ def add_variables(config: od.Config) -> None:
             binning=(40, 0., 400.),
             unit="GeV",
             null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} mass",
         )
 
     for obj in ["Electron", "Muon"]:
