@@ -55,7 +55,7 @@ def jet_selection(
     jet_mask_loose = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (events.Jet.jetId >= 2)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+        (events.Jet.jetId >= 6)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
     )
 
     electron = events.Electron[lepton_results.objects.Electron.LooseElectron]
@@ -64,7 +64,7 @@ def jet_selection(
     jet_mask = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (events.Jet.jetId >= 2) &  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+        (events.Jet.jetId >= 6) &  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
         ak.all(events.Jet.metric_table(electron) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(muon) > 0.4, axis=2)
