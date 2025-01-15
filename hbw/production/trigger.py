@@ -6,98 +6,122 @@ Trigger related event weights.
 
 from __future__ import annotations
 
+import functools
+
+# from dataclasses import dataclass
+
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import, InsertableDict
-from columnflow.columnar_util import set_ak_column, flat_np_view, layout_ak_array
+from columnflow.columnar_util import set_ak_column, fill_at
+from columnflow.production.cms.muon import muon_weights, MuonSFConfig
+
+from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-@producer(
-    uses={
-        "Trigger.pt", "Trigger.eta",
+set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+fill_at_f32 = functools.partial(fill_at, value_type=np.float32)
+
+
+# @dataclass
+# class TriggerSFConfig:
+
+
+from hbw.categorization.categories import catid_2e, catid_2mu, catid_emu
+
+
+# NOTE: dummy up/down variation at the moment
+trigger_sf_config = {
+    "trigger_sf_ee": {
+        "corr_keys": {
+            "nominal": "sf_ee_mli_lep_pt-trig_ids",
+            "up": "sf_ee_mli_lep_pt-trig_ids",
+            "down": "sf_ee_mli_lep_pt-trig_ids",
+        },
+        "category": catid_2e,
     },
+    "trigger_sf_mm": {
+        "corr_keys": {
+            "nominal": "sf_mm_mli_lep_pt-trig_ids",
+            "up": "sf_mm_mli_lep_pt-trig_ids",
+            "down": "sf_mm_mli_lep_pt-trig_ids",
+        },
+        "category": catid_2mu,
+    },
+    "trigger_sf_mixed": {
+        "corr_keys": {
+            "nominal": "sf_mixed_mli_lep_pt-trig_ids",
+            "up": "sf_mixed_mli_lep_pt-trig_ids",
+            "down": "sf_mixed_mli_lep_pt-trig_ids",
+        },
+        "category": catid_emu,
+    },
+}
+
+
+@producer(
+    uses={"{Electron,Muon}.{pt,eta,phi,mass}", prepare_objects},
     # produces in the init
     # only run on mc
     mc_only=True,
     # function to determine the correction file
-    get_trigger_file=(lambda self, external_files: external_files.trigger_sf),
-    # function to determine the trigger weight config
-    # get_trigger_config=(lambda self: self.config_inst.x.trigger_sf_names),
+    trigger_sf_config=trigger_sf_config,
     weight_name="trigger_weight",
 )
-def trigger_weights(
+def dl_trigger_weights(
     self: Producer,
     events: ak.Array,
     trigger_mask: ak.Array | type(Ellipsis) = Ellipsis,
     **kwargs,
 ) -> ak.Array:
     """
-    Creates trigger weights using the correctionlib. Requires an external file in the config under
-    ``trigger_sf``:
-
-    .. code-block:: python
-
-        cfg.x.external_files = DotDict.wrap({
-            "trigger_sf": "/afs/cern.ch/work/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c/POG/MUO/2017_UL/trigger_z.json.gz",  # noqa
-        })
-
-    *get_trigger_file* can be adapted in a subclass in case it is stored differently in the external
-    files.
-
-    The name of the correction set and the year string for the weight evaluation should be given as
-    an auxiliary entry in the config:
-
-    .. code-block:: python
-
-        cfg.x.trigger_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", "2017_UL")
-
-    *get_trigger_config* can be adapted in a subclass in case it is stored differently in the config.
-
-    Optionally, a *trigger_mask* can be supplied to compute the scale factor weight based only on a
-    subset of triggers.
+    Creates trigger weights using custom trigger SF jsons.
     """
-    # flat absolute eta and pt views
-    abs_eta = flat_np_view(abs(events.Trigger.eta[trigger_mask]), axis=1)
-    pt = flat_np_view(events.Trigger.pt[trigger_mask], axis=1)
+
+    events = self[prepare_objects](events, **kwargs)
 
     variable_map = {
-        "year": self.year,
-        "abseta": abs_eta,
-        "eta": abs_eta,
-        "pt": pt,
+        "mli_lep_pt": events.Lepton[:, 0].pt,
     }
 
-    # loop over systematics
-    for syst, postfix in [
-        ("sf", ""),
-        ("systup", "_up"),
-        ("systdown", "_down"),
-    ]:
-        # get the inputs for this type of variation
-        variable_map_syst = {
-            **variable_map,
-            "scale_factors": "nominal" if syst == "sf" else syst,  # syst key in 2022
-            "ValType": syst,  # syst key in 2017
-        }
-        inputs = [variable_map_syst[inp.name] for inp in self.trigger_sf_corrector.inputs]
-        sf_flat = self.trigger_sf_corrector(*inputs)
+    full_mask = ak.zeros_like(events.event, dtype=bool)
 
-        # add the correct layout to it
-        sf = layout_ak_array(sf_flat, events.Trigger.pt[trigger_mask])
+    for key, corr_set in self.correction_sets.items():
+        sf_config = self.trigger_sf_config[key]
 
-        # create the product over all triggers in one event
-        weight = ak.prod(sf, axis=1, mask_identity=False)
+        categorizer = sf_config["category"]
+        events, mask = self[categorizer](events, **kwargs)
 
-        # store it
-        events = set_ak_column(events, f"{self.weight_name}{postfix}", weight, value_type=np.float32)
+        # ensure that no event is assigned to multiple categories
+        if ak.any(mask & full_mask):
+            raise Exception(f"Overlapping categories in {dl_trigger_weights.cls_name}")
+        full_mask = mask | full_mask
+
+        for sys, corr_key in sf_config["corr_keys"].items():
+            sysfix = "" if sys == "nominal" else f"_{sys}"
+            col_name = f"{self.weight_name}{sysfix}"
+            if col_name not in events.fields:
+                events = set_ak_column_f32(events, col_name, ak.ones_like(events.event))
+
+            corr = corr_set[corr_key]
+            inputs = [variable_map[inp.name] for inp in corr.inputs]
+
+            _sf = corr.evaluate(*inputs)
+
+            events = fill_at_f32(
+                ak_array=events,
+                where=mask,
+                route=col_name,
+                value=_sf,
+            )
 
     return events
 
 
-@trigger_weights.requires
-def trigger_weights_requires(self: Producer, reqs: dict) -> None:
+@dl_trigger_weights.requires
+def dl_trigger_weights_requires(self: Producer, reqs: dict) -> None:
     if "external_files" in reqs:
         return
 
@@ -105,30 +129,58 @@ def trigger_weights_requires(self: Producer, reqs: dict) -> None:
     reqs["external_files"] = BundleExternalFiles.req(self.task)
 
 
-@trigger_weights.setup
-def trigger_weights_setup(
+@dl_trigger_weights.setup
+def dl_trigger_weights_setup(
     self: Producer,
     reqs: dict,
     inputs: dict,
     reader_targets: InsertableDict,
 ) -> None:
-    bundle = reqs["external_files"]
+    bundle_files = reqs["external_files"].files
 
     # create the corrector
     import correctionlib
-    correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
-    correction_set = correctionlib.CorrectionSet.from_string(
-        self.get_trigger_file(bundle.files),
-    )
-    corrector_name, self.year = self.get_trigger_config()
-    self.trigger_sf_corrector = correction_set[corrector_name]
-
-    # check versions
-    if self.supported_versions and self.trigger_sf_corrector.version not in self.supported_versions:
-        raise Exception(f"unsuppprted trigger sf corrector version {self.trigger_sf_corrector.version}")
+    self.correction_sets = {}
+    for key, sf_config in self.trigger_sf_config.items():
+        target = bundle_files[key]
+        correction_set = correctionlib.CorrectionSet.from_string(target.load(formatter="json"))
+        self.correction_sets[key] = correction_set
 
 
-@trigger_weights.init
-def trigger_weights_init(self: Producer, **kwargs) -> None:
+@dl_trigger_weights.init
+def dl_trigger_weights_init(self: Producer, **kwargs) -> None:
     weight_name = self.weight_name
     self.produces |= {weight_name, f"{weight_name}_up", f"{weight_name}_down"}
+
+    for key, sf_config in self.trigger_sf_config.items():
+        self.uses.add(sf_config["category"])
+
+
+muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
+    "weight_name": "muon_trigger_weight",
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_trigger_sf_names)),
+})
+
+
+@producer(
+    uses={muon_trigger_weights},
+)
+def sl_trigger_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer that calculates the single lepton trigger weights.
+    NOTE: this only includes the trigger weights from the muon channel. They should be combined with
+    the electron trigger weights in this producer.
+    """
+    if not self.config_inst.has_aux("muon_trigger_sf_names"):
+        raise Exception(f"In {sl_trigger_weights.__name__}: missing 'muon_trigger_sf_names' in config")
+
+    # compute muon trigger SF weights (NOTE: trigger SFs are only defined for muons with
+    # pt > 26 GeV, so create a copy of the events array with with all muon pt < 26 GeV set to 26 GeV)
+    trigger_sf_events = set_ak_column_f32(events, "Muon.pt", ak.where(events.Muon.pt > 26., events.Muon.pt, 26.))
+    trigger_sf_events = self[muon_trigger_weights](trigger_sf_events, **kwargs)
+    for route in self[muon_trigger_weights].produced_columns:
+        events = set_ak_column_f32(events, route, route.apply(trigger_sf_events))
+    # memory cleanup
+    del trigger_sf_events
+
+    return events

@@ -608,8 +608,22 @@ def add_config(
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
+    add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
+    # trigger_sf from Balduin
+    # # files with uncertainties, not loadable because there are some NaNs in the json :/
+    # trigger_sf_path = "/afs/desy.de/user/f/frahmmat/Projects/hh2bbww/data/software/trig_sf"
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
+
+    # files without uncertainties and with wrong triggers
+    trigger_sf_path = "/nfs/dust/cms/user/letzerba/hh2bbww/data/cf_store/hbw_dl/cf.CalculateTriggerScaleFactors/c22post/nominal/calib__with_b_reg/sel__dl1_no_triggerV11__steps_no_trigger/prod__event_weightsV2__trigger_prodV2__pre_ml_catsV1__dl_ml_inputsV1/weight__ref_cut/datasets_4_10839b14e3/prod3/"  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v1"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
+
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
@@ -710,6 +724,9 @@ def add_config(
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
+        # isolations for testing
+        "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH}",
+        "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH}",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
