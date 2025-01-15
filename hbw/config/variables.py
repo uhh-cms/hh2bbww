@@ -560,9 +560,12 @@ def add_variables(config: od.Config) -> None:
 
     # Leptons
     for i in range(2):
+        # NOTE: inputs aux is only being used when the expression is a function and not a string;
+        # to define expression as a function, define as lambda function with passing i=i to avoid
+        # the late binding issue
         config.add_variable(
             name=f"lepton{i}_pt",
-            expression=f"Lepton[:, {i}].pt",
+            expression=lambda events, i=i: events.Lepton[:, i].pt,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
@@ -573,29 +576,29 @@ def add_variables(config: od.Config) -> None:
         )
         config.add_variable(
             name=f"lepton{i}_eta",
-            expression=f"Lepton[:, {i}].eta",
+            expression=lambda events, i=i: events.Lepton[:, i].eta,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
             binning=(40, -3.2, 3.2),
             unit="GeV",
             null_value=EMPTY_FLOAT,
-            x_title=f"Lepton {i} $\eta$",
+            x_title=f"Lepton {i} $\\eta$",
         )
         config.add_variable(
             name=f"lepton{i}_phi",
-            expression=f"Lepton[:, {i}].phi",
+            expression=lambda events, i=i: events.Lepton[:, i].phi,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
             binning=(50, -2.5, 2.5),
             unit="GeV",
             null_value=EMPTY_FLOAT,
-            x_title=f"Lepton {i} $\phi$",
+            x_title=f"Lepton {i} $\\phi$",
         )
         config.add_variable(
             name=f"lepton{i}_mass",
-            expression=f"Lepton[:, {i}].mass",
+            expression=lambda events, i=i: events.Lepton[:, i].mass,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),

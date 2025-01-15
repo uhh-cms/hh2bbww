@@ -152,8 +152,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_hzg_zll_powheg",
                 "tth_hbb_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-                "ttzh_madgraph",
-                "ttwh_madgraph",
+                # TODO: no cross sections setup for these samples
+                # "ttzh_madgraph",
+                # "ttwh_madgraph",
             ]),
         ],
         "hh_ggf_hbb_hvv": [

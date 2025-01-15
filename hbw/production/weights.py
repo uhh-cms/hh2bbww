@@ -132,7 +132,6 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
 })
 
 
-
 @producer(
     uses={muon_id_weights, muon_iso_weights},
     produces={muon_id_weights, muon_iso_weights},
