@@ -150,6 +150,16 @@ def set_config_defaults_and_groups(config_inst):
             "vv",
             "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
         ],
+        "test_postfit": [
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+            "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+            "st",
+            "tt",
+            "dy",
+            "w_lnu",
+            "vv",
+            "h",
+        ],
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
@@ -303,6 +313,7 @@ def set_config_defaults_and_groups(config_inst):
             "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+            "sr__1b", "sr__2b",
         ),
         "vbfSR_dl": (
             "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
@@ -375,10 +386,8 @@ def set_config_defaults_and_groups(config_inst):
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "dilep": {
-            "hh_ggf_hbb_hvv2l2nu_kl0_kt1": {"scale": 10000, "unstack": True},
-            "hh_ggf_hbb_hvv2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
-            "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": {"scale": 10000, "unstack": True},
-            "hh_ggf_hbb_hvv2l2nu_kl5_kt1": {"scale": 10000, "unstack": True},
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hww2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
         },
         "dileptest": {
             "hh_ggf_hbb_hvv2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
