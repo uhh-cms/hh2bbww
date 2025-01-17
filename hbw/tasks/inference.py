@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-# import luigi
 import law
 import order as od
 
@@ -19,11 +18,8 @@ from columnflow.tasks.framework.mixins import (
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.cms.inference import CreateDatacards
-from columnflow.util import dev_sandbox, maybe_import  # import_ROOT
+from columnflow.util import dev_sandbox, maybe_import
 from hbw.tasks.base import HBWTask
-# from hbw.tasks.postfit_plots import load_hists_uproot
-
-# import hbw.inference.constants as const
 
 array = maybe_import("array")
 uproot = maybe_import("uproot")
@@ -129,47 +125,33 @@ def get_rebin_values(hist, N_bins_final: int = 10):
     the resulting histogram is flat
     """
     N_bins_input = hist.axes[0].size
-    # N_bins_input = hist.GetNbinsX()
-
-    # # replace empty bin values (TODO: remove as soon as we can disable the empty bin filling)
-    # EMPTY_BIN_VALUE = 1e-5
-    # for i in range(1, N_bins_input + 1):
-    #     if hist.GetBinContent(i) == EMPTY_BIN_VALUE:
-    #         hist.SetBinContent(i, 0)
 
     # determine events per bin the final histogram should have
     events_per_bin = hist.sum().value / N_bins_final
-    # events_per_bin = hist.Integral() / N_bins_final
     logger.info(f"============ {round(events_per_bin, 3)} events per bin")
 
     # bookkeeping number of bins and number of events
     bin_count = 1
     N_events = 0
-    # rebin_values = [hist.GetBinLowEdge(1)]
     rebin_values = [int(hist.axes[0].edges[0])]
 
     # starting loop at 1 to exclude underflow
     # ending at N_bins_input + 1 excludes overflow
-    # for i in range(1, N_bins_input + 1):
     for i in range(1, N_bins_input):
         if bin_count == N_bins_final:
             # break as soon as N-1 bin edges have been determined --> final bin is x_max
             break
         N_events += hist.view()["value"][i]
-        # N_events += hist.GetBinContent(i)
         if i % 100 == 0:
             logger.info(f"========== Bin {i} of {N_bins_input}, {N_events} events")
         if N_events >= events_per_bin * bin_count:
             # when *N_events* surpasses threshold, append the corresponding bin edge and count
-            # logger.info(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.GetBinLowEdge(i)}")
             logger.info(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.axes[0].edges[i]}")
-            # rebin_values.append(hist.GetBinLowEdge(i + 1))
             rebin_values.append(hist.axes[0].edges[i])
             bin_count += 1
 
     # final bin is x_max
     x_max = hist.axes[0].edges[N_bins_input]
-    # x_max = hist.GetBinLowEdge(N_bins_input + 1)
     rebin_values.append(x_max)
     logger.info(f"final bin edges: {rebin_values}")
     return rebin_values
@@ -275,8 +257,6 @@ class ModifyDatacardsFlatRebin(
 ):
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
-    # sandbox = dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
-    # sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cmssw_default.sh")
 
     bins_per_category = SettingsParameter(
         default=(RESOLVE_DEFAULT,),
@@ -339,7 +319,6 @@ class ModifyDatacardsFlatRebin(
         """
         config_category = self.branch_data.config_category
         processes = self.branch_data.processes.copy()
-        # inf_proc_names = [self.inference_model_inst.inf_proc(proc.name) for proc in self.branch_data.processes]
 
         rebin_process_condition = self.inference_category_rebin_processes.get(config_category, None)
         if not rebin_process_condition:
@@ -347,22 +326,6 @@ class ModifyDatacardsFlatRebin(
                 for proc in processes.copy():
                     proc_name = proc.config_process
 
-            #         if not "ggf" in proc_name:
-            #             processes.remove(proc)
-            #         elif proc_name == 'h_ggf': # This is quiet custom made
-            #             processes.remove(proc)
-            #         elif "kl5" in proc_name:
-            #             processes.remove(proc)
-            #     return processes
-            # elif 'vbf' in config_category:
-            #     for proc in processes.copy():
-            #         proc_name = proc.config_process
-            #         if not 'vbf' in proc_name:
-            #             processes.remove(proc)
-            #         if proc_name == 'h_vbf':
-            #             processes.remove(proc)
-            #     return processes
-            # else:
                 logger.warning(
                     f"No rebin condition found for category {config_category}; rebinning will be flat "
                     f"on all processes {[proc.config_process for proc in processes]}",
@@ -412,12 +375,6 @@ class ModifyDatacardsFlatRebin(
         }
 
     def run(self):
-        # import uproot
-        # from ROOT import TH1
-        # import_ROOT()
-
-        # config_inst = self.config_inst
-        # inference_model = self.inference_model_inst
 
         inputs = self.input()
         outputs = self.output()
@@ -431,7 +388,6 @@ class ModifyDatacardsFlatRebin(
         outputs["card"].dump(datacard, formatter="text")
 
         with uproot.open(inp_shapes.fn) as file:
-            # logger.info(f"File keys: {file.keys()}")
             # determine which histograms are present
             cat_names, proc_names, syst_names = get_cat_proc_syst_names(file)
 
@@ -482,38 +438,13 @@ class ModifyDatacardsFlatRebin(
                     except AttributeError:
                         continue
                     h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
-                    # bin_edges = h_rebin.axes[0].edges  # Bin edges (first axis)
-                    # bin_values = h_rebin.values()
-                    # bin_variance = h_rebin.variances()  # Bin values
-                    # h_rebin_root = uproot.newhist.Histogram(
-                    #     bins=(len(h_rebin.edges)-1),
-                    #     x_low=h_rebin.edges[0],
-                    #     x_high=h_rebin.edges[-1],
-                    #     values=h_rebin.values(),
-                    # )
+                    # problematic_bin_count = check_empty_bins(h_rebin)
+                    # TODO: we should reimplement check empty bins, check for all bkg not per process
+
                     rebinned_histograms[key] = h_rebin
 
                     logger.info(f"Inserting histogram with name {key}")
                     out_file[key] = h_rebin
-
-            # for key, h in file.items():
-            #     # remove ";1" appendix
-            #     key = key.split(";")[0]
-            #     __import__("IPython").embed()
-            #     # try:
-            #         # convert histograms to pyroot
-            #         # h = h.to_pyroot()
-            #     # except AttributeError:
-            #         # skip non-histograms
-            #         # continue
-            #     # if not isinstance(h, TH1):
-            #     #     raise Exception(f"{h} is not a TH1 histogram")
-
-            #     # h_rebin = apply_binning(h, rebin_values)
-            #     h_rebin = apply_rebinning_edges(h, "0", rebin_values)
-            #     # problematic_bin_count = check_empty_bins(h_rebin)
-            #     logger.info(f"Inserting histogram with name {key}")
-            #     out_file[key] = uproot.recreate(h_rebin)
 
 
 class PrepareInferenceTaskCalls(

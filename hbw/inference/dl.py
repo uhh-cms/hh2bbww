@@ -240,7 +240,7 @@ dl.derive("dl_ml_study_4", cls_dict={
 })
 
 
-dl.derive("dl_ml_study_1", cls_dict={
+dl_ml_study_1 = dl.derive("dl_ml_study_1", cls_dict={
     "ml_model_name": "dl_22post_ml_study_1",
     "config_categories": [
         "sr__1b__ml_signal_ggf",
@@ -283,7 +283,11 @@ dl.derive("dl_ml_study_1", cls_dict={
     "systematics": rate_systematics,
 })
 
-dl.derive("dl_ml_study_3", cls_dict={
+dl_ml_study_1.derive("dl_ml_study_1_handle", cls_dict={
+    "ml_model_name": "dl_22post_ml_study_1_handle",
+})
+
+dl_ml_study_3 = dl.derive("dl_ml_study_3", cls_dict={
     "ml_model_name": "dl_22_procs1_w0",
     "config_categories": [
         "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -325,7 +329,11 @@ dl.derive("dl_ml_study_3", cls_dict={
     "systematics": rate_systematics,
 })
 
-dl.derive("dl_ml_study_2", cls_dict={
+dl_ml_study_3.derive("dl_ml_study_3_handle", cls_dict={
+    "ml_model_name": "dl_22_procs1_w0_handle",
+})
+
+dl_ml_study_2 = dl.derive("dl_ml_study_2", cls_dict={
     "ml_model_name": "dl_22post_ml_study_2",
     "config_categories": [
         "sr__1b__ml_signal_ggf2",
@@ -365,6 +373,14 @@ dl.derive("dl_ml_study_2", cls_dict={
         "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
     ],
     "systematics": rate_systematics,
+})
+
+dl_ml_study_2.derive("dl_ml_study_2_handle", cls_dict={
+    "ml_model_name": "dl_22post_ml_study_2_handle",
+})
+
+dl_ml_study_2.derive("dl_ml_study_2_ignore", cls_dict={
+    "ml_model_name": "dl_22post_ml_study_2",
 })
 
 dl.derive("dl_hww_and_hzz", cls_dict={
@@ -531,3 +547,35 @@ dl.derive("dl_22_limited", cls_dict={
     "systematics": rate_systematics},
 )
 dl.derive("dl_rates_only", cls_dict={"systematics": rate_systematics})
+
+dl.derive("dl_postfit_test", cls_dict={
+    "ml_model_name": None,
+    "config_categories": [
+        "sr__1b",
+        "sr__2b",
+    ],
+    "processes": [
+        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
+        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
+        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
+        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
+        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
+        "st",
+        "tt",
+        "dy",
+        "w_lnu",
+        "vv",
+        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    ],
+    "systematics": rate_systematics,
+})

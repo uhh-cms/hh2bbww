@@ -293,7 +293,7 @@ dl_22post_ml_study_5 = dl_22post.derive("dl_22post_ml_study_5", cls_dict={
                 "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
                 "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
             ],
-            "weighting": "xsec",
+            "weighting": "equal",
         },
     },
     "processes": [
@@ -345,6 +345,7 @@ dl_22post_ml_study_4 = dl_22post.derive("dl_22post_ml_study_4", cls_dict={
 
 dl_22post_ml_study_1 = dl_22post.derive("dl_22post_ml_study_1", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
+    "negative_weights": "ignore",
     "combine_processes": {
         "signal_ggf": {
             # "name": "tt_and_st",
@@ -381,8 +382,13 @@ dl_22post_ml_study_1 = dl_22post.derive("dl_22post_ml_study_1", cls_dict={
     ],
 })
 
+dl_22post_ml_study_1_handle = dl_22post_ml_study_1.derive("dl_22post_ml_study_1_handle", cls_dict={
+    "negative_weights": "handle",
+})
+
 dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
+    "negative_weights": "ignore",
     "combine_processes": {
         "signal_ggf2": {
             # "name": "tt_and_st",
@@ -407,7 +413,7 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
                 "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
 
             ],
-            "weighting": "xsec",
+            "weighting": "equal",
         },
     },
     "processes": [
@@ -419,6 +425,11 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
         "h",
     ],
 })
+
+dl_22post_ml_study_2_handle = dl_22post_ml_study_2.derive("dl_22post_ml_study_2_handle", cls_dict={
+    "negative_weights": "handle",
+})
+
 #
 # setups with different processes (0: baseline, 1: add SM vbf + single H, 2: add SL+all HH variations)
 # NOTE: we should decide which signal processes exactly to use:
@@ -435,6 +446,7 @@ dl_22_procs1 = DenseClassifierDL.derive("dl_22_procs1", cls_dict={
 })
 dl_22_procs1_w0 = dl_22_procs1.derive("dl_22_procs1_w0", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
+    "negative_weights": "ignore",
     "ml_process_weights": {
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
@@ -444,6 +456,11 @@ dl_22_procs1_w0 = dl_22_procs1.derive("dl_22_procs1_w0", cls_dict={
         "h": 1,
     },
 })
+
+dl_22_procs1_w0_handle = dl_22_procs1_w0.derive("dl_22_procs1_w0_handle", cls_dict={
+    "negative_weights": "handle",
+})
+
 dl_22_procs1_w1 = dl_22_procs1.derive("dl_22_procs1_w1", cls_dict={
     "ml_process_weights": {
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
