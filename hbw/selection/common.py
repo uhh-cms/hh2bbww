@@ -316,7 +316,7 @@ def configure_selector(self: Selector):
     btag_column = self.config_inst.x.btag_column
     self.config_inst.add_variable(
         name="n_btag",
-        expression=lambda events: ak.num(events.Jet[btag_column] > self.config_inst.x.btag_wp_score, axis=1),
+        expression=lambda events: ak.sum(events.Jet[btag_column] > self.config_inst.x.btag_wp_score, axis=1),
         aux={"inputs": {f"Jet.{btag_column}"}},
         binning=(7, -0.5, 6.5),
         x_title=f"Number of b-tagged jets ({btag_column})",
