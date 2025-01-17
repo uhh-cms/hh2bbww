@@ -592,7 +592,7 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a332cfa"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-cb90b1e8"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
@@ -625,7 +625,7 @@ def add_config(
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
 
     # btag scale factor
-    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
+    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
     # ROOT files (eej.root and aj.root) taken from here:
     # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
@@ -769,6 +769,7 @@ def add_config(
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
     p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
+    # if repr(p1) != repr(p2):
     if p1 != p2:
         raise Exception(f"Processes are not the same: {repr(p1)} != {repr(p2)}")
 
