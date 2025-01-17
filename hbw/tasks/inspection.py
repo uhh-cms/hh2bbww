@@ -76,9 +76,7 @@ class SelectionSummary(
             reqs[dataset] = self.reqs.MergeSelectionStats.req(
                 self,
                 dataset=dataset,
-                tree_index=0,
                 branch=-1,
-                _exclude=self.reqs.MergeSelectionStats.exclude_params_forest_merge,
             )
         return reqs
 

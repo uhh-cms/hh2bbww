@@ -89,9 +89,7 @@ def normalized_weight_factory(
         from columnflow.tasks.selection import MergeSelectionStats
         reqs["selection_stats"] = MergeSelectionStats.req(
             self.task,
-            tree_index=0,
             branch=-1,
-            _exclude=MergeSelectionStats.exclude_params_forest_merge,
         )
 
     @normalized_weight.setup
