@@ -13,6 +13,8 @@ from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
 from columnflow.columnar_util import has_ak_column, optional_column
 
+from hbw.util import MET_COLUMN
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -160,15 +162,15 @@ def catid_fake(
     return events, mask
 
 
-@categorizer(uses={"MET.pt"})
+@categorizer(uses={MET_COLUMN("pt")})
 def catid_highmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events.MET.pt >= 20
+    mask = events[self.config_inst.x.met_name].pt >= 20
     return events, mask
 
 
-@categorizer(uses={"MET.pt"})
+@categorizer(uses={MET_COLUMN("pt")})
 def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events.MET.pt < 20
+    mask = events[self.config_inst.x.met_name].pt < 20
     return events, mask
 
 #

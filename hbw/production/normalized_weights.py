@@ -26,7 +26,8 @@ def normalized_weight_factory(
 ) -> Callable:
 
     @producer(
-        uses=set(weight_producers) | set().union(*[w.produces for w in weight_producers]) | {"process_id"},
+        # TODO: w.produces does not work as intended anymore, so we have to initialize the Producers here
+        uses=set(weight_producers) | set().union(*[w().produced_columns for w in weight_producers]) | {"process_id"},
         cls_name=producer_name,
         mc_only=True,
         # skip the checking existence of used/produced columns because not all columns are there
@@ -88,9 +89,7 @@ def normalized_weight_factory(
         from columnflow.tasks.selection import MergeSelectionStats
         reqs["selection_stats"] = MergeSelectionStats.req(
             self.task,
-            tree_index=0,
             branch=-1,
-            _exclude=MergeSelectionStats.exclude_params_forest_merge,
         )
 
     @normalized_weight.setup

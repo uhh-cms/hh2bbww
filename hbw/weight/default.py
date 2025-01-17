@@ -191,6 +191,14 @@ with_vjets_weight = default_weight_producer.derive("with_vjets_weight", cls_dict
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
+with_trigger_weight = default_weight_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "vjets_weight": [],  # TODO: corrections/shift missing
+    "trigger_weight": [],  # TODO: corrections/shift missing
+    "stitched_normalization_weight": [],
+}})
+
+
 base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],
 }})

@@ -110,6 +110,7 @@ class MLClassifierBase(MLModel):
 
         for param in self.settings_parameters:
             # overwrite the default value with the value from the parameters
+            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
             setattr(self, param, self.parameters.get(param, getattr(self, param)))
 
         # cast the ml parameters to the correct types if necessary
@@ -210,7 +211,7 @@ class MLClassifierBase(MLModel):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
+                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
                         aux={
                             "rebin": 25,
                             "rebin_config": {
@@ -305,11 +306,9 @@ class MLClassifierBase(MLModel):
         # declare the main target
         target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
 
-        # TODO: cleanup (produce plots, stats in separate task)
         outp = {
             "mlmodel": target,
             "plots": target.child("plots", type="d", optional=True),
-            # "dummy": target.child("dummy", type="d", optional=True),
             "checkpoint": target.child("checkpoint", type="d", optional=True),
         }
 

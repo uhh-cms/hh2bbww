@@ -93,9 +93,7 @@ def patch_csp_versioning():
 
     TaskArrayFunction.__str__ = TaskArrayFunction_str
     logger.info(
-        "patched TaskArrayFunction.__str__ to include the CSP version attribute "
-        "(NOTE that this currently does not work for the "
-        "MLTrainingMixin tasks (e.g. MLPreTraining and MLTraining))",
+        "patched TaskArrayFunction.__str__ to include the CSP version attribute",
     )
 
 
@@ -136,6 +134,10 @@ def patch_materialization_strategy():
 
 @memoize
 def patch_all():
+    # change the "retries" parameter default
+    from columnflow.tasks.framework.remote import RemoteWorkflow
+    RemoteWorkflow.retries = RemoteWorkflow.retries.copy(default=3)
+
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()

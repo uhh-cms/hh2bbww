@@ -116,10 +116,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         "ttv": [
             "ttw_wlnu_amcatnlo",
-            "ttz_zll_m4to50_amcatnlo",
-            "ttz_zll_m50toinf_amcatnlo",
-            "ttz_znunu_amcatnlo",
-            "ttz_zqq_amcatnlo",
+            *config.x.if_era(run=3, values=[
+                "ttz_zll_m4to50_amcatnlo",
+                "ttz_zll_m50toinf_amcatnlo",
+                "ttz_znunu_amcatnlo",
+                "ttz_zqq_amcatnlo",
+            ]),
         ],
         "h": [
             *config.x.if_era(run=3, values=[
@@ -150,8 +152,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_hzg_zll_powheg",
                 "tth_hbb_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-                "ttzh_madgraph",
-                "ttwh_madgraph",
+                # TODO: no cross sections setup for these samples
+                # "ttzh_madgraph",
+                # "ttwh_madgraph",
             ]),
         ],
         "hh_ggf_hbb_hvv": [
@@ -568,11 +571,14 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
             fs=f"wlcg_fs_{cpn_name}",
         )
 
+        broken_files = dataset_inst[shift_inst.name].get_aux("broken_files", [])
+
         # loop though files and interpret paths as lfns
-        return [
+        lfns = [
             lfn_base.child(basename, type="f").path
             for basename in lfn_base.listdir(pattern="*.root")
         ]
+        return [lfn for lfn in lfns if lfn not in broken_files]
 
     if any("uhh" in cpn_name for cpn_name in cfg.campaign.x("campaigns", [])):
         # define the lfn retrieval function
@@ -581,6 +587,6 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         # define custom remote fs's to look at
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
-                f"local_fs_{dataset_inst.x.campaign}",
                 f"wlcg_fs_{dataset_inst.x.campaign}",
+                f"local_fs_{dataset_inst.x.campaign}",
             ])

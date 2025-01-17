@@ -8,7 +8,7 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    return "with_b_reg"
+    return ["with_b_reg", "fatjet"]
 
 
 def default_selector(container):
@@ -225,7 +225,9 @@ def set_config_defaults_and_groups(config_inst):
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
         "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
-        "dl_preml": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}{,__1b,__2b}"]),
+        "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
+        "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
+        "dl_preml_boosted": bracket_expansion(["{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}boosted"]),
         "dl_ttcr": ["ttcr", "ttcr__1b", "ttcr__2b", "ttcr__2e", "ttcr__2mu", "ttcr__emu"],
         "dl_dycr": ["dycr", "dycr__1b", "dycr__2b", "dycr__2e", "dycr__2mu", "dycr__emu"],
         "dl_sr": ["sr", "sr__1b", "sr__2b", "sr__2e", "sr__2mu", "sr__emu"],
@@ -308,7 +310,7 @@ def set_config_defaults_and_groups(config_inst):
             "met_{pt,phi}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
             "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
-            "ht", "lt", "mll", "ptll",
+            "ht", "lt", "mll", "ptll", "npvs",
         ]),
         "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
         "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],

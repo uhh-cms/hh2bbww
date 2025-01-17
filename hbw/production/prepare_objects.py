@@ -110,9 +110,10 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
 
     # transform MET into 4-vector
-    if "MET" in events.fields:
-        events["MET"] = set_ak_column(events.MET, "mass", 0)
-        events["MET"] = set_ak_column(events.MET, "eta", 0)
-        events["MET"] = ak.with_name(events["MET"], "PtEtaPhiMLorentzVector")
+    met_name = self.config_inst.x.met_name
+    if met_name in events.fields:
+        events[met_name] = set_ak_column(events[met_name], "mass", 0)
+        events[met_name] = set_ak_column(events[met_name], "eta", 0)
+        events[met_name] = ak.with_name(events[met_name], "PtEtaPhiMLorentzVector")
 
     return events

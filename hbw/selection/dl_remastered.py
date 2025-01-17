@@ -8,6 +8,8 @@ from importlib import import_module
 
 from collections import defaultdict
 
+import law
+
 from cmsdb.constants import m_z
 
 from columnflow.util import maybe_import, DotDict
@@ -106,7 +108,12 @@ def dl_lepton_selection(
 
     dilepton = ak.pad_none(lepton, 2)
     dilepton = dilepton[:, 0] + dilepton[:, 1]
-    events = set_ak_column(events, "mll", ak.fill_none(dilepton.mass, EMPTY_FLOAT), value_type=np.float32)
+    events = set_ak_column(
+        events,
+        "mll",
+        ak.fill_none(ak.nan_to_none(dilepton.mass), EMPTY_FLOAT),
+        value_type=np.float32,
+    )
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
@@ -206,7 +213,7 @@ from hbw.util import timeit
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=1,
+    version=law.config.get_expanded("analysis", "dl1_version", 2),
 )
 @timeit
 def dl1(
@@ -289,6 +296,8 @@ def dl1_init(self: Selector) -> None:
     # by only adding the used selectors in the init
     configure_selector(self)
 
+    # NOTE: since we add these uses so late, init's of these Producers will not run
+    # e.g. during Plotting tasks
     self.uses = {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
