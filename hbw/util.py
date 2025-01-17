@@ -666,7 +666,7 @@ def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
 
 
 @deferred_column
-def IF_DY(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+def IF_VJETS(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     if getattr(func, "dataset_inst", None) is None:
         return self.get()
 
