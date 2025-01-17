@@ -310,7 +310,7 @@ def set_config_defaults_and_groups(config_inst):
             "met_{pt,phi}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
             "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
-            "ht", "lt", "mll", "ptll",
+            "ht", "lt", "mll", "ptll", "npvs",
         ]),
         "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
         "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],

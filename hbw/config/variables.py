@@ -191,7 +191,7 @@ def add_variables(config: od.Config) -> None:
         name="high_jet_pt_strcat",
         # NOTE: for some reason passing the string directly produces ValueError due to different shapes, e.g.
         # ValueError: cannot broadcast RegularArray of size 7 with RegularArray of size 264
-        expression=lambda events: ak.where(events.Jet.pt > 50, ["high_pt"], ["low_pt"]),
+        expression=lambda events: ak.where(events.Jet["pt"] > 50, ["high_pt"], ["low_pt"]),
         aux={
             "inputs": {"Jet.pt"},
             "axis_type": "strcat",
@@ -203,7 +203,7 @@ def add_variables(config: od.Config) -> None:
     # h[{"high_jet_pt_intcat": hist.loc(0)}] picks the bin with value 0
     config.add_variable(
         name="high_jet_pt_intcat",
-        expression=lambda events: ak.where(events.Jet.pt > 50, 1, 0),
+        expression=lambda events: ak.where(events.Jet["pt"] > 50, 1, 0),
         aux={
             "inputs": {"Jet.pt"},
             "axis_type": "intcat",
@@ -212,7 +212,7 @@ def add_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="high_jet_pt_bool",
-        expression=lambda events: events.Jet.pt > 50,
+        expression=lambda events: events.Jet["pt"] > 50,
         aux={
             "inputs": {"Jet.pt"},
             "axis_type": "bool",
@@ -258,19 +258,18 @@ def add_variables(config: od.Config) -> None:
 
     config.add_variable(
         name="n_jet",
-        expression=lambda events: ak.num(events.Jet.pt, axis=1),
+        expression=lambda events: ak.num(events.Jet["pt"], axis=1),
         aux={"inputs": {"Jet.pt"}},
         binning=(12, -0.5, 11.5),
         x_title="Number of jets",
         discrete_x=True,
     )
-
     if config.x.run == 2:
         deepjet_wps = config.x.btag_working_points.deepjet
         config.add_variable(
             name="n_deepjet_loose",
             expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            aux={"inputs": {"Jet.btagDeepFlavB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of deepjets (loose WP)",
             discrete_x=True,
@@ -278,7 +277,7 @@ def add_variables(config: od.Config) -> None:
         config.add_variable(
             name="n_deepjet_medium",
             expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.medium, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            aux={"inputs": {"Jet.btagDeepFlavB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of deepjets (medium WP)",
             discrete_x=True,
@@ -286,7 +285,7 @@ def add_variables(config: od.Config) -> None:
         config.add_variable(
             name="n_deepjet_tight",
             expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.tight, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagDeepFlavB"}},
+            aux={"inputs": {"Jet.btagDeepFlavB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of deepjets (tight WP)",
             discrete_x=True,
@@ -296,7 +295,7 @@ def add_variables(config: od.Config) -> None:
         config.add_variable(
             name="n_particlenet_loose",
             expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.loose, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            aux={"inputs": {"Jet.btagPNetB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of pnet jets (loose WP)",
             discrete_x=True,
@@ -304,7 +303,7 @@ def add_variables(config: od.Config) -> None:
         config.add_variable(
             name="n_particlenet_medium",
             expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.medium, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            aux={"inputs": {"Jet.btagPNetB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of pnet jets (medium WP)",
             discrete_x=True,
@@ -312,7 +311,7 @@ def add_variables(config: od.Config) -> None:
         config.add_variable(
             name="n_particlenet_tight",
             expression=lambda events: ak.sum(events.Jet.btagPNetB > particlenet_wps.tight, axis=1),
-            aux={"inputs": {"Jet.pt", "Jet.btagPNetB"}},
+            aux={"inputs": {"Jet.btagPNetB"}},
             binning=(7, -0.5, 6.5),
             x_title="Number of pnet jets (tight WP)",
             discrete_x=True,

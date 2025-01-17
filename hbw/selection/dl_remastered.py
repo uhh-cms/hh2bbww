@@ -8,6 +8,8 @@ from importlib import import_module
 
 from collections import defaultdict
 
+import law
+
 from cmsdb.constants import m_z
 
 from columnflow.util import maybe_import, DotDict
@@ -211,7 +213,7 @@ from hbw.util import timeit
     b_tagger=None,
     btag_wp=None,
     n_btag=None,
-    version=1,
+    version=law.config.get_expanded("analysis", "dl1_version", 2),
 )
 @timeit
 def dl1(
@@ -294,6 +296,8 @@ def dl1_init(self: Selector) -> None:
     # by only adding the used selectors in the init
     configure_selector(self)
 
+    # NOTE: since we add these uses so late, init's of these Producers will not run
+    # e.g. during Plotting tasks
     self.uses = {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
