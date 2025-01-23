@@ -1,7 +1,25 @@
 # coding: utf-8
 
 """
-Examples for custom plot functions.
+Plotting function for trigger efficiencies.
+Example call:
+
+law run cf.PlotVariables1D --config c22post \
+--selector dl1_no_trigger --selector-steps no_trigger \
+--producers event_weights,trigger_prod,pre_ml_cats,dl_ml_inputs \
+--categories sr__2e --variables mli_lep_pt-trig_ids \
+--processes hh_ggf_hbb_hww2l2nu_kl1_kt1,tt_dl \
+--plot-function trigger.plot_efficiencies_clean.plot_efficiencies_clean \
+--general-settings "bin_sel=Ele30_WPTight_Gsf;" \
+
+optional:
+--skip-ratio False --cms-label simpw \
+for unrolling, plots are unrolled in the second variable bin:
+--variables = mli_lep_pt-mli_lep2_pt-trig_ids \
+--general-settings "bin_sel=Ele30_WPTight_Gsf;,unrolling=1;2;3" \
+when used as plotting function for multiple weight producers (only one process possible):
+law run hbw.PlotVariablesMultiWeightProducer
+--general-settings "bin_sel=Ele30_WPTight_Gsf;,multi_weight=True" \
 """
 
 from __future__ import annotations
@@ -29,69 +47,91 @@ od = maybe_import("order")
 
 logger = law.logger.get_logger(__name__)
 
-"""
-law run cf.PlotVariables1D --version v1 --config l22post \
---processes tt_dl --variables electron_pt-trig_bits --categories trig_mu \
---selector trigger_sel --producers event_weights,trigger_prod \
---plot-function trigger.plot_efficiencies.plot_efficiencies \
---variable-settings "electron_pt,rebin=5,x_min=0,x_max=100" \
---general-settings "bin_sel=Ele30_WPTight_Gsf;"
-"""
 
-
-def apply_rebinning_edges(h: hist.Histogram, axis_name: str, edges: list):
+def safe_div(num, den, default=0):
     """
-    Generalized rebinning of a single axis from a hist.Histogram, using predefined edges.
-
-    :param h: histogram to rebin
-    :param axis_name: string representing the axis to rebin
-    :param edges: list of floats representing the new bin edges. Must be a subset of the original edges.
-    :return: rebinned histogram
+    Safely divide two arrays, setting the result to a default value where the denominator is zero.
     """
-    if isinstance(edges, int):
-        return h[{axis_name: hist.rebin(edges)}]
+    return np.where(
+        (num > 0) & (den > 0),
+        num / den,
+        default,
+    )
 
-    ax = h.axes[axis_name]
-    ax_idx = [a.name for a in h.axes].index(axis_name)
-    if not all([np.isclose(x, ax.edges).any() for x in edges]):
-        raise ValueError(
-            f"Cannot rebin histogram due to incompatible edges for axis '{ax.name}'\n"
-            f"Edges of histogram are {ax.edges}, requested rebinning to {edges}",
+
+def binom_int(num, den, confint=0.68):
+    """
+    calculates clopper-pearson error
+    """
+    from scipy.stats import beta
+    quant = (1 - confint) / 2.
+    low = beta.ppf(quant, num, den - num + 1)
+    high = beta.ppf(1 - quant, num + 1, den - num)
+    return (np.nan_to_num(low), np.where(np.isnan(high), 1, high))
+
+
+def calc_efficiency_errors(num, den):
+    """
+    Calculate the error on an efficiency given the numerator and denominator histograms.
+    """
+
+    efficiency = np.nan_to_num(num.values() / den.values(), nan=0, posinf=1, neginf=0)
+
+    if np.any(efficiency > 1):
+        logger.warning(
+            "Some efficiencies are greater than 1",
+        )
+    elif np.any(efficiency < 0):
+        logger.warning(
+            "Some efficiencies are less than 0",
         )
 
-    # If you rebin to a subset of initial range, keep the overflow and underflow
-    overflow = ax.traits.overflow or (edges[-1] < ax.edges[-1] and not np.isclose(edges[-1], ax.edges[-1]))
-    underflow = ax.traits.underflow or (edges[0] > ax.edges[0] and not np.isclose(edges[0], ax.edges[0]))
-    flow = overflow or underflow
-    new_ax = hist.axis.Variable(edges, name=ax.name, overflow=overflow, underflow=underflow)
-    axes = list(h.axes)
-    axes[ax_idx] = new_ax
+    # Use the variance to scale the numerator and denominator to remove an average weight,
+    # this reduces the errors for rare processes to more realistic values
+    num_scale = np.nan_to_num(num.values() / num.variances(), nan=1)
+    den_scale = np.nan_to_num(den.values() / den.variances(), nan=1)
 
-    hnew = hist.Hist(*axes, name=h.name, storage=h._storage_type())
+    band_low, band_high = binom_int(num.values() * num_scale, den.values() * den_scale)
 
-    # Offset from bin edge to avoid numeric issues
-    offset = 0.5 * np.min(ax.edges[1:] - ax.edges[:-1])
-    edges_eval = edges + offset
-    edge_idx = ax.index(edges_eval)
-    # Avoid going outside the range, reduceat will add the last index anyway
-    if edge_idx[-1] == ax.size + ax.traits.overflow:
-        edge_idx = edge_idx[:-1]
+    error_low = np.asarray(efficiency - band_low)
+    error_high = np.asarray(band_high - efficiency)
 
-    if underflow:
-        # Only if the original axis had an underflow should you offset
-        if ax.traits.underflow:
-            edge_idx += 1
-        edge_idx = np.insert(edge_idx, 0, 0)
+    # remove negative errors
+    if np.any(error_low < 0):
+        logger.warning("Some lower uncertainties are negative, setting them to zero")
+        error_low[error_low < 0] = 0
+    if np.any(error_high < 0):
+        logger.warning("Some upper uncertainties are negative, setting them to zero")
+        error_high[error_high < 0] = 0
 
-    # Take is used because reduceat sums i:len(array) for the last entry, in the case
-    # where the final bin isn't the same between the initial and rebinned histogram, you
-    # want to drop this value. Add tolerance of 1/2 min bin width to avoid numeric issues
-    hnew.values(flow=flow)[...] = np.add.reduceat(h.values(flow=flow), edge_idx,
-                axis=ax_idx).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
-    if hnew._storage_type() == hist.storage.Weight():
-        hnew.variances(flow=flow)[...] = np.add.reduceat(h.variances(flow=flow), edge_idx,
-                axis=ax_idx).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
-    return hnew
+    # stacking errors
+    errors = np.concatenate(
+        (error_low.reshape(error_low.shape[0], 1), error_high.reshape(error_high.shape[0], 1)),
+        axis=1,
+    )
+    errors = errors.T
+
+    return errors
+
+
+def calc_ratio_uncertainty(efficiencies: dict, errors: dict):
+    """
+    Calculate the error on the scale factors using a gaussian error propagation.
+    """
+    # symmetrize errors
+    sym_errors = {}
+    for key, value in errors.items():
+        if value.ndim == 2 and value.shape[0] == 2:
+            sym_errors[key] = np.maximum(value[0], value[1])
+        else:
+            sym_errors[key] = np.maximum(value[..., 0, :], value[..., 1, :])
+
+    # combine errors
+    uncertainty = np.sqrt(
+        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2
+    )
+
+    return np.nan_to_num(uncertainty, nan=0, posinf=1, neginf=0)
 
 
 def plot_efficiencies(
@@ -108,11 +148,27 @@ def plot_efficiencies(
     **kwargs,
 ) -> plt.Figure:
     """
-    TODO.
+    Plotting function for trigger efficiencies.
     """
+
+    # multi_weight allows using the task hbw.PlotVariablesMultiWeightproducer
+    # to plot the efficiencies of multiple weight producers,
+    # This only works for single processes!
+    if kwargs.get("multi_weight", False):
+        # take processes from the first weight producer (they should always be the same)
+        processes = list(list(hists.values())[0].keys())
+        if len(processes) > 1:
+            raise ValueError("multi_weight=True only works for single processes")
+
+        # merge over processes
+        for weight_producer, w_hists in hists.items():
+            hists[weight_producer] = sum(w_hists.values())
+
     remove_residual_axis(hists, "shift")
 
-    hists = apply_process_settings(hists, process_settings)
+    if not kwargs.get("multi_weight", False):
+        hists = apply_process_settings(hists, process_settings)
+
     variable_inst = variable_insts[0]
     hists = apply_variable_settings(hists, variable_insts, variable_settings)
     hists = apply_density_to_hists(hists, density)
@@ -133,80 +189,119 @@ def plot_efficiencies(
                 legend_title = f"{mask_bins[0]}"
                 proc_as_label = True
 
-    # loop over processeslabel
-    for proc_inst, myhist in hists.items():
+    # save efficiencies for ratio calculation
+    if not kwargs.get("skip_ratio", True):
+        efficiencies = {}
+        errors = {}
+        count_key = 0
 
-        # for unrolling efficiencies
-        if "unroll" in kwargs:
-            myhist = myhist[:, int(kwargs["unroll"]), :]
+    # for unrolling efficiencies
+    subslices = kwargs.get("unroll", [None])
+    for subslice in subslices:
+        # loop over processeslabel
+        for proc_inst, myhist in hists.items():
+            # for unrolling efficiencies, unroll takes the number of the bin to plot
+            if "unroll" in kwargs:
+                myhist = myhist[:, int(subslice), :]
 
-        # get normalisation from first histogram (all events)
-        # TODO: this could be possibly be a CLI option
-        norm_hist = myhist[:, 0]
-
-        # plot config for the background distribution
-        plot_config["hist_0"] = {
-            "method": "draw_hist_twin",
-            "hist": myhist[:, 0],
-            "kwargs": {
-                "norm": 1,
-                "label": None,
-                "color": "grey",
-                "histtype": "fill",
-                "alpha": 0.3,
-            },
-        }
-
-        # plot config for the individual triggers
-        if "bin_sel" in kwargs:
-            mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
-        else:
-            mask_bins = myhist.axes[1]
-        for i in mask_bins:
-            if i == 0:
-                continue
-
-            if proc_as_label:
-                label = f"{proc_inst.label}"
+            if not hasattr(proc_inst, 'label'):
+                proc_label = f"{processes[0].label}, {proc_inst}"
             else:
-                label = i
+                proc_label = proc_inst.label
 
-            plot_config[f"hist_{proc_inst.label}_{i}"] = {
-                "method": "draw_efficiency",
-                "hist": myhist[:, hist.loc(i)],
+            # get normalisation from first histogram (all events)
+            # TODO: this could be possibly be a CLI option
+            norm_hist = myhist[:, 0]
+
+            # plot config for the background distribution
+            plot_config["hist_0"] = {
+                "method": "draw_hist_twin",
+                "hist": myhist[:, 0],
                 "kwargs": {
-                    "h_norm": norm_hist,
-                    "label": f"{label}",
+                    "norm": 1,
+                    "label": None,
+                    "color": "grey",
+                    "histtype": "fill",
+                    "alpha": 0.3,
                 },
             }
 
-        # set legend title to process name
-        if proc_as_label:
-            default_style_config["legend_cfg"]["title"] = legend_title
-        else:
-            if "title" in default_style_config["legend_cfg"]:
-                default_style_config["legend_cfg"]["title"] += " & " + proc_inst.label
+            # plot config for the individual triggers
+            if "bin_sel" in kwargs:
+                mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
             else:
-                default_style_config["legend_cfg"]["title"] = proc_inst.label
+                mask_bins = myhist.axes[1]
+            for i in mask_bins:
+                if i == 0:
+                    continue
 
-        # add unroll bin to title
-        if "unroll" in kwargs:
-            default_style_config["legend_cfg"]["title"] += f"\n{variable_insts[1].name} (bin {kwargs['unroll']})"
+                if proc_as_label:
+                    label = f"{proc_label}"
+                else:
+                    label = i
+
+                if "unroll" in kwargs:
+                    label += f" (bin {subslice})"
+
+                # calculate efficiency
+                efficiency = np.nan_to_num(myhist[:, hist.loc(i)].values() / norm_hist.values(),
+                                           nan=0, posinf=1, neginf=0
+                                           )
+
+                # calculate uncertainties
+                if kwargs.get("skip_errorbars", False):
+                    eff_err = None
+                else:
+                    eff_err = calc_efficiency_errors(myhist[:, hist.loc(i)], norm_hist)
+
+                plot_config[f"hist_{proc_label}_{label}"] = {
+                    "method": "draw_plt_errorbars",
+                    "hist": myhist[:, hist.loc(i)],
+                    "kwargs": {
+                        "y": efficiency,
+                        "yerr": eff_err,
+                        "label": f"{label}",
+                    },
+                }
+
+                # calculate ratio of efficiencies
+                if not kwargs.get("skip_ratio", True):
+                    efficiencies[count_key] = efficiency
+                    errors[count_key] = eff_err
+                    count_key += 1
+                    if len(efficiencies) > 1:
+                        plot_config[f"hist_{proc_label}_{label}"]["ratio_kwargs"] = {
+                            "y": np.nan_to_num(efficiency / efficiencies[0], nan=1, posinf=1, neginf=0),
+                            "yerr": calc_ratio_uncertainty(efficiencies, errors),
+                            "label": f"{label}",
+                        }
+                    else:
+                        plot_config[f"hist_{proc_label}_{label}"]["ratio_kwargs"] = {
+                            "y": np.ones_like(efficiency),
+                            "yerr": None,
+                            "label": f"{label}",
+                        }
+
+            # set legend title to process name
+            if proc_as_label:
+                default_style_config["legend_cfg"]["title"] = legend_title
+            else:
+                if "title" in default_style_config["legend_cfg"]:
+                    if proc_label not in default_style_config["legend_cfg"]["title"]:
+                        default_style_config["legend_cfg"]["title"] += " & " + proc_label
+                else:
+                    default_style_config["legend_cfg"]["title"] = proc_label
 
     # plot-function specific changes
     default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
 
-    kwargs["skip_ratio"] = True
-
     style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
 
-    # set correct CMS label TODO: this should be implemented correctly in columnflow by default at one point
-    # style_config["cms_label_cfg"]["exp"] = ""
-    # if "data" in proc_inst.name:
-    #     style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Data)"
-    # else:
-    #     style_config["cms_label_cfg"]["llabel"] = "Private Work (CMS Simulation)"
     if "xlim" in kwargs:
         style_config["ax_cfg"]["xlim"] = kwargs["xlim"]
+
+    style_config["cms_label_cfg"]["fontsize"] = 21
+    style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 1.5))
+    style_config["rax_cfg"]["ylabel"] = "Ratio"
 
     return plot_all(plot_config, style_config, **kwargs)

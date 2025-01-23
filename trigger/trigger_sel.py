@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Selector for triggerstudies
+Selector for triggerstudies, not really necessary anymore
 """
 
 from collections import defaultdict

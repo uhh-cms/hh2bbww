@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Producers for phase-space normalized btag scale factor weights.
+Producers to load trigger scale factors, wip
 """
 
 from __future__ import annotations
