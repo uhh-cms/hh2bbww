@@ -141,7 +141,7 @@ def pre_selection(
 
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        # results.steps.jet_veto_map &
+        results.steps.jet_veto_map &
         results.steps.good_vertex &
         results.steps.met_filter &
         results.steps.json
