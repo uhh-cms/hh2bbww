@@ -230,7 +230,7 @@ def dl1(
     events, lepton_results = self[dl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
 
-    # # trigger selection
+    # trigger selection
     events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
     results += trigger_results
 
@@ -253,6 +253,18 @@ def dl1(
     results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
         (jet_step & bjet_step | results.steps.HbbJet)
+    )
+
+    # selection steps for triggerscalefactors, WARNING: only use on sort of primary dataset to avoid double counting
+    results.steps["no_trigger"] = (
+        results.steps.cleanup &
+        (jet_step | results.steps.HbbJet_no_bjet) &
+        ((jet_step & bjet_step) | results.steps.HbbJet) &
+        results.steps.ll_lowmass_veto &
+        results.steps.TripleLooseLeptonVeto &
+        results.steps.Charge &
+        results.steps.Dilepton &
+        results.steps.SR
     )
 
     # combined event selection after all steps except b-jet selection
@@ -333,3 +345,5 @@ def dl1_init(self: Selector) -> None:
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
 test_dl = dl1.derive("test_dl")
+dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
+dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 11})
