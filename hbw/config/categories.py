@@ -90,13 +90,13 @@ def add_abcd_categories(config: od.Config) -> None:
         name="highmet",
         id=3,
         selection="catid_highmet",
-        label=r"MET \geq 20",
+        label=r"$MET \geq 20$",
     )
     config.add_category(
         name="lowmet",
         id=6,
         selection="catid_lowmet",
-        label=r"MET < 20",
+        label=r"$MET < 20$",
     )
 
 
@@ -110,24 +110,25 @@ def add_mll_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_mll_low",
+        label=r"$m_{\ell\ell} < 81$",
     )
     cr = config.add_category(
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"m_{\ell\ell} \geq 81",
+        label=r"$m_{\ell\ell} \geq 81$",
     )
     cr.add_category(
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        # label=r"81 \leq m_{\ell\ell} < 101",
+        label=r"$81 \leq m_{\ell\ell} < 101$",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        # label=r"m_{\ell\ell} \geq 101",
+        label=r"$m_{\ell\ell} \geq 101$",
     )
 
 
@@ -180,13 +181,13 @@ def add_njet_categories(config: od.Config) -> None:
         name="njet1",
         id=100001,
         selection="catid_njet1",
-        label=r"N_{jet} >= 1",
+        label=r"$N_{jet} >= 1$",
     )
     config.add_category(
         name="njet3",
         id=100003,
         selection="catid_njet3",
-        label=r"N_{jet} >= 3",
+        label=r"$N_{jet} >= 3$",
     )
 
 
@@ -209,13 +210,13 @@ def add_jet_categories(config: od.Config) -> None:
         name="1b",
         id=300,
         selection="catid_1b",
-        label="1b",
+        label=r"$\leq 1 btag$",
     )
     cat_2b = config.add_category(  # noqa: F841
         name="2b",
         id=600,
         selection="catid_2b",
-        label="2b",
+        label=r"$\geq 2 btag$",
     )
 
 
@@ -258,7 +259,7 @@ def name_fn(root_cats):
 def kwargs_fn(root_cats):
     kwargs = {
         "id": sum([c.id for c in root_cats.values()]),
-        "label": ", ".join([c.name for c in root_cats.values()]),
+        "label": ",\n".join([c.label for c in root_cats.values()]),
         "aux": {
             "root_cats": {key: value.name for key, value in root_cats.items()},
         },

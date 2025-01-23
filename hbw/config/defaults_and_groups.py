@@ -122,6 +122,10 @@ def set_config_defaults_and_groups(config_inst):
     # config_inst.x.default_categories = ["incl"]
     # config_inst.x.default_variables = ["jet1_pt"]
 
+    # general_settings default needs to be tuple (or dict) to be resolved correctly
+    config_inst.x.default_general_settings = ("data_mc_plots",)
+    config_inst.x.default_custom_style_config = "default"
+
     #
     # Groups
     #
@@ -301,12 +305,13 @@ def set_config_defaults_and_groups(config_inst):
     # (used during plotting)
     config_inst.x.variable_groups = {
         "mli": ["mli_*"],
+        "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "dl": bracket_expansion([
-            "n_{jet,bjet,electron,muon,fatjet,hbbjet}",
-            "lepton{0,1}_{pt,eta,phi}",
+            "n_{jet,bjet,electron,muon,fatjet,hbbjet,vetotau}",
+            "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
             "met_{pt,phi}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
             "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
@@ -347,6 +352,12 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
+        "data_mc_plots": {
+            # "custom_style_config": "default",  # NOTE: does not work in combination with group
+            "whitespace_fraction": 0.4,
+            "cms_label": "pw",
+            "yscale": "log",
+        },
     }
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},
@@ -386,6 +397,19 @@ def set_config_defaults_and_groups(config_inst):
 
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
+        "default": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 16,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+                "reverse": True,
+            },
+            "annotate_cfg": {
+                "xy": (0.05, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 16,
+            },
+        },
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16},
         },
