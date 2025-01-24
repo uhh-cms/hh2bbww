@@ -5,6 +5,7 @@ Column production methods related to generic event weights.
 """
 
 import functools
+import law
 
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
@@ -17,7 +18,7 @@ from columnflow.production.normalization import (
     stitched_normalization_weights_brs_from_processes,
 )
 from columnflow.production.cms.electron import electron_weights
-from columnflow.production.cms.muon import muon_weights
+from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
@@ -25,7 +26,9 @@ from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weigh
 from hbw.production.gen_v import gen_v_boson, vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
-from hbw.util import has_tag
+from hbw.production.dataset_normalization import dataset_normalization_weight
+from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
+from hbw.util import has_tag, IF_VJETS, IF_TOP
 
 
 np = maybe_import("numpy")
@@ -37,8 +40,8 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses={gen_parton_top, gen_v_boson, pu_weight},
-    produces={gen_parton_top, gen_v_boson, pu_weight},
+    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
+    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -121,15 +124,11 @@ normalized_pu_weights = normalized_weight_factory(
 
 muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
     "weight_name": "muon_id_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_iso_sf_names),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_iso_sf_names)),
 })
 muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_id_sf_names),
-})
-muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
-    "weight_name": "muon_trigger_weight",
-    "get_muon_config": (lambda self: self.config_inst.x.muon_trigger_sf_names),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
 })
 
 
@@ -147,43 +146,6 @@ def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[muon_iso_weights](events, **kwargs)
 
     return events
-
-
-@producer(
-    uses={muon_trigger_weights},
-)
-def sl_trigger_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Producer that calculates the single lepton trigger weights.
-    """
-    if not self.config_inst.has_aux("muon_trigger_sf_names"):
-        raise Exception(f"In {sl_trigger_weights.__name__}: missing 'muon_trigger_sf_names' in config")
-
-    # compute muon trigger SF weights (NOTE: trigger SFs are only defined for muons with
-    # pt > 26 GeV, so create a copy of the events array with with all muon pt < 26 GeV set to 26 GeV)
-    trigger_sf_events = set_ak_column_f32(events, "Muon.pt", ak.where(events.Muon.pt > 26., events.Muon.pt, 26.))
-    trigger_sf_events = self[muon_trigger_weights](trigger_sf_events, **kwargs)
-    for route in self[muon_trigger_weights].produced_columns:
-        events = set_ak_column_f32(events, route, route.apply(trigger_sf_events))
-    # memory cleanup
-    del trigger_sf_events
-
-    return events
-
-
-def sl_trigger_weights_skip_func(self: Producer) -> bool:
-    if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
-        # do not skip when config or dataset is not set
-        return False
-
-    if self.config_inst.x.lepton_tag == "sl":
-        # do not skip when lepton tag is single lepton
-        return False
-    else:
-        return True
-
-
-sl_trigger_weights.skip_func = sl_trigger_weights_skip_func
 
 
 @producer(
@@ -224,11 +186,11 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
     when stitching our signal samples, but we want to calculate the BRs ourselved for other
     types of sample stitching (e.g. DY).
     """
-    # NOTE: I would like to produce the unstitched normalization weights for cross checks,
-    # but for DY, this is not possible at the moment, since we assign processes (hf/lf) for which no
-    # xsecs are available
-    # events = self[normalization_weights](events, **kwargs)
     events = self[self.norm_weights_producer](events, **kwargs)
+
+    # very simple Producer that creates normalization weight without any stitching
+    # (can only be used when there is a one-to-one mapping between datasets and processes)
+    events = self[dataset_normalization_weight](events, **kwargs)
     return events
 
 
@@ -239,13 +201,15 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
-    else:
+    elif "dy_" in self.dataset_inst.name:
         self.norm_weights_producer = stitched_normalization_weights
+    else:
+        self.norm_weights_producer = normalization_weights
 
     self.norm_weights_producer.weight_name = "stitched_normalization_weight"
 
-    self.uses |= {self.norm_weights_producer}
-    self.produces |= {self.norm_weights_producer}
+    self.uses |= {self.norm_weights_producer, dataset_normalization_weight}
+    self.produces |= {self.norm_weights_producer, dataset_normalization_weight}
 
 
 @producer(
@@ -262,7 +226,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=1,
+    version=law.config.get_expanded("analysis", "event_weights_version", 2),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -291,9 +255,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[muon_id_iso_weights](events, **kwargs)
 
-        if self.config_inst.x.lepton_tag == "sl":
-            # compute single lepton trigger SF weights
-            events = self[sl_trigger_weights](events, **kwargs)
+    if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
+        events = self[self.trigger_weights_producer](events, **kwargs)
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
@@ -320,8 +283,13 @@ def event_weights_init(self: Producer) -> None:
         self.uses |= {muon_id_iso_weights}
         self.produces |= {muon_id_iso_weights}
 
-        self.uses |= {sl_trigger_weights}
-        self.produces |= {sl_trigger_weights}
+    if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.trigger_weights_producer = (
+            sl_trigger_weights if self.config_inst.x.lepton_tag == "sl"
+            else dl_trigger_weights
+        )
+        self.uses |= {self.trigger_weights_producer}
+        self.produces |= {self.trigger_weights_producer}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights, normalized_btag_weights}
@@ -354,3 +322,7 @@ def large_weights_killer(self: Producer, events: ak.Array, **kwargs) -> ak.Array
     events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
 
     return events
+
+
+# for testing
+test_event_weights = event_weights.derive("test_event_weights")

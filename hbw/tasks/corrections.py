@@ -65,9 +65,7 @@ class GetBtagNormalizationSF(
             dataset.name: self.reqs.MergeSelectionStats.req(
                 self,
                 dataset=dataset.name,
-                tree_index=0,
                 branch=-1,
-                _exclude=self.reqs.MergeSelectionStats.exclude_params_forest_merge,
             )
             for dataset in self.dataset_insts
         }

@@ -727,8 +727,6 @@ class PlotMLResultsSingleFold(
             "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
         })
 
-        # ML WEIGHTING data.train.equal_weights
-
         # create plots
         # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since
         # input reading is quite fast, while producing certain plots takes a long time

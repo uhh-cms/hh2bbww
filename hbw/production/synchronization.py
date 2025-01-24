@@ -19,6 +19,7 @@ int_cols = {
 
 
 def get_columns_to_store(config_inst):
+    met_name = config_inst.x.met_name
     columns_to_store = {
         "event_nr": lambda events: events.event,
         "run_nr": lambda events: events.run,
@@ -66,8 +67,8 @@ def get_columns_to_store(config_inst):
         "ak8jet0_eta": lambda events: events.HbbJet.eta[:, 0],
         "ak8jet0_phi": lambda events: events.HbbJet.phi[:, 0],
         "ak8jet0_msoftdrop": lambda events: events.HbbJet.msoftdrop[:, 0],
-        "met_pt": lambda events: events.MET.pt,
-        "met_phi": lambda events: events.MET.phi,
+        "met_pt": lambda events: events[met_name].pt,
+        "met_phi": lambda events: events[met_name].phi,
         "mc_weight": lambda events: events.mc_weight,
         "normalized_pu_weight": lambda events: events.pu_weight,
         "normalized_btag_weight": lambda events: events.normalized_btag_weight,

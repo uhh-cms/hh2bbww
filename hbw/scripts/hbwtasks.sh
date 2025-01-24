@@ -40,7 +40,7 @@ hbw_calibration(){
 	--cf.CalibrateEvents-no-poll \
 	--cf.CalibrateEvents-parallel-jobs 4000 \
 	--cf.CalibrateEvents-retries 1 \
-	--cf.CalibrateEvents-tasks-per-job 2 \
+	--cf.CalibrateEvents-tasks-per-job 1 \
 	--cf.CalibrateEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -55,7 +55,7 @@ hbw_reduction(){
 	--cf.ReduceEvents-no-poll \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 2 \
+	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -71,7 +71,7 @@ hbw_merge_reduction(){
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 2 \
+	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@

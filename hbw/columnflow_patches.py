@@ -86,16 +86,14 @@ def patch_csp_versioning():
 
     def TaskArrayFunction_str(self):
         version = self.version() if callable(getattr(self, "version", None)) else getattr(self, "version", None)
-        if version and not isinstance(version, int):
-            raise Exception(f"version must be an integer, but is {version}")
+        if version and not isinstance(version, (int, str)):
+            raise Exception(f"version must be an integer or string, but is {version} ({type(version)})")
         version_str = f"V{version}" if version is not None else ""
         return f"{self.cls_name}{version_str}"
 
     TaskArrayFunction.__str__ = TaskArrayFunction_str
     logger.info(
-        "patched TaskArrayFunction.__str__ to include the CSP version attribute "
-        "(NOTE that this currently does not work for the "
-        "MLTrainingMixin tasks (e.g. MLPreTraining and MLTraining))",
+        "patched TaskArrayFunction.__str__ to include the CSP version attribute",
     )
 
 
@@ -136,6 +134,10 @@ def patch_materialization_strategy():
 
 @memoize
 def patch_all():
+    # change the "retries" parameter default
+    from columnflow.tasks.framework.remote import RemoteWorkflow
+    RemoteWorkflow.retries = RemoteWorkflow.retries.copy(default=3)
+
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()

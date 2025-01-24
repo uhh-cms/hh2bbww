@@ -53,6 +53,7 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     #                                           \
     #                                            q'
     #
+    met_name = self.config_inst.x.met_name
 
     # object padding
     events = set_ak_column(events, "Jet", ak.pad_none(events.Jet, 2))
@@ -64,7 +65,7 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     if "Whadron" not in events.fields:
         events = set_ak_column(events, "Whadron", events.Lightjet[:, 0] + events.Lightjet[:, 1])
     if "Wlepton" not in events.fields:
-        events = set_ak_column(events, "Wlepton", events.Lepton[:, 0] + events.MET[:])
+        events = set_ak_column(events, "Wlepton", events.Lepton[:, 0] + events[met_name][:])
     if "Higgs_WW" not in events.fields:
         events = set_ak_column(events, "Higgs_WW", events.Whadron[:] + events.Wlepton[:])
     if "Higgs_bb" not in events.fields:
@@ -98,7 +99,8 @@ def resonant_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "m_Heavy_Higgs", events.Heavy_Higgs.mass)
     events = set_ak_column_f32(events, "eta_Heavy_Higgs", events.Heavy_Higgs.eta)
     events = set_ak_column_f32(events, "phi_Heavy_Higgs", events.Heavy_Higgs.phi)
-    for col in self.produces:
+    for route in self.produced_columns:
+        col = route.string_column
         events = set_ak_column(events, col, ak.fill_none(ak.nan_to_none(events[col]), EMPTY_FLOAT))
 
     # undo object padding

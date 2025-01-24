@@ -21,6 +21,7 @@ from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.data_loader import MLDatasetLoader, MLProcessData, input_features_sanity_checks
+from hbw.config.processes import create_combined_proc_forML
 
 from hbw.tasks.ml import MLPreTraining
 
@@ -109,6 +110,7 @@ class MLClassifierBase(MLModel):
 
         for param in self.settings_parameters:
             # overwrite the default value with the value from the parameters
+            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
             setattr(self, param, self.parameters.get(param, getattr(self, param)))
 
         # cast the ml parameters to the correct types if necessary
@@ -186,24 +188,37 @@ class MLClassifierBase(MLModel):
         self._parameters_repr = parameters_repr
         return self._parameters_repr
 
-    def setup(self):
+    def setup(self) -> None:
         """ function that is run as part of the setup phase. Most likely overwritten by subclasses """
-        logger.info(
-            f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr})"
+        logger.debug(
+            f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr}), "
             f"parameters: \n{self.parameters}",
         )
-        # dynamically add variables for the quantities produced by this model
-        # NOTE: since these variables are only used in ConfigTasks,
-        #       we do not need to add these variables to all configs
+        # dynamically add processes and variables for the quantities produced by this model
+        # NOTE: this function might not be called for all configs when the requested configs
+        # between MLTraining and the requested task are different
+        for proc in self.combine_processes:
+            if proc not in self.config_inst.processes:
+                proc_name = str(proc)
+                proc_dict = DotDict(self.combine_processes[proc])
+                create_combined_proc_forML(self.config_inst, proc_name, proc_dict)
+
         for proc in self.processes:
             for config_inst in self.config_insts:
                 if f"mlscore.{proc}" not in config_inst.variables:
                     config_inst.add_variable(
                         name=f"mlscore.{proc}",
+                        expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x.ml_label}",
-                        aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
+                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        aux={
+                            "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
                     )
 
     def preparation_producer(self: MLModel, analysis_inst: od.Analysis):
@@ -291,7 +306,6 @@ class MLClassifierBase(MLModel):
         # declare the main target
         target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
 
-        # TODO: cleanup (produce plots, stats in separate task)
         outp = {
             "mlmodel": target,
             "plots": target.child("plots", type="d", optional=True),
@@ -303,7 +317,6 @@ class MLClassifierBase(MLModel):
             target.child(fname, type="f") for fname in
             ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
         ]
-
         return outp
 
     def open_model(self, target: law.LocalDirectoryTarget) -> dict[str, Any]:
