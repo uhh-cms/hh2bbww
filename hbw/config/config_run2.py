@@ -663,17 +663,15 @@ def add_config(
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
-    # # files with uncertainties, not loadable because there are some NaNs in the json :/
-    # trigger_sf_path = "/afs/desy.de/user/f/frahmmat/Projects/hh2bbww/data/software/trig_sf"
-    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))
-    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
-    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
 
-    # files without uncertainties and with wrong triggers
-    trigger_sf_path = "/data/dust/user/letzerba/hh2bbww/data/cf_store/hbw_dl/cf.CalculateTriggerScaleFactors/c22post/nominal/calib__with_b_reg/sel__dl1_no_triggerV11__steps_no_trigger/prod__event_weightsV2__trigger_prodV2__pre_ml_catsV1__dl_ml_inputsV1/weight__ref_cut/datasets_4_10839b14e3/prod3/"  # noqa: E501
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v1"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
+    trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
+
 
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
