@@ -9,7 +9,11 @@ import law
 from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer
-from columnflow.production.cms.seeds import deterministic_seeds
+from columnflow.calibration.cms.egamma import electrons
+from columnflow.production.cms.seeds import (
+    deterministic_seeds, deterministic_electron_seeds, deterministic_event_seeds,
+)
+from columnflow.production.cms.supercluster_eta import electron_sceta
 from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
@@ -28,10 +32,44 @@ np = maybe_import("numpy")
 logger = law.logger.get_logger(__name__)
 
 
+# customized electron calibrator (also needs deterministic event seeds...)
+electrons.deterministic_seed_index = 0
+
+
+@calibrator(
+    version=1,
+    uses={electron_sceta, deterministic_event_seeds, deterministic_electron_seeds},
+    produces={deterministic_event_seeds, deterministic_electron_seeds},
+)
+def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Electron calibrator, combining scale and resolution.
+    """
+    # obtain the electron super cluster eta needed for the calibration
+    events = self[electron_sceta](events, **kwargs)
+
+    events = self[deterministic_event_seeds](events, **kwargs)
+    events = self[deterministic_electron_seeds](events, **kwargs)
+
+    # apply the electron calibration
+    events = self[self.electron_calib_cls](events, **kwargs)
+
+    return events
+
+
+@ele.init
+def ele_init(self: Calibrator) -> None:
+    self.electron_calib_cls = electrons
+
+    self.uses |= {self.electron_calib_cls}
+    self.produces |= {self.electron_calib_cls}
+
+
 @calibrator(
     version=1,
     # add dummy produces such that this calibrator will always be run when requested
     # (temporary workaround until init's are only run as often as necessary)
+    # TODO: deterministic FatJet seeds
     produces={"FatJet.pt"},
 )
 def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:

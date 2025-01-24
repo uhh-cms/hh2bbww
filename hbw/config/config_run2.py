@@ -28,6 +28,7 @@ from hbw.util import timeit_multiple
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
+from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -414,9 +415,13 @@ def add_config(
 
     ################################################################################################
     #
-    # electron and muon SFs (NOTE: we could add these config entries as part of the selector init)
+    # electron and muon calibrations and SFs (NOTE: we could add these config entries as part of the selector init)
     #
     ################################################################################################
+
+    # electron calibrations
+    cfg.x.eec = EGammaCorrectionConfig(correction_set="Scale")
+    cfg.x.eer = EGammaCorrectionConfig(correction_set="Smearing")
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
@@ -431,7 +436,6 @@ def add_config(
         # (used in the muon producer)
         cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
         cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
-
     elif cfg.x.run == 3:
         electron_sf_campaign = {
             "2022postEE": "2022Re-recoE+PromptFG",
@@ -659,7 +663,9 @@ def add_config(
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    # add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
+    if year != 2023:
+        # missing in 2023
+        add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
