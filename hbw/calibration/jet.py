@@ -10,7 +10,6 @@ import functools
 
 from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column
-from columnflow.calibration.cms.jets import jec
 from columnflow.calibration import calibrator, Calibrator
 
 
@@ -24,9 +23,9 @@ ak = maybe_import("awkward")
 
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
-
-# custom jec calibrator that only runs nominal correction
-jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": ["Total"]})
+#
+# BJet calibrator
+#
 
 
 @calibrator(
