@@ -106,7 +106,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         has_four_vec(events, "Electron")
     ):
         # combine Electron and Muon into a single object (Lepton)
-        lepton = ak.concatenate([events.Muon * 1, events.Electron * 1], axis=-1)
+        lepton = ak.with_name(ak.concatenate([events.Muon, events.Electron], axis=-1), "PtEtaPhiMLorentzVector")
         events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
 
     # transform MET into 4-vector

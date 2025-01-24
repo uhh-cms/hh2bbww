@@ -203,7 +203,7 @@ def stylize_processes(config: od.Config) -> None:
 
         # unstack signal in plotting
         if "hh_" in proc.name.lower():
-            proc.has_tag("is_signal")
+            proc.add_tag("is_signal")
             proc.unstack = True
             proc.scale = "stack"
 
