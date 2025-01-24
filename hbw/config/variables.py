@@ -250,7 +250,8 @@ def add_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$p_{T}^{ll}$",
         aux={
-            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"},
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
             "rebin": 2,
             "x_max": 400,
         },
@@ -262,6 +263,16 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": {"Jet.pt"}},
         binning=(12, -0.5, 11.5),
         x_title="Number of jets",
+        discrete_x=True,
+    )
+
+    btag_column = config.x.btag_column
+    config.add_variable(
+        name="n_btag",
+        expression=lambda events: ak.sum(events.Jet[btag_column] > config.x.btag_wp_score, axis=1),
+        aux={"inputs": {f"Jet.{btag_column}"}},
+        binning=(7, -0.5, 6.5),
+        x_title=f"Number of b-tagged jets ({btag_column})",
         discrete_x=True,
     )
     if config.x.run == 2:
@@ -348,6 +359,14 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": {"Muon.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of muons",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_vetotau",
+        expression=lambda events: ak.num(events.VetoTau["pt"], axis=1),
+        aux={"inputs": {"VetoTau.pt"}},
+        binning=(4, -0.5, 3.5),
+        x_title="Number of veto taus",
         discrete_x=True,
     )
     config.add_variable(
@@ -605,6 +624,38 @@ def add_variables(config: od.Config) -> None:
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} mass",
+        )
+        config.add_variable(
+            name=f"lepton{i}_pfreliso",
+            expression=lambda events, i=i: events.Lepton[:, i].pfRelIso03_all,
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass,pfRelIso03_all}"},
+                x_max=0.5,
+            ),
+            binning=(240, 0, 2),
+            null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} pfRelIso03_all",
+        )
+        config.add_variable(
+            name=f"lepton{i}_minipfreliso",
+            expression=lambda events, i=i: events.Lepton[:, i].miniPFRelIso_all,
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass,miniPFRelIso_all}"},
+                x_max=0.5,
+            ),
+            binning=(240, 0, 2),
+            null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} miniPFRelIso_all",
+        )
+        config.add_variable(
+            name=f"lepton{i}_mvatth",
+            expression=lambda events, i=i: events.Lepton[:, i].mvaTTH,
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass,mvaTTH}"},
+            ),
+            binning=(40, -1, 1),
+            null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} mvaTTH",
         )
 
     for obj in ["Electron", "Muon"]:

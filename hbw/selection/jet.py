@@ -324,6 +324,7 @@ def sl_boosted_jet_selection(
 
     # create temporary object with fatjet mask applied and get the subjets
     hbbjets = events.FatJet[hbbJet_mask]
+    # TODO: subJetIdx1 only gives indices for the SubJet collection...
     subjet1 = events.Jet[hbbjets.subJetIdx1]
     subjet2 = events.Jet[hbbjets.subJetIdx2]
 
