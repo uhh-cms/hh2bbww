@@ -508,6 +508,9 @@ class PrepareInferenceTaskCalls(
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
 
+        # # name of the output root file that contains the Pre+Postfit shapes
+        # output_file = ""
+
         base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
 
         print("\n\n")
@@ -539,6 +542,13 @@ class PrepareInferenceTaskCalls(
         cmd = base_cmd + (
             f"law run PlotPullsAndImpacts --version {identifier} --datacards {datacards} "
             f"--order-by-impact"
+        )
+        print(cmd, "\n\n")
+
+        # running PreAndPostfitShapes for Pre+Postfit plots
+        cmd = base_cmd + (
+            f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
+            # f"--output-name {output_file}"
         )
         print(cmd, "\n\n")
         output["FitDiagnostics"].dump(cmd, formatter="text")

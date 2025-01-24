@@ -11,7 +11,6 @@ from collections import OrderedDict, defaultdict
 import law
 import luigi
 import order as od
-import re
 from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.mixins import (
     InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
@@ -32,40 +31,6 @@ hist = maybe_import("hist")
 
 
 logger = law.logger.get_logger(__name__)
-
-
-def reverse_inf_proc(proc):
-    """
-    Helper function that reverses the transformations done by inf_proc.
-    """
-    if proc.startswith("ggHH_"):
-        # Adjust pattern to split the last part into two groups
-        pattern = r"ggHH_kl_([mp\d]+)_kt_([mp\d]+)_([a-zA-Z\d]{3})([a-zA-Z\d]+)"
-        replacement = r"hh_ggf_\3_\4_kl\1_kt\2"
-        return re.sub(pattern, replacement, proc)
-    elif proc.startswith("qqHH_"):
-        # Adjust pattern to split the last part into two groups
-        pattern = r"qqHH_CV_([mp\d]+)_C2V_([mp\d]+)_kl_([mp\d]+)_([a-zA-Z\d]{3})([a-zA-Z\d]+)"
-        replacement = r"hh_vbf_\4_\5_kv\1_k2v\2_kl\3"
-        return re.sub(pattern, replacement, proc)
-    elif proc == "qqH":
-        pattern = r"qqH"
-        replacement = r"h_vbf"
-        return re.sub(pattern, replacement, proc)
-    elif proc == "ggH":
-        pattern = r"ggH"
-        replacement = r"h_ggf"
-        return re.sub(pattern, replacement, proc)
-    elif proc == "ggZH":
-        pattern = r"ggZH"
-        replacement = r"zh_gg"
-        return re.sub(pattern, replacement, proc)
-    elif "H" in proc:
-        proc = proc.lower()
-        return proc
-    else:
-        # If the string doesn't match the patterns, return it unchanged
-        return proc
 
 
 def load_hists_uproot(fit_diagnostics_path, fit_type):
@@ -154,7 +119,7 @@ from columnflow.plotting.plot_util import (
 
 
 def plot_postfit_shapes(
-    hists: OrderedDict[od.Process, hist.Hist],
+    h: OrderedDict,  # [od.Process, hist.Hist],
     config_inst: od.Config,
     category_inst: od.Category,
     variable_insts: list[od.Variable],
@@ -168,7 +133,7 @@ def plot_postfit_shapes(
     **kwargs,
 ) -> tuple(plt.Figure, tuple(plt.Axes)):
     variable_inst = law.util.make_tuple(variable_insts)[0]
-    hists = apply_process_settings(hists, process_settings)
+    hists = apply_process_settings(h.copy(), process_settings)
     plot_config = prepare_plot_config(
         hists,
         shape_norm=shape_norm,
@@ -232,11 +197,20 @@ class PlotPostfitShapes(
         description="Whether to do prefit or postfit plots; defaults to False",
     )
 
+    @property
+    def fit_type(self) -> str:
+        if self.prefit:
+            fit_type = "prefit"
+        else:
+            fit_type = "postfit"
+        self._fit_type = fit_type
+        return self._fit_type
+
     def requires(self):
         return {}
 
     def output(self):
-        return {"plots": self.target("plots", dir=True)}
+        return {"plots": self.target(f"plots_{self.fit_type}", dir=True)}
 
     @view_output_plots
     def run(self):
@@ -246,12 +220,8 @@ class PlotPostfitShapes(
         )
 
         outp = self.output()
-        if self.prefit:
-            fit_type = "prefit"
-        else:
-            fit_type = "postfit"
 
-        all_hists = load_hists_uproot(self.fit_diagnostics_file, fit_type)
+        all_hists = load_hists_uproot(self.fit_diagnostics_file, self.fit_type)
         process_insts = list(map(self.config_inst.get_process, self.processes))
 
         for channel, h_in in all_hists.items():
@@ -259,8 +229,9 @@ class PlotPostfitShapes(
             if not has_category:
                 logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
 
-        hists = defaultdict(OrderedDict)
+        hist_map = defaultdict(list)
 
+        # First map process inst for plotting to processes of root shapes
         for proc_key in list(h_in.keys()):
             proc_inst = None
             # try getting the config process via InferenceModel
@@ -273,22 +244,31 @@ class PlotPostfitShapes(
                 proc_inst = self.config_inst.get_process(proc_key, default=None)
 
             # replace string keys with process instances
+            # map HHinference processes to plotting proc_inst
             if proc_inst:
                 plot_proc = [
                     proc for proc in process_insts if proc.has_process(proc_inst) or proc.name == proc_inst.name
                 ]
                 if len(plot_proc) != 1:
                     if len(plot_proc) > 1:
-                        raise Exception(f"{proc_key} was assigned to more then one porcess insts ({plot_proc}) ")
+                        logger.warning(f"{proc_key} was assigned to more then one process insts ({plot_proc}) ")
                     else:
                         logger.warning(f"{proc_key} in root file, but won't be plotted.")
-                    continue
+                        continue
 
-                if plot_proc[0] not in hists:
-                    hists[plot_proc[0]] = {}
-                    hists[plot_proc[0]] = h_in[proc_key]
+                if plot_proc[0] not in hist_map:
+                    hist_map[plot_proc[0]] = [proc_key]
                 else:
-                    hists[plot_proc[0]] = hists[plot_proc[0]] + h_in[proc_key]
+                    hist_map[plot_proc[0]].append(proc_key)
+
+        # Plot Pre/Postfit plot for each channel
+        for channel, h_in in all_hists.items():
+            hists = defaultdict(OrderedDict)
+            for proc in hist_map:
+                plot_proc = proc.copy()
+                hists[plot_proc] = h_in[hist_map[proc][0]]
+                for p in hist_map[proc][1:]:
+                    hists[plot_proc] += h_in[p]
 
             if has_category:
                 inference_category = self.inference_model_inst.get_category(channel)
@@ -299,14 +279,18 @@ class PlotPostfitShapes(
                 config_category = od.Category(channel, id=1)
                 variable_inst = od.Variable("dummy")
 
+            # take copy of proc_inst so labeling, sclaing etc is not modified on proc inst directly
+
+            # __import__("IPYthon").embed()
+            h = hists.copy()
             # call the plot function
             fig, _ = self.call_plot_func(
                 self.plot_function,
-                hists=hists,
+                h=h,
                 config_inst=self.config_inst,
                 category_inst=config_category,
                 variable_insts=variable_inst,
                 **self.get_plot_parameters(),
             )
 
-            outp["plots"].child(f"{channel}_{fit_type}.pdf", type="f").dump(fig, formatter="mpl")
+            outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")

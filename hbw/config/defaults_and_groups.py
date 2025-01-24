@@ -151,8 +151,8 @@ def set_config_defaults_and_groups(config_inst):
             "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
         ],
         "test_postfit": [
-            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-            "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+            # "hh_vbf_hbb_hww2l2nu",
+            "hh_ggf_hbb_hww2l2nu",
             "st",
             "tt",
             "dy",
@@ -386,8 +386,8 @@ def set_config_defaults_and_groups(config_inst):
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "dilep": {
-            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": {"scale": 90000, "unstack": True},
-            "hh_ggf_hbb_hww2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
+            "hh_vbf_hbb_hww2l2nu": {"scale": 90000, "unstack": True},
+            "hh_ggf_hbb_hww2l2nu": {"scale": 10000, "unstack": True},
         },
         "dileptest": {
             "hh_ggf_hbb_hvv2l2nu_kl1_kt1": {"scale": 10000, "unstack": True},
