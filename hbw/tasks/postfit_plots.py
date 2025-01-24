@@ -112,7 +112,7 @@ mplhep = maybe_import("mplhep")
 
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
-    prepare_plot_config,
+    prepare_stack_plot_config,
     prepare_style_config,
     apply_process_settings,
 )
@@ -134,7 +134,8 @@ def plot_postfit_shapes(
 ) -> tuple(plt.Figure, tuple(plt.Axes)):
     variable_inst = law.util.make_tuple(variable_insts)[0]
     hists = apply_process_settings(hists, process_settings)
-    plot_config = prepare_plot_config(
+
+    plot_config = prepare_stack_plot_config(
         hists,
         shape_norm=shape_norm,
         hide_errors=hide_errors,
