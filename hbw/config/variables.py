@@ -265,6 +265,16 @@ def add_variables(config: od.Config) -> None:
         x_title="Number of jets",
         discrete_x=True,
     )
+
+    btag_column = config.x.btag_column
+    config.add_variable(
+        name="n_btag",
+        expression=lambda events: ak.sum(events.Jet[btag_column] > config.x.btag_wp_score, axis=1),
+        aux={"inputs": {f"Jet.{btag_column}"}},
+        binning=(7, -0.5, 6.5),
+        x_title=f"Number of b-tagged jets ({btag_column})",
+        discrete_x=True,
+    )
     if config.x.run == 2:
         deepjet_wps = config.x.btag_working_points.deepjet
         config.add_variable(

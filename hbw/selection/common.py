@@ -238,8 +238,6 @@ configurable_attributes = {
     "jet_pt": float,
     "n_jet": int,
     # bjet selection
-    "b_tagger": str,
-    "btag_wp": str,
     "n_btag": int,
 }
 
@@ -295,30 +293,3 @@ def configure_selector(self: Selector):
         # TODO: only use the "selector_config" and remove the direct config aux
         self.config_inst.set_aux(attr_name, attr)
         self.config_inst.x.selector_config[attr_name] = attr
-
-    # define config for b-tagging SFs (this needs to be done by the main Selector, because this
-    # needs to be setup before running the init of the btag Producer)
-    # NOTE we could try using the BTagSFConfig instead of this overly complicated setup:
-    if self.config_inst.x.b_tagger == "deepjet":
-        self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
-        self.config_inst.x.btag_column = "btagDeepFlavB"
-    elif self.config_inst.x.b_tagger == "particlenet":
-        self.config_inst.x.btag_sf = ("particleNet_shape", self.config_inst.x.btag_sf_jec_sources, "btagPNetB")
-        self.config_inst.x.btag_column = "btagPNetB"
-    else:
-        raise NotImplementedError(f"Cannot resolve btag sf config for b_tagger {self.config_inst.x.b_tagger}")
-
-    # write used btag wp score in the config
-    self.config_inst.x.btag_wp_score = (
-        self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
-    )
-
-    btag_column = self.config_inst.x.btag_column
-    self.config_inst.add_variable(
-        name="n_btag",
-        expression=lambda events: ak.sum(events.Jet[btag_column] > self.config_inst.x.btag_wp_score, axis=1),
-        aux={"inputs": {f"Jet.{btag_column}"}},
-        binning=(7, -0.5, 6.5),
-        x_title=f"Number of b-tagged jets ({btag_column})",
-        discrete_x=True,
-    )

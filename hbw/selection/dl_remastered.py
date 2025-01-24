@@ -210,8 +210,6 @@ from hbw.util import timeit
     trigger_config_func=lambda self: getattr(import_module("hbw.config.trigger"), "add_triggers")(self.config_inst),
     # jet selection requirements
     n_jet=None,
-    b_tagger=None,
-    btag_wp=None,
     n_btag=None,
     version=law.config.get_expanded("analysis", "dl1_version", 2),
 )

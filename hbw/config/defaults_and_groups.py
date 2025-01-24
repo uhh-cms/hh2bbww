@@ -310,7 +310,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "dl": bracket_expansion([
-            "n_{jet,bjet,electron,muon,fatjet,hbbjet,vetotau}",
+            "n_{jet,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
             "met_{pt,phi}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
