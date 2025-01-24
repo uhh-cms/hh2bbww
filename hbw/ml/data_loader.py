@@ -240,10 +240,9 @@ class MLDatasetLoader:
     @property
     def num_event_per_process(self) -> str:
         if not self.skip_mask:
-            self._num_events_per_process = "num_events_pos_weights_per_process"
+            return "num_events_pos_weights_per_process"
         else:
-            self._num_events_per_process = "num_events_per_process"
-        return self._num_events_per_process
+            return "num_events_per_process"
 
     def get_xsec_train_weights(self) -> np.ndarray:
         """
