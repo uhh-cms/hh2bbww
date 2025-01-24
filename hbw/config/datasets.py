@@ -33,6 +33,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2017": "cdef",
         "2022preEE": "cd",
         "2022postEE": "efg",
+        "2023preBPix": "c",
+        "2023postBPix": "d",
     }[config.x.cpn_tag]
 
     data_datasets = [
