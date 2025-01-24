@@ -672,7 +672,6 @@ def add_config(
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
 
-
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
