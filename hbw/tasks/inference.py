@@ -32,7 +32,6 @@ logger = law.logger.get_logger(__name__)
 
 # Function copied from Mathis Hist hook commit
 # TODO: define once at central place (hist_util.py)
-# TODO: define once at central place (hist_util.py)
 def apply_rebinning_edges(h: hist.Histogram, axis_name: str, edges: list):
     """
     Generalized rebinning of a single axis from a hist.Histogram, using predefined edges.

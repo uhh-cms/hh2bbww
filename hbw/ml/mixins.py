@@ -55,7 +55,7 @@ class DenseModelMixin(object):
         import tensorflow.keras as keras
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
-        from hbw.ml.tf_util import cumulated_crossentropy  # , categorical_crossentropy
+        from hbw.ml.tf_util import cumulated_crossentropy
 
         n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)

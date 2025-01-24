@@ -335,23 +335,14 @@ class MLClassifierBase(MLModel):
         models["parameters"] = yaml.load(f_in, Loader=yaml.Loader)
 
         # custom loss needed due to output layer changes for negative weights
-        from hbw.ml.tf_util import cumulated_crossentropy, categorical_crossentropy
+        from hbw.ml.tf_util import cumulated_crossentropy
 
-        # Check for negative weight handling and assign loss function accordingly.
-        if self.negative_weights == "ignore":
-            models["model"] = tf.keras.models.load_model(
-                target["mlmodel"].path, custom_objects={categorical_crossentropy.__name__: categorical_crossentropy},
-            )
-            models["best_model"] = tf.keras.models.load_model(
-                target["checkpoint"].path, custom_objects={categorical_crossentropy.__name__: categorical_crossentropy},
-            )
-        else:
-            models["model"] = tf.keras.models.load_model(
-                target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
-            )
-            models["best_model"] = tf.keras.models.load_model(
-                target["checkpoint"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
-            )
+        models["model"] = tf.keras.models.load_model(
+            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+        )
+        models["best_model"] = tf.keras.models.load_model(
+            target["checkpoint"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+        )
 
         return models
 
@@ -553,7 +544,7 @@ class ExampleDNN(MLClassifierBase):
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
-        from hbw.ml.tf_util import cumulated_crossentropy, categorical_crossentropy
+        from hbw.ml.tf_util import cumulated_crossentropy
 
         n_inputs = len(set(self.input_features))
         n_outputs = len(self.processes)
@@ -576,7 +567,7 @@ class ExampleDNN(MLClassifierBase):
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
         if self.negative_weights == "ignore":
             model.compile(
-                loss=categorical_crossentropy,
+                loss="categorical_crossentropy",
                 optimizer=optimizer,
                 weighted_metrics=["categorical_accuracy"],
             )
