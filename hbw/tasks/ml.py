@@ -330,6 +330,8 @@ class MLPreTraining(
         # the stats dict is created per process+fold, but should always be identical, therefore we store it only once
         outputs["stats"] = self.target("stats.json")
 
+        outputs["cross_check_weights"] = self.target(f"cross_check_weights_{process}_{self.fold}.yaml")
+
         outputs["parameters"] = self.target("parameters.yaml")
 
         return outputs
@@ -398,23 +400,36 @@ class MLPreTraining(
         outputs["stats"].dump(stats, formatter="json")
 
         # initialize the DatasetLoader
-        ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
-        # NOTE: Almost closure
+        if self.ml_model_inst.negative_weights == "ignore":
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+            logger.info(
+                f"{self.ml_model_inst.negative_weights} method chosen to hanlde negative weights:",
+                " All negative weights will be removed from training.",
+            )
+        else:
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats, skip_mask=True)
+
         sum_train_weights = np.sum(ml_dataset.train_weights)
         n_events_per_fold = len(ml_dataset.train_weights)
-        logger.info(f"Sum of traing weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
-
-        # check that equal weighting works as intended
+        logger.info(f"Sum of training weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
+        xcheck = {}
         if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
+            xcheck[process] = {}
             if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
                 for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
-                    proc_mask, sub_id = get_proc_mask(events, sub_proc, self.ml_model_inst.config_inst)
+                    proc_mask, _ = get_proc_mask(ml_dataset._events, sub_proc, self.ml_model_inst.config_inst)
                     xcheck_weight_sum = np.sum(ml_dataset.train_weights[proc_mask])
                     xcheck_n_events = len(ml_dataset.train_weights[proc_mask])
                     logger.info(
                         f"For the equal weighting method the sum of weights for {sub_proc} is {xcheck_weight_sum} "
                         f"(No. of events: {xcheck_n_events})",
                     )
+                    if sub_proc not in xcheck[process]:
+                        xcheck[process][sub_proc] = {}
+                    xcheck[process][sub_proc]["weight_sum"] = int(xcheck_weight_sum)
+                    xcheck[process][sub_proc]["num_events"] = xcheck_n_events
+                    # __import__("IPython").embed()
+        outputs["cross_check_weights"].dump(xcheck, formatter="yaml")
 
         for input_array in self.ml_model_inst.data_loader.input_arrays:
             logger.info(f"loading data for input array {input_array}")

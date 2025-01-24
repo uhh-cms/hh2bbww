@@ -89,7 +89,7 @@ class HBWInferenceModelBase(InferenceModel):
             dnn_proc = dnn_cat.replace("ml_", "")
             return f"mlscore.{dnn_proc}"
         else:
-            return "mli_mbb"
+            return "mli_lep_pt"
 
     def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
         """ Function to allow customizing the inference category """
