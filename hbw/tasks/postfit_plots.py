@@ -47,6 +47,8 @@ def load_hists_uproot(fit_diagnostics_path, fit_type):
 
 
 def get_hists_from_fit_diagnostics(tfile):
+    """ Helper function to load histograms from root file created by FitDiagnostics """
+
     # prepare output dict
     hists = DotDict()
 
@@ -74,7 +76,7 @@ def get_hists_from_fit_diagnostics(tfile):
 
 
 def get_hists_from_multidimfit(tfile):
-    """ Helper to load histograms from a fit_diagnostics file """
+    """ Helper function to load histograms from root file created by MultiDimFit """
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
@@ -179,6 +181,7 @@ class PlotPostfitShapes(
     """
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    datasets = None
 
     plot_function = PlotBase.plot_function.copy(
         default="hbw.tasks.postfit_plots.plot_postfit_shapes",
@@ -208,6 +211,48 @@ class PlotPostfitShapes(
     def output(self):
         return {"plots": self.target(f"plots_{self.fit_type}", dir=True)}
 
+    # map processes in root shape to corresponding process instance used for plotting
+    def prepare_hist_map(self, hist_processes: set, process_insts: list) -> defaultdict(list):
+
+        hist_map = defaultdict(list)
+
+        for proc_key in hist_processes:
+            proc_inst = None
+            # try getting the config process via InferenceModel
+            # NOTE: Only the first category is taken to get the config process instance,
+            # assuming they are the same for all categories
+            channel = self.inference_model_inst.get_categories_with_process(proc_key)[0]
+            has_category = self.inference_model_inst.has_category(channel)
+            if has_category:
+                inference_process = self.inference_model_inst.get_process(proc_key, channel)
+                proc_inst = self.config_inst.get_process(inference_process.config_process)
+            else:
+                # try getting proc inst directly via config
+                proc_inst = self.config_inst.get_process(proc_key, default=None)
+
+            # replace string keys with process instances
+            # map HHinference processes to process instances for plotting
+            if proc_inst:
+                plot_proc = [
+                    proc for proc in process_insts if proc.has_process(proc_inst) or proc.name == proc_inst.name
+                ]
+                if len(plot_proc) > 1:
+                    logger.warning(
+                        f"{proc_key} was assigned to ({','.join([p.name for p in plot_proc])})",
+                        f" but {plot_proc[0].name} was chosen",
+                    )
+                elif len(plot_proc) == 0:
+                    logger.warning(f"{proc_key} in root file, but won't be plotted.")
+                    continue
+                plot_proc = plot_proc[0]
+
+                if plot_proc not in hist_map:
+                    hist_map[plot_proc] = [proc_key]
+                else:
+                    hist_map[plot_proc].append(proc_key)
+
+        return hist_map
+
     @view_output_plots
     def run(self):
         logger.warning(
@@ -217,51 +262,32 @@ class PlotPostfitShapes(
 
         outp = self.output()
 
+        # Load all required histograms corresponding to the fit_type from the root input file
         all_hists = load_hists_uproot(self.fit_diagnostics_file, self.fit_type)
+
+        # Get list of all process instances required for plotting
         process_insts = list(map(self.config_inst.get_process, self.processes))
 
-        for channel, h_in in all_hists.items():
-            has_category = self.inference_model_inst.has_category(channel)
-            if not has_category:
-                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
-
-        hist_map = defaultdict(list)
-
-        # First map process inst for plotting to processes of root shapes
-        for proc_key in h_in.keys():
-            proc_inst = None
-            # try getting the config process via InferenceModel
-            if has_category:
-                inference_process = self.inference_model_inst.get_process(proc_key, channel)
-                proc_inst = self.config_inst.get_process(inference_process.config_process)
-            else:
-                # try getting proc inst directly via config
-                proc_inst = self.config_inst.get_process(proc_key, default=None)
-
-            # replace string keys with process instances
-            # map HHinference processes to plotting proc_inst
-            if proc_inst:
-                plot_proc = [
-                    proc for proc in process_insts if proc.has_process(proc_inst) or proc.name == proc_inst.name
-                ]
-                if len(plot_proc) > 1:
-                    logger.warning(f"{proc_key} was assigned to ({", ".join([p.name for p in plot_proc])}) but {plot_proc[].name was chosen}")
-                elif len(plot_proc) == 0:
-                    logger.warning(f"{proc_key} in root file, but won't be plotted.")
-                        continue
-                plot_proc = plot_proc[0]
-                   
-
-                if plot_proc[0] not in hist_map:
-                    hist_map[plot_proc[0]] = [proc_key]
-                else:
-                    hist_map[plot_proc[0]].append(proc_key)
+        # map processes in root shape to corresponding process instance used for plotting
+        hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
+        hist_map = self.prepare_hist_map(hist_processes, process_insts)
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
+
+            # Check for coherence between inference and pre/postfit categories
+            has_category = self.inference_model_inst.has_category(channel)
+            if not has_category:
+                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
+                continue
+
+            # Create Histograms
             hists = defaultdict(OrderedDict)
             for proc in hist_map:
-                plot_proc = proc.copy()
+                plot_proc = proc.copy()  # NOTE: copy produced, so actual process is not modified by process settings
+                if hist_map[proc][0] not in h_in:
+                    logger.warning(f"No histograms for {proc.name} found in {channel}.")
+                    continue
                 hists[plot_proc] = h_in[hist_map[proc][0]]
                 for p in hist_map[proc][1:]:
                     hists[plot_proc] += h_in[p]
@@ -275,14 +301,11 @@ class PlotPostfitShapes(
                 config_category = od.Category(channel, id=1)
                 variable_inst = od.Variable("dummy")
 
-            # take copy of proc_inst so labeling, sclaing etc is not modified on proc inst directly
-
-            # __import__("IPYthon").embed()
-            h = hists.copy()
             # call the plot function
+            h = hists.copy()  # NOTE: copy produced, so actual process is not modified by process settings
             fig, _ = self.call_plot_func(
                 self.plot_function,
-                h=h,
+                hists=h,
                 config_inst=self.config_inst,
                 category_inst=config_category,
                 variable_insts=variable_inst,
