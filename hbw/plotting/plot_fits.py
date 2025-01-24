@@ -52,8 +52,7 @@ fit_methods = {
 
 
 def plot_fit(
-    hists: dict[str, OrderedDict[od.Process, hist.Hist]],
-    # hists: OrderedDict[od.Process, hist.Hist],
+    hists: OrderedDict[od.Process, hist.Hist],
     config_inst: od.Config,
     category_inst: od.Category,
     variable_insts: list[od.Variable],

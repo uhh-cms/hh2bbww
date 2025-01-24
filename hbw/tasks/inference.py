@@ -31,6 +31,7 @@ logger = law.logger.get_logger(__name__)
 
 
 # Function copied from Mathis Hist hook commit
+# TODO: define once at central place (hist_util.py)
 def apply_rebinning_edges(h: hist.Histogram, axis_name: str, edges: list):
     """
     Generalized rebinning of a single axis from a hist.Histogram, using predefined edges.
@@ -322,15 +323,11 @@ class ModifyDatacardsFlatRebin(
 
         rebin_process_condition = self.inference_category_rebin_processes.get(config_category, None)
         if not rebin_process_condition:
-            if "ggf" in config_category:
-                for proc in processes.copy():
-                    proc_name = proc.config_process
-
-                logger.warning(
-                    f"No rebin condition found for category {config_category}; rebinning will be flat "
-                    f"on all processes {[proc.config_process for proc in processes]}",
-                )
-                return processes
+            logger.warning(
+                f"No rebin condition found for category {config_category}; rebinning will be flat "
+                f"on all processes {[proc.config_process for proc in processes]}",
+            )
+            return processes
 
         # transform `rebin_process_condition` into Callable if required
         if not isinstance(rebin_process_condition, Callable):

@@ -37,12 +37,10 @@ def load_hists_uproot(fit_diagnostics_path, fit_type):
     """ Helper to load histograms from a fit_diagnostics file """
     with uproot.open(fit_diagnostics_path) as tfile:
         if any("shapes_fit_s" in _k for _k in tfile.keys()):
-            if fit_type != "prefit":
+            if fit_type == "postfit":
                 fit_type = "fit_s"
             hists = get_hists_from_fit_diagnostics(tfile)[f"shapes_{fit_type}"]
         else:
-            # if fit_type != "prefit":
-            #     fit_type = "postfit"
             hists = get_hists_from_multidimfit(tfile)[f"{fit_type}"]
 
     return hists
@@ -119,7 +117,7 @@ from columnflow.plotting.plot_util import (
 
 
 def plot_postfit_shapes(
-    h: OrderedDict,  # [od.Process, hist.Hist],
+    hists: OrderedDict[od.Process, hist.Hist],
     config_inst: od.Config,
     category_inst: od.Category,
     variable_insts: list[od.Variable],
@@ -133,7 +131,7 @@ def plot_postfit_shapes(
     **kwargs,
 ) -> tuple(plt.Figure, tuple(plt.Axes)):
     variable_inst = law.util.make_tuple(variable_insts)[0]
-    hists = apply_process_settings(h.copy(), process_settings)
+    hists = apply_process_settings(hists, process_settings)
     plot_config = prepare_plot_config(
         hists,
         shape_norm=shape_norm,
@@ -200,11 +198,9 @@ class PlotPostfitShapes(
     @property
     def fit_type(self) -> str:
         if self.prefit:
-            fit_type = "prefit"
+            return "prefit"
         else:
-            fit_type = "postfit"
-        self._fit_type = fit_type
-        return self._fit_type
+            return "postfit"
 
     def requires(self):
         return {}
@@ -232,11 +228,10 @@ class PlotPostfitShapes(
         hist_map = defaultdict(list)
 
         # First map process inst for plotting to processes of root shapes
-        for proc_key in list(h_in.keys()):
+        for proc_key in h_in.keys():
             proc_inst = None
             # try getting the config process via InferenceModel
             if has_category:
-                # TODO: process customization based on inference process? e.g. scale
                 inference_process = self.inference_model_inst.get_process(proc_key, channel)
                 proc_inst = self.config_inst.get_process(inference_process.config_process)
             else:
@@ -249,12 +244,13 @@ class PlotPostfitShapes(
                 plot_proc = [
                     proc for proc in process_insts if proc.has_process(proc_inst) or proc.name == proc_inst.name
                 ]
-                if len(plot_proc) != 1:
-                    if len(plot_proc) > 1:
-                        logger.warning(f"{proc_key} was assigned to more then one process insts ({plot_proc}) ")
-                    else:
-                        logger.warning(f"{proc_key} in root file, but won't be plotted.")
+                if len(plot_proc) > 1:
+                    logger.warning(f"{proc_key} was assigned to ({", ".join([p.name for p in plot_proc])}) but {plot_proc[].name was chosen}")
+                elif len(plot_proc) == 0:
+                    logger.warning(f"{proc_key} in root file, but won't be plotted.")
                         continue
+                plot_proc = plot_proc[0]
+                   
 
                 if plot_proc[0] not in hist_map:
                     hist_map[plot_proc[0]] = [proc_key]
