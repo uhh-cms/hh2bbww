@@ -346,4 +346,4 @@ def dl1_init(self: Selector) -> None:
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
 test_dl = dl1.derive("test_dl")
 dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
-dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 11})
+dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 10})

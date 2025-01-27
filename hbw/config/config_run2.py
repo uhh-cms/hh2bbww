@@ -619,7 +619,7 @@ def add_config(
     # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
 
     # files without uncertainties and with wrong triggers
-    trigger_sf_path = "/nfs/dust/cms/user/letzerba/hh2bbww/data/cf_store/hbw_dl/cf.CalculateTriggerScaleFactors/c22post/nominal/calib__with_b_reg/sel__dl1_no_triggerV11__steps_no_trigger/prod__event_weightsV2__trigger_prodV2__pre_ml_catsV1__dl_ml_inputsV1/weight__ref_cut/datasets_4_10839b14e3/prod3/"  # noqa: E501
+    trigger_sf_path = "/data/dust/user/letzerba/hh2bbww/data/cf_store_old/hbw_dl/cf.CalculateTriggerScaleFactors/c22post/nominal/calib__with_b_reg/sel__dl1_no_triggerV11__steps_no_trigger/prod__event_weightsV2__trigger_prodV2__pre_ml_catsV1__dl_ml_inputsV1/weight__ref_cut/datasets_4_10839b14e3/prod3/"  # noqa: E501
     add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v1"))
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
