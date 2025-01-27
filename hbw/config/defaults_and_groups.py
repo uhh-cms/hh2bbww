@@ -437,7 +437,6 @@ def set_config_defaults_and_groups(config_inst):
                 "ncols": 2,
                 "fontsize": 16,
                 "bbox_to_anchor": (0., 0., 1., 1.),
-                "reverse": True,
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),
