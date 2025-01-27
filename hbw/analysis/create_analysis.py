@@ -157,6 +157,18 @@ def create_hbw_analysis(
         2210,
     )
 
+    # 2023 prePBix
+    add_lazy_config(
+        "c23pre",
+        2300,
+    )
+
+    # 2023 postPBix
+    add_lazy_config(
+        "c23post",
+        2310,
+    )
+
     add_lazy_config(
         "c22pre_das",
         2201,

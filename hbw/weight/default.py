@@ -165,7 +165,7 @@ def base_init(self: WeightProducer) -> None:
             self.shifts |= set(shifts)
 
     # remove dummy column from weight columns and uses
-    self.local_weight_columns.pop("dummy_weight")
+    self.local_weight_columns.pop("dummy_weight", "")
 
     # store column names referring to weights to multiply
     self.uses |= self.local_weight_columns.keys()
@@ -178,7 +178,7 @@ btag_uncs = [
 
 
 default_correction_weights = {
-    "dummy_weight": ["dummy_{cpn_tag}"],
+    # "dummy_weight": ["dummy_{cpn_tag}"],
     "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
@@ -211,6 +211,14 @@ with_trigger_weight = default_weight_producer.derive("with_trigger_weight", cls_
 
 base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],
+}})
+
+base.derive("minimal", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "top_pt_weight": ["top_pt"],
 }})
 
 weight_columns_execpt_btag = default_weight_columns.copy()

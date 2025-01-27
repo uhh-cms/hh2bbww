@@ -97,7 +97,14 @@ class MLDatasetLoader:
     input_arrays: tuple = ("features", "weights", "train_weights", "equal_weights")
     evaluation_arrays: tuple = ("prediction",)
 
-    def __init__(self, ml_model_inst: MLModel, process: "str", events: ak.Array, stats: dict | None = None):
+    def __init__(
+        self,
+        ml_model_inst: MLModel,
+        process: "str",
+        events: ak.Array,
+        stats: dict | None = None,
+        skip_mask=False,
+    ):
         """
         Initializes the MLDatasetLoader with the given parameters.
 
@@ -112,10 +119,15 @@ class MLDatasetLoader:
         """
         self._ml_model_inst = ml_model_inst
         self._process = process
+        self._skip_mask = skip_mask
 
         proc_mask, _ = get_proc_mask(events, process, ml_model_inst.config_inst)
         self._stats = stats
-        self._events = events[proc_mask]
+        if not skip_mask:
+            self._events = events[proc_mask]
+            self._events = events[events.event_weight >= 0.0]
+        else:
+            self._events = events
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
@@ -142,6 +154,10 @@ class MLDatasetLoader:
             for param in self.hyperparameter_deps
         }
         return self._parameters
+
+    @property
+    def skip_mask(self):
+        return self._skip_mask
 
     @property
     def ml_model_inst(self):
@@ -221,6 +237,13 @@ class MLDatasetLoader:
         self._shuffle_indices = np.random.permutation(self.n_events)
         return self._shuffle_indices
 
+    @property
+    def num_event_per_process(self) -> str:
+        if not self.skip_mask:
+            return "num_events_pos_weights_per_process"
+        else:
+            return "num_events_per_process"
+
     def get_xsec_train_weights(self) -> np.ndarray:
         """
         Weighting such that each event has roughly the same weight,
@@ -233,10 +256,20 @@ class MLDatasetLoader:
             raise Exception("cannot determine train weights without stats")
 
         _, sub_id = get_proc_mask(self._events, self.process, self.ml_model_inst.config_inst)
-        sum_abs_weights = np.sum([self.stats[self.process]["sum_abs_weights_per_process"][str(id)] for id in sub_id])
-        num_events = np.sum([self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id])
+        sum_weights = np.sum([self.stats[self.process]["sum_pos_weights_per_process"][str(id)] for id in sub_id])
+        num_events = np.sum(
+            [self.stats[self.process][self.num_event_per_process][str(id)] for id in sub_id],
+        )
+        # if not self.skip_mask:
+        #     num_events = np.sum(
+        #         [self.stats[self.process]["num_events_pos_weights_per_process"][str(id)] for id in sub_id],
+        #     )
+        # else:
+        #     num_events = np.sum(
+        #         [self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id],
+        #     )
 
-        xsec_train_weights = self.weights / sum_abs_weights * num_events
+        xsec_train_weights = self.weights / sum_weights * num_events
 
         return xsec_train_weights
 
@@ -252,7 +285,15 @@ class MLDatasetLoader:
 
         combined_proc_inst = self.ml_model_inst.config_inst.get_process(self.process)
         _, sub_id_proc = get_proc_mask(self._events, self.process, self.ml_model_inst.config_inst)
-        num_events = np.sum([self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id_proc])
+        num_events = np.sum(
+            [self.stats[self.process][self.num_event_per_process][str(id)] for id in sub_id_proc],
+        )
+        # if not self.skip_mask:
+        #     num_events = np.sum(
+        #         [self.stats[self.process]["num_events_pos_weights_per_process"][str(id)] for id in sub_id_proc],
+        #     )
+        # else:
+        #     num_events = np.sum([self.stats[self.process]["num_events_per_process"][str(id)] for id in sub_id_proc])
         targeted_sum_of_weights_per_process = (
             num_events / len(combined_proc_inst.x.ml_config.sub_processes)
         )
@@ -685,8 +726,10 @@ class MLProcessData:
             self._prediction = self.load_data("prediction")
         else:
             # calcluate prediction if needed
-            if not hasattr(self._ml_model_inst, "trained_model"):
+            if not hasattr(self._ml_model_inst, "best_model"):
+                # if not hasattr(self._ml_model_inst, "trained_model"):
                 raise Exception("No trained model found in the MLModel instance. Cannot calculate prediction.")
-            self._prediction = predict_numpy_on_batch(self._ml_model_inst.trained_model, self.features)
+            # self._prediction = predict_numpy_on_batch(self._ml_model_inst.trained_model, self.features)
+            self._prediction = predict_numpy_on_batch(self._ml_model_inst.best_model, self.features)
 
-        return self._prediction
+        return self._prediction  # TODO ML best model

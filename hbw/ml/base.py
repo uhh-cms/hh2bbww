@@ -336,6 +336,7 @@ class MLClassifierBase(MLModel):
 
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
+
         models["model"] = tf.keras.models.load_model(
             target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
@@ -373,7 +374,6 @@ class MLClassifierBase(MLModel):
         # load into memory
         validation.load_all
         log_memory("loading validation data")
-
         # store input features as an output
         output["mlmodel"].child("input_features.pkl", type="f").dump(self.input_features_ordered, formatter="pickle")
 
@@ -414,7 +414,6 @@ class MLClassifierBase(MLModel):
         #
         # training
         #
-
         self.fit_ml_model(task, model, train, validation, output)
         log_memory("training")
         # save the model and history; TODO: use formatter
@@ -454,7 +453,7 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
-        use_best_model = False
+        use_best_model = False  # TODO ML, hier auf True setzen?
 
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
@@ -467,7 +466,7 @@ class MLClassifierBase(MLModel):
         process = task.dataset_inst.x("ml_process", task.dataset_inst.processes.get_first().name)
         process_inst = task.config_inst.get_process(process)
 
-        ml_dataset = self.data_loader(self, process_inst, events)
+        ml_dataset = self.data_loader(self, process_inst, events, skip_mask=True)
 
         # # store the ml truth label in the events
         # events = set_ak_column(
@@ -499,7 +498,6 @@ class MLClassifierBase(MLModel):
             if len(pred[0]) != len(self.processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
-
             # store predictions for each model
             for j, proc in enumerate(self.processes):
                 events = set_ak_column(
@@ -567,11 +565,18 @@ class ExampleDNN(MLClassifierBase):
         # compile the network
         # NOTE: the custom loss needed due to output layer changes for negative weights
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
-        model.compile(
-            loss=cumulated_crossentropy,
-            optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy"],
-        )
+        if self.negative_weights == "ignore":
+            model.compile(
+                loss="categorical_crossentropy",
+                optimizer=optimizer,
+                weighted_metrics=["categorical_accuracy"],
+            )
+        else:
+            model.compile(
+                loss=cumulated_crossentropy,
+                optimizer=optimizer,
+                weighted_metrics=["categorical_accuracy"],
+            )
 
         return model
 

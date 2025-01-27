@@ -33,6 +33,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2017": "cdef",
         "2022preEE": "cd",
         "2022postEE": "efg",
+        "2023preBPix": "c",
+        "2023postBPix": "d",
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -126,7 +128,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
         ],
         "ttv": [
-            "ttw_wlnu_amcatnlo",
+            # missing pdf weights in 2022postEE uhh samples
+            # "ttw_wlnu_amcatnlo",
             *config.x.if_era(run=3, values=[
                 "ttz_zll_m4to50_amcatnlo",
                 "ttz_zll_m50toinf_amcatnlo",
@@ -549,7 +552,7 @@ def get_dataset_lfns_2017(
     # NOTE: this currently simply takes samples from a hard-coded local path. Should be improved
     #       when all files are stored somewhere remote
     lfn_base = law.LocalDirectoryTarget(
-        f"/nfs/dust/cms/user/paaschal/WorkingArea/MCProduction/sgnl_production/NanoAODs/{dataset_key}/",
+        f"/data/dust/user/paaschal/WorkingArea/MCProduction/sgnl_production/NanoAODs/{dataset_key}/",
         fs="local_fs",
     )
 

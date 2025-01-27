@@ -25,6 +25,10 @@ from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
 
+from columnflow.production.cms.electron import ElectronSFConfig
+from columnflow.production.cms.muon import MuonSFConfig
+from columnflow.production.cms.btag import BTagSFConfig
+
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
@@ -39,8 +43,6 @@ def add_config(
     limit_dataset_files: int | None = None,
     add_dataset_extensions: bool = False,
 ) -> od.Config:
-    # validations
-    assert campaign.x.year in [2016, 2017, 2018, 2022]
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
@@ -54,9 +56,14 @@ def add_config(
         if not campaign.has_tag("postEE") and not campaign.has_tag("preEE"):
             raise ValueError("2022 campaign must have the 'postEE' or 'preEE' tag")
         corr_postfix = "postEE" if campaign.has_tag("postEE") else "preEE"
+    elif campaign.x.year == 2023:
+        if not campaign.has_tag("postBPix") and not campaign.has_tag("preBPix"):
+            raise ValueError("2023 campaign must have the 'postBPix' or 'preBPix' tag")
+        corr_postfix = "postBPix" if campaign.has_tag("postBPix") else "preBPix"
 
-    if campaign.x.year not in [2017, 2022]:
-        raise NotImplementedError("For now, only 2017 and 2022 campaign is implemented")
+    implemented_years = [2017, 2022, 2023]
+    if campaign.x.year not in implemented_years:
+        raise NotImplementedError(f"For now, only {', '.join(implemented_years)} years are implemented")
 
     # create a config by passing the campaign, so id and name will be identical
     # cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
@@ -171,12 +178,12 @@ def add_config(
             })
     elif year == 2023:
         if campaign.has_tag("preBPix"):
-            cfg.x.luminosity = Number(17.794, {
+            cfg.x.luminosity = Number(17794, {
                 "lumi_13TeV_2023": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
             })
         elif campaign.has_tag("postBPix"):
-            cfg.x.luminosity = Number(9.451, {
+            cfg.x.luminosity = Number(9451, {
                 "lumi_13TeV_2023": 0.01j,
                 "lumi_13TeV_correlated": 0.006j,
             })
@@ -197,15 +204,22 @@ def add_config(
     # JEC
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
     jerc_postfix = campaign.x.postfix
-    if jerc_postfix not in ("", "APV", "EE"):
+    if jerc_postfix not in ("", "APV", "EE", "BPix"):
         raise ValueError(f"Unknown JERC postfix '{jerc_postfix}'")
 
     if cfg.x.run == 2:
-        jerc_campaign = f"Summer19UL{year2}{jerc_postfix}"
+        jer_campaign = jec_campaign = f"Summer19UL{year2}{jerc_postfix}"
         jet_type = "AK4PFchs"
         fatjet_type = "AK8PFchs"
     elif cfg.x.run == 3:
-        jerc_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
+        if year == 2022:
+            jer_campaign = jec_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
+        elif year == 2023:
+            # NOTE: this might be totally wrong, ask Daniel
+            # TODO: fix for 2023postBPix....
+            era = "Cv4" if campaign.has_tag("preBPix") else "D"
+            jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
+            jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
         jet_type = "AK4PFPuppi"
         fatjet_type = "AK8PFPuppi"
 
@@ -222,8 +236,8 @@ def add_config(
     cfg.x.jec = DotDict.wrap({
         # NOTE: currently, we set the uncertainty_sources in the calibrator itself
         "Jet": {
-            "campaign": jerc_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+            "campaign": jec_campaign,
+            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
@@ -231,8 +245,8 @@ def add_config(
             "uncertainty_sources": jec_uncertainties,
         },
         "FatJet": {
-            "campaign": jerc_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2"}[year],
+            "campaign": jec_campaign,
+            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
             "jet_type": fatjet_type,
             "external_file_key": "fat_jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
@@ -245,14 +259,14 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution?rev=107
     cfg.x.jer = DotDict.wrap({
         "Jet": {
-            "campaign": jerc_campaign,
-            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
+            "campaign": jer_campaign,
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
         },
         "FatJet": {
-            "campaign": jerc_campaign,
-            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1"}[year],
+            "campaign": jer_campaign,
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
             # "jet_type": "fatjet_type",
             # JER info only for AK4 jets, stored in AK4 file
             "jet_type": jet_type,
@@ -328,11 +342,28 @@ def add_config(
     })
 
     # b-tag configuration. Potentially overwritten by the jet Selector.
-    cfg.x.b_tagger = {
-        2: "deepjet",
-        3: "particlenet",
-    }[cfg.x.run]
+    if cfg.x.run == 2:
+        cfg.x.b_tagger = "deepjet"
+        cfg.x.btag_sf = BTagSFConfig(
+            correction_set="deepJet_shape",
+            jec_sources=cfg.x.btag_sf_jec_sources,
+            discriminator="btagDeepFlavB",
+            # corrector_kwargs=...,
+        )
+    elif cfg.x.run == 3:
+        cfg.x.b_tagger = "particlenet"
+        cfg.x.btag_sf = BTagSFConfig(
+            correction_set="particleNet_shape",
+            jec_sources=cfg.x.btag_sf_jec_sources,
+            discriminator="btagPNetB",
+            # corrector_kwargs=...,
+        )
+
+    cfg.x.btag_column = cfg.x.btag_sf.discriminator
     cfg.x.btag_wp = "medium"
+    cfg.x.btag_wp_score = (
+        cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
+    )
 
     # met configuration
     cfg.x.met_name = {
@@ -390,29 +421,49 @@ def add_config(
     if cfg.x.run == 2:
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
-        cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{cfg.x.cpn_tag}", "Tight")
+        cfg.x.electron_sf_names = ElectronSFConfig(
+            correction="UL-Electron-ID-SF",
+            campaign=f"{cfg.x.cpn_tag}",
+            working_point="Tight",
+        )
 
         # names of muon correction sets and working points
         # (used in the muon producer)
-        cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
         cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
         cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
 
     elif cfg.x.run == 3:
+        electron_sf_campaign = {
+            "2022postEE": "2022Re-recoE+PromptFG",
+            "2022preEE": "2022Re-recoBCD",
+            "2023postBPix": "2023PromptD",
+            "2023preBPix": "2023PromptC",
+        }[cfg.x.cpn_tag]
+
+        cfg.x.electron_sf_names = ElectronSFConfig(
+            correction="Electron-ID-SF",
+            campaign=electron_sf_campaign,
+            working_point="Tight",
+        )
         # names of electron correction sets and working points
         # (used in the electron_sf producer)
         if cfg.x.cpn_tag == "2022postEE":
-            # TODO: we need to use different SFs for control regions
+            # TODO: we might need to use different SFs for control regions
             cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoE+PromptFG", "Tight")
         elif cfg.x.cpn_tag == "2022preEE":
             cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoBCD", "Tight")
 
         # names of muon correction sets and working points
         # (used in the muon producer)
-        # TODO: we need to use different SFs for control regions
-        cfg.x.muon_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
-        cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}")
-        cfg.x.muon_iso_sf_names = ("NUM_TightPFIso_DEN_TightID", f"{cfg.x.cpn_tag}")
+        # TODO: we might need to use different SFs for control regions
+        cfg.x.muon_id_sf_names = MuonSFConfig(
+            correction="NUM_TightID_DEN_TrackerMuons",
+            campaign=f"{cfg.x.cpn_tag}",
+        )
+        cfg.x.muon_iso_sf_names = MuonSFConfig(
+            correction="NUM_TightPFIso_DEN_TightID",
+            campaign=f"{cfg.x.cpn_tag}",
+        )
 
         # central trigger SF, only possible for SL
         if cfg.x.lepton_tag == "sl":
@@ -592,12 +643,12 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a332cfa"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-cb90b1e8"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
-        corr_tag = f"{year}_Summer22{jerc_postfix}"
+        corr_tag = f"{year}_Summer{year2}{jerc_postfix}"
 
     # pileup weight correction
     add_external("pu_sf", (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"))
@@ -608,24 +659,21 @@ def add_config(
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
+    # add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
-    # # files with uncertainties, not loadable because there are some NaNs in the json :/
-    # trigger_sf_path = "/afs/desy.de/user/f/frahmmat/Projects/hh2bbww/data/software/trig_sf"
-    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))
-    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
-    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
 
-    # files without uncertainties and with wrong triggers
-    trigger_sf_path = "/data/dust/user/letzerba/hh2bbww/data/cf_store_old/hbw_dl/cf.CalculateTriggerScaleFactors/c22post/nominal/calib__with_b_reg/sel__dl1_no_triggerV11__steps_no_trigger/prod__event_weightsV2__trigger_prodV2__pre_ml_catsV1__dl_ml_inputsV1/weight__ref_cut/datasets_4_10839b14e3/prod3/"  # noqa: E501
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v1"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v1"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v1"))  # noqa: E501
+    trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
 
     # btag scale factor
-    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v1"))
+    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
     # ROOT files (eej.root and aj.root) taken from here:
     # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
@@ -660,7 +708,7 @@ def add_config(
         }
 
     # external files with more complex year dependence
-    if year not in (2017, 2022):
+    if year not in (2017, 2022, 2023):
         raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
     if year == 2017:
@@ -733,6 +781,8 @@ def add_config(
         # isolations for testing
         "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH}",
         "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH}",
+        # Taus
+        "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
@@ -775,6 +825,7 @@ def add_config(
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
     p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
+    # if repr(p1) != repr(p2):
     if p1 != p2:
         raise Exception(f"Processes are not the same: {repr(p1)} != {repr(p2)}")
 

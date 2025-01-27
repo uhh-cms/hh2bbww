@@ -76,15 +76,16 @@ def ml_preparation(
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
-        weight_map["sum_abs_weights"] = (weight, weight > 0)
-        weight_map["sum_pos_weights"] = np.abs(weight)
+        weight_map["sum_pos_weights"] = (weight, weight > 0)
+        weight_map["sum_abs_weights"] = np.abs(weight)
+        weight_map["num_events_pos_weights"] = weight > 0
 
         # normalization weight only
         norm_weight = events["stitched_normalization_weight"]
         stats["sum_norm_weights"] += float(ak.sum(norm_weight, axis=0))
         weight_map["sum_norm_weights"] = norm_weight
-        weight_map["sum_abs_norm_weights"] = (norm_weight, norm_weight > 0)
-        weight_map["sum_pos_norm_weights"] = np.abs(norm_weight)
+        weight_map["sum_pos_norm_weights"] = (norm_weight, norm_weight > 0)
+        weight_map["sum_abs_norm_weights"] = np.abs(norm_weight)
 
     group_map = {
         "process": {
