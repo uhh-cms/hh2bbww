@@ -301,3 +301,13 @@ for proc in ml_processes:
             outp_mask = outp_mask & mask
 
         return events, outp_mask
+
+
+@categorizer(uses={"{Electron,Muon}.{pt,eta,phi,mass}", "mll"})
+def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events in the phase space that we understand.
+    Needs to be used in combination with a Producer that defines the leptons.
+    """
+    mask = (events.Lepton[:, 0].pt > 70) & (events.Lepton[:, 1].pt > 50) & (events.mll > 20)
+    return events, mask

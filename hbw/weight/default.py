@@ -49,10 +49,17 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight_columns=None,
     # only run on mc
     mc_only=False,
+    # optional categorizer to obtain baseline event mask
+    categorizer_cls=None,
 )
 def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
     events = self[prepare_objects](events, **kwargs)
+
+    # apply mask
+    if self.categorizer_cls:
+        events, mask = self[self.categorizer_cls](events, **kwargs)
+        events = events[mask]
 
     if self.dataset_inst.is_data:
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
@@ -93,8 +100,10 @@ def base_init(self: WeightProducer) -> None:
     if not getattr(self, "config_inst"):
         return
 
-    dataset_inst = getattr(self, "dataset_inst", None)
+    if self.categorizer_cls:
+        self.uses.add(self.categorizer_cls)
 
+    dataset_inst = getattr(self, "dataset_inst", None)
     if dataset_inst and dataset_inst.is_data:
         return
 
@@ -214,7 +223,7 @@ base.derive("minimal", cls_dict={"weight_columns": {
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
-base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
+no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
@@ -253,3 +262,9 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
     "stitched_normalization_weight": [],
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
+
+
+from hbw.categorization.categories import mask_fn_highpt
+
+
+no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
