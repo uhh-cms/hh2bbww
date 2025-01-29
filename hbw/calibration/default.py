@@ -53,7 +53,6 @@ def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
     # apply the electron calibration
     events = self[self.electron_calib_cls](events, **kwargs)
-
     return events
 
 
@@ -152,6 +151,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     # jec uncertainty_sources: set to None to use config default
     jec_sources=["Total"],
     bjet_regression=True,
+    skip_jer=False,
     version=1,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
@@ -243,7 +243,7 @@ def jet_base_init(self: Calibrator) -> None:
 
     # JER (only for MC)
     jer_cls = self.config_inst.x.calib_deterministic_jer_cls
-    if self.dataset_inst.is_mc:
+    if self.dataset_inst.is_mc and not self.skip_jer:
         self.calibrators.append(jer_cls)
 
     # MET phi (only in run 2)
@@ -255,6 +255,8 @@ def jet_base_init(self: Calibrator) -> None:
     self.produces |= set(self.calibrators)
 
 
-skip_jecunc = jet_base.derive("skip_jecunc", cls_dict=dict(bjet_regression=False))
+jec_only = jet_base.derive("jec_only", cls_dict=dict(bjet_regression=False, skip_jer=True))
+skip_jer = jet_base.derive("skip_jer", cls_dict=dict(bjet_regression=True, skip_jer=True))
+no_breg = jet_base.derive("no_breg", cls_dict=dict(bjet_regression=False))
 with_b_reg = jet_base.derive("with_b_reg", cls_dict=dict(bjet_regression=True))
 with_b_reg_test = jet_base.derive("with_b_reg_test", cls_dict=dict(bjet_regression=True))

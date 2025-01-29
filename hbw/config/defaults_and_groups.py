@@ -8,7 +8,8 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    return ["with_b_reg", "fatjet"]
+    # return ["with_b_reg", "fatjet"]
+    return ["no_breg", "fatjet", "ele"]
 
 
 def default_selector(container):
@@ -166,23 +167,20 @@ def set_config_defaults_and_groups(config_inst):
             "h",
         ],
         "all": ["*"],
-        "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl1": [default_signal_process, "tt", "dy", "st", "ttv", "vv", "w_lnu", "h"],
-        "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl3": [default_signal_process, "tt", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
-        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],
-        "dlmajor": [default_signal_process, "tt", "dy", "st"],
-        "2much": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        "2ech": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        "emuch": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        # "dl": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "2much": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "2ech": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "emuch": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
+        "dl2": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "table": [default_signal_process, "st", "dy_m10to50", "dy_m50toinf", "tt", "background", "data"],  # noqa: E501
+        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
+        "dlmajor": [default_signal_process, "st", "dy", "tt"],
+        "2much": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "emuch": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
