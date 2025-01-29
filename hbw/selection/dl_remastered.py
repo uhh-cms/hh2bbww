@@ -211,7 +211,7 @@ from hbw.util import timeit
     # jet selection requirements
     n_jet=None,
     n_btag=None,
-    version=law.config.get_expanded("analysis", "dl1_version", 2),
+    version=law.config.get_expanded("analysis", "dl1_version", 4),
 )
 @timeit
 def dl1(
@@ -250,25 +250,32 @@ def dl1(
 
     results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
-        (jet_step & bjet_step | results.steps.HbbJet)
+        ((jet_step & bjet_step) | results.steps.HbbJet)
     )
 
-    # combined event selection after all steps except b-jet selection
-    results.steps["all_but_bjet"] = (
+    results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
         results.steps.data_double_counting &
-        (jet_step | results.steps.HbbJet_no_bjet) &
+        jet_step &
         results.steps.ll_lowmass_veto &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &
-        results.steps.SR &  # exactly 2 tight leptons
+        results.steps.SR  # exactly 2 tight leptons
+    )
+    # combined event selection after all steps except b-jet selection
+    results.steps["all_but_bjet"] = (
+        results.steps.all_but_trigger_and_bjet &
         results.steps.Trigger &
         results.steps.TriggerAndLep
     )
 
     # combined event selection after all steps
     results.steps["all"] = results.event = (
+        results.steps.all_but_bjet &
+        bjet_step
+    )
+    results.steps["all_or_boosted"] = (
         results.steps.all_but_bjet &
         ((jet_step & bjet_step) | results.steps.HbbJet)
     )
