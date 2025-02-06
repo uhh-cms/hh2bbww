@@ -266,6 +266,33 @@ def add_variables(config: od.Config) -> None:
         discrete_x=True,
     )
 
+    for pt in (25, 30):
+        # NOTE: changing pt cut would also impact bjet cut + categories, which is not taken care of here
+        config.add_variable(
+            name=f"n_jet_pt{pt}",
+            expression=lambda events, pt=pt: ak.sum(events.Jet["pt"] > pt, axis=1),
+            aux={"inputs": {"Jet.pt"}},
+            binning=(12, -0.5, 11.5),
+            x_title="Number of jets (pt > {pt} GeV)".format(pt=pt),
+            discrete_x=True,
+        )
+        config.add_variable(
+            name=f"n_barreljet_pt{pt}",
+            expression=lambda events, pt=pt: ak.sum((events.Jet["pt"] > pt) & (abs(events.Jet["eta"]) < 1.3), axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.eta"}},
+            binning=(12, -0.5, 11.5),
+            x_title="Number of jets (pt > {pt} GeV, barrel)".format(pt=pt),
+            discrete_x=True,
+        )
+        config.add_variable(
+            name=f"n_endcapjet_pt{pt}",
+            expression=lambda events, pt=pt: ak.sum((events.Jet["pt"] > pt) & (abs(events.Jet["eta"]) >= 1.3), axis=1),
+            aux={"inputs": {"Jet.pt", "Jet.eta"}},
+            binning=(12, -0.5, 11.5),
+            x_title="Number of jets (pt > {pt} GeV, endcap)".format(pt=pt),
+            discrete_x=True,
+        )
+
     btag_column = config.x.btag_column
     config.add_variable(
         name="n_btag",
@@ -359,6 +386,14 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": {"Muon.pt"}},
         binning=(4, -0.5, 3.5),
         x_title="Number of muons",
+        discrete_x=True,
+    )
+    config.add_variable(
+        name="n_lepton",
+        expression=lambda events: ak.num(events.Lepton["pt"], axis=1),
+        aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"}},
+        binning=(6, 0, 5),
+        x_title="Number of leptons",
         discrete_x=True,
     )
     config.add_variable(
@@ -466,6 +501,57 @@ def add_variables(config: od.Config) -> None:
                 x_title=r"Jet %i ParticleNet score" % i,
             )
 
+    # Barrel and endcap jets
+    barreljet_expr = lambda events, field, i: (
+        ak.fill_none(ak.pad_none(events.Jet[abs(events.Jet["eta"]) < 1.3], i + 1)[field], EMPTY_FLOAT)[:, i]
+    )
+    endcapjet_expr = lambda events, field, i: (
+        ak.fill_none(ak.pad_none(events.Jet[abs(events.Jet["eta"]) >= 1.3], i + 1)[field], EMPTY_FLOAT)[:, i]
+    )
+
+    for i in range(3):
+        config.add_variable(
+            name=f"barreljet{i}_pt",
+            expression=lambda events, i=i: barreljet_expr(events, "pt", i),
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0., 400.),
+            unit="GeV",
+            x_title=r"Jet %i $p_{T}$ (barrel)" % i,
+            aux={
+                "inputs": {"Jet.{pt,eta}"},
+            },
+        )
+        config.add_variable(
+            name=f"barreljet{i}_eta",
+            expression=lambda events, i=i: barreljet_expr(events, "eta", i),
+            null_value=EMPTY_FLOAT,
+            binning=(50, -2.5, 2.5),
+            x_title=r"Jet %i $\eta$ (barrel)" % i,
+            aux={
+                "inputs": {"Jet.eta"},
+            },
+        )
+        config.add_variable(
+            name=f"endcapjet{i}_pt",
+            expression=lambda events, i=i: endcapjet_expr(events, "pt", i),
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0., 400.),
+            unit="GeV",
+            x_title=r"Jet %i $p_{T}$ (endcap)" % i,
+            aux={
+                "inputs": {"Jet.{pt,eta}"},
+            },
+        )
+        config.add_variable(
+            name=f"endcapjet{i}_eta",
+            expression=lambda events, i=i: endcapjet_expr(events, "eta", i),
+            null_value=EMPTY_FLOAT,
+            binning=(50, -2.5, 2.5),
+            x_title=r"Jet %i $\eta$ (endcap)" % i,
+            aux={
+                "inputs": {"Jet.eta"},
+            },
+        )
     # Bjets (2 b-score leading jets) and Lightjets (2 non-b pt-leading jets)
     for i in range(2):
         for obj in ["Bjet", "Lightjet"]:
@@ -576,11 +662,49 @@ def add_variables(config: od.Config) -> None:
             x_title=r"FatJet %i deepTagMD_HbbvsQCD " % i,
         )
 
+    # Barrel and endcap objects
+    barrelobj_expr = lambda events, obj, field, i: (
+        ak.fill_none(ak.pad_none(events[obj][abs(events[obj]["eta"]) < 1.3], i + 1)[field], EMPTY_FLOAT)[:, i]
+    )
+    endcapobj_expr = lambda events, obj, field, i: (
+        ak.fill_none(ak.pad_none(events[obj][abs(events[obj]["eta"]) >= 1.3], i + 1)[field], EMPTY_FLOAT)[:, i]
+    )
+
     # Leptons
+    config.add_variable(
+        name="sum_charge",
+        expression=lambda events: ak.sum(events.Lepton.charge, axis=1),
+        aux={"inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"}},
+        binning=(7, -3.5, 3.5),
+        x_title="Sum of lepton charges",
+    )
+
     for i in range(2):
         # NOTE: inputs aux is only being used when the expression is a function and not a string;
         # to define expression as a function, define as lambda function with passing i=i to avoid
         # the late binding issue
+        config.add_variable(
+            name=f"barrellep{i}_pt",
+            expression=lambda events, i=i: barrelobj_expr(events, "Lepton", "pt", i),
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(40, 0., 400.),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} $p_{{T}}$ (barrel)",
+        )
+        config.add_variable(
+            name=f"endcaplep{i}_pt",
+            expression=lambda events, i=i: endcapobj_expr(events, "Lepton", "pt", i),
+            aux=dict(
+                inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            ),
+            binning=(40, 0., 400.),
+            unit="GeV",
+            null_value=EMPTY_FLOAT,
+            x_title=f"Lepton {i} $p_{{T}}$ (endcap)",
+        )
         config.add_variable(
             name=f"lepton{i}_pt",
             expression=lambda events, i=i: events.Lepton[:, i].pt,
