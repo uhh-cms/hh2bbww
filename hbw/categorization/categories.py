@@ -11,7 +11,7 @@ import law
 from columnflow.util import maybe_import
 from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
-from columnflow.columnar_util import has_ak_column, optional_column
+from columnflow.columnar_util import has_ak_column, optional_column, set_ak_column
 
 from hbw.util import MET_COLUMN, BTAG_COLUMN
 
@@ -324,4 +324,149 @@ def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     Needs to be used in combination with a Producer that defines the leptons.
     """
     mask = (events.Lepton[:, 0].pt > 70) & (events.Lepton[:, 1].pt > 50) & (events.mll > 20)
+    return events, mask
+
+
+@categorizer(uses={"run", "trigger_ids", "HLT.*"})
+def trigger_hlt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = ak.zeros_like(events.run, dtype=np.bool_)
+    for trig in events.HLT.fields:
+        mask = mask | events.HLT[trig]
+    return events, mask
+
+
+@categorizer(uses={"run", "trigger_steps.*"})
+def trigger_default(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Use steps for trigger selection that were not applied during the selection to mask events
+    when creating histograms.
+    """
+    mask = ak.ones_like(events.run, dtype=np.bool_)
+    for trig_step in (
+        "Trigger",
+        "TriggerAndLep",
+        "data_double_counting",
+    ):
+        mask = mask & events.trigger_steps[trig_step]
+    return events, mask
+
+
+@categorizer(uses={"run", "steps.*"})
+def default_sel(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Use steps for trigger selection that were not applied during the selection to mask events
+    when creating histograms.
+    """
+    mask = ak.ones_like(events.run, dtype=np.bool_)
+    for step in (
+        "Trigger",
+        "TriggerAndLep",
+        "data_double_counting",
+        "TripleLooseLeptonVeto",
+        "Charge",
+    ):
+        mask = mask & events.steps[step]
+    return events, mask
+
+
+@categorizer(uses={"run", default_sel, "steps.horn_jet_veto"})
+def sel_hornjets(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Hornjets mask (veto all events with jets in horns)
+    """
+    events, mask = self[default_sel](events, **kwargs)
+
+    mask = mask & events.steps.horn_jet_veto
+
+    return events, mask
+
+
+@categorizer(uses={"run", default_sel, "steps.horn_jet_veto_leading_only"})
+def sel_hornjets_leading_only(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Hornjets mask (veto all events with jets in horns)
+    """
+    events, mask = self[default_sel](events, **kwargs)
+
+    mask = mask & events.steps.horn_jet_veto_leading_only
+
+    return events, mask
+
+
+@categorizer(uses={"run", default_sel, "{Electron,Muon}.{pt,eta,phi,mass}"})
+def sel_barrelleps(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    All leptons in barrel
+    """
+    events, mask = self[default_sel](events, **kwargs)
+
+    lep_mask = ak.all(abs(events.Lepton.eta) < 1.3, axis=-1)
+    mask = mask & lep_mask
+
+    return events, mask
+
+
+@categorizer(uses={"run", default_sel, "{Electron,Muon}.{pt,eta,phi,mass}"})
+def sel_endcapleps(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    All leptons in endcaps
+    """
+    events, mask = self[default_sel](events, **kwargs)
+
+    lep_mask = ak.all(abs(events.Lepton.eta) > 1.3, axis=-1)
+    mask = mask & lep_mask
+
+    return events, mask
+
+
+@categorizer(uses={"run", default_sel, "Jet.pt", "Jet.eta", BTAG_COLUMN("Jet")})
+def sel_leadingjet30(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    At least one b-tagged jet with pt>30
+    """
+    events, mask = self[default_sel](events, **kwargs)
+
+    jet_mask = (
+        (events.Jet["pt"] > 30) &
+        (events.Jet[self.config_inst.x.btag_column] >= self.config_inst.x.btag_wp_score)
+    )
+    mask = mask & (ak.sum(jet_mask, axis=-1) >= 1)
+
+    return events, mask
+
+
+@categorizer(uses={"run", sel_leadingjet30, "Jet.pt", "Jet.eta"})
+def sel_jets30(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    At least one b-tagged jet with pt>30 + all jets have pt>30
+    """
+    events = set_ak_column(events, "Jet", events.Jet[events.Jet["pt"] > 30])
+    events, mask = self[sel_leadingjet30](events, **kwargs)
+
+    return events, mask
+
+
+@categorizer(uses={"run", "steps.*"})
+def sel_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Loose selection (no TripleLeptonVeto and no Charge at the moment)
+    """
+    mask = ak.ones_like(events.run, dtype=np.bool_)
+    for step in (
+        "Trigger",
+        "TriggerAndLep",
+        "data_double_counting",
+    ):
+        mask = mask & events.steps[step]
+    return events, mask
+
+
+@categorizer(uses={"run", "steps.*"}, steps=[])
+def sel_steps(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Configurable Categorizer to apply a list of selection steps.
+    """
+    mask = ak.ones_like(events.run, dtype=np.bool_)
+    for step in self.steps:
+        mask = mask & events.steps[step]
     return events, mask

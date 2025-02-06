@@ -264,7 +264,20 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
 }})
 
 
-from hbw.categorization.categories import mask_fn_highpt
-
+from hbw.categorization.categories import (
+    mask_fn_highpt, trigger_default, trigger_hlt, default_sel, sel_loose,
+    sel_leadingjet30, sel_jets30, sel_barrelleps, sel_endcapleps,
+    sel_hornjets, sel_hornjets_leading_only,
+)
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
+no_btag_weight.derive("no_btag_weight_trigger_hlt", cls_dict={"categorizer_cls": trigger_hlt})
+no_btag_weight.derive("no_btag_weight_trigger", cls_dict={"categorizer_cls": trigger_default})
+no_btag_weight.derive("no_btag_weight_sel", cls_dict={"categorizer_cls": default_sel})
+no_btag_weight.derive("no_btag_weight_sel_loose", cls_dict={"categorizer_cls": sel_loose})
+no_btag_weight.derive("no_btag_weight_sel_jets30", cls_dict={"categorizer_cls": sel_jets30})
+no_btag_weight.derive("no_btag_weight_sel_leadingjet30", cls_dict={"categorizer_cls": sel_leadingjet30})
+no_btag_weight.derive("no_btag_weight_sel_barrelleps", cls_dict={"categorizer_cls": sel_barrelleps})
+no_btag_weight.derive("no_btag_weight_sel_endcapleps", cls_dict={"categorizer_cls": sel_endcapleps})
+no_btag_weight.derive("no_btag_weight_sel_hornjets", cls_dict={"categorizer_cls": sel_hornjets})
+no_btag_weight.derive("no_btag_weight_sel_hornjets_leading_only", cls_dict={"categorizer_cls": sel_hornjets_leading_only})  # noqa: E501
