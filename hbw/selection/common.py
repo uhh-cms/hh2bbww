@@ -25,6 +25,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
+from hbw.production.prepare_objects import prepare_objects
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
 
@@ -44,7 +45,7 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
 
 
 @selector(
-    uses={"*"},
+    uses={prepare_objects, "*"},
     exposed=True,
 )
 def check_columns(
@@ -54,6 +55,8 @@ def check_columns(
     # hists: dict,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
+    # apply behavior (for variable reconstruction)
+    events = self[prepare_objects](events, **kwargs)
     routes = get_ak_routes(events)  # noqa
     from hbw.util import debugger
     debugger()
