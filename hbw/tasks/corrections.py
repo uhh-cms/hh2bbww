@@ -10,6 +10,7 @@ from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
     SelectorMixin, CalibratorsMixin,
 )
+from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.selection import MergeSelectionStats
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.config_util import get_datasets_from_process
@@ -25,12 +26,16 @@ logger = law.logger.get_logger(__name__)
 
 class GetBtagNormalizationSF(
     HBWTask,
-    ConfigTask,
     SelectorMixin,
     CalibratorsMixin,
-    # law.LocalWorkflow,
+    ConfigTask,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
-    reqs = Requirements(MergeSelectionStats=MergeSelectionStats)
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeSelectionStats=MergeSelectionStats,
+    )
 
     store_as_dict = False
 
@@ -47,6 +52,10 @@ class GetBtagNormalizationSF(
         description="Processes to consider for the scale factors",
     )
 
+    def create_branch_map(self):
+        # single branch without payload
+        return {0: None}
+
     @cached_property
     def process_insts(self):
         processes = [self.config_inst.get_process(process) for process in self.processes]
@@ -59,10 +68,22 @@ class GetBtagNormalizationSF(
             datasets.update(get_datasets_from_process(self.config_inst, process_inst))
         return list(datasets)
 
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs["selection_stats"] = {
+            dataset.name: self.reqs.MergeSelectionStats.req_different_branching(
+                self,
+                dataset=dataset.name,
+                branch=-1,
+            )
+            for dataset in self.dataset_insts
+        }
+        return reqs
+
     def requires(self):
         reqs = {}
         reqs["selection_stats"] = {
-            dataset.name: self.reqs.MergeSelectionStats.req(
+            dataset.name: self.reqs.MergeSelectionStats.req_different_branching(
                 self,
                 dataset=dataset.name,
                 branch=-1,
