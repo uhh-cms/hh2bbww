@@ -37,7 +37,7 @@ logger = law.logger.get_logger(__name__)
         "{Electron,Muon,Tau}.{pt,eta,phi,mass}",
         "Electron.{dxy,dz,cutBased}",
         "Muon.{dxy,dz,looseId,pfIsoId}",
-        "Tau.{dz,idDeepTau2017v2p1VSe,idDeepTau2017v2p1VSmu,idDeepTau2017v2p1VSjet,decayMode}",
+        "Tau.{dz,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet,decayMode}",
         jet_selection,
     },
     produces={
@@ -126,10 +126,10 @@ def lepton_definition(
     tau_mask_veto = (
         (abs(events.Tau.eta) < 2.3) &
         # (abs(events.Tau.dz) < 0.2) &
-        (events.Tau.pt > 20.0) &
-        (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
-        (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
-        (events.Tau.idDeepTau2017v2p1VSjet >= 2) &  # 2: VVLoose
+        (events.Tau.pt > 15.0) &
+        (events.Tau.idDeepTau2018v2p5VSe >= 2) &  # VVLoose
+        (events.Tau.idDeepTau2018v2p5VSmu >= 1) &  # VLoose
+        (events.Tau.idDeepTau2018v2p5VSjet >= 5) &  # medium
         (
             (events.Tau.decayMode == 0) |
             (events.Tau.decayMode == 1) |
@@ -138,6 +138,7 @@ def lepton_definition(
             (events.Tau.decayMode == 11)
         )
     )
+    steps["VetoTau"] = ak.sum(tau_mask_veto, axis=1) == 0
 
     # lepton invariant mass cuts
     loose_leptons = ak.concatenate([
