@@ -58,8 +58,8 @@ def jet_selection(
         (events.Jet.jetId >= 6)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
     )
 
-    electron = events.Electron[lepton_results.objects.Electron.LooseElectron]
-    muon = events.Muon[lepton_results.objects.Muon.LooseMuon]
+    electron = events.Electron[lepton_results.objects.Electron.Electron]
+    muon = events.Muon[lepton_results.objects.Muon.Muon]
 
     jet_mask = (
         (events.Jet.pt >= self.jet_pt) &
