@@ -277,10 +277,6 @@ def dl1(
         results.steps.all_but_bjet &
         bjet_step
     )
-    results.steps["all_plus_tau_veto"] = (
-        results.steps.all &
-        results.steps.TauVeto
-    )
     results.steps["all_or_boosted"] = (
         results.steps.all_but_bjet &
         ((jet_step & bjet_step) | results.steps.HbbJet)
