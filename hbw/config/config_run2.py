@@ -680,6 +680,10 @@ def add_config(
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
 
+    # trigger
+    from hbw.config.trigger import add_triggers
+    add_triggers(cfg)
+
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
@@ -787,9 +791,23 @@ def add_config(
         "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
+        # steps
+        "steps.*",
+        # Trigger-related
+        "trigger_ids", "trigger_data.*",
+        "HLT.IsoMu24",
+        "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+        "HLT.Ele30_WPTight_Gsf",
+        "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
+    } | {
+        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
     }
 
     # Version of required tasks

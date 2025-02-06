@@ -35,6 +35,7 @@ logger = law.logger.get_logger(__name__)
     produces={
         # new columns
         "trigger_ids",
+        "trigger_data.any_fired", "trigger_data.HLT*.{all_legs_match,fired,fired_and_all_legs_match}",
     },
 )
 def trigger_selection(
@@ -94,11 +95,6 @@ def trigger_selection(
                     leg_mask = leg_mask & ((events.TrigObj.filterBits & bits) == bits)
             leg_masks.append(index[leg_mask])
 
-            trigger_data = set_ak_bool(
-                trigger_data,
-                f"{trigger.name}.leg_{i}_mask",
-                leg_mask,
-            )
             # at least one object must match this leg
             # NOTE: it could in theory happen, that two legs are matched to the same object.
             # However, as long as the correct trigger bits are required (e.g. 2mu), this
@@ -126,14 +122,15 @@ def trigger_selection(
     # store the fired trigger ids
     trigger_ids = ak.concatenate(trigger_ids, axis=1)
     events = set_ak_int32(events, "trigger_ids", trigger_ids)
+    events = set_ak_bool(events, "trigger_data", trigger_data)
 
     return events, SelectionResult(
         steps={
             "trigger": trigger_data.any_fired,
         },
-        aux={
-            "trigger_data": trigger_data,
-        },
+        # aux={
+        #     "trigger_data": trigger_data,
+        # },
     )
 
 
