@@ -146,9 +146,9 @@ sl_rates_only = default.derive("rates_only", cls_dict={"systematics": rate_syste
 # minimal model for quick test purposes
 # This is what we need for the ml-model
 cls_dict_test = {
-    "ml_model_name": "dense_22post_test",
+    "ml_model_name": "dense_22post",
     "processes": [
-        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
         "tt",
     ],
     "config_categories": [
@@ -168,7 +168,7 @@ cls_dict_test = {
 # das rufen wir auf zum produzieren der datacards - als inference-model 
 sl_22post_test = default.derive("sl_22post_test", cls_dict=cls_dict_test)
 
-#same for 2017 data
+# same for 2017 data
 cls_dict_test_17 = {
     "ml_model_name": "dense_17post_test",  # Name of the 2017-specific model
     "processes": [
@@ -211,11 +211,14 @@ processes_22 = [
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "tt",
     # "st_schannel",
-    "st_tchannel", "st_twchannel",
+    "st", #???
+    #"st_tchannel", "st_twchannel",
     "dy",
     "w_lnu",
+    "qcd",
 ]
 
+# 1e vs 1mu Aufteilung rausnehmen sagt mathis 
 config_categories_22 = [
     # Signal regions
     "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
@@ -235,7 +238,7 @@ sl_22 = default.derive("sl_22", cls_dict={
     "dummy_kl_variation": True,
     "processes": processes_22,
     "config_categories": config_categories_22,
-    "ml_model_name": "dense_22",
+    "ml_model_name": "dense_22post", #"dense_22",
     "systematics": rate_systematics,
 })
 sl_22_shapes = sl_22.derive("sl_22_shapes", cls_dict={

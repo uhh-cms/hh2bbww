@@ -37,7 +37,7 @@ logger = law.logger.get_logger(__name__)
         "{Electron,Muon,Tau}.{pt,eta,phi,mass}",
         "Electron.{dxy,dz,cutBased}",
         "Muon.{dxy,dz,looseId,pfIsoId}",
-        "Tau.{dz,idDeepTau2017v2p1VSe,idDeepTau2017v2p1VSmu,idDeepTau2017v2p1VSjet,decayMode}",
+        "Tau.{dz,idDeepTau2017v2p1VSe,idDeepTau2017v2p1VSmu,idDeepTau2017v2p1VSjet,decayMode,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet}",
         jet_selection,
     },
     produces={
@@ -117,10 +117,10 @@ def lepton_definition(
     tau_mask_veto = (
         (abs(events.Tau.eta) < 2.3) &
         # (abs(events.Tau.dz) < 0.2) &
-        (events.Tau.pt > 20.0) &
-        (events.Tau.idDeepTau2017v2p1VSe >= 4) &  # 4: VLoose
-        (events.Tau.idDeepTau2017v2p1VSmu >= 8) &  # 8: Tight
-        (events.Tau.idDeepTau2017v2p1VSjet >= 2) &  # 2: VVLoose
+        (events.Tau.pt > 5.0) &
+        (events.Tau.idDeepTau2018v2p5VSe >= 2) &  # 2: VvLoose
+        (events.Tau.idDeepTau2018v2p5VSmu >= 1) &  # 1: VLoose
+        (events.Tau.idDeepTau2018v2p5VSjet >= 50) &  # 5: Medium
         (
             (events.Tau.decayMode == 0) |
             (events.Tau.decayMode == 1) |

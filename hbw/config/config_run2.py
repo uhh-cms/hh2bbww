@@ -128,9 +128,6 @@ def add_config(
     # set color of some processes
     stylize_processes(cfg)
 
-    # configure datasets in config
-    configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
-
     # whether to validate the number of obtained LFNs in GetDatasetLFNs
     cfg.x.validate_dataset_lfns = limit_dataset_files is None
 
@@ -406,9 +403,6 @@ def add_config(
         if cfg.x.lepton_tag == "sl":
             # TODO: this should be year-dependent and setup in the selector
             cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")       
-        if cfg.x.lepton_tag == "l1nano":
-            # TODO: this should be year-dependent and setup in the selector
-            cfg.x.muon_trigger_sf_names = ("NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", f"{cfg.x.cpn_tag}")
 
     ################################################################################################
     #
@@ -557,6 +551,10 @@ def add_config(
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
     add_shift_aliases(cfg, "jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
 
+
+    # configure datasets in config
+    configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
+    
     ################################################################################################
     #
     # external files
@@ -597,7 +595,7 @@ def add_config(
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
     
     # TOPO trigger
-    L1NN_base_path = "/nfs/dust/cms/user/kleinboe/hh2bbww/NN_model/Winter24_Topo_HwIso_NAS_Final"
+    L1NN_base_path = "/data/dust/user/kleinboe/hh2bbww/NN_model/Winter24_Topo_HwIso_NAS_Final"
     add_external("L1NN_infos", (f"{L1NN_base_path}/info.yml", "v1"))
     add_external("L1NN_network", (f"{L1NN_base_path}/model.h5", "v1"))
     add_external("L1NN_scaler", (f"{L1NN_base_path}/scaler.pkl", "v1"))
@@ -695,14 +693,21 @@ def add_config(
         # MET
         "MET.{pt,phi}",
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
+
+        "L1Jet.{pt,eta,phi}",
+        "L1Mu.{pt,eta,phi}",
+        "L1EG.{pt,eta,phi,hwIso}",
+        "L1EtSum.{pt,phi,etSumType}",
+        "HLT.Ele30_WPTight_Gsf",
+        "HLT.Ele35_WPTight_Gsf",
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     }
 
-    # Version of required tasks
-    cfg.x.versions = {
-        "cf.CalibrateEvents": law.config.get_expanded("analysis", "default_common_version", "common2"),
-    }
+    # # Version of required tasks
+    # cfg.x.versions = {
+    #     "cf.CalibrateEvents": law.config.get_expanded("analysis", "default_common_version", "common2"),
+    # }
 
     # add categories
     add_categories_selection(cfg)

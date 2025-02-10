@@ -283,19 +283,25 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
 
     })
-    
-    ## custom l1nano datasets
-    if config.has_tag("is_l1nano"): 
+
+# custom l1nano datasets
+    if config.has_tag("is_l1nano") or config.has_tag("is_baseline"):
         config.x.get_dataset_lfns = get_dataset_lfns_l1nano
         dataset_names = DotDict.wrap({
             "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
             "qcd": [
-                "qcd_mu_pt15to20_pythia", "qcd_mu_pt20to30_pythia",
-                "qcd_mu_pt30to50_pythia", "qcd_mu_pt50to80_pythia",
-                "qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
-                "qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
-                "qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
-                "qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000toinf_pythia",
+                #"qcd_mu_pt15to20_pythia",
+                #"qcd_mu_pt50to80_pythia",
+                #"qcd_mu_pt80to120_pythia", "qcd_mu_pt120to170_pythia",
+                #"qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
+                #"qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
+                #"qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000toinf_pythia",
+                "qcd_em_pt30to50_pythia",
+                "qcd_em_pt50to80_pythia",
+                "qcd_em_pt80to120_pythia",
+                "qcd_em_pt120to170_pythia",
+                "qcd_em_pt170to300_pythia",
+                "qcd_em_pt300toinf_pythia",
             ],
             "hh_vbf_hbb_hvv": [
                 "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
@@ -303,11 +309,24 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
                 "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
             ],
+            "dy": [
+                "dy_m50toinf_amcatnlo", # "dy_m10to50_amcatnlo",
+                "dy_m4to10_amcatnlo", "dy_m50toinf_0j_amcatnlo",
+                "dy_m50toinf_1j_amcatnlo",
+                "dy_m50toinf_2j_amcatnlo",
+            ],
+            "w_lnu": ["w_lnu_amcatnlo"],
+            "st": [
+                "st_tchannel_tbar_4f_powheg", "st_twchannel_tbar_dl_powheg",
+                "st_twchannel_tbar_fh_powheg", "st_twchannel_tbar_sl_powheg",
+                "st_twchannel_t_dl_powheg", "st_twchannel_t_fh_powheg",
+                "st_twchannel_t_sl_powheg",
+            ],
         })
 
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
-
+    print(dataset_names)
     return dataset_names
 
 
@@ -338,6 +357,9 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
         for hh_proc in ("hh_ggf_hbb_hvv", "qHH_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
             dataset_names.pop(hh_proc)
 
+    if as_list:
+        return list(itertools.chain(*dataset_names.values()))
+
     return dataset_names
 
 
@@ -361,8 +383,8 @@ def add_synchronization_dataset(config: od.Config):
 
 
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
-    if config.x.cpn_tag == "2022postEE":
-        add_synchronization_dataset(config)
+    # if config.x.cpn_tag == "2022postEE":
+    #     add_synchronization_dataset(config)
 
     # if campaign.x.year == 2017:
     #     # load custom produced datasets into campaign (2017 only!)
@@ -413,9 +435,18 @@ def configure_hbw_datasets(
     limit_dataset_files: int | None = None,
     add_dataset_extensions: bool = False,
 ):
+
     for dataset in config.datasets:
-        if add_dataset_extensions:
-            add_dataset_extension_to_nominal(dataset)
+        # if add_dataset_extensions:
+        #     add_dataset_extension_to_nominal(dataset)
+        # Check if the config has the "is_l1nano" or "is_baseline" tags
+        if config.has_tag("is_l1nano") or config.has_tag("is_baseline"):  # Modify this condition as necessary
+            for shift, info in dataset.info.items():
+                if shift != "nominal":
+                    continue
+                lfns = get_dataset_lfns_l1nano(dataset, config.get_shift(shift), info.keys[0])
+                n_files_found = len(lfns)
+                info.n_files = n_files_found
 
         if limit_dataset_files:
             # apply optional limit on the max. number of files per dataset
@@ -558,6 +589,7 @@ def get_dataset_lfns_2017(
         for basename in lfn_base.listdir(pattern="*.root")
     ]
 
+
 def get_dataset_lfns_l1nano(
     dataset_inst: od.Dataset,
     shift_inst: od.Shift,
@@ -566,120 +598,11 @@ def get_dataset_lfns_l1nano(
     """
     Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn
     """
-    import glob
 
     print("dataset name:", dataset_inst.name)
     print("dataset_key:", dataset_key)
 
     dataset_name = dataset_key.split("/")[1]
-
-    # no idea if this is clean, but I could not get the LocalDirectoryTarget to give me these paths :D
-    # this is why I'm just globbing here
-    
-    #files =  glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
-    #print(80*'#',files)
-    search_path = f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root"
-    #search_path = f"/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root"
-
-    #fs = "local_fs"
-    print("Searching for files at path:", search_path)
+    search_path = f"/pnfs/desy.de/cms/tier2/store/user/lebeling/prod5/{dataset_name}/*/*/*/*/*/0000/*.root"
     files = glob.glob(search_path)
-    print("Found files:", files)
-    return files
-
-
-def get_dataset_lfns_l1nano_gpt(
-    dataset_inst: od.Dataset,
-    shift_inst: od.Shift,
-    dataset_key: str,
-) -> list[str]:
-    """
-    Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn.
-    """
-    # Wenn kein benutzerdefinierter Pfad existiert, eine alternative Methode verwenden
-    if not dataset_inst.x("custom", None):
-        return GetDatasetLFNs.get_dataset_lfns_dasgoclient(
-            GetDatasetLFNs, dataset_inst=dataset_inst, shift_inst=shift_inst, dataset_key=dataset_key,
-        )
-
-    # Datasetname und Basisverzeichnis definieren
-    print("dataset name:", dataset_inst.name)
-    print("dataset_key:", dataset_key)
-    
-    dataset_name = dataset_key.split("/")[1]
-    
-    # Definiere das Basisverzeichnis für `LocalDirectoryTarget` mit dem lokalen Dateisystem
-    lfn_base = LocalDirectoryTarget(
-        f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}",
-        fs="local_fs",
-    )
-    
-    # Liste der Pfade der ROOT-Dateien im Verzeichnis abrufen
-    lfns = [
-        lfn_base.child(basename, type="f").path
-        for basename in lfn_base.listdir(pattern="/*/*/*/*.root")
-    ]
-
-    print("Final list of LFNs:", lfns)
-    return lfns
-
-def get_dataset_lfns_l1nano_schrott(
-    dataset_inst: od.Dataset,
-    shift_inst: od.Shift,
-    dataset_key: str,
-) -> list[str]:
-    """
-    Custom method to obtain custom NanoAOD datasets
-    """
-
-
-    #if not dataset_inst.x("custom", None):
-    #    return GetDatasetLFNs.get_dataset_lfns_dasgoclient(
-    #        GetDatasetLFNs, dataset_inst=dataset_inst, shift_inst=shift_inst, dataset_key=dataset_key,
-    #    )
-    print("dataset name:", dataset_inst.name)
-    print("dataset_key:", dataset_key)
-    dataset_name = dataset_key.split("/")[1]
-    print("dataset name:", dataset_name)
-    # NOTE: this currently simply takes samples from a hard-coded local path. Should be improved
-    #       when all files are stored somewhere remote
-    lfn_base = law.LocalDirectoryTarget(
-        f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/",
-        fs="local_desy_dcache",
-    )
-
-    # loop though files and interpret paths as lfns
-    return [
-        lfn_base.child(basename, type="f").path
-        for basename in lfn_base.listdir(pattern="crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/*.root")
-    ]
-
-def get_dataset_lfns_l1nano_test2(
-    dataset_inst: od.Dataset,
-    shift_inst: od.Shift,
-    dataset_key: str,
-) -> list[str]:
-    """
-    Custom method to obtain custom NanoAOD datasets for l1 nano files from Finn
-    """
-    import glob
-
-    print("dataset name:", dataset_inst.name)
-    print("dataset_key:", dataset_key)
-
-    #dataset_name = dataset_key.split("/")[1]
-
-    # no idea if this is clean, but I could not get the LocalDirectoryTarget to give me these paths :D
-    # this is why I'm just globbing here
-    
-    #files =  glob.glob(f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/{dataset_name}/*/*/*/*.root")
-    #print(80*'#',files)
-    #search_path = f"/pnfs/desy.de/cms/tier2/store/user/flabe/custom_L1_Nano/sixthproduction/GluGluToHHTo2B2VLNu2J_node_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/output_12.root"
-    search_path = f"/store/user/flabe/custom_L1_Nano/sixthproduction//GluGluToHHTo2B2VLNu2J_node_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/crab_custom_L1_nano_HH_ggHH_kl_1_sl/231205_145832/0000/output_12.root"
-
-    #fs = "local_fs"
-    print("Searching for files at path:", search_path)
-    #files = glob.glob(search_path)
-    files = search_path
-    print("Found files:", files)
     return files

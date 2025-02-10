@@ -79,6 +79,7 @@ class MLDatasetLoader:
         self._ml_model_inst = ml_model_inst
         self._process = process
         self._stats = stats
+        events = events[:5_000_000]
         self._events = events
 
     def __repr__(self):
@@ -199,7 +200,8 @@ class MLDatasetLoader:
         sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
         num_events = self.stats[self.process]["num_events"]
 
-        self._train_weights = self.weights / sum_abs_weights * num_events
+        train_weights = self.weights / sum_abs_weights * num_events
+        self._train_weights = ak.to_numpy(train_weights).astype(np.float32)
         return self._train_weights
 
     @property
@@ -217,7 +219,8 @@ class MLDatasetLoader:
         sum_abs_weights = self.stats[self.process]["sum_abs_weights"]
         num_events_per_process = {proc: self.stats[proc]["num_events"] for proc in processes}
 
-        self._validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
+        validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
+        self._validation_weights = ak.to_numpy(validation_weights).astype(np.float32)
 
         return self._validation_weights
 
@@ -521,7 +524,6 @@ class MLProcessData:
             train_weights = train_weights
 
         self._train_weights = train_weights
-        return self._train_weights
 
     @property
     def equal_weights(self) -> np.ndarray:

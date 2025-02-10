@@ -15,7 +15,7 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
 from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.default import default_weight_producer
+from hbw.weight.default import default_weight_producer, topo_cut, ele_cut
 
 
 ak = maybe_import("awkward")
@@ -28,7 +28,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
+    uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices", topo_cut, ele_cut},
     produces={IF_MC("event_weight")},
 )
 def ml_preparation(
@@ -46,8 +46,13 @@ def ml_preparation(
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
         sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
+        if self.config_inst.has_tag("is_l1nano"):
+            events, weight = self[ele_cut](events, **kwargs)
+        else:
+            events, weight = self[topo_cut](events, **kwargs)
         events, mask = self[sr_categorizer](events, **kwargs)
         logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
+        #__import__("IPython").embed()
         events = events[mask]
 
     weight_map = {

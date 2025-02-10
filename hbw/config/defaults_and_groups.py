@@ -12,7 +12,7 @@ def default_calibrator(container):
 
 def default_selector(container):
     if container.has_tag("is_sl"):
-        selector = "sl1"
+        selector = "sl1_baseline"
     elif container.has_tag("is_dl"):
         selector = "dl1"
 
@@ -21,6 +21,8 @@ def default_selector(container):
 
 def ml_inputs_producer(container):
     if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
+        ml_inputs = "sl_ml_inputs"
+    if container.has_tag("is_l1nano") and not container.has_tag("is_resonant"):
         ml_inputs = "sl_ml_inputs"
     if container.has_tag("is_dl"):
         ml_inputs = "dl_ml_inputs"
@@ -60,7 +62,7 @@ def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
-    default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
+    default_producers = ["event_weights", "NN_trigger_inference", "pre_ml_cats", ml_inputs_producer(container)]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
@@ -336,7 +338,7 @@ def set_config_defaults_and_groups(config_inst):
         "unstack_all": {proc.name: {"unstack": True} for proc, _, _ in config_inst.walk_processes()},
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
-            proc.name: {"unstack": True, "scale": 10000}
+            proc.name: {"unstack": True, "scale": 100000}
             for proc, _, _ in config_inst.walk_processes() if proc.has_tag("is_signal")
         },
         "scale_signal1": {

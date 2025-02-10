@@ -351,7 +351,6 @@ class MLClassifierBase(MLModel):
             proc_data.load_all()
 
         log_memory("loading train data")
-
         validation = MLProcessData(
             self, input_files, "val", self.processes, task.fold,
         )

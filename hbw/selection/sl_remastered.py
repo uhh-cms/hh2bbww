@@ -89,8 +89,8 @@ def sl_lepton_selection(
 
     # reject all events with > 1 lepton: this step ensures orthogonality to the DL channel.
     # NOTE: we could tighten this cut (veto loose lepton or reduce pt threshold)
-    lepton_results.steps["DileptonVeto"] = ak.num(lepton, axis=1) <= 1
 
+    lepton_results.steps["DileptonVeto"] = ak.num(lepton, axis=1) <= 1
     lepton_results.steps["Lep_e"] = e_mask = (
         (ak.sum(leading_e_mask, axis=1) == 1) &
         (ak.sum(veto_mu_mask, axis=1) == 0)
@@ -219,6 +219,7 @@ def sl_lepton_selection_init(self: Selector) -> None:
     btag_wp=None,
     n_btag=None,
     is_l1nano=False,
+    is_baseline=False,
     version=1,
 )
 def sl1(
@@ -238,7 +239,7 @@ def sl1(
     if self.is_l1nano:
         events, l1_results = self[NN_trigger_selection](events, stats, **kwargs)
         results += l1_results
-
+    # __import__("IPython").embed()
     # jet selection
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
@@ -262,6 +263,7 @@ def sl1(
     )
 
     # combined event selection after all steps except b-jet selection
+    include_L1NNcut = hasattr(self, "is_l1nano") and self.is_l1nano
     results.steps["all_but_bjet"] = (
         results.steps.cleanup &
         (jet_step | results.steps.HbbJet_no_bjet) &
@@ -271,7 +273,8 @@ def sl1(
         results.steps.Lepton &
         results.steps.VetoTau &
         results.steps.Trigger &
-        results.steps.TriggerAndLep 
+        results.steps.TriggerAndLep &
+        (results.steps.L1NNcut if include_L1NNcut else True)
         #results.steps.L1NNcut
     )
 
@@ -288,8 +291,8 @@ def sl1(
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
-    return events, results
 
+    return events, results
 
 @sl1.init
 def sl1_init(self: Selector) -> None:
@@ -342,4 +345,13 @@ sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
     "ele_pt": 15.,
     "ele2_pt": 15.,
     "is_l1nano": True,
+})
+sl1_baseline = sl1.derive("sl1_baseline", cls_dict={
+    "trigger": {"e": [], "mu": []},
+    "mu_pt": 15.,
+    "mu2_pt": 15.,
+    "ele_pt": 15.,
+    "ele2_pt": 15.,
+    #"is_l1nano": False,
+    "is_baseline": True,
 })

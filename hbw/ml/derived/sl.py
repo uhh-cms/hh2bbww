@@ -28,8 +28,8 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
         "tt",
         "st",
-        "v_lep",
-        # "w_lnu",
+        #"v_lep",
+        "w_lnu",
         # "dy",
     ]
 
@@ -173,7 +173,7 @@ dense_17post_test = DenseClassifierSL.derive("dense_17post_test", cls_dict={
 
 dense_22post = DenseClassifierSL.derive("dense_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "v_lep"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st","tt","dy","w_lnu","qcd"], # hier noch tt wieder ein
 })
 dense_22post_test = dense_22post.derive("dense_22post_test", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],

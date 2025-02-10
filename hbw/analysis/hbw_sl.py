@@ -12,6 +12,7 @@ hbw_sl = create_hbw_analysis(
         "is_sl",
         "is_nonresonant",
         "is_l1nano",
+        "is_baseline",
         # "custom_signals",
     },
 )

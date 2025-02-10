@@ -49,9 +49,15 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight_columns=None,
     # only run on mc
     mc_only=False,
+    mask_fn=None,
+    mask_columns=None,
 )
 def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
+    #from hbw.util import debugger; debugger()
+    if self.mask_fn:
+        events = events[self.mask_fn(events)]
+
     events = self[prepare_objects](events, **kwargs)
 
     if self.dataset_inst.is_data:
@@ -65,10 +71,14 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, weight
 
 
+
 @base.init
 def base_init(self: WeightProducer) -> None:
     if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
         return
+    if self.mask_columns:
+        for col in self.mask_columns:
+            self.uses.add(col)
 
     if self.dataset_inst.is_data:
         return
@@ -191,3 +201,37 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
     "stitched_normalization_weight": [],
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
+
+# Mask for topo
+topo_cut = base.derive("topo_cut", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: events.L1NNscore >= 0.8351974487304688 ,
+    "mask_columns": ["L1NNscore"],
+})
+
+
+@topo_cut.requires
+def base_requires(self: WeightProducer, reqs: dict) -> None:
+    from columnflow.tasks.production import ProduceColumns
+    reqs["topo"] = ProduceColumns.req(self.task, producer="NN_trigger_inference")
+
+@topo_cut.setup
+def base_setup(self: WeightProducer, reqs: dict, inputs: dict, reader_targets) -> None:
+    reader_targets["topo_cols"] = inputs["topo"]["columns"]
+
+ele_cut = base.derive("ele_cut", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: events.HLT.Ele30_WPTight_Gsf,
+    "mask_columns": ["HLT.Ele30_WPTight_Gsf"],
+})
+
+ele17_cut = base.derive("mu_cut", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: events.HLT.Ele35_WPTight_Gsf,
+    "mask_columns": ["HLT.Ele35_WPTight_Gsf"],
+})
+mu_cut = base.derive("mu_cut", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: events.HLT.IsoMu24,
+    "mask_columns": ["HLT.IsoMu24"],
+})
