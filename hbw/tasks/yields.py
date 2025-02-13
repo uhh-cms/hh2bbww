@@ -233,12 +233,16 @@ class CustomCreateYieldTable(
                     yields[category_inst].append(value)
 
             if self.ratio:
-                processes.append(od.Process("Ratio", id=-9871, label=f"{self.ratio[0]} / {self.ratio[1]}"))
-                num_idx, den_idxs = [processes.index(self.config_inst.get_process(_p)) for _p in self.ratio]
-                for category_inst in category_insts:
-                    num = yields[category_inst][num_idx]
-                    den = yields[category_inst][den_idxs]
-                    yields[category_inst].append(num / den)
+                missing_for_ratio = set(self.ratio[:2]) - set(p.name for p in processes)
+                if missing_for_ratio:
+                    logger.warning(f"Cannot do ratio, missing requested processes: {', '.join(missing_for_ratio)}")
+                else:
+                    processes.append(od.Process("Ratio", id=-9871, label=f"{self.ratio[0]} / {self.ratio[1]}"))
+                    num_idx, den_idxs = [processes.index(self.config_inst.get_process(_p)) for _p in self.ratio]
+                    for category_inst in category_insts:
+                        num = yields[category_inst][num_idx]
+                        den = yields[category_inst][den_idxs]
+                        yields[category_inst].append(num / den)
 
             # obtain normalizaton factors
             norm_factors = 1
