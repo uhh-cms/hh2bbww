@@ -3,6 +3,7 @@ Tasks for creating correctionlib files.
 """
 
 import law
+import luigi
 
 from functools import cached_property
 
@@ -39,9 +40,17 @@ class GetBtagNormalizationSF(
 
     store_as_dict = False
 
-    rescale_mode = "nevents"
-
     reweighting_step = "selected_no_bjet"
+
+    rescale_mode = luigi.ChoiceParameter(
+        default="nevents",
+        choices=("nevents", "xs"),
+    )
+    base_key = luigi.ChoiceParameter(
+        default="rescaled_sum_mc_weight",
+        # NOTE: "num_events" does not work because I did not store the corresponding key in the stats :/
+        choices=("rescaled_sum_mc_weight", "sum_mc_weight", "num_events"),
+    )
 
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
@@ -98,6 +107,9 @@ class GetBtagNormalizationSF(
         processes_repr = "__".join(self.processes)
         parts.insert_before("version", "processes", processes_repr)
 
+        significant_params = (self.rescale_mode, self.base_key)
+        parts.insert_before("version", "params", "__".join(significant_params))
+
         return parts
 
     def output(self):
@@ -143,23 +155,24 @@ class GetBtagNormalizationSF(
             )
 
         # rescale the histograms
-        for dataset, hists in hists_per_dataset.items():
-            process = self.config_inst.get_dataset(dataset).processes.get_first()
-            if self.rescale_mode == "xs":
-                # scale such that the sum of weights is the cross section
-                xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
-                dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
-            elif self.rescale_mode == "nevents":
-                # scale such that mean weight is 1
-                n_events = hists["num_events"][{"steps": self.reweighting_step}].value
-                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": self.reweighting_step}].value
-            else:
-                raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
-            for key in tuple(hists.keys()):
-                if "sum" not in key:
-                    continue
-                h = hists[key].copy() * dataset_factor
-                hists[f"rescaled_{key}"] = h
+        if "rescaled" in self.base_key:
+            for dataset, hists in hists_per_dataset.items():
+                process = self.config_inst.get_dataset(dataset).processes.get_first()
+                if self.rescale_mode == "xs":
+                    # scale such that the sum of weights is the cross section
+                    xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
+                    dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
+                elif self.rescale_mode == "nevents":
+                    # scale such that mean weight is 1
+                    n_events = hists["num_events"][{"steps": self.reweighting_step}].value
+                    dataset_factor = n_events / hists["sum_mc_weight"][{"steps": self.reweighting_step}].value
+                else:
+                    raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
+                for key in tuple(hists.keys()):
+                    if "sum" not in key:
+                        continue
+                    h = hists[key].copy() * dataset_factor
+                    hists[f"rescaled_{key}"] = h
 
         # if necessary, merge the histograms across datasets
         if len(hists_per_dataset) > 1:
@@ -183,18 +196,18 @@ class GetBtagNormalizationSF(
             # ("",),
         ):
             mode_str = "_".join(mode)
-            numerator = merged_hists["rescaled_sum_mc_weight_per_process_ht_njet_nhf"]
+            numerator = merged_hists[f"{self.base_key}_per_process_ht_njet_nhf"]
             numerator = self.reduce_hist(numerator, mode).values()
 
             for key in merged_hists.keys():
                 if (
-                    not key.startswith("rescaled_sum_mc_weight_btag_weight") or
+                    not key.startswith(f"{self.base_key}_btag_weight") or
                     not key.endswith("_per_process_ht_njet_nhf")
                 ):
                     continue
 
                 # extract the weight name
-                weight_name = key.replace("rescaled_sum_mc_weight_", "").replace("_per_process_ht_njet_nhf", "")
+                weight_name = key.replace(f"{self.base_key}_", "").replace("_per_process_ht_njet_nhf", "")
 
                 # create the scale factor histogram
                 h = merged_hists[key]
