@@ -18,6 +18,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices
 from hbw.util import call_once_on_config
+from hbw.production.jets import jetId
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -26,7 +27,7 @@ logger = law.logger.get_logger(__name__)
 
 
 @selector(
-    uses={"Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")},
+    uses={jetId, "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")},
     exposed=True,
 )
 def jet_selection(
@@ -51,11 +52,14 @@ def jet_selection(
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
+    # get correct jet working points (Jet.TightId and Jet.TightLepVeto)
+    events = self[jetId](events, **kwargs)
+
     # default jet definition
     jet_mask_loose = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (events.Jet.jetId >= 6)  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+        (events.Jet.TightLepVeto)
     )
 
     electron = events.Electron[lepton_results.objects.Electron.Electron]
@@ -64,7 +68,7 @@ def jet_selection(
     jet_mask = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (events.Jet.jetId >= 6) &  # 1: loose, 2: tight, 4: isolated, 6: tight+isolated
+        (events.Jet.TightLepVeto) &
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
         ak.all(events.Jet.metric_table(electron) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(muon) > 0.4, axis=2)
