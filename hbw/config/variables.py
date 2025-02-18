@@ -670,6 +670,18 @@ def add_variables(config: od.Config) -> None:
         ak.fill_none(ak.pad_none(events[obj][abs(events[obj]["eta"]) >= 1.3], i + 1)[field], EMPTY_FLOAT)[:, i]
     )
 
+    dr_expr = lambda events, obj1, i, obj2, j: ak.fill_none(
+        ak.pad_none(events[obj1], i + 1)[:, i].delta_r(ak.pad_none(events[obj2], j + 1)[:, j]), EMPTY_FLOAT,
+    )
+
+    config.add_variable(
+        name="dr_jj",
+        expression=lambda events: dr_expr(events, "Jet", 0, "Jet", 1),
+        aux={"inputs": {"Jet.{pt,eta,phi,mass}"}},
+        binning=(40, 0., 4),
+        x_title=r"$\Delta R(jj)$",
+    )
+
     # Leptons
     config.add_variable(
         name="sum_charge",
