@@ -63,7 +63,13 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute btag SF weights (for renormalization tasks)
-        events = self[btag_weights](events, jet_mask=results.aux["jet_mask"], **kwargs)
+        events = self[btag_weights](
+            events,
+            jet_mask=results.aux["jet_mask"],
+            negative_b_score_action="ignore",
+            negative_b_score_log_mode="debug",
+            **kwargs,
+        )
 
     # skip scale/pdf weights for some datasets (missing columns)
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
@@ -246,7 +252,12 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights
-        events = self[btag_weights](events, **kwargs)
+        events = self[btag_weights](
+            events,
+            negative_b_score_action="ignore",
+            negative_b_score_log_mode="debug",
+            **kwargs,
+        )
         events = self[normalized_btag_weights](events, **kwargs)
 
     # compute electron and muon SF weights
