@@ -13,7 +13,7 @@ import law
 from columnflow.util import maybe_import
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
-    # prepare_plot_config,
+    # prepare_stack_plot_config,
     prepare_style_config,
     remove_residual_axis,
     apply_variable_settings,

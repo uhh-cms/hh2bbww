@@ -6,8 +6,12 @@ Custom tasks for inspecting the configuration or certain task outputs.
 
 from collections import defaultdict
 
+from functools import cached_property
+
 import law
 import luigi
+
+from scinum import Number
 
 
 from columnflow.tasks.framework.mixins import (
@@ -20,6 +24,7 @@ from columnflow.tasks.reduction import ReducedEventsUser
 from columnflow.tasks.selection import MergeSelectionStats
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import get_ak_routes, update_ak_array
+from columnflow.tasks.framework.remote import RemoteWorkflow
 
 from hbw.tasks.base import HBWTask, ColumnsBaseTask
 from hbw.util import round_sig
@@ -29,7 +34,7 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-def create_table_from_csv(csv_file_path):
+def create_table_from_csv(csv_file_path, transpose=False, with_header=True):
     import csv
     from tabulate import tabulate
 
@@ -38,12 +43,18 @@ def create_table_from_csv(csv_file_path):
         reader = csv.reader(file)
         data = list(reader)
 
+    # Transpose the data if requested
+    if transpose:
+        data = list(zip(*data))
+
     # Optionally, if you want to use the first row as headers
-    headers = data[0]  # First row as headers
-    table_data = data[1:]  # Rest as table data
+    headers = None
+    if with_header:
+        headers = data[0]  # First row as headers
+        data = data[1:]  # Rest as table data
 
     # Generate the table using tabulate
-    table = tabulate(table_data, headers=headers, tablefmt="grid")
+    table = tabulate(data, headers=headers, tablefmt="grid")
 
     # Print the table
     print(table)
@@ -55,8 +66,13 @@ class SelectionSummary(
     DatasetsProcessesMixin,
     SelectorMixin,
     CalibratorsMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
-    reqs = Requirements(MergeSelectionStats=MergeSelectionStats)
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeSelectionStats=MergeSelectionStats,
+    )
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
@@ -65,13 +81,28 @@ class SelectionSummary(
         default=tuple(),
     )
 
-    # @cached_property
-    # def datasets(self):
-    #     return [dataset.name for dataset in self.config_inst.datasets]
+    def store_parts(self):
+        parts = super().store_parts()
+        parts.insert_before("version", "datasets", f"datasets_{self.datasets_repr}")
+        return parts
+
+    def create_branch_map(self):
+        # single branch without payload
+        return {0: None}
 
     def requires(self):
-        print("SelectionSummary requires")
         reqs = {}
+        for dataset in self.datasets:
+            reqs[dataset] = self.reqs.MergeSelectionStats.req(
+                self,
+                dataset=dataset,
+                branch=-1,
+                workflow="local",
+            )
+        return reqs
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
         for dataset in self.datasets:
             reqs[dataset] = self.reqs.MergeSelectionStats.req(
                 self,
@@ -84,10 +115,20 @@ class SelectionSummary(
     def keys_repr(self):
         return "_".join(sorted(self.keys_of_interest))
 
+    @cached_property
+    def stats(self):
+        inp = self.input()
+        return {
+            dataset: inp[dataset]["collection"][0]["stats"].load(formatter="json")
+            for dataset in self.datasets
+        }
+
     def output(self):
         output = {
             "selection_summary_csv": self.target("selection_summary.csv"),
             "selection_summary_table": self.target("selection_summary.txt"),
+            "selection_steps_summary_csv": self.target("selection_steps_summary.csv"),
+            "selection_steps_summary_table": self.target("selection_steps_summary.txt"),
         }
         return output
 
@@ -95,7 +136,6 @@ class SelectionSummary(
         import csv
         outp.touch()
         lumi = self.config_inst.x.luminosity
-        inputs = self.input()
 
         empty_datasets = []
 
@@ -113,30 +153,35 @@ class SelectionSummary(
 
             writer.writerow(["Dataset"] + [header_map.get(key, key) for key in keys_of_interest])
             for dataset in self.datasets:
-                stats = inputs[dataset]["collection"][0]["stats"].load(formatter="json")
+                dataset_inst = self.config_inst.get_dataset(dataset)
+                stats = self.stats[dataset]
                 # hists = inputs[dataset]["collection"][0]["hists"].load(formatter="pickle")
 
-                xsec = self.config_inst.get_dataset(dataset).processes.get_first().xsecs.get(
+                xsec = dataset_inst.processes.get_first().xsecs.get(
                     self.config_inst.campaign.ecm, None,
                 )
 
                 def safe_div(num, den):
                     return num / den if den != 0 else 0
 
-                missing_keys = {"sum_mc_weight", "sum_mc_weight_selected"} - set(stats.keys())
+                sumw_key = "sum_mc_weight" if dataset_inst.is_mc else "num_events"
+
+                missing_keys = {f"{sumw_key}", f"{sumw_key}_selected"} - set(stats.keys())
                 if missing_keys:
                     logger.warning(f"Missing keys in stats in dataset {dataset}: {missing_keys}")
                     continue
 
-                selection_eff = safe_div(stats["sum_mc_weight_selected"], stats["sum_mc_weight"])
-                if xsec is not None:
+                selection_eff = safe_div(stats[f"{sumw_key}_selected"], stats[f"{sumw_key}"])
+                if dataset_inst.is_data:
+                    expected_yield = Number(stats["num_events_selected"])
+                elif xsec is not None:
                     expected_yield = xsec * selection_eff * lumi
 
                 if stats["num_events_selected"] == 0:
                     empty_datasets.append(dataset)
 
                 selection_summary = {
-                    "xsec": xsec.nominal,
+                    "xsec": xsec.nominal if xsec else -1,
                     "empty": True if stats["num_events_selected"] == 0 else False,
                     "selection_eff": round_sig(selection_eff, 4),
                     "expected_yield": round_sig(expected_yield.nominal, 4),
@@ -154,12 +199,41 @@ class SelectionSummary(
 
         self.publish_message(f"Empty datasets: {empty_datasets}")
 
+    def write_selection_steps_summary(self, outp):
+        import csv
+        outp.touch()
+
+        with open(outp.path, "w") as f:
+            writer = csv.writer(f)
+
+            steps = [
+                k.replace("num_events_step_", "") for k in self.stats[self.datasets[0]].keys()
+                if "num_events_step_" in k
+            ]
+
+            writer.writerow(["Datasets"] + steps)
+
+            for dataset in self.datasets:
+                dataset_inst = self.config_inst.get_dataset(dataset)
+                stats = self.stats[dataset]
+
+                sumw_key = "num_events" if dataset_inst.is_data else "sum_mc_weight"
+
+                row = [dataset] + [stats.get(f"{sumw_key}_step_{step}", 0) / stats.get(sumw_key, 1.) for step in steps]
+                writer.writerow(row)
+
     def run(self):
         output = self.output()
-        self.write_selection_summary(output["selection_summary_csv"])
 
+        # write overall summary
+        self.write_selection_summary(output["selection_summary_csv"])
         table = create_table_from_csv(output["selection_summary_csv"].path)
         output["selection_summary_table"].dump(table, formatter="text")
+
+        # write step-by-step summary
+        self.write_selection_steps_summary(output["selection_steps_summary_csv"])
+        table = create_table_from_csv(output["selection_steps_summary_csv"].path, transpose=True)
+        output["selection_steps_summary_table"].dump(table, formatter="text")
 
 
 class DumpAnalysisSummary(

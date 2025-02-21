@@ -1,3 +1,4 @@
+
 # coding: utf-8
 
 """
@@ -136,7 +137,7 @@ def add_mll_categories(config: od.Config) -> None:
 def add_lepton_categories(config: od.Config) -> None:
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
-        "dl": ("2e", "2mu", "emu"),
+        "dl": ("2e", "2mu", "emu", "ge3lep"),
     }[config.x.lepton_tag]
 
     cat_1e = config.add_category(  # noqa: F841
@@ -172,6 +173,13 @@ def add_lepton_categories(config: od.Config) -> None:
         id=50,
         selection="catid_emu",
         label="1 Electron 1 Muon",
+    )
+
+    cat_emu = config.add_category(  # noqa: F841
+        name="ge3lep",
+        id=60,
+        selection="catid_ge3lep",
+        label=r"$N_{lep} \geq 3$",
     )
 
 

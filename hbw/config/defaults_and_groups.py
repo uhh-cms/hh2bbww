@@ -8,7 +8,8 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    return ["with_b_reg", "fatjet"]
+    # return ["with_b_reg", "fatjet"]
+    return ["no_breg", "fatjet", "ele"]
 
 
 def default_selector(container):
@@ -166,23 +167,22 @@ def set_config_defaults_and_groups(config_inst):
             "h",
         ],
         "all": ["*"],
-        "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl1": [default_signal_process, "tt", "dy", "st", "ttv", "vv", "w_lnu", "h"],
-        "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl3": [default_signal_process, "tt", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
-        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],
-        "dlmajor": [default_signal_process, "tt", "dy", "st"],
-        "2much": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        "2ech": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        "emuch": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "vv", "w_lnu", "h"],
-        # "dl": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "2much": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "2ech": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
-        # "emuch": [default_signal_process, "tt", "dy", "st", "vv", "w_lnu", "h"],
+        "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
+        "dl2": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "table": [default_signal_process, "st", "dy_m10to50", "dy_m50toinf", "tt", "background", "data"],  # noqa: E501
+        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
+        "dlmajor": [default_signal_process, "st", "dy", "tt"],
+        "2much": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "emuch": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
@@ -263,6 +263,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
         "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
         "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
+        "dl_preml_1": bracket_expansion(["incl", "{,sr,ttcr,dycr}__{,2e,2mu,emu}"]),
         "dl_preml_boosted": bracket_expansion(["{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}boosted"]),
         "dl_ttcr": ["ttcr", "ttcr__1b", "ttcr__2b", "ttcr__2e", "ttcr__2mu", "ttcr__emu"],
         "dl_dycr": ["dycr", "dycr__1b", "dycr__2b", "dycr__2e", "dycr__2mu", "dycr__emu"],
@@ -347,12 +348,24 @@ def set_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "dl": bracket_expansion([
-            "n_{jet,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
+            "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
             "met_{pt,phi}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
             "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
             "ht", "lt", "mll", "ptll", "npvs",
+        ]),
+        "dl_eta_studies": bracket_expansion([
+            "n_{jet,jet_pt30,bjet,btag}",
+            "lepton{0,1}_{pt,eta}",
+            "met_{pt,phi}",
+            "jet{0,1,2}_{pt,eta,phi,mass,btagpnetb}",
+            "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
+            "ht", "mll", "ptll",
+            "barreljet{0,1,2}_{pt,eta}",
+            "endcapjet{0,1,2}_{pt,eta}",
+            "barrellep{0,1}_pt",
+            "endcaplep{0,1}_pt",
         ]),
         "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
         "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],
@@ -437,7 +450,6 @@ def set_config_defaults_and_groups(config_inst):
                 "ncols": 2,
                 "fontsize": 16,
                 "bbox_to_anchor": (0., 0., 1., 1.),
-                "reverse": True,
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),

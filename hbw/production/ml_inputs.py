@@ -28,11 +28,14 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 ZERO_PADDING_VALUE = -10
 
 
-@producer(uses={"*"}, produces={"dummy"})
+@producer(uses={prepare_objects, "*"}, produces={"dummy"})
 def check_columns(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Check that all columns are present in the events.
     """
+    # apply behavior (for variable reconstruction)
+    events = self[prepare_objects](events, **kwargs)
+
     from hbw.util import debugger
     debugger()
     return events

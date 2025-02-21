@@ -13,7 +13,7 @@ from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
 from columnflow.columnar_util import has_ak_column, optional_column
 
-from hbw.util import MET_COLUMN
+from hbw.util import MET_COLUMN, BTAG_COLUMN
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -123,6 +123,23 @@ catid_1mu = catid_lep.derive("catid_1mu", cls_dict={"n_electron": 0, "n_muon": 1
 catid_2e = catid_lep.derive("catid_2e", cls_dict={"n_electron": 2, "n_muon": 0})
 catid_2mu = catid_lep.derive("catid_2mu", cls_dict={"n_electron": 0, "n_muon": 2})
 catid_emu = catid_lep.derive("catid_emu", cls_dict={"n_electron": 1, "n_muon": 1})
+
+
+@categorizer(
+    uses={"{Muon,Electron}.pt"},
+)
+def catid_ge3lep(
+    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    if results:
+        electron = events.Electron[results.objects.Electron.Electron]
+        muon = events.Muon[results.objects.Muon.Muon]
+    else:
+        electron = events.Electron
+        muon = events.Muon
+
+    mask = ak.sum(electron.pt > 0, axis=-1) + ak.sum(muon.pt > 0, axis=-1) >= 3
+    return events, mask
 
 
 #
@@ -246,9 +263,6 @@ def catid_njet3(
     return events, mask
 
 
-from hbw.util import BTAG_COLUMN
-
-
 @categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column
@@ -301,3 +315,13 @@ for proc in ml_processes:
             outp_mask = outp_mask & mask
 
         return events, outp_mask
+
+
+@categorizer(uses={"{Electron,Muon}.{pt,eta,phi,mass}", "mll"})
+def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events in the phase space that we understand.
+    Needs to be used in combination with a Producer that defines the leptons.
+    """
+    mask = (events.Lepton[:, 0].pt > 70) & (events.Lepton[:, 1].pt > 50) & (events.mll > 20)
+    return events, mask

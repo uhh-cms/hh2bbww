@@ -81,6 +81,11 @@ def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
     reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(self.task)
 
 
+normalized_btag_weights_full = normalized_btag_weights.derive("normalized_btag_weights_full", cls_dict=dict(
+    modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
+))
+
+
 @normalized_btag_weights.setup
 def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
     # create the corrector

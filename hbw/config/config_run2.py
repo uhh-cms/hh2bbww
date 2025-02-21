@@ -28,6 +28,7 @@ from hbw.util import timeit_multiple
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
+from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -325,9 +326,9 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023preBPix": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023preBPix": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023preBPix": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "deepcsv": {
             "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
@@ -335,9 +336,9 @@ def add_config(
             "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "particlenet": {
-            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023": 0.0358, "2023BPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023": 0.1917, "2023BPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023": 0.6172, "2023BPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023preBPix": 0.0358, "2023postBPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
 
@@ -364,6 +365,8 @@ def add_config(
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
     )
+    if cfg.x.btag_wp_score == 0.0:
+        raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
@@ -414,9 +417,13 @@ def add_config(
 
     ################################################################################################
     #
-    # electron and muon SFs (NOTE: we could add these config entries as part of the selector init)
+    # electron and muon calibrations and SFs (NOTE: we could add these config entries as part of the selector init)
     #
     ################################################################################################
+
+    # electron calibrations
+    cfg.x.eec = EGammaCorrectionConfig(correction_set="Scale")
+    cfg.x.eer = EGammaCorrectionConfig(correction_set="Smearing")
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
@@ -431,7 +438,6 @@ def add_config(
         # (used in the muon producer)
         cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
         cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
-
     elif cfg.x.run == 3:
         electron_sf_campaign = {
             "2022postEE": "2022Re-recoE+PromptFG",
@@ -659,7 +665,9 @@ def add_config(
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    # add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
+    if year != 2023:
+        # missing in 2023
+        add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
@@ -671,6 +679,10 @@ def add_config(
     add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
+
+    # trigger
+    from hbw.config.trigger import add_triggers
+    add_triggers(cfg)
 
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
@@ -779,9 +791,23 @@ def add_config(
         "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
+        # steps
+        "steps.*",
+        # Trigger-related
+        "trigger_ids", "trigger_data.*",
+        "HLT.IsoMu24",
+        "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+        "HLT.Ele30_WPTight_Gsf",
+        "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
+    } | {
+        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
     }
 
     # Version of required tasks

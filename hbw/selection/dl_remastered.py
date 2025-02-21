@@ -5,6 +5,7 @@ Selection modules for HH -> bbWW(lnulnu).
 """
 
 from importlib import import_module
+from functools import partial
 
 from collections import defaultdict
 
@@ -24,6 +25,9 @@ from hbw.production.weights import event_weights_to_normalize
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+
+# helper functions
+set_ak_bool = partial(set_ak_column, value_type=np.bool_)
 
 
 @selector(
@@ -118,29 +122,21 @@ def dl_lepton_selection(
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.Charge &
-        # lepton_results.steps.TripleLooseLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
@@ -198,6 +194,7 @@ from hbw.util import timeit
 
 
 @selector(
+    produces={"steps.*"},
     exposed=True,
     # configurable attributes
     # object selection requirements
@@ -211,7 +208,7 @@ from hbw.util import timeit
     # jet selection requirements
     n_jet=None,
     n_btag=None,
-    version=law.config.get_expanded("analysis", "dl1_version", 2),
+    version=law.config.get_expanded("analysis", "dl1_version", 5),
 )
 @timeit
 def dl1(
@@ -250,25 +247,37 @@ def dl1(
 
     results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
-        (jet_step & bjet_step | results.steps.HbbJet)
+        ((jet_step & bjet_step) | results.steps.HbbJet)
     )
 
-    # combined event selection after all steps except b-jet selection
-    results.steps["all_but_bjet"] = (
+    results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
-        results.steps.data_double_counting &
-        (jet_step | results.steps.HbbJet_no_bjet) &
+        jet_step &
         results.steps.ll_lowmass_veto &
-        results.steps.TripleLooseLeptonVeto &
+        results.steps.TripleLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &
-        results.steps.SR &  # exactly 2 tight leptons
+        results.steps.SR  # exactly 2 tight leptons
+    )
+    # combined event selection after all steps except b-jet selection
+    results.steps["all_but_bjet"] = (
+        results.steps.all_but_trigger_and_bjet &
+        results.steps.data_double_counting &
         results.steps.Trigger &
         results.steps.TriggerAndLep
+    )
+    # combined event selection after all steps except trigger
+    results.steps["all_but_trigger"] = (
+        results.steps.all_but_trigger_and_bjet &
+        bjet_step
     )
 
     # combined event selection after all steps
     results.steps["all"] = results.event = (
+        results.steps.all_but_bjet &
+        bjet_step
+    )
+    results.steps["all_or_boosted"] = (
         results.steps.all_but_bjet &
         ((jet_step & bjet_step) | results.steps.HbbJet)
     )
@@ -277,6 +286,16 @@ def dl1(
 
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
+
+    # keep various steps for last-minute selection changes for data/MC debugging
+    keep_steps = (
+        "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet",
+        "Trigger", "TriggerAndLep", "data_double_counting",
+        "TripleLooseLeptonVeto", "TripleTightLeptonVeto",
+        "VetoTau",
+    )
+    for step in keep_steps:
+        events = set_ak_bool(events, f"steps.{step}", results.steps[step])
 
     return events, results
 
@@ -303,7 +322,7 @@ def dl1_init(self: Selector) -> None:
         hbw_trigger_selection,
         post_selection,
     }
-    self.produces = {
+    self.produces |= {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
