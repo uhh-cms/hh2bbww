@@ -7,7 +7,7 @@ Set of producers to reconstruct categories at different states of the analysis
 import law
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, InsertableDict
+from columnflow.util import maybe_import
 from columnflow.production.categories import category_ids
 
 from hbw.config.categories import add_categories_production, add_categories_ml
@@ -58,16 +58,18 @@ def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @cats_ml.requires
-def cats_ml_reqs(self: Producer, reqs: dict) -> None:
+def cats_ml_reqs(self: Producer, task: law.Task, reqs: dict) -> None:
     if "ml" in reqs:
         return
 
     from columnflow.tasks.ml import MLEvaluation
-    reqs["ml"] = MLEvaluation.req(self.task, ml_model=self.ml_model_name)
+    reqs["ml"] = MLEvaluation.req(task, ml_model=self.ml_model_name)
 
 
 @cats_ml.setup
-def cats_ml_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+def cats_ml_setup(
+    self: Producer, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
+) -> None:
     reader_targets["mlcolumns"] = inputs["ml"]["mlcolumns"]
 
 

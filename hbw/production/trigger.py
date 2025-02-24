@@ -7,11 +7,12 @@ Trigger related event weights.
 from __future__ import annotations
 
 import functools
+import law
 
 # from dataclasses import dataclass
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, InsertableDict
+from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, fill_at
 from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 
@@ -121,20 +122,21 @@ def dl_trigger_weights(
 
 
 @dl_trigger_weights.requires
-def dl_trigger_weights_requires(self: Producer, reqs: dict) -> None:
+def dl_trigger_weights_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     if "external_files" in reqs:
         return
 
     from columnflow.tasks.external import BundleExternalFiles
-    reqs["external_files"] = BundleExternalFiles.req(self.task)
+    reqs["external_files"] = BundleExternalFiles.req(task)
 
 
 @dl_trigger_weights.setup
 def dl_trigger_weights_setup(
     self: Producer,
+    task: law.Task,
     reqs: dict,
     inputs: dict,
-    reader_targets: InsertableDict,
+    reader_targets: law.util.InsertableDict,
 ) -> None:
     bundle_files = reqs["external_files"].files
 

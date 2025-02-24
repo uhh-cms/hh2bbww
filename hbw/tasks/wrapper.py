@@ -13,7 +13,7 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements, MultiConfigTask, ConfigTask
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
+    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorMixin,
     CalibratorsMixin,
 )
 from columnflow.tasks.framework.plotting import (
@@ -34,7 +34,7 @@ class ControlPlots(
     law.WrapperTask,
     HBWTask,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     MultiConfigTask,
 ):
@@ -103,7 +103,7 @@ class ControlPlots(
 class MLInputPlots(
     HBWTask,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     MultiConfigTask,
 ):
@@ -162,7 +162,7 @@ class InferencePlots(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
     # law.LocalWorkflow,
@@ -233,7 +233,7 @@ class ShiftedInferencePlots(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
 ):

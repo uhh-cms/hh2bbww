@@ -71,12 +71,12 @@ def ele_init(self: Calibrator) -> None:
     # TODO: deterministic FatJet seeds
     produces={"FatJet.pt"},
 )
-def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     """
     FatJet calibrator, combining JEC and JER.
     Uses as JER uncertainty either only "Total" for MC or no uncertainty for data.
     """
-    if self.task.local_shift != "nominal":
+    if task.local_shift != "nominal":
         raise Exception("FatJet Calibrator should not be run for shifts other than nominal")
 
     # apply the fatjet JEC and JER
@@ -89,10 +89,6 @@ def fatjet(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 @fatjet.init
 def fatjet_init(self: Calibrator) -> None:
-    if not self.task or self.task.task_family != "cf.CalibrateEvents":
-        # init only required for task itself
-        return
-
     # derive calibrators to add settings once
     flag = f"custom_fatjet_calibs_registered_{self.cls_name}"
     if not self.config_inst.x(flag, False):
@@ -185,9 +181,6 @@ def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 @jet_base.init
 def jet_base_init(self: Calibrator) -> None:
-    if not self.task or self.task.task_family != "cf.CalibrateEvents":
-        # init only required for task itself
-        return
 
     # derive calibrators to add settings once
     flag = f"custom_jet_calibs_registered_{self.cls_name}"

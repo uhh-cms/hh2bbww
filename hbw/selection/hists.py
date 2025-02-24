@@ -4,6 +4,7 @@
 Stat-related methods.
 """
 
+import law
 import order as od
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -120,7 +121,9 @@ def hbw_selection_hists(
 
 
 @hbw_selection_hists.setup
-def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_targets: dict) -> None:
+def hbw_selection_hists_setup(
+    self: Selector, task: law.Task, reqs: dict, inputs: dict, reader_targets: dict,
+) -> None:
     self.process_variable = od.Variable(
         name="process",
         expression="process_id",

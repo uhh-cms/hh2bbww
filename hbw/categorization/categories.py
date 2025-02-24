@@ -112,8 +112,8 @@ def catid_lep(
         muon = events.Muon
 
     mask = (
-        (ak.sum(electron.pt > 0, axis=-1) == self.n_electron) &
-        (ak.sum(muon.pt > 0, axis=-1) == self.n_muon)
+        (ak.sum(electron["pt"] > 0, axis=-1) == self.n_electron) &
+        (ak.sum(muon["pt"] > 0, axis=-1) == self.n_muon)
     )
     return events, mask
 
@@ -138,7 +138,7 @@ def catid_ge3lep(
         electron = events.Electron
         muon = events.Muon
 
-    mask = ak.sum(electron.pt > 0, axis=-1) + ak.sum(muon.pt > 0, axis=-1) >= 3
+    mask = ak.sum(electron["pt"] > 0, axis=-1) + ak.sum(muon["pt"] > 0, axis=-1) >= 3
     return events, mask
 
 

@@ -14,7 +14,7 @@ import order as od
 from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT, AnalysisTask, ConfigTask
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
+    CalibratorsMixin, SelectorMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.cms.inference import CreateDatacards
@@ -250,7 +250,7 @@ class ModifyDatacardsFlatRebin(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
     law.LocalWorkflow,
@@ -449,7 +449,7 @@ class PrepareInferenceTaskCalls(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
 ):

@@ -37,6 +37,7 @@ ak = maybe_import("awkward")
 
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+logger = law.logger.get_logger(__name__)
 
 
 @producer(
@@ -101,8 +102,7 @@ def event_weights_to_normalize_init(self) -> None:
         self.uses |= {btag_weights}
         # dont store most btag_weights to save storage space, since we can reproduce them in ProduceColumns
         # but keep nominal one for checks/synchronization
-        if hasattr(self, "local_shift_inst") and self.local_shift_inst.name == "nominal":
-            self.produces |= {"btag_weight"}
+        self.produces |= {"btag_weight"}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
@@ -283,6 +283,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
+    logger.info(f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
+
     if not getattr(self, "dataset_inst", None):
         return
 

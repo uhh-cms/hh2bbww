@@ -16,7 +16,7 @@ from scinum import Number
 
 from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin,
+    CalibratorsMixin, SelectorMixin, ProducersMixin,
     DatasetsProcessesMixin, CategoriesMixin, WeightProducerMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
@@ -35,7 +35,7 @@ class CustomCreateYieldTable(
     WeightProducerMixin,
     ProducersMixin,
     # MLModelsMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
     law.LocalWorkflow,

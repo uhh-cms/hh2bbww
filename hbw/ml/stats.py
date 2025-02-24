@@ -50,6 +50,7 @@ def del_sub_proc_stats(
 def ml_preparation(
     self: Producer,
     events: ak.Array,
+    task,
     stats: dict = {},
     fold_indices: ak.Array | None = None,
     ml_model_inst: MLModel | None = None,
@@ -58,7 +59,7 @@ def ml_preparation(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
-    if self.task.task_family == "cf.PrepareMLEvents":
+    if task.task_family == "cf.PrepareMLEvents":
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
         sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
@@ -70,7 +71,7 @@ def ml_preparation(
         "num_events": Ellipsis,  # all events
     }
 
-    if self.task.dataset_inst.is_mc:
+    if task.dataset_inst.is_mc:
         # full event weight
         events, weight = self[default_weight_producer](events, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
@@ -121,8 +122,6 @@ def ml_preparation(
 
 @ml_preparation.init
 def ml_preparation_init(self):
-    # TODO: we access self.task.dataset_inst instead of self.dataset_inst due to an issue
-    # with the preparation producer initialization
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 

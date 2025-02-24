@@ -28,6 +28,7 @@ ak = maybe_import("awkward")
 
 # helper functions
 set_ak_bool = partial(set_ak_column, value_type=np.bool_)
+logger = law.logger.get_logger(__name__)
 
 
 @selector(
@@ -183,9 +184,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TriggerAndLep": "Trigger+Lep",
     })
 
-    # Trigger setup, only required when running SelectEvents
-    if self.task and self.task.task_family == "cf.SelectEvents":
-        self.produces.add("mll")
+    self.produces.add("mll")
 
     return
 
@@ -311,6 +310,8 @@ def dl1_init(self: Selector) -> None:
     # configuration of selection parameters
     # apparently, this init only runs after the used selectors, but we can run this init first
     # by only adding the used selectors in the init
+    logger.info("adding selector tag")
+    self.config_inst.add_tag("selector_init")
     configure_selector(self)
 
     # NOTE: since we add these uses so late, init's of these Producers will not run

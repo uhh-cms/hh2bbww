@@ -29,7 +29,7 @@ def jetId(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     https://twiki.cern.ch/twiki/bin/view/CMS/JetID13p6TeV?rev=21
     """
     abseta = abs(events.Jet.eta)
-    print("start")
+
     # baseline mask (abseta < 2.7)
     passJetId_Tight = (events.Jet.jetId & 2 == 2)
 

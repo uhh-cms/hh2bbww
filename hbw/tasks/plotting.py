@@ -12,7 +12,7 @@ import order as od
 
 from columnflow.tasks.framework.base import Requirements, ShiftTask, ConfigTask
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin,
+    CalibratorsMixin, SelectorMixin, ProducersMixin, MLModelsMixin,
     CategoriesMixin, DatasetsProcessesMixin,
 )
 from columnflow.tasks.framework.plotting import (
@@ -117,7 +117,7 @@ class PlotVariablesMultiWeightProducer(
     CategoriesMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ShiftTask,
     ConfigTask,

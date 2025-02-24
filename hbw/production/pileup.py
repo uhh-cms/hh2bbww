@@ -5,9 +5,10 @@ Column production methods related to pileup weights.
 """
 
 import functools
+import law
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, InsertableDict
+from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
@@ -55,7 +56,7 @@ def pu_weight_from_correctionlib(self: Producer, events: ak.Array, **kwargs) -> 
 
 
 @pu_weight_from_correctionlib.requires
-def pu_weight_from_correctionlib_requires(self: Producer, reqs: dict) -> None:
+def pu_weight_from_correctionlib_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     """
     Adds the requirements needed the underlying task to derive the pileup weights into *reqs*.
     """
@@ -63,15 +64,16 @@ def pu_weight_from_correctionlib_requires(self: Producer, reqs: dict) -> None:
         return
 
     from columnflow.tasks.external import BundleExternalFiles
-    reqs["external_files"] = BundleExternalFiles.req(self.task)
+    reqs["external_files"] = BundleExternalFiles.req(task)
 
 
 @pu_weight_from_correctionlib.setup
 def pu_weight_from_correctionlib_setup(
     self: Producer,
+    task: law.Task,
     reqs: dict,
     inputs: dict,
-    reader_targets: InsertableDict,
+    reader_targets: law.util.InsertableDict,
 ) -> None:
     """
     Loads the pileup weights added through the requirements and saves them in the

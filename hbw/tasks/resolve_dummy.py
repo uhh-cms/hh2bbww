@@ -5,7 +5,7 @@ from columnflow.util import DotDict
 from columnflow.tasks.framework.base import MultiConfigTask
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, WeightProducerMixin,
+    CalibratorsMixin, SelectorMixin, ProducersMixin, MLModelsMixin, WeightProducerMixin,
     CategoriesMixin, HistHookMixin, MultiConfigDatasetsProcessesMixin,
     # ShiftSourcesMixin,
 )
@@ -25,7 +25,7 @@ class ResolveDummy(
     MLModelsMixin,
     WeightProducerMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     MultiConfigTask,
     law.LocalWorkflow,

@@ -13,7 +13,7 @@ import luigi
 import order as od
 from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
+    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorMixin,
     CalibratorsMixin, DatasetsProcessesMixin,
 )
 from columnflow.tasks.framework.plotting import (
@@ -167,7 +167,7 @@ class PlotPostfitShapes(
     InferenceModelMixin,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
     ConfigTask,
 ):

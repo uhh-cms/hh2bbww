@@ -6,7 +6,7 @@ Event weight producer.
 
 import law
 
-from columnflow.util import maybe_import, InsertableDict
+from columnflow.util import maybe_import
 from columnflow.weight import WeightProducer, weight_producer
 from columnflow.config_util import get_shifts_from_sources
 from columnflow.columnar_util import Route
@@ -52,7 +52,7 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     # optional categorizer to obtain baseline event mask
     categorizer_cls=None,
 )
-def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+def base(self: WeightProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
     events = self[prepare_objects](events, **kwargs)
 
@@ -70,9 +70,9 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
         weight = weight * Route(column).apply(events)
 
     # implement dummy shift by varying weight by factor of 2
-    if "dummy" in self.local_shift_inst.name:
+    if "dummy" in task.local_shift_inst.name:
         logger.warning("Applying dummy weight shift (should never be use for real analysis)")
-        variation = self.local_shift_inst.name.split("_")[-1]
+        variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
 
     return events, weight
@@ -82,8 +82,9 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 def base_setup(
     self: WeightProducer,
     reqs: dict,
+    task: law.Task,
     inputs: dict,
-    reader_targets: InsertableDict,
+    reader_targets: law.util.InsertableDict,
 ) -> None:
     logger.info(
         f"WeightProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
@@ -168,6 +169,12 @@ def base_init(self: WeightProducer) -> None:
 
     # store column names referring to weights to multiply
     self.uses |= self.local_weight_columns.keys()
+    # self.uses = {"*"}
+
+
+# @base.post_init
+# def base_post_init(self: WeightProducer, task: law.Task):
+#     from hbw.util import debugger; debugger()
 
 
 btag_uncs = [

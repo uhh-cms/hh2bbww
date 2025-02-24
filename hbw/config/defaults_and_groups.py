@@ -51,9 +51,9 @@ def default_ml_model(cls, container, task_params):
         if inference_model in (None, law.NO_STR, RESOLVE_DEFAULT):
             inference_model = container.x.default_inference_model
 
-        # get the default_ml_model from the inference_model_inst
-        inference_model_inst = InferenceModel.get_cls(inference_model)
-        default_ml_model = getattr(inference_model_inst, "ml_model_name", default_ml_model)
+        # get the default_ml_model from the inference_model_cls
+        inference_model_cls = InferenceModel.get_cls(inference_model)
+        default_ml_model = getattr(inference_model_cls, "ml_model_name", default_ml_model)
 
     return default_ml_model
 

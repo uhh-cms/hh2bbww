@@ -9,7 +9,7 @@ from typing import Iterable, Callable
 import law
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, safe_div, InsertableDict
+from columnflow.util import maybe_import, safe_div
 from columnflow.columnar_util import set_ak_column  # , EMPTY_FLOAT
 
 ak = maybe_import("awkward")
@@ -85,15 +85,17 @@ def normalized_weight_factory(
         self.produces |= set(f"normalized_{weight_name}" for weight_name in self.weight_names)
 
     @normalized_weight.requires
-    def normalized_weight_requires(self: Producer, reqs: dict) -> None:
+    def normalized_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
         from columnflow.tasks.selection import MergeSelectionStats
         reqs["selection_stats"] = MergeSelectionStats.req(
-            self.task,
+            task,
             branch=-1,
         )
 
     @normalized_weight.setup
-    def normalized_weight_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+    def normalized_weight_setup(
+        self: Producer, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
+    ) -> None:
         # load the selection stats
         stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")
 

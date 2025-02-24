@@ -27,7 +27,6 @@ from columnflow.tasks.framework.mixins import (
     MLModelTrainingMixin,
     MLModelsMixin,
     MLModelDataMixin,
-    SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.framework.decorators import view_output_plots
@@ -109,7 +108,7 @@ class MLOptimizer(
     HBWTask,
     MLModelsMixin,
     ProducersMixin,
-    SelectorStepsMixin,
+    SelectorMixin,
     CalibratorsMixin,
 ):
     reqs = Requirements(MLTraining=MLTraining)
@@ -239,11 +238,11 @@ class MLPreTraining(
         }
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1,
+                    branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
@@ -277,11 +276,12 @@ class MLPreTraining(
         # load stats for all processes
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1)
+                    branch=-1,
+                )
                 for dataset_inst in dataset_insts
             }
             for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
