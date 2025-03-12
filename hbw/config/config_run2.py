@@ -587,6 +587,24 @@ def add_config(
             "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
         },
     )
+    # cfg.add_shift(name="dummy_2022postEE_up", id=209, type="shape")
+    # cfg.add_shift(name="dummy_2022postEE_down", id=210, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022postEE",
+    #     {
+    #         "dummy_weight": "dummy_2022postEE_weight_" + "{direction}",
+    #     },
+    # )
+    # cfg.add_shift(name="dummy_2022preEE_up", id=211, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_down", id=212, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022preEE",
+    #     {
+    #         "dummy_weight": "dummy_2022preEE_weight_" + "{direction}",
+    #     },
+    # )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]

@@ -19,7 +19,6 @@ logger = law.logger.get_logger(__name__)
 
 
 from hbw.config.defaults_and_groups import (
-    default_calibrator, default_selector, default_producers, default_ml_model,
     ml_inputs_producer,
 )
 
@@ -69,15 +68,8 @@ def create_hbw_analysis(
     # (used in wrapper_factory)
     analysis_inst.set_aux("config_groups", {})
 
-    analysis_inst.x.default_calibrator = default_calibrator(analysis_inst)
-    analysis_inst.x.default_selector = default_selector(analysis_inst)
-    analysis_inst.x.default_producer = default_producers
-    analysis_inst.x.default_weight_producer = "default"
+    # used by our MLModel (also set in config_inst, so be careful)
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
-    analysis_inst.x.default_ml_model = default_ml_model
-    analysis_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
-    analysis_inst.x.default_categories = ["incl", "sr", "ttcr", "dycr"]
-
     #
     # define configs
     #
@@ -107,7 +99,7 @@ def create_hbw_analysis(
                     config=config_name,
                 )
                 if cpn_task.complete():
-                    logger.warning(
+                    logger.debug(
                         f"Using pickled campaign for config {config_name}; to re-initialize, run:\n"
                         f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
                     )

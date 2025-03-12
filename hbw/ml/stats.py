@@ -50,7 +50,7 @@ def del_sub_proc_stats(
 def ml_preparation(
     self: Producer,
     events: ak.Array,
-    task,
+    task: law.Task,
     stats: dict = {},
     fold_indices: ak.Array | None = None,
     ml_model_inst: MLModel | None = None,
@@ -73,7 +73,7 @@ def ml_preparation(
 
     if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_weight_producer](events, **kwargs)
+        events, weight = self[default_weight_producer](events, task, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight

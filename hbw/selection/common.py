@@ -282,7 +282,7 @@ def configure_selector(self: Selector):
         attr = getattr(self, attr_name)
 
         if isinstance(attr, Callable):
-            logger.info(f"Calling config function '{attr_name}'")
+            logger.debug(f"Calling config function '{attr_name}'")
             attr = attr()
 
         if attr is None:

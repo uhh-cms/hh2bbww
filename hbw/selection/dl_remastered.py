@@ -310,7 +310,7 @@ def dl1_init(self: Selector) -> None:
     # configuration of selection parameters
     # apparently, this init only runs after the used selectors, but we can run this init first
     # by only adding the used selectors in the init
-    logger.info("adding selector tag")
+    logger.debug("adding selector tag")
     self.config_inst.add_tag("selector_init")
     configure_selector(self)
 

@@ -152,6 +152,7 @@ dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
 dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+    "epochs": 6,
 })
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],

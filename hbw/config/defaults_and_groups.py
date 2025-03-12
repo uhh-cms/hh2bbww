@@ -34,7 +34,7 @@ def ml_inputs_producer(container):
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
-    default_ml_model = None
+    default_ml_model = ()
 
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
@@ -109,19 +109,18 @@ def set_config_defaults_and_groups(config_inst):
     # Defaults
     #
 
-    # NOTE: many of these have been moved to analysis_inst, TODO cleanup
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    # config_inst.x.default_calibrator = default_calibrator(config_inst)
-    # config_inst.x.default_selector = default_selector(config_inst)
+    config_inst.x.default_calibrator = default_calibrator(config_inst)
+    config_inst.x.default_selector = default_selector(config_inst)
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
-    # config_inst.x.default_producer = default_producers
-    # config_inst.x.default_weight_producer = "default"
-    # # config_inst.x.default_weight_producer = "btag_not_normalized"
-    # config_inst.x.default_ml_model = default_ml_model
+    config_inst.x.default_producer = default_producers
+    config_inst.x.default_weight_producer = "default"
+    # config_inst.x.default_weight_producer = "btag_not_normalized"
+    config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
-    # config_inst.x.default_categories = ["incl"]
-    # config_inst.x.default_variables = ["jet1_pt"]
+    config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
+    config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
     config_inst.x.default_general_settings = ("data_mc_plots",)
@@ -261,6 +260,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
         "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
+        "dl_preml_incl": bracket_expansion(["incl", "{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
         "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
         "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
         "dl_preml_1": bracket_expansion(["incl", "{,sr,ttcr,dycr}__{,2e,2mu,emu}"]),

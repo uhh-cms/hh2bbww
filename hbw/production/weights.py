@@ -283,7 +283,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
-    logger.info(f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
+    logger.debug(f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
 
     if not getattr(self, "dataset_inst", None):
         return

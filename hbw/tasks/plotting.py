@@ -10,10 +10,12 @@ from collections import OrderedDict, defaultdict
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, ShiftTask, ConfigTask
+from columnflow.tasks.framework.base import Requirements, ShiftTask, TaskShifts
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorMixin, ProducersMixin, MLModelsMixin,
-    CategoriesMixin, DatasetsProcessesMixin,
+    CalibratorClassesMixin, SelectorClassMixin, ProducerClassesMixin,
+    # CalibratorsMixin, SelectorMixin, ProducersMixin,
+    MLModelsMixin,
+    CategoriesMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
@@ -109,25 +111,23 @@ def plot_multi_weight_producer(
 
 class PlotVariablesMultiWeightProducer(
     HBWTask,
-    # PlotShiftMixin,  # replaced by ShiftTask for now (single config)
-    VariablePlotSettingMixin,
-    ProcessPlotSettingMixin,
-    DatasetsProcessesMixin,
-    PlotBase1D,
-    CategoriesMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    CategoriesMixin,
+    ProcessPlotSettingMixin,
+    VariablePlotSettingMixin,
+    # HistHookMixin,
     ShiftTask,
-    ConfigTask,
+    PlotBase1D,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    # use the MergeHistograms task to trigger upstream TaskArrayFunction initialization
+    single_config = True
+    upstream_task_cls = MergeHistograms
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
-    """sandbox to use for this task. Defaults to *default_columnar_sandbox* from
-    analysis config.
-    """
 
     weight_producers = law.CSVParameter(
         default=(),
@@ -144,6 +144,37 @@ class PlotVariablesMultiWeightProducer(
         RemoteWorkflow.reqs,
         MergeHistograms=MergeHistograms,
     )
+
+    @classmethod
+    def build_taf_insts(cls, params, shifts: TaskShifts | None = None):
+        # TODO: WeightProducersMixin
+        if not cls.upstream_task_cls:
+            raise ValueError(f"upstream_task_cls must be set for multi-config task {cls.task_family}")
+
+        if shifts is None:
+            shifts = TaskShifts()
+        # we loop over all configs/datasets, but return initial params
+        for i, config_inst in enumerate(params["config_insts"]):
+            if cls.has_single_config():
+                datasets = params["datasets"]
+            else:
+                datasets = params["datasets"][i]
+
+            for weight_producer in params["weight_producers"]:
+                for dataset in datasets:
+                    # NOTE: we need to copy here, because otherwise taf inits will only be triggered once
+                    _params = params.copy()
+                    _params["config_inst"] = config_inst
+                    _params["config"] = config_inst.name
+                    _params["dataset"] = dataset
+                    _params["weight_producer"] = weight_producer
+                    logger.warning(f"building taf insts for {weight_producer} {config_inst.name}, {dataset}")
+                    _params = cls.upstream_task_cls.build_taf_insts(_params, shifts)
+                    cls.upstream_task_cls.get_known_shifts(_params, shifts)
+
+        params["known_shifts"] = shifts
+
+        return params
 
     def requires(self):
         return {
@@ -220,6 +251,8 @@ class PlotVariablesMultiWeightProducer(
         # histogram data per process
         hists = defaultdict(OrderedDict)
 
+        # NOTE: loading histograms as implemented here might not be consistent anymore with
+        # how it's done in PlotVariables1D (important when datasets/shifts differ per config)
         with self.publish_step(f"plotting {self.branch_data.variable} in {category_inst.name}"):
             for weight_producer, inputs in self.input().items():
                 for dataset, inp in inputs.items():
