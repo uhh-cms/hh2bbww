@@ -81,6 +81,12 @@ def add_common_ml_variables(config: od.Config) -> None:
         x_title=r"$\Delta\Phi(b,b)$",
     )
     config.add_variable(
+        name="mli_deta_bb",
+        expression="mli_deta_bb",
+        binning=(40, 0, 6),
+        x_title=r"$\Delta\eta(b,b)$",
+    )
+    config.add_variable(
         name="mli_mbb",
         expression="mli_mbb",
         binning=(40, 0, 400),
@@ -104,6 +110,12 @@ def add_common_ml_variables(config: od.Config) -> None:
         expression="mli_mindr_jj",
         binning=(40, 0, 8),
         x_title=r"min $\Delta R(j,j)$",
+    )
+    config.add_variable(
+        name="mli_maxdr_jj",
+        expression="mli_maxdr_jj",
+        binning=(40, 0, 12),
+        x_title=r"max $\Delta R(j,j)$",
     )
     config.add_variable(
         name="mli_vbf_deta",

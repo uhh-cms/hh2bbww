@@ -132,6 +132,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     jet_pairs = ak.combinations(events.Jet, 2)
     dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
     events = set_ak_column_f32(events, "mli_mindr_jj", ak.min(dr, axis=1))
+    events = set_ak_column_f32(events, "mli_maxdr_jj", ak.max(dr, axis=1))
 
     # hbb features
     hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
@@ -140,6 +141,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
     events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    events = set_ak_column_f32(events, "mli_deta_bb", abs(events.Bjet[:, 0].eta - (events.Bjet[:, 1]).eta))
 
     # angles to lepton
     mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
@@ -168,9 +170,9 @@ def common_ml_inputs_init(self: Producer) -> None:
         "mli_ht", "mli_lt", "mli_n_jet",
         "mli_n_btag", "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
         # bb system
-        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb",
+        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb",
         # minimum angles
-        "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj",
+        "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj", "mli_maxdr_jj",
         # VBF features
         "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
         # low-level features
@@ -318,7 +320,8 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mll", hll.mass)
     events = set_ak_column_f32(events, "mli_mllMET", (hll + events[met_name][:]).mass)
     events = set_ak_column_f32(events, "mli_dr_ll", events.Lepton[:, 0].delta_r(events.Lepton[:, 1]))
-    events = set_ak_column_f32(events, "mli_dphi_ll", events.Lepton[:, 0].delta_phi(events.Lepton[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_ll", abs(events.Lepton[:, 0].delta_phi(events.Lepton[:, 1])))
+    events = set_ak_column_f32(events, "mli_deta_ll", abs(events.Lepton[:, 0].eta - (events.Lepton[:, 1]).eta))
 
     # minimum deltaR between lep and jet
     llbb_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
@@ -346,7 +349,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_input_columns = {
         # ll system
-        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_deta_ll", "mli_ll_pt",
         "mli_min_dr_llbb",
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
