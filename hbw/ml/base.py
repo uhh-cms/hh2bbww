@@ -15,7 +15,7 @@ import order as od
 
 from columnflow.types import Sequence
 from columnflow.ml import MLModel
-from columnflow.util import maybe_import, dev_sandbox, DotDict
+from columnflow.util import maybe_import, dev_sandbox, DotDict, DerivableMeta
 from columnflow.columnar_util import Route, set_ak_column
 from columnflow.config_util import get_datasets_from_process
 
@@ -39,7 +39,9 @@ class MLClassifierBase(MLModel):
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
     # NOTE: the order of processes is crucial! Do not change after training
-    processes: tuple = ("tt", "st")
+    _default__processes: tuple = ("tt", "st")
+    _default__train_classes: dict = {}
+
     input_features: set = {"mli_ht", "mli_n_jet"}
 
     # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when producing new input features
@@ -56,22 +58,40 @@ class MLClassifierBase(MLModel):
     folds: int = 5
 
     # training-specific parameters. Only need to re-run training when changing these
-    ml_process_weights: dict = {"st": 2, "tt": 1}
-    negative_weights: str = "handle"
-    epochs: int = 50
-    batchsize: int = 2 ** 10
+    _default__ml_process_weights: dict = {"st": 2, "tt": 1}
+    _default__negative_weights: str = "handle"
+    _default__epochs: int = 50
+    _default__batchsize: int = 2 ** 10
 
     # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
     bookkeep_params: set[str] = {
         "data_loader", "input_features", "train_val_test_split",
-        "processes", "ml_process_weights", "negative_weights", "epochs", "batchsize", "folds",
+        "processes", "train_classes", "ml_process_weights",
+        "negative_weights", "epochs", "batchsize", "folds",
     }
 
     # parameters that can be overwritten via command line
     settings_parameters: set[str] = {
-        "processes", "ml_process_weights",
+        "processes", "train_classes", "ml_process_weights",
         "negative_weights", "epochs", "batchsize",
     }
+
+    @classmethod
+    def derive(
+        cls,
+        cls_name: str,
+        bases: tuple = (),
+        cls_dict: dict[str, Any] | None = None,
+        module: str | None = None,
+    ):
+        """
+        derive but rename classattributes included in settings_parameters to "_default__{attr}"
+        """
+        for attr, value in cls_dict.copy().items():
+            if attr in cls.settings_parameters:
+                cls_dict[f"_default__{attr}"] = cls_dict.pop(attr)
+
+        return DerivableMeta.derive(cls, cls_name, bases, cls_dict, module)
 
     def __init__(
             self,
@@ -80,14 +100,18 @@ class MLClassifierBase(MLModel):
             **kwargs,
     ):
         """
-        Initialization function of the MLModel. We first overwrite the class attributes with what is set
-        in the  *self.parameters* attribute via the `--ml-model-settings` parameter. Then we cast the
-        parameters to the correct types and store them as individual class attributes. Finally, we store
-        the parameters in the `self.parameters` attribute, which is used both to create a hash for the output
-        path and to store the parameters in a yaml file.
+        Initialization function of the MLModel. We first set properties using values from the
+        *self.parameters* dictionary that is obtained via the `--ml-model-settings` parameter. If
+        the parameter is not set via command line,cthe "_default__{attr}" classattribute is used as
+        fallback. Then we cast the parameters to the correct types and store them as individual
+        class attributes. Finally, we store the parameters in the `self.parameters` attribute,
+        which is used both to create a hash for the output path and to store the parameters in a yaml file.
 
         Only the parameters in the `settings_parameters` attribute can be overwritten via the command line.
         Only the parameters in the `bookkeep_params` attribute are stored in the `self.parameters` attribute.
+        Parameters defined in the `settings_parameters` must be named "_default__{attr}" in the main class definition.
+        When deriving, the "_default__" is automatically added.
+        Similarly, a parameter starting with "_default__" must be part of the `settings_parameters`.
         """
         super().__init__(*args, **kwargs)
 
@@ -109,9 +133,23 @@ class MLClassifierBase(MLModel):
             )
 
         for param in self.settings_parameters:
-            # overwrite the default value with the value from the parameters
-            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
-            setattr(self, param, self.parameters.get(param, getattr(self, param)))
+            # param is not allowed to exist on class level
+            if hasattr(self, param):
+                raise ValueError(
+                    f"{self.cls_name} has classatribute {param} (value: {getattr(self, param)}) on class level "
+                    "but also requests it as configurable via settings_parameters",
+                )
+            # set to requested value, fallback on "__default_{param}"
+            setattr(self, param, self.parameters.get(param, getattr(self, f"_default__{param}")))
+
+        # check that all _default__ attributes are taken care of
+        for attr in dir(self):
+            if not attr.startswith("_default__"):
+                continue
+            if not hasattr(self, attr.replace("_default__", "", 1)):
+                raise ValueError(
+                    f"{self.cls_name} has classatribute {attr} but never sets corresponding property",
+                )
 
         # cast the ml parameters to the correct types if necessary
         self.cast_ml_param_values()
@@ -188,6 +226,9 @@ class MLClassifierBase(MLModel):
         self._parameters_repr = parameters_repr
         return self._parameters_repr
 
+    from hbw.util import timeit_multiple
+
+    @timeit_multiple
     def setup(self) -> None:
         """ function that is run as part of the setup phase. Most likely overwritten by subclasses """
         logger.debug(
@@ -258,6 +299,7 @@ class MLClassifierBase(MLModel):
 
             proc_inst = config_inst.get_process(proc)
             # NOTE: this info is accessible during training but probably not afterwards in other tasks
+            # --> move to setup? or store in some intermediate output file?
             proc_inst.x.ml_id = i
             proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
 
@@ -532,7 +574,7 @@ class ExampleDNN(MLClassifierBase):
     """ Example class how to implement a DNN from the MLClassifierBase """
 
     # optionally overwrite input parameters
-    epochs: int = 10
+    _default__epochs: int = 10
 
     def prepare_ml_model(
         self,

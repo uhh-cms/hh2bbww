@@ -33,10 +33,10 @@ class DenseModelMixin(object):
     Mixin that provides an implementation for `prepare_ml_model`
     """
 
-    activation: str = "relu"
-    layers: tuple[int] = (64, 64, 64)
-    dropout: float = 0.50
-    learningrate: float = 0.00050
+    _default__activation: str = "relu"
+    _default__layers: tuple[int] = (64, 64, 64)
+    _default__dropout: float = 0.50
+    _default__learningrate: float = 0.00050
 
     def cast_ml_param_values(self):
         """
@@ -110,15 +110,15 @@ class DenseModelMixin(object):
 
 class CallbacksBase(object):
     """ Base class that handles parametrization of callbacks """
-    callbacks: set[str] = {
+    _default__callbacks: set[str] = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
 
     # NOTE: we could remove these parameters since they can be implemented via reduce_lr_kwargs
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
 
     # custom callback kwargs
     checkpoint_kwargs: dict = {}
@@ -215,15 +215,15 @@ class ClassicModelFitMixin(CallbacksBase):
     TODO: this will require a different reweighting
     """
 
-    callbacks: set = {
+    _default__callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
-    epochs: int = 200
-    batchsize: int = 2 ** 12
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
+    _default__epochs: int = 200
+    _default__batchsize: int = 2 ** 12
 
     def cast_ml_param_values(self):
         """
@@ -281,16 +281,16 @@ class ClassicModelFitMixin(CallbacksBase):
 
 class ModelFitMixin(CallbacksBase):
     # parameters related to callbacks
-    callbacks: set = {
+    _default__callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
 
-    epochs: int = 200
-    batchsize: int = 2 ** 12
+    _default__epochs: int = 200
+    _default__batchsize: int = 2 ** 12
     # either set steps directly or use attribute from the MultiDataset
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
