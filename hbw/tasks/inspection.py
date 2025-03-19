@@ -389,7 +389,7 @@ class CheckMixins(
     HistHookMixin,
     DummyWorkflow,
 ):
-    upstream_task_cls = MergeHistograms
+    resolution_task_class = MergeHistograms
     plot_function = PlotBase.plot_function.copy(
         default="columnflow.plotting.plot_functions_1d.plot_variable_per_process",
         add_default_to_description=True,

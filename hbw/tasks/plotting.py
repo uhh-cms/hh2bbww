@@ -126,7 +126,7 @@ class PlotVariablesMultiWeightProducer(
 ):
     # use the MergeHistograms task to trigger upstream TaskArrayFunction initialization
     single_config = True
-    upstream_task_cls = MergeHistograms
+    resolution_task_class = MergeHistograms
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     weight_producers = law.CSVParameter(
@@ -148,8 +148,8 @@ class PlotVariablesMultiWeightProducer(
     @classmethod
     def build_taf_insts(cls, params, shifts: TaskShifts | None = None):
         # TODO: WeightProducersMixin
-        if not cls.upstream_task_cls:
-            raise ValueError(f"upstream_task_cls must be set for multi-config task {cls.task_family}")
+        if not cls.resolution_task_class:
+            raise ValueError(f"resolution_task_class must be set for multi-config task {cls.task_family}")
 
         if shifts is None:
             shifts = TaskShifts()
@@ -169,8 +169,8 @@ class PlotVariablesMultiWeightProducer(
                     _params["dataset"] = dataset
                     _params["weight_producer"] = weight_producer
                     logger.warning(f"building taf insts for {weight_producer} {config_inst.name}, {dataset}")
-                    _params = cls.upstream_task_cls.build_taf_insts(_params, shifts)
-                    cls.upstream_task_cls.get_known_shifts(_params, shifts)
+                    _params = cls.resolution_task_class.build_taf_insts(_params, shifts)
+                    cls.resolution_task_class.get_known_shifts(_params, shifts)
 
         params["known_shifts"] = shifts
 

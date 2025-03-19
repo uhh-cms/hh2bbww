@@ -36,7 +36,7 @@ class GetBtagNormalizationSF(
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
-    upstream_task_cls = MergeSelectionStats
+    resolution_task_class = MergeSelectionStats
 
     single_config = True
     reqs = Requirements(
