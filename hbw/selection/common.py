@@ -117,7 +117,7 @@ def pre_selection(
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
-        events = self[large_weights_killer](events, **kwargs)
+        events = self[large_weights_killer](events, stats, **kwargs)
 
     if self.dataset_inst.is_mc:
         # get hard gen particles

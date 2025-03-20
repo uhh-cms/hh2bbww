@@ -432,7 +432,8 @@ def configure_hbw_datasets(
 
         if dataset.name.startswith("qcd"):
             dataset.add_tag("is_qcd")
-
+        if "hh" in dataset.name:
+            dataset.add_tag("is_hh")
         if "hh" in dataset.name and "hbb_hvv" in dataset.name:
             # add HH signal tags
             dataset.add_tag("is_hbv")

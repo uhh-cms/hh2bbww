@@ -318,21 +318,29 @@ def event_weights_init(self: Producer) -> None:
 
 
 @producer(
-    uses={"mc_weight"},
-    produces={"mc_weight"},
+    uses={"mc_weight", "genWeight"},
+    produces={"mc_weight", "genWeight"},
     mc_only=True,
 )
-def large_weights_killer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs) -> ak.Array:
     """
     Simple producer that sets eventweights to 0 when too large.
     """
     if self.dataset_inst.is_data:
         raise Exception("large_weights_killer is only callable for MC")
 
-    # TODO: figure out a good threshold when events are considered unphysical
+    # set mc_weight to zero when genWeight is > 0.5 for HH events
+    if self.dataset_inst.has_tag("is_hh"):
+        weight_too_large = abs(events.genWeight) > 0.5
+        logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
+        events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+
+    # check for anomalous weights and store in stats
     median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]
-    weight_too_large = abs(events.mc_weight) > 1000 * median_weight
-    events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+    anomalous_weights_mask = abs(events.mc_weight) > 1000 * median_weight
+    if ak.any(anomalous_weights_mask):
+        logger.warning(f"found {ak.sum(anomalous_weights_mask)} events with weights > 1000 * median weight")
+        stats["num_events_anomalous_weights"] += ak.sum(anomalous_weights_mask)
 
     return events
 
