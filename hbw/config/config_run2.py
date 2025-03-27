@@ -798,7 +798,11 @@ def add_config(
         # Jets
         "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
-        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
+        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
+        # FatJet particleNet scores (all for now, should be reduced at some point)
+        "Fatjet.particleNet*",
+        "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
+        "{FatJet,HbbJet}.particleNetWithMass_{HbbVsQCD}",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
