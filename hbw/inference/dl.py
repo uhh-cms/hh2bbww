@@ -537,15 +537,17 @@ dl.derive("dl_tmp", cls_dict={
 })
 
 
-dl.derive("dl_22_limited", cls_dict={
-    "ml_model_name": "dl_22_limited",
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "tt_dl"],
+dl.derive("dl_22post_limited", cls_dict={
+    "ml_model_name": "dl_22post_limited",
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
     "config_categories": [
         "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2b__ml_tt_dl",
+        "sr__2b__ml_st_tchannel_t",
     ],
     "systematics": rate_systematics},
 )
+# test command:
+# law run cf.CreateDatacards --inference-model dl_22post_limited --configs l22post
 dl.derive("dl_rates_only", cls_dict={"systematics": rate_systematics})
 
 dl.derive("dl_postfit_test", cls_dict={

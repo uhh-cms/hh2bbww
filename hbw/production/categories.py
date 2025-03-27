@@ -73,7 +73,10 @@ def cats_ml_reqs(self: Producer, task: law.Task, reqs: dict) -> None:
         return
 
     from columnflow.tasks.ml import MLEvaluation
-    reqs["ml"] = MLEvaluation.req(task, ml_model=self.ml_model_name)
+    reqs["ml"] = MLEvaluation.req(
+        task,
+        ml_model=self.ml_model_name,
+    )
 
 
 @cats_ml.setup
@@ -88,6 +91,9 @@ def cats_ml_setup(
 def cats_ml_init(self: Producer) -> None:
     if not self.ml_model_name:
         raise ValueError(f"invalid ml_model_name {self.ml_model_name} for Producer {self.cls_name}")
+
+    # NOTE: if necessary, we could initialize the MLModel ourselves, e.g. via:
+    # MLModelMixinBase.get_ml_model_inst(self.ml_model_name, self.analysis_inst, requested_configs=[self.config_inst])
 
     if not self.config_inst.has_variable("mlscore.max_score"):
         self.config_inst.add_variable(

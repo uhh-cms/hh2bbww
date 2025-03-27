@@ -53,6 +53,24 @@ class HBWInferenceModelBase(InferenceModel):
     # helper functions and properties
     #
 
+    @classmethod
+    def used_datasets(cls, config_inst):
+        """
+        This classmethod defines, which datasets are used from the inference model
+        and is used to declare for which datasets to run TAF init functions.
+        """
+        used_datasets = set().union(*[
+            get_datasets_from_process(config_inst, proc, strategy="all")
+            for proc in cls.processes
+        ])
+        logger.warning(f"used datasets {used_datasets}")
+        return used_datasets
+
+    @property
+    def config_inst(self):
+        # workaround as long as we do not consider multi config
+        return self.config_insts[0]
+
     def inf_proc(self, proc):
         """
         Helper function that translates our process names to the inference model process names
@@ -101,8 +119,11 @@ class HBWInferenceModelBase(InferenceModel):
         # cat_inst.variables_to_plot = variables
         return
 
-    def __init__(self, config_inst: od.Config, *args, **kwargs):
-        super().__init__(config_inst)
+    def __init__(self, config_insts: od.Config, *args, **kwargs):
+        super().__init__(config_insts)
+        if len(config_insts) != 1:
+            raise NotImplementedError("Multi-config inference model not yet fully supported.")
+        config_inst = config_insts[0]
         year = config_inst.campaign.x.year
         self.systematics = [syst.format(year=year) for syst in self.systematics]
 
@@ -132,24 +153,34 @@ class HBWInferenceModelBase(InferenceModel):
         # get the MLModel inst
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
         for config_category in self.config_categories:
+            # TODO: loop over configs here
             cat_inst = self.config_inst.get_category(config_category)
-            # root_cats = cat_inst.x.root_cats
+
+            # check that variable inst is available
+            var_name = self.config_variable(cat_inst)
+            if not self.config_inst.has_variable(var_name):
+                raise ValueError(f"Variable {var_name} not found in config {self.config_inst.name}")
 
             cat_name = self.cat_name(cat_inst)
             cat_kwargs = dict(
-                config_category=config_category,
-                config_variable=self.config_variable(cat_inst),
+                config_data={
+                    config_inst.name: self.category_config_spec(
+                        category=config_category,
+                        variable=var_name,
+                        data_datasets=[
+                            dataset_inst.name for dataset_inst in
+                            get_datasets_from_process(config_inst, "data", strategy="all")
+                        ],
+                    )
+                    for config_inst in self.config_insts
+                },
                 mc_stats=self.mc_stats,
                 flow_strategy="move",
                 empty_bin_value=0.0,  # NOTE: remove this when removing custom rebin task
             )
+            # TODO: check that data datasets are requested as expected
             if self.skip_data:
                 cat_kwargs["data_from_processes"] = self.inf_processes
-            else:
-                cat_kwargs["config_data_datasets"] = [
-                    dataset_inst.name for dataset_inst in
-                    get_datasets_from_process(self.config_inst, "data", strategy="all")
-                ]
 
             # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
@@ -208,10 +239,16 @@ class HBWInferenceModelBase(InferenceModel):
             used_datasets |= set(datasets)
 
             self.add_process(
-                self.inf_proc(proc),
-                config_process=proc,
+                name=self.inf_proc(proc),
+                config_data={
+                    config_inst.name: self.process_config_spec(
+                        process=proc,
+                        mc_datasets=datasets,
+                    )
+                    for config_inst in self.config_insts
+                },
                 is_signal=("hh_" in proc.lower()),
-                config_mc_datasets=datasets,
+                # is_dynamic=??,
             )
 
             # add dummy variations if requested

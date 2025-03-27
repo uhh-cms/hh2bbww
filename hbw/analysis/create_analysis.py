@@ -283,8 +283,14 @@ def create_hbw_analysis(
             store_parts = reorganize_parts(task, store_parts)
         return store_parts
 
+    def pre_reducer_parts(task, store_parts):
+        store_parts.pop("reducer")
+        store_parts["weight_producer"] = store_parts["weight_producer"].replace("weight", "hist")
+        return store_parts
+
     analysis_inst.x.store_parts_modifiers = {
         "hbw_parts": hbw_parts,
+        "pre_reducer": pre_reducer_parts,
     }
 
     return analysis_inst
