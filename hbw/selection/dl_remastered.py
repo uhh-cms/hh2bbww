@@ -207,7 +207,7 @@ from hbw.util import timeit
     # jet selection requirements
     n_jet=None,
     n_btag=None,
-    version=law.config.get_expanded("analysis", "dl1_version", 5),
+    version=law.config.get_expanded("analysis", "dl1_version", 0),
 )
 @timeit
 def dl1(

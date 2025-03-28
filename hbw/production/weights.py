@@ -24,6 +24,7 @@ from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weig
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
 from hbw.production.gen_v import gen_v_boson, vjets_weight
+from hbw.production.dy import gen_dilepton
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
@@ -41,8 +42,8 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
-    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
+    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_VJETS(gen_dilepton), pu_weight},
+    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_VJETS(gen_dilepton), pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -58,6 +59,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute gen information that will later be needed for vector boson pt reweighting
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[gen_v_boson](events, **kwargs)
+        events = self[gen_dilepton](events, **kwargs)
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
@@ -232,7 +234,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 2),
+    version=law.config.get_expanded("analysis", "event_weights_version", 0),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

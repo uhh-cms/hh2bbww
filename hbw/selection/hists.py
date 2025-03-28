@@ -82,8 +82,9 @@ def hbw_selection_hists(
             weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
             # weight_map[f"sum_{name}"] = events[name]
 
-    # initialize histograms (only on first chunk)
-    if getattr(self, "first_chunk", True):
+    # initialize histograms if not already done
+    # (NOTE: this only works as long as this is the only selector that adds histograms)
+    if not hists:
         for key, weight in weight_map.items():
             if "btag_weight" not in key:
                 hists[key] = create_hist_from_variables(self.steps_variable)
@@ -116,7 +117,6 @@ def hbw_selection_hists(
                     weight=weight[mask],
                 )
 
-    self.first_chunk = False
     return events
 
 

@@ -789,6 +789,7 @@ def add_config(
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
         "GenPartonTop.pt", "GenVBoson.pt",
+        "gen_dilepton_pt", "gen_dilepton_{vis,all}.{pt,phi}",
         # weight-related columns
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
@@ -796,7 +797,7 @@ def add_config(
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
         # Jets
-        "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
