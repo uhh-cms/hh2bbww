@@ -115,8 +115,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_selector = default_selector(config_inst)
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
-    config_inst.x.default_weight_producer = "default"
-    # config_inst.x.default_weight_producer = "btag_not_normalized"
+    config_inst.x.default_hist_producer = "default"
+    # config_inst.x.default_hist_producer = "btag_not_normalized"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]

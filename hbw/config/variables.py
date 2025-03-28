@@ -243,7 +243,7 @@ def add_variables(config: od.Config) -> None:
     )
 
     config.add_variable(
-        # NOTE: only works when running `prepare_objects` in WeightProducer
+        # NOTE: only works when running `prepare_objects` in HistProducer
         name="ptll",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         binning=(240, 0., 1200.),

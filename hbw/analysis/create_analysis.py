@@ -181,9 +181,9 @@ def create_hbw_analysis(
     known_parts = (
         # from cf
         "analysis", "task_family", "config", "configs", "dataset", "shift", "version",
-        "calibrator", "calibrators", "selector", "producer", "producers",
+        "calibrator", "calibrators", "selector", "reducer", "producer", "producers",
         "ml_model", "ml_data", "ml_models",
-        "weight_producer", "inf_model",
+        "hist_producer", "inf_model",
         "plot", "shift_sources", "shifts", "datasets",
         # MLTraining
         "calib", "sel", "prod",
@@ -236,12 +236,13 @@ def create_hbw_analysis(
         # to be decided for "ml_data", "ml_model", "inf_model" (used for multiple tasks)
         parts_order_start = [
             "analysis",
-            "calibrator", "calibrators", "calib",
-            "selector", "sel",
+            "calibrator", "calibrators",
+            "selector",
+            "reducer",
             "config", "configs",
-            "producers", "prod",
+            "producers",
             "ml_data", "ml_model", "ml_models",
-            "weight_producer", "inf_model",
+            "hist_producer", "inf_model",
             "task_family",
             "calibrator", "producer",
             "shift", "dataset",

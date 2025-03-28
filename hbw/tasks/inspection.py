@@ -20,7 +20,7 @@ from columnflow.tasks.framework.mixins import (
     CalibratorClassesMixin,
     SelectorClassMixin,
     ProducerClassesMixin,
-    WeightProducerClassMixin,
+    HistProducerClassMixin,
     CategoriesMixin,
     DatasetsProcessesMixin,
     HistHookMixin,
@@ -382,14 +382,14 @@ class CheckMixins(
     SelectorClassMixin,
     ProducerClassesMixin,
     MLModelsMixin,
-    WeightProducerClassMixin,
+    HistProducerClassMixin,
     CategoriesMixin,
     ProcessPlotSettingMixin,
     VariablePlotSettingMixin,
     HistHookMixin,
     DummyWorkflow,
 ):
-    resolution_task_class = MergeHistograms
+    resolution_task_cls = MergeHistograms
     plot_function = PlotBase.plot_function.copy(
         default="columnflow.plotting.plot_functions_1d.plot_variable_per_process",
         add_default_to_description=True,

@@ -1,5 +1,5 @@
 # flake8: noqa
-class PlotVariablesMultiConfigMultiWeightProducer(
+class PlotVariablesMultiConfigMultiHistProducer(
     HBWTask,
     CalibratorClassesMixin,
     SelectorClassMixin,
@@ -17,16 +17,16 @@ class PlotVariablesMultiConfigMultiWeightProducer(
 ):
     # use the MergeHistograms task to trigger upstream TaskArrayFunction initialization
     single_config = False
-    resolution_task_class = MergeHistograms
+    resolution_task_cls = MergeHistograms
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    weight_producers = law.CSVParameter(
+    hist_producers = law.CSVParameter(
         default=(),
         description="Weight producers to use for plotting",
     )
 
     plot_function = PlotBase.plot_function.copy(
-        default="hbw.tasks.plotting.plot_multi_weight_producer",
+        default="hbw.tasks.plotting.plot_multi_hist_producer",
         add_default_to_description=True,
     )
 
@@ -38,8 +38,8 @@ class PlotVariablesMultiConfigMultiWeightProducer(
 
     @classmethod
     def resolve_instances(cls, params, shifts: TaskShifts | None = None):
-        if not cls.resolution_task_class:
-            raise ValueError(f"resolution_task_class must be set for multi-config task {cls.task_family}")
+        if not cls.resolution_task_cls:
+            raise ValueError(f"resolution_task_cls must be set for multi-config task {cls.task_family}")
 
         if shifts is None:
             shifts = TaskShifts()
@@ -50,17 +50,17 @@ class PlotVariablesMultiConfigMultiWeightProducer(
             else:
                 datasets = params["datasets"][i]
 
-            for weight_producer in params["weight_producers"]:
+            for hist_producer in params["hist_producers"]:
                 for dataset in datasets:
                     # NOTE: we need to copy here, because otherwise taf inits will only be triggered once
                     _params = params.copy()
                     _params["config_inst"] = config_inst
                     _params["config"] = config_inst.name
                     _params["dataset"] = dataset
-                    _params["weight_producer"] = weight_producer
+                    _params["hist_producer"] = hist_producer
                     logger.warning(f"building taf insts for {config_inst.name}, {dataset}")
-                    _params = cls.resolution_task_class.resolve_instances(_params, shifts)
-                    cls.resolution_task_class.get_known_shifts(_params, shifts)
+                    _params = cls.resolution_task_cls.resolve_instances(_params, shifts)
+                    cls.resolution_task_cls.get_known_shifts(_params, shifts)
 
         params["known_shifts"] = shifts
 
@@ -68,19 +68,19 @@ class PlotVariablesMultiConfigMultiWeightProducer(
 
     def requires(self):
         req = {}
-        for weight_producer in self.weight_producers:
-            req[weight_producer] = {}
+        for hist_producer in self.hist_producers:
+            req[hist_producer] = {}
             for i, config_inst in enumerate(self.config_insts):
                 sub_datasets = self.datasets[i]
-                req[weight_producer][config_inst.name] = {}
+                req[hist_producer][config_inst.name] = {}
                 for d in sub_datasets:
                     if d in config_inst.datasets.names():
-                        req[weight_producer][config_inst.name][d] = self.reqs.MergeHistograms.req(
+                        req[hist_producer][config_inst.name][d] = self.reqs.MergeHistograms.req(
                             self,
                             config=config_inst.name,
                             # shift=self.global_shift_insts[config_inst.name],
                             dataset=d,
-                            weight_producer=weight_producer,
+                            hist_producer=hist_producer,
                             branch=-1,
                             _exclude={"branches"},
                             _prefer_cli={"variables"},
@@ -98,13 +98,13 @@ class PlotVariablesMultiConfigMultiWeightProducer(
         return [self.shift]
 
     @property
-    def weight_producers_repr(self):
-        return "_".join(self.weight_producers)
+    def hist_producers_repr(self):
+        return "_".join(self.hist_producers)
 
     def store_parts(self):
         parts = super().store_parts()
         parts.insert_before("version", "plot", f"datasets_{self.datasets_repr}")
-        parts.insert_before("version", "weights", f"weights_{self.weight_producers_repr}")
+        parts.insert_before("version", "weights", f"weights_{self.hist_producers_repr}")
         return parts
 
     def create_branch_map(self):
@@ -140,9 +140,9 @@ class PlotVariablesMultiConfigMultiWeightProducer(
         hists = defaultdict(OrderedDict)
 
         # NOTE: loading histograms as implemented here might not be consistent anymore with
-        # how it's done in PlotVariables1D (important when datasets/shifts differ per config/weightProducer/...)
+        # how it's done in PlotVariables1D (important when datasets/shifts differ per config/HistProducer/...)
         with self.publish_step(f"plotting {self.branch_data.variable} in {self.branch_data.category}"):
-            for weight_producer, inputs in self.input().items():
+            for hist_producer, inputs in self.input().items():
                 for config, _inputs in inputs.items():
                     config_inst = self.analysis_inst.get_config(config)
                     plot_shift_insts = [config_inst.get_shift(shift) for shift in plot_shifts]
@@ -191,10 +191,10 @@ class PlotVariablesMultiConfigMultiWeightProducer(
                             h = h[{"process": sum, "category": sum}]
 
                             # add the histogram
-                            if weight_producer in hists and process_inst in hists[weight_producer]:
-                                hists[weight_producer][process_inst] = hists[weight_producer][process_inst] + h
+                            if hist_producer in hists and process_inst in hists[hist_producer]:
+                                hists[hist_producer][process_inst] = hists[hist_producer][process_inst] + h
                             else:
-                                hists[weight_producer][process_inst] = h
+                                hists[hist_producer][process_inst] = h
 
                 # there should be hists to plot
                 if not hists:
@@ -205,9 +205,9 @@ class PlotVariablesMultiConfigMultiWeightProducer(
                     )
 
                 # sort hists by process order
-                hists[weight_producer] = OrderedDict(
-                    (process_inst.copy_shallow(), hists[weight_producer][process_inst])
-                    for process_inst in sorted(hists[weight_producer], key=process_insts.index)
+                hists[hist_producer] = OrderedDict(
+                    (process_inst.copy_shallow(), hists[hist_producer][process_inst])
+                    for process_inst in sorted(hists[hist_producer], key=process_insts.index)
                 )
 
             hists = dict(hists)

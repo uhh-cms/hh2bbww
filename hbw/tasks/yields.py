@@ -17,7 +17,7 @@ from scinum import Number
 from columnflow.tasks.framework.base import Requirements, ConfigTask
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin, SelectorMixin, ProducersMixin,
-    DatasetsProcessesMixin, CategoriesMixin, WeightProducerMixin,
+    DatasetsProcessesMixin, CategoriesMixin, HistProducerMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
@@ -32,7 +32,7 @@ class CustomCreateYieldTable(
     HBWTask,
     DatasetsProcessesMixin,
     CategoriesMixin,
-    WeightProducerMixin,
+    HistProducerMixin,
     ProducersMixin,
     # MLModelsMixin,
     SelectorMixin,

@@ -15,7 +15,7 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
 from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.default import default_weight_producer
+from hbw.weight.default import default_hist_producer
 
 
 ak = maybe_import("awkward")
@@ -73,7 +73,7 @@ def ml_preparation(
 
     if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_weight_producer](events, task, **kwargs)
+        events, weight = self[default_hist_producer](events, task, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
@@ -126,4 +126,4 @@ def ml_preparation_init(self):
         return
 
     self.uses.add("stitched_normalization_weight")
-    self.uses.add(default_weight_producer)
+    self.uses.add(default_hist_producer)

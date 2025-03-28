@@ -181,7 +181,7 @@ class MLPreTraining(
     - input_arrays: list of input arrays to be loaded. Each array is a string, pointing to a property
     of the data_loader class that returns the data.
     """
-    resolution_task_class = SimpleMergeMLEvents
+    resolution_task_cls = SimpleMergeMLEvents
 
     # never run this task on GPU
     htcondor_gpus = 0
@@ -461,7 +461,7 @@ class MLEvaluationSingleFold(
     """
     This task creates evaluation outputs for a single trained MLModel.
     """
-    resolution_task_class = SimpleMergeMLEvents
+    resolution_task_cls = SimpleMergeMLEvents
 
     sandbox = None
 
