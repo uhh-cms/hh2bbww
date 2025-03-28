@@ -22,14 +22,13 @@ from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
-from hbw.production.gen_v import gen_v_boson, vjets_weight
-from hbw.production.dy import gen_dilepton
+from columnflow.production.cms.top_pt_weight import top_pt_weight
+from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_VJETS, IF_TOP
+from hbw.util import has_tag
 
 
 np = maybe_import("numpy")
@@ -42,8 +41,12 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_VJETS(gen_dilepton), pu_weight},
-    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_VJETS(gen_dilepton), pu_weight},
+    uses={
+        pu_weight
+    },
+    produces={
+        pu_weight,
+    },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -51,15 +54,6 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     Wrapper of several event weight producers that are typically called as part of SelectEvents
     since it is required to normalize them before applying certain event selections.
     """
-
-    # compute gen information that will later be needed for top pt reweighting
-    if self.dataset_inst.has_tag("has_top"):
-        events = self[gen_parton_top](events, **kwargs)
-
-    # compute gen information that will later be needed for vector boson pt reweighting
-    if self.dataset_inst.has_tag("is_v_jets"):
-        events = self[gen_v_boson](events, **kwargs)
-        events = self[gen_dilepton](events, **kwargs)
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)

@@ -113,7 +113,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
     config_inst.x.default_calibrator = default_calibrator(config_inst)
     config_inst.x.default_selector = default_selector(config_inst)
-    config_inst.x.default_reducer = "cf_default"
+    config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
     config_inst.x.default_hist_producer = "default"
