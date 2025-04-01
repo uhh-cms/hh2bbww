@@ -37,25 +37,25 @@ from hbw.categorization.categories import catid_2e, catid_2mu, catid_emu
 trigger_sf_config = {
     "trigger_sf_ee": {
         "corr_keys": {
-            "nominal": "sf_ee_mli_lep_pt-trig_ids",
-            "up": "sf_ee_mli_lep_pt-trig_ids",
-            "down": "sf_ee_mli_lep_pt-trig_ids",
+            "nominal": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids",
+            "up": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids_up",
+            "down": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids_down",
         },
         "category": catid_2e,
     },
     "trigger_sf_mm": {
         "corr_keys": {
-            "nominal": "sf_mm_mli_lep_pt-trig_ids",
-            "up": "sf_mm_mli_lep_pt-trig_ids",
-            "down": "sf_mm_mli_lep_pt-trig_ids",
+            "nominal": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids",
+            "up": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids_up",
+            "down": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids_down",
         },
         "category": catid_2mu,
     },
     "trigger_sf_mixed": {
         "corr_keys": {
-            "nominal": "sf_mixed_mli_lep_pt-trig_ids",
-            "up": "sf_mixed_mli_lep_pt-trig_ids",
-            "down": "sf_mixed_mli_lep_pt-trig_ids",
+            "nominal": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids",
+            "up": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids_up",
+            "down": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids_down",
         },
         "category": catid_emu,
     },
@@ -85,6 +85,7 @@ def dl_trigger_weights(
 
     variable_map = {
         "mli_lep_pt": events.Lepton[:, 0].pt,
+        "mli_lep2_pt": events.Lepton[:, 1].pt,
     }
 
     full_mask = ak.zeros_like(events.event, dtype=bool)
@@ -105,7 +106,6 @@ def dl_trigger_weights(
             col_name = f"{self.weight_name}{sysfix}"
             if col_name not in events.fields:
                 events = set_ak_column_f32(events, col_name, ak.ones_like(events.event))
-
             corr = corr_set[corr_key]
             inputs = [variable_map[inp.name] for inp in corr.inputs]
 
