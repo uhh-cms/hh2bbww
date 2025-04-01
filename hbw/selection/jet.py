@@ -209,7 +209,7 @@ def vbf_jet_selection(
         ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1),
     )
     vbf_jets = events.Jet[(events.Jet.local_index != b_indices[:, 0]) & (events.Jet.local_index != b_indices[:, 1])]
-    vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta < 4.7))]
+    vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta) < 4.7)] # 
 
     # build all possible pairs of jets fulfilling the `vbf_jet_mask` requirement
     vbf_pairs = ak.combinations(vbf_jets, 2)
@@ -224,7 +224,7 @@ def vbf_jet_selection(
     vbf_selection = ak.sum(vbf_mask >= 1, axis=-1) >= 1
 
     # apply requirements to vbf pairs
-    vbf_pairs = vbf_pairs[vbf_mask]
+    # vbf_pairs = vbf_pairs[vbf_mask]
 
     # choose the vbf pair based on maximum delta eta
     chosen_vbf_pair = vbf_pairs[ak.singletons(ak.argmax(vbf_pairs.deta, axis=1))]
@@ -256,6 +256,50 @@ def vbf_jet_selection_init(self: Selector) -> None:
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
     self.config_inst.x.selector_step_labels.update({
         "VBFJetPair": r"$N_{VBFJetPair}^{AK4} \geq 1$",
+    })
+
+@selector(
+    uses={jet_selection, "Jet.{pt,eta,phi,mass}"},
+    exposed=False,
+)
+def forward_jet_selection(
+    self: Selector,
+    events: ak.Array,
+    # results: SelectionResult,
+    # stats: defaultdict,
+    **kwargs,
+) -> Tuple[ak.Array, SelectionResult]:
+
+    # assign local index to all Jets
+    events = set_ak_column(events, "Jet.local_index", ak.local_index(events.Jet.pt))
+
+    forward_mask = (events.Jet.pt >= 25) & (abs(events.Jet.eta) < 4.7) & (abs(events.Jet.eta) >= 2.4)
+    forward_jets = events.Jet[forward_mask]
+    # forward_selection = ak.sum(forward_mask >= 1, axis=-1) >= 1
+
+    forward_jets = forward_jets[ak.argsort(forward_jets.pt, ascending=False)]
+
+    # build and return selection results plus new columns
+    return events, SelectionResult(
+        #steps={"ForwardJet": forward_selection},
+        objects={"Jet": {
+            "Forwardjet": forward_jets.local_index,
+        }},
+    )
+
+@forward_jet_selection.init
+def forward_jet_selection_init(self: Selector) -> None:
+    # Add shift dependencies
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag(("jec", "jer"))
+    }
+
+    # update selector step labels
+    self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
+    self.config_inst.x.selector_step_labels.update({
+        "Forward": r"$N_{ForwardJetPair}^{AK4} \geq 1$",
     })
 
 

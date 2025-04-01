@@ -7,12 +7,19 @@ Producers that determine the generator-level particles of a HH->bbWW decay.
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
+from hbw.production.prepare_objects import prepare_objects
+
+from hbw.config.cutflow_variables import add_gen_variables
 
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
-
+# Need: GenPart.hasFlags, GenPart.pdgId, GenPart.mass, eta phi pt 
+# uses={
+    # "GenPart.pdgId", "GenPart.statusFlags",
+    # "GenPart.pt", "GenPart.eta", "GenPart.phi", "GenPart.mass",
+# },
 @producer
 def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -20,9 +27,10 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     All sub-fields correspond to individual GenParticles with fields pt, eta, phi, mass and pdgId.
     """
 
-    if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbv", False):
-        return events
-
+    __import__("IPython").embed()
+    # if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbv", False):
+    #     return events
+    # events = self[prepare_objects](events, **kwargs)
     # for quick checks
     def all_or_raise(arr, msg):
         if not ak.all(arr):
@@ -126,7 +134,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         gp: {f: np.float32(hhgen[gp][f]) for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
     })
     events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
-
+    __import__("IPython").embed()
     return events
 
 
@@ -136,6 +144,36 @@ def gen_hbw_decay_products_init(self: Producer) -> None:
     Ammends the set of used and produced columns of :py:class:`gen_hbw_decay_products` in case
     a dataset including top decays is processed.
     """
-    if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_hbv", False):
-        self.uses |= {"nGenPart", "GenPart.*"}
-        self.produces |= {"gen_hbw_decay"}
+    # if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_hbv", False):
+    self.uses |= {  # "nGenPart", "GenPart.*"}
+        prepare_objects,
+        "{Electron,Muon,Jet,Bjet,Lightjet,VBFJet,HbbJet}.{pt,eta,phi,mass}",
+        "GenPart.*",
+    }
+    self.produces |= {"gen_hbw_decay"}
+
+# @producer(
+#     uses={
+#         "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
+#         gen_hbw_decay_products,
+#     },
+#     produces=set(
+#         f"gen.{gp}_{var}"
+#         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]
+#         for var in ["pt", "eta", "phi", "mass"]
+#     ),
+# )
+# def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+#     events = self[gen_hbw_decay_products](events, **kwargs)
+#     for var in ["pt", "eta", "phi", "mass"]:
+#         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
+#             events = set_ak_column(events, f"gen.{gp}_{var}", events.gen_hbw_decay[gp][var])
+
+#     return events
+
+# @gen_hbw_decay_features.init
+# def gen_hbw_decay_features_init(self: Producer) -> None:
+#     if self.config_inst.x("call_add_gen_variables", True):
+#         # add gen variables but only on first call
+#         add_gen_variables(self.config_inst)
+#         self.config_inst.x.call_add_gp_variables = False

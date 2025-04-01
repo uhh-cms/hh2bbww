@@ -5,11 +5,12 @@ Event weight producer.
 """
 
 import law
+from functools import partial
 
 from columnflow.util import maybe_import, InsertableDict
 from columnflow.weight import WeightProducer, weight_producer
 from columnflow.config_util import get_shifts_from_sources
-from columnflow.columnar_util import Route
+from columnflow.columnar_util import Route, EMPTY_FLOAT
 from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
@@ -42,6 +43,13 @@ def stitched_norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
+# @weight_producer(uses={"gen_hbw_decay.*.*"}, mc_only=True)
+# def gen_barrel_test(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+#     for gp in events.gen_hbw_decay.fields:
+#         mask = abs(events.gen_hbw_decay[gp]['eta']) >= 2.4 # purposely inverted 
+#         # events = ak.where(mask, events, EMPTY_FLOAT)
+#     return events, mask
+
 
 @weight_producer(
     uses={prepare_objects},
@@ -49,8 +57,14 @@ def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight_columns=None,
     # only run on mc
     mc_only=False,
+    # applying a mask
+    mask_fn=None,
+    # mask columns
+    mask_columns=None,
     # optional categorizer to obtain baseline event mask
     categorizer_cls=None,
+    # combines masks with or boolean
+    combine_or=False,
 )
 def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -60,6 +74,20 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     if self.categorizer_cls:
         events, mask = self[self.categorizer_cls](events, **kwargs)
         events = events[mask]
+
+    #apply cutsom masks
+    if self.mask_fn:
+        # __import__("IPython").embed()
+        if self.combine_or:
+            mask = events.process_id < -9999
+            for m in self.mask_fn.keys():
+                # mask = immer false 
+                mask = self.mask_fn[m](events) | mask
+            events = events[mask]
+        else: 
+            for m in self.mask_fn.keys():
+                mask = self.mask_fn[m](events)
+                events = events[mask]
 
     if self.dataset_inst.is_data:
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
@@ -102,6 +130,10 @@ def base_init(self: WeightProducer) -> None:
 
     if self.categorizer_cls:
         self.uses.add(self.categorizer_cls)
+    
+    if self.mask_columns:
+        for col in self.mask_columns:
+            self.uses.add(col)
 
     dataset_inst = getattr(self, "dataset_inst", None)
     if dataset_inst and dataset_inst.is_data:
@@ -263,6 +295,139 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
 
+# applying barrel region cut 
+gen_barrel = base.derive("gen_barrel", cls_dict={ 
+    "mc_only": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "sec1": lambda events: abs(events.gen_hbw_decay['sec1']['eta']) < 2.4, 
+        "sec2": lambda events: abs(events.gen_hbw_decay['sec2']['eta']) < 2.4 ,
+    },
+    # "mask_fn": {
+    #     gp: partial(lambda self, events, gp: abs(events.gen_hbw_decay[gp]['eta']) < 2.4, self, gp=gp)
+    #     for gp in ["sec1", "sec2", "h1", "h2", "b1", "b2"] --> can be used, if i exclude self etc... 
+
+    # },
+          #  for gp in events.gen_hbw_decay.fields),
+    "mask_columns": ["gen_hbw_decay.*.*"],
+})
+
+ptgeq50 = base.derive("ptgeq50", cls_dict={ 
+    "mc_only": False,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "jet0": lambda events: abs(events.customjet0_pt) >= 50,
+        "jet1": lambda events: abs(events.customjet1_pt) >= 50,
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+ptgeq50horn = base.derive("ptgeq50horn", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50),
+        "outsidehorn": lambda events: ((abs(events.customjet0_eta) <= 2.6) | (abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+hornhandle = base.derive("hornhandle", cls_dict={ 
+"mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) >= 2.6) & (abs(events.customjet0_eta) <= 3.1) & (abs(events.customjet0_pt) >= 50),
+        "outsidehorn": lambda events: ((abs(events.customjet0_eta) < 2.6) | (abs(events.customjet0_eta) > 3.1)) & (abs(events.customjet0_pt) >= 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+horn50forward40 = base.derive("horn50forward40", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50),
+        "forward": lambda events: ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 40),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+horn50forward40barrel30 = base.derive("horn50forward40barrel30", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50),
+        "forward": lambda events: ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 40),
+        "barrel": lambda events: ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) >= 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+forward50barrel30 = base.derive("forward50barrel30", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "forward0": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_pt) > 50),
+        "barrel0": lambda events: ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) > 30),
+        "forward1": lambda events: (abs(events.customjet1_eta) > 2.6) & (abs(events.customjet1_pt) > 40),
+        "barrel1": lambda events: ((abs(events.customjet1_eta) <= 2.6)) & (abs(events.customjet1_pt) > 30),
+        #"barrel1": lambda events: ((abs(events.customjet1_eta) <= 2.6)) & (abs(events.customjet1_pt) > 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+horn70forward50barrel30 = base.derive("horn70forward50barrel30", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) > 70),
+        "forward": lambda events: ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) > 50),
+        "barrel": lambda events: ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) > 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+horn50forward50barrel30 = base.derive("horn50forward50barrel30", cls_dict={ 
+    "mc_only": False,
+    "combine_or": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50),
+        "forward": lambda events: ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 50),
+        "barrel": lambda events: ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) >= 30),
+
+    },
+    "mask_columns": ["customjet*"],
+})
+
+gen_barrel_sec1 = base.derive("gen_barrel_sec1", cls_dict={ 
+    "mc_only": True,
+    "weight_columns": default_weight_columns,
+    "mask_fn": {
+        "sec1": lambda events: abs(events.gen_hbw_decay['sec1']['eta']) < 2.4, 
+        # "sec2": lambda events: abs(events.gen_hbw_decay['sec2']['eta']) < 2.4 ,
+    },
+    # "mask_fn": {
+    #     gp: partial(lambda self, events, gp: abs(events.gen_hbw_decay[gp]['eta']) < 2.4, self, gp=gp)
+    #     for gp in ["sec1", "sec2", "h1", "h2", "b1", "b2"] --> can be used, if i exclude self etc... 
+
+    # },
+          #  for gp in events.gen_hbw_decay.fields),
+    "mask_columns": ["gen_hbw_decay.*.*"],
+})
 
 from hbw.categorization.categories import mask_fn_highpt
 

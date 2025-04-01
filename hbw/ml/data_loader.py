@@ -205,7 +205,10 @@ class MLDatasetLoader:
 
         # bookkeep order of input features and perform sanity checks
         self._input_features = tuple(features.fields)
-        input_features_sanity_checks(self.ml_model_inst, self._input_features)
+        try:
+            input_features_sanity_checks(self.ml_model_inst, self._input_features)
+        except:
+            __import__("IPython").embed()
 
         # transform features into numpy npdarray
         # NOTE: when converting to numpy, the awkward array seems to stay in memory...

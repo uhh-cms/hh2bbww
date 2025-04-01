@@ -76,7 +76,7 @@ def add_hist_hooks(config: od.Config) -> None:
         """
         # get variable inst assuming we created a 1D histogram
         variable_inst = task.config_inst.get_variable(task.branch_data.variable)
-
+        __import__("IPython").embed()
         # edges for 2b channel
         edges = {
             "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa

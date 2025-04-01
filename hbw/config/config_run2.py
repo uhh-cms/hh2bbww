@@ -694,6 +694,18 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
+    # add_external("dy_weight_sf", ("/afs/cern.ch/work/m/mrieger/public/mirrors/external_files/DY_pTll_weights_v1.json.gz", "v1")))
+    cfg.x.external_files = DotDict.wrap({
+            "dy_weight_sf": "/afs/cern.ch/work/m/mrieger/public/mirrors/external_files/DY_pTll_weights_v1.json.gz",  # noqa
+        })
+
+    cfg.x.dy_weight_config = DrellYanConfig(
+            era="2022preEE_NLO",
+            order="NLO",
+            correction="DY_pTll_reweighting",
+            unc_correction="DY_pTll_reweighting_N_uncertainty",
+        )
+
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
@@ -757,10 +769,11 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "gen_hbw_decay",
         },
     })
-
+    gen_obj_list = ["h1", "h2", "b1", "b2", "l", "nu", "q1", "q2", "sec1", "sec2"]
+    gen_var_list = ["pt", "eta", "phi", "mass"]
     cfg.x.keep_columns["cf.ReduceEvents"] = {
         # general event information, mandatory for reading files with coffea
         "run", "luminosityBlock", "event",
@@ -775,10 +788,13 @@ def add_config(
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
         "btag_weight*",
+        # Gen particle information 
+        "gen_hbw_decay.*.*", 
+        # "gen_hbw_decay.{h1,h2,b1,b2,sec1,sec2}.{pt,eta,phi,mass}" #VBFTODO ->?
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
         # Jets
-        "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        "{Jet,Bjet,Lightjet,VBFJet,Forwardjet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
         # Leptons

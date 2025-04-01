@@ -290,8 +290,10 @@ class PlotPostfitShapes(
                     logger.warning(f"No histograms for {proc.name} found in {channel}.")
                     continue
                 hists[plot_proc] = h_in[hist_map[proc][0]]
+
                 for p in hist_map[proc][1:]:
-                    hists[plot_proc] += h_in[p]
+                    if p in h_in.keys():
+                        hists[plot_proc] += h_in[p]
 
             if has_category:
                 inference_category = self.inference_model_inst.get_category(channel)

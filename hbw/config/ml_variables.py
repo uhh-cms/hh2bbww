@@ -109,18 +109,41 @@ def add_common_ml_variables(config: od.Config) -> None:
         name="mli_vbf_deta",
         expression="mli_vbf_deta",
         binning=(50, 2, 9.5),
-        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
+        x_title=r"$\Delta\eta(vbfjet1,vbfjet2) (forward)$",
+        aux={"overflow": True,}
     )
     config.add_variable(
         name="mli_vbf_invmass",
+        expression="mli_vbf_invmass_barrel",
+        binning=(50, 0, 4000),
+        unit="GeV",
+        x_title="invarint mass of two vbf jets (forward)",
+        aux={"overflow": True,}
+    )
+    config.add_variable(
+        name="mli_vbf_deta_barrel",
+        expression="mli_vbf_deta_barrel",
+        binning=(50, 2.5, 5.5),
+        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
+        aux={"overflow": True,}
+    )
+    config.add_variable(
+        name="mli_vbf_invmass_barrel",
         expression="mli_vbf_invmass",
-        binning=(50, 400, 4000),
+        binning=(50, 0, 4000),
         unit="GeV",
         x_title="invarint mass of two vbf jets",
+        aux={"overflow": True,}
     )
     config.add_variable(
         name="mli_vbf_tag",
         expression="mli_vbf_tag",
+        binning=(2, -0.5, 1.5),
+        x_title="existence of at least two vbf jets = 1, else 0",
+    )
+    config.add_variable(
+        name="mli_vbf_tag_barrel",
+        expression="mli_vbf_tag_barrel",
         binning=(2, -0.5, 1.5),
         x_title="existence of at least two vbf jets = 1, else 0",
     )

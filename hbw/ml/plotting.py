@@ -415,7 +415,7 @@ def plot_output_nodes(
                     "weight": inputs.weights[mask],
                 }
                 h.fill(**fill_kwargs)
-
+        # __import__("IPython").embed()
         plot_kwargs = {
             "ax": ax,
             "label": [proc_inst.label for proc_inst in process_insts],

@@ -239,11 +239,12 @@ class MLPreTraining(
         }
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1,
+                    branch=-1,
+                    # tree_index=-1,
                 )
                 for dataset_inst in dataset_insts
             }
@@ -277,11 +278,12 @@ class MLPreTraining(
         # load stats for all processes
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1)
+                    branch=-1
+                )
                 for dataset_inst in dataset_insts
             }
             for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
@@ -345,7 +347,9 @@ class MLPreTraining(
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
                 # gather stats per ml process
-                stats = inputs["stats"][config_inst.name][dataset]["stats"].load(formatter="json")
+                stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
+                # except:
+                #     __import__("IPython").embed()
                 process = config_inst.get_dataset(dataset).x.ml_process
                 proc_inst = config_inst.get_process(process)
                 sub_id = [

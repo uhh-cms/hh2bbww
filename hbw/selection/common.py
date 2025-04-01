@@ -25,6 +25,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
+from hbw.production.gen_vbf_candidate import gen_vbf_candidate
 from hbw.production.prepare_objects import prepare_objects
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
@@ -169,11 +170,11 @@ def pre_selection_init(self: Selector) -> None:
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
-        hbw_selection_hists,
+        hbw_selection_hists, gen_vbf_candidate,
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
-        hbw_selection_hists,
+        hbw_selection_hists, gen_vbf_candidate,
     },
     exposed=False,
 )
@@ -189,6 +190,8 @@ def post_selection(
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
+    if self.dataset_inst.has_tag("is_hbv"):
+        events = self[gen_vbf_candidate](events, results=results, **kwargs)
 
     # produce event weights
     if self.dataset_inst.is_mc:
@@ -226,6 +229,10 @@ def post_selection_init(self: Selector) -> None:
 
     self.uses.update({event_weights_to_normalize})
     self.produces.update({event_weights_to_normalize})
+    self.uses.update({gen_vbf_candidate})
+    self.produces.update({gen_vbf_candidate})
+
+    # TODO make a flag for the gen column production
 
 
 configurable_attributes = {

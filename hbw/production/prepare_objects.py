@@ -37,6 +37,11 @@ custom_collections = {
         "check_attr": "metric_table",
         "skip_fields": "*Idx*G",
     },
+    "Forwardjet": {
+        "type_name": "Jet",
+        "check_attr": "metric_table",
+        "skip_fields": "*Idx*G",
+    },
     "HbbSubJet": {
         "type_name": "Jet",
         "check_attr": "metric_table",
@@ -57,6 +62,11 @@ custom_collections = {
         "check_attr": "metric_table",
         "skip_fields": "*Idx*G",
     },
+    # "gen_hbw_decay": {
+    #     "type_name": "Muon",  # is there some other collection?
+    #     "check_attr": "metric_table",
+    #     "skip_fields": "pdgId",
+    # },
 }
 
 
@@ -93,7 +103,6 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     Producer that defines objects in a convenient way.
     When used as part of `SelectEvents`, be careful since it may override the original NanoAOD columns.
     """
-
     # apply results if given to create new collections
     events = apply_object_results(events, results)
 

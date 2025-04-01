@@ -375,6 +375,14 @@ dl_ml_study_2 = dl.derive("dl_ml_study_2", cls_dict={
     "systematics": rate_systematics,
 })
 
+dl_vbf_incl_study = dl_ml_study_2.derive("dl_vbf_incl_study", cls_dict={
+    "ml_model_name": "dl_vbf_incl",
+})
+
+dl_vbf_barrel_study = dl_ml_study_2.derive("dl_vbf_barrel_study", cls_dict={
+    "ml_model_name": "dl_vbf_barrel",
+})
+
 dl_ml_study_2.derive("dl_ml_study_2_handle", cls_dict={
     "ml_model_name": "dl_22post_ml_study_2_handle",
 })

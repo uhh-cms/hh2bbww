@@ -24,6 +24,7 @@ from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weig
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
 from hbw.production.gen_v import gen_v_boson, vjets_weight
+from hbw.production.dy import dy_weights
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
@@ -223,12 +224,14 @@ def combined_normalization_weights_init(self: Producer) -> None:
         combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
+        dy_weights,
         normalized_pu_weights,
     },
     produces={
         combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
+        dy_weights,
         normalized_pu_weights,
     },
     mc_only=True,
@@ -249,6 +252,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute gen vjet pt weights
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[vjets_weight](events, **kwargs)
+
+    __import__("IPython").embed()
+    if self.dataset_inst.has_tag("is_dy"):
+        events = self[dy_weights](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights
