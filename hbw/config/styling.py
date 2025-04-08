@@ -236,6 +236,7 @@ default_var_binning = {
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
+    "particleNet_XbbVsQCD": (40, 0, 1),
     # Leptons
     "dxy": (40, 0, 0.1),
     "dz": (40, 0, 0.1),
