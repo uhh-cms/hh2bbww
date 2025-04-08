@@ -59,11 +59,12 @@ class HBWInferenceModelBase(InferenceModel):
         This classmethod defines, which datasets are used from the inference model
         and is used to declare for which datasets to run TAF init functions.
         """
-        used_datasets = set().union(*[
-            get_datasets_from_process(config_inst, proc, strategy="all")
-            for proc in cls.processes
-        ])
-        logger.warning(f"used datasets {used_datasets}")
+        used_datasets = {"hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg"}
+        # used_datasets = set().union(*[
+        #     get_datasets_from_process(config_inst, proc, strategy="all")
+        #     for proc in cls.processes
+        # ])
+        # logger.warning(f"used datasets {used_datasets}")
         return used_datasets
 
     @property
@@ -103,9 +104,11 @@ class HBWInferenceModelBase(InferenceModel):
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """
         root_cats = config_cat_inst.x.root_cats
-        if dnn_cat := root_cats.get("dnn"):
-            dnn_proc = dnn_cat.replace("ml_", "")
-            return f"mlscore.{dnn_proc}"
+        # if dnn_cat := root_cats.get("dnn"):
+        if root_cats.get("dnn"):
+            # dnn_proc = dnn_cat.replace("ml_", "")
+            # return f"mlscore.{dnn_proc}"
+            return "mlscore.max_score"
         else:
             return "mli_lep_pt"
 
@@ -135,7 +138,6 @@ class HBWInferenceModelBase(InferenceModel):
         #
         # post-processing
         #
-
         self.cleanup()
 
     def print_model(self):
@@ -352,12 +354,16 @@ class HBWInferenceModelBase(InferenceModel):
             if "all" in shape_processes:
                 _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
                 shape_processes = set(self.processes) - _remove_processes
-
             self.add_parameter(
                 shape_uncertainty_formatted,
-                process=shape_processes,
                 type=ParameterType.shape,
-                config_shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
+                process=shape_processes,
+                config_data={
+                    config_inst.name: self.parameter_config_spec(
+                        shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
+                    )
+                    for config_inst in self.config_insts
+                },
             )
 
             is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
