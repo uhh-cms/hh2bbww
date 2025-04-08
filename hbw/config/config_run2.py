@@ -340,6 +340,10 @@ def add_config(
             "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
             "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
+        "particlenet_hbb_vs_qcd": {
+            # AK4 medium WP as placeholder (TODO: replace with actual values)
+            "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
     })
 
     # b-tag configuration. Potentially overwritten by the jet Selector.
@@ -365,6 +369,7 @@ def add_config(
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
     )
+    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["PLACEHOLDER"]
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
 
@@ -533,6 +538,11 @@ def add_config(
     add_shift_aliases(cfg, "mu_id_sf", {"muon_id_weight": "muon_id_weight_{direction}"})
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
+
+    # trigger SFs
+    cfg.add_shift(name="trigger_sf_up", id=60, type="shape")
+    cfg.add_shift(name="trigger_sf_down", id=61, type="shape")
+    add_shift_aliases(cfg, "trigger_sf", {"trigger_weight": "trigger_weight_{direction}"})
 
     # b-tagging scale factor uncertainties
     cfg.x.btag_uncs = [
@@ -798,14 +808,14 @@ def add_config(
         "btag_weight*",
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
-        # Jets
+        # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
         "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
-        "Fatjet.particleNet*",
+        "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
-        "{FatJet,HbbJet}.particleNetWithMass_{HbbVsQCD}",
+        "{FatJet,HbbJet}.particleNetWithMass_HbbVsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
