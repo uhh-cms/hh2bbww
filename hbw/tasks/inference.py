@@ -11,12 +11,14 @@ from typing import Callable
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT, AnalysisTask, ConfigTask
+from columnflow.tasks.framework.base import Requirements, AnalysisTask
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
+    CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, MLModelsMixin,
+    InferenceModelMixin, HistHookMixin, HistProducerClassMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.histograms import MergeHistograms
 from columnflow.tasks.cms.inference import CreateDatacards
 from columnflow.util import dev_sandbox, maybe_import
 from hbw.tasks.base import HBWTask
@@ -247,28 +249,32 @@ def resolve_category_groups_new(param: dict[str, any], config_inst: od.Config):
 
 class ModifyDatacardsFlatRebin(
     HBWTask,
-    InferenceModelMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ReducerClassMixin,
+    ProducerClassesMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
-    ConfigTask,
+    HistProducerClassMixin,
+    InferenceModelMixin,
+    HistHookMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    resolution_task_cls = MergeHistograms
+    single_config = False
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     bins_per_category = SettingsParameter(
-        default=(RESOLVE_DEFAULT,),
+        default={},
         description="Number of bins per category in the format `cat_name=n_bins,...`; ",
     )
 
-    inference_category_rebin_processes = SettingsParameter(
-        default=(RESOLVE_DEFAULT,),
-        significant=False,
-        description="Dummy Parameter; only used via config_inst default",
-    )
+    # inference_category_rebin_processes = SettingsParameter(
+    #     default={},
+    #     significant=False,
+    #     description="Dummy Parameter; only used via config_inst default",
+    # )
 
     # upstream requirements
     reqs = Requirements(
@@ -280,33 +286,23 @@ class ModifyDatacardsFlatRebin(
     def resolve_param_values(cls, params):
         params = super().resolve_param_values(params)
 
-        if config_inst := params.get("config_inst"):
+        config_inst = params.get("config_insts")[0]
 
-            # resolve default and groups for `bins_per_category`
-            params["bins_per_category"] = cls.resolve_config_default(
-                params,
-                params.get("bins_per_category"),
-                container=config_inst,
-                default_str="default_bins_per_category",
-            )
-            params["bins_per_category"] = resolve_category_groups(params["bins_per_category"], config_inst)
+        # resolve default and groups for `bins_per_category`
+        if not params.get("bins_per_category"):
+            params["bins_per_category"] = config_inst.x.default_bins_per_category
+        params["bins_per_category"] = resolve_category_groups(params["bins_per_category"], config_inst)
 
-            # set `inference_category_rebin_processes` as parameter and resolve groups
-            params["inference_category_rebin_processes"] = cls.resolve_config_default(
-                params,
-                RESOLVE_DEFAULT,
-                container=config_inst,
-                default_str="inference_category_rebin_processes",
-            )
-            params["inference_category_rebin_processes"] = resolve_category_groups(
-                params["inference_category_rebin_processes"],
-                config_inst,
-            )
+        config_inst.x.inference_category_rebin_processes = resolve_category_groups(
+            config_inst.x.inference_category_rebin_processes,
+            config_inst,
+        )
         return params
 
     def get_n_bins(self, DEFAULT_N_BINS=8):
         """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
-        config_category = self.branch_data.config_category
+        # NOTE: we assume single config here...
+        config_category = self.branch_data.config_data[self.config_insts[0].name].category
         n_bins = self.bins_per_category.get(config_category, None)
         if not n_bins:
             logger.warning(f"No number of bins setup for category {config_category}; will default to {DEFAULT_N_BINS}.")
@@ -318,14 +314,16 @@ class ModifyDatacardsFlatRebin(
         Method to resolve the requested processes on which to flatten the histograms of the current category.
         Defaults to all processes of the current category.
         """
-        config_category = self.branch_data.config_category
+        config_inst = self.config_insts[0]
+        config_category = self.branch_data.config_data[self.config_insts[0].name].category
         processes = self.branch_data.processes.copy()
 
-        rebin_process_condition = self.inference_category_rebin_processes.get(config_category, None)
+        get_config_process = lambda proc: proc.config_data[self.config_insts[0].name].process
+        rebin_process_condition = config_inst.x.inference_category_rebin_processes.get(config_category, None)
         if not rebin_process_condition:
             logger.warning(
                 f"No rebin condition found for category {config_category}; rebinning will be flat "
-                f"on all processes {[proc.config_process for proc in processes]}",
+                f"on all processes {[get_config_process(proc) for proc in processes]}",
             )
             return processes
 
@@ -335,13 +333,13 @@ class ModifyDatacardsFlatRebin(
             rebin_process_condition = lambda _proc_name: _proc_name in _rebin_processes
 
         for proc in processes.copy():
-            proc_name = proc.config_process
+            proc_name = get_config_process(proc)
             # check for each process if the *rebin_process_condition*  is fulfilled
             if not rebin_process_condition(proc_name):
                 processes.remove(proc)
         logger.info(
             f"Category {config_category} will be rebinned flat in processes "
-            f"{[proc.config_process for proc in processes]}",
+            f"{[get_config_process(proc) for proc in processes]}",
         )
         return processes
 
@@ -362,8 +360,8 @@ class ModifyDatacardsFlatRebin(
         return reqs
 
     def output(self):
-        cat_obj = self.branch_data
-        basename = lambda name, ext: f"{name}__cat_{cat_obj.config_category}__var_{cat_obj.config_variable}.{ext}"
+        cat_obj = self.branch_data.config_data[self.config_insts[0].name]
+        basename = lambda name, ext: f"{name}__cat_{cat_obj.category}__var_{cat_obj.variable}.{ext}"
         n_bins = self.get_n_bins()
         return {
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
@@ -384,9 +382,9 @@ class ModifyDatacardsFlatRebin(
         datacard = datacard.replace(inp_shapes.basename, outputs["shapes"].basename)
         outputs["card"].dump(datacard, formatter="text")
 
-        with uproot.open(inp_shapes.fn) as file:
+        with uproot.open(inp_shapes.fn) as f_in:
             # determine which histograms are present
-            cat_names, proc_names, syst_names = get_cat_proc_syst_names(file)
+            cat_names, proc_names, syst_names = get_cat_proc_syst_names(f_in)
 
             if len(cat_names) != 1:
                 raise Exception("Expected 1 category per file")
@@ -400,8 +398,8 @@ class ModifyDatacardsFlatRebin(
 
             # get all nominal histograms
             nominal_hists = {
-                proc_name: file[get_hist_name(cat_name, proc_name)].to_hist()
-                # proc_name: file[get_hist_name(cat_name, proc_name)].to_pyroot()
+                proc_name: f_in[get_hist_name(cat_name, proc_name)].to_hist()
+                # proc_name: f_in[get_hist_name(cat_name, proc_name)].to_pyroot()
                 for proc_name in proc_names
             }
 
@@ -414,7 +412,6 @@ class ModifyDatacardsFlatRebin(
                 "nominal histograms found")
 
             hists = [nominal_hists[proc_name] for proc_name in rebin_inf_proc_names]
-
             hist = hists[0]
             for h in hists[1:]:
                 hist += h
@@ -426,12 +423,12 @@ class ModifyDatacardsFlatRebin(
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)
             rebinned_histograms = {}
-            for key, h in file.items():
+            for key, h in f_in.items():
 
                 key = key.split(";")[0]
                 if "TH1" in str(h):
                     try:
-                        h = file[key].to_hist()
+                        h = f_in[key].to_hist()
                     except AttributeError:
                         continue
                     h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
@@ -446,16 +443,22 @@ class ModifyDatacardsFlatRebin(
 
 class PrepareInferenceTaskCalls(
     HBWTask,
-    InferenceModelMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ReducerClassMixin,
+    ProducerClassesMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
-    ConfigTask,
+    HistProducerClassMixin,
+    InferenceModelMixin,
+    HistHookMixin,
+    # law.LocalWorkflow,
+    # RemoteWorkflow,
 ):
     """
     Simple task that produces string to run certain tasks in Inference
     """
+    resolution_task_cls = MergeHistograms
+    single_config = False
 
     # upstream requirements
     reqs = Requirements(
@@ -487,7 +490,7 @@ class PrepareInferenceTaskCalls(
         output = self.output()
 
         # string that represents the version of datacards
-        identifier = "__".join([self.config, self.selector, self.inference_model, self.version])
+        identifier = "__".join([*self.configs, self.selector, self.inference_model, self.version])
 
         # get the datacard names from the inputs
         collection = inputs["rebinned_datacards"]["collection"]

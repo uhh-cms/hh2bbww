@@ -21,8 +21,9 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements, DatasetTask
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin,
     CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
     ProducersMixin,
     MLModelTrainingMixin,
     MLModelsMixin,
@@ -41,6 +42,7 @@ logger = law.logger.get_logger(__name__)
 class SimpleMergeMLEvents(
     CalibratorsMixin,
     SelectorMixin,
+    ReducerMixin,
     ProducersMixin,
     MLModelDataMixin,
     DatasetTask,
@@ -105,11 +107,12 @@ class SimpleMergeMLEvents(
 
 
 class MLOptimizer(
+    CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
+    ProducersMixin,
     HBWTask,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
 ):
     reqs = Requirements(MLTraining=MLTraining)
 
@@ -601,7 +604,7 @@ class PlotMLResultsSingleFold(
     """
     This task creates plots for the results of a single trained MLModel.
     """
-    resolution_task_class = SimpleMergeMLEvents
+    resolution_task_cls = SimpleMergeMLEvents
 
     sandbox = None
 
