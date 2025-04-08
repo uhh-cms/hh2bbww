@@ -325,8 +325,9 @@ def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs
     if self.dataset_inst.is_data:
         raise Exception("large_weights_killer is only callable for MC")
 
-    # set mc_weight to zero when genWeight is > 0.5 for HH events
-    if self.dataset_inst.has_tag("is_hh"):
+    # set mc_weight to zero when genWeight is > 0.5 for powheg HH events
+    if self.dataset_inst.has_tag("is_hh") and self.dataset_inst.name.endswith("powheg"):
+        # TODO: this feels very unsafe because genWeight can also be just 1 for all events. To be revisited
         weight_too_large = abs(events.genWeight) > 0.5
         logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
         events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
