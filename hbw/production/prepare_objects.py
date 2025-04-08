@@ -9,7 +9,7 @@ import law
 from columnflow.production import Producer, producer
 from columnflow.selection import SelectionResult
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, has_ak_column
 from columnflow.production.util import attach_coffea_behavior
 # from columnflow.production.util import attach_coffea_behavior
 from hbw.util import has_four_vec
@@ -83,6 +83,29 @@ def apply_object_results(events: ak.Array, results: SelectionResult = None):
     return events
 
 
+def combine_collections(events: ak.Array, src_names: list[str], dst_name: str, sort_by: str = "pt") -> ak.Array:
+    """
+    Combine multiple collections into a single collection, sorting by `sort_by`.
+    :param events: ak.Array
+    :param src_names: list of strings with the names of the source collections to combine
+    :param dst_name: string with the name of the destination collection
+    :param sort_by: string with the name of the field to sort by
+    :return: events with the combined collection added
+    """
+    if dst_name in events.fields:
+        logger.warning(f"Collection {dst_name} already exists, skipping combination")
+        return events
+    if all(has_four_vec(events, src_name) for src_name in src_names):
+        combined = ak.with_name(
+            ak.concatenate([events[name] for name in src_names], axis=-1),
+            "PtEtaPhiMLorentzVector",
+        )
+        if sort_by:
+            combined = combined[ak.argsort(combined[sort_by], ascending=False)]
+        events = set_ak_column(events, dst_name, combined)
+    return events
+
+
 @producer(
     # collections are only created when needed by someone else
     uses={attach_coffea_behavior},
@@ -100,14 +123,13 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # coffea behavior for relevant objects
     events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
-    if (
-        "Lepton" not in events.fields and
-        has_four_vec(events, "Muon") and
-        has_four_vec(events, "Electron")
-    ):
-        # combine Electron and Muon into a single object (Lepton)
-        lepton = ak.with_name(ak.concatenate([events.Muon, events.Electron], axis=-1), "PtEtaPhiMLorentzVector")
-        events = set_ak_column(events, "Lepton", lepton[ak.argsort(lepton.pt, ascending=False)])
+    # combine collections if necessary and possible
+    events = combine_collections(events, ["Muon", "Electron"], "Lepton", sort_by="pt")
+    events = combine_collections(events, ["ForwardJet", "Lightjet"], "VBFCandidateJet", sort_by="pt")
+    events = combine_collections(events, ["Jet", "ForwardJet"], "InclJet", sort_by="pt")
+    if has_ak_column(events, "FatJet.particleNet_XbbVsQCD"):
+        # TODO: change to particleNetWithMass_HbbVsQCD after next selection run
+        events = combine_collections(events, ["FatJet"], "FatBjet", sort_by="particleNet_XbbVsQCD")
 
     # transform MET into 4-vector
     met_name = self.config_inst.x.met_name
