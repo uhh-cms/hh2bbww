@@ -116,8 +116,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
-    config_inst.x.default_hist_producer = "default"
-    # config_inst.x.default_hist_producer = "btag_not_normalized"
+    # config_inst.x.default_hist_producer = "default"
+    config_inst.x.default_hist_producer = "with_trigger_weight"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -315,22 +315,37 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": (
+        "SR_dl": [
+            "sr__2e__1b__ml_signal_ggf2", "sr__2e__2b__ml_signal_ggf2",
             "sr__1b__ml_signal_ggf", "sr__1b__ml_signal_ggf2", "sr__2b__ml_signal_ggf", "sr__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
             "sr__1b__ml_signal_ggf4", "sr__1b__ml_signal_ggf5", "sr__2b__ml_signal_ggf4", "sr__2b__ml_signal_ggf5",
-            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
             "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__1b", "sr__2b",
-        ),
+        ] + bracket_expansion(["sr__{2e,2mu,emu}__{1b,2b}__ml_{signal_ggf2,signal_vbf2}"]),
         "vbfSR_dl": (
+            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
+            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
             "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        ),
+        "SR_dl_resolved": (
+            "sr__resolved__1b__ml_signal_ggf2",
+            "sr__resolved__2b__ml_signal_ggf2",
+        ),
+        "vbfSR_dl_resolved": (
+            "sr__resolved__1b__ml_signal_vbf2",
+            "sr__resolved__2b__ml_signal_vbf2",
+        ),
+        "SR_dl_boosted": (
+            "sr__boosted__ml_signal_ggf2",
+        ),
+        "vbfSR_dl_boosted": (
+            "sr__boosted__ml_signal_vbf2",
         ),
         "BR_dl": (
             "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
@@ -492,15 +507,17 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_boosted": 3,
         # Dilepton
         "SR_dl": 10,
-        "vbfSR_dl": 5,
+        "vbfSR_dl": 10,
         "BR_dl": 3,
         "SR_dl_resolved": 10,
-        "SR_dl_boosted": 5,
-        "vbfSR_dl_resolved": 5,
-        "vbfSR_dl_boosted": 3,
+        "SR_dl_boosted": 10,
+        "vbfSR_dl_resolved": 10,
+        "vbfSR_dl_boosted": 10,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
+    is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
+    is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
@@ -511,20 +528,20 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.inference_category_rebin_processes = {
         # Single lepton
-        "SR_sl": is_signal_sm,
-        "vbfSR_sl": is_signal_sm,
+        "SR_sl": is_signal_sm_ggf,
+        "vbfSR_sl": is_signal_sm_vbf,
         "SR_sl_resolved": is_signal_sm,
         "SR_sl_boosted": is_signal_sm,
         "vbfSR_sl_resolved": is_signal_sm,
         "vbfSR_sl_boosted": is_signal_sm,
         "BR_sl": is_background,
         # Dilepton
-        "SR_dl": is_signal_sm,
-        "vbfSR_dl": is_signal_sm,
-        "SR_dl_resolved": is_signal_sm,
-        "SR_dl_boosted": is_signal_sm,
-        "vbfSR_dl_resolved": is_signal_sm,
-        "vbfSR_dl_boosted": is_signal_sm,
+        "SR_dl": is_signal_sm_ggf,
+        "vbfSR_dl": is_signal_sm_vbf,
+        "SR_dl_resolved": is_signal_sm_ggf,
+        "SR_dl_boosted": is_signal_sm_ggf,
+        "vbfSR_dl_resolved": is_signal_sm_vbf,
+        "vbfSR_dl_boosted": is_signal_sm_vbf,
         "BR_dl": is_background,
 
     }
