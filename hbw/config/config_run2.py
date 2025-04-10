@@ -385,7 +385,7 @@ def add_config(
 
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
-    cfg.x.top_pt_reweighting_params = {
+    cfg.x.top_pt_weight = {
         "a": 0.0615,
         "a_up": 0.0615 * 1.5,
         "a_down": 0.0615 * 0.5,
