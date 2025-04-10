@@ -586,7 +586,7 @@ dl_22post_procs2_w0_inp2 = DenseClassifierDL.derive("dl_22post_procs2_w0_inp2", 
     ],
     "ml_process_weights": {
         "signal_ggf2": 1,
-        "sigal_vbf2": 1,
+        "signal_vbf2": 1,
         "tt": 2,
         "st": 2,
         "dy": 2,
