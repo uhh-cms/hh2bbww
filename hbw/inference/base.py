@@ -135,6 +135,9 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_parameters()
         # self.print_model()
 
+        # tmp: remove w_lnu process from higgs nodes
+        # self.remove_process("w_lnu", "*__ml_h")
+
         #
         # post-processing
         #
@@ -357,7 +360,7 @@ class HBWInferenceModelBase(InferenceModel):
             self.add_parameter(
                 shape_uncertainty_formatted,
                 type=ParameterType.shape,
-                process=shape_processes,
+                process=[self.inf_proc(proc) for proc in shape_processes],
                 config_data={
                     config_inst.name: self.parameter_config_spec(
                         shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
