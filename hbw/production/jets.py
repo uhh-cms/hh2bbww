@@ -70,7 +70,7 @@ def jetId_init(self: Producer) -> None:
     produces={
         "VBFJet.{pt,eta,phi,mass}",
         "VBFPair.{pt,eta,phi,mass,deta}",
-    }
+    },
 )
 def vbf_candidates(
     self: Producer,
@@ -78,7 +78,7 @@ def vbf_candidates(
     jet_collection: ak.Array | str = "VBFCandidateJet",
     deta_cut: float | None = None,
     invmass_cut: float | None = 500,
-    **kwargs
+    **kwargs,
 ) -> ak.Array:
     if isinstance(jet_collection, str):
         print(f"Runninng vbf_candidates with {jet_collection}")

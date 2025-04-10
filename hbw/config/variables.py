@@ -449,28 +449,28 @@ def add_variables(config: od.Config) -> None:
         expression="Jet.pt",
         binning=(40, 0, 400),
         unit="GeV",
-        x_title="$p_{T}$ of central jets",
+        x_title=r"$p_{T}$ of central jets",
     )
     config.add_variable(
         name="jets_eta",
         expression="Jet.eta",
         binning=(50, -2.5, 2.5),
         unit="GeV",
-        x_title="$\eta$ of central jets",
+        x_title=r"$\eta$ of central jets",
     )
     config.add_variable(
         name="forwardjets_pt",
         expression="ForwardJet.pt",
         binning=(40, 0, 400),
         unit="GeV",
-        x_title="$p_{T}$ of forward jets",
+        x_title=r"$p_{T}$ of forward jets",
     )
     config.add_variable(
         name="forwardjets_eta",
         expression="ForwardJet.eta",
         binning=(96, -4.8, 4.8),
         unit="GeV",
-        x_title="$\eta$ of forward jets",
+        x_title=r"$\eta$ of forward jets",
     )
     config.add_variable(
         name="incljets_pt",
@@ -478,7 +478,7 @@ def add_variables(config: od.Config) -> None:
         expression="InclJet.pt",
         binning=(40, 0, 400),
         unit="GeV",
-        x_title="$p_{T}$ of all jets",
+        x_title=r"$p_{T}$ of all jets",
         aux={"inputs": {"{Jet,ForwardJet}.{pt,eta,phi,mass}"}},
     )
     config.add_variable(
@@ -487,7 +487,7 @@ def add_variables(config: od.Config) -> None:
         expression="InclJet.eta",
         binning=(96, -4.8, 4.8),
         unit="GeV",
-        x_title="$\eta$ of all jets",
+        x_title=r"$\eta$ of all jets",
         aux={"inputs": {"{Jet,ForwardJet}.{pt,eta,phi,mass}"}},
     )
 

@@ -42,7 +42,7 @@ logger = law.logger.get_logger(__name__)
 
 @producer(
     uses={
-        pu_weight
+        pu_weight,
     },
     produces={
         pu_weight,

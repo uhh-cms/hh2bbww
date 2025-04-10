@@ -7,7 +7,6 @@ Exemplary reduction methods that can run on-top of columnflow's default reductio
 from columnflow.reduction import Reducer, reducer
 from columnflow.reduction.default import cf_default
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
 
 from hbw.util import IF_TOP, IF_VJETS
 from columnflow.production.cms.top_pt_weight import gen_parton_top

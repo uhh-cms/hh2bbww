@@ -517,7 +517,7 @@ class PrepareInferenceTaskCalls(
         base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
         full_cmd = base_cmd
 
-        lumi = sum([config_inst.x.luminosity.get('nominal') for config_inst in self.config_insts]) * 0.001
+        lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         print("\n\n")
