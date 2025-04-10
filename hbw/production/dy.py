@@ -75,7 +75,7 @@ def gen_dilepton(self, events: ak.Array, **kwargs) -> ak.Array:
     lepton_all_mask = (
         # e, mu, taus, neutrinos
         (
-            (pdg_id >= 11)
+            (pdg_id >= 11) |
             (pdg_id <= 16) &
             (status == 1) &
             events.GenPart.hasFlags("fromHardProcess")
@@ -111,6 +111,7 @@ def gen_dilepton(self, events: ak.Array, **kwargs) -> ak.Array:
 
 @producer(
     uses={"gen_dilepton_pt"},
+    # uses=gen_dilepton,
     # weight variations are defined in init
     produces={"dy_weight"},
     # only run on mc
@@ -166,11 +167,13 @@ def dy_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             weights_list.append(tmp_tuple)
 
     # preparing the input variables for the corrector
+    # __import__("IPython").embed()
     for column_name, syst in weights_list:
         variable_map_syst = {**variable_map, "syst": syst}
 
         # evaluating dy weights given a certain era, ptll array and sytematic shift
         inputs = [variable_map_syst[inp.name] for inp in self.dy_corrector.inputs]
+        # __import__("IPython").embed()
         dy_weight = self.dy_corrector.evaluate(*inputs)
 
         # save the weights in a new column
@@ -230,7 +233,6 @@ def dy_weights_setup(
     correction_set = correctionlib.CorrectionSet.from_string(
         self.get_dy_weight_file(bundle.files).load(formatter="gzip").decode("utf-8"),
     )
-
     # check number of fetched correctors
     if len(correction_set.keys()) != 2:
         raise Exception("Expected exactly two types of Drell-Yan correction")
@@ -332,6 +334,8 @@ def GetMETfromH(Hpara, Hperp, FullVPt, FullVPhi, VisVPt, VisVPhi):
     },
     produces={
         "RecoilCorrMET.{pt,phi}",
+        "Upara", "CorrUpara",
+        "Uperp", "CorrUperp",
     },
     mc_only=True,
     # function to determine the recoil correction file from external files
@@ -372,6 +376,7 @@ def recoil_corrections(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # Nominal recoil correction:
     # (see here: https://cms-higgs-leprare.docs.cern.ch/htt-common/V_recoil/#example-snippet)
     # 1) Compute Upara and Uperp from the original MET and boson information.
+
     upara, uperp = GetU(met_pt, met_phi, full_pt, full_phi, vis_pt, vis_phi)
 
     # 2) Apply the nominal recoil correction using the QuantileMapHist method.
@@ -393,7 +398,6 @@ def recoil_corrections(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "Uperp",
         uperp,
     )
-
     # 3) Recompute the corrected MET from the corrected U components.
     met_pt_corr, met_phi_corr = GetMETfromU(
         upara_corr, uperp_corr, full_pt, full_phi, vis_pt, vis_phi,
@@ -404,7 +408,18 @@ def recoil_corrections(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(
         events, "RecoilCorrMET.phi", met_phi_corr, value_type=np.float32,
     )
-
+    events = set_ak_column(
+        events, "Upara", upara, value_type=np.float32,
+    )
+    events = set_ak_column(
+        events, "Uperp", uperp, value_type=np.float32,
+    )
+    events = set_ak_column(
+        events, "CorrUpara", upara_corr, value_type=np.float32,
+    )
+    events = set_ak_column(
+        events, "CorrUperp", uperp_corr, value_type=np.float32,
+    )
     # -------------------------------------------------------------------------
     # Recoil uncertainty variations:
     # First, derive H components from the nominal corrected MET.
@@ -432,6 +447,7 @@ def recoil_corrections(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             hperp,
             syst,
         )
+
         met_pt_var, met_phi_var = GetMETfromH(
             hpara_var, hperp_var, full_pt, full_phi, vis_pt, vis_phi,
         )

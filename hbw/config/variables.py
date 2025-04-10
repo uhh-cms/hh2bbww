@@ -71,63 +71,6 @@ def add_debug_variable(config: od.Config) -> None:
         binning=(1, 0, 1),
     )
 
-@call_once_on_config()
-def add_vbf_variables(config: od.Config) -> None:
-
-    config.add_variable(
-        name="vbf_deta",
-        expression="vbf_deta",
-        binning=(50, 2.5, 5.5),
-        x_title=r"$\Delta | \eta|(vbfjet1,vbfjet2)$",
-        aux={"overflow": True,}
-    )
-    config.add_variable(
-        name="vbf_invmass",
-        expression="vbf_invmass",
-        binning=(50, 0, 4000),
-        unit="GeV",
-        x_title="invariant mass of two vbf jets",
-        aux={"overflow": True,}
-    )
-    config.add_variable(
-        name="vbf_tag",
-        expression="vbf_tag",
-        binning=(2, -0.5, 1.5),
-        x_title="existence of at least two vbf jets = 1, else 0",
-    )
-    config.add_variable(
-        name="vbf_deta_barrel",
-        expression="vbf_deta_barrel",
-        binning=(50, 2.5, 5.5),
-        x_title=r"$\Delta|\eta|(vbfjet1,vbfjet2)_{barrel}$",
-        aux={"overflow": True,}
-    )
-    config.add_variable(
-        name="vbf_invmass_barrel",
-        expression="vbf_invmass_barrel",
-        binning=(50, 0, 4000),
-        unit="GeV",
-        x_title="invariant mass of two vbf jets (barrel)",
-        aux={"overflow": True,}
-    )
-    config.add_variable(
-        name="vbf_tag_barrel",
-        expression="vbf_tag_barrel",
-        binning=(2, -0.5, 1.5),
-        x_title="existence of at least two vbf jets = 1, else 0 (barrel)",
-    )
-
-    # add reconstructed top variables
-    for obj in ["vbf1", "vbf2", "customjet0", "customjet1"]:
-        # pt and phi should be the same as MET, mass should always be 0
-        for var in ["pt", "eta", "phi", "mass"]:
-            config.add_variable(
-                name=f"{obj}_{var}",
-                # expression=f"{obj}_{var}",
-                binning=default_var_binning[var],
-                unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
-            )
 
 @call_once_on_config()
 def add_variables(config: od.Config) -> None:
@@ -910,6 +853,30 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="met_phi",
         expression=f"{met_name}.phi",
+        binning=(40, -3.2, 3.2),
+        x_title=r"{met_name} $\phi$".format(met_name=met_name),
+    )
+    for U in ["Upara", "Uperp"]:
+        config.add_variable(
+            name=f"{U}",
+            binning=(40, -150, 150),
+            x_title=f"{U}",
+        )
+        config.add_variable(
+            name=f"Corr{U}",
+            binning=(40, -150, 150),
+            x_title=f"{U} corrected",
+        )
+
+    # corrected MET
+    config.add_variable(
+        name="met_pt_corr",
+        binning=(40, 0., 400.),
+        unit="GeV",
+        x_title=r"{met_name} $p_{{T}}$".format(met_name=met_name),
+    )
+    config.add_variable(
+        name="met_phi_corr",
         binning=(40, -3.2, 3.2),
         x_title=r"{met_name} $\phi$".format(met_name=met_name),
     )

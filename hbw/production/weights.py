@@ -24,12 +24,12 @@ from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weig
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
 from hbw.production.gen_v import gen_v_boson, vjets_weight
-from hbw.production.dy import dy_weights
+from hbw.production.dy import dy_weights, recoil_corrections, gen_dilepton
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_VJETS, IF_TOP
+from hbw.util import has_tag, IF_VJETS, IF_TOP, IF_DY
 
 
 np = maybe_import("numpy")
@@ -41,8 +41,8 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
-    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
+    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_DY(gen_dilepton), pu_weight},
+    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), IF_DY(gen_dilepton), pu_weight},
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -58,6 +58,9 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     # compute gen information that will later be needed for vector boson pt reweighting
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[gen_v_boson](events, **kwargs)
+
+    if self.dataset_inst.has_tag("is_dy"):
+        events = self[gen_dilepton](events, **kwargs)
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
@@ -225,6 +228,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         top_pt_weight,
         vjets_weight,
         dy_weights,
+        recoil_corrections,
         normalized_pu_weights,
     },
     produces={
@@ -232,6 +236,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         top_pt_weight,
         vjets_weight,
         dy_weights,
+        recoil_corrections,
         normalized_pu_weights,
     },
     mc_only=True,
@@ -253,9 +258,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[vjets_weight](events, **kwargs)
 
-    __import__("IPython").embed()
     if self.dataset_inst.has_tag("is_dy"):
         events = self[dy_weights](events, **kwargs)
+        events = self[recoil_corrections](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights

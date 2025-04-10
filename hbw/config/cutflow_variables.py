@@ -110,7 +110,7 @@ def add_gen_variables(config: od.Config) -> None:
             binning=(40, 0., 1000.),
             unit="GeV",
             x_title=r"$p_{T, %s}^{gen}$" % (gp),
-            aux={"overflow": True,},
+            aux={"overflow": True},
         )
         config.add_variable(
             name=f"gen_{gp}_mass",
@@ -118,7 +118,7 @@ def add_gen_variables(config: od.Config) -> None:
             binning=(40, 0., 1000.),
             unit="GeV",
             x_title=r"$m_{%s}^{gen}$" % (gp),
-            aux={"overflow": True,},
+            aux={"overflow": True},
         )
         config.add_variable(
             name=f"gen_{gp}_eta",
@@ -126,15 +126,15 @@ def add_gen_variables(config: od.Config) -> None:
             binning=(40, -6., 6.),
             unit="GeV",
             x_title=r"$\eta_{%s}^{gen}$" % (gp),
-            aux={"overflow": True,},
+            aux={"overflow": True},
         )
         config.add_variable(
             name=f"gen_{gp}_eta_barrel",
             expression=f"gen_hbw_decay.{gp}.eta",
             binning=(40, -6., 6.),
-            selection=(lambda events: events.gen_hbw_decay[gp]['eta'] > 2.4),
+            selection=(lambda events: events.gen_hbw_decay[gp]["eta"] > 2.4),
             unit="GeV",
-            aux={"overflow": True,},
+            aux={"overflow": True},
             x_title=r"$\eta_{%s}^{gen}(barrel)$" % (gp),
         )
         config.add_variable(
@@ -142,40 +142,31 @@ def add_gen_variables(config: od.Config) -> None:
             expression=f"gen_hbw_decay.{gp}.phi",
             binning=(40, -4, 4),
             unit="GeV",
-            aux={"overflow": True,},
+            aux={"overflow": True},
             x_title=r"$\phi_{%s}^{gen}$" % (gp),
         )
-    # config.add_variable(
-    #     name=f"vbfpair.nevents",
-    #     #expression=f"gen_hbw_decay.{gp}.phi",
-    #     binning=(2, -0.5, 1.5),
-    #     unit="GeV",
-    #     x_title=r"$Nevents$" ,
-    # )
     config.add_variable(
-        name=f"vbfpair.dr",
-        #expression=f"gen_hbw_decay.{gp}.phi",
+        name="vbfpair.dr",
         binning=(40, 0, 10),
         unit="GeV",
-        x_title=r"$\Delta \, R_{gen}$" ,
-        aux={"overflow": True,},
+        x_title=r"$\Delta \, R_{gen}$",
+        aux={"overflow": True},
     )
     config.add_variable(
-        name=f"vbfpair.deta",
-        #expression=f"gen_hbw_decay.{gp}.phi",
+        name="vbfpair.deta",
         binning=(40, 0, 10),
         unit="GeV",
         x_title=r"$\Delta \, \eta_{gen}$",
-        aux={"overflow": True,},
+        aux={"overflow": True},
     )
     config.add_variable(
-        name=f"vbfpair.mass",
-        #expression=f"gen_hbw_decay.{gp}.phi",
+        name="vbfpair.mass",
         binning=(40, 0, 4000),
         unit="GeV",
         x_title=r"$mass(VBF pair)^{gen}$",
-        aux={"overflow": True,},
+        aux={"overflow": True},
     )
+
 
 @call_once_on_config()
 def add_gp_variables(config: od.Config) -> None:

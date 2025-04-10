@@ -202,7 +202,6 @@ def stylize_processes(config: od.Config) -> None:
             label = proc.label
             pattern = r"hh_vbf_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)\s?(.*)"
             replacement = r"$HH_{vbf}^{\1,\2,\3}$\4"
-            # replacement = r"$HH_{vbf}^{\1,\2,\3}$"
             proc.label = re.sub(pattern, replacement, label)
 
         if short_label := short_labels.get(proc.name, None):
@@ -212,7 +211,7 @@ def stylize_processes(config: od.Config) -> None:
         if "hh_" in proc.name.lower():
             proc.add_tag("is_signal")
             proc.unstack = True
-            # proc.scale = "stack" # This sclaes signal always to the stack ob bkg 
+            # proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)

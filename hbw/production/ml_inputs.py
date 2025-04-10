@@ -15,9 +15,8 @@ from columnflow.columnar_util import set_ak_column
 from hbw.production.prepare_objects import prepare_objects
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
-from hbw.config.variables import add_vbf_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
-from hbw.production.jets import vbf_candidates_barrel, vbf_candidates_incl, vbf_candidates
+from hbw.production.dy import recoil_corrections
 
 from hbw.util import MET_COLUMN
 
@@ -84,7 +83,6 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
-    #events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
 
     # setup correct btagging columns
     btag_wp_score = self.config_inst.x.btag_wp_score
@@ -115,25 +113,6 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column_f32(events, "mli_lt", ak.sum(events.Lepton.pt, axis=1) + events[met_name].pt)
     events = set_ak_column_f32(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
-
-    # vbf jet pair features
-    # events = set_ak_column_f32(events, "mli_vbf_deta", abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta))
-    # events = set_ak_column_f32(events, "mli_vbf_invmass", (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass)
-    # vbf_tag = ak.sum(events.VBFJet.pt > 0, axis=1) >= 2
-    # events = set_ak_column_f32(events, "mli_vbf_tag", vbf_tag)
-
-    # eta_mask = abs(events.VBFJet[:].eta) < 2.4
-    # eta_mask = ak.all(eta_mask, axis=-1)
-
-    # mass = (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass 
-    # deta = abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta)
-    # sel_mask = eta_mask & (mass > 500) & (deta > 3)
-    # mass = ak.where((sel_mask), mass, -10)
-    # deta = ak.where((sel_mask), deta, -10)
-    # vbf_tag = ak.where((sel_mask), vbf_tag, -10)
-    # events = set_ak_column_f32(events, "mli_vbf_deta_barrel", deta)
-    # events = set_ak_column_f32(events, "mli_vbf_invmass_barrel", mass)
-    # events = set_ak_column_f32(events, "mli_vbf_tag_barrel", vbf_tag)
 
     # bjets in general
     events = set_ak_column_f32(
@@ -186,9 +165,6 @@ def common_ml_inputs_init(self: Producer) -> None:
         "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb",
         # minimum angles
         "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj",
-        # VBF features
-        # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
-        # "mli_vbf_deta_barrel", "mli_vbf_invmass_barrel",
         # low-level features
         "mli_lep_pt", "mli_lep_eta", "mli_met_pt", "mli_met_phi",
     } | set(
@@ -378,81 +354,30 @@ def dl_ml_inputs_init(self: Producer) -> None:
     add_dl_ml_variables(self.config_inst)
     check_variable_existence(self)
 
-# @producer(
-#     uses={dl_ml_inputs, vbf_candidates_incl, vbf_candidates_barrel},
-#     produces={dl_ml_inputs, vbf_candidates_incl, vbf_candidates_barrel},
-# )
-# def dl_ml_inputs_incl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
-#     events = self[dl_ml_inputs](events, **kwargs)
-#     events = self[vbf_candidates_barrel](events, **kwargs)
-
-
-#     return events
 
 @producer(
-    uses={dl_ml_inputs, vbf_candidates_barrel, vbf_candidates_incl},
-    produces={dl_ml_inputs, vbf_candidates_barrel, vbf_candidates_incl},
+    uses={dl_ml_inputs, recoil_corrections},
+    produces={dl_ml_inputs, recoil_corrections, "met_pt_corr", "met_phi_corr"},
 )
-def dl_ml_inputs_with_vbf(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[dl_ml_inputs](events, **kwargs)
 
-    events = self[vbf_candidates_barrel](events, **kwargs)
-    events = set_ak_column_f32(events, "mli_vbf_tag_barrel", events.vbf_tag_barrel)
-    events = set_ak_column_f32(events, "mli_vbf_deta_barrel", events.vbf_deta_barrel)
-    events = set_ak_column_f32(events, "mli_vbf_invmass_barrel", events.vbf_invmass_barrel)
+    if self.dataset_inst.has_tag("is_dy"):
+        events = self[recoil_corrections](events, **kwargs)
+        met_pt_corr = events.RecoilCorrMET.pt
+        met_phi_corr = events.RecoilCorrMET.phi
 
-    events = self[vbf_candidates_incl](events, **kwargs)
-    events = set_ak_column_f32(events, "mli_vbf_tag", events.vbf_tag)
-    events = set_ak_column_f32(events, "mli_vbf_deta", events.vbf_deta)
-    events = set_ak_column_f32(events, "mli_vbf_invmass", events.vbf_invmass)
+    else:
+        met_pt_corr = events.mli_met_pt
+        met_phi_corr = events.mli_met_phi
+    events = set_ak_column_f32(events, "met_pt_corr", met_pt_corr)
+    events = set_ak_column_f32(events, "met_phi_corr", met_phi_corr)
 
-    for col in self.ml_input_columns:
+    for col in ["met_pt_corr", "met_phi_corr"]:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
-
-@producer(
-    uses={prepare_objects,
-          "{Forwardjet,Lightjet}.{pt,eta,phi,mass}",
-          vbf_candidates,
-    },
-    produces={vbf_candidates},
-    region="",
-)
-def hans_eberhardt(self:Producer, events: ak.Array, **kwargs)-> ak.Array:
-
-    events = self[prepare_objects](events, **kwargs)
-
-    # __import__("IPython").embed()
-    jet_collection = ak.concatenate([events.Lightjet,events.Forwardjet], axis=-1)
-    jet_collection = ak.pad_none(jet_collection, 2)
-    forward_mask = (abs(jet_collection[:,0].eta) > 2.6) & (jet_collection[:,0].pt > 50)
-    jet_mask = forward_mask | (jet_collection[:,:].pt > 30)
-    jet_collection = jet_collection[jet_mask]
-    events = self[vbf_candidates](events,jet_collection=jet_collection,deta_cut=3,invmass_cut=500,region=self.region,**kwargs)
-
-    return events
-
-@hans_eberhardt.init
-def hans_eberhardt_init(self: Producer) -> None:
-
-    add_vbf_variables(self.config_inst)
-    # check_variable_existence(self)
-
-@dl_ml_inputs_with_vbf.init
-def dl_ml_inputs_with_vbf_init(self: Producer) -> None:
-    # define ML input separately to self.produces
-    self.ml_input_columns = {
-        # ll system
-        "mli_vbf_tag","mli_vbf_deta","mli_vbf_invmass",
-        "mli_vbf_tag_barrel","mli_vbf_deta_barrel","mli_vbf_invmass_barrel",
-    }
-    self.produces |= self.ml_input_columns
-
-    # bookkeep used ml_input_columns over multiple Producers
-    self.config_inst.x.ml_input_columns = self.config_inst.x("ml_input_columns", set()) | self.ml_input_columns
 
 
 test_dl_ml_inputs = dl_ml_inputs.derive("test_dl_ml_inputs")
@@ -564,63 +489,3 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
 
     # add variable instances to config
     add_sl_res_ml_variables(self.config_inst)
-    # check_variable_existence(self)
-
-# @producer(
-#     uses={common_ml_inputs},
-#     produces={common_ml_inputs, "mli_vbf_invmass_barrel", "mli_vbf_deta_barrel"},
-#     # produced columns set in the init function
-#     vbf_barrel_columns = {"mli_vbf_invmass_barrel", "mli_vbf_deta_barrel"},
-#     version=1,
-# )
-# def vbf_barrel(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
-#     events = self[common_ml_inputs](events, **kwargs)
-#     events = set_ak_column(events, "VBFJet", ak.pad_none(events.VBFJet, 2))
-
-
-#     eta_mask = abs(events.VBFJet[:].eta) < 2.4
-#     eta_mask = ak.all(eta_mask, axis=-1)
-
-#     mass = (events.VBFJet[:, 0] + events.VBFJet[:, 1]).mass 
-#     deta = abs(events.VBFJet[:, 0].eta - events.VBFJet[:, 1].eta)
-#     sel_mask = eta_mask & (mass > 500) & (deta > 3)
-#     mass = ak.where((sel_mask), mass, -10)
-#     deta = ak.where((sel_mask), deta, -10)
-
-#     events = set_ak_column_f32(events, "mli_vbf_deta_barrel", deta)
-#     events = set_ak_column_f32(events, "mli_vbf_invmass_barrel", mass)
-
-#     # for col in self.vbf_barrel_columns:
-#     #     events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-
-#     return events
-
-# @producer(
-#     uses={
-#         "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB",
-#         "gen_hbw_decay",
-#     },
-#     produces=set(
-#         f"gen.{gp}_{var}"
-#         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]
-#         for var in ["pt", "eta", "phi", "mass"]
-#     ),
-# )
-# def gen_test(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-#     __import__("IPython").embed()
-#     events = self[gen_hbw_decay_products](events, **kwargs)
-#     __import__("IPython").embed()
-#     for var in ["pt", "eta", "phi", "mass"]:
-#         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
-#             events = set_ak_column(events, f"gen.{gp}_{var}", events["gen_hbw_decay"][gp][var])
-
-#     return events
-
-# @gen_test.init
-# def gen_test_init(self: Producer) -> None:
-#     if self.config_inst.x("call_add_gen_variables", True):
-#         # add gen variables but only on first call
-#         add_gen_variables(self.config_inst)
-#         self.config_inst.x.call_add_gen_variables = False
-

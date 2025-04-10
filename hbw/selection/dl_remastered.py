@@ -19,7 +19,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
-from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection, forward_jet_selection
+from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
 from hbw.selection.trigger import hbw_trigger_selection
 from hbw.production.weights import event_weights_to_normalize
 
@@ -233,9 +233,6 @@ def dl1(
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
 
-    events, forward_results = self[forward_jet_selection](events, **kwargs)
-    results += forward_results
-
     # boosted selection
     events, boosted_results = self[dl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
@@ -321,14 +318,14 @@ def dl1_init(self: Selector) -> None:
     self.uses = {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
-        jet_selection, dl_lepton_selection,forward_jet_selection,
+        jet_selection, dl_lepton_selection,
         hbw_trigger_selection,
         post_selection,
     }
     self.produces |= {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
-        jet_selection, dl_lepton_selection,forward_jet_selection,
+        jet_selection, dl_lepton_selection,
         hbw_trigger_selection,
         post_selection,
     }

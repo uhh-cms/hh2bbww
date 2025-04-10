@@ -37,11 +37,6 @@ custom_collections = {
         "check_attr": "metric_table",
         "skip_fields": "*Idx*G",
     },
-    "Forwardjet": {
-        "type_name": "Jet",
-        "check_attr": "metric_table",
-        "skip_fields": "*Idx*G",
-    },
     "HbbSubJet": {
         "type_name": "Jet",
         "check_attr": "metric_table",

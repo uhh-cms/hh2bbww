@@ -282,7 +282,7 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    branch=-1
+                    branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
@@ -348,8 +348,7 @@ class MLPreTraining(
             for dataset in used_datasets:
                 # gather stats per ml process
                 stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
-                # except:
-                #     __import__("IPython").embed()
+
                 process = config_inst.get_dataset(dataset).x.ml_process
                 proc_inst = config_inst.get_process(process)
                 sub_id = [
@@ -432,7 +431,7 @@ class MLPreTraining(
                         xcheck[process][sub_proc] = {}
                     xcheck[process][sub_proc]["weight_sum"] = int(xcheck_weight_sum)
                     xcheck[process][sub_proc]["num_events"] = xcheck_n_events
-                    # __import__("IPython").embed()
+
         outputs["cross_check_weights"].dump(xcheck, formatter="yaml")
 
         for input_array in self.ml_model_inst.data_loader.input_arrays:

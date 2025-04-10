@@ -120,7 +120,7 @@ def get_cat_proc_syst_names(root_file):
     return cat_names, proc_names, syst_names
 
 
-def get_rebin_values(hist, N_bins_final: int = 10, equidistant: bool=False):
+def get_rebin_values(hist, N_bins_final: int = 10):
     """
     Function that determines how to rebin a hist to *N_bins_final* bins such that
     the resulting histogram is flat
@@ -136,27 +136,20 @@ def get_rebin_values(hist, N_bins_final: int = 10, equidistant: bool=False):
     N_events = 0
     rebin_values = [int(hist.axes[0].edges[0])]
 
-    if equidistant: 
-        distance = N_bins_input/N_bins_final
-        # ‚__import__("IPython").embed()
-        for i in range(1,N_bins_final):
-            rebin_values.append(hist.axes[0].edges[int(i*distance)])
-
-    else: 
-        # starting loop at 1 to exclude underflow
-        # ending at N_bins_input + 1 excludes overflow
-        for i in range(1, N_bins_input):
-            if bin_count == N_bins_final:
-                # break as soon as N-1 bin edges have been determined --> final bin is x_max
-                break
-            N_events += hist.view()["value"][i]
-            if i % 100 == 0:
-                logger.info(f"========== Bin {i} of {N_bins_input}, {N_events} events")
-            if N_events >= events_per_bin * bin_count:
-                # when *N_events* surpasses threshold, append the corresponding bin edge and count
-                logger.info(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.axes[0].edges[i]}")
-                rebin_values.append(hist.axes[0].edges[i])
-                bin_count += 1
+    # starting loop at 1 to exclude underflow
+    # ending at N_bins_input + 1 excludes overflow
+    for i in range(1, N_bins_input):
+        if bin_count == N_bins_final:
+            # break as soon as N-1 bin edges have been determined --> final bin is x_max
+            break
+        N_events += hist.view()["value"][i]
+        if i % 100 == 0:
+            logger.info(f"========== Bin {i} of {N_bins_input}, {N_events} events")
+        if N_events >= events_per_bin * bin_count:
+            # when *N_events* surpasses threshold, append the corresponding bin edge and count
+            logger.info(f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge {hist.axes[0].edges[i]}")
+            rebin_values.append(hist.axes[0].edges[i])
+            bin_count += 1
 
     # final bin is x_max
     x_max = hist.axes[0].edges[N_bins_input]
@@ -276,12 +269,6 @@ class ModifyDatacardsFlatRebin(
         significant=False,
         description="Dummy Parameter; only used via config_inst default",
     )
-
-    # equidistant = SettingsParameter(
-    #     default=(RESOLVE_DEFAULT,),
-    #     significant=False,
-    #     description="Dummy Parameter; only used via config_inst default",
-    # )
 
     # upstream requirements
     reqs = Requirements(
@@ -433,7 +420,7 @@ class ModifyDatacardsFlatRebin(
                 hist += h
 
             logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
-            rebin_values = get_rebin_values(hist, self.get_n_bins(), equidistant=True)
+            rebin_values = get_rebin_values(hist, self.get_n_bins())
             outputs["edges"].dump(rebin_values, formatter="json")
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file

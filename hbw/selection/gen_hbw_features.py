@@ -43,7 +43,6 @@ def gen_hbw_decay_features_test(self: Producer, events: ak.Array, **kwargs) -> a
 
 @gen_hbw_decay_features_test.init
 def gen_hbw_decay_features_test_init(self: Producer) -> None:
-    # __import__("IPython").embed()
     if self.config_inst.x("call_add_gen_variables", True):
         # add gen variables but only on first call
         add_gen_variables(self.config_inst)

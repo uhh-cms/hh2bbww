@@ -20,11 +20,12 @@ def default_selector(container):
 
     return selector
 
+
 def ml_inputs_producer(container):
     if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
         ml_inputs = "sl_ml_inputs"
     if container.has_tag("is_dl"):
-        ml_inputs = "dl_ml_inputs_with_vbf" #Change this here bakc againprob at some point 
+        ml_inputs = "dl_ml_inputs"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -133,7 +134,8 @@ def set_config_defaults_and_groups(config_inst):
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
-        "gen_vbf":[
+        # Collection of VBF samples with most shape and rate difference
+        "gen_vbf": [
             "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
             "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
             "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
@@ -161,6 +163,7 @@ def set_config_defaults_and_groups(config_inst):
             "vv",
             "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
         ],
+        # Collection of all VBF samples present
         "vbf_only": [
             "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
             "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
@@ -173,47 +176,13 @@ def set_config_defaults_and_groups(config_inst):
             "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
             "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
         ],
-        "vbf_study": [
-            "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-            "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-            "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-            "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-            "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-            "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-            "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-            "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-            "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-            "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-            "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-            "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-            "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-            "st",
-            "tt",
-            "dy",
-            "w_lnu",
-            "vv",
-            "h",
-        ],
-        "test_postfit": [
-            # "hh_vbf_hbb_hww2l2nu",
-            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-            "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-            "st",
-            "tt",
-            "ttv",
-            "dy",
-            "w_lnu",
-            "vv",
-            "h",
-        ],
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
-        "dl1": ["hh_ggf_hbb_hww2l2nu_kl1_kt1", "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
+        "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -383,7 +352,7 @@ def set_config_defaults_and_groups(config_inst):
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
-        "gen_vbf": ["vbfpair.deta","vbfpair.mass","gen_sec1_eta","gen_sec2_eta","gen_sec1_pt","gen_sec2_pt"],
+        "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
         "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
@@ -437,7 +406,6 @@ def set_config_defaults_and_groups(config_inst):
         "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
         "test": ["Lepton", "Jet", "Bjet"],
         "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
-        "dl1": ["Trigger", "Jet", "Bjet", "Lepton", "SR"],
     }
 
     # plotting settings groups
@@ -491,7 +459,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 16,
+                "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {

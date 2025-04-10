@@ -60,7 +60,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
         # VBF features
-        "mli_vbf_deta_barrel", "mli_vbf_invmass_barrel", "mli_vbf_tag",
+        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf",
         # low-level features
         "mli_met_pt",
     ] + [
@@ -364,7 +364,6 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
     "negative_weights": "ignore",
     "combine_processes": {
         "signal_ggf2": {
-            # "name": "tt_and_st",
             "label": "Signal GGF",
             "color": "#000000",  # black
             "sub_processes": [
@@ -376,7 +375,6 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
             "weighting": "equal",
         },
         "signal_vbf2": {
-            # "name": "tt_and_st",
             "label": "Signal VBF",
             "color": "#999999",  # grey
             "sub_processes": [
@@ -399,74 +397,6 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
         "dy",
         "h",
     ],
-})
-
-dl_vbf_incl = dl_22post_ml_study_2.derive("dl_vbf_incl", cls_dict={
-
-    "input_features": [
-        # event features
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
-        "mli_b_score_sum",
-        # bb system
-        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
-        "mli_mindr_lb",
-        # ll system
-        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
-        "mli_min_dr_llbb",
-        "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
-        "mli_mbbllMET", "mli_dr_bb_llMET",
-        # VBF features
-        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
-        # low-level features
-        "mli_met_pt",
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1"]
-        for var in ["pt", "eta", "b_score"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["lep", "lep2"]
-        for var in ["pt", "eta"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
-    ]
-
-})
-
-dl_vbf_barrel = dl_22post_ml_study_2.derive("dl_vbf_barrel", cls_dict={
-
-    "input_features": [
-        # event features
-        "mli_ht", "mli_lt", "mli_n_jet", "mli_n_btag",
-        "mli_b_score_sum",
-        # bb system
-        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
-        "mli_mindr_lb",
-        # ll system
-        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
-        "mli_min_dr_llbb",
-        "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
-        "mli_mbbllMET", "mli_dr_bb_llMET",
-        # VBF features
-        "mli_vbf_deta_barrel", "mli_vbf_invmass_barrel", "mli_vbf_tag_barrel",
-        # low-level features
-        "mli_met_pt",
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1"]
-        for var in ["pt", "eta", "b_score"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["lep", "lep2"]
-        for var in ["pt", "eta"]
-    ] + [
-        f"mli_{obj}_{var}"
-        for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
-    ]
-
 })
 
 dl_22post_ml_study_2_handle = dl_22post_ml_study_2.derive("dl_22post_ml_study_2_handle", cls_dict={
