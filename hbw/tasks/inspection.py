@@ -313,7 +313,7 @@ class DumpAnalysisSummary(
         self.write_dataset_summary(output["dataset_summary"])
 
 
-class DummyWorkflow(HBWTask, law.LocalWorkflow, RemoteWorkflow):
+class DummyWorkflow(HBWTask, law.LocalWorkflow):
     # columnar sandbox is always nice to have :)
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
@@ -323,9 +323,13 @@ class DummyWorkflow(HBWTask, law.LocalWorkflow, RemoteWorkflow):
         default=False,
         description="Whether to start a ipython debugger session or not; default: False",
     )
+    # reqs = Requirements(RemoteWorkflow.reqs)
 
     def create_branch_map(self):
         return {0: None}
+
+    def workflow_requires(self):
+        return {}
 
     def requires(self):
         return {}
@@ -338,9 +342,9 @@ class DummyWorkflow(HBWTask, law.LocalWorkflow, RemoteWorkflow):
 
 
 class CheckConfig(
-    MLModelsMixin,
-    ProducersMixin,
     ReducedEventsUser,
+    ProducersMixin,
+    MLModelsMixin,
     DummyWorkflow,
 ):
     """

@@ -480,9 +480,12 @@ class PrepareInferenceTaskCalls(
 
     def output(self):
         return {
+            "Run": self.target("Run.sh"),
             "PlotUpperLimitsAtPoint": self.target("PlotUpperLimitsAtPoint.txt"),
-            "PlotUpperLimitsPoint": self.target("PlotUpperLimitsPoint.txt"),
+            "PlotUpperLimits_kl": self.target("PlotUpperLimits_kl.txt"),
+            "PlotUpperLimits_c2v": self.target("PlotUpperLimits_c2v.txt"),
             "FitDiagnostics": self.target("FitDiagnostics.txt"),
+            "PullsAndImpacts": self.target("PullsAndImpacts.txt"),
         }
 
     def run(self):
@@ -512,43 +515,64 @@ class PrepareInferenceTaskCalls(
         # output_file = ""
 
         base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
+        full_cmd = base_cmd
+
+        lumi = sum([config_inst.x.luminosity.get('nominal') for config_inst in self.config_insts]) * 0.001
+        lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         print("\n\n")
         # creating upper limits for kl=1
-        cmd = base_cmd + (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --multi-datacards {datacards} "
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} --multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
-        print(cmd, "\n\n")
+        print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
         output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
 
         # creating kl scan
-        cmd = base_cmd + (
-            f"law run PlotUpperLimits --version {identifier} --datacards {datacards} "
+        cmd = (
+            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
             f"--xsec fb --y-log"
         )
-        print(cmd, "\n\n")
-        output["PlotUpperLimitsPoint"].dump(cmd, formatter="text")
+        print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
+        output["PlotUpperLimits_kl"].dump(cmd, formatter="text")
+
+        # creating C2V scan
+        cmd = (
+            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11"
+        )
+        print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
+        output["PlotUpperLimits_c2v"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
-        cmd = base_cmd + (
+        cmd = (
             f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
             f"--skip-b-only"
         )
-        print(cmd, "\n\n")
+        print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
         output["FitDiagnostics"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
-        cmd = base_cmd + (
-            f"law run PlotPullsAndImpacts --version {identifier} --datacards {datacards} "
+        cmd = (
+            f"law run PlotPullsAndImpacts --version {identifier} --campaign {lumi} --datacards {datacards} "
             f"--order-by-impact"
         )
-        print(cmd, "\n\n")
+        print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
+        output["PullsAndImpacts"].dump(cmd, formatter="text")
 
         # running PreAndPostfitShapes for Pre+Postfit plots
-        cmd = base_cmd + (
+        cmd = (
             f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
             # f"--output-name {output_file}"
         )
-        print(cmd, "\n\n")
+        print(base_cmd + cmd, "\n\n")
         output["FitDiagnostics"].dump(cmd, formatter="text")
+
+        # dump the full command to one output file
+        output["Run"].dump(full_cmd, formatter="text")
