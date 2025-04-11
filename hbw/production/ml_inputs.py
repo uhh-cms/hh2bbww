@@ -17,7 +17,7 @@ from hbw.production.jets import vbf_candidates
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
-from hbw.production.dy import recoil_corrections
+from columnflow.production.cms.dy import recoil_corrections
 
 from hbw.util import MET_COLUMN
 

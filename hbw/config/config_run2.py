@@ -24,7 +24,7 @@ from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
-from hbw.production.dy import DrellYanConfig
+from columnflow.production.cms.dy import DrellYanConfig
 
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
