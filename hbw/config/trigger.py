@@ -249,6 +249,11 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
     Electron Trigger: https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIIISummary
     Muon Trigger: https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2022
 
+    trigger_bits are obtained from the TrigObj.filterBits docstring, by running some task and
+    starting an embed shell, e.g. via:
+        law run cf.SelectEvents --selector check_columns
+        events.TrigObj.filterBits?
+
     Auxiliary data in use:
     - "channels": list of channels during selection that the trigger applies to,
     e.g. ["e", "ee", "emu", "mue"] (TODO: use this in SL aswell)
@@ -264,7 +269,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         legs=[
             TriggerLeg(
                 pdg_id=13,
-                min_pt=25.0,
+                min_pt=24.0,
                 # filter names:
                 # hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p08 (1mu + Iso)
                 trigger_bits=2**1 + 2**3,  # Iso (bit 1) + 1mu (bit 3)
@@ -282,14 +287,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         legs=[
             TriggerLeg(
                 pdg_id=13,
-                min_pt=18.0,
+                min_pt=17.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**0 + 2**4,  # TrkIsoVVL (bit 0) + 2mu (bit 4)
             ),
             TriggerLeg(
                 pdg_id=13,
-                min_pt=9.0,
+                min_pt=8.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**0 + 2**4,  # TrkIsoVVL (bit 0) + 2mu (bit 4) + DZ_Mass3p8 (bit ?)
@@ -307,7 +312,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         legs=[
             TriggerLeg(
                 pdg_id=11,
-                min_pt=31.0,
+                min_pt=30.0,
                 # filter names:
                 # hltEle30WPTightGsfTrackIsoFilter
                 trigger_bits=2**1,  # 1e (WPTight) (bit 1)
@@ -326,14 +331,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         legs=[
             TriggerLeg(
                 pdg_id=11,
-                min_pt=24.0,
+                min_pt=23.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
-                min_pt=13.0,
+                min_pt=12.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
@@ -345,20 +350,58 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         },
         tags={"di_trigger", "di_e"},
     )
+    single_e50_noniso = Trigger(
+        name="HLT_Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
+        id=203,
+        legs=[
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=50.0,
+                # filter names: TODO
+                trigger_bits=2**11 + 2**12,  # CaloIdVT_GsfTrkIdT (bit 11) + PFJet (bit 12)
+            ),
+        ],
+        aux={
+            "channels": ["e", "ee", "emu", "mue", "mixed"],
+            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+        },
+    )
+    di_e33_noniso = Trigger(
+        name="HLT_DoubleEle33_CaloIdL_MW",
+        id=204,
+        legs=[
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=33.0,
+                # filter names: TODO
+                trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
+            ),
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=33.0,
+                # filter names: TODO
+                trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
+            ),
+        ],
+        aux={
+            "channels": ["ee"],
+            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+        },
+    )
     mixed_mue = Trigger(
         name="HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
         id=301,
         legs=[
             TriggerLeg(
                 pdg_id=13,
-                min_pt=24.0,
+                min_pt=23.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
-                min_pt=13.0,
+                min_pt=12.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
@@ -371,19 +414,19 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         tags={"mixed_trigger", "mixed_mue"},
     )
     mixed_emu = Trigger(
-        name="HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+        name="HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         id=401,
         legs=[
             TriggerLeg(
                 pdg_id=13,
-                min_pt=9.0,
+                min_pt=8.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + TrkIsoVVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
-                min_pt=24.0,
+                min_pt=23.0,
                 # filter names:
                 # TODO
                 trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
@@ -400,8 +443,10 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
     if config.has_tag("is_dl"):
         config.x.triggers = od.UniqueObjectIndex(Trigger, [
             single_e,
+            single_e50_noniso,
             single_mu,
             di_e,
+            di_e33_noniso,
             di_mu,
             mixed_mue,
             mixed_emu,

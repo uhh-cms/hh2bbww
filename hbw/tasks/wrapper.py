@@ -3,6 +3,7 @@
 """
 Convenience wrapper tasks to simplify producing results and fetching & deleting their outputs
 e.g. default sets of plots or datacards
+NOTE: these tasks have not been tested after TAF init changes, so they might not work anymore.
 """
 
 from __future__ import annotations
@@ -13,8 +14,8 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
-    CalibratorsMixin,
+    InferenceModelMixin, MLModelsMixin,
+    ProducerClassesMixin, SelectorClassMixin, CalibratorClassesMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
@@ -31,16 +32,23 @@ logger = law.logger.get_logger(__name__)
 
 
 class ControlPlots(
+    law.WrapperTask,
     HBWTask,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
 ):
-    split_resolved_boosted = False
-
     """
     Helper task to produce default set of control plots
     """
+    is_single_config = False
+    split_resolved_boosted = False
+    output_collection_cls = law.NestedSiblingFileCollection
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def requires(self):
         lepton_tag = self.config_inst.x.lepton_tag
         lepton_channels = self.config_inst.x.lepton_channels
@@ -85,22 +93,29 @@ class ControlPlots(
 
         return reqs
 
-    def output(self):
-        return self.requires()
+    # def output(self):
+    #     return self.requires()
 
-    def run(self):
-        pass
+    # def run(self):
+    #     pass
 
 
 class MLInputPlots(
     HBWTask,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
 ):
     """
     Helper task to produce default set of control plots
     """
+
+    output_collection_cls = law.NestedSiblingFileCollection
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def requires(self):
         lepton_tag = self.config_inst.x.lepton_tag
         lepton_channels = self.config_inst.x.lepton_channels
@@ -129,25 +144,25 @@ class MLInputPlots(
 
         return reqs
 
-    def output(self):
-        return self.requires()
+    # def output(self):
+    #     return self.requires()
 
-    def run(self):
-        pass
+    # def run(self):
+    #     pass
 
 
 class InferencePlots(
     law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
     PlotBase1D,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
     InferenceModelMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
     # law.LocalWorkflow,
     # RemoteWorkflow,
 ):
@@ -210,14 +225,14 @@ class ShiftedInferencePlots(
     law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
     PlotBase1D,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
     InferenceModelMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
 ):
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 

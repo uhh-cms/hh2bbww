@@ -96,6 +96,7 @@ processes_per_shape = {
     "mu_trig_sf": ["all"],
     "e_sf": ["all"],
     "e_trig_sf": ["all"],
+    "trigger_sf": ["all"],
     "minbias_xs": ["all"],
     "top_pt": ["tt"],
     "pdf_shape_tt": ["tt"],

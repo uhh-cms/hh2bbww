@@ -4,6 +4,7 @@
 Stat-related methods.
 """
 
+import law
 import order as od
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -13,8 +14,8 @@ from hbw.production.weights import event_weights_to_normalize
 from columnflow.columnar_util import set_ak_column
 
 from columnflow.util import maybe_import
-from hbw.util import has_tag
-from hbw.hist_util import create_columnflow_hist
+from hbw.util import has_tag, IF_MC
+from columnflow.hist_util import create_hist_from_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -22,8 +23,8 @@ hist = maybe_import("hist")
 
 
 @selector(
-    uses={increment_stats, event_weights_to_normalize, "Jet.hadronFlavour"},
-    produces={"ht", "njet", "nhf"},
+    uses={increment_stats, event_weights_to_normalize, IF_MC("Jet.hadronFlavour")},
+    produces=IF_MC({"ht", "njet", "nhf"}),
 )
 def hbw_selection_hists(
     self: Selector,
@@ -45,13 +46,14 @@ def hbw_selection_hists(
     njet = results.x.n_central_jets
     ht = results.x.ht
 
-    hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
-    nhf = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
-
     # store ht, njet, and nhf for consistency checks
     events = set_ak_column(events, "ht", ht)
     events = set_ak_column(events, "njet", njet)
-    events = set_ak_column(events, "nhf", nhf)
+
+    if self.dataset_inst.is_mc:
+        hadron_flavour = events.Jet[results.objects.Jet.Jet].hadronFlavour
+        nhf = ak.sum(hadron_flavour == 5, axis=1) + ak.sum(hadron_flavour == 4, axis=1)
+        events = set_ak_column(events, "nhf", nhf)
 
     # weight map definition
     weight_map = {
@@ -80,14 +82,15 @@ def hbw_selection_hists(
             weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
             # weight_map[f"sum_{name}"] = events[name]
 
-    # initialize histograms (only on first chunk)
-    if getattr(self, "first_chunk", True):
+    # initialize histograms if not already done
+    # (NOTE: this only works as long as this is the only selector that adds histograms)
+    if not hists:
         for key, weight in weight_map.items():
             if "btag_weight" not in key:
-                hists[key] = create_columnflow_hist(self.steps_variable)
-                hists[f"{key}_per_process"] = create_columnflow_hist(self.steps_variable, self.process_variable)
+                hists[key] = create_hist_from_variables(self.steps_variable)
+                hists[f"{key}_per_process"] = create_hist_from_variables(self.steps_variable, self.process_variable)
             if key == "sum_mc_weight" or "btag_weight" in key:
-                hists[f"{key}_per_process_ht_njet_nhf"] = create_columnflow_hist(
+                hists[f"{key}_per_process_ht_njet_nhf"] = create_hist_from_variables(
                     self.steps_variable,
                     self.process_variable,
                     self.ht_variable,
@@ -114,12 +117,13 @@ def hbw_selection_hists(
                     weight=weight[mask],
                 )
 
-    self.first_chunk = False
     return events
 
 
 @hbw_selection_hists.setup
-def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_targets: dict) -> None:
+def hbw_selection_hists_setup(
+    self: Selector, task: law.Task, reqs: dict, inputs: dict, reader_targets: dict,
+) -> None:
     self.process_variable = od.Variable(
         name="process",
         expression="process_id",
@@ -157,8 +161,12 @@ def hbw_selection_hists_init(self: Selector) -> None:
     if not getattr(self, "dataset_inst", None):
         return
 
+    if self.dataset_inst.is_data:
+        return
+
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights}
 
     if self.dataset_inst.is_mc:
-        self.uses |= {"mc_weight"}
+        self.uses |= {"mc_weight", "Jet.hadronFlavour"}
+        self.produces |= {"ht", "njet", "nhf"}

@@ -62,7 +62,8 @@ def hbw_process_ids_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.process_producer = hh_bbvv_process_producer
-    elif "dy" in self.dataset_inst.name:
+    elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
+        # stitching of DY NLO samples
         self.process_producer = dy_nlo_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
@@ -200,7 +201,7 @@ def hh_bbvv_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.A
 
 
 @producer(
-    uses={"LHE.NpNLO", "GenJet.pt", "GenJet.hadronFlavour"},
+    uses={"LHE.NpNLO", "GenJet.{pt,eta,hadronFlavour}"},
     produces={"process_id"},
 )
 def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -212,7 +213,8 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     """
     n_partons = events.LHE.NpNLO
 
-    genjet = events.GenJet[events.GenJet.pt >= 20]
+    genjet_mask = (events.GenJet["pt"] >= 20) & (abs(events.GenJet["eta"]) < 2.4)
+    genjet = (events.GenJet[genjet_mask])
     hf_genjet_mask = (genjet.hadronFlavour == 4) | (genjet.hadronFlavour == 5)
     is_hf = ak.any(hf_genjet_mask, axis=1)
 

@@ -163,7 +163,7 @@ class DenseClassifierRes(ModelFitMixin, DenseModelMixin, MLClassifierBase):
                 )
                 self.config_inst.add_variable(
                     # TODO: to be used for rebinning
-                    name=f"mlscore.{proc}_manybins",
+                    name=f"mlscore.{proc}",
                     expression=f"mlscore.{proc}",
                     null_value=-1,
                     binning=(1000, 0., 1.),

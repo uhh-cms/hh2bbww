@@ -25,6 +25,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
+from hbw.production.prepare_objects import prepare_objects
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
 
@@ -44,7 +45,7 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
 
 
 @selector(
-    uses={"*"},
+    uses={prepare_objects, "*"},
     exposed=True,
 )
 def check_columns(
@@ -54,6 +55,8 @@ def check_columns(
     # hists: dict,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
+    # apply behavior (for variable reconstruction)
+    events = self[prepare_objects](events, **kwargs)
     routes = get_ak_routes(events)  # noqa
     from hbw.util import debugger
     debugger()
@@ -95,6 +98,7 @@ def pre_selection(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    task: law.Task,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL before calling the selection modules """
@@ -107,13 +111,13 @@ def pre_selection(
     results = SelectionResult()
 
     # run deterministic seeds when no Calibrator has been requested
-    if not self.task.calibrators:
+    if not task.calibrators:
         events = self[deterministic_seeds](events, **kwargs)
 
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
-        events = self[large_weights_killer](events, **kwargs)
+        events = self[large_weights_killer](events, stats, **kwargs)
 
     if self.dataset_inst.is_mc:
         # get hard gen particles
@@ -141,7 +145,7 @@ def pre_selection(
 
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        # results.steps.jet_veto_map &
+        results.steps.jet_veto_map &
         results.steps.good_vertex &
         results.steps.met_filter &
         results.steps.json
@@ -152,15 +156,18 @@ def pre_selection(
 
 @pre_selection.init
 def pre_selection_init(self: Selector) -> None:
-    if self.task and not self.task.calibrators:
-        self.uses.add(deterministic_seeds)
-        self.produces.add(deterministic_seeds)
-
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
     self.uses.update({hard_gen_particles})
     self.produces.update({hard_gen_particles})
+
+
+@pre_selection.post_init
+def pre_selection_post_init(self: Selector, task: law.Task) -> None:
+    if not task.calibrators:
+        self.uses.add(deterministic_seeds)
+        self.produces.add(deterministic_seeds)
 
 
 @selector(
@@ -238,8 +245,6 @@ configurable_attributes = {
     "jet_pt": float,
     "n_jet": int,
     # bjet selection
-    "b_tagger": str,
-    "btag_wp": str,
     "n_btag": int,
 }
 
@@ -277,7 +282,7 @@ def configure_selector(self: Selector):
         attr = getattr(self, attr_name)
 
         if isinstance(attr, Callable):
-            logger.info(f"Calling config function '{attr_name}'")
+            logger.debug(f"Calling config function '{attr_name}'")
             attr = attr()
 
         if attr is None:
@@ -295,20 +300,3 @@ def configure_selector(self: Selector):
         # TODO: only use the "selector_config" and remove the direct config aux
         self.config_inst.set_aux(attr_name, attr)
         self.config_inst.x.selector_config[attr_name] = attr
-
-    # define config for b-tagging SFs (this needs to be done by the main Selector, because this
-    # needs to be setup before running the init of the btag Producer)
-    # NOTE we could try using the BTagSFConfig instead of this overly complicated setup:
-    if self.config_inst.x.b_tagger == "deepjet":
-        self.config_inst.x.btag_sf = ("deepJet_shape", self.config_inst.x.btag_sf_jec_sources, "btagDeepFlavB")
-        self.config_inst.x.btag_column = "btagDeepFlavB"
-    elif self.config_inst.x.b_tagger == "particlenet":
-        self.config_inst.x.btag_sf = ("particleNet_shape", self.config_inst.x.btag_sf_jec_sources, "btagPNetB")
-        self.config_inst.x.btag_column = "btagPNetB"
-    else:
-        raise NotImplementedError(f"Cannot resolve btag sf config for b_tagger {self.config_inst.x.b_tagger}")
-
-    # write used btag wp score in the config
-    self.config_inst.x.btag_wp_score = (
-        self.config_inst.x.btag_working_points[self.config_inst.x.b_tagger][self.config_inst.x.btag_wp]
-    )

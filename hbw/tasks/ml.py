@@ -13,19 +13,21 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+import numpy as np
+
+from hbw.ml.data_loader import get_proc_mask
 import law
 import luigi
 
 from columnflow.tasks.framework.base import Requirements, DatasetTask
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin,
     CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
     ProducersMixin,
     MLModelTrainingMixin,
-    MLModelMixin,
     MLModelsMixin,
     MLModelDataMixin,
-    SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.framework.decorators import view_output_plots
@@ -38,10 +40,11 @@ logger = law.logger.get_logger(__name__)
 
 
 class SimpleMergeMLEvents(
-    MLModelDataMixin,
-    ProducersMixin,
-    SelectorMixin,
     CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
+    ProducersMixin,
+    MLModelDataMixin,
     DatasetTask,
     law.LocalWorkflow,
     RemoteWorkflow,
@@ -104,11 +107,12 @@ class SimpleMergeMLEvents(
 
 
 class MLOptimizer(
+    CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
+    ProducersMixin,
     HBWTask,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
 ):
     reqs = Requirements(MLTraining=MLTraining)
 
@@ -162,6 +166,7 @@ class MLOptimizer(
         self.output()["model_summary"].dump(model_summary, formatter="yaml")
 
 
+# TODO: Cross check if the trian weights work as intended --> by reading out porcess_id
 class MLPreTraining(
     HBWTask,
     MLModelTrainingMixin,
@@ -179,6 +184,7 @@ class MLPreTraining(
     - input_arrays: list of input arrays to be loaded. Each array is a string, pointing to a property
     of the data_loader class that returns the data.
     """
+    resolution_task_cls = SimpleMergeMLEvents
 
     # never run this task on GPU
     htcondor_gpus = 0
@@ -208,6 +214,10 @@ class MLPreTraining(
             return None
         return self.branch_data["fold"]
 
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def create_branch_map(self):
         return [
             DotDict({"fold": fold, "process": process})
@@ -224,39 +234,23 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
-                    tree_index=-1,
+                    branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
         return reqs
 
@@ -275,41 +269,26 @@ class MLPreTraining(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
                     branch=-1,
                 )
                 for dataset_inst in dataset_insts
                 if dataset_inst.x.ml_process == process
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
 
         # load stats for all processes
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    calibrators=_calibrators,
-                    selector=_selector,
-                    producers=_producers,
-                    tree_index=-1)
+                    branch=-1,
+                )
                 for dataset_inst in dataset_insts
             }
-            for (config_inst, dataset_insts), _calibrators, _selector, _producers in zip(
-                self.ml_model_inst.used_datasets.items(),
-                self.calibrators,
-                self.selectors,
-                self.producers,
-            )
+            for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
         }
 
         return reqs
@@ -355,6 +334,8 @@ class MLPreTraining(
         # the stats dict is created per process+fold, but should always be identical, therefore we store it only once
         outputs["stats"] = self.target("stats.json")
 
+        outputs["cross_check_weights"] = self.target(f"cross_check_weights_{process}_{self.fold}.yaml")
+
         outputs["parameters"] = self.target("parameters.yaml")
 
         return outputs
@@ -368,8 +349,19 @@ class MLPreTraining(
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
                 # gather stats per ml process
-                stats = inputs["stats"][config_inst.name][dataset]["stats"].load(formatter="json")
+                stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
+                proc_inst = config_inst.get_process(process)
+                sub_id = [
+                    proc_inst.id
+                    for proc_inst, _, _ in proc_inst.walk_processes(include_self=True)
+                ]
+
+                for id in list(stats["num_events_per_process"].keys()):
+                    if int(id) not in sub_id:
+                        for key in list(stats.keys()):
+                            stats[key].pop(id, None)
+
                 MergeMLStats.merge_counts(merged_stats[process], stats)
 
         return merged_stats
@@ -412,7 +404,36 @@ class MLPreTraining(
         outputs["stats"].dump(stats, formatter="json")
 
         # initialize the DatasetLoader
-        ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+        if self.ml_model_inst.negative_weights == "ignore":
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+            logger.info(
+                f"{self.ml_model_inst.negative_weights} method chosen to handle negative weights: "
+                "All negative weights will be removed from training.",
+            )
+        else:
+            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats, skip_mask=True)
+
+        sum_train_weights = np.sum(ml_dataset.train_weights)
+        n_events_per_fold = len(ml_dataset.train_weights)
+        logger.info(f"Sum of training weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
+        xcheck = {}
+        if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
+            xcheck[process] = {}
+            if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
+                for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
+                    proc_mask, _ = get_proc_mask(ml_dataset._events, sub_proc, self.ml_model_inst.config_inst)
+                    xcheck_weight_sum = np.sum(ml_dataset.train_weights[proc_mask])
+                    xcheck_n_events = len(ml_dataset.train_weights[proc_mask])
+                    logger.info(
+                        f"For the equal weighting method the sum of weights for {sub_proc} is {xcheck_weight_sum} "
+                        f"(No. of events: {xcheck_n_events})",
+                    )
+                    if sub_proc not in xcheck[process]:
+                        xcheck[process][sub_proc] = {}
+                    xcheck[process][sub_proc]["weight_sum"] = int(xcheck_weight_sum)
+                    xcheck[process][sub_proc]["num_events"] = xcheck_n_events
+                    # __import__("IPython").embed()
+        outputs["cross_check_weights"].dump(xcheck, formatter="yaml")
 
         for input_array in self.ml_model_inst.data_loader.input_arrays:
             logger.info(f"loading data for input array {input_array}")
@@ -425,7 +446,6 @@ class MLPreTraining(
             outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
 
             outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")
-
         # dump parameters of the DatasetLoader
         outputs["parameters"].dump(ml_dataset.parameters, formatter="yaml")
 
@@ -435,19 +455,17 @@ class MLPreTraining(
 
 
 class MLEvaluationSingleFold(
-    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
-    # is implemented
+    # NOTE: mixins might need fixing, needs to be checked
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
     """
     This task creates evaluation outputs for a single trained MLModel.
     """
+    resolution_task_cls = SimpleMergeMLEvents
+
     sandbox = None
 
     allow_empty_ml_model = False
@@ -470,6 +488,10 @@ class MLEvaluationSingleFold(
         description="the data split to evaluate; must be one of 'train', 'val', 'test'; default: 'test'",
     )
 
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def create_branch_map(self):
         return [
             DotDict({"process": process})
@@ -489,16 +511,10 @@ class MLEvaluationSingleFold(
             self,
             branches=(self.fold,),
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
@@ -515,16 +531,10 @@ class MLEvaluationSingleFold(
             branches=(self.fold,),
             branch=self.fold,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
@@ -585,19 +595,17 @@ class MLEvaluationSingleFold(
 
 
 class PlotMLResultsSingleFold(
-    # NOTE: this should probably be a MLModelTrainingMixin, but I'll postpone this until the MultiConfigTask
-    # is implemented
+    # NOTE: mixins might need fixing, needs to be checked
     HBWTask,
-    MLModelMixin,
-    ProducersMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    MLModelTrainingMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
     """
     This task creates plots for the results of a single trained MLModel.
     """
+    resolution_task_cls = SimpleMergeMLEvents
+
     sandbox = None
 
     allow_empty_ml_model = False
@@ -628,6 +636,10 @@ class PlotMLResultsSingleFold(
 
     data_splits = ("test", "val", "train")
 
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
     def create_branch_map(self):
         return {0: None}
 
@@ -649,9 +661,6 @@ class PlotMLResultsSingleFold(
             "training": self.reqs.MLTraining.req_different_branching(
                 self,
                 configs=(self.config_inst.name,),
-                calibrators=(self.calibrators,),
-                selectors=(self.selector,),
-                producers=(self.producers,),
                 branches=(self.fold,),
             ),
         }
@@ -659,9 +668,6 @@ class PlotMLResultsSingleFold(
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
             self,
             configs=(self.config_inst.name,),
-            calibrators=(self.calibrators,),
-            selectors=(self.selector,),
-            producers=(self.producers,),
             branch=-1,
         )
         reqs["mlpred"] = {

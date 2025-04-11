@@ -21,6 +21,7 @@ from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.data_loader import MLDatasetLoader, MLProcessData, input_features_sanity_checks
+from hbw.config.processes import create_combined_proc_forML
 
 from hbw.tasks.ml import MLPreTraining
 
@@ -109,6 +110,7 @@ class MLClassifierBase(MLModel):
 
         for param in self.settings_parameters:
             # overwrite the default value with the value from the parameters
+            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
             setattr(self, param, self.parameters.get(param, getattr(self, param)))
 
         # cast the ml parameters to the correct types if necessary
@@ -186,41 +188,56 @@ class MLClassifierBase(MLModel):
         self._parameters_repr = parameters_repr
         return self._parameters_repr
 
-    def setup(self):
+    def setup(self) -> None:
         """ function that is run as part of the setup phase. Most likely overwritten by subclasses """
-        logger.info(
-            f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr})"
+        logger.debug(
+            f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr}), "
             f"parameters: \n{self.parameters}",
         )
-        # dynamically add variables for the quantities produced by this model
-        # NOTE: since these variables are only used in ConfigTasks,
-        #       we do not need to add these variables to all configs
-        for proc in self.processes:
-            if f"mlscore.{proc}" not in self.config_inst.variables:
-                self.config_inst.add_variable(
-                    name=f"mlscore.{proc}",
-                    null_value=-1,
-                    binning=(1000, 0., 1.),
-                    x_title=f"DNN output score {self.config_inst.get_process(proc).x.ml_label}",
-                    aux={"rebin": 25},  # automatically rebin to 40 bins for plotting tasks
-                )
+        # dynamically add processes and variables for the quantities produced by this model
+        # NOTE: this function might not be called for all configs when the requested configs
+        # between MLTraining and the requested task are different
+        for proc in self.combine_processes:
+            for config_inst in self.config_insts:
+                if proc not in config_inst.processes:
+                    proc_name = str(proc)
+                    proc_dict = DotDict(self.combine_processes[proc])
+                    create_combined_proc_forML(config_inst, proc_name, proc_dict)
 
-    def preparation_producer(self: MLModel, config_inst: od.Config):
+        for proc in self.processes:
+            for config_inst in self.config_insts:
+                if f"mlscore.{proc}" not in config_inst.variables:
+                    config_inst.add_variable(
+                        name=f"mlscore.{proc}",
+                        expression=f"mlscore.{proc}",
+                        null_value=-1,
+                        binning=(1000, 0., 1.),
+                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        aux={
+                            "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
+                    )
+
+    def preparation_producer(self: MLModel, analysis_inst: od.Analysis):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
         return "ml_preparation"
 
-    def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
+    def training_calibrators(self, analysis_inst: od.Analysis, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         # NOTE: since automatic resolving is not working here, we do it ourselves
-        return requested_calibrators or [config_inst.x.default_calibrator]
+        return requested_calibrators or [analysis_inst.x.default_calibrator]
 
-    def training_producers(self, config_inst: od.Config, requested_producers: Sequence[str]) -> list[str]:
+    def training_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         # NOTE: might be nice to keep the "pre_ml_cats" for consistency, but running two
         # categorization Producers in the same workflow is messy, so we skip it for now
-        # return requested_producers or ["event_weights", "pre_ml_cats", config_inst.x.ml_inputs_producer]
-        # return requested_producers or ["event_weights", config_inst.x.ml_inputs_producer]
-        return ["event_weights", config_inst.x.ml_inputs_producer]
+        # return requested_producers or ["event_weights", "pre_ml_cats", analysis_inst.x.ml_inputs_producer]
+        # return requested_producers or ["event_weights", analysis_inst.x.ml_inputs_producer]
+        return ["event_weights", analysis_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
@@ -272,6 +289,7 @@ class MLClassifierBase(MLModel):
         columns = {"mli_*"}
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
+        columns.add("process_id")
         columns.add("normalization_weight")
         columns.add("stitched_normalization_weight")
         columns.add("event_weight")
@@ -289,7 +307,6 @@ class MLClassifierBase(MLModel):
         # declare the main target
         target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
 
-        # TODO: cleanup (produce plots, stats in separate task)
         outp = {
             "mlmodel": target,
             "plots": target.child("plots", type="d", optional=True),
@@ -301,7 +318,6 @@ class MLClassifierBase(MLModel):
             target.child(fname, type="f") for fname in
             ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
         ]
-
         return outp
 
     def open_model(self, target: law.LocalDirectoryTarget) -> dict[str, Any]:
@@ -321,6 +337,7 @@ class MLClassifierBase(MLModel):
 
         # custom loss needed due to output layer changes for negative weights
         from hbw.ml.tf_util import cumulated_crossentropy
+
         models["model"] = tf.keras.models.load_model(
             target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
@@ -358,7 +375,6 @@ class MLClassifierBase(MLModel):
         # load into memory
         validation.load_all
         log_memory("loading validation data")
-
         # store input features as an output
         output["mlmodel"].child("input_features.pkl", type="f").dump(self.input_features_ordered, formatter="pickle")
 
@@ -399,7 +415,6 @@ class MLClassifierBase(MLModel):
         #
         # training
         #
-
         self.fit_ml_model(task, model, train, validation, output)
         log_memory("training")
         # save the model and history; TODO: use formatter
@@ -439,7 +454,7 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
-        use_best_model = False
+        use_best_model = False  # TODO ML, hier auf True setzen?
 
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
@@ -452,7 +467,7 @@ class MLClassifierBase(MLModel):
         process = task.dataset_inst.x("ml_process", task.dataset_inst.processes.get_first().name)
         process_inst = task.config_inst.get_process(process)
 
-        ml_dataset = self.data_loader(self, process_inst, events)
+        ml_dataset = self.data_loader(self, process_inst, events, skip_mask=True)
 
         # # store the ml truth label in the events
         # events = set_ak_column(
@@ -484,7 +499,6 @@ class MLClassifierBase(MLModel):
             if len(pred[0]) != len(self.processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
-
             # store predictions for each model
             for j, proc in enumerate(self.processes):
                 events = set_ak_column(
@@ -552,11 +566,18 @@ class ExampleDNN(MLClassifierBase):
         # compile the network
         # NOTE: the custom loss needed due to output layer changes for negative weights
         optimizer = keras.optimizers.Adam(learning_rate=0.00050)
-        model.compile(
-            loss=cumulated_crossentropy,
-            optimizer=optimizer,
-            weighted_metrics=["categorical_accuracy"],
-        )
+        if self.negative_weights == "ignore":
+            model.compile(
+                loss="categorical_crossentropy",
+                optimizer=optimizer,
+                weighted_metrics=["categorical_accuracy"],
+            )
+        else:
+            model.compile(
+                loss=cumulated_crossentropy,
+                optimizer=optimizer,
+                weighted_metrics=["categorical_accuracy"],
+            )
 
         return model
 

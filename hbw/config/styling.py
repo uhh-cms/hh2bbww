@@ -82,7 +82,7 @@ default_process_colors = {
     "dy_m50toinf": color_palette["yellow"],
     "dy_m10to50": color_palette["brown"],
     "dy_m4to10": color_palette["darkgrey"],
-    "ttV": color_palette["brown"],
+    "ttv": color_palette["turqoise"],
     "vv": color_palette["blue"],
     "other": color_palette["grey"],
     "hh_ggf_hbb_htt": color_palette["grey"],
@@ -203,7 +203,9 @@ def stylize_processes(config: od.Config) -> None:
 
         # unstack signal in plotting
         if "hh_" in proc.name.lower():
+            proc.add_tag("is_signal")
             proc.unstack = True
+            # proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
@@ -234,6 +236,7 @@ default_var_binning = {
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
+    "particleNet_XbbVsQCD": (40, 0, 1),
     # Leptons
     "dxy": (40, 0, 0.1),
     "dz": (40, 0, 0.1),
@@ -292,10 +295,10 @@ def quick_addvar(config: od.Config, obj: str, i: int, var: str):
     object (starting at 1) and `var` is the variable of interest; example: cf_loosejet1_pt
     """
     config.add_variable(
-        name=name.format(obj=obj, i=i + 1, var=var).lower(),
+        name=name.format(obj=obj, i=i, var=var).lower(),
         expression=expr.format(obj=obj, i=i, var=var),
         null_value=EMPTY_FLOAT,
         binning=default_var_binning[var],
         unit=default_var_unit.get(var, "1"),
-        x_title=x_title_base.format(obj=obj, i=i + 1) + default_var_title_format.get(var, var),
+        x_title=x_title_base.format(obj=obj, i=i) + default_var_title_format.get(var, var),
     )

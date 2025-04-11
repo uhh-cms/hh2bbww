@@ -81,6 +81,12 @@ def add_common_ml_variables(config: od.Config) -> None:
         x_title=r"$\Delta\Phi(b,b)$",
     )
     config.add_variable(
+        name="mli_deta_bb",
+        expression="mli_deta_bb",
+        binning=(40, 0, 6),
+        x_title=r"$\Delta\eta(b,b)$",
+    )
+    config.add_variable(
         name="mli_mbb",
         expression="mli_mbb",
         binning=(40, 0, 400),
@@ -106,24 +112,54 @@ def add_common_ml_variables(config: od.Config) -> None:
         x_title=r"min $\Delta R(j,j)$",
     )
     config.add_variable(
-        name="mli_vbf_deta",
-        expression="mli_vbf_deta",
-        binning=(50, 2, 9.5),
-        x_title=r"$\Delta\eta(vbfjet1,vbfjet2)$",
+        name="mli_maxdr_jj",
+        expression="mli_maxdr_jj",
+        binning=(40, 0, 12),
+        x_title=r"max $\Delta R(j,j)$",
     )
-    config.add_variable(
-        name="mli_vbf_invmass",
-        expression="mli_vbf_invmass",
-        binning=(50, 400, 4000),
-        unit="GeV",
-        x_title="invarint mass of two vbf jets",
-    )
-    config.add_variable(
-        name="mli_vbf_tag",
-        expression="mli_vbf_tag",
-        binning=(2, -0.5, 1.5),
-        x_title="existence of at least two vbf jets = 1, else 0",
-    )
+
+    # vbf features for central jets and incljets
+    for eta_range, prefix in (
+        ("2.4", ""),
+        ("4.7", "full_"),
+    ):
+        config.add_variable(
+            name=f"mli_{prefix}vbf_pt",
+            expression=f"mli_{prefix}vbf_pt",
+            binning=(40, 0, 1000),
+            x_title=rf"VBF pair $p_{{T}}$ ($|\eta| < {eta_range}|$)",
+        )
+        config.add_variable(
+            name=f"mli_{prefix}vbf_phi",
+            expression=f"mli_{prefix}vbf_phi",
+            binning=(50, -3.2, 3.2),
+            x_title=rf"VBF pair $\phi$ ($|\eta| < {eta_range}|$)",
+        )
+        config.add_variable(
+            name=f"mli_{prefix}vbf_eta",
+            expression=f"mli_{prefix}vbf_eta",
+            binning=(48, -4.7, 4.7),
+            x_title=rf"VBF pair $\eta$ ($|\eta| < {eta_range}|$)",
+        )
+        config.add_variable(
+            name=f"mli_{prefix}vbf_deta",
+            expression=f"mli_{prefix}vbf_deta",
+            binning=(50, 2, 9.5),
+            x_title=rf"VBF pair $\Delta\eta$ ($|\eta| < {eta_range}|$)",
+        )
+        config.add_variable(
+            name=f"mli_{prefix}vbf_mass",
+            expression=f"mli_{prefix}vbf_mass",
+            binning=(50, 400, 4000),
+            unit="GeV",
+            x_title=rf"VBF pair mass ($|\eta| < {eta_range}|$)",
+        )
+        config.add_variable(
+            name=f"mli_{prefix}vbf_tag",
+            expression=f"mli_{prefix}vbf_tag",
+            binning=(2, -0.5, 1.5),
+            x_title=rf"VBF pair tag ($|\eta| < {eta_range}|$)",
+        )
 
     #
     # low-level variables
@@ -154,7 +190,7 @@ def add_common_ml_variables(config: od.Config) -> None:
             )
 
     for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "particleNet_XbbVsQCD"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",

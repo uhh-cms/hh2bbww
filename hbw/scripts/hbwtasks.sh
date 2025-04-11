@@ -40,7 +40,7 @@ hbw_calibration(){
 	--cf.CalibrateEvents-no-poll \
 	--cf.CalibrateEvents-parallel-jobs 4000 \
 	--cf.CalibrateEvents-retries 1 \
-	--cf.CalibrateEvents-tasks-per-job 2 \
+	--cf.CalibrateEvents-tasks-per-job 1 \
 	--cf.CalibrateEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -55,7 +55,7 @@ hbw_reduction(){
 	--cf.ReduceEvents-no-poll \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 2 \
+	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -68,11 +68,10 @@ hbw_merge_reduction(){
 	--shifts nominal \
 	--datasets $datasets \
     --cf.MergeReducedEvents-workflow htcondor \
-	--cf.ReduceEvents-workflow htcondor \
 	--cf.ReduceEvents-pilot \
 	--cf.ReduceEvents-parallel-jobs 4000 \
 	--cf.ReduceEvents-retries 1 \
-	--cf.ReduceEvents-tasks-per-job 2 \
+	--cf.ReduceEvents-tasks-per-job 1 \
 	--cf.ReduceEvents-job-workers 1 \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	$@
@@ -98,9 +97,6 @@ hbw_ml_training(){
 	--cf.PrepareMLEvents-htcondor-memory 4000 \
 	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
-	--cf.MergeReductionStats-n-inputs -1 \
-	--cf.ReduceEvents-workflow htcondor \
-	--cf.SelectEvents-workflow htcondor \
 	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
@@ -117,10 +113,6 @@ hbw_plot_ml_training(){
 	--cf.PrepareMLEvents-workflow htcondor \
 	--cf.PrepareMLEvents-htcondor-memory 4000 \
 	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeReducedEvents-workflow htcondor \
-	--cf.MergeReductionStats-n-inputs -1 \
-	--cf.ReduceEvents-workflow htcondor \
-	--cf.SelectEvents-workflow htcondor \
 	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
@@ -142,11 +134,6 @@ hbw_datacards(){
 	--cf.MergeMLEvents-htcondor-memory 4000 \
 	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-pilot True \
-	--cf.MergeReducedEvents-workflow htcondor \
-	--cf.MergeReductionStats-n-inputs -1 \
-	--cf.ReduceEvents-workflow htcondor \
-	--cf.SelectEvents-workflow htcondor \
 	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
@@ -168,12 +155,7 @@ hbw_rebin_datacards(){
 	--cf.MergeMLEvents-htcondor-memory 4000 \
 	--cf.MergeMLEvents-max-runtime 3h \
 	--cf.PrepareMLEvents-workflow htcondor \
-	--cf.PrepareMLEvents-pilot True \
 	--cf.MergeReducedEvents-workflow htcondor \
-	--cf.MergeReductionStats-n-inputs -1 \
-	--cf.ReduceEvents-workflow htcondor \
-	--cf.SelectEvents-workflow htcondor \
-	--cf.SelectEvents-pilot True \
 	--cf.BundleRepo-custom-checksum $(checksum) \
 	--retries 2 \
 	$@

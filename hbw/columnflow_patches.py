@@ -84,18 +84,25 @@ def patch_csp_versioning():
     Patches the TaskArrayFunction to add the version to the string representation of the task.
     """
 
+    from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
+
     def TaskArrayFunction_str(self):
         version = self.version() if callable(getattr(self, "version", None)) else getattr(self, "version", None)
-        if version and not isinstance(version, int):
-            raise Exception(f"version must be an integer, but is {version}")
+        if version and not isinstance(version, (int, str)):
+            raise Exception(f"version must be an integer or string, but is {version} ({type(version)})")
         version_str = f"V{version}" if version is not None else ""
         return f"{self.cls_name}{version_str}"
 
+    def array_function_cls_repr(self, array_function):
+        # NOTE: this might be a problem when we have identical names between different types of
+        # TaskArrayFunctions...
+        array_function_cls = TaskArrayFunction.get_cls(array_function)
+        return TaskArrayFunction_str(array_function_cls)
+
+    ArrayFunctionClassMixin.array_function_cls_repr = array_function_cls_repr
     TaskArrayFunction.__str__ = TaskArrayFunction_str
     logger.info(
-        "patched TaskArrayFunction.__str__ to include the CSP version attribute "
-        "(NOTE that this currently does not work for the "
-        "MLTrainingMixin tasks (e.g. MLPreTraining and MLTraining))",
+        "patched TaskArrayFunction.__str__ to include the CSP version attribute",
     )
 
 
@@ -111,7 +118,35 @@ def patch_default_version():
 
 
 @memoize
+def patch_materialization_strategy():
+    """
+    Simple patch function to switch to the PARTITIONS materialization strategy for DaskArrayReader.
+    We might want to try in the future if this improves memory usage, but this requires us to
+    reproduce all existing outputs with this type of partitioning.
+    """
+    from columnflow.columnar_util import DaskArrayReader
+
+    # Save the original __init__ method
+    _original_init = DaskArrayReader.__init__
+
+    def patched_init(self, *args, **kwargs):
+        logger.debug(f"patched DaskArrayReader.__init__ with {DaskArrayReader.MaterializationStrategy.PARTITIONS}")
+        # Modify the materialization_strategy before calling the original __init__
+        kwargs["materialization_strategy"] = (
+            DaskArrayReader.MaterializationStrategy.PARTITIONS
+        )
+        _original_init(self, *args, **kwargs)
+
+    # Replace the original __init__ with the patched version
+    DaskArrayReader.__init__ = patched_init
+
+
+@memoize
 def patch_all():
+    # change the "retries" parameter default
+    from columnflow.tasks.framework.remote import RemoteWorkflow
+    RemoteWorkflow.retries = RemoteWorkflow.retries.copy(default=3)
+
     patch_mltraining()
     patch_htcondor_workflow_naf_resources()
     # patch_column_alias_strategy()

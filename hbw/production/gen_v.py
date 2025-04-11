@@ -6,8 +6,10 @@ Producers for L1 prefiring weights.
 
 from __future__ import annotations
 
+import law
+
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, InsertableDict, DotDict
+from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column
 
 
@@ -63,8 +65,8 @@ def gen_v_boson(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     dilepton_pair["pdgId"] = dilepton_pdg_id
 
     # check if the V boson type is consistent
-    unique_pdg_id = (set(abs(v_boson.pdgId)) | set(dilepton_pair.pdgId)) - {None}
-    if len(unique_pdg_id) != 1:
+    unique_pdg_id = (set(abs(v_boson.pdgId)) | set(abs(dilepton_pair.pdgId))) - {None}
+    if len(unique_pdg_id) > 1:
         raise Exception(f"found multiple boson types: {unique_pdg_id}")
 
     # save the column
@@ -178,9 +180,10 @@ def vjets_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         kfactor[key] = get_kfactor(boson, key, events.GenVBoson)
 
     weights = {
-        "nominal": kfactor.value,
-        "up": kfactor.value + kfactor.error,
-        "down": kfactor.value - kfactor.error,
+        # NOTE: 1-kfactor for "ew" correction
+        "nominal": 1 - kfactor.value,
+        "up": 1 - kfactor.value + kfactor.error,
+        "down": 1 - kfactor.value - kfactor.error,
     }
 
     # save the weights
@@ -205,24 +208,19 @@ def vjets_weight_skip(self: Producer) -> bool:
     )
 
 
-@vjets_weight.init
-def vjets_weight_init(self: Producer) -> None:
-    shift_inst = getattr(self, "local_shift_inst", None)
-    if not shift_inst:
-        return
-
-
 @vjets_weight.requires
-def vjets_weight_requires(self: Producer, reqs: dict) -> None:
+def vjets_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     if "external_files" in reqs:
         return
 
     from columnflow.tasks.external import BundleExternalFiles
-    reqs["external_files"] = BundleExternalFiles.req(self.task)
+    reqs["external_files"] = BundleExternalFiles.req(task)
 
 
 @vjets_weight.setup
-def vjets_weight_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+def vjets_weight_setup(
+    self: Producer, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
+) -> None:
     bundle = reqs["external_files"]
 
     # create the L1 prefiring weight evaluator
@@ -232,6 +230,7 @@ def vjets_weight_setup(self: Producer, reqs: dict, inputs: dict, reader_targets:
         self.get_vjets_reweighting_file(bundle.files).load(formatter="gzip").decode("utf-8"),
     )
     corrections = self.get_vjets_reweighting_config()
+
     self.vjets_reweighting_evaluators = {
         obj_name: {
             key: correction_set[correction_name]

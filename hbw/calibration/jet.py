@@ -10,7 +10,6 @@ import functools
 
 from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column
-from columnflow.calibration.cms.jets import jec
 from columnflow.calibration import calibrator, Calibrator
 
 
@@ -24,9 +23,9 @@ ak = maybe_import("awkward")
 
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
-
-# custom jec calibrator that only runs nominal correction
-jec_nominal = jec.derive("jec_nominal", cls_dict={"uncertainty_sources": ["Total"]})
+#
+# BJet calibrator
+#
 
 
 @calibrator(
@@ -89,23 +88,22 @@ def bjet_regression(
 @bjet_regression.init
 def bjet_regression_init(self: Calibrator):
     # setup only required by CalibrateEvents task itself
-    if self.task and self.task.task_family == "cf.CalibrateEvents":
-        self.b_tagger = {
-            2: "deepjet",
-            3: "particlenet",
-        }[self.config_inst.x.run]
+    self.b_tagger = {
+        2: "deepjet",
+        3: "particlenet",
+    }[self.config_inst.x.run]
 
-        self.b_score_column = {
-            "particlenet": "btagPNetB",
-            "deepjet": "btagDeepFlavB",
-        }[self.b_tagger]
+    self.b_score_column = {
+        "particlenet": "btagPNetB",
+        "deepjet": "btagDeepFlavB",
+    }[self.b_tagger]
 
-        self.b_reg_column = {
-            "particlenet": "PNetRegPtRawCorr",
-            "deepjet": "bRegCorr",
-        }[self.b_tagger]
+    self.b_reg_column = {
+        "particlenet": "PNetRegPtRawCorr",
+        "deepjet": "bRegCorr",
+    }[self.b_tagger]
 
-        self.btag_wp = self.config_inst.x("btag_wp", "medium")
+    self.btag_wp = self.config_inst.x("btag_wp", "medium")
 
-        self.uses.add(f"Jet.{self.b_score_column}")
-        self.uses.add(f"Jet.{self.b_reg_column}")
+    self.uses.add(f"Jet.{self.b_score_column}")
+    self.uses.add(f"Jet.{self.b_reg_column}")

@@ -97,16 +97,13 @@ class DenseModelMixin(object):
             epsilon=1e-6, amsgrad=False,
         )
 
-        model.compile(
-            loss=cumulated_crossentropy,
-            # NOTE: we'd preferrably use the Keras CCE, but it does not work when assigning one event
-            #       to multiple classes (target with multiple entries != 0)
-            # loss ="categorical_crossentropy",
-            # loss=tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE),
-            optimizer=optimizer,
-            metrics=["categorical_accuracy"],
-            weighted_metrics=["categorical_accuracy"],
-        )
+        model_compile_kwargs = {
+            "loss": "categorical_crossentropy" if self.negative_weights == "ignore" else cumulated_crossentropy,
+            "optimizer": optimizer,
+            "metrics": ["categorical_accuracy"],
+            "weighted_metrics": ["categorical_accuracy"],
+        }
+        model.compile(**model_compile_kwargs)
 
         return model
 
