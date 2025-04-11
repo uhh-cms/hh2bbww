@@ -113,21 +113,21 @@ def add_variables(config: od.Config) -> None:
         expression="event",
         binning=(1, 0.0, 1.0e9),
         x_title="Event number",
-        discrete_x=True,
+        # discrete_x=True,
     )
     config.add_variable(
         name="run",
         expression="run",
         binning=(1, 100000.0, 500000.0),
         x_title="Run number",
-        discrete_x=True,
+        # discrete_x=True,
     )
     config.add_variable(
         name="lumi",
         expression="luminosityBlock",
         binning=(1, 0.0, 5000.0),
         x_title="Luminosity block",
-        discrete_x=True,
+        # discrete_x=True,
     )
 
     #
@@ -243,7 +243,7 @@ def add_variables(config: od.Config) -> None:
     )
 
     config.add_variable(
-        # NOTE: only works when running `prepare_objects` in WeightProducer
+        # NOTE: only works when running `prepare_objects` in HistProducer
         name="ptll",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         binning=(240, 0., 1200.),
@@ -449,7 +449,46 @@ def add_variables(config: od.Config) -> None:
         expression="Jet.pt",
         binning=(40, 0, 400),
         unit="GeV",
-        x_title="$p_{T}$ of all jets",
+        x_title=r"$p_{T}$ of central jets",
+    )
+    config.add_variable(
+        name="jets_eta",
+        expression="Jet.eta",
+        binning=(50, -2.5, 2.5),
+        unit="GeV",
+        x_title=r"$\eta$ of central jets",
+    )
+    config.add_variable(
+        name="forwardjets_pt",
+        expression="ForwardJet.pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title=r"$p_{T}$ of forward jets",
+    )
+    config.add_variable(
+        name="forwardjets_eta",
+        expression="ForwardJet.eta",
+        binning=(96, -4.8, 4.8),
+        unit="GeV",
+        x_title=r"$\eta$ of forward jets",
+    )
+    config.add_variable(
+        name="incljets_pt",
+        # expression=lambda events: events.InclJet.pt,
+        expression="InclJet.pt",
+        binning=(40, 0, 400),
+        unit="GeV",
+        x_title=r"$p_{T}$ of all jets",
+        aux={"inputs": {"{Jet,ForwardJet}.{pt,eta,phi,mass}"}},
+    )
+    config.add_variable(
+        name="incljets_eta",
+        # expression=lambda events: events.InclJet.eta,
+        expression="InclJet.eta",
+        binning=(96, -4.8, 4.8),
+        unit="GeV",
+        x_title=r"$\eta$ of all jets",
+        aux={"inputs": {"{Jet,ForwardJet}.{pt,eta,phi,mass}"}},
     )
 
     # Jets (4 pt-leading jets)
@@ -594,73 +633,92 @@ def add_variables(config: od.Config) -> None:
                 )
 
     # FatJets (2 pt-leading fatjets)
-    for i in range(2):
-        config.add_variable(
-            name=f"fatjet{i}_pt",
-            expression=f"FatJet.pt[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 170., 500.),
-            unit="GeV",
-            x_title=r"FatJet %i $p_{T}$" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_eta",
-            expression=f"FatJet.eta[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(50, -2.5, 2.5),
-            x_title=r"FatJet %i $\eta$" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_phi",
-            expression=f"FatJet.phi[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, -3.2, 3.2),
-            x_title=r"FatJet %i $\phi$" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_mass",
-            expression=f"FatJet.mass[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 250),
-            unit="GeV",
-            x_title=r"FatJet %i mass" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_msoftdrop",
-            expression=f"FatJet.msoftdrop[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 250),
-            unit="GeV",
-            x_title=r"FatJet %i softdrop mass" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_tau1",
-            expression=f"FatJet.tau1[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"FatJet %i $\tau_1$" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_tau2",
-            expression=f"FatJet.tau2[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"FatJet %i $\tau_2$" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_btagHbb".lower(),
-            expression=f"FatJet.btagHbb[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"FatJet %i btagHbb" % i,
-        )
-        config.add_variable(
-            name=f"fatjet{i}_deepTagMD_HbbvsQCD".lower(),
-            expression=f"FatJet.deepTagMD_HbbvsQCD[:,{i}]",
-            null_value=EMPTY_FLOAT,
-            binning=(40, 0, 1),
-            x_title=r"FatJet %i deepTagMD_HbbvsQCD " % i,
-        )
+    for obj in ("FatJet", "FatBjet"):
+        for i in range(1):
+            config.add_variable(
+                name=f"{obj}{i}_pt".lower(),
+                expression=f"{obj}.pt[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 170., 500.),
+                unit="GeV",
+                x_title=rf"{obj} %i $p_{{T}}$" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            )
+            config.add_variable(
+                name=f"{obj}{i}_eta".lower(),
+                expression=f"{obj}.eta[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(50, -2.5, 2.5),
+                x_title=rf"{obj} %i $\eta$" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            )
+            config.add_variable(
+                name=f"{obj}{i}_phi".lower(),
+                expression=f"{obj}.phi[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, -3.2, 3.2),
+                x_title=rf"{obj} %i $\phi$" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            )
+            config.add_variable(
+                name=f"{obj}{i}_mass".lower(),
+                expression=f"{obj}.mass[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 250),
+                unit="GeV",
+                x_title=rf"{obj} %i mass" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            )
+            config.add_variable(
+                name=f"{obj}{i}_msoftdrop".lower(),
+                expression=f"{obj}.msoftdrop[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 250),
+                unit="GeV",
+                x_title=rf"{obj} %i softdrop mass" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,msoftdrop}"} if obj == "FatBjet" else set()},  # noqa: E501
+            )
+            config.add_variable(
+                name=f"{obj}{i}_particleNet_XbbVsQCD".lower(),
+                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                x_title=rf"{obj} %i particleNet_XbbVsQCD" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            )
+            # config.add_variable(
+            #     name=f"{obj}{i}_particleNetWithMass_HbbVsQCD".lower(),
+            #     expression=f"{obj}.particleNetWithMass_HbbVsQCD[:,{i}]",
+            #     null_value=EMPTY_FLOAT,
+            #     binning=(40, 0, 1),
+            #     x_title=rf"{obj} %i particleNetWithMass_HbbVsQCD" % i,
+            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            # )
+            # config.add_variable(
+            #     name=f"{obj}{i}_tau1".lower(),
+            #     expression=f"{obj}.tau1[:,{i}]",
+            #     null_value=EMPTY_FLOAT,
+            #     binning=(40, 0, 1),
+            #     x_title=rf"{obj} %i $\tau_1$" % i,
+            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass}"} if obj == "FatBjet" else set()},
+            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            # )
+            # config.add_variable(
+            #     name=f"{obj}{i}_tau2".lower(),
+            #     expression=f"{obj}.tau2[:,{i}]",
+            #     null_value=EMPTY_FLOAT,
+            #     binning=(40, 0, 1),
+            #     x_title=rf"{obj} %i $\tau_2$" % i,
+            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            # )
+            # config.add_variable(
+            #     name=f"{obj}{i}_btagHbb".lower(),
+            #     expression=f"{obj}.btagHbb[:,{i}]",
+            #     null_value=EMPTY_FLOAT,
+            #     binning=(40, 0, 1),
+            #     x_title=rf"{obj} %i btagHbb" % i,
+            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
+            # )
 
     # Barrel and endcap objects
     barrelobj_expr = lambda events, obj, field, i: (

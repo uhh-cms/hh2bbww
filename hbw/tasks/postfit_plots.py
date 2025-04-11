@@ -11,13 +11,14 @@ from collections import OrderedDict, defaultdict
 import law
 import luigi
 import order as od
-from columnflow.tasks.framework.base import ConfigTask
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
-    CalibratorsMixin, DatasetsProcessesMixin,
+    CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin,
+    HistProducerClassMixin,
+    InferenceModelMixin, MLModelsMixin, DatasetsProcessesMixin,
 )
+from columnflow.tasks.histograms import MergeHistograms
 from columnflow.tasks.framework.plotting import (
-    PlotBase, PlotBase1D, ProcessPlotSettingMixin,  # VariablesPlotSettingMixin,
+    PlotBase, PlotBase1D, ProcessPlotSettingMixin,
 )
 from columnflow.tasks.framework.decorators import view_output_plots
 from hbw.tasks.base import HBWTask
@@ -140,11 +141,16 @@ def plot_postfit_shapes(
         shape_norm=shape_norm,
         hide_errors=hide_errors,
     )
+    try:
+        plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
+        plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
+        print(plot_config["mc_stat_unc"]["kwargs"])
+    except KeyError:
+        logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
 
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-
     # since we are rebinning, the xlim should be defined based on the histograms itself
     bin_edges = list(hists.values())[0].axes[0].edges
     default_style_config["ax_cfg"]["xlim"] = (bin_edges[0], bin_edges[-1])
@@ -157,19 +163,18 @@ def plot_postfit_shapes(
 
 
 class PlotPostfitShapes(
-    # NOTE: mixins might be wrong and could (should?) be extended to MultiConfigTask
     HBWTask,
     PlotBase1D,
     ProcessPlotSettingMixin,
     DatasetsProcessesMixin,
-    # to correctly setup our InferenceModel, we need all these mixins, but hopefully, all these
-    # parameters are automatically resolved correctly
-    InferenceModelMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ReducerClassMixin,
+    ProducerClassesMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    ConfigTask,
+    HistProducerClassMixin,
+    InferenceModelMixin,
+    # HistHookMixin,
 ):
     """
     Task that creates Postfit shape plots based on a fit_diagnostics file.
@@ -181,8 +186,11 @@ class PlotPostfitShapes(
     - pass correct binning information
     """
 
+    single_config = True
+    resolution_task_cls = MergeHistograms
+
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
-    datasets = None
+    # datasets = None
 
     plot_function = PlotBase.plot_function.copy(
         default="hbw.tasks.postfit_plots.plot_postfit_shapes",
@@ -198,6 +206,10 @@ class PlotPostfitShapes(
         default=False,
         description="Whether to do prefit or postfit plots; defaults to False",
     )
+
+    # @property
+    # def config_inst(self) -> od.Config:
+    #     return self.config_insts[0]
 
     @property
     def fit_type(self) -> str:
@@ -225,8 +237,9 @@ class PlotPostfitShapes(
             channel = self.inference_model_inst.get_categories_with_process(proc_key)[0]
             has_category = self.inference_model_inst.has_category(channel)
             if has_category:
+                # config_data = channel.config_data.get(self.config_inst.name)
                 inference_process = self.inference_model_inst.get_process(proc_key, channel)
-                proc_inst = self.config_inst.get_process(inference_process.config_process)
+                proc_inst = self.config_inst.get_process(inference_process.config_data[self.config_inst.name].process)
             else:
                 # try getting proc inst directly via config
                 proc_inst = self.config_inst.get_process(proc_key, default=None)
@@ -272,10 +285,8 @@ class PlotPostfitShapes(
         # map processes in root shape to corresponding process instance used for plotting
         hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
         hist_map = self.prepare_hist_map(hist_processes, process_insts)
-
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
-
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
             if not has_category:
@@ -295,12 +306,19 @@ class PlotPostfitShapes(
 
             if has_category:
                 inference_category = self.inference_model_inst.get_category(channel)
-                config_category = self.config_inst.get_category(inference_category.config_category)
-                variable_inst = self.config_inst.get_variable(inference_category.config_variable)
+                config_data = inference_category.config_data.get(self.config_inst.name)
+                config_category = self.config_inst.get_category(config_data.category)
+                variable_inst = self.config_inst.get_variable(config_data.variable)
             else:
                 # default to dummy Category and Variable
                 config_category = od.Category(channel, id=1)
                 variable_inst = od.Variable("dummy")
+
+            # sort histograms
+            hists = {
+                proc_inst: hists[proc_inst]
+                for proc_inst in sorted(hists.keys(), key=self.processes.index)
+            }
 
             # call the plot function
             h = hists.copy()  # NOTE: copy produced, so actual process is not modified by process settings

@@ -60,7 +60,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
         # VBF features
-        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        "mli_vbf_deta", "mli_vbf_mass", "mli_vbf_tag",
         # low-level features
         "mli_met_pt",
     ] + [
@@ -152,6 +152,7 @@ dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
 dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+    "epochs": 6,
 })
 dl_22 = DenseClassifierDL.derive("dl_22", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
@@ -194,7 +195,7 @@ dl_22post_sigtest = dl_22post.derive("dl_22post_sigtest", cls_dict={
     "processes": ["sig_01", "sig_25"],
 })
 
-dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
+dl_22post_test1 = dl_22post.derive("dl_22post_test1", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "combine_processes": {
         "signal": {
@@ -468,7 +469,7 @@ dl_22_procs1_w0_inp1 = DenseClassifierDL.derive("dl_22_procs1_w0_inp1", cls_dict
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
         # VBF features
-        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        "mli_vbf_deta", "mli_vbf_mass", "mli_vbf_tag",
         # low-level features
         "mli_met_pt",
     ] + [
@@ -481,6 +482,148 @@ dl_22_procs1_w0_inp1 = DenseClassifierDL.derive("dl_22_procs1_w0_inp1", cls_dict
         for var in ["pt", "eta"]
     ],
 })
+
+inp2 = [
+    # event features
+    "mli_ht", "mli_n_jet", "mli_n_btag",
+    "mli_b_score_sum",
+    # bb system
+    "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
+    "mli_mindr_lb",
+    # ll system
+    "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+    "mli_min_dr_llbb",
+    "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
+    "mli_mbbllMET", "mli_dr_bb_llMET",
+    # VBF features
+    "mli_vbf_deta", "mli_vbf_mass", "mli_vbf_tag",
+    # low-level features
+    "mli_met_pt",
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["b1", "b2", "j1"]
+    for var in ["pt", "eta", "b_score"]
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["lep", "lep2"]
+    for var in ["pt", "eta"]
+]
+inp3 = [
+    # event features
+    "mli_ht", "mli_n_jet", "mli_n_btag",
+    "mli_b_score_sum",
+    # bb system
+    "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
+    "mli_mindr_lb",
+    # ll system
+    "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+    "mli_min_dr_llbb",
+    "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
+    "mli_mbbllMET", "mli_dr_bb_llMET",
+    # VBF features
+    "mli_full_vbf_deta", "mli_full_vbf_mass", "mli_full_vbf_tag",
+    # low-level features
+    "mli_met_pt",
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["b1", "b2", "j1"]
+    for var in ["pt", "eta", "b_score"]
+] + [
+    f"mli_{obj}_{var}"
+    for obj in ["lep", "lep2"]
+    for var in ["pt", "eta"]
+]
+dl_22post_procs1_w0_inp2 = DenseClassifierDL.derive("dl_22post_procs1_w0_inp2", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "tt", "st", "dy", "h"],
+    "ml_process_weights": {
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "tt": 2,
+        "st": 2,
+        "dy": 2,
+        "h": 2,
+    },
+    "input_features": inp2,
+})
+dl_22post_procs2_w0_inp2 = DenseClassifierDL.derive("dl_22post_procs2_w0_inp2", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "negative_weights": "ignore",
+    "combine_processes": {
+        "signal_ggf2": {
+            # "name": "tt_and_st",
+            "label": "Signal GGF",
+            "sub_processes": [
+                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+            ],
+            "weighting": "equal",
+        },
+        "signal_vbf2": {
+            # "name": "tt_and_st",
+            "label": "Signal VBF",
+            "sub_processes": [
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+
+            ],
+            "weighting": "equal",
+        },
+    },
+    "processes": [
+        "signal_ggf2",
+        "signal_vbf2",
+        "tt",
+        "st",
+        "dy",
+        "h",
+    ],
+    "ml_process_weights": {
+        "signal_ggf2": 1,
+        "signal_vbf2": 1,
+        "tt": 2,
+        "st": 2,
+        "dy": 2,
+        "h": 2,
+    },
+    "input_features": inp2,
+})
+dl_22post_procs2_w1_inp2 = dl_22post_procs2_w0_inp2.derive(
+    "dl_22post_procs2_w1_inp2",
+    cls_dict={"ml_process_weights": {
+        "signal_ggf2": 1,
+        "sigal_vbf2": 1,
+        "tt": 8,
+        "st": 2,
+        "dy": 2,
+        "h": 1,
+    }},
+)
+dl_22_procs2_w1_inp2 = dl_22post_procs2_w0_inp2.derive(
+    "dl_22_procs2_w1_inp2",
+    cls_dict={
+        "training_configs": lambda self, requested_configs: ["c22post", "c22pre"],
+        "ml_process_weights": {
+            "signal_ggf2": 1,
+            "sigal_vbf2": 1,
+            "tt": 8,
+            "st": 2,
+            "dy": 2,
+            "h": 1,
+        },
+    },
+)
+
+dl_22post_procs2_w0_inp3 = dl_22post_procs2_w0_inp2.derive(
+    "dl_22post_procs2_w0_inp3",
+    cls_dict={"input_features": inp3},
+)
 
 
 dl_22_procs2 = DenseClassifierDL.derive("dl_22_procs2", cls_dict={

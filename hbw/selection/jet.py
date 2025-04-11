@@ -65,14 +65,16 @@ def jet_selection(
     electron = events.Electron[lepton_results.objects.Electron.Electron]
     muon = events.Muon[lepton_results.objects.Muon.Muon]
 
-    jet_mask = (
+    jet_mask_incl = (
         (events.Jet.pt >= self.jet_pt) &
-        (abs(events.Jet.eta) <= 2.4) &
+        (abs(events.Jet.eta) <= 4.7) &
         (events.Jet.TightLepVeto) &
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
         ak.all(events.Jet.metric_table(electron) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(muon) > 0.4, axis=2)
     )
+    jet_mask = jet_mask_incl & (abs(events.Jet.eta) <= 2.4)
+    forward_jet_mask = jet_mask_incl & (abs(events.Jet.eta) > 2.4) & (abs(events.Jet.eta) <= 4.7)
 
     # apply loose Jet puId to jets with pt below 50 GeV (not in Run3 samples so skip this for now)
     if self.config_inst.x.run == 2:
@@ -80,6 +82,7 @@ def jet_selection(
         jet_mask = jet_mask & jet_pu_mask
 
     # get the jet indices for pt-sorting of jets
+    forward_jet_indices = masked_sorted_indices(forward_jet_mask, events.Jet.pt)
     jet_indices = masked_sorted_indices(jet_mask, events.Jet.pt)
 
     steps["nJetReco1"] = ak.num(events.Jet) >= 1
@@ -122,6 +125,7 @@ def jet_selection(
         objects={
             "Jet": {
                 "Jet": jet_indices,
+                "ForwardJet": forward_jet_indices,
                 "Bjet": bjet_indices,
                 "Lightjet": lightjet_indices,
             },

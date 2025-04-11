@@ -112,8 +112,8 @@ def catid_lep(
         muon = events.Muon
 
     mask = (
-        (ak.sum(electron.pt > 0, axis=-1) == self.n_electron) &
-        (ak.sum(muon.pt > 0, axis=-1) == self.n_muon)
+        (ak.sum(electron["pt"] > 0, axis=-1) == self.n_electron) &
+        (ak.sum(muon["pt"] > 0, axis=-1) == self.n_muon)
     )
     return events, mask
 
@@ -138,7 +138,7 @@ def catid_ge3lep(
         electron = events.Electron
         muon = events.Muon
 
-    mask = ak.sum(electron.pt > 0, axis=-1) + ak.sum(muon.pt > 0, axis=-1) >= 3
+    mask = ak.sum(electron["pt"] > 0, axis=-1) + ak.sum(muon["pt"] > 0, axis=-1) >= 3
     return events, mask
 
 
@@ -223,13 +223,14 @@ def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
 # Jet categorization
 #
 
-@categorizer(uses={"Jet.pt", "HbbJet.pt"})
+@categorizer(uses={"Jet.pt", "FatJet.particleNet_XbbVsQCD"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
-    for the H->bb decay
+    fulfilling medium WP of PNetHbb
     """
-    mask = (ak.sum(events.HbbJet.pt > 0, axis=-1) >= 1)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > hbb_btag_wp_score, axis=-1) >= 1)
     return events, mask
 
 
@@ -239,7 +240,8 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     Categorization of events in the resolved category: presence of no AK8 jet candidate
     for the H->bb decay
     """
-    mask = (ak.sum(events.HbbJet.pt > 0, axis=-1) == 0)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > hbb_btag_wp_score, axis=-1) == 0)
     return events, mask
 
 
@@ -293,7 +295,7 @@ ml_processes = [
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
     "tt", "st", "w_lnu", "dy", "v_lep", "h",
-    "dy_m50toinf", "tt_dl",
+    "dy_m50toinf", "tt_dl", "st_tchannel_t",
 ]
 for proc in ml_processes:
     @categorizer(

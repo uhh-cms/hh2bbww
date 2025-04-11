@@ -205,7 +205,7 @@ def stylize_processes(config: od.Config) -> None:
         if "hh_" in proc.name.lower():
             proc.add_tag("is_signal")
             proc.unstack = True
-            proc.scale = "stack"
+            # proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
@@ -236,6 +236,7 @@ default_var_binning = {
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
+    "particleNet_XbbVsQCD": (40, 0, 1),
     # Leptons
     "dxy": (40, 0, 0.1),
     "dz": (40, 0, 0.1),

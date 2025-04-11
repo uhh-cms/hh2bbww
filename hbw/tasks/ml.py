@@ -21,13 +21,13 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements, DatasetTask
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin,
     CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
     ProducersMixin,
     MLModelTrainingMixin,
     MLModelsMixin,
     MLModelDataMixin,
-    SelectorStepsMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.framework.decorators import view_output_plots
@@ -40,10 +40,11 @@ logger = law.logger.get_logger(__name__)
 
 
 class SimpleMergeMLEvents(
-    MLModelDataMixin,
-    ProducersMixin,
-    SelectorMixin,
     CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
+    ProducersMixin,
+    MLModelDataMixin,
     DatasetTask,
     law.LocalWorkflow,
     RemoteWorkflow,
@@ -106,11 +107,12 @@ class SimpleMergeMLEvents(
 
 
 class MLOptimizer(
+    CalibratorsMixin,
+    SelectorMixin,
+    ReducerMixin,
+    ProducersMixin,
     HBWTask,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
 ):
     reqs = Requirements(MLTraining=MLTraining)
 
@@ -182,6 +184,7 @@ class MLPreTraining(
     - input_arrays: list of input arrays to be loaded. Each array is a string, pointing to a property
     of the data_loader class that returns the data.
     """
+    resolution_task_cls = SimpleMergeMLEvents
 
     # never run this task on GPU
     htcondor_gpus = 0
@@ -239,11 +242,11 @@ class MLPreTraining(
         }
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1,
+                    branch=-1,
                 )
                 for dataset_inst in dataset_insts
             }
@@ -277,11 +280,12 @@ class MLPreTraining(
         # load stats for all processes
         reqs["stats"] = {
             config_inst.name: {
-                dataset_inst.name: self.reqs.MergeMLStats.req(
+                dataset_inst.name: self.reqs.MergeMLStats.req_different_branching(
                     self,
                     config=config_inst.name,
                     dataset=dataset_inst.name,
-                    tree_index=-1)
+                    branch=-1,
+                )
                 for dataset_inst in dataset_insts
             }
             for config_inst, dataset_insts in self.ml_model_inst.used_datasets.items()
@@ -345,7 +349,7 @@ class MLPreTraining(
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
                 # gather stats per ml process
-                stats = inputs["stats"][config_inst.name][dataset]["stats"].load(formatter="json")
+                stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
                 proc_inst = config_inst.get_process(process)
                 sub_id = [
@@ -403,8 +407,8 @@ class MLPreTraining(
         if self.ml_model_inst.negative_weights == "ignore":
             ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
             logger.info(
-                f"{self.ml_model_inst.negative_weights} method chosen to hanlde negative weights:",
-                " All negative weights will be removed from training.",
+                f"{self.ml_model_inst.negative_weights} method chosen to handle negative weights: "
+                "All negative weights will be removed from training.",
             )
         else:
             ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats, skip_mask=True)
@@ -460,6 +464,8 @@ class MLEvaluationSingleFold(
     """
     This task creates evaluation outputs for a single trained MLModel.
     """
+    resolution_task_cls = SimpleMergeMLEvents
+
     sandbox = None
 
     allow_empty_ml_model = False
@@ -598,6 +604,8 @@ class PlotMLResultsSingleFold(
     """
     This task creates plots for the results of a single trained MLModel.
     """
+    resolution_task_cls = SimpleMergeMLEvents
+
     sandbox = None
 
     allow_empty_ml_model = False

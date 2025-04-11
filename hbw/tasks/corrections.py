@@ -7,14 +7,15 @@ import luigi
 
 from functools import cached_property
 
-from columnflow.tasks.framework.base import Requirements, ConfigTask
+from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin, CalibratorsMixin,
+    SelectorClassMixin, CalibratorClassesMixin,
+    DatasetsProcessesMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.selection import MergeSelectionStats
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.config_util import get_datasets_from_process
+# from columnflow.config_util import get_datasets_from_process
 from hbw.tasks.base import HBWTask
 
 ak = maybe_import("awkward")
@@ -23,16 +24,21 @@ np = maybe_import("numpy")
 
 
 logger = law.logger.get_logger(__name__)
+logger_dev = law.logger.get_logger(f"{__name__}-dev")
 
 
 class GetBtagNormalizationSF(
     HBWTask,
-    SelectorMixin,
-    CalibratorsMixin,
-    ConfigTask,
+    SelectorClassMixin,
+    CalibratorClassesMixin,
+    DatasetsProcessesMixin,
+    ShiftTask,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    resolution_task_cls = MergeSelectionStats
+
+    single_config = True
     reqs = Requirements(
         RemoteWorkflow.reqs,
         MergeSelectionStats=MergeSelectionStats,
@@ -55,10 +61,10 @@ class GetBtagNormalizationSF(
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    processes = law.CSVParameter(
-        # default=("tt_dl",),
+    processes = DatasetsProcessesMixin.processes.copy(
         default=("tt", "dy_m50toinf", "dy_m10to50"),
         description="Processes to consider for the scale factors",
+        add_default_to_description=True,
     )
 
     def create_branch_map(self):
@@ -67,15 +73,13 @@ class GetBtagNormalizationSF(
 
     @cached_property
     def process_insts(self):
-        processes = [self.config_inst.get_process(process) for process in self.processes]
-        return processes
+        process_insts = [self.config_inst.get_process(process) for process in self.processes]
+        return process_insts
 
     @cached_property
     def dataset_insts(self):
-        datasets = set()
-        for process_inst in self.process_insts:
-            datasets.update(get_datasets_from_process(self.config_inst, process_inst))
-        return list(datasets)
+        dataset_insts = [self.config_inst.get_dataset(dataset) for dataset in self.datasets]
+        return dataset_insts
 
     def workflow_requires(self):
         reqs = super().workflow_requires()

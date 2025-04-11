@@ -34,7 +34,7 @@ def ml_inputs_producer(container):
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
-    default_ml_model = None
+    default_ml_model = ()
 
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
@@ -51,9 +51,9 @@ def default_ml_model(cls, container, task_params):
         if inference_model in (None, law.NO_STR, RESOLVE_DEFAULT):
             inference_model = container.x.default_inference_model
 
-        # get the default_ml_model from the inference_model_inst
-        inference_model_inst = InferenceModel.get_cls(inference_model)
-        default_ml_model = getattr(inference_model_inst, "ml_model_name", default_ml_model)
+        # get the default_ml_model from the inference_model_cls
+        inference_model_cls = InferenceModel.get_cls(inference_model)
+        default_ml_model = getattr(inference_model_cls, "ml_model_name", default_ml_model)
 
     return default_ml_model
 
@@ -109,19 +109,19 @@ def set_config_defaults_and_groups(config_inst):
     # Defaults
     #
 
-    # NOTE: many of these have been moved to analysis_inst, TODO cleanup
     # TODO: the default dataset is currently still being set up by the law.cfg
     config_inst.x.default_dataset = default_signal_dataset = f"{default_signal_process}_{signal_generator}"
-    # config_inst.x.default_calibrator = default_calibrator(config_inst)
-    # config_inst.x.default_selector = default_selector(config_inst)
+    config_inst.x.default_calibrator = default_calibrator(config_inst)
+    config_inst.x.default_selector = default_selector(config_inst)
+    config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
-    # config_inst.x.default_producer = default_producers
-    # config_inst.x.default_weight_producer = "default"
-    # # config_inst.x.default_weight_producer = "btag_not_normalized"
-    # config_inst.x.default_ml_model = default_ml_model
+    config_inst.x.default_producer = default_producers
+    # config_inst.x.default_hist_producer = "default"
+    config_inst.x.default_hist_producer = "with_trigger_weight"
+    config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
-    # config_inst.x.default_categories = ["incl"]
-    # config_inst.x.default_variables = ["jet1_pt"]
+    config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
+    config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
     config_inst.x.default_general_settings = ("data_mc_plots",)
@@ -261,6 +261,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
         "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
+        "dl_preml_incl": bracket_expansion(["incl", "{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
         "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
         "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
         "dl_preml_1": bracket_expansion(["incl", "{,sr,ttcr,dycr}__{,2e,2mu,emu}"]),
@@ -314,22 +315,37 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": (
+        "SR_dl": [
+            "sr__2e__1b__ml_signal_ggf2", "sr__2e__2b__ml_signal_ggf2",
             "sr__1b__ml_signal_ggf", "sr__1b__ml_signal_ggf2", "sr__2b__ml_signal_ggf", "sr__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
             "sr__1b__ml_signal_ggf4", "sr__1b__ml_signal_ggf5", "sr__2b__ml_signal_ggf4", "sr__2b__ml_signal_ggf5",
-            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
             "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
             "sr__1b", "sr__2b",
-        ),
+        ] + bracket_expansion(["sr__{2e,2mu,emu}__{1b,2b}__ml_{signal_ggf2,signal_vbf2}"]),
         "vbfSR_dl": (
+            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
+            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
             "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
             "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        ),
+        "SR_dl_resolved": (
+            "sr__resolved__1b__ml_signal_ggf2",
+            "sr__resolved__2b__ml_signal_ggf2",
+        ),
+        "vbfSR_dl_resolved": (
+            "sr__resolved__1b__ml_signal_vbf2",
+            "sr__resolved__2b__ml_signal_vbf2",
+        ),
+        "SR_dl_boosted": (
+            "sr__boosted__ml_signal_ggf2",
+        ),
+        "vbfSR_dl_boosted": (
+            "sr__boosted__ml_signal_vbf2",
         ),
         "BR_dl": (
             "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
@@ -491,15 +507,17 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_boosted": 3,
         # Dilepton
         "SR_dl": 10,
-        "vbfSR_dl": 5,
+        "vbfSR_dl": 10,
         "BR_dl": 3,
         "SR_dl_resolved": 10,
-        "SR_dl_boosted": 5,
-        "vbfSR_dl_resolved": 5,
-        "vbfSR_dl_boosted": 3,
+        "SR_dl_boosted": 10,
+        "vbfSR_dl_resolved": 10,
+        "vbfSR_dl_boosted": 10,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
+    is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
+    is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
@@ -510,20 +528,20 @@ def set_config_defaults_and_groups(config_inst):
 
     config_inst.x.inference_category_rebin_processes = {
         # Single lepton
-        "SR_sl": is_signal_sm,
-        "vbfSR_sl": is_signal_sm,
+        "SR_sl": is_signal_sm_ggf,
+        "vbfSR_sl": is_signal_sm_vbf,
         "SR_sl_resolved": is_signal_sm,
         "SR_sl_boosted": is_signal_sm,
         "vbfSR_sl_resolved": is_signal_sm,
         "vbfSR_sl_boosted": is_signal_sm,
         "BR_sl": is_background,
         # Dilepton
-        "SR_dl": is_signal_sm,
-        "vbfSR_dl": is_signal_sm,
-        "SR_dl_resolved": is_signal_sm,
-        "SR_dl_boosted": is_signal_sm,
-        "vbfSR_dl_resolved": is_signal_sm,
-        "vbfSR_dl_boosted": is_signal_sm,
+        "SR_dl": is_signal_sm_ggf,
+        "vbfSR_dl": is_signal_sm_vbf,
+        "SR_dl_resolved": is_signal_sm_ggf,
+        "SR_dl_boosted": is_signal_sm_ggf,
+        "vbfSR_dl_resolved": is_signal_sm_vbf,
+        "vbfSR_dl_boosted": is_signal_sm_vbf,
         "BR_dl": is_background,
 
     }

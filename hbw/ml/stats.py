@@ -15,7 +15,7 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
 from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.default import default_weight_producer
+from hbw.weight.default import default_hist_producer
 
 
 ak = maybe_import("awkward")
@@ -50,6 +50,7 @@ def del_sub_proc_stats(
 def ml_preparation(
     self: Producer,
     events: ak.Array,
+    task: law.Task,
     stats: dict = {},
     fold_indices: ak.Array | None = None,
     ml_model_inst: MLModel | None = None,
@@ -58,7 +59,7 @@ def ml_preparation(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
-    if self.task.task_family == "cf.PrepareMLEvents":
+    if task.task_family == "cf.PrepareMLEvents":
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
         sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
@@ -70,9 +71,9 @@ def ml_preparation(
         "num_events": Ellipsis,  # all events
     }
 
-    if self.task.dataset_inst.is_mc:
+    if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_weight_producer](events, **kwargs)
+        events, weight = self[default_hist_producer](events, task, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
@@ -121,10 +122,8 @@ def ml_preparation(
 
 @ml_preparation.init
 def ml_preparation_init(self):
-    # TODO: we access self.task.dataset_inst instead of self.dataset_inst due to an issue
-    # with the preparation producer initialization
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
     self.uses.add("stitched_normalization_weight")
-    self.uses.add(default_weight_producer)
+    self.uses.add(default_hist_producer)

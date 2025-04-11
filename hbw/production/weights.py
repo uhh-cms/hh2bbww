@@ -22,13 +22,13 @@ from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from columnflow.production.cms.top_pt_weight import gen_parton_top, top_pt_weight
-from hbw.production.gen_v import gen_v_boson, vjets_weight
+from columnflow.production.cms.top_pt_weight import top_pt_weight
+from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_VJETS, IF_TOP
+from hbw.util import has_tag
 
 
 np = maybe_import("numpy")
@@ -37,11 +37,16 @@ ak = maybe_import("awkward")
 
 # helper
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+logger = law.logger.get_logger(__name__)
 
 
 @producer(
-    uses={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
-    produces={IF_TOP(gen_parton_top), IF_VJETS(gen_v_boson), pu_weight},
+    uses={
+        pu_weight,
+    },
+    produces={
+        pu_weight,
+    },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -49,14 +54,6 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     Wrapper of several event weight producers that are typically called as part of SelectEvents
     since it is required to normalize them before applying certain event selections.
     """
-
-    # compute gen information that will later be needed for top pt reweighting
-    if self.dataset_inst.has_tag("has_top"):
-        events = self[gen_parton_top](events, **kwargs)
-
-    # compute gen information that will later be needed for vector boson pt reweighting
-    if self.dataset_inst.has_tag("is_v_jets"):
-        events = self[gen_v_boson](events, **kwargs)
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
@@ -101,8 +98,7 @@ def event_weights_to_normalize_init(self) -> None:
         self.uses |= {btag_weights}
         # dont store most btag_weights to save storage space, since we can reproduce them in ProduceColumns
         # but keep nominal one for checks/synchronization
-        if hasattr(self, "local_shift_inst") and self.local_shift_inst.name == "nominal":
-            self.produces |= {"btag_weight"}
+        self.produces |= {"btag_weight"}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
@@ -232,7 +228,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 2),
+    version=law.config.get_expanded("analysis", "event_weights_version", 0),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -283,6 +279,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
+    logger.debug(f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
+
     if not getattr(self, "dataset_inst", None):
         return
 
@@ -316,21 +314,30 @@ def event_weights_init(self: Producer) -> None:
 
 
 @producer(
-    uses={"mc_weight"},
-    produces={"mc_weight"},
+    uses={"mc_weight", "genWeight"},
+    produces={"mc_weight", "genWeight"},
     mc_only=True,
 )
-def large_weights_killer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs) -> ak.Array:
     """
     Simple producer that sets eventweights to 0 when too large.
     """
     if self.dataset_inst.is_data:
         raise Exception("large_weights_killer is only callable for MC")
 
-    # TODO: figure out a good threshold when events are considered unphysical
+    # set mc_weight to zero when genWeight is > 0.5 for powheg HH events
+    if self.dataset_inst.has_tag("is_hh") and self.dataset_inst.name.endswith("powheg"):
+        # TODO: this feels very unsafe because genWeight can also be just 1 for all events. To be revisited
+        weight_too_large = abs(events.genWeight) > 0.5
+        logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
+        events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+
+    # check for anomalous weights and store in stats
     median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]
-    weight_too_large = abs(events.mc_weight) > 1000 * median_weight
-    events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+    anomalous_weights_mask = abs(events.mc_weight) > 1000 * median_weight
+    if ak.any(anomalous_weights_mask):
+        logger.warning(f"found {ak.sum(anomalous_weights_mask)} events with weights > 1000 * median weight")
+        stats["num_events_anomalous_weights"] += ak.sum(anomalous_weights_mask)
 
     return events
 

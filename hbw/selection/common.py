@@ -98,6 +98,7 @@ def pre_selection(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
+    task: law.Task,
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
     """ Methods that are called for both SL and DL before calling the selection modules """
@@ -110,13 +111,13 @@ def pre_selection(
     results = SelectionResult()
 
     # run deterministic seeds when no Calibrator has been requested
-    if not self.task.calibrators:
+    if not task.calibrators:
         events = self[deterministic_seeds](events, **kwargs)
 
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
-        events = self[large_weights_killer](events, **kwargs)
+        events = self[large_weights_killer](events, stats, **kwargs)
 
     if self.dataset_inst.is_mc:
         # get hard gen particles
@@ -155,15 +156,18 @@ def pre_selection(
 
 @pre_selection.init
 def pre_selection_init(self: Selector) -> None:
-    if self.task and not self.task.calibrators:
-        self.uses.add(deterministic_seeds)
-        self.produces.add(deterministic_seeds)
-
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
     self.uses.update({hard_gen_particles})
     self.produces.update({hard_gen_particles})
+
+
+@pre_selection.post_init
+def pre_selection_post_init(self: Selector, task: law.Task) -> None:
+    if not task.calibrators:
+        self.uses.add(deterministic_seeds)
+        self.produces.add(deterministic_seeds)
 
 
 @selector(
@@ -278,7 +282,7 @@ def configure_selector(self: Selector):
         attr = getattr(self, attr_name)
 
         if isinstance(attr, Callable):
-            logger.info(f"Calling config function '{attr_name}'")
+            logger.debug(f"Calling config function '{attr_name}'")
             attr = attr()
 
         if attr is None:
