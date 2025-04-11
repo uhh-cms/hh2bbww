@@ -103,7 +103,7 @@ def add_gen_variables(config: od.Config) -> None:
     """
     defines gen-level cutflow variables
     """
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
+    for gp in ["h1", "h2", "b1", "b2", "sec1", "sec2"]:
         config.add_variable(
             name=f"gen_{gp}_pt",
             expression=f"gen_hbw_decay.{gp}.pt",

@@ -914,17 +914,6 @@ def add_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"{met_name} $\phi$".format(met_name=met_name),
     )
-    for U in ["Upara", "Uperp"]:
-        config.add_variable(
-            name=f"{U}",
-            binning=(40, -150, 150),
-            x_title=f"{U}",
-        )
-        config.add_variable(
-            name=f"Corr{U}",
-            binning=(40, -150, 150),
-            x_title=f"{U} corrected",
-        )
 
     # corrected MET
     config.add_variable(
