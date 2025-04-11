@@ -126,7 +126,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         config.add_variable(
             name=f"mli_{prefix}vbf_pt",
             expression=f"mli_{prefix}vbf_pt",
-            binning=(50, 2, 9.5),
+            binning=(40, 0, 1000),
             x_title=rf"VBF pair $p_{{T}}$ ($|\eta| < {eta_range}|$)",
         )
         config.add_variable(
