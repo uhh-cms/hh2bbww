@@ -430,24 +430,30 @@ def has_four_vec(
     return collection_name in events.fields and four_vec_cols.issubset(events[collection_name].fields)
 
 
-def call_once_on_config(include_hash=False):
+def call_once_on_config(func=None, *, include_hash=False):
     """
-    Parametrized decorator to ensure that function *func* is only called once for the config *config*
+    Parametrized decorator to ensure that function *func* is only called once for the config *config*.
+    Can be used with or without parentheses.
     """
-    def outer(func):
-        @wraps(func)
-        def inner(config, *args, **kwargs):
-            tag = f"{func.__name__}_called"
-            if include_hash:
-                tag += f"_{func.__hash__()}"
+    if func is None:
+        # If func is None, it means the decorator was called with arguments.
+        def wrapper(f):
+            return call_once_on_config(f, include_hash=include_hash)
+        return wrapper
 
-            if config.has_tag(tag):
-                return
+    @wraps(func)
+    def inner(config, *args, **kwargs):
+        tag = f"{func.__name__}_called"
+        if include_hash:
+            tag += f"_{func.__hash__()}"
 
-            config.add_tag(tag)
-            return func(config, *args, **kwargs)
-        return inner
-    return outer
+        if config.has_tag(tag):
+            return
+
+        config.add_tag(tag)
+        return func(config, *args, **kwargs)
+
+    return inner
 
 
 def timeit(func):

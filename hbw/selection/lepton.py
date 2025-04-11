@@ -196,6 +196,7 @@ def lepton_definition(
 @lepton_definition.setup
 def lepton_definition_setup(
     self: Selector,
+    task: law.Task,
     reqs: dict,
     inputs: dict,
     reader_targets: dict,

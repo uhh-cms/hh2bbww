@@ -14,11 +14,23 @@ import luigi
 from scinum import Number
 
 
+from columnflow.tasks.framework.base import ConfigTask, Requirements
 from columnflow.tasks.framework.mixins import (
-    ProducersMixin, MLModelsMixin,
+    SelectorMixin, CalibratorsMixin, ProducersMixin, MLModelsMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
+    HistProducerClassMixin,
+    CategoriesMixin,
+    DatasetsProcessesMixin,
+    HistHookMixin,
 )
-from columnflow.tasks.framework.base import MultiConfigTask, ConfigTask, Requirements
-from columnflow.tasks.framework.mixins import DatasetsProcessesMixin, SelectorMixin, CalibratorsMixin
+from columnflow.tasks.histograms import MergeHistograms
+from columnflow.tasks.framework.plotting import (
+    PlotBase,
+    ProcessPlotSettingMixin,
+    VariablePlotSettingMixin,
+)
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.reduction import ReducedEventsUser
 from columnflow.tasks.selection import MergeSelectionStats
@@ -240,7 +252,7 @@ class DumpAnalysisSummary(
     HBWTask,
     ConfigTask,
 ):
-
+    is_single_config = False
     keys_of_interest = law.CSVParameter(
         default=tuple(),
         description="Keys of interest to be printed in the summary",
@@ -301,18 +313,7 @@ class DumpAnalysisSummary(
         self.write_dataset_summary(output["dataset_summary"])
 
 
-class CheckConfig(
-    HBWTask,
-    MLModelsMixin,
-    ProducersMixin,
-    ReducedEventsUser,
-    law.LocalWorkflow,
-):
-    """
-    Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.
-    It only prints some informations from the config inst.
-    Does not require anything, does not output anything.
-    """
+class DummyWorkflow(HBWTask, law.LocalWorkflow):
     # columnar sandbox is always nice to have :)
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
@@ -322,8 +323,13 @@ class CheckConfig(
         default=False,
         description="Whether to start a ipython debugger session or not; default: False",
     )
+    # reqs = Requirements(RemoteWorkflow.reqs)
 
-    settings = SettingsParameter(default={})
+    def create_branch_map(self):
+        return {0: None}
+
+    def workflow_requires(self):
+        return {}
 
     def requires(self):
         return {}
@@ -333,6 +339,21 @@ class CheckConfig(
             "always_incomplete_dummy": self.target("dummy.txt"),
         }
         return output
+
+
+class CheckConfig(
+    ReducedEventsUser,
+    ProducersMixin,
+    MLModelsMixin,
+    DummyWorkflow,
+):
+    """
+    Task that inherits from relevant mixins to build the config inst based on CSP+ML init functions.
+    It only prints some informations from the config inst.
+    Does not require anything, does not output anything.
+    """
+
+    settings = SettingsParameter(default={})
 
     def run(self):
         config = self.config_inst
@@ -360,13 +381,35 @@ class CheckConfig(
             debugger()
 
 
+class CheckMixins(
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
+    MLModelsMixin,
+    HistProducerClassMixin,
+    CategoriesMixin,
+    ProcessPlotSettingMixin,
+    VariablePlotSettingMixin,
+    HistHookMixin,
+    DummyWorkflow,
+):
+    resolution_task_cls = MergeHistograms
+    plot_function = PlotBase.plot_function.copy(
+        default="columnflow.plotting.plot_functions_1d.plot_variable_per_process",
+        add_default_to_description=True,
+    )
+
+    def run(self):
+        if not self.skip_debugger:
+            self.publish_message("starting debugger ....")
+            from hbw.util import debugger
+            debugger()
+
+
 class DatasetSummary(
     HBWTask,
-    MultiConfigTask,
+    ConfigTask,
 ):
-    def requires(self):
-        return {}
-
     def output(self):
         output = {
             "dataset_summary": self.target("dataset_summary.yaml"),
@@ -396,15 +439,6 @@ class CheckColumns(
     """
     Task to inspect columns after Reduction, Production and MLEvaluation.
     """
-
-    debugger = luigi.BoolParameter(
-        default=True,
-        description="Whether to start a ipython debugger session or not; default: True",
-    )
-
-    def output(self):
-        return {"always_incomplete_dummy": self.target("dummy.txt")}
-
     def run(self):
         import awkward as ak
         inputs = self.input()
@@ -432,7 +466,7 @@ class CheckColumns(
             fields = [route.string_column for route in get_ak_routes(columns)]
             self.publish_message(f"{'=' * 10} {key} fields:\n{fields} \n")
 
-        if self.debugger:
+        if not self.skip_debugger:
             # when starting a debugger session, combine all columns into one ak.Array
             events = ak.from_parquet(files["events"])
             events = update_ak_array(events, *[ak.from_parquet(fname) for fname in files.values()])

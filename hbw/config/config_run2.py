@@ -341,6 +341,10 @@ def add_config(
             "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
             "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
+        "particlenet_hbb_vs_qcd": {
+            # AK4 medium WP as placeholder (TODO: replace with actual values)
+            "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
     })
 
     # b-tag configuration. Potentially overwritten by the jet Selector.
@@ -366,6 +370,7 @@ def add_config(
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
     )
+    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["PLACEHOLDER"]
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
 
@@ -381,7 +386,7 @@ def add_config(
 
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
-    cfg.x.top_pt_reweighting_params = {
+    cfg.x.top_pt_weight = {
         "a": 0.0615,
         "a_up": 0.0615 * 1.5,
         "a_down": 0.0615 * 0.5,
@@ -535,6 +540,11 @@ def add_config(
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
+    # trigger SFs
+    cfg.add_shift(name="trigger_sf_up", id=60, type="shape")
+    cfg.add_shift(name="trigger_sf_down", id=61, type="shape")
+    add_shift_aliases(cfg, "trigger_sf", {"trigger_weight": "trigger_weight_{direction}"})
+
     # b-tagging scale factor uncertainties
     cfg.x.btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
@@ -588,6 +598,24 @@ def add_config(
             "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
         },
     )
+    # cfg.add_shift(name="dummy_2022postEE_up", id=209, type="shape")
+    # cfg.add_shift(name="dummy_2022postEE_down", id=210, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022postEE",
+    #     {
+    #         "dummy_weight": "dummy_2022postEE_weight_" + "{direction}",
+    #     },
+    # )
+    # cfg.add_shift(name="dummy_2022preEE_up", id=211, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_down", id=212, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022preEE",
+    #     {
+    #         "dummy_weight": "dummy_2022preEE_weight_" + "{direction}",
+    #     },
+    # )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
@@ -673,13 +701,15 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
 
-    trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    # trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"
+
     # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
 
     # trigger
     from hbw.config.trigger import add_triggers
@@ -789,6 +819,7 @@ def add_config(
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
         "GenPartonTop.pt", "GenVBoson.pt",
+        "gen_dilepton_pt", "gen_dilepton_{vis,all}.{pt,phi}",
         # weight-related columns
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
@@ -797,10 +828,14 @@ def add_config(
         "gen_hbw_decay.*.*",
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
-        # Jets
-        "{Jet,Bjet,Lightjet,VBFJet,Forwardjet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
+        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
-        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
+        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
+        # FatJet particleNet scores (all for now, should be reduced at some point)
+        "FatJet.particleNet*",
+        "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
+        "{FatJet,HbbJet}.particleNetWithMass_HbbVsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",

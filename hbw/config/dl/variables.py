@@ -169,8 +169,13 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_dphi_ll",
         expression="mli_dphi_ll",
         binning=(40, 0, 8),
-        unit="GeV",
         x_title=r"$\Delta \phi_{ll}$",
+    )
+    config.add_variable(
+        name="mli_deta_ll",
+        expression="mli_deta_ll",
+        binning=(40, 0, 6),
+        x_title=r"$\Delta \eta_{ll}$",
     )
     config.add_variable(
         name="mli_ll_pt",

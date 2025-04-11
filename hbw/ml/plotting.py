@@ -491,8 +491,11 @@ def plot_input_features(
     for i, feature_name in enumerate(input_features):
         fig, ax = plt.subplots()
 
-        # NOTE: we could get the variable inst from the feature name
-        variable_inst = model.config_inst.get_variable(feature_name)
+        variable_inst = model.config_inst.get_variable(feature_name, default=None)
+        if not variable_inst:
+            logger.warning(f"Could not get variable instance for {feature_name}, skipping")
+            continue
+
         h = (
             hist.Hist.new
             .StrCat(["train", "validation"], name="type")

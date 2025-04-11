@@ -3,9 +3,10 @@
 """
 Column production methods related to sample normalization event weights.
 """
+import law
 
 from columnflow.production import Producer, producer
-from columnflow.util import maybe_import, InsertableDict
+from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
@@ -39,7 +40,7 @@ def dataset_normalization_weight(self: Producer, events: ak.Array, **kwargs) -> 
 
 
 @dataset_normalization_weight.requires
-def dataset_normalization_weight_requires(self: Producer, reqs: dict) -> None:
+def dataset_normalization_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     """
     Adds the requirements needed by the underlying py:attr:`task` to access selection stats into
     *reqs*.
@@ -49,7 +50,7 @@ def dataset_normalization_weight_requires(self: Producer, reqs: dict) -> None:
     #       (i.e. all datasets that might contain any of the sub processes found in a dataset)
     from columnflow.tasks.selection import MergeSelectionStats
     reqs["selection_stats"] = MergeSelectionStats.req(
-        self.task,
+        task,
         branch=-1,
     )
 
@@ -57,9 +58,10 @@ def dataset_normalization_weight_requires(self: Producer, reqs: dict) -> None:
 @dataset_normalization_weight.setup
 def dataset_normalization_weight_setup(
     self: Producer,
+    task: law.Task,
     reqs: dict,
     inputs: dict,
-    reader_targets: InsertableDict,
+    reader_targets: law.util.InsertableDict,
 ) -> None:
     """
     Load inclusive selection stats and cross sections for the normalization weight calculation.

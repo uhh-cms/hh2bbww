@@ -88,23 +88,22 @@ def bjet_regression(
 @bjet_regression.init
 def bjet_regression_init(self: Calibrator):
     # setup only required by CalibrateEvents task itself
-    if self.task and self.task.task_family == "cf.CalibrateEvents":
-        self.b_tagger = {
-            2: "deepjet",
-            3: "particlenet",
-        }[self.config_inst.x.run]
+    self.b_tagger = {
+        2: "deepjet",
+        3: "particlenet",
+    }[self.config_inst.x.run]
 
-        self.b_score_column = {
-            "particlenet": "btagPNetB",
-            "deepjet": "btagDeepFlavB",
-        }[self.b_tagger]
+    self.b_score_column = {
+        "particlenet": "btagPNetB",
+        "deepjet": "btagDeepFlavB",
+    }[self.b_tagger]
 
-        self.b_reg_column = {
-            "particlenet": "PNetRegPtRawCorr",
-            "deepjet": "bRegCorr",
-        }[self.b_tagger]
+    self.b_reg_column = {
+        "particlenet": "PNetRegPtRawCorr",
+        "deepjet": "bRegCorr",
+    }[self.b_tagger]
 
-        self.btag_wp = self.config_inst.x("btag_wp", "medium")
+    self.btag_wp = self.config_inst.x("btag_wp", "medium")
 
-        self.uses.add(f"Jet.{self.b_score_column}")
-        self.uses.add(f"Jet.{self.b_reg_column}")
+    self.uses.add(f"Jet.{self.b_score_column}")
+    self.uses.add(f"Jet.{self.b_reg_column}")

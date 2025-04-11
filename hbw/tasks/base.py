@@ -59,7 +59,11 @@ class ColumnsBaseTask(
         if not self.pilot:
             if self.producers:
                 reqs["producers"] = [
-                    self.reqs.ProduceColumns.req(self, producer=producer_inst.cls_name)
+                    self.reqs.ProduceColumns.req(
+                        self,
+                        producer=producer_inst.cls_name,
+                        producer_inst=producer_inst,
+                    )
                     for producer_inst in self.producer_insts
                     if producer_inst.produced_columns
                 ]
@@ -78,7 +82,11 @@ class ColumnsBaseTask(
 
         if self.producers:
             reqs["producers"] = [
-                self.reqs.ProduceColumns.req(self, producer=producer_inst.cls_name)
+                self.reqs.ProduceColumns.req(
+                    self,
+                    producer=producer_inst.cls_name,
+                    producer_inst=producer_inst,
+                )
                 for producer_inst in self.producer_insts
                 if producer_inst.produced_columns
             ]

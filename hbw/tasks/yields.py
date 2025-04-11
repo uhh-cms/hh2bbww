@@ -14,11 +14,8 @@ import luigi
 import order as od
 from scinum import Number
 
-from columnflow.tasks.framework.base import Requirements, ConfigTask
-from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin,
-    DatasetsProcessesMixin, CategoriesMixin, WeightProducerMixin,
-)
+from columnflow.tasks.framework.base import Requirements
+from columnflow.tasks.yields import _CreateYieldTable
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.util import dev_sandbox, try_int
@@ -30,20 +27,14 @@ logger = law.logger.get_logger(__name__)
 
 class CustomCreateYieldTable(
     HBWTask,
-    DatasetsProcessesMixin,
-    CategoriesMixin,
-    WeightProducerMixin,
-    ProducersMixin,
+    _CreateYieldTable,
     # MLModelsMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    ConfigTask,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    yields_variable = "mll"
+    yields_variable = "ptll"
 
     table_format = luigi.Parameter(
         default="fancy_grid",
@@ -180,9 +171,9 @@ class CustomCreateYieldTable(
                     # axis selections
                     h = h[{
                         "process": [
-                            hist.loc(p.id)
+                            hist.loc(p.name)
                             for p in sub_process_insts[process_inst]
-                            if p.id in h.axes["process"]
+                            if p.name in h.axes["process"]
                         ],
                     }]
 

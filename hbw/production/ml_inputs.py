@@ -10,9 +10,10 @@ import functools
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import remove_ak_column, set_ak_column
 
 from hbw.production.prepare_objects import prepare_objects
+from hbw.production.jets import vbf_candidates
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
@@ -63,9 +64,9 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
 
 @producer(
     uses={
-        prepare_objects,
-        "HbbJet.msoftdrop",
-        "{Electron,Muon,Jet,Bjet,Lightjet,HbbJet}.{pt,eta,phi,mass}",
+        prepare_objects, vbf_candidates,
+        "FatJet.{msoftdrop,particleNet_XbbVsQCD}",
+        "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
         MET_COLUMN("pt"), MET_COLUMN("phi"),
     },
     # produced columns set in the init function
@@ -79,10 +80,31 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     met_name = self.config_inst.x.met_name
 
+    # vbf with and without forward region
+    # NOTE: we need to clear the cache since we have to run the same Producer twice
+    _clear_cache = kwargs.pop("_clear_cache", False)
+    kwargs["_clear_cache"] = True
+    for jet_collection, dst_basename in (
+        ("Lightjet", "mli_vbf"),
+        ("VBFCandidateJet", "mli_full_vbf"),
+    ):
+        print(jet_collection, dst_basename)
+        events = self[vbf_candidates](events, jet_collection=jet_collection, **kwargs)
+        vbfpair = ak.pad_none(events.VBFPair, 1)[:, 0]
+        events = set_ak_column_f32(events, f"{dst_basename}_tag", ak.num(events.VBFPair))
+        for col in ("pt", "eta", "phi", "mass", "deta"):
+            events = set_ak_column_f32(events, f"{dst_basename}_{col}", vbfpair[col])
+
+        # remove columns produced by vbf_candidates such that the same producer can be used again
+        events = remove_ak_column(events, "VBFPair")
+        events = remove_ak_column(events, "VBFJet")
+
+    kwargs["_clear_cache"] = _clear_cache
+
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
-    events = set_ak_column(events, "HbbJet", ak.pad_none(events.HbbJet, 1))
+    events = set_ak_column(events, "FatBjet", ak.pad_none(events.FatBjet, 1))
 
     # setup correct btagging columns
     btag_wp_score = self.config_inst.x.btag_wp_score
@@ -93,8 +115,11 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "Lightjet.b_score", events.Lightjet[btag_column])
 
     # H->bb FatJet
-    for var in ["pt", "eta", "phi", "mass", "msoftdrop"]:
-        events = set_ak_column_f32(events, f"mli_fj_{var}", events.HbbJet[:, 0][var])
+    for var in [
+        "pt", "eta", "phi", "mass", "msoftdrop",
+        "particleNet_XbbVsQCD",
+    ]:
+        events = set_ak_column_f32(events, f"mli_fj_{var}", events.FatBjet[:, 0][var])
 
     # low-level features
     for var in ["pt", "eta", "b_score"]:
@@ -126,6 +151,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     jet_pairs = ak.combinations(events.Jet, 2)
     dr = jet_pairs[:, :, "0"].delta_r(jet_pairs[:, :, "1"])
     events = set_ak_column_f32(events, "mli_mindr_jj", ak.min(dr, axis=1))
+    events = set_ak_column_f32(events, "mli_maxdr_jj", ak.max(dr, axis=1))
 
     # hbb features
     hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
@@ -134,6 +160,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
     events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    events = set_ak_column_f32(events, "mli_deta_bb", abs(events.Bjet[:, 0].eta - (events.Bjet[:, 1]).eta))
 
     # angles to lepton
     mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
@@ -162,19 +189,28 @@ def common_ml_inputs_init(self: Producer) -> None:
         "mli_ht", "mli_lt", "mli_n_jet",
         "mli_n_btag", "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
         # bb system
-        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb",
+        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb",
         # minimum angles
-        "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj",
+        "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj", "mli_maxdr_jj",
+        # VBF features
+        # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
         # low-level features
         "mli_lep_pt", "mli_lep_eta", "mli_met_pt", "mli_met_phi",
     } | set(
+        f"mli_{obj}_{var}"
+        for obj in ["vbf", "full_vbf"]
+        for var in ["pt", "eta", "phi", "mass", "deta", "tag"]
+    ) | set(
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]
         for var in ["b_score", "pt", "eta"]
     ) | set(
         f"mli_{obj}_{var}"
         for obj in ["fj"]
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop"]
+        for var in [
+            "pt", "eta", "phi", "mass", "msoftdrop",
+            "particleNet_XbbVsQCD",
+        ]
     )
     self.produces |= self.ml_input_columns
 
@@ -310,7 +346,8 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mll", hll.mass)
     events = set_ak_column_f32(events, "mli_mllMET", (hll + events[met_name][:]).mass)
     events = set_ak_column_f32(events, "mli_dr_ll", events.Lepton[:, 0].delta_r(events.Lepton[:, 1]))
-    events = set_ak_column_f32(events, "mli_dphi_ll", events.Lepton[:, 0].delta_phi(events.Lepton[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_ll", abs(events.Lepton[:, 0].delta_phi(events.Lepton[:, 1])))
+    events = set_ak_column_f32(events, "mli_deta_ll", abs(events.Lepton[:, 0].eta - (events.Lepton[:, 1]).eta))
 
     # minimum deltaR between lep and jet
     llbb_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
@@ -338,7 +375,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_input_columns = {
         # ll system
-        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_deta_ll", "mli_ll_pt",
         "mli_min_dr_llbb",
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
@@ -489,3 +526,4 @@ def sl_res_ml_inputs_init(self: Producer) -> None:
 
     # add variable instances to config
     add_sl_res_ml_variables(self.config_inst)
+    check_variable_existence(self)
