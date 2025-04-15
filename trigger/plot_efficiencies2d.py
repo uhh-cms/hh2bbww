@@ -98,7 +98,7 @@ def plot_efficiencies2d(
     h2d_trig = h_sum[:, :, eff_bin].values()
     hh2d_all = h_sum[:, :, 0].values()
 
-    eff_2d = h2d_trig / hh2d_all
+    eff_2d = h2d_trig  # / hh2d_all
 
     if np.any(eff_2d > 1):
         logger.warning(

@@ -22,7 +22,7 @@ ak = maybe_import("awkward")
 @producer(
     produces={"trig_ids"},
     channel=["mm", "ee", "mixed"],
-    version=10,
+    version=14,
 )
 def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -46,8 +46,9 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                 channel_trigger = channel_trigger | events.HLT[trigger.hlt_field]
 
                 # add stepwise trigger combination
-                trig_passed = ak.where(channel_trigger, [[comb_label[:-1]]], [[]])
-                trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+                if "+" in comb_label[:-1]:
+                    trig_passed = ak.where(channel_trigger, [[comb_label[:-1]]], [[]])
+                    trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
         # add trigger selection for the channel
         trig_passed = ak.where(channel_trigger, [[channel]], [[]])
@@ -58,6 +59,49 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         trig_passed = ak.where(events.HLT[trigger.hlt_field], [[trigger.hlt_field]], [[]])
         trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
+    # add sequential combination of triggers for dpg talk
+    mixed_trigger_sequence = {
+        "emu_dilep": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ"],
+        "emu_single": ["Ele30_WPTight_Gsf", "IsoMu24"],
+        "emu_electronjet": ["Ele50_CaloIdVT_GsfTrkIdT_PFJet165"],
+        "emu_alt_mix": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+                        "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                        "Ele30_WPTight_Gsf",
+                        "IsoMu24",
+                        "Ele115_CaloIdVT_GsfTrkIdT"]
+    }
+    ee_trigger_sequence = {
+        "ee_dilep": ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL", "DoubleEle33_CaloIdL_MW"],
+        "ee_single": ["Ele30_WPTight_Gsf"],
+        "ee_electronjet": ["Ele50_CaloIdVT_GsfTrkIdT_PFJet165"],
+    }
+    mm_trigger_sequence = {
+        "mm_dilep": ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8"],
+        "mm_single": ["IsoMu24"],
+    }
+    trigger_sequence = {
+        "ee": ee_trigger_sequence,
+        "mm": mm_trigger_sequence,
+        "mixed": mixed_trigger_sequence
+    }
+
+    for channel in self.channel:
+        seq_trigger = ak.Array([0] * len(events))
+        seq_label = ""
+        for label, triggers in trigger_sequence[channel].items():
+            triggers_mask = ak.Array([0] * len(events))
+            for trigger in triggers:
+                triggers_mask = triggers_mask | events.HLT[trigger]
+                seq_trigger = seq_trigger | events.HLT[trigger]
+
+            trig_passed = ak.where(triggers_mask, [[label]], [[]])
+            trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
+            seq_label += label + "+"
+            if "+" in seq_label[:-1]:
+                trig_passed = ak.where(seq_trigger, [[seq_label[:-1]]], [[]])
+                trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
     events = set_ak_column(events, "trig_ids", trig_ids)
 
     return events
@@ -67,8 +111,9 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @trigger_prod.init
 def trigger_prod_init(self: Producer) -> None:
 
-    for trigger in self.config_inst.x.triggers:
+    for trigger in self.config_inst.x("triggers", []):
         self.uses.add(f"HLT.{trigger.hlt_field}")
+    self.uses.add("HLT.Ele115_CaloIdVT_GsfTrkIdT")
 
 
 # producers for single channels
@@ -119,3 +164,40 @@ def trig_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(events, "trig_weights", weights)
 
     return events
+
+
+# produce trigger columns for debugging
+@producer(
+    produces={"trig_ids"},
+    channel=["mm", "ee", "mixed"],
+    version=1,
+)
+def trigger_prod_db(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Produces column filled for each event with the triggers triggering the event.
+    This column can then be used to fill a Histogram where each bin corresponds to a certain trigger.
+    """
+
+    # TODO: check if trigger were fired by unprescaled L1 seed
+    trig_ids = ak.Array([["allEvents"]] * len(events))
+
+    # add individual triggers
+    for trigger in self.config_inst.x.triggers:
+        trig_passed = ak.where(events.HLT[trigger.hlt_field], [[trigger.hlt_field]], [[]])
+        trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
+    trig_passed = ak.where(events.HLT["Ele115_CaloIdVT_GsfTrkIdT"], [["Ele115_CaloIdVT_GsfTrkIdT"]], [[]])
+    trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
+    events = set_ak_column(events, "trig_ids", trig_ids)
+
+    return events
+
+
+# initialize the trigger producer, triggers can be set in the trigger config
+@trigger_prod_db.init
+def trigger_prod_db_init(self: Producer) -> None:
+
+    for trigger in self.config_inst.x("triggers", []):
+        self.uses.add(f"HLT.{trigger.hlt_field}")
+    self.uses.add("HLT.Ele115_CaloIdVT_GsfTrkIdT")
