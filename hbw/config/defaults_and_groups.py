@@ -134,6 +134,13 @@ def set_config_defaults_and_groups(config_inst):
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
+        # Collection of VBF samples with most shape and rate difference
+        "gen_vbf": [
+            "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
+            "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+        ],
         "ml_study": [
             "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
             "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
@@ -156,15 +163,18 @@ def set_config_defaults_and_groups(config_inst):
             "vv",
             "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
         ],
-        "test_postfit": [
-            # "hh_vbf_hbb_hww2l2nu",
-            "hh_ggf_hbb_hww2l2nu",
-            "st",
-            "tt",
-            "dy",
-            "w_lnu",
-            "vv",
-            "h",
+        # Collection of all VBF samples present
+        "vbf_only": [
+            "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
+            "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+            "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
+            "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+            "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
+            "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+            "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
+            "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+            "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
         ],
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
@@ -358,6 +368,7 @@ def set_config_defaults_and_groups(config_inst):
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     config_inst.x.variable_groups = {
+        "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
         "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],

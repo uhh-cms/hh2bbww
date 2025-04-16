@@ -11,7 +11,7 @@ from columnflow.util import maybe_import
 from hbw.util import IF_TOP, IF_VJETS
 from columnflow.production.cms.top_pt_weight import gen_parton_top
 from hbw.production.gen_v import gen_v_boson
-from hbw.production.dy import gen_dilepton
+from columnflow.production.cms.dy import gen_dilepton
 
 ak = maybe_import("awkward")
 

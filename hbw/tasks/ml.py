@@ -432,7 +432,7 @@ class MLPreTraining(
                         xcheck[process][sub_proc] = {}
                     xcheck[process][sub_proc]["weight_sum"] = int(xcheck_weight_sum)
                     xcheck[process][sub_proc]["num_events"] = xcheck_n_events
-                    # __import__("IPython").embed()
+
         outputs["cross_check_weights"].dump(xcheck, formatter="yaml")
 
         for input_array in self.ml_model_inst.data_loader.input_arrays:
