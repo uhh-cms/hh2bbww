@@ -11,6 +11,7 @@ from collections import OrderedDict, defaultdict
 import law
 import luigi
 import order as od
+from columnflow.tasks.framework.base import ShiftTask
 from columnflow.tasks.framework.mixins import (
     CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin,
     HistProducerClassMixin,
@@ -116,6 +117,8 @@ from columnflow.plotting.plot_util import (
     prepare_stack_plot_config,
     prepare_style_config,
     apply_process_settings,
+    apply_process_scaling,
+    remove_residual_axis,
 )
 
 
@@ -124,6 +127,7 @@ def plot_postfit_shapes(
     config_inst: od.Config,
     category_inst: od.Category,
     variable_insts: list[od.Variable],
+    shift_insts: list[od.Shift],
     style_config: dict | None = None,
     density: bool | None = False,
     shape_norm: bool | None = False,
@@ -132,30 +136,54 @@ def plot_postfit_shapes(
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
-) -> tuple(plt.Figure, tuple(plt.Axes)):
+) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
-    hists = apply_process_settings(hists, process_settings)
+    hists, process_style_config = apply_process_settings(hists, process_settings)
+    # process scaling
+    hists = apply_process_scaling(hists)
+    if len(shift_insts) == 1:
+        # when there is exactly one shift bin, we can remove the shift axis
+        remove_residual_axis(hists, "shift", select_value=shift_insts[0].name)
+    else:
+        # remove shift axis of histograms that are not to be stacked
+        unstacked_hists = {
+            proc_inst: h
+            for proc_inst, h in hists.items()
+            if proc_inst.is_mc and getattr(proc_inst, "unstack", False)
+        }
+        hists |= remove_residual_axis(unstacked_hists, "shift", select_value="nominal")
 
     plot_config = prepare_stack_plot_config(
         hists,
         shape_norm=shape_norm,
         hide_errors=hide_errors,
+        shift_insts=shift_insts,
+        **kwargs,
     )
     try:
         plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
         plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
-        print(plot_config["mc_stat_unc"]["kwargs"])
     except KeyError:
         logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
 
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
+    # for key in plot_config.keys():
+    #     if "line_" in key:
+    #         # remove line yerr
+    #         plot_config[key]["kwargs"]["yerr"] = 0
+
     # since we are rebinning, the xlim should be defined based on the histograms itself
     bin_edges = list(hists.values())[0].axes[0].edges
     default_style_config["ax_cfg"]["xlim"] = (bin_edges[0], bin_edges[-1])
 
-    style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
+    style_config = law.util.merge_dicts(
+        default_style_config,
+        process_style_config,
+        style_config,
+        deep=True,
+    )
     if shape_norm:
         style_config["ax_cfg"]["ylabel"] = r"$\Delta N/N$"
 
@@ -165,6 +193,7 @@ def plot_postfit_shapes(
 class PlotPostfitShapes(
     HBWTask,
     PlotBase1D,
+    ShiftTask,
     ProcessPlotSettingMixin,
     DatasetsProcessesMixin,
     CalibratorClassesMixin,
@@ -259,13 +288,12 @@ class PlotPostfitShapes(
                     logger.warning(f"{proc_key} in root file, but won't be plotted.")
                     continue
                 plot_proc = plot_proc[0]
-
-                if plot_proc not in hist_map:
-                    hist_map[plot_proc] = [proc_key]
-                else:
-                    hist_map[plot_proc].append(proc_key)
+                hist_map[plot_proc].append(proc_key)
 
         return hist_map
+
+    def get_shift_insts(self):
+        return [self.config_inst.get_shift(self.shift)]
 
     @view_output_plots
     def run(self):
@@ -281,7 +309,6 @@ class PlotPostfitShapes(
 
         # Get list of all process instances required for plotting
         process_insts = list(map(self.config_inst.get_process, self.processes))
-
         # map processes in root shape to corresponding process instance used for plotting
         hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
         hist_map = self.prepare_hist_map(hist_processes, process_insts)
@@ -295,14 +322,16 @@ class PlotPostfitShapes(
 
             # Create Histograms
             hists = defaultdict(OrderedDict)
-            for proc in hist_map:
+            for proc, sub_procs in hist_map.items():
                 plot_proc = proc.copy()  # NOTE: copy produced, so actual process is not modified by process settings
-                if hist_map[proc][0] not in h_in:
+
+                if not any(sub_proc in h_in.keys() for sub_proc in sub_procs):
                     logger.warning(f"No histograms for {proc.name} found in {channel}.")
                     continue
-                hists[plot_proc] = h_in[hist_map[proc][0]]
-                for p in hist_map[proc][1:]:
-                    hists[plot_proc] += h_in[p]
+                hists[plot_proc] = sum([
+                    h_in[sub_proc] for sub_proc in sub_procs
+                    if sub_proc in h_in.keys()
+                ])
 
             if has_category:
                 inference_category = self.inference_model_inst.get_category(channel)
@@ -328,6 +357,7 @@ class PlotPostfitShapes(
                 config_inst=self.config_inst,
                 category_inst=config_category,
                 variable_insts=variable_inst,
+                shift_insts=self.get_shift_insts(),
                 **self.get_plot_parameters(),
             )
 
