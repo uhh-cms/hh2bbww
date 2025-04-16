@@ -427,8 +427,16 @@ def add_config(
     ################################################################################################
 
     # electron calibrations
-    cfg.x.eec = EGammaCorrectionConfig(correction_set="Scale")
-    cfg.x.eer = EGammaCorrectionConfig(correction_set="Smearing")
+    cfg.x.eec = EGammaCorrectionConfig(
+        correction_set="Scale",
+        value_type="total_correction",
+        uncertainty_type="total_uncertainty",
+    )
+    cfg.x.eer = EGammaCorrectionConfig(
+        correction_set="Smearing",
+        value_type="total_correction",
+        uncertainty_type="total_uncertainty",
+    )
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
