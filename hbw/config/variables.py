@@ -505,7 +505,7 @@ def add_variables(config: od.Config) -> None:
             name=f"jet{i}_eta",
             expression=f"Jet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
-            binning=(50, -5., 5.),
+            binning=(50, -2.5, 2.5),
             x_title=r"Jet %i $\eta$" % i,
         )
         config.add_variable(

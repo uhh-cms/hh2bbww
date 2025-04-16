@@ -16,11 +16,8 @@ ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
 # helper functions
-set_ak_column_f32 = partial(set_ak_column, value_type=np.float32)
 set_ak_bool = partial(set_ak_column, value_type=np.bool_)
 set_ak_f32 = partial(set_ak_column, value_type=np.float32)
-
-ZERO_PADDING_VALUE = -10
 
 
 @producer(

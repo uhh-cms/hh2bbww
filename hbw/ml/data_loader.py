@@ -205,7 +205,6 @@ class MLDatasetLoader:
 
         # bookkeep order of input features and perform sanity checks
         self._input_features = tuple(features.fields)
-
         input_features_sanity_checks(self.ml_model_inst, self._input_features)
 
         # transform features into numpy npdarray

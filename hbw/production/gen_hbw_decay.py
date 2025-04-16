@@ -7,7 +7,6 @@ Producers that determine the generator-level particles of a HH->bbWW decay.
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
-from hbw.production.prepare_objects import prepare_objects
 
 
 ak = maybe_import("awkward")
@@ -21,12 +20,15 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
     All sub-fields correspond to individual GenParticles with fields pt, eta, phi, mass and pdgId.
     """
 
+    if self.dataset_inst.is_data or not self.dataset_inst.x("is_hbv", False):
+        return events
+
     # for quick checks
     def all_or_raise(arr, msg):
         if not ak.all(arr):
             raise Exception(f"{msg} in {100 * ak.mean(~arr):.3f}% of cases")
 
-    # TODO: for now, this only works for HH->bbWW(lnulnu), but could maybe be generalized to all HH->bbWW decays
+    # TODO: for now, this only works for HH->bbWW(qqlnu), but could maybe be generalized to all HH->bbWW decays
 
     # only consider hard process genparticles
     gp = events.GenPart
@@ -124,6 +126,7 @@ def gen_hbw_decay_products(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         gp: {f: np.float32(hhgen[gp][f]) for f in ["pt", "eta", "phi", "mass", "pdgId"]} for gp in hhgen.keys()
     })
     events = set_ak_column(events, "gen_hbw_decay", gen_hbw_decay)
+
     return events
 
 
@@ -133,10 +136,6 @@ def gen_hbw_decay_products_init(self: Producer) -> None:
     Ammends the set of used and produced columns of :py:class:`gen_hbw_decay_products` in case
     a dataset including top decays is processed.
     """
-
-    self.uses |= {
-        prepare_objects,
-        "{Electron,Muon,Jet,Bjet,Lightjet,VBFJet,HbbJet}.{pt,eta,phi,mass}",
-        "GenPart.*",
-    }
-    self.produces |= {"gen_hbw_decay"}
+    if getattr(self, "dataset_inst", None) and self.dataset_inst.x("is_hbv", False):
+        self.uses |= {"nGenPart", "GenPart.*"}
+        self.produces |= {"gen_hbw_decay"}

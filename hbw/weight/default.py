@@ -51,14 +51,8 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight_columns=None,
     # only run on mc
     mc_only=False,
-    # applying a mask
-    mask_fn=None,
-    # mask columns
-    mask_columns=None,
     # optional categorizer to obtain baseline event mask
     categorizer_cls=None,
-    # combines masks with or boolean
-    combine_or=False,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -68,18 +62,6 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
     if self.categorizer_cls:
         events, mask = self[self.categorizer_cls](events, **kwargs)
         events = events[mask]
-
-    # apply cutsom masks
-    if self.mask_fn:
-        if self.combine_or:
-            mask = events.process_id < -9999
-            for m in self.mask_fn.keys():
-                mask = self.mask_fn[m](events) | mask
-            events = events[mask]
-        else:
-            for m in self.mask_fn.keys():
-                mask = self.mask_fn[m](events)
-                events = events[mask]
 
     if self.dataset_inst.is_data:
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
@@ -124,10 +106,6 @@ def base_init(self: HistProducer) -> None:
     if self.categorizer_cls:
         self.uses.add(self.categorizer_cls)
 
-    if self.mask_columns:
-        for col in self.mask_columns:
-            self.uses.add(col)
-
     dataset_inst = getattr(self, "dataset_inst", None)
     if dataset_inst and dataset_inst.is_data:
         return
@@ -159,10 +137,6 @@ def base_init(self: HistProducer) -> None:
     if dataset_inst and not dataset_inst.has_tag("is_v_jets"):
         # remove dependency towards vjets weights
         self.local_weight_columns.pop("vjets_weight", None)
-
-    if dataset_inst and not dataset_inst.has_tag("is_dy"):
-        # remove dependency towards vjets weights
-        self.local_weight_columns.pop("dy_weight", None)
 
     self.shifts = set()
 
@@ -223,31 +197,27 @@ default_correction_weights = {
     "normalized_muf_weight": ["muf"],
     "normalized_pdf_weight": ["pdf"],
     "top_pt_weight": ["top_pt"],
-
 }
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
     **default_correction_weights,
 }
-
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
-
-with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    "dy_weight": [],
-    "stitched_normalization_weight": [],
-}})
-
 with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "vjets_weight": [],  # TODO: corrections/shift missing
-    # "stitched_normalization_weight": [],
+    "stitched_normalization_weight": [],
 }})
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "vjets_weight": [],  # TODO: corrections/shift missing
     "trigger_weight": ["trigger_sf"],
+    "stitched_normalization_weight": [],
+}})
+with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "dy_weight": [],
     "stitched_normalization_weight": [],
 }})
 
@@ -307,41 +277,10 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
 
-# applying barrel region cut
-gen_barrel = base.derive("gen_barrel", cls_dict={
-    "mc_only": True,
-    "weight_columns": default_weight_columns,
-    "mask_fn": {
-        "sec1": lambda events: abs(events.gen_hbw_decay["sec1"]["eta"]) < 2.4,
-        "sec2": lambda events: abs(events.gen_hbw_decay["sec2"]["eta"]) < 2.4,
-    },
-    "mask_columns": ["gen_hbw_decay.*.*"],
-})
 
-horn50forward50barrel30 = base.derive("horn50forward50barrel30", cls_dict={
-    "mc_only": False,
-    "combine_or": True,
-    "weight_columns": default_weight_columns,
-    "mask_fn": {
-        "horn": lambda events: (abs(events.customjet0_eta) > 2.6) &
-        (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50),
-        "forward": lambda events: ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 50),
-        "barrel": lambda events: ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) >= 30),
-
-    },
-    "mask_columns": ["customjet*"],
-})
-
-gen_barrel_sec1 = base.derive("gen_barrel_sec1", cls_dict={
-    "mc_only": True,
-    "weight_columns": default_weight_columns,
-    "mask_fn": {
-        "sec1": lambda events: abs(events.gen_hbw_decay["sec1"]["eta"]) < 2.4,
-    },
-    "mask_columns": ["gen_hbw_decay.*.*"],
-})
-
-from hbw.categorization.categories import mask_fn_highpt
+from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling
 
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
+base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
+base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})

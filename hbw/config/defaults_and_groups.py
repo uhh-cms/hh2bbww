@@ -475,7 +475,7 @@ def set_config_defaults_and_groups(config_inst):
         "default": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 20,
+                "fontsize": 16,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
@@ -488,7 +488,7 @@ def set_config_defaults_and_groups(config_inst):
             "legend_cfg": {"ncols": 2, "fontsize": 16},
         },
         "no_cat_label": {
-            "legend_cfg": {"ncols": 2, "fontsize": 16},
+            "legend_cfg": {"ncols": 2, "fontsize": 20},
             "annotate_cfg": {"text": ""},
         },
         "example": {

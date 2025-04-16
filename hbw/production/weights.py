@@ -23,14 +23,13 @@ from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.top_pt_weight import top_pt_weight
-from columnflow.production.cms.dy import dy_weights, recoil_corrections
+from columnflow.production.cms.dy import dy_weights
 from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag
-
+from hbw.util import has_tag, IF_DY
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -220,16 +219,14 @@ def combined_normalization_weights_init(self: Producer) -> None:
         combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
-        dy_weights,
-        recoil_corrections,
+        IF_DY(dy_weights),
         normalized_pu_weights,
     },
     produces={
         combined_normalization_weights,
         top_pt_weight,
         vjets_weight,
-        dy_weights,
-        recoil_corrections,
+        IF_DY(dy_weights),
         normalized_pu_weights,
     },
     mc_only=True,
@@ -253,7 +250,6 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if self.dataset_inst.has_tag("is_dy"):
         events = self[dy_weights](events, **kwargs)
-        events = self[recoil_corrections](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights
