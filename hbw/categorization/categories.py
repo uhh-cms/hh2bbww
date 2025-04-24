@@ -327,3 +327,24 @@ def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     """
     mask = (events.Lepton[:, 0].pt > 70) & (events.Lepton[:, 1].pt > 50) & (events.mll > 20)
     return events, mask
+
+
+@categorizer(uses={"gen_hbw_decay.*.*"})
+def mask_fn_gen_barrel(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events generated only in the barrel region
+    """
+    mask = (abs(events.gen_hbw_decay["sec1"]["eta"]) < 2.4) & (abs(events.gen_hbw_decay["sec2"]["eta"]) < 2.4)
+    return events, mask
+
+
+@categorizer(uses={"customjet*"})
+def mask_fn_forward_handling(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events generated only in the barrel region
+    """
+    mask = ((abs(events.InclJet.eta) > 2.6) & (abs(events.InclJet.eta) < 3.1) & (abs(events.InclJet.pt) >= 50))
+    mask = mask | ((abs(events.InclJet.eta) >= 3.1)) & (abs(events.InclJet.pt) >= 50)
+    mask = mask | ((abs(events.InclJet.eta) <= 2.6)) & (abs(events.InclJet.pt) >= 30)
+
+    return events, mask

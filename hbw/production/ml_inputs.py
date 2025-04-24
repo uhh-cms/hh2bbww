@@ -17,8 +17,9 @@ from hbw.production.jets import vbf_candidates
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from hbw.config.sl_res.variables import add_sl_res_ml_variables
+from columnflow.production.cms.dy import recoil_corrected_met
 
-from hbw.util import MET_COLUMN
+from hbw.util import MET_COLUMN, IF_DY
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -389,6 +390,31 @@ def dl_ml_inputs_init(self: Producer) -> None:
     # add variable instances to config
     add_dl_ml_variables(self.config_inst)
     check_variable_existence(self)
+
+
+@producer(
+    uses={MET_COLUMN("{pt,phi}"), IF_DY(recoil_corrected_met)},
+    produces={"met_pt_corr", "met_phi_corr"},
+)
+def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    met_name = self.config_inst.x.met_name
+
+    if self.dataset_inst.has_tag("is_dy"):
+        events = self[recoil_corrected_met](events, **kwargs)
+        met_pt_corr = events.RecoilCorrMET.pt
+        met_phi_corr = events.RecoilCorrMET.phi
+    else:
+        met_pt_corr = events[met_name].pt
+        met_phi_corr = events[met_name].phi
+
+    events = set_ak_column_f32(events, "met_pt_corr", met_pt_corr)
+    events = set_ak_column_f32(events, "met_phi_corr", met_phi_corr)
+
+    for col in ["met_pt_corr", "met_phi_corr"]:
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+
+    return events
 
 
 test_dl_ml_inputs = dl_ml_inputs.derive("test_dl_ml_inputs")

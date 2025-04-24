@@ -365,8 +365,8 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
     "negative_weights": "ignore",
     "combine_processes": {
         "signal_ggf2": {
-            # "name": "tt_and_st",
             "label": "Signal GGF",
+            "color": "#000000",  # black
             "sub_processes": [
                 "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
                 "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -376,8 +376,8 @@ dl_22post_ml_study_2 = dl_22post.derive("dl_22post_ml_study_2", cls_dict={
             "weighting": "equal",
         },
         "signal_vbf2": {
-            # "name": "tt_and_st",
             "label": "Signal VBF",
+            "color": "#999999",  # grey
             "sub_processes": [
                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",

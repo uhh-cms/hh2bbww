@@ -24,6 +24,7 @@ from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
+from columnflow.production.cms.dy import DrellYanConfig
 
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
@@ -732,6 +733,23 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
+    json_mirror_mrieger = "/afs/cern.ch/work/m/mrieger/public/mirrors/external_files"
+    add_external("dy_weight_sf", (f"{json_mirror_mrieger}/DY_pTll_weights_v2.json.gz", "v1"))
+    add_external("dy_recoil_sf", (f"{json_mirror_mrieger}/Recoil_corrections_v2.json.gz", "v2"))
+
+    cfg.x.dy_weight_config = DrellYanConfig(
+        era="2022postEE",
+        order="NLO",  # only when using v2
+        correction="DY_pTll_reweighting",
+        unc_correction="DY_pTll_reweighting_N_uncertainty",
+    )
+    cfg.x.dy_recoil_config = DrellYanConfig(
+        era="2022postEE",
+        order="NLO",  # only when using v2
+        correction="Recoil_correction_QuantileMapHist",
+        unc_correction="Recoil_correction_Uncertainty",
+    )
+
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
@@ -795,7 +813,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "gen_hbw_decay",
         },
     })
 
@@ -814,6 +832,8 @@ def add_config(
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
         "btag_weight*",
+        # Gen particle information
+        "gen_hbw_decay.*.*",
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
         # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)

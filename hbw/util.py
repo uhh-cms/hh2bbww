@@ -699,6 +699,14 @@ def IF_VJETS(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | s
 
 
 @deferred_column
+def IF_DY(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.has_tag("is_dy") else None
+
+
+@deferred_column
 def IF_TOP(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     if getattr(func, "dataset_inst", None) is None:
         return self.get()
@@ -712,3 +720,11 @@ def IF_TT(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
         return self.get()
 
     return self.get() if func.dataset_inst.has_tag("is_ttbar") else None
+
+
+@deferred_column
+def IF_HBV(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.has_tag("is_hbv") else None

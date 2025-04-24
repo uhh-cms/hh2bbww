@@ -213,7 +213,7 @@ def vbf_jet_selection(
         ak.fill_none(ak.pad_none(results.objects.Jet.Bjet, 2), -1),
     )
     vbf_jets = events.Jet[(events.Jet.local_index != b_indices[:, 0]) & (events.Jet.local_index != b_indices[:, 1])]
-    vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta < 4.7))]
+    vbf_jets = vbf_jets[(vbf_jets.pt > 30) & (abs(vbf_jets.eta) < 4.7)]
 
     # build all possible pairs of jets fulfilling the `vbf_jet_mask` requirement
     vbf_pairs = ak.combinations(vbf_jets, 2)
@@ -228,7 +228,7 @@ def vbf_jet_selection(
     vbf_selection = ak.sum(vbf_mask >= 1, axis=-1) >= 1
 
     # apply requirements to vbf pairs
-    vbf_pairs = vbf_pairs[vbf_mask]
+    # vbf_pairs = vbf_pairs[vbf_mask]
 
     # choose the vbf pair based on maximum delta eta
     chosen_vbf_pair = vbf_pairs[ak.singletons(ak.argmax(vbf_pairs.deta, axis=1))]

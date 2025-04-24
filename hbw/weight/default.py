@@ -215,6 +215,11 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
     "trigger_weight": ["trigger_sf"],
     "stitched_normalization_weight": [],
 }})
+with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "dy_weight": [],
+    "stitched_normalization_weight": [],
+}})
 
 
 base.derive("unstitched", cls_dict={"weight_columns": {
@@ -273,7 +278,9 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
 }})
 
 
-from hbw.categorization.categories import mask_fn_highpt
+from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling
 
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
+base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
+base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})

@@ -33,16 +33,16 @@ def masked_sorted_indices(mask: ak.Array, sort_var: ak.Array, ascending: bool = 
         for var in ["pt", "eta", "phi", "mass"]
     ),
 )
-def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def gen_hbw_decay_features_test(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for var in ["pt", "eta", "phi", "mass"]:
         for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
-            events = set_ak_column(events, f"cutflow.{gp}_{var}", events.gen_hbw_decay[gp][var])
+            events = set_ak_column(events, f"gen.{gp}_{var}", events.gen_hbw_decay[gp][var])
 
     return events
 
 
-@gen_hbw_decay_features.init
-def gen_hbw_decay_features_init(self: Producer) -> None:
+@gen_hbw_decay_features_test.init
+def gen_hbw_decay_features_test_init(self: Producer) -> None:
     if self.config_inst.x("call_add_gen_variables", True):
         # add gen variables but only on first call
         add_gen_variables(self.config_inst)
