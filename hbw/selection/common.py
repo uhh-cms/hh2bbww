@@ -194,7 +194,8 @@ def post_selection(
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
-    if self.dataset_inst.has_tag("is_hbv"):
+
+    if self.has_dep(gen_vbf_candidate):
         events = self[gen_vbf_candidate](events, results=results, **kwargs)
 
     # produce event weights

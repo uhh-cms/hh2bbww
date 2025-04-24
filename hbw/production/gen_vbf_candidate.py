@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Producers for L1 prefiring weights.
+Producer for generator-level VBF candidates in HH->bbWW decays.
 """
 
 from __future__ import annotations
@@ -70,17 +70,17 @@ def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     nb = ak.num(b, axis=1)
     all_or_raise(nb == 2, "number of bottom quarks from Higgs decay != 2")
 
-    # Ws from H decay
-    w = gp[abs_id == 24]
-    w = w[(abs(w.distinctParent.pdgId) == 25)]
-    w = w[~ak.is_none(w, axis=1)]
-    # nw = ak.num(w, axis=1)
+    # # Ws from H decay
+    # w = gp[abs_id == 24]
+    # w = w[(abs(w.distinctParent.pdgId) == 25)]
+    # w = w[~ak.is_none(w, axis=1)]
+    # # nw = ak.num(w, axis=1)
 
-    # non-top quarks from W decays
-    qs = gp[(abs_id >= 1) & (abs_id <= 5)]
-    qs = qs[(abs(qs.distinctParent.pdgId) == 24)]
-    qs = qs[~ak.is_none(qs, axis=1)]
-    # nqs = ak.num(qs, axis=1)
+    # # non-top quarks from W decays
+    # qs = gp[(abs_id >= 1) & (abs_id <= 5)]
+    # qs = qs[(abs(qs.distinctParent.pdgId) == 24)]
+    # qs = qs[~ak.is_none(qs, axis=1)]
+    # # nqs = ak.num(qs, axis=1)
 
     # check if decay product charges are valid
     sign = lambda part: (part.pdgId > 0) * 2 - 1
@@ -111,7 +111,13 @@ def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @gen_vbf_candidate.skip
-def gen_vbf_candidate_skip(self: Producer) -> None:
+def gen_vbf_candidate_skip(self: Producer) -> ak.Array:
+    # skip Producer if the dataset is not a HH->bbWW dataset
+    return not self.dataset_inst.has_tag("is_hbv")
+
+
+@gen_vbf_candidate.init
+def gen_vbf_candidate_init(self: Producer) -> None:
     add_gen_variables(self.config_inst)
 
 
