@@ -393,7 +393,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
 
 
 @producer(
-    uses={ MET_COLUMN("{pt,phi}"), IF_DY(recoil_corrections)},
+    uses={MET_COLUMN("{pt,phi}"), IF_DY(recoil_corrections)},
     produces={"met_pt_corr", "met_phi_corr"},
 )
 def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

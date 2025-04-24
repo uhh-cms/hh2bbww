@@ -343,8 +343,8 @@ def mask_fn_forward_handling(self: Categorizer, events: ak.Array, **kwargs) -> t
     """
     Categorizer that selects events generated only in the barrel region
     """
-    mask = ((abs(events.customjet0_eta) > 2.6) & (abs(events.customjet0_eta) < 3.1) & (abs(events.customjet0_pt) >= 50))
-    mask = mask | ((abs(events.customjet0_eta) >= 3.1)) & (abs(events.customjet0_pt) >= 50)
-    mask = mask | ((abs(events.customjet0_eta) <= 2.6)) & (abs(events.customjet0_pt) >= 30)
+    mask = ((abs(events.InclJet.eta) > 2.6) & (abs(events.InclJet.eta) < 3.1) & (abs(events.InclJet.pt) >= 50))
+    mask = mask | ((abs(events.InclJet.eta) >= 3.1)) & (abs(events.InclJet.pt) >= 50)
+    mask = mask | ((abs(events.InclJet.eta) <= 2.6)) & (abs(events.InclJet.pt) >= 30)
 
     return events, mask
