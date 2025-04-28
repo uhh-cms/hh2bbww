@@ -30,6 +30,7 @@ from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
+from columnflow.production.cms.jet import JetIdConfig
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -429,11 +430,17 @@ def add_config(
 
     # electron calibrations
     cfg.x.eec = EGammaCorrectionConfig(
-        correction_set=f"EGMScale_ElePTsplit_{cfg.x.cpn_tag}",
+        correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}",
         value_type="total_correction",
         uncertainty_type="escale",
         compound=True,
     )
+    # cfg.x.eec = EGammaCorrectionConfig(
+    #     correction_set=f"EGMScale_ElePTsplit_{cfg.x.cpn_tag}",
+    #     value_type="total_correction",
+    #     uncertainty_type="escale",
+    #     compound=False,
+    # )
     cfg.x.eer = EGammaCorrectionConfig(
         correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}",
         value_type="smear",
@@ -701,6 +708,16 @@ def add_config(
     add_external("fat_jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/fatJet_jerc.json.gz", "v1"))
     # jet veto map
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
+    # jet id fix
+    add_external("jet_id", (f"{json_mirror}/POG/JME/{corr_tag}/jetid.json.gz", "v1"))
+    cfg.x.jet_id = JetIdConfig(corrections={
+        "AK4PUPPI_Tight": 2,
+        "AK4PUPPI_TightLeptonVeto": 3,
+    })
+    cfg.x.fatjet_id = JetIdConfig(corrections={
+        "AK8PUPPI_Tight": 2,
+        "AK8PUPPI_TightLeptonVeto": 3,
+    })
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
     add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS_EtDependent.json.gz", "v1"))
