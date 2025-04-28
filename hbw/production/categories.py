@@ -35,11 +35,7 @@ def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-from hbw.util import timeit_multiple
-
-
 @pre_ml_cats.init
-@timeit_multiple
 def pre_ml_cats_init(self: Producer) -> None:
     # add categories to config inst
     add_categories_production(self.config_inst)
