@@ -435,8 +435,8 @@ def add_config(
     )
     cfg.x.eer = EGammaCorrectionConfig(
         correction_set="Smearing",
-        value_type="total_correction",
-        uncertainty_type="total_uncertainty",
+        value_type="rho",
+        uncertainty_type="err_rho",
     )
 
     if cfg.x.run == 2:
