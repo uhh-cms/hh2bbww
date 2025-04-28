@@ -138,6 +138,10 @@ def base_init(self: HistProducer) -> None:
         # remove dependency towards vjets weights
         self.local_weight_columns.pop("vjets_weight", None)
 
+    if dataset_inst and not dataset_inst.has_tag("is_dy"):
+        # remove dependency towards dy weights
+        self.local_weight_columns.pop("dy_weight", None)
+
     self.shifts = set()
 
     # when jec sources are known btag SF source, then propagate the shift to the HistProducer
