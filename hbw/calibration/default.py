@@ -9,6 +9,7 @@ import law
 from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer
+from columnflow.production.cms.jet import msoftdrop
 from columnflow.calibration.cms.egamma import electrons
 from columnflow.production.cms.seeds import (
     deterministic_seeds, deterministic_electron_seeds, deterministic_event_seeds,
@@ -20,10 +21,7 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from hbw.util import MET_COLUMN
 
 from hbw.calibration.jet import bjet_regression
-# from hbw.calibration.jet import (
-#     fatjet_jec_data, fatjet_jec_total, fatjet_jer,
-#     bjet_regression,
-# )
+
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -65,11 +63,12 @@ def ele_init(self: Calibrator) -> None:
 
 
 @calibrator(
-    version=1,
+    version=2,
     # add dummy produces such that this calibrator will always be run when requested
     # (temporary workaround until init's are only run as often as necessary)
     # TODO: deterministic FatJet seeds
-    produces={"FatJet.pt"},
+    uses={msoftdrop},
+    produces={msoftdrop, "FatJet.pt"},
 )
 def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     """
@@ -83,6 +82,9 @@ def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     events = self[self.fatjet_jec_cls](events, **kwargs)
     if self.dataset_inst.is_mc:
         events = self[self.fatjet_jer_cls](events, **kwargs)
+
+    # recalculate the softdrop mass
+    events = self[msoftdrop](events, **kwargs)
 
     return events
 
