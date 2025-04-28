@@ -37,7 +37,7 @@ electrons.deterministic_seed_index = 0
 
 
 @calibrator(
-    version=1,
+    version=2,
     uses={electron_sceta, deterministic_event_seeds, deterministic_electron_seeds},
     produces={deterministic_event_seeds, deterministic_electron_seeds},
 )
