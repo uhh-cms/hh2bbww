@@ -228,13 +228,24 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
             ]),
         ],
-        # TODO: add bbtautau to cmsdb in 2022
-        # "hh_ggf_hbb_htt": [
-        #     "hh_ggf_hbb_htt_kl1_kt1_madgraph",
-        # ],
-        # "hh_vbf_hbb_htt": [
-        #     "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
-        # ],
+        "hh_ggf_hbb_htt": [
+            "hh_ggf_hbb_htt_kl0_kt1_powheg",
+            "hh_ggf_hbb_htt_kl1_kt1_powheg",
+            "hh_ggf_hbb_htt_kl2p45_kt1_powheg",
+            "hh_ggf_hbb_htt_kl5_kt1_powheg",
+        ],
+        "hh_vbf_hbb_htt": [
+            "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
+            "hh_vbf_hbb_htt_kv1_k2v0_kl1_madgraph",
+            "hh_vbf_hbb_htt_kv1p74_k2v1p37_kl14p4_madgraph",
+            "hh_vbf_hbb_htt_kvm0p012_k2v0p03_kl10p2_madgraph",
+            "hh_vbf_hbb_htt_kvm0p758_k2v1p44_klm19p3_madgraph",
+            "hh_vbf_hbb_htt_kvm0p962_k2v0p959_klm1p43_madgraph",
+            "hh_vbf_hbb_htt_kvm1p21_k2v1p94_klm0p94_madgraph",
+            "hh_vbf_hbb_htt_kvm1p6_k2v2p72_klm1p36_madgraph",
+            "hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39_madgraph",
+            "hh_vbf_hbb_htt_kvm2p12_k2v3p87_klm5p96_madgraph",
+        ],
         "graviton_hh_ggf_bbww": [
             *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
                 f"graviton_hh_ggf_bbww_m{mass}_madgraph"
