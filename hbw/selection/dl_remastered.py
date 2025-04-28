@@ -359,7 +359,7 @@ def single_lepton_trigger_config_func(self: Selector) -> ak.Array:
         "HLT_Ele30_WPTight_Gsf",
     ]
     triggers = self.config_inst.x.triggers
-    for trig_name in triggers.names():
+    for trig_name in list(triggers.names()):
         if trig_name not in sl_triggers:
             triggers.remove(trig_name)
     # check that all sl_triggers are still there
