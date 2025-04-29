@@ -150,7 +150,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     jec_sources=["Total"],
     bjet_regression=True,
     skip_jer=False,
-    version=1,
+    version=2,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
