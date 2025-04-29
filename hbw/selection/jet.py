@@ -31,7 +31,7 @@ logger = law.logger.get_logger(__name__)
     uses={
         IF_NANO_V12(jetId_v12),
         IF_NANO_geV13(jet_id),
-        "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")
+        "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId"),
     },
     exposed=True,
 )
