@@ -750,6 +750,10 @@ def add_config(
         unc_correction="Recoil_correction_Uncertainty",
     )
 
+    # Louvain Transformer Model
+    add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
+    add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
+
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
