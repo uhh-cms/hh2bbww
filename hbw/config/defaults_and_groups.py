@@ -131,6 +131,13 @@ def set_config_defaults_and_groups(config_inst):
     # Groups
     #
 
+    backgrounds0 = ["h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"]
+    backgrounds1 = ["h", "ttv", "vv", "w_lnu", "st", "dy", "tt"]
+    hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
+    hh_sm = [
+        "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "hh_ggf_hbb_hzz_kl1_kt1", "hh_ggf_hbb_htt_kl1_kt1",
+    ]
+
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
     config_inst.x.process_groups = {
@@ -179,16 +186,12 @@ def set_config_defaults_and_groups(config_inst):
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
-        "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
-        "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
-        "table": [default_signal_process, "st", "dy_m10to50", "dy_m50toinf", "tt", "background", "data"],  # noqa: E501
-        "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
         "2much": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -225,6 +228,9 @@ def set_config_defaults_and_groups(config_inst):
         # background groups (separated for plotting)
         "dy_m": ["dy_m4to10", "dy_m10to50", "dy_m50toinf"],
         # background groups (for yield tables)
+        "table": [*hbbhww_sm, *backgrounds0, "data", "background"],
+        "table0": [*hh_sm, *backgrounds0, "data", "background"],
+        "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
         "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
         "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
@@ -234,7 +240,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl3", "dl2", "dl1", "dl", "much", "2much", "ech", "2ech", "emuch"):
+    for group in ("dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         # thanks to double counting removal, we can (and should) now use all datasets in each channel
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
@@ -242,8 +248,6 @@ def set_config_defaults_and_groups(config_inst):
     # (used in wrapper_factory and during plotting)
     config_inst.x.dataset_groups = {
         "all": ["*"],
-        "default": [default_signal_dataset, "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
-        "inference": ["hh_ggf_*", "tt_*", "qcd_*", "st_*", "dy_*", "w_lnu_*"],
         "test": [default_signal_dataset, "tt_sl_powheg"],
         "small": [default_signal_dataset, "tt_*", "st_*"],
         "bkg": ["tt_*", "st_*", "w_lnu_*", "dy_*"],
