@@ -13,7 +13,7 @@ from columnflow.calibration.cms.egamma import electrons
 from columnflow.production.cms.seeds import (
     deterministic_seeds, deterministic_electron_seeds, deterministic_event_seeds,
 )
-from columnflow.production.cms.supercluster_eta import electron_sceta
+from columnflow.production.cms.electron import electron_sceta
 from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
