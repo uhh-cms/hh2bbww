@@ -229,8 +229,8 @@ def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
     fulfilling medium WP of PNetHbb
     """
-    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > hbb_btag_wp_score, axis=-1) >= 1)
+    xbb_btag_wp_score = self.config_inst.x.xbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > xbb_btag_wp_score, axis=-1) >= 1)
     return events, mask
 
 
@@ -240,8 +240,8 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     Categorization of events in the resolved category: presence of no AK8 jet candidate
     for the H->bb decay
     """
-    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > hbb_btag_wp_score, axis=-1) == 0)
+    xbb_btag_wp_score = self.config_inst.x.xbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > xbb_btag_wp_score, axis=-1) == 0)
     return events, mask
 
 
