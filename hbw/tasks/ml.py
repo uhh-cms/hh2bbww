@@ -574,10 +574,10 @@ class MLEvaluationSingleFold(
         self.ml_model_inst.trained_model = training_results["model"]
         self.ml_model_inst.best_model = training_results["best_model"]
 
-        self.ml_model_inst.process_insts = [
-            self.ml_model_inst.config_inst.get_process(proc)
-            for proc in self.ml_model_inst.processes
-        ]
+        # self.ml_model_inst.process_insts = [
+        #     self.ml_model_inst.config_inst.get_process(proc)
+        #     for proc in self.ml_model_inst.processes
+        # ]
 
         input_files = inputs["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
@@ -699,6 +699,7 @@ class PlotMLResultsSingleFold(
             plot_introspection,
         )
 
+        logger.info(f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
         # prepare inputs and outputs
         inputs = self.input()
         output = self.output()
@@ -712,10 +713,10 @@ class PlotMLResultsSingleFold(
         self.ml_model_inst.trained_model = training_results["model"]
         self.ml_model_inst.best_model = training_results["best_model"]
 
-        self.ml_model_inst.process_insts = [
-            self.ml_model_inst.config_inst.get_process(proc)
-            for proc in self.ml_model_inst.processes
-        ]
+        # self.ml_model_inst.process_insts = [
+        #     self.ml_model_inst.config_inst.get_process(proc)
+        #     for proc in self.ml_model_inst.processes
+        # ]
 
         # load data
         input_files_preml = inputs["preml"]["collection"]
@@ -739,6 +740,9 @@ class PlotMLResultsSingleFold(
         # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since
         # input reading is quite fast, while producing certain plots takes a long time
 
+        # NOTE: making plots per sub-process (`self.ml_model_inst.process_insts`) might be nice,
+        # but at the moment we can only plot per DNN node process (`self.ml_model_inst.train_node_process_insts`)
+
         for data_split in ("train", "val", "test"):
             # confusion matrix
             plot_confusion(
@@ -746,7 +750,7 @@ class PlotMLResultsSingleFold(
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
                 stats,
             )
 
@@ -756,7 +760,7 @@ class PlotMLResultsSingleFold(
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
                 stats,
             )
             plot_roc_ovo(
@@ -764,7 +768,7 @@ class PlotMLResultsSingleFold(
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
             )
 
         # input features
@@ -773,7 +777,7 @@ class PlotMLResultsSingleFold(
             data.train,
             data.val,
             output["plots"],
-            self.ml_model_inst.process_insts,
+            self.ml_model_inst.train_node_process_insts,
         )
 
         # output nodes
@@ -782,7 +786,7 @@ class PlotMLResultsSingleFold(
             data.train,
             data.val,
             output["plots"],
-            self.ml_model_inst.process_insts,
+            self.ml_model_inst.train_node_process_insts,
         )
 
         # introspection plot for variable importance ranking

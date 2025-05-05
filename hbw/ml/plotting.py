@@ -141,6 +141,7 @@ def gather_confusion_stats(
         stats: dict,
 ) -> None:
     from math import sqrt
+    print(len(confusion))
     for i in range(len(confusion)):
         # labels must be in the same order as the confusion matrix
         proc_name = process_insts[i].name
