@@ -329,24 +329,8 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": [
-            "sr__2e__1b__ml_signal_ggf2", "sr__2e__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_ggf", "sr__1b__ml_signal_ggf2", "sr__2b__ml_signal_ggf", "sr__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_ggf4", "sr__1b__ml_signal_ggf5", "sr__2b__ml_signal_ggf4", "sr__2b__ml_signal_ggf5",
-            "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__1b", "sr__2b",
-        ] + bracket_expansion(["sr__{2e,2mu,emu}__{1b,2b}__ml_{signal_ggf2,signal_vbf2}"]),
-        "vbfSR_dl": (
-            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
-            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
-            "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        ),
+        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
+        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
         "SR_dl_resolved": (
             "sr__resolved__1b__ml_signal_ggf2",
             "sr__resolved__2b__ml_signal_ggf2",
@@ -361,12 +345,7 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": (
             "sr__boosted__ml_signal_vbf2",
         ),
-        "BR_dl": (
-            "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
-            "sr__2b__ml_tt", "sr__2b__ml_st", "sr__2b__ml_dy", "sr__2b__ml_h",
-            "sr__ml_tt", "sr__ml_st", "sr__ml_dy", "sr__ml_h",
-            "sr__1b__ml_dy_m50toinf", "sr__2b__ml_dy_m50toinf",
-        ),
+        "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
     }
 
     # variable groups for conveniently looping over certain variables

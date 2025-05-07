@@ -45,7 +45,8 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
     train_nodes: dict = {
         "sig_ggf": {
             "ml_id": 0,
-            "label": "HH GGF",
+            "label": r"HH_{GGF}",
+            "color": "#000000",  # black
             "class_factor_mode": "equal",
             "sub_processes": (
                 "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
@@ -56,7 +57,8 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         },
         "sig_vbf": {
             "ml_id": 1,
-            "label": "HH VBF",
+            "label": r"HH_{VBF}",
+            "color": "#999999",  # grey
             "class_factor_mode": "equal",
             "sub_processes": (
                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
@@ -178,15 +180,44 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 
 
 #
-# derived MLModels
+# configs
 #
 
-dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
-})
-dl_22post_benchmark = DenseClassifierDL.derive("dl_22post_benchmark", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
-    "class_factors": {
+processes = {
+    "default": DenseClassifierDL._default__processes,
+    "merge_hh": ["sig_ggf", "sig_vbf", "tt", "st", "dy", "h"],
+}
+input_features = {
+    "default": DenseClassifierDL.input_features,
+    "previous": [
+        # event features
+        "mli_ht", "mli_n_jet", "mli_n_btag",
+        "mli_b_score_sum",
+        # bb system
+        "mli_dr_bb", "mli_dphi_bb", "mli_mbb", "mli_bb_pt",
+        "mli_mindr_lb",
+        # ll system
+        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_ll_pt",
+        "mli_min_dr_llbb",
+        "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
+        "mli_mbbllMET", "mli_dr_bb_llMET",
+        # VBF features
+        "mli_vbf_deta", "mli_vbf_mass", "mli_vbf_tag",
+        # low-level features
+        "mli_met_pt",
+    ] + [
+        f"mli_{obj}_{var}"
+        for obj in ["b1", "b2", "j1"]
+        for var in ["pt", "eta", "b_score"]
+    ] + [
+        f"mli_{obj}_{var}"
+        for obj in ["lep", "lep2"]
+        for var in ["pt", "eta"]
+    ],
+}
+class_factors = {
+    "default": DenseClassifierDL._default__class_factors,
+    "benchmark": {
         "sig_ggf": 1,
         "sig_vbf": 1,
         "tt": 8,
@@ -194,6 +225,33 @@ dl_22post_benchmark = DenseClassifierDL.derive("dl_22post_benchmark", cls_dict={
         "dy": 2,
         "h": 1,
     },
+}
+#
+# derived MLModels
+#
+
+dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+})
+# v0: using MultiDataset for validation, looping 2x
+# v1: modifying MultiDataset to loop over all events in validation, but incorrect weights
+# v2: use validation_weights that reweight sum of weights to the requested batchsize
+# v3: final ?
+dl_22post_benchmark_v3 = DenseClassifierDL.derive("dl_22post_benchmark_v3", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "class_factors": class_factors["benchmark"],
+})
+# has been run with same setup as v1
+dl_22post_previous = dl_22post.derive("dl_22post_previous", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "class_factors": class_factors["benchmark"],
+    "input_features": input_features["previous"],
+})
+dl_22post_previous_merge_hh = dl_22post.derive("dl_22post_previous_merge_hh", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": processes["merge_hh"],
+    "class_factors": class_factors["benchmark"],
+    "input_features": input_features["previous"],
 })
 
 dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
@@ -205,56 +263,8 @@ dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
     "epochs": 6,
 })
-dl_22post_binary = dl_22post.derive("dl_22post_binary", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": [
-        "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-        "tt",
-        "st",
-        "dy",
-        # "vv",
-    ],
-    "train_nodes": {
-        "sig_ggf": {
-            "ml_id": 0,
-            "label": "Signal",
-            "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-            ),
-        },
-        "bkg": {
-            "ml_id": 1,
-            "label": "Background",
-            "class_factor_mode": "xsec",
-            "sub_processes": (
-                "tt",
-                "st",
-                "dy",
-                # "vv",
-            ),
-        },
-    },
-    "sub_process_class_factors": {
-        "hh_ggf_hbb_hvv2l2nu_kl0_kt1": 1,
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
-        "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
-        "tt": 1,
-        "st": 1,
-        "dy": 1,
-        # "vv": 1,
-    },
-    "epochs": 100,
-})
 
-dl_22post_binary.derive("dl_22post_binary_test2", cls_dict={
+dl_22post_binary_test3 = dl_22post.derive("dl_22post_binary_test3", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
