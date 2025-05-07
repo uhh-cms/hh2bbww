@@ -376,8 +376,9 @@ def plot_roc_ovo(
 @timeit
 def plot_output_nodes(
         model: MLModel,
-        train: DotDict,
-        validation: DotDict,
+        data: DotDict[DotDict],
+        # train: DotDict,
+        # validation: DotDict,
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
         shape_norm: bool = True,
@@ -390,7 +391,7 @@ def plot_output_nodes(
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
 
-    n_classes = len(train.target[0])
+    n_classes = len(list(data.values())[0].target[0])
 
     for i in range(n_classes):
         fig, ax = plt.subplots()
@@ -399,13 +400,13 @@ def plot_output_nodes(
 
         h = (
             hist.Hist.new
-            .StrCat(["train", "validation"], name="type")
+            .StrCat(list(data.keys()), name="type")
             .IntCat([], name="process", growth=True)
             .Reg(20, 0, 1, name=var_title)
             .Weight()
         )
 
-        for input_type, inputs in (("train", train), ("validation", validation)):
+        for input_type, inputs in data.items():
             for j in range(n_classes):
                 mask = (inputs.labels == j)
                 # mask = (np.argmax(inputs.target, axis=1) == j)
@@ -423,24 +424,31 @@ def plot_output_nodes(
             "color": [proc_inst.color for proc_inst in process_insts],
         }
 
+        labels = {
+            "train": ("Training", "solid"),
+            "val": ("Validation", "dotted"),
+            "test": ("Test", "dashed"),
+        }
+
         # dummy legend entries
-        plt.hist([], histtype="step", label="Training", color="black")
-        plt.hist([], histtype="step", label="Validation", linestyle="dotted", color="black")
+        for input_type in data.keys():
+            plt.hist([], histtype="step", label=labels[input_type][0], linestyle=labels[input_type][1], color="black")
 
         # get the correct normalization factors
-        if shape_norm:
-            scale_train = np.array([
-                h[{"type": "train", "process": i}].sum().value for i in range(n_classes)
+        scale_factors = {}
+        for input_type, inputs in data.items():
+            scale_factors[input_type] = np.array([
+                h[{"type": input_type, "process": i}].sum().value for i in range(n_classes)
             ])[:, np.newaxis]
-            scale_val = np.array([
-                h[{"type": "validation", "process": i}].sum().value for i in range(n_classes)
-            ])[:, np.newaxis]
-        else:
-            scale_train = 1
-            scale_val = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
+        keys = list(scale_factors.keys())
+        if not shape_norm:
+            base_factor = scale_factors[keys[0]]
+            scale_factors[keys[0]] = 1
+            for key in keys[1:]:
+                scale_factors[key] = base_factor / scale_factors[key]
 
-        # plot training scores
-        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs)
+        # plot "first" dataset
+        (h[{"type": keys[0]}] / scale_factors[keys[0]]).plot1d(**plot_kwargs, linestyle=labels[key][1])
 
         # legend
         ax.legend(loc="best", ncols=2)
@@ -462,7 +470,8 @@ def plot_output_nodes(
         ax.set(**ax_kwargs)
 
         # plot validation scores, scaled to train dataset
-        (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
+        for key in keys[1:]:
+            (h[{"type": key}] / scale_factors[key]).plot1d(**plot_kwargs, linestyle=labels[key][1])
 
         # ax.set_xlabel("")
 
