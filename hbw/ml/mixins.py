@@ -339,18 +339,21 @@ class ModelFitMixin(CallbacksBase):
         rel_sumw_dicts = {}
         for train_node_proc_name, node_config in self.train_nodes.items():
             train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            sub_procs = (
+                (set(node_config.get("sub_processes", set())) | {train_node_proc_name}) &
+                {proc.name for proc in data.keys()}
+            )
+            if not sub_procs:
+                raise ValueError(f"Cannot find any sub-processes for {train_node_proc_name} in the data")
+            sub_procs = {self.config_inst.get_process(proc_name) for proc_name in sub_procs}
             class_factor_mode = train_node_proc.x("class_factor_mode", "equal")
             if class_factor_mode == "xsec":
                 rel_sumw_dicts[train_node_proc.name] = self.resolve_weights_xsec(
-                    {
-                        proc_inst: arrays for proc_inst, arrays in data.items()
-                        if proc_inst.name in node_config.get("sub_processes", [train_node_proc_name])
-                    },
+                    {proc_inst: data[proc_inst] for proc_inst in sub_procs},
                 )
             elif class_factor_mode == "equal":
                 rel_sumw_dicts[train_node_proc.name] = {
-                    proc_inst: proc_inst.x.sub_process_class_factor for proc_inst in data.keys()
-                    if proc_inst.name in node_config.get("sub_processes", [train_node_proc_name])
+                    proc_inst: proc_inst.x("sub_process_class_factor", 1) for proc_inst in sub_procs
                 }
         for train_node_proc_name, node_config in self.train_nodes.items():
             train_node_proc = self.config_inst.get_process(train_node_proc_name)
@@ -390,6 +393,14 @@ class ModelFitMixin(CallbacksBase):
         batch_sizes = {proc_inst: int(batch_size * batch_scaler) for proc_inst, batch_size in batch_sizes.items()}
         return batch_sizes
 
+    def set_validation_weights(self, validation, batch_sizes, train_steps_per_epoch):
+        """
+        Update the train weights such that
+        """
+        for proc_inst, arrays in validation.items():
+            bs = batch_sizes[proc_inst]
+            arrays.validation_weights = arrays.weights / np.sum(arrays.weights) * bs * train_steps_per_epoch
+
     def _check_weights(self, train):
         sum_nodes = np.zeros(len(self.train_nodes), dtype=np.float32)
         for proc, data in train.items():
@@ -417,28 +428,19 @@ class ModelFitMixin(CallbacksBase):
         log_memory("start")
 
         batch_sizes = self.get_batch_sizes(data=train)
-        batch_sizes_valid = self.get_batch_sizes(data=validation)
         print("batch_sizes:", batch_sizes)
 
         # NOTE: self.batchsize not used at the moment
         with tf.device("CPU"):
             tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
-            tf_validation = MultiDataset(data=validation, batch_size=batch_sizes_valid, kind="valid", buffersize=0)
-            # tf_validation = tf.data.Dataset.from_tensor_slices(
-            #     (validation.features, validation.target, validation.train_weights),
-            # ).batch(self.batchsize)
-
-        log_memory("init")
 
         # determine the requested steps_per_epoch
         if isinstance(self.steps_per_epoch, str):
-            magic_smooth_factor = 2
-            # steps_per_epoch is usually "iter_smallest_process", *2 to smooth out acc/loss
+            magic_smooth_factor = 1
+            # steps_per_epoch is usually "iter_smallest_process" (TODO: check performance with other factors)
             steps_per_epoch = getattr(tf_train, self.steps_per_epoch) * magic_smooth_factor
-            validation_steps = getattr(tf_validation, self.steps_per_epoch) * magic_smooth_factor
         else:
-            steps_per_epoch = int(self.steps_per_epoch)
-            validation_steps = int(self.steps_per_epoch)
+            raise Exception("self.steps_per_epoch is not a string, cannot determine steps_per_epoch")
         if not isinstance(steps_per_epoch, int):
             raise Exception(
                 f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
@@ -446,13 +448,21 @@ class ModelFitMixin(CallbacksBase):
             )
         logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
+        with tf.device("CPU"):
+            # batch_sizes_valid = self.get_batch_sizes(data=validation)
+            self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
+            tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+
+        log_memory("init")
+
+
         # check that the weights are set correctly
         # self._check_weights(train)
 
         # set the kwargs used for training
         model_fit_kwargs = {
             "validation_data": (x for x in tf_validation),
-            "validation_steps": validation_steps,
+            "validation_steps": tf_validation.iter_smallest_process,
             "epochs": self.epochs,
             "verbose": 2,
             "steps_per_epoch": steps_per_epoch,

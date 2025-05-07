@@ -17,29 +17,6 @@ logger = law.logger.get_logger(__name__)
 
 
 class MultiDataset(object):
-    # def auto_resolve_weights(self, data, max_diff_int: float = 0.3):
-    #     """
-    #     Represents cross-section weighting
-    #     """
-    #     rel_sumw_dict = {proc_inst: {} for proc_inst in data.keys()}
-    #     factor = 1
-    #     smallest_sumw = None
-    #     for proc_inst, arrays in data.items():
-    #         sumw = np.sum(arrays.weights)
-    #         if not smallest_sumw or smallest_sumw >= sumw:
-    #             smallest_sumw = sumw
-
-    #     for proc_inst, arrays in data.items():
-    #         sumw = np.sum(arrays.weights)
-    #         rel_sumw = sumw / smallest_sumw
-    #         rel_sumw_dict[proc_inst] = rel_sumw
-
-    #         if (rel_sumw - round(rel_sumw)) / rel_sumw > max_diff_int:
-    #             factor = 2
-
-    #     rel_sumw_dict = {proc_inst: int(rel_sumw * factor) for proc_inst, rel_sumw in rel_sumw_dict.items()}
-
-    #     return list(rel_sumw_dict.values())
 
     def __init__(
         self,
@@ -66,20 +43,24 @@ class MultiDataset(object):
         class_factors = []
 
         for proc_inst, arrays in data.items():
-            arrays = (arrays.features, arrays.target, arrays.train_weights)
             # ML WEIGHTING
+            self.counts.append(len(arrays.features))
+            if self.kind == "train":
+                arrays = (arrays.features, arrays.target, arrays.train_weights)
+            else:
+                arrays = (arrays.features, arrays.target, arrays.validation_weights)
             self.tuple_length = len(arrays)
             self.datasets.append(tf.data.Dataset.from_tensor_slices(arrays))
-            self.counts.append(len(arrays[0]))
             class_factors.append(proc_inst.x.sub_process_class_factor)
-
-        # if class_factor_mode == "sub_process_class_factor":
-        #     class_factors = [proc_inst.x.sub_process_class_factor for proc_inst in data.keys()]
-        # elif class_factor_mode == "auto":
-        #     class_factors = self.auto_resolve_weights(data)
 
         # state attributes
         self.batches_seen = None
+
+        if self.kind == "valid":
+            # always batch validation data to the same size (10 batches)
+            self.max_iter_valid = 10
+            self.iter_smallest_process = 10
+            return
 
         # determine batch sizes per dataset
         sum_weights = sum(class_factors)
@@ -123,10 +104,12 @@ class MultiDataset(object):
         self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
         gc.collect()
 
-        for proc_inst, batch_size, count, weight in zip(self.processes, self.batch_sizes, self.counts, class_factors):
+        for proc_inst, batch_size, count, weight in zip(
+            self.processes, self.batch_sizes, self.counts, class_factors,
+        ):
             logger.info(
-                f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen completely "
-                f"(count {count}, weight {weight}, batch size {batch_size})",
+                f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen "
+                f"completely (count {count}, weight {weight}, batch size {batch_size})",
             )
 
     @property
@@ -151,11 +134,18 @@ class MultiDataset(object):
             for dataset in datasets
         ]
 
-        # batching
-        datasets = [
-            dataset.batch(bs_size)
-            for dataset, bs_size in zip(datasets, self.batch_sizes)
-        ]
+        if self.kind == "train":
+            # batching
+            datasets = [
+                dataset.batch(bs_size)
+                for dataset, bs_size in zip(datasets, self.batch_sizes)
+            ]
+        else:
+            # for validation, we want to see all data, so we create the same number of batches for each dataset
+            datasets = [
+                dataset.batch(count // self.iter_smallest_process)
+                for dataset, count in zip(datasets, self.counts)
+            ]
 
         its = [iter(dataset) for dataset in datasets]
         while True:
@@ -181,7 +171,7 @@ class MultiDataset(object):
             yield tuple(tf.concat([batch[i] for batch in dataset_batches], axis=0) for i in range(self.tuple_length))
 
             self.batches_seen += 1
-            logger.debug(self.kind, self.batches_seen, self.iter_smallest_process, self.max_iter_valid)
+            # print(self.kind, self.batches_seen, self.iter_smallest_process, self.max_iter_valid)
             # if self.kind == "valid" and self.batches_seen >= self.iter_smallest_process:
             #     break
 
