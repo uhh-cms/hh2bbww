@@ -217,6 +217,7 @@ input_features = {
 }
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
+    "ones": {},  # defaults to 1 (NOTE: do not try to use defaultdict! does not work with hash generation)
     "benchmark": {
         "sig_ggf": 1,
         "sig_vbf": 1,
@@ -245,6 +246,11 @@ dl_22post_benchmark_v3 = DenseClassifierDL.derive("dl_22post_benchmark_v3", cls_
 dl_22post_previous = dl_22post.derive("dl_22post_previous", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "class_factors": class_factors["benchmark"],
+    "input_features": input_features["previous"],
+})
+dl_22post_weight1 = dl_22post.derive("dl_22post_weight1", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "class_factors": class_factors["ones"],
     "input_features": input_features["previous"],
 })
 dl_22post_previous_merge_hh = dl_22post.derive("dl_22post_previous_merge_hh", cls_dict={
@@ -321,6 +327,79 @@ dl_22post_binary_test3 = dl_22post.derive("dl_22post_binary_test3", cls_dict={
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
         "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m4to10": 0.1,  # assign small weight due to low statistics
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "vv": 1,
+        "ttv": 1,
+        "h": 1,
+    },
+    "epochs": 100,
+})
+dl_22post_vbf = dl_22post.derive("dl_22post_vbf", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": [
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "tt",
+        "st",
+        "dy_m4to10",
+        "dy_m10to50",
+        "dy_m50toinf",
+        "vv",
+        "ttv",
+        "h",
+    ],
+    "train_nodes": {
+        "sig_vbf_binary": {
+            "ml_id": 0,
+            "label": "HH VBF",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+            ),
+        },
+        "bkg_binary_for_vbf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": (
+                "tt",
+                "st",
+                "dy_m4to10",
+                "dy_m10to50",
+                "dy_m50toinf",
+                "vv",
+                "ttv",
+                "h",
+            ),
+        },
+    },
+    "class_factors": {
+        "sig_vbf_binary": 1,
+        "bkg_binary_for_vbf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
         "tt": 1,
         "st": 1,
         "dy_m4to10": 0.1,  # assign small weight due to low statistics

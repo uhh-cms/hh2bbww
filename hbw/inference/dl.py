@@ -149,6 +149,21 @@ default_cls_dict = {
     "skip_data": True,
 }
 
+
+def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
+    """
+    Function to set the config variable for the binary model.
+    """
+    if "sig_ggf" in config_cat_inst.name:
+        return "logit_mlscore.sig_ggf_binary"
+    elif "sig_vbf" in config_cat_inst.name:
+        return "logit_mlscore.sig_vbf_binary"
+    elif config_cat_inst.x.root_cats.get("dnn"):
+        return "mlscore.max_score"
+    else:
+        raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+
+
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
 
@@ -182,5 +197,17 @@ hh_multi_dataset = dl.derive("hh_multi_dataset", cls_dict={
 hh_multi_dataset_and_binary = dl.derive("hh_multi_dataset_and_binary", cls_dict={
     "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3"],
     "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
+    "systematics": rate_systematics,
+})
+
+with_vbf_binary = dl.derive("with_vbf_binary", cls_dict={
+    "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3", "dl_22post_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": rate_systematics,
+})
+
+weight1 = dl.derive("weight1", cls_dict={
+    "ml_model_name": ["dl_22post_weight1", "dl_22post_binary_test3", "dl_22post_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": rate_systematics,
 })

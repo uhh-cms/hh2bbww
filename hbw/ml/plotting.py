@@ -448,7 +448,7 @@ def plot_output_nodes(
                 scale_factors[key] = base_factor / scale_factors[key]
 
         # plot "first" dataset
-        (h[{"type": keys[0]}] / scale_factors[keys[0]]).plot1d(**plot_kwargs, linestyle=labels[key][1])
+        (h[{"type": keys[0]}] / scale_factors[keys[0]]).plot1d(**plot_kwargs, linestyle=labels[keys[0]][1])
 
         # legend
         ax.legend(loc="best", ncols=2)
