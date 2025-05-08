@@ -211,6 +211,11 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
     :raises NotImplementedError: If the dataset cannot be assigned to the correct DY base process
     """
+    # TODO: it might be possible to calculate process ids during selection only for the processes
+    # we want to perform stitching with, then add IDs for sub-process we need for e.g. plotting later
+    # this might help minimize memory consumption during selection and simplify stitching
+    # as soon as the Reducer function exist, we could move calculations that require gen info to this
+    # stage as they are quite memory intensive
     n_partons = events.LHE.NpNLO
 
     genjet_mask = (events.GenJet["pt"] >= 20) & (abs(events.GenJet["eta"]) < 2.4)

@@ -13,42 +13,52 @@ from hbw.inference.base import HBWInferenceModelBase
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dl_22_procs1_w0_inp1"
-# default_producers = [f"ml_{ml_model_name}", "event_weights"]
+ml_model_name = "dl_22post_benchmark"
 
 # All processes to be included in the final datacard
 processes = [
-    "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-    "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",  # TODO
-    "tt",
-    # "ttv",  # TODO
-    # "ttvv",  # TODO
-    # "st_schannel",  # Not datasets anyways
+    "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
+    "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+    "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
+    "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
+    "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+    "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
+    "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+    "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
+    "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+    "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+    "hh_ggf_hbb_hww2l2nu_kl0_kt1",
+    "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+    "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+    "hh_ggf_hbb_hww2l2nu_kl5_kt1",
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
+    # "st_schannel",  # Not datasets anyways
+    "tt",
+    # "ttw",  # TODO: dataset not working?
+    "ttz",
     "dy",
     "w_lnu",
     "vv",
-    # "vvv",  # TODO
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    # "ttv",  # TODO
+    # "ttvv",  # TODO
+    # "vvv",  # TODO
     # TODO: add thq, thw, bbh
     # "qcd",  # probably not needed
 ]
 
 # All categories to be included in the final datacard
 config_categories = [
-    "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+    "sr__1b__ml_sig_ggf",
+    "sr__1b__ml_sig_vbf",
     "sr__1b__ml_tt",
     "sr__1b__ml_st",
     "sr__1b__ml_dy",
     "sr__1b__ml_h",
-    "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+    "sr__2b__ml_sig_ggf",
+    "sr__2b__ml_sig_vbf",
     "sr__2b__ml_tt",
     "sr__2b__ml_st",
     "sr__2b__ml_dy",
@@ -110,7 +120,7 @@ shape_systematics = [
     # "pdf_shape_ttv",
     # "pdf_shape_vv",
     # "pdf_shape_h",
-    # Scale Factors (TODO)
+    # Scale Factors
     "btag_hf",
     "btag_lf",
     "btag_hfstats1_{year}",
@@ -134,589 +144,118 @@ default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes,
     "config_categories": config_categories,
-    "systematics": systematics,
+    "systematics": rate_systematics,
     "mc_stats": True,
     "skip_data": True,
 }
 
+hhprocs = lambda hhdecay: [
+    f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
+    f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
+    f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
+    f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
+    f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
+    f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
+    f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
+    f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
+    f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
+    f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+    f"hh_ggf_{hhdecay}_kl0_kt1",
+    f"hh_ggf_{hhdecay}_kl1_kt1",
+    f"hh_ggf_{hhdecay}_kl2p45_kt1",
+    f"hh_ggf_{hhdecay}_kl5_kt1",
+]
+backgrounds = [
+    # TODO: merge st_schannel, st_tchannel
+    "st_tchannel",
+    "st_twchannel",
+    # "st_schannel",  # Not datasets anyways
+    "tt",
+    # "ttw",  # TODO: dataset not working?
+    "ttz",
+    "dy",
+    "w_lnu",
+    "vv",
+    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    # "ttv",  # TODO
+    # "ttvv",  # TODO
+    # "vvv",  # TODO
+    # TODO: add thq, thw, bbh
+    # "qcd",  # probably not needed
+]
+
+processes_dict = {
+    "default": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
+    "hww": [*backgrounds, *hhprocs("hbb_hww")],
+    "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+}
+
+
+def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
+    """
+    Function to set the config variable for the binary model.
+    """
+    if "sig_ggf" in config_cat_inst.name:
+        return "logit_mlscore.sig_ggf_binary"
+    elif "sig_vbf" in config_cat_inst.name:
+        return "logit_mlscore.sig_vbf_binary"
+    elif config_cat_inst.x.root_cats.get("dnn"):
+        return "mlscore.max_score"
+    else:
+        raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+
+
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
 
-
-dl_apr2025 = dl.derive("dl_apr2025", cls_dict={
-    "ml_model_name": "dl_22post_procs2_w0_inp2",
-    "config_categories": [
-        "sr__1b__ml_signal_ggf2",
-        "sr__1b__ml_signal_vbf2",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_signal_ggf2",
-        "sr__2b__ml_signal_vbf2",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st_tchannel",
-        "st_twchannel",
-        "tt",
-        # "ttw",  # TODO: dataset not working?
-        "ttz",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-    "systematics": rate_systematics,
-})
-dl_apr2025_22dnn = dl_apr2025.derive("dl_apr2025_22dnn", cls_dict={
-    "ml_model_name": "dl_22_procs2_w1_inp2",
-})
-dl_apr2025_22dnn_syst = dl_apr2025.derive("dl_apr2025_22dnn_syst", cls_dict={
-    "ml_model_name": "dl_22_procs2_w1_inp2",
-    "systematics": systematics,
-})
-dl_apr2025_22dnn_syst = dl_apr2025.derive("dl_apr2025_22dnn_lep_syst", cls_dict={
-    "ml_model_name": "dl_22_procs2_w1_inp2",
-    "systematics": systematics,
-    "config_categories": [
-        "sr__2e__1b__ml_signal_ggf2",
-        "sr__2e__1b__ml_signal_vbf2",
-        "sr__2e__2b__ml_signal_ggf2",
-        "sr__2e__2b__ml_signal_vbf2",
-        "sr__2mu__1b__ml_signal_ggf2",
-        "sr__2mu__1b__ml_signal_vbf2",
-        "sr__2mu__2b__ml_signal_ggf2",
-        "sr__2mu__2b__ml_signal_vbf2",
-        "sr__emu__1b__ml_signal_ggf2",
-        "sr__emu__1b__ml_signal_vbf2",
-        "sr__emu__2b__ml_signal_ggf2",
-        "sr__emu__2b__ml_signal_vbf2",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-})
-dl_apr2025_22dnn_syst = dl_apr2025.derive("dl_apr2025_22dnn_boosted_syst", cls_dict={
-    "ml_model_name": "dl_22_procs2_w1_inp2",
-    "systematics": systematics,
-    "config_categories": [
-        "sr__resolved__1b__ml_signal_ggf2",
-        "sr__resolved__1b__ml_signal_vbf2",
-        "sr__resolved__2b__ml_signal_ggf2",
-        "sr__resolved__2b__ml_signal_vbf2",
-        "sr__boosted__ml_signal_ggf2",
-        "sr__boosted__ml_signal_vbf2",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-})
-dl_apr2025_v1 = dl_apr2025.derive("dl_apr2025_v1", cls_dict={
-    "ml_model_name": "dl_22post_procs2_w1_inp2",
-})
-dl_apr2025_v1.derive("dl_apr2025_v1_syst", cls_dict={"systematics": systematics})
-dl_apr2025_v1.derive("dl_apr2025_v1_boosted_syst", cls_dict={
-    "systematics": systematics,
-    "config_categories": [
-        "sr__resolved__1b__ml_signal_ggf2",
-        "sr__resolved__1b__ml_signal_vbf2",
-        "sr__resolved__2b__ml_signal_ggf2",
-        "sr__resolved__2b__ml_signal_vbf2",
-        "sr__boosted__ml_signal_ggf2",
-        "sr__boosted__ml_signal_vbf2",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-})
-
-dl_apr2025_v1.derive("dl_apr2025_v1_testsyst", cls_dict={
-    "systematics": systematics,
-    "processes": [
-        # "tt",
-        # "ttz",
-        # "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-        # "dy",
-        # "w_lnu",
-        # "vv",
-        # "st_tchannel",
-        # "st_twchannel",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-    ],
-})
-
-
-# "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-# "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
-# "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-# "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
-# "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-# "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-# "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-# "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-# "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-# "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-
-dl.derive("dl_ml_study_5", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_5",
-    "config_categories": [
-        "sr__1b__ml_signal_ggf5",
-        "sr__1b__ml_signal_vbf5",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_signal_ggf5",
-        "sr__2b__ml_signal_vbf5",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        # qqHH_CV_m0p012_C2V_0p03_kl_10p2
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-    "systematics": rate_systematics,
-})
-
-dl.derive("dl_ml_study_4", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_4",
-    "config_categories": [
-        "sr__1b__ml_signal_ggf4",
-        "sr__1b__ml_signal_vbf4",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_signal_ggf4",
-        "sr__2b__ml_signal_vbf4",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        # qqHH_CV_m0p012_C2V_0p03_kl_10p2
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
+# TODO: remove since outdated model
+dl_binary = dl.derive("dl_binary", cls_dict={
+    "ml_model_name": ["dl_22post_benchmark", "dl_22post_binary_test2"],
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
     "systematics": rate_systematics,
 })
 
 
-dl_ml_study_1 = dl.derive("dl_ml_study_1", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_1",
-    "config_categories": [
-        "sr__1b__ml_signal_ggf",
-        "sr__1b__ml_signal_vbf",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_signal_ggf",
-        "sr__2b__ml_signal_vbf",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        # qqHH_CV_m0p012_C2V_0p03_kl_10p2
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
+previous = dl.derive("previous", cls_dict={
+    "ml_model_name": ["dl_22post_previous_merge_hh"],
+    "systematics": rate_systematics,
+})
+previous_and_binary = dl.derive("previous_and_binary", cls_dict={
+    "ml_model_name": ["dl_22post_previous_merge_hh", "dl_22post_binary_test3"],
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
+    "systematics": rate_systematics,
+})
+# TODO: change config variable to use the correct scores per category
+benchmark = dl.derive("benchmark", cls_dict={
+    "ml_model_name": ["dl_22post_benchmark_v3", "dl_22post_binary_test3"],
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
+    "systematics": rate_systematics,
+})
+hh_multi_dataset = dl.derive("hh_multi_dataset", cls_dict={
+    "ml_model_name": ["dl_22post_previous"],
+    "systematics": rate_systematics,
+})
+hh_multi_dataset_and_binary = dl.derive("hh_multi_dataset_and_binary", cls_dict={
+    "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3"],
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
     "systematics": rate_systematics,
 })
 
-dl_ml_study_1.derive("dl_ml_study_1_handle", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_1_handle",
-})
-
-dl_ml_study_3 = dl.derive("dl_ml_study_3", cls_dict={
-    "ml_model_name": "dl_22_procs1_w0",
-    "config_categories": [
-        "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
+with_vbf_binary = dl.derive("with_vbf_binary", cls_dict={
+    "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3", "dl_22post_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": rate_systematics,
 })
 
-dl_ml_study_3.derive("dl_ml_study_3_handle", cls_dict={
-    "ml_model_name": "dl_22_procs1_w0_handle",
-})
-
-dl_ml_study_2 = dl.derive("dl_ml_study_2", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_2",
-    "config_categories": [
-        "sr__1b__ml_signal_ggf2",
-        "sr__1b__ml_signal_vbf2",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_signal_ggf2",
-        "sr__2b__ml_signal_vbf2",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-    "processes": [
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
+weight1 = dl.derive("weight1", cls_dict={
+    "ml_model_name": ["dl_22post_weight1", "dl_22post_binary_test3", "dl_22post_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": rate_systematics,
 })
 
-dl_ml_study_2.derive("dl_ml_study_2_handle", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_2_handle",
+weight1_hww = weight1.derive("weight1_hww", cls_dict={
+    "processes": processes_dict["hww"],
 })
-
-dl_ml_study_2.derive("dl_ml_study_2_ignore", cls_dict={
-    "ml_model_name": "dl_22post_ml_study_2",
-})
-
-dl.derive("dl_hww_and_hzz", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hww_kl0_kt1",
-        "hh_ggf_hbb_hww_kl1_kt1",
-        "hh_ggf_hbb_hww_kl2p45_kt1",
-        "hh_ggf_hbb_hww_kl5_kt1",
-        "hh_ggf_hbb_hzz_kl0_kt1",
-        "hh_ggf_hbb_hzz_kl1_kt1",
-        "hh_ggf_hbb_hzz_kl2p45_kt1",
-        "hh_ggf_hbb_hzz_kl5_kt1",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-})
-dl.derive("dl_lch", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hww_kl0_kt1",
-        "hh_ggf_hbb_hww_kl1_kt1",
-        "hh_ggf_hbb_hww_kl2p45_kt1",
-        "hh_ggf_hbb_hww_kl5_kt1",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-    "config_categories": [
-        "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "sr__1b__ml_tt",
-        "sr__1b__ml_st",
-        "sr__1b__ml_dy",
-        "sr__1b__ml_h",
-        "sr__2b__ml_tt",
-        "sr__2b__ml_st",
-        "sr__2b__ml_dy",
-        "sr__2b__ml_h",
-    ],
-})
-dl.derive("dl_hww2l2nu", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-})
-dl.derive("dl_hww_v1", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hww_kl0_kt1",
-        "hh_ggf_hbb_hww_kl1_kt1",
-        "hh_ggf_hbb_hww_kl2p45_kt1",
-        "hh_ggf_hbb_hww_kl5_kt1",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-})
-
-dl.derive("dl_dummy_vbf_variation", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hww_kl0_kt1",
-        "hh_ggf_hbb_hww_kl1_kt1",
-        "hh_ggf_hbb_hww_kl2p45_kt1",
-        "hh_ggf_hbb_hww_kl5_kt1",
-        "hh_ggf_hbb_hzz_kl0_kt1",
-        "hh_ggf_hbb_hzz_kl1_kt1",
-        "hh_ggf_hbb_hzz_kl2p45_kt1",
-        "hh_ggf_hbb_hzz_kl5_kt1",
-        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-    "dummy_vbf_variation": True,
-})
-dl.derive("dl_with_vbf2", cls_dict={
-    "processes": [
-        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",
-        "hh_vbf_hbb_hww_kvm2p12_k2v3p87_klm5p96",
-        # "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
-        # "hh_vbf_hbb_hzz_kv1_k2v0_kl1",
-        # "hh_vbf_hbb_hzz_kv1p74_k2v1p37_kl14p4",
-        # "hh_vbf_hbb_hzz_kvm0p012_k2v0p03_kl10p2",
-        # "hh_vbf_hbb_hzz_kvm0p758_k2v1p44_klm19p3",
-        # "hh_vbf_hbb_hzz_kvm0p962_k2v0p959_klm1p43",
-        # "hh_vbf_hbb_hzz_kvm1p21_k2v1p94_klm0p94",
-        # "hh_vbf_hbb_hzz_kvm1p6_k2v2p72_klm1p36",
-        # "hh_vbf_hbb_hzz_kvm1p83_k2v3p57_klm3p39",
-        # "hh_vbf_hbb_hzz_kvm2p12_k2v3p87_klm5p96",
-        "hh_ggf_hbb_hww_kl0_kt1",
-        "hh_ggf_hbb_hww_kl1_kt1",
-        "hh_ggf_hbb_hww_kl2p45_kt1",
-        "hh_ggf_hbb_hww_kl5_kt1",
-        # "hh_ggf_hbb_hzz_kl0_kt1",
-        # "hh_ggf_hbb_hzz_kl1_kt1",
-        # "hh_ggf_hbb_hzz_kl2p45_kt1",
-        # "hh_ggf_hbb_hzz_kl5_kt1",
-        # "hh_vbf_hbb_hvv_kv1_k2v1_kl1",  # TODO
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-})
-
-
-dl.derive("dl_tmp", cls_dict={
-    "processes": [
-        "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-        # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",  # TODO
-        "tt",
-        "dy",
-        "w_lnu",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-})
-
-
-dl.derive("dl_22post_limited", cls_dict={
-    "ml_model_name": "dl_22post_limited",
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
-    "config_categories": [
-        "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "sr__2b__ml_st_tchannel_t",
-    ],
-    "systematics": rate_systematics},
-)
-# test command:
-# law run cf.CreateDatacards --inference-model dl_22post_limited --configs l22post
-dl.derive("dl_rates_only", cls_dict={"systematics": rate_systematics})
-
-dl.derive("dl_postfit_test", cls_dict={
-    "ml_model_name": None,
-    "config_categories": [
-        "sr__1b",
-        "sr__2b",
-    ],
-    "processes": [
-        # "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kv1p74_k2v1p37_kl14p4",
-        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "hh_vbf_hbb_hww2l2nu_kvm0p012_k2v0p03_kl10p2",
-        "hh_vbf_hbb_hww2l2nu_kvm2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hww2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hww2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_ggf_hbb_hww2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hww2l2nu_kl5_kt1",
-        "st",
-        "tt",
-        "dy",
-        "w_lnu",
-        "vv",
-        "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    ],
-    "systematics": rate_systematics,
+weight1_hwwzztt = weight1.derive("weight1_hwwzztt", cls_dict={
+    "processes": processes_dict["hwwzztt"],
 })

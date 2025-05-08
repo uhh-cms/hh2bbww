@@ -296,6 +296,8 @@ ml_processes = [
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
     "tt", "st", "w_lnu", "dy", "v_lep", "h",
     "dy_m50toinf", "tt_dl", "st_tchannel_t",
+    "bkg_binary", "sig_ggf_binary", "sig_vbf_binary",
+    "sig_ggf", "sig_vbf",
 ]
 for proc in ml_processes:
     @categorizer(

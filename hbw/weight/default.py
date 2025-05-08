@@ -7,8 +7,8 @@ Event weight producer.
 import law
 
 from columnflow.util import maybe_import
-from columnflow.histograming import HistProducer
-from columnflow.histograming.default import cf_default
+from columnflow.histogramming import HistProducer
+from columnflow.histogramming.default import cf_default
 from columnflow.config_util import get_shifts_from_sources
 from columnflow.columnar_util import Route
 from hbw.production.prepare_objects import prepare_objects

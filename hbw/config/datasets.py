@@ -43,6 +43,33 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         for stream in config.x.data_streams
     ]
 
+    ggf_samples = lambda hhdecay: [
+        f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
+        f"hh_ggf_{hhdecay}_kl1_kt1_powheg",
+        f"hh_ggf_{hhdecay}_kl2p45_kt1_powheg",
+        f"hh_ggf_{hhdecay}_kl5_kt1_powheg",
+    ]
+    vbf_samples = lambda hhdecay: [
+        f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4_madgraph",
+        f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2_madgraph",
+        f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3_madgraph",
+        f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43_madgraph",
+        f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
+        f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
+        f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
+        f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
+    ] if config.x.run == 3 else [
+        f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
+        f"hh_vbf_{hhdecay}_kv1_k2v1_kl2_madgraph",
+        f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv1_k2v2_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv0p5_k2v1_kl1_madgraph",
+        f"hh_vbf_{hhdecay}_kv1p5_k2v1_kl1_madgraph",
+    ]
+
     dataset_names = DotDict.wrap({
         # **data_datasets,
         "data": data_datasets,
@@ -160,91 +187,17 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "ttwh_madgraph",
             ]),
         ],
-        "hh_ggf_hbb_hvv": [
-            # SL
-            "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
-            # DL
-            "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
-            *config.x.if_era(run=3, values=[
-                "hh_ggf_hbb_hvv_kl0_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl1_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl5_kt1_powheg",
-            ]),
+        "hh_ggf": [
+            *ggf_samples("hbb_hvvqqlnu"),
+            *ggf_samples("hbb_hvv2l2nu"),
+            *ggf_samples("hbb_htt"),
+            *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
         ],
-        "hh_vbf_hbb_hvv": [
-            *config.x.if_era(run=2, values=[
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1_madgraph",
-            ]),
-            *config.x.if_era(run=3, values=[
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm2p12_k2v3p87_klm5p96_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm2p12_k2v3p87_klm5p96_madgraph",
-                "hh_vbf_hbb_hvv_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
-            ]),
-        ],
-        "hh_ggf_hbb_htt": [
-            "hh_ggf_hbb_htt_kl0_kt1_powheg",
-            "hh_ggf_hbb_htt_kl1_kt1_powheg",
-            "hh_ggf_hbb_htt_kl2p45_kt1_powheg",
-            "hh_ggf_hbb_htt_kl5_kt1_powheg",
-        ],
-        "hh_vbf_hbb_htt": [
-            "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
-            "hh_vbf_hbb_htt_kv1_k2v0_kl1_madgraph",
-            "hh_vbf_hbb_htt_kv1p74_k2v1p37_kl14p4_madgraph",
-            "hh_vbf_hbb_htt_kvm0p012_k2v0p03_kl10p2_madgraph",
-            "hh_vbf_hbb_htt_kvm0p758_k2v1p44_klm19p3_madgraph",
-            "hh_vbf_hbb_htt_kvm0p962_k2v0p959_klm1p43_madgraph",
-            "hh_vbf_hbb_htt_kvm1p21_k2v1p94_klm0p94_madgraph",
-            "hh_vbf_hbb_htt_kvm1p6_k2v2p72_klm1p36_madgraph",
-            "hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39_madgraph",
-            "hh_vbf_hbb_htt_kvm2p12_k2v3p87_klm5p96_madgraph",
+        "hh_vbf": [
+            *vbf_samples("hbb_hvvqqlnu"),
+            *vbf_samples("hbb_hvv2l2nu"),
+            *vbf_samples("hbb_htt"),
+            *config.x.if_era(run=3, values=vbf_samples("hbb_hvv")),
         ],
         "graviton_hh_ggf_bbww": [
             *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
@@ -336,7 +289,7 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
     if not config.has_tag("is_nonresonant"):
         # remove all nonresonant signal processes/datasets
-        for hh_proc in ("hh_ggf_hbb_hvv", "qHH_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
+        for hh_proc in ("hh_ggf", "hh_vbf"):
             dataset_names.pop(hh_proc)
 
     return dataset_names
@@ -362,8 +315,8 @@ def add_synchronization_dataset(config: od.Config):
 
 
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
-    if config.x.cpn_tag == "2022postEE":
-        add_synchronization_dataset(config)
+    # if config.x.cpn_tag == "2022postEE":
+    #     add_synchronization_dataset(config)
 
     # if campaign.x.year == 2017:
     #     # load custom produced datasets into campaign (2017 only!)

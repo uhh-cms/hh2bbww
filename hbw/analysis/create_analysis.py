@@ -182,12 +182,12 @@ def create_hbw_analysis(
     known_parts = (
         # from cf
         "analysis", "task_family", "config", "configs", "dataset", "shift", "version",
-        "calibrator", "calibrators", "selector", "reducer", "producer", "producers",
-        "ml_model", "ml_data", "ml_models",
+        "calibrator", "calibrators", "selector", "reducer",
+        "ml_models",
+        "producer", "producers",
+        "ml_model", "ml_data",
         "hist_producer", "inf_model",
         "plot", "shift_sources", "shifts", "datasets",
-        # MLTraining
-        "calib", "sel", "prod",
         # from hbw
         "processes",
     )

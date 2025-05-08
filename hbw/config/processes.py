@@ -5,10 +5,11 @@ Configuration of the Run 2 HH -> bbWW processes.
 """
 
 import order as od
+import law
 
 from scinum import Number
 
-from columnflow.util import DotDict
+logger = law.logger.get_logger(__name__)
 
 
 def create_parent_process(child_proces: list[od.Process], **kwargs):
@@ -74,7 +75,7 @@ def configure_hbw_processes(config: od.Config):
     NOTE: we should not rely on modifying process instances themselves as part of the config initialization.
     """
     # add main HH process
-    config.add_process(config.x.procs.n.hh_ggf)
+    # config.add_process(config.x.procs.n.hh_ggf)
 
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)
@@ -84,21 +85,65 @@ def configure_hbw_processes(config: od.Config):
     add_dummy_xsecs(config)
 
 
-from random import randint
+def set_proc_attr(proc_inst, attr, value):
+    if attr in ("id", "name"):
+        raise ValueError(f"Setting {attr} via `set_proc_attr` helper is not allowed")
+    if attr in ("label", "color"):
+        setattr(proc_inst, attr, value)
+    else:
+        proc_inst.set_aux(attr, value)
 
 
-def create_combined_proc_forML(config: od.Config, proc_name: str, proc_dict: dict, color=None):
+def apply_proc_settings(proc_inst, process_settings):
+    for attr, value in process_settings.items():
+        set_proc_attr(proc_inst, attr, value)
 
-    combining_proc = []
-    for proc in proc_dict.sub_processes:
-        combining_proc.append(config.get_process(proc, default=None))
-    proc_name = add_parent_process(config,
-        combining_proc,
-        name=proc_name,
-        id=randint(10000000, 99999999),
-        # TODO: random number (could by chance be a already used number --> should be checked)
-        label=proc_dict.get("label", "combined custom process"),
-        color=proc_dict.get("color", None),
-    )
-    ml_config = DotDict({"weighting": proc_dict.get("weighting", None), "sub_processes": proc_dict.sub_processes})
-    proc_name.x.ml_config = ml_config
+
+def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_factors):
+    # fallbacks
+    default_process_settings = {
+        "weighting": None,
+        "ml_id": -1,
+    }
+
+    for proc_name, process_settings in train_nodes.items():
+        process_settings = law.util.merge_dicts(default_process_settings, process_settings)
+
+        if process_settings["ml_id"] == -1:
+            logger.warning("ml_id for process {proc_name} set to '-1'; will not be used in training")
+
+        sub_processes = process_settings.pop("sub_processes", None)
+
+        if config_inst.has_process(proc_name):
+            logger.debug(f"update process {proc_name}")
+            if sub_processes:
+                raise NotImplementedError("Cannot re-assign sub-processes to already existing Process {proc_name}")
+            proc_inst = config_inst.get_process(proc_name)
+            apply_proc_settings(proc_inst, process_settings)
+            set_proc_attr(proc_inst, "sub_process_class_factor", sub_process_class_factors.get(proc_name, 1))
+        else:
+            logger.debug(f"create new process {proc_name}")
+            proc_id = process_settings.pop("id", int(1e7) + law.util.create_hash(proc_name, l=6, to_int=True))
+            sub_process_insts = []
+            for proc in sub_processes:
+                if not config_inst.has_process(proc):
+                    raise ValueError(
+                        f"Trying to create parent process {proc_name}, but requested child {proc} "
+                        f"is not included in config {config_inst.name}",
+                    )
+                sub_process_inst = config_inst.get_process(proc, default=None)
+
+                # assign attributes to sub process insts
+                set_proc_attr(sub_process_inst, "ml_id", process_settings["ml_id"])
+                set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
+                sub_process_insts.append(sub_process_inst)
+
+            # create parent process and assign attributes of relevance
+            proc_inst = add_parent_process(
+                config_inst,
+                sub_process_insts,
+                name=proc_name,
+                id=proc_id,
+            )
+            apply_proc_settings(proc_inst, process_settings)
+            set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
