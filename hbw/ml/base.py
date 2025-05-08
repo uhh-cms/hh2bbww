@@ -353,6 +353,9 @@ class MLClassifierBase(MLModel):
         # return requested_producers or ["event_weights", analysis_inst.x.ml_inputs_producer]
         return ["event_weights", analysis_inst.x.ml_inputs_producer]
 
+    def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
+        return self.training_producers(analysis_inst, requested_producers)
+
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
         reqs = {}
@@ -492,12 +495,9 @@ class MLClassifierBase(MLModel):
         for proc_data in validation.values():
             # load into memory
             proc_data.load_all()
-        # validation = MLProcessData(
-        #     self, input_files, "val", self.processes, task.fold,
-        # )
-        # # load into memory
-        # validation.load_all
+
         log_memory("loading validation data")
+
         # store input features as an output
         output["mlmodel"].child("input_features.pkl", type="f").dump(self.input_features_ordered, formatter="pickle")
 

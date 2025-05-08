@@ -455,7 +455,6 @@ class ModelFitMixin(CallbacksBase):
 
         log_memory("init")
 
-
         # check that the weights are set correctly
         # self._check_weights(train)
 
