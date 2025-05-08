@@ -274,7 +274,7 @@ class MLClassifierBase(MLModel):
         if self.config_inst.has_tag(f"{self.cls_name}_called"):
             # call this function only once per config
             return
-        logger.warning(
+        logger.debug(
             f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr}), "
             f"parameters: \n{self.parameters}",
         )

@@ -197,6 +197,7 @@ def set_config_defaults_and_groups(config_inst):
         "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "emuch": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "postfit": [*hbbhww_sm, *backgrounds1],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
@@ -412,6 +413,12 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
+        "postfit": {
+            "whitespace_fraction": 0.4,
+            "cms_label": "simpw",
+            "yscale": "log",
+            "hide_signal_errors": True,
+        },
         "data_mc_plots": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
@@ -537,5 +544,4 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_resolved": is_signal_sm_vbf,
         "vbfSR_dl_boosted": is_signal_sm_vbf,
         "BR_dl": is_background,
-
     }

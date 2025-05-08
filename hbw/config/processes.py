@@ -75,7 +75,7 @@ def configure_hbw_processes(config: od.Config):
     NOTE: we should not rely on modifying process instances themselves as part of the config initialization.
     """
     # add main HH process
-    config.add_process(config.x.procs.n.hh_ggf)
+    # config.add_process(config.x.procs.n.hh_ggf)
 
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)

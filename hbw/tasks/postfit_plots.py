@@ -133,6 +133,7 @@ def plot_postfit_shapes(
     shape_norm: bool | None = False,
     yscale: str | None = "",
     hide_errors: bool | None = None,
+    hide_signal_errors: bool | None = False,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
@@ -169,10 +170,11 @@ def plot_postfit_shapes(
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    # for key in plot_config.keys():
-    #     if "line_" in key:
-    #         # remove line yerr
-    #         plot_config[key]["kwargs"]["yerr"] = 0
+    if hide_signal_errors:
+        for key in plot_config.keys():
+            if "line_" in key:
+                # remove line yerr
+                plot_config[key]["kwargs"]["yerr"] = 0
 
     # since we are rebinning, the xlim should be defined based on the histograms itself
     bin_edges = list(hists.values())[0].axes[0].edges

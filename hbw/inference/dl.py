@@ -149,6 +149,47 @@ default_cls_dict = {
     "skip_data": True,
 }
 
+hhprocs = lambda hhdecay: [
+    f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
+    f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
+    f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
+    f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
+    f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
+    f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
+    f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
+    f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
+    f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
+    f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+    f"hh_ggf_{hhdecay}_kl0_kt1",
+    f"hh_ggf_{hhdecay}_kl1_kt1",
+    f"hh_ggf_{hhdecay}_kl2p45_kt1",
+    f"hh_ggf_{hhdecay}_kl5_kt1",
+]
+backgrounds = [
+    # TODO: merge st_schannel, st_tchannel
+    "st_tchannel",
+    "st_twchannel",
+    # "st_schannel",  # Not datasets anyways
+    "tt",
+    # "ttw",  # TODO: dataset not working?
+    "ttz",
+    "dy",
+    "w_lnu",
+    "vv",
+    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    # "ttv",  # TODO
+    # "ttvv",  # TODO
+    # "vvv",  # TODO
+    # TODO: add thq, thw, bbh
+    # "qcd",  # probably not needed
+]
+
+processes_dict = {
+    "default": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
+    "hww": [*backgrounds, *hhprocs("hbb_hww")],
+    "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+}
+
 
 def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     """
@@ -210,4 +251,11 @@ weight1 = dl.derive("weight1", cls_dict={
     "ml_model_name": ["dl_22post_weight1", "dl_22post_binary_test3", "dl_22post_vbf"],
     "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": rate_systematics,
+})
+
+weight1_hww = weight1.derive("weight1_hww", cls_dict={
+    "processes": processes_dict["hww"],
+})
+weight1_hwwzztt = weight1.derive("weight1_hwwzztt", cls_dict={
+    "processes": processes_dict["hwwzztt"],
 })
