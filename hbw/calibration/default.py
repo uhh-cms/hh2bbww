@@ -8,7 +8,7 @@ import law
 
 from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
-from columnflow.calibration.cms.jets import jec, jer
+from columnflow.calibration.cms.jets import jec, jer, jer_horn_handling
 from columnflow.production.cms.jet import msoftdrop
 from columnflow.calibration.cms.egamma import electrons
 from columnflow.production.cms.seeds import (
@@ -209,7 +209,8 @@ def jet_base_init(self: Calibrator) -> None:
             "uncertainty_sources": [],
         })
         # version of jer that uses the first random number from deterministic_seeds
-        self.config_inst.x.calib_deterministic_jer_cls = jer.derive("deterministic_jer", cls_dict={
+        base_jer_cls = jer_horn_handling if self.jer_horn_handling else jer
+        self.config_inst.x.calib_deterministic_jer_cls = base_jer_cls.derive("deterministic_jer", cls_dict={
             "deterministic_seed_index": 0,
             "met_name": met_name,
         })
