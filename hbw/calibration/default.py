@@ -150,6 +150,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     jec_sources=["Total"],
     bjet_regression=True,
     skip_jer=False,
+    jer_horn_handling=False,
     version=2,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
@@ -255,3 +256,9 @@ skip_jer = jet_base.derive("skip_jer", cls_dict=dict(bjet_regression=True, skip_
 no_breg = jet_base.derive("no_breg", cls_dict=dict(bjet_regression=False))
 with_b_reg = jet_base.derive("with_b_reg", cls_dict=dict(bjet_regression=True))
 with_b_reg_test = jet_base.derive("with_b_reg_test", cls_dict=dict(bjet_regression=True))
+
+ak4 = jet_base.derive("ak4", cls_dict=dict(
+    bjet_regression=False,
+    skip_jer=False,
+    jer_horn_handling=True,
+))
