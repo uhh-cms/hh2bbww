@@ -574,11 +574,6 @@ class MLEvaluationSingleFold(
         self.ml_model_inst.trained_model = training_results["model"]
         self.ml_model_inst.best_model = training_results["best_model"]
 
-        self.ml_model_inst.process_insts = [
-            self.ml_model_inst.config_inst.get_process(proc)
-            for proc in self.ml_model_inst.processes
-        ]
-
         input_files = inputs["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
 
@@ -690,19 +685,10 @@ class PlotMLResultsSingleFold(
     def run(self):
         # imports
         from hbw.ml.data_loader import MLProcessData
-        from hbw.ml.plotting import (
-            plot_confusion,
-            plot_roc_ovr,
-            plot_roc_ovo,
-            plot_output_nodes,
-            plot_input_features,
-            plot_introspection,
-        )
 
+        logger.info(f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
         # prepare inputs and outputs
         inputs = self.input()
-        output = self.output()
-        stats = {}
 
         # this initializes some process information (e.g. proc_inst.x.ml_id), but feels kind of hacky
         self.ml_model_inst.datasets(self.config_inst)
@@ -711,11 +697,6 @@ class PlotMLResultsSingleFold(
         training_results = self.ml_model_inst.open_model(inputs["training"])
         self.ml_model_inst.trained_model = training_results["model"]
         self.ml_model_inst.best_model = training_results["best_model"]
-
-        self.ml_model_inst.process_insts = [
-            self.ml_model_inst.config_inst.get_process(proc)
-            for proc in self.ml_model_inst.processes
-        ]
 
         # load data
         input_files_preml = inputs["preml"]["collection"]
@@ -730,23 +711,43 @@ class PlotMLResultsSingleFold(
             deep=True,
         )
         data = DotDict({
-            "train": MLProcessData(self.ml_model_inst, input_files, "train", self.ml_model_inst.processes, self.fold),
-            "val": MLProcessData(self.ml_model_inst, input_files, "val", self.ml_model_inst.processes, self.fold),
-            "test": MLProcessData(self.ml_model_inst, input_files, "test", self.ml_model_inst.processes, self.fold),
+            data_split: MLProcessData(
+                self.ml_model_inst,
+                input_files,
+                data_split,
+                self.ml_model_inst.processes,
+                self.fold,
+            ) for data_split in self.data_splits
         })
 
-        # create plots
-        # NOTE: this is currently hard-coded, could be made customizable and could also be parallelized since
-        # input reading is quite fast, while producing certain plots takes a long time
+        self.create_plots(data)
 
-        for data_split in ("train", "val", "test"):
+    def create_plots(self, data):
+        output = self.output()
+        stats = {}
+        from hbw.ml.plotting import (
+            plot_confusion,
+            plot_roc_ovr,
+            plot_roc_ovo,
+            plot_output_nodes,
+            plot_input_features,
+            plot_introspection,
+        )
+        # create plots
+        # NOTE: could be more parallelized since input reading is quite fast,
+        # while producing certain plots takes a long time
+
+        # NOTE: making plots per sub-process (`self.ml_model_inst.process_insts`) might be nice,
+        # but at the moment we can only plot per DNN node process (`self.ml_model_inst.train_node_process_insts`)
+
+        for data_split in self.data_splits:
             # confusion matrix
             plot_confusion(
                 self.ml_model_inst,
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
                 stats,
             )
 
@@ -756,7 +757,7 @@ class PlotMLResultsSingleFold(
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
                 stats,
             )
             plot_roc_ovo(
@@ -764,7 +765,7 @@ class PlotMLResultsSingleFold(
                 data[data_split],
                 output["plots"],
                 data_split,
-                self.ml_model_inst.process_insts,
+                self.ml_model_inst.train_node_process_insts,
             )
 
         # input features
@@ -773,16 +774,79 @@ class PlotMLResultsSingleFold(
             data.train,
             data.val,
             output["plots"],
-            self.ml_model_inst.process_insts,
+            self.ml_model_inst.train_node_process_insts,
         )
 
         # output nodes
         plot_output_nodes(
             self.ml_model_inst,
-            data.train,
-            data.val,
+            data,
             output["plots"],
-            self.ml_model_inst.process_insts,
+            self.ml_model_inst.train_node_process_insts,
+        )
+
+        # introspection plot for variable importance ranking
+        plot_introspection(
+            self.ml_model_inst,
+            output["plots"],
+            data.test,
+            input_features=self.ml_model_inst.input_features_ordered,
+            stats=stats,
+        )
+
+        # dump all stats into yaml file
+        output["stats"].dump(stats, formatter="json")
+
+
+class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
+    data_splits = ("test",)
+
+    def create_plots(self, data):
+        output = self.output()
+        stats = {}
+        from hbw.ml.plotting import (
+            plot_confusion,
+            plot_roc_ovr,
+            plot_roc_ovo,
+            plot_output_nodes,
+            # plot_input_features,
+            plot_introspection,
+        )
+        # create plots
+        for data_split in self.data_splits:
+            # confusion matrix
+            plot_confusion(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.train_node_process_insts,
+                stats,
+            )
+
+            # ROC curves
+            plot_roc_ovr(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.train_node_process_insts,
+                stats,
+            )
+            plot_roc_ovo(
+                self.ml_model_inst,
+                data[data_split],
+                output["plots"],
+                data_split,
+                self.ml_model_inst.train_node_process_insts,
+            )
+
+        # output nodes
+        plot_output_nodes(
+            self.ml_model_inst,
+            data,
+            output["plots"],
+            self.ml_model_inst.train_node_process_insts,
         )
 
         # introspection plot for variable importance ranking

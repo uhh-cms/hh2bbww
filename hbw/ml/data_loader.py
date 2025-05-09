@@ -382,55 +382,6 @@ class MLDatasetLoader:
         return self._validation_weights
 
     @property
-    def labels(self) -> np.ndarray:
-        raise Exception(
-            "This should not be used anymore since we now create the labels during training/evaluation"
-            "to allow sharing these outputs between ML models with different sets of processes.",
-        )
-        if hasattr(self, "_labels"):
-            return self._labels
-
-        if not self.process_inst.has_aux("ml_id"):
-            logger.warning(
-                f"Process {self.process} does not have an ml_id. Label will be set to -1.",
-            )
-            self._labels = np.ones(self.n_events) * -1
-            return self._labels
-        elif self.process_inst.x.ml_id not in range(len(self.ml_model_inst.processes)):
-            raise Exception(
-                f"ml_id {self.process_inst.x.ml_id} of process {self.process} not in range of processes "
-                f"{self.ml_model_inst.processes}. Cannot create target array.",
-            )
-
-        self._labels = np.ones(self.n_events) * self.process_inst.x.ml_id
-        return self._labels
-
-    @property
-    def target(self) -> np.ndarray:
-        raise Exception(
-            "This should not be used anymore since we now create the labels during training/evaluation"
-            "to allow sharing these outputs between ML models with different sets of processes.",
-        )
-        if hasattr(self, "_target"):
-            return self._target
-
-        self._target = np.zeros((self.n_events, len(self.ml_model_inst.processes))).astype(np.float32)
-
-        if not self.process_inst.has_aux("ml_id"):
-            logger.warning(
-                f"Process {self.process} does not have an ml_id. Target will be set to 0 for all classes.",
-            )
-            return self._target
-        elif self.process_inst.x.ml_id not in range(len(self.ml_model_inst.processes)):
-            raise Exception(
-                f"ml_id {self.process_inst.x.ml_id} of process {self.process} not in range of processes "
-                f"{self.ml_model_inst.processes}. Cannot create target array.",
-            )
-
-        self._target[:, self.process_inst.x.ml_id] = 1
-        return self._target
-
-    @property
     def get_data_split(self) -> tuple[int, int]:
         """
         Get the data split for training, validation and testing.
@@ -698,7 +649,10 @@ class MLProcessData:
 
         # use the labels to create the target array
         labels = self.labels
-        target = np.eye(len(self._ml_model_inst.processes))[labels]
+        target = np.eye(len(self._ml_model_inst.train_nodes.keys()))[labels]
+
+        # set target to 0 when labels < 0
+        target = np.where(labels[:, np.newaxis] >= 0, target, 0)
 
         # handling of negative weights based on the ml_model_inst.negative_weights parameter
         if self._ml_model_inst.negative_weights == "handle":

@@ -20,6 +20,7 @@ from columnflow.tasks.framework.mixins import (
     # MLModelMixin,
     MLModelTrainingMixin,
 )
+from columnflow.tasks.ml import MLTraining
 # from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.util import DotDict
 from hbw.tasks.base import HBWTask
@@ -109,6 +110,7 @@ class Optimizer(
     cf_sandbox venv_ml_plotting
     law run hbw.Optimizer --version prod2 --ml-model dl_22
     """
+    resolution_task_cls = MLTraining.resolution_task_cls
     sandbox = "bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh"
 
     iterations = luigi.IntParameter(default=10, description="Number of iterations")
@@ -128,7 +130,8 @@ class Optimizer(
 
         # define the hyperparameter space
         self._hyperparameter_space = {
-            "negative_weights": Categorical(["handle", "abs", "ignore"]),
+            "negative_weights": Categorical(["ignore"]),
+            # "negative_weights": Categorical(["handle", "abs", "ignore"]),
             "activation": Categorical(["relu", "elu"]),
             "learningrate": Real(1e-6, 1e-2, prior="log-uniform"),
             "layer": Integer(32, 1024, prior="log-uniform", base=2),
@@ -200,6 +203,8 @@ class Objective(
     """
     Objective to optimize.
     """
+    resolution_task_cls = MLTraining.resolution_task_cls
+
     parameter_keys = law.CSVParameter()
     parameter_tuples = law.MultiCSVParameter()
     iteration = luigi.IntParameter()

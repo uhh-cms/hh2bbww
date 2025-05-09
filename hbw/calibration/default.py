@@ -8,7 +8,8 @@ import law
 
 from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
-from columnflow.calibration.cms.jets import jec, jer
+from columnflow.calibration.cms.jets import jec, jer, jer_horn_handling
+from columnflow.production.cms.jet import msoftdrop
 from columnflow.calibration.cms.egamma import electrons
 from columnflow.production.cms.seeds import (
     deterministic_seeds, deterministic_electron_seeds, deterministic_event_seeds,
@@ -20,10 +21,7 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from hbw.util import MET_COLUMN
 
 from hbw.calibration.jet import bjet_regression
-# from hbw.calibration.jet import (
-#     fatjet_jec_data, fatjet_jec_total, fatjet_jer,
-#     bjet_regression,
-# )
+
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -37,7 +35,7 @@ electrons.deterministic_seed_index = 0
 
 
 @calibrator(
-    version=1,
+    version=2,
     uses={electron_sceta, deterministic_event_seeds, deterministic_electron_seeds},
     produces={deterministic_event_seeds, deterministic_electron_seeds},
 )
@@ -65,11 +63,12 @@ def ele_init(self: Calibrator) -> None:
 
 
 @calibrator(
-    version=1,
+    version=2,
     # add dummy produces such that this calibrator will always be run when requested
     # (temporary workaround until init's are only run as often as necessary)
     # TODO: deterministic FatJet seeds
-    produces={"FatJet.pt"},
+    uses={msoftdrop},
+    produces={msoftdrop, "FatJet.pt"},
 )
 def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     """
@@ -83,6 +82,9 @@ def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     events = self[self.fatjet_jec_cls](events, **kwargs)
     if self.dataset_inst.is_mc:
         events = self[self.fatjet_jer_cls](events, **kwargs)
+
+    # recalculate the softdrop mass
+    events = self[msoftdrop](events, **kwargs)
 
     return events
 
@@ -148,7 +150,8 @@ fatjet_test = fatjet.derive("fatjet_test")
     jec_sources=["Total"],
     bjet_regression=True,
     skip_jer=False,
-    version=1,
+    jer_horn_handling=False,
+    version=2,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[deterministic_seeds](events, **kwargs)
@@ -206,7 +209,8 @@ def jet_base_init(self: Calibrator) -> None:
             "uncertainty_sources": [],
         })
         # version of jer that uses the first random number from deterministic_seeds
-        self.config_inst.x.calib_deterministic_jer_cls = jer.derive("deterministic_jer", cls_dict={
+        base_jer_cls = jer_horn_handling if self.jer_horn_handling else jer
+        self.config_inst.x.calib_deterministic_jer_cls = base_jer_cls.derive("deterministic_jer", cls_dict={
             "deterministic_seed_index": 0,
             "met_name": met_name,
         })
@@ -253,3 +257,9 @@ skip_jer = jet_base.derive("skip_jer", cls_dict=dict(bjet_regression=True, skip_
 no_breg = jet_base.derive("no_breg", cls_dict=dict(bjet_regression=False))
 with_b_reg = jet_base.derive("with_b_reg", cls_dict=dict(bjet_regression=True))
 with_b_reg_test = jet_base.derive("with_b_reg_test", cls_dict=dict(bjet_regression=True))
+
+ak4 = jet_base.derive("ak4", cls_dict=dict(
+    bjet_regression=False,
+    skip_jer=False,
+    jer_horn_handling=True,
+))

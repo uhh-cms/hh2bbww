@@ -189,6 +189,14 @@ def add_common_ml_variables(config: od.Config) -> None:
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
 
+    config.add_variable(
+        name="mli_lep_pdgid",
+        expression="mli_lep_pdgid",
+        binning=(6, 11, 16),
+        discrete_x=True,
+        x_title="lepton pdgid",
+    )
+
     for obj in ["fj"]:
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "particleNet_XbbVsQCD"]:
             config.add_variable(
