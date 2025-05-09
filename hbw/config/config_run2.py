@@ -272,7 +272,7 @@ def add_config(
             "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
             # "jet_type": "fatjet_type",
             # JER info only for AK4 jets, stored in AK4 file
-            "jet_type": jet_type,
+            "jet_type": fatjet_type,
             "external_file_key": "jet_jerc",
         },
     })
@@ -441,7 +441,7 @@ def add_config(
     # electron calibrations
     cfg.x.eec = EGammaCorrectionConfig(
         correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}",
-        value_type="total_correction",
+        value_type="scale",
         uncertainty_type="escale",
         compound=True,
     )
