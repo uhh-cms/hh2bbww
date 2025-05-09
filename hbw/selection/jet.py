@@ -61,7 +61,7 @@ def jet_selection(
     if self.has_dep(jetId_v12):
         events = self[jetId_v12](events, **kwargs)
         tight_lep_veto = events.Jet.TightLepVeto
-    if self.has_dep(jet_id):
+    elif self.has_dep(jet_id):
         events = self[jet_id](events, **kwargs)
         tight_lep_veto = events.Jet.jetId & 6 == 6
     else:
@@ -278,8 +278,11 @@ def vbf_jet_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
-        IF_NANO_V12(fatjetId_v12),
-        IF_NANO_geV13(fatjet_id),
+        # NOTE: in NanoV12, the FatJet.{chEmEf,muEF,neEmEF,neHEF} columns are not available,
+        # so the fatjetId_v12 is not useable and we cannot recalculate the jetId in NanoV12.
+        # For consistency, we also do not recalculate the fatjetId in NanoV13.
+        # IF_NANO_V12(fatjetId_v12),
+        # IF_NANO_geV13(fatjet_id),
         jet_selection,
         "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",
         "Jet.{jetId}",

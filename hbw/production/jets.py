@@ -27,7 +27,7 @@ def jetId_v12(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer that extracts correct jet ids for Nano v12
     https://twiki.cern.ch/twiki/bin/view/CMS/JetID13p6TeV?rev=21
-    NOTE: this receipe seems to be looser that the "correc" JetId receipe (at least in NanoV13).
+    NOTE: this receipe seems to be looser that the "correct" JetId receipe (at least in NanoV13).
     therefore, this should only be used where really necessary (Nano V12).
     In Nano V13 and forward, we can use the columnflow.production.cms.jet.jet_id Producer, which
     recalculates the jetId from scratch using a centrally provided json file.
@@ -75,6 +75,8 @@ def jetId_v12_post_init(self: Producer, **kwargs) -> None:
     self.produces = {f"{self.jet_collection}.{{TightId,TightLepVeto}}"}
 
 
+# NOTE: in NanoV12, the FatJet.{chEmEf,muEF,neEmEF,neHEF} columns are not available,
+# so this Producer is not useable and we cannot recalculate the jetId in NanoV12.
 fatjetId_v12 = jetId_v12.derive("fatjetId_v12", cls_dict={"jet_collection": "FatJet"})
 
 
