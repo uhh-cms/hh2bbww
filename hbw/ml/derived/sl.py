@@ -64,7 +64,7 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_mindr_jj",
         "mli_s_min",
         # VBF features
-        "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
+        "mli_vbf_deta", "mli_vbf_mass", "mli_vbf_tag",
     ] + [
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]

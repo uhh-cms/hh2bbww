@@ -6,8 +6,9 @@ Event weight producer.
 
 import law
 
-from columnflow.util import maybe_import, InsertableDict
-from columnflow.weight import WeightProducer, weight_producer
+from columnflow.util import maybe_import
+from columnflow.histograming import HistProducer
+from columnflow.histograming.default import cf_default
 from columnflow.config_util import get_shifts_from_sources
 from columnflow.columnar_util import Route
 from hbw.production.prepare_objects import prepare_objects
@@ -18,44 +19,52 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
-@weight_producer(uses={"mc_weight"}, mc_only=True)
-def mc_weight(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+# extend columnflow's default hist producer
+@cf_default.hist_producer(uses={"mc_weight"}, mc_only=True)
+def mc_weight(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.mc_weight
 
 
-@weight_producer(uses={"normalization_weight"}, mc_only=True)
-def norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+@cf_default.hist_producer(uses={"normalization_weight"}, mc_only=True)
+def norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.normalization_weight
 
 
-@weight_producer(uses={"stitched_normalization_weight_brs_from_processes"}, mc_only=True)
-def norm_brs_cmsdb(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+@cf_default.hist_producer(uses={"stitched_normalization_weight_brs_from_processes"}, mc_only=True)
+def norm_brs_cmsdb(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.stitched_normalization_weight_brs_from_processes
 
 
-@weight_producer(uses={"stitched_normalization_weight"}, mc_only=True)
-def stitched_norm(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+@cf_default.hist_producer(uses={"stitched_normalization_weight"}, mc_only=True)
+def stitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.stitched_normalization_weight
 
 
-@weight_producer(mc_only=True)
-def no_weights(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+@cf_default.hist_producer(mc_only=True)
+def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
 
-@weight_producer(
+@cf_default.hist_producer(
     uses={prepare_objects},
     # both used columns and dependent shifts are defined in init below
     weight_columns=None,
     # only run on mc
     mc_only=False,
+    # optional categorizer to obtain baseline event mask
+    categorizer_cls=None,
     # mask to apply to events
     mask_fn=None,
     mask_columns=None,
 )
-def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
+def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
     events = self[prepare_objects](events, **kwargs)
+
+    # apply mask
+    if self.categorizer_cls:
+        events, mask = self[self.categorizer_cls](events, **kwargs)
+        events = events[mask]
 
     # apply mask
     if self.mask_fn:
@@ -70,9 +79,9 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
         weight = weight * Route(column).apply(events)
 
     # implement dummy shift by varying weight by factor of 2
-    if "dummy" in self.local_shift_inst.name:
+    if "dummy" in task.local_shift_inst.name:
         logger.warning("Applying dummy weight shift (should never be use for real analysis)")
-        variation = self.local_shift_inst.name.split("_")[-1]
+        variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
 
     return events, weight
@@ -80,25 +89,29 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
 
 @base.setup
 def base_setup(
-    self: WeightProducer,
+    self: HistProducer,
     reqs: dict,
+    task: law.Task,
     inputs: dict,
-    reader_targets: InsertableDict,
+    reader_targets: law.util.InsertableDict,
 ) -> None:
     logger.info(
-        f"WeightProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
+        f"HistProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
         f"{', '.join(self.weight_columns.keys())}",
     )
 
 
 @base.init
-def base_init(self: WeightProducer) -> None:
+def base_init(self: HistProducer) -> None:
     # NOTE: this might be called multiple times, might be quite inefficient
     # if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
     #     return
 
     if not getattr(self, "config_inst"):
         return
+
+    if self.categorizer_cls:
+        self.uses.add(self.categorizer_cls)
 
     if self.mask_columns:
         for col in self.mask_columns:
@@ -136,9 +149,13 @@ def base_init(self: WeightProducer) -> None:
         # remove dependency towards vjets weights
         self.local_weight_columns.pop("vjets_weight", None)
 
+    if dataset_inst and not dataset_inst.has_tag("is_dy"):
+        # remove dependency towards dy weights
+        self.local_weight_columns.pop("dy_weight", None)
+
     self.shifts = set()
 
-    # when jec sources are known btag SF source, then propagate the shift to the WeightProducer
+    # when jec sources are known btag SF source, then propagate the shift to the HistProducer
     # TODO: we should do this somewhere centrally
     btag_sf_jec_sources = (
         (set(self.config_inst.x.btag_sf_jec_sources) | {"Total"}) &
@@ -169,6 +186,12 @@ def base_init(self: WeightProducer) -> None:
 
     # store column names referring to weights to multiply
     self.uses |= self.local_weight_columns.keys()
+    # self.uses = {"*"}
+
+
+# @base.post_init
+# def base_post_init(self: HistProducer, task: law.Task):
+#     from hbw.util import debugger; debugger()
 
 
 btag_uncs = [
@@ -195,16 +218,21 @@ default_weight_columns = {
     "stitched_normalization_weight": [],
     **default_correction_weights,
 }
-default_weight_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
-with_vjets_weight = default_weight_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
+default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
-with_trigger_weight = default_weight_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
+with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "vjets_weight": [],  # TODO: corrections/shift missing
-    "trigger_weight": [],  # TODO: corrections/shift missing
+    "trigger_weight": ["trigger_sf"],
+    "stitched_normalization_weight": [],
+}})
+with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "dy_weight": [],
     "stitched_normalization_weight": [],
 }})
 with_trigger_weight2 = default_weight_producer.derive("with_trigger_weight2", cls_dict={"weight_columns": {
@@ -229,7 +257,7 @@ base.derive("minimal", cls_dict={"weight_columns": {
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
-base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
+no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
     **weight_columns_execpt_btag,
     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
@@ -419,3 +447,11 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
     "stitched_normalization_weight": [],
     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
 }})
+
+
+from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling
+
+
+no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
+base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
+base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})

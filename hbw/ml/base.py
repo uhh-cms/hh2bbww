@@ -198,10 +198,11 @@ class MLClassifierBase(MLModel):
         # NOTE: this function might not be called for all configs when the requested configs
         # between MLTraining and the requested task are different
         for proc in self.combine_processes:
-            if proc not in self.config_inst.processes:
-                proc_name = str(proc)
-                proc_dict = DotDict(self.combine_processes[proc])
-                create_combined_proc_forML(self.config_inst, proc_name, proc_dict)
+            for config_inst in self.config_insts:
+                if proc not in config_inst.processes:
+                    proc_name = str(proc)
+                    proc_dict = DotDict(self.combine_processes[proc])
+                    create_combined_proc_forML(config_inst, proc_name, proc_dict)
 
         for proc in self.processes:
             for config_inst in self.config_insts:

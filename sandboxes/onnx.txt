@@ -1,0 +1,5 @@
+# version 6
+
+-r ../modules/columnflow/sandboxes/columnar.txt
+
+onnxruntime

@@ -6,9 +6,11 @@ Producers for phase-space normalized btag scale factor weights.
 
 from __future__ import annotations
 
+import law
+
 from columnflow.production import Producer, producer
 from columnflow.production.cms.btag import btag_weights
-from columnflow.util import maybe_import, safe_div, InsertableDict
+from columnflow.util import maybe_import, safe_div
 from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
@@ -18,7 +20,7 @@ hist = maybe_import("hist")
 
 @producer(
     uses={
-        btag_weights.PRODUCES, "process_id", "Jet.pt", "njet", "ht", "nhf",
+        btag_weights.PRODUCES, "process_id", "Jet.{pt,eta,phi}", "njet", "ht", "nhf",
     },
     # produced columns are defined in the init function below
     mc_only=True,
@@ -27,7 +29,6 @@ hist = maybe_import("hist")
     from_file=False,
 )
 def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
     variable_map = {
         # NOTE: might be cleaner to use the ht and njet reconstructed during the selection (and also compare?)
         "ht": ak.sum(events.Jet.pt, axis=1),
@@ -65,8 +66,11 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     return events
 
 
-@normalized_btag_weights.init
-def normalized_btag_weights_init(self: Producer) -> None:
+@normalized_btag_weights.post_init
+def normalized_btag_weights_post_init(self: Producer, task: law.Task) -> None:
+    # NOTE: self[btag_weights].produced_columns is empty during the `init`, therefore changed to `post_init`
+    # this means that running this Producer directly on command line would not be triggered due to empty produces
+    # during task initialization
     for weight_route in self[btag_weights].produced_columns:
         weight_name = weight_route.string_column
         if not weight_name.startswith("btag_weight"):
@@ -76,13 +80,24 @@ def normalized_btag_weights_init(self: Producer) -> None:
 
 
 @normalized_btag_weights.requires
-def normalized_btag_weights_requires(self: Producer, reqs: dict) -> None:
+def normalized_btag_weights_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     from hbw.tasks.corrections import GetBtagNormalizationSF
-    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(self.task)
+    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(task)
+
+
+normalized_btag_weights_full = normalized_btag_weights.derive("normalized_btag_weights_full", cls_dict=dict(
+    modes=["ht_njet_nhf", "ht_njet", "njet", "ht"],
+))
 
 
 @normalized_btag_weights.setup
-def normalized_btag_weights_setup(self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict) -> None:
+def normalized_btag_weights_setup(
+    self: Producer,
+    task: law.Task,
+    reqs: dict,
+    inputs: dict,
+    reader_targets: law.util.InsertableDict,
+) -> None:
     # create the corrector
     import correctionlib
     correctionlib.highlevel.Correction.__call__ = correctionlib.highlevel.Correction.evaluate
@@ -147,17 +162,17 @@ def normalized_btag_weights_from_json_init(self: Producer) -> None:
 
 
 @normalized_btag_weights_from_json.requires
-def normalized_btag_weights_from_json_requires(self: Producer, reqs: dict) -> None:
+def normalized_btag_weights_from_json_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     from columnflow.tasks.selection import MergeSelectionStats
     reqs["selection_stats"] = MergeSelectionStats.req(
-        self.task,
+        task,
         branch=-1,
     )
 
 
 @normalized_btag_weights_from_json.setup
 def normalized_btag_weights_from_json_setup(
-    self: Producer, reqs: dict, inputs: dict, reader_targets: InsertableDict,
+    self: Producer, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
 ) -> None:
     # load the selection stats
     stats = inputs["selection_stats"]["collection"][0]["stats"].load(formatter="json")

@@ -19,7 +19,6 @@ logger = law.logger.get_logger(__name__)
 
 
 from hbw.config.defaults_and_groups import (
-    default_calibrator, default_selector, default_producers, default_ml_model,
     ml_inputs_producer,
 )
 
@@ -54,6 +53,7 @@ def create_hbw_analysis(
         "$CF_BASE/sandboxes/venv_columnar.sh",
         # "$CF_BASE/sandboxes/venv_ml_tf.sh",
         "$HBW_BASE/sandboxes/venv_ml_plotting.sh",
+        "$HBW_BASE/sandboxes/venv_onnx.sh",
     ]
 
     # cmssw sandboxes that should be bundled for remote jobs in case they are needed
@@ -69,15 +69,8 @@ def create_hbw_analysis(
     # (used in wrapper_factory)
     analysis_inst.set_aux("config_groups", {})
 
-    analysis_inst.x.default_calibrator = default_calibrator(analysis_inst)
-    analysis_inst.x.default_selector = default_selector(analysis_inst)
-    analysis_inst.x.default_producer = default_producers
-    analysis_inst.x.default_weight_producer = "default"
+    # used by our MLModel (also set in config_inst, so be careful)
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
-    analysis_inst.x.default_ml_model = default_ml_model
-    analysis_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
-    analysis_inst.x.default_categories = ["incl", "sr", "ttcr", "dycr"]
-
     #
     # define configs
     #
@@ -107,7 +100,7 @@ def create_hbw_analysis(
                     config=config_name,
                 )
                 if cpn_task.complete():
-                    logger.warning(
+                    logger.debug(
                         f"Using pickled campaign for config {config_name}; to re-initialize, run:\n"
                         f"law run {cpn_task.task_family} --config {config_name} --remove-output 0,a,y",
                     )
@@ -189,9 +182,9 @@ def create_hbw_analysis(
     known_parts = (
         # from cf
         "analysis", "task_family", "config", "configs", "dataset", "shift", "version",
-        "calibrator", "calibrators", "selector", "producer", "producers",
+        "calibrator", "calibrators", "selector", "reducer", "producer", "producers",
         "ml_model", "ml_data", "ml_models",
-        "weightprod", "inf_model",
+        "hist_producer", "inf_model",
         "plot", "shift_sources", "shifts", "datasets",
         # MLTraining
         "calib", "sel", "prod",
@@ -244,12 +237,13 @@ def create_hbw_analysis(
         # to be decided for "ml_data", "ml_model", "inf_model" (used for multiple tasks)
         parts_order_start = [
             "analysis",
-            "calibrator", "calibrators", "calib",
-            "selector", "sel",
+            "calibrator", "calibrators",
+            "selector",
+            "reducer",
             "config", "configs",
-            "producers", "prod",
+            "producers",
             "ml_data", "ml_model", "ml_models",
-            "weightprod", "inf_model",
+            "hist_producer", "inf_model",
             "task_family",
             "calibrator", "producer",
             "shift", "dataset",
@@ -291,8 +285,14 @@ def create_hbw_analysis(
             store_parts = reorganize_parts(task, store_parts)
         return store_parts
 
+    def pre_reducer_parts(task, store_parts):
+        store_parts.pop("reducer")
+        store_parts["weight_producer"] = store_parts["weight_producer"].replace("weight", "hist")
+        return store_parts
+
     analysis_inst.x.store_parts_modifiers = {
         "hbw_parts": hbw_parts,
+        "pre_reducer": pre_reducer_parts,
     }
 
     return analysis_inst

@@ -5,6 +5,7 @@ Selection modules for HH -> bbWW(lnulnu).
 """
 
 from importlib import import_module
+from functools import partial
 
 from collections import defaultdict
 
@@ -24,6 +25,10 @@ from hbw.production.weights import event_weights_to_normalize
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+
+# helper functions
+set_ak_bool = partial(set_ak_column, value_type=np.bool_)
+logger = law.logger.get_logger(__name__)
 
 
 @selector(
@@ -118,29 +123,21 @@ def dl_lepton_selection(
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.Charge &
-        # lepton_results.steps.TripleLooseLeptonVeto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
         lepton_results.steps.ll_lowmass_veto &
-        # lepton_results.steps.TripleLooseLeptonVeto &
-        # lepton_results.steps.Charge &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
@@ -187,9 +184,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TriggerAndLep": "Trigger+Lep",
     })
 
-    # Trigger setup, only required when running SelectEvents
-    if self.task and self.task.task_family == "cf.SelectEvents":
-        self.produces.add("mll")
+    self.produces.add("mll")
 
     return
 
@@ -198,6 +193,7 @@ from hbw.util import timeit
 
 
 @selector(
+    produces={"steps.*"},
     exposed=True,
     # configurable attributes
     # object selection requirements
@@ -250,7 +246,7 @@ def dl1(
 
     results.steps["Resolved"] = (jet_step & bjet_step)
     results.steps["ResolvedOrBoosted"] = (
-        (jet_step & bjet_step | results.steps.HbbJet)
+        ((jet_step & bjet_step) | results.steps.HbbJet)
     )
 
     # selection steps for triggerscalefactors, WARNING: only use on sort of primary dataset to avoid double counting
@@ -273,22 +269,34 @@ def dl1(
         results.steps.Dilepton
     )
 
-    # combined event selection after all steps except b-jet selection
-    results.steps["all_but_bjet"] = (
+    results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
-        # results.steps.data_double_counting &
-        (jet_step | results.steps.HbbJet_no_bjet) &
+        jet_step &
         results.steps.ll_lowmass_veto &
-        results.steps.TripleLooseLeptonVeto &
+        results.steps.TripleLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &
-        results.steps.SR  # &  # exactly 2 tight leptons
-        # results.steps.Trigger &
-        # results.steps.TriggerAndLep
+        results.steps.SR  # exactly 2 tight leptons
+    )
+    # combined event selection after all steps except b-jet selection
+    results.steps["all_but_bjet"] = (
+        results.steps.all_but_trigger_and_bjet &
+        results.steps.data_double_counting &
+        results.steps.Trigger &
+        results.steps.TriggerAndLep
+    )
+    # combined event selection after all steps except trigger
+    results.steps["all_but_trigger"] = (
+        results.steps.all_but_trigger_and_bjet &
+        bjet_step
     )
 
     # combined event selection after all steps
     results.steps["all"] = results.event = (
+        results.steps.all_but_bjet &
+        bjet_step
+    )
+    results.steps["all_or_boosted"] = (
         results.steps.all_but_bjet &
         ((jet_step & bjet_step) | results.steps.HbbJet)
     )
@@ -297,6 +305,16 @@ def dl1(
 
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
+
+    # keep various steps for last-minute selection changes for data/MC debugging
+    keep_steps = (
+        "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet",
+        "Trigger", "TriggerAndLep", "data_double_counting",
+        "TripleLooseLeptonVeto", "TripleTightLeptonVeto",
+        "VetoTau",
+    )
+    for step in keep_steps:
+        events = set_ak_bool(events, f"steps.{step}", results.steps[step])
 
     return events, results
 
@@ -312,6 +330,8 @@ def dl1_init(self: Selector) -> None:
     # configuration of selection parameters
     # apparently, this init only runs after the used selectors, but we can run this init first
     # by only adding the used selectors in the init
+    logger.debug("adding selector tag")
+    self.config_inst.add_tag("selector_init")
     configure_selector(self)
 
     # NOTE: since we add these uses so late, init's of these Producers will not run
@@ -323,7 +343,7 @@ def dl1_init(self: Selector) -> None:
         # hbw_trigger_selection,
         post_selection,
     }
-    self.produces = {
+    self.produces |= {
         pre_selection,
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
@@ -351,6 +371,44 @@ def dl1_init(self: Selector) -> None:
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
 test_dl = dl1.derive("test_dl")
+
+
+def single_lepton_trigger_config_func(self: Selector) -> ak.Array:
+    sl_triggers = [
+        "HLT_IsoMu24",
+        "HLT_Ele30_WPTight_Gsf",
+    ]
+    triggers = self.config_inst.x.triggers
+    for trig_name in list(triggers.names()):
+        if trig_name not in sl_triggers:
+            triggers.remove(trig_name)
+    # check that all sl_triggers are still there
+    for trig in sl_triggers:
+        if trig not in triggers:
+            raise ValueError(f"Trigger {trig} not found in {self.config_inst.x.triggers}")
+
+
+dl1_sl_triggers = dl1.derive(
+    "dl1_sl_triggers",
+    cls_dict={
+        "trigger_config_func": single_lepton_trigger_config_func,
+        "mu_pt": 25.,
+        "ele_pt": 31.,
+        "mu2_pt": 15.,
+        "ele2_pt": 15.,
+    },
+)
+
+
+dl1_mu18 = dl1.derive(
+    "dl1_mu18",
+    cls_dict={
+        "mu_pt": 18.,
+        "ele_pt": 25.,
+        "mu2_pt": 15.,
+        "ele2_pt": 15.,
+    },
+)
 dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
 dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 33})  # 12 has wrong reduction
 dl1_no_trig_low_lep = dl1.derive("dl1_no_trig_low_lep", cls_dict={

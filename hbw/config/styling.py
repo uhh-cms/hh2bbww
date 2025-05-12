@@ -86,10 +86,16 @@ default_process_colors = {
     "vv": color_palette["blue"],
     "other": color_palette["grey"],
     "hh_ggf_hbb_htt": color_palette["grey"],
+    "signal_ggf2": color_palette["black"],
+    "signal_vbf2": color_palette["grey"],
+    "hh_ggf_hbb_hww2l2nu_kl1_kt1": color_palette["black"],
+    "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": color_palette["grey"],
 }
 
 for decay in ("", "qqlnu", "2l2nu"):
     default_process_colors[f"hh_ggf_hbb_hvv{decay}"] = "#000000"  # black
+    default_process_colors[f"signal_ggf2{decay}"] = "#000000"  # black
+    default_process_colors[f"signal_vbf2{decay}"] = "#999999"  # black
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"  # green2
     default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"  # orange2
@@ -206,6 +212,7 @@ def stylize_processes(config: od.Config) -> None:
             proc.add_tag("is_signal")
             proc.unstack = True
             # proc.scale = "stack"
+            # proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
@@ -218,7 +225,7 @@ def stylize_processes(config: od.Config) -> None:
 default_var_binning = {
     # General object fields
     "pt": (400, 0, 400),
-    "eta": (40, -2.5, 2.5),
+    "eta": (40, -5., 5.),
     "eta_full": (40, -5.0, 5.0),
     "phi": (32, -3.2, 3.2),
     "mass": (40, 0, 400),
@@ -236,6 +243,7 @@ default_var_binning = {
     # FatJet
     "msoftdrop": (40, 0, 400),
     "deepTagMD_HbbvsQCD": (40, 0, 1),
+    "particleNet_XbbVsQCD": (40, 0, 1),
     # Leptons
     "dxy": (40, 0, 0.1),
     "dz": (40, 0, 0.1),

@@ -84,6 +84,8 @@ def patch_csp_versioning():
     Patches the TaskArrayFunction to add the version to the string representation of the task.
     """
 
+    from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
+
     def TaskArrayFunction_str(self):
         version = self.version() if callable(getattr(self, "version", None)) else getattr(self, "version", None)
         if version and not isinstance(version, (int, str)):
@@ -91,6 +93,13 @@ def patch_csp_versioning():
         version_str = f"V{version}" if version is not None else ""
         return f"{self.cls_name}{version_str}"
 
+    def array_function_cls_repr(self, array_function):
+        # NOTE: this might be a problem when we have identical names between different types of
+        # TaskArrayFunctions...
+        array_function_cls = TaskArrayFunction.get_cls(array_function)
+        return TaskArrayFunction_str(array_function_cls)
+
+    ArrayFunctionClassMixin.array_function_cls_repr = array_function_cls_repr
     TaskArrayFunction.__str__ = TaskArrayFunction_str
     logger.info(
         "patched TaskArrayFunction.__str__ to include the CSP version attribute",

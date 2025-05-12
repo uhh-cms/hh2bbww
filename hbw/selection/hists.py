@@ -4,6 +4,7 @@
 Stat-related methods.
 """
 
+import law
 import order as od
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -81,8 +82,9 @@ def hbw_selection_hists(
             weight_map[f"sum_mc_weight_{name}"] = events.mc_weight * events[name]
             # weight_map[f"sum_{name}"] = events[name]
 
-    # initialize histograms (only on first chunk)
-    if getattr(self, "first_chunk", True):
+    # initialize histograms if not already done
+    # (NOTE: this only works as long as this is the only selector that adds histograms)
+    if not hists:
         for key, weight in weight_map.items():
             if "btag_weight" not in key:
                 hists[key] = create_hist_from_variables(self.steps_variable)
@@ -115,12 +117,13 @@ def hbw_selection_hists(
                     weight=weight[mask],
                 )
 
-    self.first_chunk = False
     return events
 
 
 @hbw_selection_hists.setup
-def hbw_selection_hists_setup(self: Selector, reqs: dict, inputs: dict, reader_targets: dict) -> None:
+def hbw_selection_hists_setup(
+    self: Selector, task: law.Task, reqs: dict, inputs: dict, reader_targets: dict,
+) -> None:
     self.process_variable = od.Variable(
         name="process",
         expression="process_id",

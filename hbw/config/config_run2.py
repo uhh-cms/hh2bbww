@@ -24,10 +24,12 @@ from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
+from columnflow.production.cms.dy import DrellYanConfig
 
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
+from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -325,9 +327,9 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
     cfg.x.btag_working_points = DotDict.wrap({
         "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023preBPix": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023preBPix": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023preBPix": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "deepcsv": {
             "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
@@ -335,9 +337,13 @@ def add_config(
             "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "particlenet": {
-            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023": 0.0358, "2023BPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023": 0.1917, "2023BPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023": 0.6172, "2023BPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023preBPix": 0.0358, "2023postBPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
+        "particlenet_hbb_vs_qcd": {
+            # AK4 medium WP as placeholder (TODO: replace with actual values)
+            "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
 
@@ -364,6 +370,9 @@ def add_config(
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
     )
+    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["PLACEHOLDER"]
+    if cfg.x.btag_wp_score == 0.0:
+        raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
@@ -377,7 +386,7 @@ def add_config(
 
     # top pt reweighting parameters
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat?rev=31
-    cfg.x.top_pt_reweighting_params = {
+    cfg.x.top_pt_weight = {
         "a": 0.0615,
         "a_up": 0.0615 * 1.5,
         "a_down": 0.0615 * 0.5,
@@ -414,9 +423,21 @@ def add_config(
 
     ################################################################################################
     #
-    # electron and muon SFs (NOTE: we could add these config entries as part of the selector init)
+    # electron and muon calibrations and SFs (NOTE: we could add these config entries as part of the selector init)
     #
     ################################################################################################
+
+    # electron calibrations
+    cfg.x.eec = EGammaCorrectionConfig(
+        correction_set="Scale",
+        value_type="total_correction",
+        uncertainty_type="total_uncertainty",
+    )
+    cfg.x.eer = EGammaCorrectionConfig(
+        correction_set="Smearing",
+        value_type="rho",
+        uncertainty_type="err_rho",
+    )
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
@@ -431,7 +452,6 @@ def add_config(
         # (used in the muon producer)
         cfg.x.muon_id_sf_names = ("NUM_TightID_DEN_TrackerMuons", f"{cfg.x.cpn_tag}_UL")
         cfg.x.muon_iso_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{cfg.x.cpn_tag}_UL")
-
     elif cfg.x.run == 3:
         electron_sf_campaign = {
             "2022postEE": "2022Re-recoE+PromptFG",
@@ -528,6 +548,11 @@ def add_config(
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
 
+    # trigger SFs
+    cfg.add_shift(name="trigger_sf_up", id=60, type="shape")
+    cfg.add_shift(name="trigger_sf_down", id=61, type="shape")
+    add_shift_aliases(cfg, "trigger_sf", {"trigger_weight": "trigger_weight_{direction}"})
+
     # b-tagging scale factor uncertainties
     cfg.x.btag_uncs = [
         "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
@@ -581,6 +606,24 @@ def add_config(
             "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
         },
     )
+    # cfg.add_shift(name="dummy_2022postEE_up", id=209, type="shape")
+    # cfg.add_shift(name="dummy_2022postEE_down", id=210, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022postEE",
+    #     {
+    #         "dummy_weight": "dummy_2022postEE_weight_" + "{direction}",
+    #     },
+    # )
+    # cfg.add_shift(name="dummy_2022preEE_up", id=211, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_down", id=212, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     "dummy_2022preEE",
+    #     {
+    #         "dummy_weight": "dummy_2022preEE_weight_" + "{direction}",
+    #     },
+    # )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
@@ -659,22 +702,26 @@ def add_config(
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    # add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
+    if year != 2023:
+        # missing in 2023
+        add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
 
     # trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
-    trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"  # noqa: E501
+    trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"
+
     # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
-    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
-    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
-    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v2"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v2"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v2"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
+
+    # trigger
+    from hbw.config.trigger import add_triggers
+    add_triggers(cfg)
 
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
@@ -685,6 +732,27 @@ def add_config(
     if cfg.x.run == 2:
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
+
+    json_mirror_mrieger = "/afs/cern.ch/work/m/mrieger/public/mirrors/external_files"
+    add_external("dy_weight_sf", (f"{json_mirror_mrieger}/DY_pTll_weights_v2.json.gz", "v1"))
+    add_external("dy_recoil_sf", (f"{json_mirror_mrieger}/Recoil_corrections_v2.json.gz", "v2"))
+
+    cfg.x.dy_weight_config = DrellYanConfig(
+        era="2022postEE",
+        order="NLO",  # only when using v2
+        correction="DY_pTll_reweighting",
+        unc_correction="DY_pTll_reweighting_N_uncertainty",
+    )
+    cfg.x.dy_recoil_config = DrellYanConfig(
+        era="2022postEE",
+        order="NLO",  # only when using v2
+        correction="Recoil_correction_QuantileMapHist",
+        unc_correction="Recoil_correction_Uncertainty",
+    )
+
+    # Louvain Transformer Model
+    add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
+    add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
 
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
@@ -749,7 +817,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "gen_hbw_decay",
         },
     })
 
@@ -772,16 +840,23 @@ def add_config(
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
         "GenPartonTop.pt", "GenVBoson.pt",
+        "gen_dilepton_pt", "gen_dilepton_{vis,all}.{pt,phi}",
         # weight-related columns
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
         "btag_weight*",
+        # Gen particle information
+        "gen_hbw_decay.*.*",
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
-        # Jets
-        "{Jet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
+        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
-        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,particleNet_HbbvsQCD}",
+        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
+        # FatJet particleNet scores (all for now, should be reduced at some point)
+        "FatJet.particleNet*",
+        "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
+        "{FatJet,HbbJet}.particleNetWithMass_HbbVsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
@@ -792,10 +867,100 @@ def add_config(
         "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET
         "{MET,PuppiMET}.{pt,phi}",
+        # steps
+        "steps.*",
+        # Trigger-related
+        "trigger_ids", "trigger_data.*",
+        "HLT.IsoMu24",
+        "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+        "HLT.Ele30_WPTight_Gsf",
+        "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
+    } | {
+        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
     }
+
+    cfg.x.hlt_L1_seeds = {
+        'IsoMu24': ['SingleMu22'],
+        'Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8': ['DoubleMu_15_7'],
+        'Ele30_WPTight_Gsf': [
+                            'SingleEG38er2p5',
+                            'SingleEG40er2p5',
+                            'SingleEG42er2p5',
+                            'SingleEG45er2p5',
+                            'SingleEG36er2p5',
+                            'SingleIsoEG30er2p1',
+                            'SingleIsoEG32er2p1',
+                            'SingleIsoEG30er2p5',
+                            'SingleIsoEG32er2p5',
+                            'SingleIsoEG34er2p5'
+                            ],
+        'Ele23_Ele12_CaloIdL_TrackIdL_IsoVL': [
+                                            'SingleEG38er2p5',
+                                            'SingleEG40er2p5',
+                                            'SingleEG42er2p5',
+                                            'SingleEG45er2p5',
+                                            'SingleEG36er2p5',
+                                            'SingleIsoEG30er2p1',
+                                            'SingleIsoEG32er2p1',
+                                            'SingleIsoEG30er2p5',
+                                            'SingleIsoEG32er2p5',
+                                            'SingleIsoEG34er2p5',
+                                            'DoubleEG_25_12_er2p5',
+                                            'DoubleEG_25_14_er2p5',
+                                            'DoubleEG_LooseIso22_12_er2p5'
+                                            ],
+        'Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL': [
+                                                    'Mu20_EG10er2p5',
+                                                    'SingleMu22'
+                                                    ],
+        'Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ': [
+                                                        'Mu7_EG20er2p5',
+                                                        'Mu7_EG23er2p5',
+                                                        'Mu7_LooseIsoEG20er2p5',
+                                                        'Mu7_LooseIsoEG23er2p5'
+                                                        ],
+        'Ele50_CaloIdVT_GsfTrkIdT_PFJet165': [
+                                            'SingleEG40er2p5',
+                                            'SingleEG42er2p5',
+                                            'SingleEG45er2p5'
+                                            ],
+        'DoubleEle33_CaloIdL_MW': [
+                                'SingleEG36er2p5',
+                                'SingleEG38er2p5',
+                                'SingleEG40er2p5',
+                                'SingleEG42er2p5',
+                                'SingleEG45er2p5',
+                                'DoubleEG_25_12_er2p5',
+                                'DoubleEG_25_14_er2p5',
+                                'SingleJet180',
+                                'SingleJet200',
+                                'SingleTau120er2p1',
+                                'SingleTau130er2p1'
+                                ],
+        'PFMETNoMu120_PFMHTNoMu120_IDTight': [
+                                            'ETMHF90',
+                                            'ETMHF100',
+                                            'ETMHF110',
+                                            'ETMHF120',
+                                            'ETMHF130',
+                                            'ETMHF140',
+                                            'ETMHF150',
+                                            'ETM150',
+                                            'ETMHF90_SingleJet60er2p5_dPhi_Min2p1',
+                                            'ETMHF90_SingleJet60er2p5_dPhi_Min2p6'
+                                            ],
+    }
+    for hlt_path, l1_seeds in cfg.x.hlt_L1_seeds.items():
+        for l1_seed in l1_seeds:
+            if f"L1.{l1_seeds}" not in cfg.x.keep_columns["cf.ReduceEvents"]:
+                cfg.x.keep_columns["cf.ReduceEvents"] |= {f"L1.{l1_seed}"}
 
     cfg.x.hlt_L1_seeds = {
         'IsoMu24': ['SingleMu22'],

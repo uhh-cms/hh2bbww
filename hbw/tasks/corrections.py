@@ -3,16 +3,19 @@ Tasks for creating correctionlib files.
 """
 
 import law
+import luigi
 
 from functools import cached_property
 
-from columnflow.tasks.framework.base import Requirements, ConfigTask
+from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin, CalibratorsMixin,
+    SelectorClassMixin, CalibratorClassesMixin,
+    DatasetsProcessesMixin,
 )
+from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.selection import MergeSelectionStats
 from columnflow.util import maybe_import, dev_sandbox
-from columnflow.config_util import get_datasets_from_process
+# from columnflow.config_util import get_datasets_from_process
 from hbw.tasks.base import HBWTask
 
 ak = maybe_import("awkward")
@@ -21,48 +24,79 @@ np = maybe_import("numpy")
 
 
 logger = law.logger.get_logger(__name__)
+logger_dev = law.logger.get_logger(f"{__name__}-dev")
 
 
 class GetBtagNormalizationSF(
     HBWTask,
-    ConfigTask,
-    SelectorMixin,
-    CalibratorsMixin,
-    # law.LocalWorkflow,
+    SelectorClassMixin,
+    CalibratorClassesMixin,
+    DatasetsProcessesMixin,
+    ShiftTask,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
-    reqs = Requirements(MergeSelectionStats=MergeSelectionStats)
+    resolution_task_cls = MergeSelectionStats
+
+    single_config = True
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeSelectionStats=MergeSelectionStats,
+    )
 
     store_as_dict = False
 
-    rescale_mode = "nevents"
-
     reweighting_step = "selected_no_bjet"
+
+    rescale_mode = luigi.ChoiceParameter(
+        default="nevents",
+        choices=("nevents", "xs"),
+    )
+    base_key = luigi.ChoiceParameter(
+        default="rescaled_sum_mc_weight",
+        # NOTE: "num_events" does not work because I did not store the corresponding key in the stats :/
+        choices=("rescaled_sum_mc_weight", "sum_mc_weight", "num_events"),
+    )
 
     # default sandbox, might be overwritten by selector function
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    processes = law.CSVParameter(
-        # default=("tt_dl",),
+    processes = DatasetsProcessesMixin.processes.copy(
         default=("tt", "dy_m50toinf", "dy_m10to50"),
         description="Processes to consider for the scale factors",
+        add_default_to_description=True,
     )
+
+    def create_branch_map(self):
+        # single branch without payload
+        return {0: None}
 
     @cached_property
     def process_insts(self):
-        processes = [self.config_inst.get_process(process) for process in self.processes]
-        return processes
+        process_insts = [self.config_inst.get_process(process) for process in self.processes]
+        return process_insts
 
     @cached_property
     def dataset_insts(self):
-        datasets = set()
-        for process_inst in self.process_insts:
-            datasets.update(get_datasets_from_process(self.config_inst, process_inst))
-        return list(datasets)
+        dataset_insts = [self.config_inst.get_dataset(dataset) for dataset in self.datasets]
+        return dataset_insts
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs["selection_stats"] = {
+            dataset.name: self.reqs.MergeSelectionStats.req_different_branching(
+                self,
+                dataset=dataset.name,
+                branch=-1,
+            )
+            for dataset in self.dataset_insts
+        }
+        return reqs
 
     def requires(self):
         reqs = {}
         reqs["selection_stats"] = {
-            dataset.name: self.reqs.MergeSelectionStats.req(
+            dataset.name: self.reqs.MergeSelectionStats.req_different_branching(
                 self,
                 dataset=dataset.name,
                 branch=-1,
@@ -76,6 +110,9 @@ class GetBtagNormalizationSF(
 
         processes_repr = "__".join(self.processes)
         parts.insert_before("version", "processes", processes_repr)
+
+        significant_params = (self.rescale_mode, self.base_key)
+        parts.insert_before("version", "params", "__".join(significant_params))
 
         return parts
 
@@ -122,23 +159,24 @@ class GetBtagNormalizationSF(
             )
 
         # rescale the histograms
-        for dataset, hists in hists_per_dataset.items():
-            process = self.config_inst.get_dataset(dataset).processes.get_first()
-            if self.rescale_mode == "xs":
-                # scale such that the sum of weights is the cross section
-                xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
-                dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
-            elif self.rescale_mode == "nevents":
-                # scale such that mean weight is 1
-                n_events = hists["num_events"][{"steps": self.reweighting_step}].value
-                dataset_factor = n_events / hists["sum_mc_weight"][{"steps": self.reweighting_step}].value
-            else:
-                raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
-            for key in tuple(hists.keys()):
-                if "sum" not in key:
-                    continue
-                h = hists[key].copy() * dataset_factor
-                hists[f"rescaled_{key}"] = h
+        if "rescaled" in self.base_key:
+            for dataset, hists in hists_per_dataset.items():
+                process = self.config_inst.get_dataset(dataset).processes.get_first()
+                if self.rescale_mode == "xs":
+                    # scale such that the sum of weights is the cross section
+                    xs = process.get_xsec(self.config_inst.campaign.ecm).nominal
+                    dataset_factor = xs / hists["sum_mc_weight"][{"steps": "Initial"}].value
+                elif self.rescale_mode == "nevents":
+                    # scale such that mean weight is 1
+                    n_events = hists["num_events"][{"steps": self.reweighting_step}].value
+                    dataset_factor = n_events / hists["sum_mc_weight"][{"steps": self.reweighting_step}].value
+                else:
+                    raise ValueError(f"Invalid rescale mode {self.rescale_mode}")
+                for key in tuple(hists.keys()):
+                    if "sum" not in key:
+                        continue
+                    h = hists[key].copy() * dataset_factor
+                    hists[f"rescaled_{key}"] = h
 
         # if necessary, merge the histograms across datasets
         if len(hists_per_dataset) > 1:
@@ -162,18 +200,18 @@ class GetBtagNormalizationSF(
             # ("",),
         ):
             mode_str = "_".join(mode)
-            numerator = merged_hists["rescaled_sum_mc_weight_per_process_ht_njet_nhf"]
+            numerator = merged_hists[f"{self.base_key}_per_process_ht_njet_nhf"]
             numerator = self.reduce_hist(numerator, mode).values()
 
             for key in merged_hists.keys():
                 if (
-                    not key.startswith("rescaled_sum_mc_weight_btag_weight") or
+                    not key.startswith(f"{self.base_key}_btag_weight") or
                     not key.endswith("_per_process_ht_njet_nhf")
                 ):
                     continue
 
                 # extract the weight name
-                weight_name = key.replace("rescaled_sum_mc_weight_", "").replace("_per_process_ht_njet_nhf", "")
+                weight_name = key.replace(f"{self.base_key}_", "").replace("_per_process_ht_njet_nhf", "")
 
                 # create the scale factor histogram
                 h = merged_hists[key]

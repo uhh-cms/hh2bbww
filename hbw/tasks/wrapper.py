@@ -3,6 +3,7 @@
 """
 Convenience wrapper tasks to simplify producing results and fetching & deleting their outputs
 e.g. default sets of plots or datacards
+NOTE: these tasks have not been tested after TAF init changes, so they might not work anymore.
 """
 
 from __future__ import annotations
@@ -11,10 +12,10 @@ from __future__ import annotations
 import law
 import luigi
 
-from columnflow.tasks.framework.base import Requirements, MultiConfigTask, ConfigTask
+from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
-    CalibratorsMixin,
+    InferenceModelMixin, MLModelsMixin,
+    ProducerClassesMixin, SelectorClassMixin, CalibratorClassesMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
@@ -33,15 +34,14 @@ logger = law.logger.get_logger(__name__)
 class ControlPlots(
     law.WrapperTask,
     HBWTask,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    MultiConfigTask,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
 ):
     """
     Helper task to produce default set of control plots
     """
-
+    is_single_config = False
     split_resolved_boosted = False
     output_collection_cls = law.NestedSiblingFileCollection
 
@@ -102,10 +102,9 @@ class ControlPlots(
 
 class MLInputPlots(
     HBWTask,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    MultiConfigTask,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
 ):
     """
     Helper task to produce default set of control plots
@@ -156,15 +155,14 @@ class InferencePlots(
     law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
     PlotBase1D,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
     InferenceModelMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    ConfigTask,
     # law.LocalWorkflow,
     # RemoteWorkflow,
 ):
@@ -227,15 +225,14 @@ class ShiftedInferencePlots(
     law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ProducerClassesMixin,
     PlotBase1D,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
     InferenceModelMixin,
     MLModelsMixin,
-    ProducersMixin,
-    SelectorStepsMixin,
-    CalibratorsMixin,
-    ConfigTask,
 ):
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 

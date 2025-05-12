@@ -380,13 +380,17 @@ def four_vec(
     return outp
 
 
-def bracket_expansion(inputs: list):
+def bracket_expansion(inputs: list, clean_chars: str = "_") -> list:
     """
     Expands a list of strings with bracket notation into all possible combinations.
 
     Example:
     bracket_expansion(["{Jet,Muon}.{pt,eta}", "{Electron,Photon}.{phi}"]) -->
     {"Jet.pt", "Jet.eta", "Muon.pt", "Muon.eta", "Electron.phi", "Photon.phi"}
+
+    :param inputs: list of strings with bracket notation
+    :param clean_chars: characters to remove from the beginning and end of each string (default is "_")
+    :return list: expanded and sorted list of strings
 
     NOTE: similar implementation might be somewhere in columnflow.
     """
@@ -403,7 +407,14 @@ def bracket_expansion(inputs: list):
 
         # Generate all possible combinations and add to the output set
         combinations = itertools.product(*options)
-        outp.update(template.format(*combo) for combo in combinations)
+        expanded = (template.format(*combo) for combo in combinations)
+
+        # Remove specified leading/trailing characters
+        cleaned = (s.strip(clean_chars) for s in expanded)
+        outp.update(cleaned)
+
+    # remove empty string
+    outp.discard("")
 
     return sorted(outp)
 
@@ -419,24 +430,30 @@ def has_four_vec(
     return collection_name in events.fields and four_vec_cols.issubset(events[collection_name].fields)
 
 
-def call_once_on_config(include_hash=False):
+def call_once_on_config(func=None, *, include_hash=False):
     """
-    Parametrized decorator to ensure that function *func* is only called once for the config *config*
+    Parametrized decorator to ensure that function *func* is only called once for the config *config*.
+    Can be used with or without parentheses.
     """
-    def outer(func):
-        @wraps(func)
-        def inner(config, *args, **kwargs):
-            tag = f"{func.__name__}_called"
-            if include_hash:
-                tag += f"_{func.__hash__()}"
+    if func is None:
+        # If func is None, it means the decorator was called with arguments.
+        def wrapper(f):
+            return call_once_on_config(f, include_hash=include_hash)
+        return wrapper
 
-            if config.has_tag(tag):
-                return
+    @wraps(func)
+    def inner(config, *args, **kwargs):
+        tag = f"{func.__name__}_called"
+        if include_hash:
+            tag += f"_{func.__hash__()}"
 
-            config.add_tag(tag)
-            return func(config, *args, **kwargs)
-        return inner
-    return outer
+        if config.has_tag(tag):
+            return
+
+        config.add_tag(tag)
+        return func(config, *args, **kwargs)
+
+    return inner
 
 
 def timeit(func):
@@ -666,11 +683,27 @@ def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
 
 
 @deferred_column
+def IF_DATA(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.is_data else None
+
+
+@deferred_column
 def IF_VJETS(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     if getattr(func, "dataset_inst", None) is None:
         return self.get()
 
     return self.get() if func.dataset_inst.has_tag("is_v_jets") else None
+
+
+@deferred_column
+def IF_DY(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.has_tag("is_dy") else None
 
 
 @deferred_column
@@ -687,3 +720,11 @@ def IF_TT(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
         return self.get()
 
     return self.get() if func.dataset_inst.has_tag("is_ttbar") else None
+
+
+@deferred_column
+def IF_HBV(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.has_tag("is_hbv") else None
