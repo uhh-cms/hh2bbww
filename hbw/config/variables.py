@@ -687,8 +687,8 @@ def add_variables(config: od.Config) -> None:
                 aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
             )
             # config.add_variable(
-            #     name=f"{obj}{i}_particleNetWithMass_HbbVsQCD".lower(),
-            #     expression=f"{obj}.particleNetWithMass_HbbVsQCD[:,{i}]",
+            #     name=f"{obj}{i}_particleNetWithMass_HbbvsQCD".lower(),
+            #     expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
             #     null_value=EMPTY_FLOAT,
             #     binning=(40, 0, 1),
             #     x_title=rf"{obj} %i particleNetWithMass_HbbVsQCD" % i,

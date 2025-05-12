@@ -188,7 +188,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
-        "dl2": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -362,6 +362,7 @@ def set_config_defaults_and_groups(config_inst):
             "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
             "met_{pt,phi}",
+            "incljets_{pt,eta}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
             "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
             "ht", "lt", "mll", "ptll", "npvs",

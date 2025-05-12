@@ -868,7 +868,7 @@ def add_config(
         # FatJet particleNet scores (all for now, should be reduced at some point)
         "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
-        "{FatJet,HbbJet}.particleNetWithMass_HbbVsQCD",
+        "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
