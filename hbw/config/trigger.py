@@ -414,7 +414,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         tags={"mixed_trigger", "mixed_mue"},
     )
     mixed_emu = Trigger(
-        name="HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+        name="HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         id=401,
         legs=[
             TriggerLeg(

@@ -173,72 +173,72 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         "hh_ggf_hbb_hvv": [
             # SL
-            "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
+            # "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
             "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
+            # "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
+            # "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
             # DL
-            "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
+            # "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
             "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
+            # "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
+            # "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
             *config.x.if_era(run=3, values=[
-                "hh_ggf_hbb_hvv_kl0_kt1_powheg",
+                # "hh_ggf_hbb_hvv_kl0_kt1_powheg",
                 "hh_ggf_hbb_hvv_kl1_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl5_kt1_powheg",
+                # "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
+                # "hh_ggf_hbb_hvv_kl5_kt1_powheg",
             ]),
         ],
-        "hh_vbf_hbb_hvv": [
-            *config.x.if_era(run=2, values=[
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1_madgraph",
-            ]),
-            *config.x.if_era(run=3, values=[
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvvqqlnu_kvm2p12_k2v3p87_klm5p96_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvv2l2nu_kvm2p12_k2v3p87_klm5p96_madgraph",
-                "hh_vbf_hbb_hvv_kv1_k2v1_kl1_madgraph",
-                "hh_vbf_hbb_hvv_kv1_k2v0_kl1_madgraph",
-                "hh_vbf_hbb_hvv_kv1p74_k2v1p37_kl14p4_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p012_k2v0p03_kl10p2_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p758_k2v1p44_klm19p3_madgraph",
-                "hh_vbf_hbb_hvv_kvm0p962_k2v0p959_klm1p43_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p21_k2v1p94_klm0p94_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p6_k2v2p72_klm1p36_madgraph",
-                "hh_vbf_hbb_hvv_kvm1p83_k2v3p57_klm3p39_madgraph",
-                "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
-            ]),
-        ],
+        # "hh_vbf_hbb_hvv": [
+        #     *config.x.if_era(run=2, values=[
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl0_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl2_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v2_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv0p5_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1p5_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl0_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl2_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v2_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv0p5_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1p5_k2v1_kl1_madgraph",
+        #     ]),
+        #     *config.x.if_era(run=3, values=[
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kv1p74_k2v1p37_kl14p4_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm0p012_k2v0p03_kl10p2_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm0p758_k2v1p44_klm19p3_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39_madgraph",
+        #         "hh_vbf_hbb_hvvqqlnu_kvm2p12_k2v3p87_klm5p96_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39_madgraph",
+        #         "hh_vbf_hbb_hvv2l2nu_kvm2p12_k2v3p87_klm5p96_madgraph",
+        #         "hh_vbf_hbb_hvv_kv1_k2v1_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv_kv1_k2v0_kl1_madgraph",
+        #         "hh_vbf_hbb_hvv_kv1p74_k2v1p37_kl14p4_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm0p012_k2v0p03_kl10p2_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm0p758_k2v1p44_klm19p3_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm0p962_k2v0p959_klm1p43_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm1p21_k2v1p94_klm0p94_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm1p6_k2v2p72_klm1p36_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm1p83_k2v3p57_klm3p39_madgraph",
+        #         "hh_vbf_hbb_hvv_kvm2p12_k2v3p87_klm5p96_madgraph",
+        #     ]),
+        # ],
         # TODO: add bbtautau to cmsdb in 2022
         # "hh_ggf_hbb_htt": [
         #     "hh_ggf_hbb_htt_kl1_kt1_madgraph",
@@ -246,26 +246,26 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         # "hh_vbf_hbb_htt": [
         #     "hh_vbf_hbb_htt_kv1_k2v1_kl1_madgraph",
         # ],
-        "graviton_hh_ggf_bbww": [
-            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
-                f"graviton_hh_ggf_bbww_m{mass}_madgraph"
-                for mass in [
-                    250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
-                    550, 600, 650, 700, 750, 800, 850, 900, 1000,
-                    1250, 1500, 1750, 2000, 2500, 3000,
-                ]
-            ]),
-        ],
-        "radion_hh_ggf_bbww": [
-            *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
-                f"radion_hh_ggf_bbww_m{mass}_madgraph"
-                for mass in [
-                    250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
-                    550, 600, 650, 700, 750, 800, 850, 900, 1000,
-                    1250, 1500, 1750, 2000, 2500, 3000,
-                ]
-            ]),
-        ],
+        # "graviton_hh_ggf_bbww": [
+        #     *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
+        #         f"graviton_hh_ggf_bbww_m{mass}_madgraph"
+        #         for mass in [
+        #             250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+        #             550, 600, 650, 700, 750, 800, 850, 900, 1000,
+        #             1250, 1500, 1750, 2000, 2500, 3000,
+        #         ]
+        #     ]),
+        # ],
+        # "radion_hh_ggf_bbww": [
+        #     *config.x.if_era(run=2, cfg_tag="is_resonant", values=[
+        #         f"radion_hh_ggf_bbww_m{mass}_madgraph"
+        #         for mass in [
+        #             250, 260, 270, 280, 300, 320, 350, 400, 450, 500,
+        #             550, 600, 650, 700, 750, 800, 850, 900, 1000,
+        #             1250, 1500, 1750, 2000, 2500, 3000,
+        #         ]
+        #     ]),
+        # ],
         "qcd_mu": [
             *config.x.if_era(cfg_tag="is_sl", values=[
                 # "qcd_mu_pt15to20_pythia",

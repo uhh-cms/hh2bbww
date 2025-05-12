@@ -110,25 +110,25 @@ def add_mll_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_mll_low",
-        label=r"$m_{\ell\ell} < 81$",
+        label=r"$m_{\ell\ell} < 81$GeV",
     )
     cr = config.add_category(
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$m_{\ell\ell} \geq 81$",
+        label=r"$m_{\ell\ell} \geq 81$GeV",
     )
     cr.add_category(
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        label=r"$81 \leq m_{\ell\ell} < 101$",
+        label=r"$81 \leq m_{\ell\ell} < 101$GeV",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        label=r"$m_{\ell\ell} \geq 101$",
+        label=r"$m_{\ell\ell} \geq 101$GeV",
     )
 
 

@@ -171,7 +171,7 @@ def set_config_defaults_and_groups(config_inst):
         "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "dl1": [default_signal_process, "tt", "dy", "st", "ttv", "vv", "w_lnu", "h"],
+        "dl1": ["tt", "dy", "st", "ttv", "vv", "w_lnu", "h"],  # default_signal_process,
         "dl2": [default_signal_process, "tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
         "dl3": [default_signal_process, "tt", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],  # noqa: E501
         "dlbkg": ["tt", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "st", "ttv", "vv", "w_lnu", "h"],
@@ -435,14 +435,14 @@ def set_config_defaults_and_groups(config_inst):
         "default": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 16,
+                "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
                 "reverse": True,
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 16,
+                "fontsize": 20,
             },
         },
         "small_legend": {

@@ -18,24 +18,37 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
+def check_l1_seeds(self: Producer, events: ak.Array, trigger) -> ak.Array:
+    """
+    Check if the unprescaled L1 seeds of a given trigger have fired
+    """
+    l1_seeds_fired = ak.Array([False] * len(events))
+
+    for l1_seed in self.config_inst.x.hlt_L1_seeds[trigger]:
+        l1_seeds_fired = l1_seeds_fired | events.L1[l1_seed]
+
+    return l1_seeds_fired
+
+
 # produce trigger column for triggers included in the NanoAOD
 @producer(
     produces={"trig_ids"},
     channel=["mm", "ee", "mixed"],
-    version=14,
+    version=16,
 )
 def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Produces column filled for each event with the triggers triggering the event.
     This column can then be used to fill a Histogram where each bin corresponds to a certain trigger.
     """
-
     # TODO: check if trigger were fired by unprescaled L1 seed
+
     trig_ids = ak.Array([["allEvents"]] * len(events))
 
     for channel in self.channel:
 
         channel_trigger = ak.Array([0] * len(events))
+        channel_trigger2 = ak.Array([0] * len(events))  # w/o check for unprescaled L1 seeds
 
         # label for stepwise combination of triggers
         comb_label = ""
@@ -43,7 +56,9 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             # build trigger combination for channel
             if channel in trigger.x.channels:
                 comb_label += trigger.hlt_field + "+"
-                channel_trigger = channel_trigger | events.HLT[trigger.hlt_field]
+                channel_trigger = channel_trigger | (events.HLT[trigger.hlt_field]
+                                                     & check_l1_seeds(self, events, trigger.hlt_field))
+                channel_trigger2 = channel_trigger2 | (events.HLT[trigger.hlt_field])
 
                 # add stepwise trigger combination
                 if "+" in comb_label[:-1]:
@@ -54,9 +69,13 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         trig_passed = ak.where(channel_trigger, [[channel]], [[]])
         trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
+        trig_passed = ak.where(channel_trigger2, [[f"{channel}_prescL1"]], [[]])
+        trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
     # add individual triggers
     for trigger in self.config_inst.x.triggers:
-        trig_passed = ak.where(events.HLT[trigger.hlt_field], [[trigger.hlt_field]], [[]])
+        trig_passed = ak.where(events.HLT[trigger.hlt_field] & check_l1_seeds(self, events, trigger.hlt_field),
+                               [[trigger.hlt_field]], [[]])
         trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
     # add sequential combination of triggers for dpg talk
@@ -64,11 +83,11 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "emu_dilep": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ"],
         "emu_single": ["Ele30_WPTight_Gsf", "IsoMu24"],
         "emu_electronjet": ["Ele50_CaloIdVT_GsfTrkIdT_PFJet165"],
-        "emu_alt_mix": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
-                        "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-                        "Ele30_WPTight_Gsf",
-                        "IsoMu24",
-                        "Ele115_CaloIdVT_GsfTrkIdT"]
+        # "emu_alt_mix": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        #                 "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        #                 "Ele30_WPTight_Gsf",
+        #                 "IsoMu24",
+        #                 "Ele115_CaloIdVT_GsfTrkIdT"]
     }
     ee_trigger_sequence = {
         "ee_dilep": ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL", "DoubleEle33_CaloIdL_MW"],
@@ -91,8 +110,8 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         for label, triggers in trigger_sequence[channel].items():
             triggers_mask = ak.Array([0] * len(events))
             for trigger in triggers:
-                triggers_mask = triggers_mask | events.HLT[trigger]
-                seq_trigger = seq_trigger | events.HLT[trigger]
+                triggers_mask = triggers_mask | (events.HLT[trigger] & check_l1_seeds(self, events, trigger))
+                seq_trigger = seq_trigger | (events.HLT[trigger] & check_l1_seeds(self, events, trigger))
 
             trig_passed = ak.where(triggers_mask, [[label]], [[]])
             trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
@@ -113,7 +132,12 @@ def trigger_prod_init(self: Producer) -> None:
 
     for trigger in self.config_inst.x("triggers", []):
         self.uses.add(f"HLT.{trigger.hlt_field}")
-    self.uses.add("HLT.Ele115_CaloIdVT_GsfTrkIdT")
+    # self.uses.add("HLT.Ele115_CaloIdVT_GsfTrkIdT")
+
+    for hlt_path, l1_seeds in self.config_inst.x.hlt_L1_seeds.items():
+        for l1_seed in l1_seeds:
+            if f"L1.{l1_seeds}" not in self.uses:
+                self.uses.add(f"L1.{l1_seed}")
 
 
 # producers for single channels

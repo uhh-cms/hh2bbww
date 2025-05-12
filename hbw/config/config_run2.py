@@ -664,13 +664,17 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
     # trigger_sf from Balduin
 
-    trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    # trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
+    trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"  # noqa: E501
     # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-trig_ids.json", "v2"))
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids.json", "v2"))
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-trig_ids.json", "v2"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v2"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v2"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v2"))  # noqa: E501
 
     # btag scale factor
     add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
@@ -759,7 +763,10 @@ def add_config(
         "HLT.IsoMu24", "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
         "HLT.Ele30_WPTight_Gsf", "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
         "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
+        "HLT.PFMET200_BeamHaloCleaned", "HLT.PFHT500_PFMET100_PFMHT100_IDTight",
+        "HLT.PFHT700_PFMET85_PFMHT85_IDTight", "HLT.PFHT800_PFMET75_PFMHT75_IDTight",
         "HLT.Ele115_CaloIdVT_GsfTrkIdT", "HLT.Ele50_CaloIdVT_GsfTrkIdT_PFJet165", "HLT.DoubleEle33_CaloIdL_MW",
         # Gen information (for categorization)
         "HardGenPart.pdgId",
@@ -789,6 +796,82 @@ def add_config(
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     }
+
+    cfg.x.hlt_L1_seeds = {
+        'IsoMu24': ['SingleMu22'],
+        'Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8': ['DoubleMu_15_7'],
+        'Ele30_WPTight_Gsf': [
+                            'SingleEG38er2p5',
+                            'SingleEG40er2p5',
+                            'SingleEG42er2p5',
+                            'SingleEG45er2p5',
+                            'SingleEG36er2p5',
+                            'SingleIsoEG30er2p1',
+                            'SingleIsoEG32er2p1',
+                            'SingleIsoEG30er2p5',
+                            'SingleIsoEG32er2p5',
+                            'SingleIsoEG34er2p5'
+                            ],
+        'Ele23_Ele12_CaloIdL_TrackIdL_IsoVL': [
+                                            'SingleEG38er2p5',
+                                            'SingleEG40er2p5',
+                                            'SingleEG42er2p5',
+                                            'SingleEG45er2p5',
+                                            'SingleEG36er2p5',
+                                            'SingleIsoEG30er2p1',
+                                            'SingleIsoEG32er2p1',
+                                            'SingleIsoEG30er2p5',
+                                            'SingleIsoEG32er2p5',
+                                            'SingleIsoEG34er2p5',
+                                            'DoubleEG_25_12_er2p5',
+                                            'DoubleEG_25_14_er2p5',
+                                            'DoubleEG_LooseIso22_12_er2p5'
+                                            ],
+        'Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL': [
+                                                    'Mu20_EG10er2p5',
+                                                    'SingleMu22'
+                                                    ],
+        'Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ': [
+                                                        'Mu7_EG20er2p5',
+                                                        'Mu7_EG23er2p5',
+                                                        'Mu7_LooseIsoEG20er2p5',
+                                                        'Mu7_LooseIsoEG23er2p5'
+                                                        ],
+        'Ele50_CaloIdVT_GsfTrkIdT_PFJet165': [
+                                            'SingleEG40er2p5',
+                                            'SingleEG42er2p5',
+                                            'SingleEG45er2p5'
+                                            ],
+        'DoubleEle33_CaloIdL_MW': [
+                                'SingleEG36er2p5',
+                                'SingleEG38er2p5',
+                                'SingleEG40er2p5',
+                                'SingleEG42er2p5',
+                                'SingleEG45er2p5',
+                                'DoubleEG_25_12_er2p5',
+                                'DoubleEG_25_14_er2p5',
+                                'SingleJet180',
+                                'SingleJet200',
+                                'SingleTau120er2p1',
+                                'SingleTau130er2p1'
+                                ],
+        'PFMETNoMu120_PFMHTNoMu120_IDTight': [
+                                            'ETMHF90',
+                                            'ETMHF100',
+                                            'ETMHF110',
+                                            'ETMHF120',
+                                            'ETMHF130',
+                                            'ETMHF140',
+                                            'ETMHF150',
+                                            'ETM150',
+                                            'ETMHF90_SingleJet60er2p5_dPhi_Min2p1',
+                                            'ETMHF90_SingleJet60er2p5_dPhi_Min2p6'
+                                            ],
+    }
+    for hlt_path, l1_seeds in cfg.x.hlt_L1_seeds.items():
+        for l1_seed in l1_seeds:
+            if f"L1.{l1_seeds}" not in cfg.x.keep_columns["cf.ReduceEvents"]:
+                cfg.x.keep_columns["cf.ReduceEvents"] |= {f"L1.{l1_seed}"}
 
     # Version of required tasks
     cfg.x.versions = {
