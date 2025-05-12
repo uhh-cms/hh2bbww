@@ -79,7 +79,7 @@ class MLDatasetLoader:
         self._ml_model_inst = ml_model_inst
         self._process = process
         self._stats = stats
-        events = events[:5_000_000]
+        events = events[:3_000_000] # 5_000_000
         self._events = events
 
     def __repr__(self):

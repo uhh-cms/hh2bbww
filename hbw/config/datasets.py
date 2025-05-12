@@ -296,6 +296,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 #"qcd_mu_pt170to300_pythia", "qcd_mu_pt300to470_pythia",
                 #"qcd_mu_pt470to600_pythia", "qcd_mu_pt600to800_pythia",
                 #"qcd_mu_pt800to1000_pythia", "qcd_mu_pt1000toinf_pythia",
+                
+                "qcd_em_pt10to30_pythia",
                 "qcd_em_pt30to50_pythia",
                 "qcd_em_pt50to80_pythia",
                 "qcd_em_pt80to120_pythia",
@@ -310,7 +312,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
             ],
             "dy": [
-                "dy_m50toinf_amcatnlo", # "dy_m10to50_amcatnlo",
+                "dy_m50toinf_amcatnlo",  #"dy_m10to50_amcatnlo",
                 "dy_m4to10_amcatnlo", "dy_m50toinf_0j_amcatnlo",
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",

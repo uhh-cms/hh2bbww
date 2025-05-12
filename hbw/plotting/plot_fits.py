@@ -169,6 +169,9 @@ def plot_fit(
         xlabel=variable_inst.get_full_x_title(),
         xscale="log" if variable_inst.log_x else "linear",
     )
+    # Setze wissenschaftliche Notation und verschiebe "1e6"
+    ax.ticklabel_format(style="sci", scilimits=(-3, 3), useMathText=True)
+    ax.get_yaxis().get_offset_text().set_position((-0.15, 1.05))  # x-Wert nach links verschieben
     ax.legend(title=category_inst.label)
     mplhep.cms.label(ax=ax, fontsize=22, llabel="Simulation private work")
 

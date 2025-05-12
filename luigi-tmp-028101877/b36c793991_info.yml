@@ -1,0 +1,54 @@
+model: model.h5
+name: example_model_topo
+objects:
+- cuts:
+  - cuttype: equals
+    field: etSumType
+    value: 2
+  fields:
+  - pt
+  - phi
+  key: L1EtSum
+  n_obj: 1
+  name: MET
+- fields:
+  - pt
+  - eta
+  - phi
+  key: L1Jet
+  n_obj: 4
+  name: jet
+- fields:
+  - pt
+  - eta
+  - phi
+  - hwIso
+  key: L1EG
+  n_obj: 2
+  name: electron
+scaler: scaler.pkl
+testdata: testdata.parquet
+type: topo
+variables:
+- MET_0_pt
+- MET_0_phi
+- jet_0_pt
+- jet_0_eta
+- jet_0_phi
+- jet_1_pt
+- jet_1_eta
+- jet_1_phi
+- jet_2_pt
+- jet_2_eta
+- jet_2_phi
+- jet_3_pt
+- jet_3_eta
+- jet_3_phi
+- electron_0_pt
+- electron_0_eta
+- electron_0_phi
+- electron_0_hwIso
+- electron_1_pt
+- electron_1_eta
+- electron_1_phi
+- electron_1_hwIso

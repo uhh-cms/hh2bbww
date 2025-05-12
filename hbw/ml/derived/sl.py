@@ -38,9 +38,9 @@ class DenseClassifierSL(ModelFitMixin, DenseModelMixin, MLClassifierBase):
         "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": 1,
         "tt": 2,
         "st": 2,
-        "v_lep": 2,
-        "w_lnu": 2,
-        "dy": 2,
+        "v_lep": 1,
+        "w_lnu": 1,
+        "dy": 1,
     }
 
     input_features: list = [
@@ -173,7 +173,29 @@ dense_17post_test = DenseClassifierSL.derive("dense_17post_test", cls_dict={
 
 dense_22post = DenseClassifierSL.derive("dense_22post", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st","tt","dy","w_lnu","qcd"], # hier noch tt wieder ein
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt", "v_lep"],  # hier noch tt wieder ein ,"dy","w_lnu", qcd ist zu klein
+})
+
+dense_22Topo = DenseClassifierSL.derive("dense_22Topo", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt"],
+})
+
+dense_22Ele = DenseClassifierSL.derive("dense_22Ele", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt"],
+})
+dense_22EleRealistic = DenseClassifierSL.derive("dense_22EleRealistic", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt"],
+})
+dense_22EleandMuRealistic = DenseClassifierSL.derive("dense_22EleandMuRealistic", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt"],
+})
+dense_22Baseline = DenseClassifierSL.derive("dense_22Baseline", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "processes": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "st", "tt"],
 })
 dense_22post_test = dense_22post.derive("dense_22post_test", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],

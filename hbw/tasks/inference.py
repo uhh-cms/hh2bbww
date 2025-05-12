@@ -15,7 +15,7 @@ import order as od
 from columnflow.tasks.framework.base import Requirements, RESOLVE_DEFAULT, AnalysisTask, ConfigTask
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
-    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin,
+    CalibratorsMixin, SelectorStepsMixin, ProducersMixin, MLModelsMixin, InferenceModelMixin, WeightProducerMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.cms.inference import CreateDatacards
@@ -265,6 +265,7 @@ class ModifyDatacardsFlatRebin(
     HBWTask,
     InferenceModelMixin,
     MLModelsMixin,
+    WeightProducerMixin,
     ProducersMixin,
     SelectorStepsMixin,
     CalibratorsMixin,
@@ -445,7 +446,7 @@ class ModifyDatacardsFlatRebin(
             hist = hists[0]
             for h in hists[1:]:
                 hist += h
-            __import__("IPython").embed()
+            # __import__("IPython").embed()
             logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_processes}")
             rebin_values = get_rebin_values(hist, self.get_n_bins())
             outputs["edges"].dump(rebin_values, formatter="json")

@@ -67,7 +67,7 @@ def base(self: WeightProducer, events: ak.Array, **kwargs) -> ak.Array:
     weight = ak.Array(np.ones(len(events), dtype=np.float32))
     for column in self.weight_columns.keys():
         weight = weight * Route(column).apply(events)
-
+    #__import__("IPython").embed()
     return events, weight
 
 
@@ -234,4 +234,35 @@ mu_cut = base.derive("mu_cut", cls_dict={
     "weight_columns": default_weight_columns,
     "mask_fn": lambda self, events: events.HLT.IsoMu24,
     "mask_columns": ["HLT.IsoMu24"],
+})
+
+def my_mask(events):
+    ele_pt = events.Electron.pt
+    ele_pt = ak.pad_none(ele_pt, 2, axis=1)
+    ele_pt = ak.fill_none(ele_pt, -1)
+    mask = (ele_pt[:, 0] > 31) | (ele_pt[:, 0] < 0)
+    print(20*'#', sum(mask))
+    return mask
+
+
+HLTEle30_realistic = base.derive("HLTEle30_realistic", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: (my_mask(events)) & (events.HLT.Ele30_WPTight_Gsf),
+    "mask_columns": ["Electron.pt","HLT.Ele30_WPTight_Gsf"],
+})
+
+
+def mu_mask(events):
+    mu_pt = events.Muon.pt
+    mu_pt = ak.pad_none(mu_pt, 2, axis=1)
+    mu_pt = ak.fill_none(mu_pt, -1)
+    mask = (mu_pt[:, 0] > 25) | (mu_pt[:, 0] < 0)
+    print(20*'#', sum(mask))
+    return mask
+
+
+HLTEleandMu_realistic = base.derive("HLTEleandMu_realistic", cls_dict={
+    "weight_columns": default_weight_columns,
+    "mask_fn": lambda self, events: ((my_mask(events)) & (events.HLT.Ele30_WPTight_Gsf) |(mu_mask(events))&(events.HLT.IsoMu24)),
+    "mask_columns": ["Electron.pt", "HLT.Ele30_WPTight_Gsf", "Muon.pt", "HLT.IsoMu24"],
 })

@@ -700,6 +700,7 @@ def add_config(
         "L1EtSum.{pt,phi,etSumType}",
         "HLT.Ele30_WPTight_Gsf",
         "HLT.Ele35_WPTight_Gsf",
+        "HLT.IsoMu24",
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     }

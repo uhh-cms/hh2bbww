@@ -257,7 +257,8 @@ def sl1(
     bjet_step = results.steps[f"nBjet{self.n_btag}"] if self.n_btag != 0 else True
 
     results.steps["Resolved"] = (jet_step & bjet_step)
-
+    results.steps["Jet"] = (jet_step)
+    results.steps["bJet"] = (bjet_step)
     results.steps["ResolvedOrBoosted"] = (
         (jet_step & bjet_step) | results.steps.HbbJet
     )
@@ -291,7 +292,7 @@ def sl1(
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
-
+    print("Defined selector steps:", list(results.steps.keys()))
     return events, results
 
 @sl1.init

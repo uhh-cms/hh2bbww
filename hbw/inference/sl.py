@@ -13,7 +13,7 @@ from hbw.inference.base import HBWInferenceModelBase
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dense_default"
+ml_model_name = "dense_22post"
 
 # default_producers = [f"ml_{ml_model_name}", "event_weights"]
 
@@ -25,12 +25,13 @@ processes = [
     "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
     "tt",
     # "ttv", "ttvv",
-    "st_schannel", "st_tchannel", "st_twchannel",
+    "st",
+    # "st_schannel", "st_tchannel", "st_twchannel",
     "dy",
     "w_lnu",
     # "vv",
     # "vvv",
-    # "qcd",
+    "qcd",
     # "ggZH", "tHq", "tHW", "ggH", "qqH", "ZH", "WH", "VH", "ttH", "bbH",
 ]
 
@@ -40,11 +41,11 @@ config_categories = [
     "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
     "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
-    "sr__1e__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+    # "sr__1e__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1e__ml_tt",
     "sr__1e__ml_st",
     "sr__1e__ml_v_lep",
-    "sr__1mu__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+    # "sr__1mu__ml_hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "sr__1mu__ml_tt",
     "sr__1mu__ml_st",
     "sr__1mu__ml_v_lep",
@@ -52,12 +53,12 @@ config_categories = [
 
 rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
-    "lumi_13TeV_2016",
-    "lumi_13TeV_2017",
-    "lumi_13TeV_1718",
+    # "lumi_13TeV_2016",
+    # "lumi_13TeV_2017",
+    # "lumi_13TeV_1718",
     "lumi_13TeV_2022",
-    "lumi_13TeV_2023",
-    "lumi_13TeV_correlated",
+    # "lumi_13TeV_2023",
+    # "lumi_13TeV_correlated",
     # Rate QCDScale uncertainties
     "QCDScale_ttbar",
     "QCDScale_V",
@@ -208,7 +209,10 @@ jet1_pt = default.derive("jet1_pt", cls_dict={
 #
 
 processes_22 = [
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    # "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
     "tt",
     # "st_schannel",
     "st", #???
@@ -216,6 +220,19 @@ processes_22 = [
     "dy",
     "w_lnu",
     "qcd",
+]
+
+processes_22_noQCD = [
+    # "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
+    "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
+    "tt",
+    # "st_schannel",
+    "st", #???
+    #"st_tchannel", "st_twchannel",
+    "dy",
+    "w_lnu",
 ]
 
 # 1e vs 1mu Aufteilung rausnehmen sagt mathis 
@@ -234,11 +251,73 @@ config_categories_22 = [
     "sr__1mu__ml_v_lep",
 ]
 
+config_categories_22_withoutvlep = [
+    # Signal regions
+    "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1e__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    "sr__1mu__2b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+    # Background regions
+    "sr__1e__ml_tt",
+    "sr__1e__ml_st",
+    #"sr__1e__ml_v_lep",
+    "sr__1mu__ml_tt",
+    "sr__1mu__ml_st",
+    #"sr__1mu__ml_v_lep",
+]
+
 sl_22 = default.derive("sl_22", cls_dict={
     "dummy_kl_variation": True,
     "processes": processes_22,
     "config_categories": config_categories_22,
     "ml_model_name": "dense_22post", #"dense_22",
+    "systematics": rate_systematics,
+})
+sl_22Topo = default.derive("sl_22Topo", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "config_categories": config_categories_22_withoutvlep,
+    "mc_stats": False,
+    "ml_model_name": "dense_22Topo", #"dense_22",
+    "systematics": rate_systematics,
+})
+sl_22Topo_noQCD = default.derive("sl_22Topo_noQCD", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22_noQCD,
+    "config_categories": config_categories_22_withoutvlep,
+    "ml_model_name": "dense_22Topo", #"dense_22",
+    "systematics": rate_systematics,
+})
+sl_22Ele = default.derive("sl_22Ele", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "config_categories": config_categories_22_withoutvlep,
+    "ml_model_name": "dense_22Ele", #"dense_22",
+    "systematics": rate_systematics,
+})
+sl_22EleRealistic = default.derive("sl_22EleRealistic", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "mc_stats": True,
+    "config_categories": config_categories_22_withoutvlep,
+    "ml_model_name": "dense_22EleRealistic", #"dense_22",
+    "systematics": rate_systematics,
+})
+sl_22EleandMuRealistic = default.derive("sl_22EleandMuRealistic", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "mc_stats": True,
+    "config_categories": config_categories_22_withoutvlep,
+    "ml_model_name": "dense_22EleandMuRealistic",  #"dense_22",
+    "systematics": rate_systematics,
+})
+
+sl_22Baseline = default.derive("sl_22Baseline", cls_dict={
+    "dummy_kl_variation": True,
+    "processes": processes_22,
+    "mc_stats": False,
+    "config_categories": config_categories_22_withoutvlep,
+    "ml_model_name": "dense_22Baseline",  # "dense_22",
     "systematics": rate_systematics,
 })
 sl_22_shapes = sl_22.derive("sl_22_shapes", cls_dict={

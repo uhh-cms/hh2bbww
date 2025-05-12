@@ -14,7 +14,7 @@ import luigi
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
     InferenceModelMixin, MLModelsMixin, ProducersMixin, SelectorStepsMixin,
-    CalibratorsMixin,
+    CalibratorsMixin, WeightProducerMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
@@ -144,6 +144,7 @@ class InferencePlots(
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
     InferenceModelMixin,
+    WeightProducerMixin,
     MLModelsMixin,
     ProducersMixin,
     SelectorStepsMixin,
@@ -156,8 +157,8 @@ class InferencePlots(
     plot_function = PlotVariables1D.plot_function
 
     # disable some parameters
-    datasets = None
-    processes = None
+    # datasets = None
+    # processes = None
     categories = None
 
     inference_variables = law.CSVParameter(
@@ -199,7 +200,7 @@ class InferencePlots(
                 self,
                 variables=variables,
                 categories=(category,),
-                processes=processes,
+                # processes=processes,
                 ml_models=(ml_model_name,),
             )
 

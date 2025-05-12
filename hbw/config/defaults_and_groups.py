@@ -131,7 +131,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.process_groups = {
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501
-        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
+        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "w_lnu"],  # noqa: E501
         "much": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "ech": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "qcd", "st", "dy", "vv", "w_lnu", "h"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "tt", "dy", "st", "vv", "w_lnu", "h"],  # noqa: E501

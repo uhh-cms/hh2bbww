@@ -681,9 +681,11 @@ def add_variables(config: od.Config) -> None:
             name=f"{obj.lower()}_pt",
             expression=f"{obj}.pt[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, 0., 350.),
+            # binning=(40, 0., 350.),
+            binning=(400, 0., 400.),
             unit="GeV",
             x_title=obj + r" $p_{T}$",
+            aux={"overflow":True,},
         )
         config.add_variable(
             name=f"{obj.lower()}_phi",
@@ -736,4 +738,10 @@ def add_variables(config: od.Config) -> None:
         expression="MET.phi",
         binning=(40, -3.2, 3.2),
         x_title=r"MET $\phi$",
+    )
+    # trigger ids für scale factors
+    config.add_variable(
+        name="trig_ids",
+        binning=(6, -0.5, 5.5),
+        x_title="Trigger IDs for scale factors",
     )
