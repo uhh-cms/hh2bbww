@@ -4,4 +4,4 @@
 
 [submodule "modules/cmsdb"]
     path = modules/cmsdb
-    url = ../cmsdb.git
+    url = ../../uhh-cms/cmsdb.git
