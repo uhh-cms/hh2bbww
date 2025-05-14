@@ -197,6 +197,7 @@ def set_config_defaults_and_groups(config_inst):
         "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "emuch": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
+        "postfit": [*hbbhww_sm, *backgrounds1],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
         "ml_test": [default_signal_process, "st", "w_lnu"],
@@ -329,24 +330,8 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": [
-            "sr__2e__1b__ml_signal_ggf2", "sr__2e__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_ggf", "sr__1b__ml_signal_ggf2", "sr__2b__ml_signal_ggf", "sr__2b__ml_signal_ggf2",
-            "sr__1b__ml_signal_ggf4", "sr__1b__ml_signal_ggf5", "sr__2b__ml_signal_ggf4", "sr__2b__ml_signal_ggf5",
-            "sr__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__2mu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2mu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__2e__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__2e__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__emu__1b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1", "sr__emu__2b__ml_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-            "sr__1b", "sr__2b",
-        ] + bracket_expansion(["sr__{2e,2mu,emu}__{1b,2b}__ml_{signal_ggf2,signal_vbf2}"]),
-        "vbfSR_dl": (
-            "sr__1b__ml_signal_vbf", "sr__1b__ml_signal_vbf2", "sr__2b__ml_signal_vbf", "sr__2b__ml_signal_vbf2",
-            "sr__1b__ml_signal_vbf4", "sr__1b__ml_signal_vbf5", "sr__2b__ml_signal_vbf4", "sr__2b__ml_signal_vbf5",
-            "sr__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__2mu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2mu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__2e__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__2e__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-            "sr__emu__1b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1", "sr__emu__2b__ml_hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        ),
+        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
+        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
         "SR_dl_resolved": (
             "sr__resolved__1b__ml_signal_ggf2",
             "sr__resolved__2b__ml_signal_ggf2",
@@ -361,12 +346,7 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": (
             "sr__boosted__ml_signal_vbf2",
         ),
-        "BR_dl": (
-            "sr__1b__ml_tt", "sr__1b__ml_st", "sr__1b__ml_dy", "sr__1b__ml_h",
-            "sr__2b__ml_tt", "sr__2b__ml_st", "sr__2b__ml_dy", "sr__2b__ml_h",
-            "sr__ml_tt", "sr__ml_st", "sr__ml_dy", "sr__ml_h",
-            "sr__1b__ml_dy_m50toinf", "sr__2b__ml_dy_m50toinf",
-        ),
+        "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -433,6 +413,12 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
+        "postfit": {
+            "whitespace_fraction": 0.4,
+            "cms_label": "simpw",
+            "yscale": "log",
+            "hide_signal_errors": True,
+        },
         "data_mc_plots": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
@@ -558,5 +544,4 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_resolved": is_signal_sm_vbf,
         "vbfSR_dl_boosted": is_signal_sm_vbf,
         "BR_dl": is_background,
-
     }

@@ -460,6 +460,8 @@ class PrepareInferenceTaskCalls(
     resolution_task_cls = MergeHistograms
     single_config = False
 
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
     # upstream requirements
     reqs = Requirements(
         ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,

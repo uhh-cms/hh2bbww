@@ -334,13 +334,17 @@ def add_categories_ml(config, ml_model_inst):
     #       we can reconfigure our MLModel after having created these categories
     # TODO: config is empty and therefore fails
     ml_categories = []
-    for i, proc in enumerate(ml_model_inst.processes):
+    # for i, proc in enumerate(ml_model_inst.processes):
+    for proc, node_config in ml_model_inst.train_nodes.items():
+        print(proc, node_config["ml_id"])
+        _id = (node_config["ml_id"] + 1) * 1000
         # cat_label = config.get_process(proc).x.ml_label
         ml_categories.append(config.add_category(
             # NOTE: name and ID is unique as long as we don't use
             #       multiple ml_models simutaneously
             name=f"ml_{proc}",
-            id=(i + 1) * 1000,
+            # NOTE: the +1 is necessary to avoid reusing ID of non-ml categories
+            id=_id,
             selection=f"catid_ml_{proc}",
             # label=f"{cat_label} category",
             aux={"ml_proc": proc},

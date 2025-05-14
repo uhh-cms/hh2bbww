@@ -6,6 +6,7 @@ Column production methods related to higher-level features.
 
 from __future__ import annotations
 
+import law
 import functools
 
 from columnflow.production import Producer, producer
@@ -64,9 +65,11 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
 
 @producer(
     uses={
+        # "*", "*.*",
         prepare_objects, vbf_candidates,
         "FatJet.{msoftdrop,particleNet_XbbVsQCD}",
         "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
+        "{Electron,Muon}.{pdgId}",
         MET_COLUMN("pt"), MET_COLUMN("phi"),
     },
     # produced columns set in the init function
@@ -77,7 +80,6 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-
     met_name = self.config_inst.x.met_name
 
     # vbf with and without forward region
@@ -131,6 +133,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
     events = set_ak_column_f32(events, "mli_lep_eta", events.Lepton[:, 0].eta)
+    events = set_ak_column_f32(events, "mli_lep_pdgid", events.Lepton[:, 0].pdgId)
     events = set_ak_column_f32(events, "mli_met_pt", events[met_name].pt)
     events = set_ak_column_f32(events, "mli_met_phi", events[met_name].phi)
 
@@ -195,7 +198,8 @@ def common_ml_inputs_init(self: Producer) -> None:
         # VBF features
         # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
         # low-level features
-        "mli_lep_pt", "mli_lep_eta", "mli_met_pt", "mli_met_phi",
+        "mli_lep_pt", "mli_lep_eta", "mli_lep_pdgid",
+        "mli_met_pt", "mli_met_phi",
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["vbf", "full_vbf"]
@@ -324,7 +328,7 @@ def sl_ml_inputs_init(self: Producer) -> None:
     uses={common_ml_inputs},
     produces={common_ml_inputs},
     # produced columns set in the init function
-    version=1,
+    version=law.config.get_expanded("analysis", "dl_ml_inputs_version", 1),
 )
 def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -337,8 +341,8 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # object padding
     events = set_ak_column(events, "Lepton", ak.pad_none(events.Lepton, 2))
 
-    for var in ["pt", "eta"]:
-        events = set_ak_column_f32(events, f"mli_lep2_{var}", events.Lepton[:, 1][var])
+    for var in ["pt", "eta", "pdgId"]:
+        events = set_ak_column_f32(events, f"mli_lep2_{var}".lower(), events.Lepton[:, 1][var])
 
     # create ll object and ll variables
     hll = (events.Lepton[:, 0] + events.Lepton[:, 1])
@@ -380,7 +384,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
         # low-level features
-        "mli_lep2_pt", "mli_lep2_eta",
+        "mli_lep2_pt", "mli_lep2_eta", "mli_lep2_pdgid",
     }
     self.produces |= self.ml_input_columns
 

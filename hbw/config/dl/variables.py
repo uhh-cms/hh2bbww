@@ -194,3 +194,11 @@ def add_dl_ml_variables(config: od.Config) -> None:
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
+
+    config.add_variable(
+        name="mli_lep2_pdgid",
+        expression="mli_lep2_pdgid",
+        binning=(6, 11, 16),
+        discrete_x=True,
+        x_title="lepton 2 pdgid",
+    )

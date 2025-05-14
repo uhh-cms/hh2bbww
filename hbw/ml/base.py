@@ -15,13 +15,13 @@ import order as od
 
 from columnflow.types import Sequence
 from columnflow.ml import MLModel
-from columnflow.util import maybe_import, dev_sandbox, DotDict
+from columnflow.util import maybe_import, dev_sandbox, DotDict, DerivableMeta
 from columnflow.columnar_util import Route, set_ak_column
 from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import log_memory
 from hbw.ml.data_loader import MLDatasetLoader, MLProcessData, input_features_sanity_checks
-from hbw.config.processes import create_combined_proc_forML
+from hbw.config.processes import prepare_ml_processes
 
 from hbw.tasks.ml import MLPreTraining
 
@@ -39,7 +39,12 @@ class MLClassifierBase(MLModel):
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
     # NOTE: the order of processes is crucial! Do not change after training
-    processes: tuple = ("tt", "st")
+    _default__processes: tuple = ("tt", "st")
+    train_nodes: dict = {
+        "tt": {"ml_id": 0},
+        "st": {"ml_id": 1},
+    }
+
     input_features: set = {"mli_ht", "mli_n_jet"}
 
     # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when producing new input features
@@ -56,22 +61,42 @@ class MLClassifierBase(MLModel):
     folds: int = 5
 
     # training-specific parameters. Only need to re-run training when changing these
-    ml_process_weights: dict = {"st": 2, "tt": 1}
-    negative_weights: str = "handle"
-    epochs: int = 50
-    batchsize: int = 2 ** 10
+    _default__class_factors: dict = {"st": 1, "tt": 1}
+    _default__sub_process_class_factors: dict = {"st": 2, "tt": 1}
+    _default__negative_weights: str = "handle"
+    _default__epochs: int = 50
+    _default__batchsize: int = 2 ** 10
 
     # parameters to add into the `parameters` attribute to determine the 'parameters_repr' and to store in a yaml file
     bookkeep_params: set[str] = {
         "data_loader", "input_features", "train_val_test_split",
-        "processes", "ml_process_weights", "negative_weights", "epochs", "batchsize", "folds",
+        "processes", "train_nodes", "class_factors", "sub_process_class_factors",
+        "negative_weights", "epochs", "batchsize", "folds",
     }
 
     # parameters that can be overwritten via command line
     settings_parameters: set[str] = {
-        "processes", "ml_process_weights",
+        "processes", "class_factors", "sub_process_class_factors",
         "negative_weights", "epochs", "batchsize",
     }
+
+    @classmethod
+    def derive(
+        cls,
+        cls_name: str,
+        bases: tuple = (),
+        cls_dict: dict[str, Any] | None = None,
+        module: str | None = None,
+    ):
+        """
+        derive but rename classattributes included in settings_parameters to "_default__{attr}"
+        """
+        if cls_dict:
+            for attr, value in cls_dict.copy().items():
+                if attr in cls.settings_parameters:
+                    cls_dict[f"_default__{attr}"] = cls_dict.pop(attr)
+
+        return DerivableMeta.derive(cls, cls_name, bases, cls_dict, module)
 
     def __init__(
             self,
@@ -80,16 +105,21 @@ class MLClassifierBase(MLModel):
             **kwargs,
     ):
         """
-        Initialization function of the MLModel. We first overwrite the class attributes with what is set
-        in the  *self.parameters* attribute via the `--ml-model-settings` parameter. Then we cast the
-        parameters to the correct types and store them as individual class attributes. Finally, we store
-        the parameters in the `self.parameters` attribute, which is used both to create a hash for the output
-        path and to store the parameters in a yaml file.
+        Initialization function of the MLModel. We first set properties using values from the
+        *self.parameters* dictionary that is obtained via the `--ml-model-settings` parameter. If
+        the parameter is not set via command line,cthe "_default__{attr}" classattribute is used as
+        fallback. Then we cast the parameters to the correct types and store them as individual
+        class attributes. Finally, we store the parameters in the `self.parameters` attribute,
+        which is used both to create a hash for the output path and to store the parameters in a yaml file.
 
         Only the parameters in the `settings_parameters` attribute can be overwritten via the command line.
         Only the parameters in the `bookkeep_params` attribute are stored in the `self.parameters` attribute.
+        Parameters defined in the `settings_parameters` must be named "_default__{attr}" in the main class definition.
+        When deriving, the "_default__" is automatically added.
+        Similarly, a parameter starting with "_default__" must be part of the `settings_parameters`.
         """
         super().__init__(*args, **kwargs)
+        # logger.warning("Running MLModel init")
 
         # checks
         if diff := self.settings_parameters.difference(self.bookkeep_params):
@@ -109,9 +139,24 @@ class MLClassifierBase(MLModel):
             )
 
         for param in self.settings_parameters:
-            # overwrite the default value with the value from the parameters
-            # TODO: this is quite dangerous, as it overwrites a class attribute instead of an instance attribute
-            setattr(self, param, self.parameters.get(param, getattr(self, param)))
+            # param is not allowed to exist on class level
+            if hasattr(self, param):
+                raise ValueError(
+                    f"{self.cls_name} has classatribute {param} (value: {getattr(self, param)}) on class level "
+                    "but also requests it as configurable via settings_parameters. Maybe you have to rename the",
+                    "classattribute in some base class to '_default__{param}'?",
+                )
+            # set to requested value, fallback on "__default_{param}"
+            setattr(self, param, self.parameters.get(param, getattr(self, f"_default__{param}")))
+
+        # check that all _default__ attributes are taken care of
+        for attr in dir(self):
+            if not attr.startswith("_default__"):
+                continue
+            if not hasattr(self, attr.replace("_default__", "", 1)):
+                raise ValueError(
+                    f"{self.cls_name} has classatribute {attr} but never sets corresponding property",
+                )
 
         # cast the ml parameters to the correct types if necessary
         self.cast_ml_param_values()
@@ -126,6 +171,8 @@ class MLClassifierBase(MLModel):
         # sort the self.settings_parameters
         self.parameters = DotDict(sorted(self.parameters.items()))
 
+        # sanity check: for each process in "train_nodes", we need to have 1 process with "ml_id" in config
+
     def cast_ml_param_values(self):
         """
         Resolve the values of the parameters that are used in the MLModel
@@ -133,15 +180,15 @@ class MLClassifierBase(MLModel):
         self.processes = tuple(self.processes)
         self.input_features = set(self.input_features)
         self.train_val_test_split = tuple(self.train_val_test_split)
-        if not isinstance(self.ml_process_weights, dict):
+        if not isinstance(self.sub_process_class_factors, dict):
             # cast tuple to dict
-            self.ml_process_weight = {
-                proc: weight for proc, weight in [s.split(":") for s in self.ml_process_weight]
+            self.sub_process_class_factor = {
+                proc: weight for proc, weight in [s.split(":") for s in self.sub_process_class_factor]
             }
         # cast weights to int and remove processes not used in training
         self.ml_model_weights = {
             proc: int(weight)
-            for proc, weight in self.ml_process_weights.items()
+            for proc, weight in self.sub_process_class_factors.items()
             if proc in self.processes
         }
         self.negative_weights = str(self.negative_weights)
@@ -188,8 +235,45 @@ class MLClassifierBase(MLModel):
         self._parameters_repr = parameters_repr
         return self._parameters_repr
 
+    from hbw.util import timeit_multiple
+
+    def valid_ml_id_sanity_check(self):
+        """
+        ml_ids must include 0 and each following integer up to the number of requested train_nodes
+        """
+        for p in self.process_insts:
+            sub_process_class_factor = p.x("sub_process_class_factor", None)
+            if sub_process_class_factor is None:
+                logger.warning(f"Process {p.name} has no 'sub_process_class_factor' aux; will be set to 1.")
+                p.x.sub_process_class_factor = 1
+            ml_id = p.x("ml_id", None)
+            if ml_id is None:
+                logger.warning(f"Process {p.name} has no 'ml_id' aux; will be set to -1.")
+                p.x.ml_id = -1
+
+        ml_ids = sorted(set(p.x.ml_id for p in self.process_insts) - {-1})
+
+        if len(ml_ids) != len(self.train_nodes.keys()):
+            raise Exception(f"ml_ids {ml_ids} does not match number of requested train_nodes {self.train_nodes.keys()}")
+
+        expected_id = 0
+        while ml_ids:
+            _id = ml_ids.pop(0)
+            if _id == expected_id:
+                # next id should be previous value + 1
+                expected_id += 1
+                continue
+            else:
+                raise ValueError(f"Invalid combination of ml ids {set(p.x.ml_id for p in self.process_insts)}")
+
+        logger.debug("ml_id_sanity_check passed")
+
+    # @timeit_multiple
     def setup(self) -> None:
         """ function that is run as part of the setup phase. Most likely overwritten by subclasses """
+        if self.config_inst.has_tag(f"{self.cls_name}_called"):
+            # call this function only once per config
+            return
         logger.debug(
             f"Setting up MLModel {self.cls_name} (parameter hash: {self.parameters_repr}), "
             f"parameters: \n{self.parameters}",
@@ -197,14 +281,14 @@ class MLClassifierBase(MLModel):
         # dynamically add processes and variables for the quantities produced by this model
         # NOTE: this function might not be called for all configs when the requested configs
         # between MLTraining and the requested task are different
-        for proc in self.combine_processes:
-            for config_inst in self.config_insts:
-                if proc not in config_inst.processes:
-                    proc_name = str(proc)
-                    proc_dict = DotDict(self.combine_processes[proc])
-                    create_combined_proc_forML(config_inst, proc_name, proc_dict)
 
-        for proc in self.processes:
+        # setup processes for training
+        prepare_ml_processes(self.config_inst, self.train_nodes, self.sub_process_class_factors)
+        self.valid_ml_id_sanity_check()
+
+        # setup variables
+        # for proc in self.processes:
+        for proc, node_config in self.train_nodes.items():
             for config_inst in self.config_insts:
                 if f"mlscore.{proc}" not in config_inst.variables:
                     config_inst.add_variable(
@@ -221,6 +305,36 @@ class MLClassifierBase(MLModel):
                             },
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
+                    config_inst.add_variable(
+                        name=f"logit_mlscore.{proc}",
+                        expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
+                        null_value=-1,
+                        binning=(1000, -2., 10.),
+                        x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        aux={
+                            "inputs": {f"mlscore.{proc}"},
+                            "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
+                    )
+
+        # add tag to allow running this function just once
+        self.config_inst.add_tag(f"{self.cls_name}_called")
+
+    @property
+    def process_insts(self):
+        if hasattr(self, "_process_insts"):
+            return self._process_insts
+        return [self.config_inst.get_process(proc) for proc in self.processes]
+
+    @property
+    def train_node_process_insts(self):
+        if hasattr(self, "_train_node_process_insts"):
+            return self._train_node_process_insts
+        return [self.config_inst.get_process(proc) for proc in self.train_nodes.keys()]
 
     def preparation_producer(self: MLModel, analysis_inst: od.Analysis):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
@@ -238,6 +352,9 @@ class MLClassifierBase(MLModel):
         # return requested_producers or ["event_weights", "pre_ml_cats", analysis_inst.x.ml_inputs_producer]
         # return requested_producers or ["event_weights", analysis_inst.x.ml_inputs_producer]
         return ["event_weights", analysis_inst.x.ml_inputs_producer]
+
+    def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
+        return self.training_producers(analysis_inst, requested_producers)
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
@@ -258,8 +375,9 @@ class MLClassifierBase(MLModel):
 
             proc_inst = config_inst.get_process(proc)
             # NOTE: this info is accessible during training but probably not afterwards in other tasks
-            proc_inst.x.ml_id = i
-            proc_inst.x.ml_process_weight = self.ml_process_weights.get(proc, 1)
+            # --> move to setup? or store in some intermediate output file?
+            # proc_inst.x.ml_id = i
+            # proc_inst.x.sub_process_class_factor = self.sub_process_class_factors.get(proc, 1)
 
             # get datasets corresponding to this process
             dataset_insts = [
@@ -297,7 +415,7 @@ class MLClassifierBase(MLModel):
 
     def produces(self, config_inst: od.Config) -> set[Route | str]:
         produced = set()
-        for proc in self.processes:
+        for proc in self.train_nodes.keys():
             produced.add(f"mlscore.{proc}")
 
         return produced
@@ -369,12 +487,17 @@ class MLClassifierBase(MLModel):
 
         log_memory("loading train data")
 
-        validation = MLProcessData(
-            self, input_files, "val", self.processes, task.fold,
+        validation = DotDict(
+            {proc_inst: MLProcessData(
+                self, input_files, "val", [proc_inst.name], task.fold,
+            ) for proc_inst in self.process_insts},
         )
-        # load into memory
-        validation.load_all
+        for proc_data in validation.values():
+            # load into memory
+            proc_data.load_all()
+
         log_memory("loading validation data")
+
         # store input features as an output
         output["mlmodel"].child("input_features.pkl", type="f").dump(self.input_features_ordered, formatter="pickle")
 
@@ -389,7 +512,6 @@ class MLClassifierBase(MLModel):
         """ Training function that is called during the MLTraining task """
         import tensorflow as tf
         log_memory("start")
-        self.process_insts = [self.config_inst.get_process(proc) for proc in self.processes]
         # np.random.seed(1337)  # for reproducibility
 
         # input preparation
@@ -466,6 +588,7 @@ class MLClassifierBase(MLModel):
 
         process = task.dataset_inst.x("ml_process", task.dataset_inst.processes.get_first().name)
         process_inst = task.config_inst.get_process(process)
+        node_processes = list(self.train_nodes.keys())
 
         ml_dataset = self.data_loader(self, process_inst, events, skip_mask=True)
 
@@ -496,11 +619,11 @@ class MLClassifierBase(MLModel):
         for i, model in enumerate(models):
             # NOTE: the next line triggers some warning concering tf.function retracing
             pred = ak.from_numpy(model.predict_on_batch(ml_dataset.features))
-            if len(pred[0]) != len(self.processes):
+            if len(pred[0]) != len(node_processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
             # store predictions for each model
-            for j, proc in enumerate(self.processes):
+            for j, proc in enumerate(node_processes):
                 events = set_ak_column(
                     events, f"fold{i}_mlscore.{proc}", pred[:, j],
                 )
@@ -510,19 +633,19 @@ class MLClassifierBase(MLModel):
         for i in range(self.folds):
             logger.info(f"Evaluation fold {i}")
             # reshape mask from N*bool to N*k*bool (TODO: simpler way?)
-            idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == i)] * len(self.processes), axis=1))
+            idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == i)] * len(node_processes), axis=1))
             outputs = ak.where(idx, predictions[i], outputs)
 
         # sanity check of the number of output nodes
-        if len(outputs[0]) != len(self.processes):
+        if len(outputs[0]) != len(node_processes):
             raise Exception(
                 f"The number of output nodes {len(outputs[0])} should be equal to "
-                f"the number of processes {len(self.processes)}",
+                f"the number of processes {len(node_processes)}",
             )
 
-        for i, proc in enumerate(self.processes):
+        for proc, node_config in self.train_nodes.items():
             events = set_ak_column(
-                events, f"mlscore.{proc}", outputs[:, i],
+                events, f"mlscore.{proc}", outputs[:, node_config["ml_id"]],
             )
 
         return events
@@ -532,7 +655,7 @@ class ExampleDNN(MLClassifierBase):
     """ Example class how to implement a DNN from the MLClassifierBase """
 
     # optionally overwrite input parameters
-    epochs: int = 10
+    _default__epochs: int = 10
 
     def prepare_ml_model(
         self,
