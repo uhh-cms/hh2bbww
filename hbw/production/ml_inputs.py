@@ -67,7 +67,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     uses={
         # "*", "*.*",
         prepare_objects, vbf_candidates,
-        "FatJet.{msoftdrop,particleNet_XbbVsQCD}",
+        "FatJet.{msoftdrop,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}",
         "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
         "{Electron,Muon}.{pdgId}",
         MET_COLUMN("pt"), MET_COLUMN("phi"),
@@ -119,7 +119,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # H->bb FatJet
     for var in [
         "pt", "eta", "phi", "mass", "msoftdrop",
-        "particleNet_XbbVsQCD",
+        "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
     ]:
         events = set_ak_column_f32(events, f"mli_fj_{var}", events.FatBjet[:, 0][var])
 
@@ -133,7 +133,6 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = set_ak_column_f32(events, "mli_lep_pt", events.Lepton[:, 0].pt)
     events = set_ak_column_f32(events, "mli_lep_eta", events.Lepton[:, 0].eta)
-    events = set_ak_column_f32(events, "mli_lep_pdgid", events.Lepton[:, 0].pdgId)
     events = set_ak_column_f32(events, "mli_met_pt", events[met_name].pt)
     events = set_ak_column_f32(events, "mli_met_phi", events[met_name].phi)
 
@@ -198,7 +197,7 @@ def common_ml_inputs_init(self: Producer) -> None:
         # VBF features
         # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
         # low-level features
-        "mli_lep_pt", "mli_lep_eta", "mli_lep_pdgid",
+        "mli_lep_pt", "mli_lep_eta",
         "mli_met_pt", "mli_met_phi",
     } | set(
         f"mli_{obj}_{var}"
@@ -213,7 +212,7 @@ def common_ml_inputs_init(self: Producer) -> None:
         for obj in ["fj"]
         for var in [
             "pt", "eta", "phi", "mass", "msoftdrop",
-            "particleNet_XbbVsQCD",
+            "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
         ]
     )
     self.produces |= self.ml_input_columns
@@ -341,8 +340,12 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # object padding
     events = set_ak_column(events, "Lepton", ak.pad_none(events.Lepton, 2))
 
-    for var in ["pt", "eta", "pdgId"]:
+    for var in ["pt", "eta"]:
         events = set_ak_column_f32(events, f"mli_lep2_{var}".lower(), events.Lepton[:, 1][var])
+
+    events = set_ak_column_f32(events, "mli_lep_tag", abs(events.Lepton[:, 0]["pdgId"]) == 13)
+    events = set_ak_column_f32(events, "mli_lep2_tag", abs(events.Lepton[:, 1]["pdgId"]) == 13)
+    events = set_ak_column_f32(events, "mli_mixed_channel", events.mli_lep_tag != events.mli_lep2_tag)
 
     # create ll object and ll variables
     hll = (events.Lepton[:, 0] + events.Lepton[:, 1])
@@ -369,7 +372,6 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-
     check_column_bookkeeping(self, events)
     return events
 
@@ -384,7 +386,8 @@ def dl_ml_inputs_init(self: Producer) -> None:
         "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
         "mli_mbbllMET", "mli_dr_bb_llMET",
         # low-level features
-        "mli_lep2_pt", "mli_lep2_eta", "mli_lep2_pdgid",
+        "mli_lep2_pt", "mli_lep2_eta",
+        "mli_lep_tag", "mli_lep2_tag", "mli_mixed_channel",
     }
     self.produces |= self.ml_input_columns
 

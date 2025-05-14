@@ -15,10 +15,11 @@ import order as od
 from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.production.cms.jet import jet_id, fatjet_id
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import call_once_on_config
-from hbw.production.jets import jetId
+from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13
+from hbw.production.jets import jetId_v12, fatjetId_v12
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -27,7 +28,11 @@ logger = law.logger.get_logger(__name__)
 
 
 @selector(
-    uses={jetId, "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId")},
+    uses={
+        IF_NANO_V12(jetId_v12),
+        IF_NANO_geV13(jet_id),
+        "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId"),
+    },
     exposed=True,
 )
 def jet_selection(
@@ -52,14 +57,22 @@ def jet_selection(
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
-    # get correct jet working points (Jet.TightId and Jet.TightLepVeto)
-    events = self[jetId](events, **kwargs)
+    # get correct jet Ids (Jet.TightId and Jet.TightLepVeto)
+    if self.has_dep(jetId_v12):
+        events = self[jetId_v12](events, **kwargs)
+        tight_lep_veto = events.Jet.TightLepVeto
+    elif self.has_dep(jet_id):
+        events = self[jet_id](events, **kwargs)
+        tight_lep_veto = events.Jet.jetId & 6 == 6
+    else:
+        logger.warning("No Producer found to fix the Jet.jetId, using default Jet.jetId")
+        tight_lep_veto = events.Jet.jetId & 6 == 6
 
     # default jet definition
     jet_mask_loose = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (events.Jet.TightLepVeto)
+        (tight_lep_veto)
     )
 
     electron = events.Electron[lepton_results.objects.Electron.Electron]
@@ -68,7 +81,7 @@ def jet_selection(
     jet_mask_incl = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 4.7) &
-        (events.Jet.TightLepVeto) &
+        tight_lep_veto &
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
         ak.all(events.Jet.metric_table(electron) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(muon) > 0.4, axis=2)
@@ -265,6 +278,11 @@ def vbf_jet_selection_init(self: Selector) -> None:
 
 @selector(
     uses={
+        # NOTE: in NanoV12, the FatJet.{chEmEf,muEF,neEmEF,neHEF} columns are not available,
+        # so the fatjetId_v12 is not useable and we cannot recalculate the jetId in NanoV12.
+        # For consistency, we also do not recalculate the fatjetId in NanoV13.
+        # IF_NANO_V12(fatjetId_v12),
+        # IF_NANO_geV13(fatjet_id),
         jet_selection,
         "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",
         "Jet.{jetId}",
@@ -300,11 +318,22 @@ def sl_boosted_jet_selection(
     events = set_ak_column(events, "cutflow.FatJet.n_separated_jets", ak.sum(dr_fatjet_ak4 > 1.2, axis=2))
     events = set_ak_column(events, "cutflow.FatJet.max_dr_ak4", ak.max(dr_fatjet_ak4, axis=2))
 
+    # get correct fatjet Ids (FatJet.TightId and FatJet.TightLepVeto)
+    if self.has_dep(fatjetId_v12):
+        events = self[fatjetId_v12](events, **kwargs)
+        tight_lep_veto = events.FatJet.TightLepVeto
+    elif self.has_dep(fatjet_id):
+        events = self[fatjet_id](events, **kwargs)
+        tight_lep_veto = events.FatJet.jetId & 6 == 6
+    else:
+        logger.warning("No Producer found to fix the FatJet.jetId, using default FatJet.jetId")
+        tight_lep_veto = events.FatJet.jetId & 6 == 6
+
     # baseline fatjet selection
     fatjet_mask = (
         (events.FatJet.pt > 170) &
         (abs(events.FatJet.eta) < 2.4) &
-        (events.FatJet.jetId >= 6) &
+        tight_lep_veto &
         (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
         (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
     )
