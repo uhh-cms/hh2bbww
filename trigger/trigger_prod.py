@@ -11,7 +11,7 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.production.categories import category_ids
 
 from hbw.config.categories import add_categories_production
-from hbw.weight.default import default_weight_producer
+from hbw.weight.default import default_hist_producer
 from hbw.production.weights import event_weights
 
 np = maybe_import("numpy")
@@ -170,7 +170,7 @@ def trig_cats_init(self: Producer) -> None:
 # always plot trig_weights with '--weight-producer no_weights', otherwise the weights themselves are weighted
 @producer(
     uses={
-        default_weight_producer,
+        default_hist_producer,
         event_weights,
     },
     produces={
@@ -184,7 +184,7 @@ def trig_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     events = self[event_weights](events, **kwargs)
-    events, weights = self[default_weight_producer](events, **kwargs)
+    events, weights = self[default_hist_producer](events, **kwargs)
     events = set_ak_column(events, "trig_weights", weights)
 
     return events

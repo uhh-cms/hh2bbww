@@ -18,7 +18,7 @@ for unrolling, plots are unrolled in the second variable bin:
 --variables = mli_lep_pt-mli_lep2_pt-trig_ids \
 --general-settings "bin_sel=Ele30_WPTight_Gsf;,unrolling=1;2;3" \
 when used as plotting function for multiple weight producers (only one process possible):
-law run hbw.PlotVariablesMultiWeightProducer
+law run hbw.PlotVariablesMultiHistProducer
 --general-settings "bin_sel=Ele30_WPTight_Gsf;,multi_weight=True" \
 """
 
@@ -161,7 +161,7 @@ def plot_efficiencies(
     Plotting function for trigger efficiencies.
     """
 
-    # multi_weight allows using the task hbw.PlotVariablesMultiWeightproducer
+    # multi_weight allows using the task hbw.PlotVariablesMultiHistProducer
     # to plot the efficiencies of multiple weight producers,
     # This only works for single processes!
     if kwargs.get("multi_weight", False):
@@ -171,8 +171,8 @@ def plot_efficiencies(
             raise ValueError("multi_weight=True only works for single processes")
 
         # merge over processes
-        for weight_producer, w_hists in hists.items():
-            hists[weight_producer] = sum(w_hists.values())
+        for hist_producer, w_hists in hists.items():
+            hists[hist_producer] = sum(w_hists.values())
 
     remove_residual_axis(hists, "shift")
 

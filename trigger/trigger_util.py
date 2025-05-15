@@ -171,12 +171,12 @@ def optimise_binning1d(
         variable = variables.split("-")[0]
 
     efficiencies = {
-        calculator.weight_producers[0]: {},
-        calculator.weight_producers[1]: {},
+        calculator.hist_producers[0]: {},
+        calculator.hist_producers[1]: {},
     }
     efficiency_unc = {
-        calculator.weight_producers[0]: {},
-        calculator.weight_producers[1]: {},
+        calculator.hist_producers[0]: {},
+        calculator.hist_producers[1]: {},
     }
 
     bins_optimised = False
@@ -184,46 +184,46 @@ def optimise_binning1d(
     if premade_edges is not None:
         edges = premade_edges
         # apply edges
-        for weight_producer in calculator.weight_producers:
-            hist = hists[weight_producer][variables]
+        for hist_producer in calculator.hist_producers:
+            hist = hists[hist_producer][variables]
             hist = rebin_hist(hist, variable, edges)
-            hists[weight_producer][variables] = hist
+            hists[hist_producer][variables] = hist
         bins_optimised = True
     else:
-        edges = hists[calculator.weight_producers[0]][variables].axes[variable].edges
+        edges = hists[calculator.hist_producers[0]][variables].axes[variable].edges
 
     while not bins_optimised:
         # apply edges
-        for weight_producer in calculator.weight_producers:
-            hist = hists[weight_producer][variables]
+        for hist_producer in calculator.hist_producers:
+            hist = hists[hist_producer][variables]
             hist = rebin_hist(hist, variable, edges)
-            hists[weight_producer][variables] = hist
+            hists[hist_producer][variables] = hist
 
         # calculate scale factors and uncertainties
-        for weight_producer in calculator.weight_producers:
+        for hist_producer in calculator.hist_producers:
             # calculate efficiencies. process, shift, variable, bin
-            efficiencies[weight_producer], efficiency_unc[weight_producer] = calculate_efficiencies(
-                hists[weight_producer][calculator.variables[0]][:, ..., :], calculator.trigger
+            efficiencies[hist_producer], efficiency_unc[hist_producer] = calculate_efficiencies(
+                hists[hist_producer][calculator.variables[0]][:, ..., :], calculator.trigger
                 )
 
         # calculate scale factors, second weight producer is used
         scale_factors = np.nan_to_num(
-            efficiencies[calculator.weight_producers[1]][0] / efficiencies[calculator.weight_producers[1]][1],
+            efficiencies[calculator.hist_producers[1]][0] / efficiencies[calculator.hist_producers[1]][1],
             nan=1,
             posinf=1,
             neginf=1,
             )
         # calculate alpha factors
         alpha_factors = np.nan_to_num(
-            efficiencies[calculator.weight_producers[0]][1] / efficiencies[calculator.weight_producers[1]][1],
+            efficiencies[calculator.hist_producers[0]][1] / efficiencies[calculator.hist_producers[1]][1],
             nan=1,
             posinf=1,
             neginf=1,
             )
 
         # only use the efficiencies and uncertainties of the second weight producer
-        efficiencies = efficiencies[calculator.weight_producers[1]]
-        efficiency_unc = efficiency_unc[calculator.weight_producers[1]]
+        efficiencies = efficiencies[calculator.hist_producers[1]]
+        efficiency_unc = efficiency_unc[calculator.hist_producers[1]]
         # calculate scale factor uncertainties, only statistical uncertainties are considered right now
         uncertainties = calc_sf_uncertainty(
             efficiencies, efficiency_unc, alpha_factors
@@ -268,12 +268,12 @@ def optimise_binning2d(
 
     # optimise first axis
     hists1 = {
-        calculator.weight_producers[0]: {},
-        calculator.weight_producers[1]: {},
+        calculator.hist_producers[0]: {},
+        calculator.hist_producers[1]: {},
     }
-    for weight_producer in calculator.weight_producers:
-        hist1 = hists[weight_producer][variables][{f"{variable[1]}": sum}]
-        hists1[weight_producer][variables] = hist1
+    for hist_producer in calculator.hist_producers:
+        hist1 = hists[hist_producer][variables][{f"{variable[1]}": sum}]
+        hists1[hist_producer][variables] = hist1
 
     logger.info("Optimising first axis")
 
@@ -282,24 +282,24 @@ def optimise_binning2d(
     )
 
     # apply edges
-    for weight_producer in calculator.weight_producers:
-        hist = hists[weight_producer][variables]
+    for hist_producer in calculator.hist_producers:
+        hist = hists[hist_producer][variables]
         hist = rebin_hist(hist, variable[0], edges1)
-        hists[weight_producer][variables] = hist
+        hists[hist_producer][variables] = hist
 
     logger.info("Optimising second axis")
 
     # optimise first axis
     edges2 = {}
     histslices = {}
-    for subslice in range(len(hists[weight_producer][variables].axes[1].centers)):
+    for subslice in range(len(hists[hist_producer][variables].axes[1].centers)):
         hists2 = {
-            calculator.weight_producers[0]: {},
-            calculator.weight_producers[1]: {},
+            calculator.hist_producers[0]: {},
+            calculator.hist_producers[1]: {},
         }
-        for weight_producer in calculator.weight_producers:
-            hist2 = hists[weight_producer][variables][:, subslice, :, :]
-            hists2[weight_producer][variables] = hist2
+        for hist_producer in calculator.hist_producers:
+            hist2 = hists[hist_producer][variables][:, subslice, :, :]
+            hists2[hist_producer][variables] = hist2
 
         histslices[subslice], edges2[subslice] = optimise_binning1d(
             calculator, hists2, target_uncertainty2, variable=variable[1]

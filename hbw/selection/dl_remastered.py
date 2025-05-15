@@ -207,7 +207,7 @@ from hbw.util import timeit
     # jet selection requirements
     n_jet=None,
     n_btag=None,
-    version=law.config.get_expanded("analysis", "dl1_version", 33),
+    version=law.config.get_expanded("analysis", "dl1_version", 1),
 )
 @timeit
 def dl1(
@@ -280,10 +280,10 @@ def dl1(
     )
     # combined event selection after all steps except b-jet selection
     results.steps["all_but_bjet"] = (
-        results.steps.all_but_trigger_and_bjet &
-        results.steps.data_double_counting &
-        results.steps.Trigger &
-        results.steps.TriggerAndLep
+        results.steps.all_but_trigger_and_bjet  # &
+        # results.steps.data_double_counting &
+        # results.steps.Trigger &
+        # results.steps.TriggerAndLep
     )
     # combined event selection after all steps except trigger
     results.steps["all_but_trigger"] = (
@@ -410,7 +410,7 @@ dl1_mu18 = dl1.derive(
     },
 )
 dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
-dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 33})  # 12 has wrong reduction
+dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 1})
 dl1_no_trig_low_lep = dl1.derive("dl1_no_trig_low_lep", cls_dict={
     "version": 2,
     "mu_pt": 15.,

@@ -235,7 +235,7 @@ with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weigh
     "dy_weight": [],
     "stitched_normalization_weight": [],
 }})
-with_trigger_weight2 = default_weight_producer.derive("with_trigger_weight2", cls_dict={"weight_columns": {
+with_trigger_weight2 = default_hist_producer.derive("with_trigger_weight2", cls_dict={"weight_columns": {
     **default_correction_weights,
     "trigger_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
@@ -300,7 +300,7 @@ only_shape_ref_cut = base.derive("only_shape_ref_cut", cls_dict={
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight,
     "mask_columns": ["HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"],
     })
-default2 = default_weight_producer.derive("default2")
+default2 = default_hist_producer.derive("default2")
 ele_ref_cut = ref_cut.derive("ele_ref_cut", cls_dict={
     "mask_fn": lambda self, events: events.HLT.Ele30_WPTight_Gsf,
     "mask_columns": ["HLT.Ele30_WPTight_Gsf"],
@@ -322,7 +322,7 @@ hard_cut = base.derive("hard_cut", cls_dict={
 })
 
 
-def check_l1_seeds(self: WeightProducer, events: ak.Array, trigger) -> ak.Array:
+def check_l1_seeds(self: HistProducer, events: ak.Array, trigger) -> ak.Array:
     """
     Check if the unprescaled L1 seeds of a given trigger have fired
     """

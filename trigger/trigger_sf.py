@@ -50,7 +50,7 @@ class CalculateTriggerScaleFactors(
         description="The trigger to calculate the scale factors for, must be set; default: allEvents",
     )
 
-    weight_producers = law.CSVParameter(
+    hist_producers = law.CSVParameter(
         default=("default",),
         description="Weight producers to use for plotting",
     )
@@ -88,39 +88,39 @@ class CalculateTriggerScaleFactors(
 
     def requires(self):
         return {
-            weight_producer: {
+            hist_producer: {
                 d: self.reqs.MergeHistograms.req(
                     self,
                     dataset=d,
                     branch=-1,
-                    weight_producer=weight_producer,
+                    hist_producer=hist_producer,
                     _exclude={"branches"},
                     _prefer_cli={"variables"},
                 )
                 for d in self.datasets
             }
-            for weight_producer in self.weight_producers
+            for hist_producer in self.hist_producers
         }
 
     @property
-    def weight_producers_repr(self):
-        return "_".join(self.weight_producers)
+    def hist_producers_repr(self):
+        return "_".join(self.hist_producers)
 
     def store_parts(self):
         parts = super().store_parts()
-        parts.insert_before("version", "weights", f"weights_{self.weight_producers_repr}")
+        parts.insert_before("version", "weights", f"weights_{self.hist_producers_repr}")
         return parts
 
     def load_histogram(
         self,
-        weight_producer: str,
+        hist_producer: str,
         dataset: str | od.Dataset,
         variable: str | od.Variable,
     ) -> hist.Hist:
         """
         Helper function to load the histogram from the input for a given dataset and variable.
 
-        :param weight_producer: The weight producer name.
+        :param hist_producer: The weight producer name.
         :param dataset: The dataset name or instance.
         :param variable: The variable name or instance.
         :return: The loaded histogram.
@@ -129,7 +129,7 @@ class CalculateTriggerScaleFactors(
             dataset = dataset.name
         if isinstance(variable, od.Variable):
             variable = variable.name
-        histogram = self.input()[weight_producer][dataset]["collection"][0]["hists"].targets[variable].load(formatter="pickle")  # noqa
+        histogram = self.input()[hist_producer][dataset]["collection"][0]["hists"].targets[variable].load(formatter="pickle")  # noqa
         return histogram
 
     def calc_sf_and_unc(
@@ -142,12 +142,12 @@ class CalculateTriggerScaleFactors(
         Also returns the efficiencies and their uncertainties used in the calculation.
         """
         efficiencies = {
-            self.weight_producers[0]: {},
-            self.weight_producers[1]: {},
+            self.hist_producers[0]: {},
+            self.hist_producers[1]: {},
         }
         efficiency_unc = {
-            self.weight_producers[0]: {},
-            self.weight_producers[1]: {},
+            self.hist_producers[0]: {},
+            self.hist_producers[1]: {},
         }
 
         sf_envelope = {
@@ -159,8 +159,8 @@ class CalculateTriggerScaleFactors(
         # calc sfs for different categories
         if not envelope:
             # get half point
-            axes = hists[self.weight_producers[1]][self.variables[0]].axes.name
-            h2 = hists[self.weight_producers[1]][self.variables[0]][{"process": 0}]
+            axes = hists[self.hist_producers[1]][self.variables[0]].axes.name
+            h2 = hists[self.hist_producers[1]][self.variables[0]][{"process": 0}]
             for var in axes:
                 if "npvs" not in var and "process" not in var:
                     h2 = h2[{var: sum}]
@@ -174,28 +174,28 @@ class CalculateTriggerScaleFactors(
                     "up": (half_point, len(h2.values())),
                 }
                 hists2 = {
-                    self.weight_producers[0]: {},
-                    self.weight_producers[1]: {},
+                    self.hist_producers[0]: {},
+                    self.hist_producers[1]: {},
                 }
-                for weight_producer in self.weight_producers:
-                    h1 = hists[weight_producer][self.variables[0]][{
+                for hist_producer in self.hist_producers:
+                    h1 = hists[hist_producer][self.variables[0]][{
                         "npvs": slice(slice_borders[region][0], slice_borders[region][1])}]
-                    hists2[weight_producer][self.variables[0]] = h1[:, :, 0:len(h1[0, 0, :, 0].values()):sum, :]
+                    hists2[hist_producer][self.variables[0]] = h1[:, :, 0:len(h1[0, 0, :, 0].values()):sum, :]
 
                 sf_envelope[region], _, _, _ = self.calc_sf_and_unc(hists2, envelope=True)
 
-            for weight_producer in self.weight_producers:
-                hists[weight_producer][self.variables[0]] = hists[weight_producer][self.variables[0]][{"npvs": sum}]
+            for hist_producer in self.hist_producers:
+                hists[hist_producer][self.variables[0]] = hists[hist_producer][self.variables[0]][{"npvs": sum}]
 
-        for weight_producer in self.weight_producers:
+        for hist_producer in self.hist_producers:
             # calculate efficiencies. process, shift, variable, bin
-            efficiencies[weight_producer], efficiency_unc[weight_producer] = calculate_efficiencies(
-                hists[weight_producer][self.variables[0]][:, ..., :], self.trigger
+            efficiencies[hist_producer], efficiency_unc[hist_producer] = calculate_efficiencies(
+                hists[hist_producer][self.variables[0]][:, ..., :], self.trigger
                 )
 
         # calculate scale factors, second weight producer is used
         scale_factors = np.nan_to_num(
-            efficiencies[self.weight_producers[1]][0] / efficiencies[self.weight_producers[1]][1],
+            efficiencies[self.hist_producers[1]][0] / efficiencies[self.hist_producers[1]][1],
             nan=1,
             posinf=1,
             neginf=1,
@@ -203,15 +203,15 @@ class CalculateTriggerScaleFactors(
         scale_factors[scale_factors == 0] = 1
         # calculate alpha factors
         alpha_factors = np.nan_to_num(
-            efficiencies[self.weight_producers[0]][1] / efficiencies[self.weight_producers[1]][1],
+            efficiencies[self.hist_producers[0]][1] / efficiencies[self.hist_producers[1]][1],
             nan=1,
             posinf=1,
             neginf=1,
             )
 
         # only use the efficiencies and uncertainties of the second weight producer
-        efficiencies = efficiencies[self.weight_producers[1]]
-        efficiency_unc = efficiency_unc[self.weight_producers[1]]
+        efficiencies = efficiencies[self.hist_producers[1]]
+        efficiency_unc = efficiency_unc[self.hist_producers[1]]
         # calculate scale factor uncertainties, only statistical uncertainties are considered right now
         uncertainties = calc_sf_uncertainty(
             efficiencies, efficiency_unc, alpha_factors
@@ -252,8 +252,8 @@ class CalculateTriggerScaleFactors(
         outputs = self.output()
 
         hists = {
-            self.weight_producers[0]: {},
-            self.weight_producers[1]: {},
+            self.hist_producers[0]: {},
+            self.hist_producers[1]: {},
         }
 
 
@@ -271,10 +271,10 @@ class CalculateTriggerScaleFactors(
         edgesmix = {"mli_lep_pt": mixedges1, "mli_lep2_pt": mixedges2}
         pre_edges = {"ee": edgesee, "mm": edgesmu, "mixed": edgesmix}
 
-        for weight_producer in self.weight_producers:
+        for hist_producer in self.hist_producers:
             for dataset in self.datasets:
                 for variable in self.variables:
-                    h_in = self.load_histogram(weight_producer, dataset, variable)
+                    h_in = self.load_histogram(hist_producer, dataset, variable)
                     h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
                     h_in = h_in[{"category": sum}]
                     h_in = h_in[{"shift": sum}]
@@ -287,12 +287,12 @@ class CalculateTriggerScaleFactors(
                     if self.premade_edges:
                         for var in h_in.axes.name[1:3]:
                             h_in = rebin_hist(h_in, var, pre_edges[self.trigger][var])
-                    if variable in hists[weight_producer].keys():
-                        hists[weight_producer][variable] += h_in
+                    if variable in hists[hist_producer].keys():
+                        hists[hist_producer][variable] += h_in
                     else:
-                        hists[weight_producer][variable] = h_in
+                        hists[hist_producer][variable] = h_in
 
-        old_axes = hists[self.weight_producers[0]][self.variables[0]][0, ..., 0].axes
+        old_axes = hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes
 
         # optimise 1d binning
         if len(self.variables[0].split("-")[:-1]) == 1:
@@ -320,7 +320,7 @@ class CalculateTriggerScaleFactors(
             # scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(hists, envelope=True)  # noqa
             scale_factors[uncertainties == 0.0] = 1.0
 
-            sfhist = hist.Hist(*hists[self.weight_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors)
+            sfhist = hist.Hist(*hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors)
             sfhist.name = f"sf_{self.trigger}_{self.variables[0]}"
             sfhist.label = "out"
 
@@ -332,7 +332,7 @@ class CalculateTriggerScaleFactors(
 
             # add uncertainties
             sfhist_up = hist.Hist(
-                *hists[self.weight_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors + uncertainties
+                *hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors + uncertainties
                 )
             sfhist_up.name = f"sf_{self.trigger}_{self.variables[0]}_up"
             sfhist_up.label = "out"
@@ -344,7 +344,7 @@ class CalculateTriggerScaleFactors(
             upwards_scale_factors.data.flow = "clamp"
 
             sfhist_down = hist.Hist(
-                *hists[self.weight_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors - uncertainties
+                *hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors - uncertainties
                 )
             sfhist_down.name = f"sf_{self.trigger}_{self.variables[0]}_down"
             sfhist_down.label = "out"
@@ -511,7 +511,7 @@ class CalculateTriggerScaleFactors(
             sliced_efficiency_unc = {}
             rel_unc = {}
 
-            x_edges = hists[self.weight_producers[0]][self.variables[0]].axes[1].edges
+            x_edges = hists[self.hist_producers[0]][self.variables[0]].axes[1].edges
 
             for key, sliced_hist in histslices.items():
                 scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(sliced_hist)
@@ -530,7 +530,7 @@ class CalculateTriggerScaleFactors(
 
                 for key, h in histslices.items():
                     axs[key].errorbar(
-                        x=h[self.weight_producers[0]][self.variables[0]].axes[1].centers, y=sliced_scale_factors[key],
+                        x=h[self.hist_producers[0]][self.variables[0]].axes[1].centers, y=sliced_scale_factors[key],
                         yerr=sliced_uncertainties[key],
                         fmt="o", label=f"{x_edges[key]}<lep2pt<{x_edges[key+1]}")
 
