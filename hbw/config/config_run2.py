@@ -30,6 +30,7 @@ from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
+from columnflow.production.cms.jet import JetIdConfig
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -271,7 +272,7 @@ def add_config(
             "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
             # "jet_type": "fatjet_type",
             # JER info only for AK4 jets, stored in AK4 file
-            "jet_type": jet_type,
+            "jet_type": fatjet_type,
             "external_file_key": "jet_jerc",
         },
     })
@@ -341,6 +342,14 @@ def add_config(
             "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
             "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
+        # taken from preliminary studies from HH(4b)
+        # source: https://indico.cern.ch/event/1372046/#2-run-3-particlenet-bb-sfs-sfb
+        # different results here (0.8, 0.9, 0.95): https://indico.cern.ch/event/1428223/#21-calibration-of-run-3-partic
+        "particlenet_xbb_vs_qcd": {
+            "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        },
         "particlenet_hbb_vs_qcd": {
             # AK4 medium WP as placeholder (TODO: replace with actual values)
             "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
@@ -370,9 +379,11 @@ def add_config(
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
     )
-    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["PLACEHOLDER"]
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
+    cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
+    if cfg.x.xbb_btag_wp_score == 0.0:
+        raise ValueError(f"Unknown xbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
@@ -429,14 +440,21 @@ def add_config(
 
     # electron calibrations
     cfg.x.eec = EGammaCorrectionConfig(
-        correction_set="Scale",
-        value_type="total_correction",
-        uncertainty_type="total_uncertainty",
+        correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}",
+        value_type="scale",
+        uncertainty_type="escale",
+        compound=True,
     )
+    # cfg.x.eec = EGammaCorrectionConfig(
+    #     correction_set=f"EGMScale_ElePTsplit_{cfg.x.cpn_tag}",
+    #     value_type="total_correction",
+    #     uncertainty_type="escale",
+    #     compound=False,
+    # )
     cfg.x.eer = EGammaCorrectionConfig(
-        correction_set="Smearing",
-        value_type="rho",
-        uncertainty_type="err_rho",
+        correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}",
+        value_type="smear",
+        uncertainty_type="esmear",
     )
 
     if cfg.x.run == 2:
@@ -686,7 +704,7 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-cb90b1e8"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
     if cfg.x.run == 2:
         # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
@@ -700,26 +718,30 @@ def add_config(
     add_external("fat_jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/fatJet_jerc.json.gz", "v1"))
     # jet veto map
     add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
+    # jet id fix
+    add_external("jet_id", (f"{json_mirror}/POG/JME/{corr_tag}/jetid.json.gz", "v1"))
+    cfg.x.jet_id = JetIdConfig(corrections={
+        "AK4PUPPI_Tight": 2,
+        "AK4PUPPI_TightLeptonVeto": 3,
+    })
+    cfg.x.fatjet_id = JetIdConfig(corrections={
+        "AK8PUPPI_Tight": 2,
+        "AK8PUPPI_TightLeptonVeto": 3,
+    })
     # electron scale factors
     add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    if year != 2023:
-        # missing in 2023
-        add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS.json.gz", "v1"))
+    add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS_EtDependent.json.gz", "v1"))
     # muon scale factors
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
+
     # trigger_sf from Balduin
+    trigger_sf_path = f"{json_mirror}/data/trig_sf_v1"
 
-    # trigger_sf_path = f"{json_mirror}/data/trig_sf_v0"
-    trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"
-
-    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
-    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
-    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed+Ele50_CaloI+DoubleEle33_mli_lep_pt-trig_ids_statanda.json", "v2"))  # noqa: E501
     add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
     add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
 
-    # trigger
+    # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers
     add_triggers(cfg)
 
@@ -733,9 +755,8 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
-    json_mirror_mrieger = "/afs/cern.ch/work/m/mrieger/public/mirrors/external_files"
-    add_external("dy_weight_sf", (f"{json_mirror_mrieger}/DY_pTll_weights_v2.json.gz", "v1"))
-    add_external("dy_recoil_sf", (f"{json_mirror_mrieger}/Recoil_corrections_v2.json.gz", "v2"))
+    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v1"))
+    add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
 
     cfg.x.dy_weight_config = DrellYanConfig(
         era="2022postEE",
@@ -856,7 +877,7 @@ def add_config(
         # FatJet particleNet scores (all for now, should be reduced at some point)
         "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
-        "{FatJet,HbbJet}.particleNetWithMass_HbbVsQCD",
+        "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",

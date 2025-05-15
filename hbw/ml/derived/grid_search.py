@@ -26,7 +26,7 @@ example_grid_search = {  # 4*2*2*1*3*3*1 = 144 trainings
     "epochs": [300],
     "batchsize": [1024, 2048, 4096],
     "dropout": [0.1, 0.3, 0.5],
-    "ml_process_weights": [weights(1)],  # weighting should not change AUCs, so optimize it separately
+    "sub_process_class_factors": [weights(1)],  # weighting should not change AUCs, so optimize it separately
 }
 
 param_product = build_param_product(example_grid_search, lambda i: f"dense_gridsearch_{i}")

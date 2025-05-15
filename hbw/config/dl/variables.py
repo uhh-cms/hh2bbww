@@ -194,3 +194,24 @@ def add_dl_ml_variables(config: od.Config) -> None:
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
+
+    config.add_variable(
+        name="mli_lep_tag",
+        expression="mli_lep_tag",
+        binning=(2, -.5, 1.5),
+        x_title="lepton 1 muon tag",
+    )
+
+    config.add_variable(
+        name="mli_lep2_tag",
+        expression="mli_lep2_tag",
+        binning=(2, -0.5, 1.5),
+        x_title="lepton 2 muon tag",
+    )
+
+    config.add_variable(
+        name="mli_mixed_channel",
+        expression="mli_mixed_channel",
+        binning=(2, -0.5, 1.5),
+        x_title="Mixed channel tag",
+    )

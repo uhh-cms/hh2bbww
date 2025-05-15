@@ -190,7 +190,7 @@ def add_common_ml_variables(config: od.Config) -> None:
             )
 
     for obj in ["fj"]:
-        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "particleNet_XbbVsQCD"]:
+        for var in ["pt", "eta", "phi", "mass", "msoftdrop", "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD"]:
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",

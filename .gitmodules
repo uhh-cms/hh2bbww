@@ -4,4 +4,4 @@
 
 [submodule "modules/cmsdb"]
     path = modules/cmsdb
-    url = git@github.com:BalduinLetzer/cmsdb.git
+    url = ../../uhh-cms/cmsdb.git

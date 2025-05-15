@@ -17,16 +17,19 @@ logger = law.logger.get_logger(__name__)
 
 
 class MultiDataset(object):
+
     def __init__(
         self,
         data: DotDict[od.Process, DotDict[str, np.array]],
-        batch_size: int = 128,
+        batch_size: DotDict[od.Process, int] | int = 128,
         correct_batch_size: bool | str = "down",
         kind: str = "train",
         seed: int | None = None,
         buffersize: int = 0,  # buffersize=0 means no shuffle
     ):
         super().__init__()
+
+        assert correct_batch_size in ("up", "down", True, False)
 
         assert kind in ["train", "valid"]
         self.kind = kind
@@ -37,55 +40,76 @@ class MultiDataset(object):
         self.processes = tuple(data.keys())
         self.datasets = []
         self.counts = []
-        self.weights = []
+        class_factors = []
 
         for proc_inst, arrays in data.items():
-            arrays = (arrays.features, arrays.target, arrays.train_weights)
             # ML WEIGHTING
+            self.counts.append(len(arrays.features))
+            if self.kind == "train":
+                arrays = (arrays.features, arrays.target, arrays.train_weights)
+            else:
+                arrays = (arrays.features, arrays.target, arrays.validation_weights)
             self.tuple_length = len(arrays)
             self.datasets.append(tf.data.Dataset.from_tensor_slices(arrays))
-            self.counts.append(len(arrays[0]))
-            self.weights.append(proc_inst.x.ml_process_weight)
+            class_factors.append(proc_inst.x.sub_process_class_factor)
 
         # state attributes
         self.batches_seen = None
 
+        if self.kind == "valid":
+            # always batch validation data to the same size (10 batches)
+            self.max_iter_valid = 10
+            self.iter_smallest_process = 10
+            return
+
         # determine batch sizes per dataset
-        self.batch_sizes = []
-        sum_weights = sum(self.weights)
+        sum_weights = sum(class_factors)
 
-        # check if requested batch size and weights are compatible
-        if remainder := batch_size % sum_weights:
-            msg = (
-                f"batch_size ({batch_size}) should be dividable by sum of process weights ({sum_weights}) "
-                "to correctly weight processes as requested. "
-            )
-            if correct_batch_size:
-                if isinstance(correct_batch_size, str) and correct_batch_size.lower() == "down":
-                    batch_size -= remainder
-                else:
-                    batch_size += sum_weights - remainder
-                msg += f"batch_size has been corrected to {batch_size}"
-            logger.warning(msg)
+        if isinstance(batch_size, int):
+            total_batch_size = batch_size
+        else:
+            total_batch_size = sum([batch_size[proc_inst] for proc_inst in data.keys()])
 
-        carry = 0.0
-        for weight in self.weights:
-            bs = weight / sum_weights * batch_size - carry
-            bs_int = int(round(bs))
-            carry = bs_int - bs
-            self.batch_sizes.append(bs_int)
+        if isinstance(batch_size, int):
+            # check if requested batch size and weights are compatible
+            if remainder := total_batch_size % sum_weights:
+                msg = (
+                    f"total_batch_size ({total_batch_size}) should be dividable by sum of "
+                    f"process weights ({sum_weights}) to correctly weight processes as requested. "
+                )
+                if correct_batch_size:
+                    if isinstance(correct_batch_size, str) and correct_batch_size.lower() == "down":
+                        total_batch_size -= remainder
+                    else:
+                        total_batch_size += sum_weights - remainder
+                    msg += f"total_batch_size has been corrected to {total_batch_size}"
+                logger.warning(msg)
 
-        if batch_size != sum(self.batch_sizes):
-            print(f"batch_size is {sum(self.batch_sizes)} but should be {batch_size}")
+            self.batch_sizes = []
+            carry = 0.0
+            for weight in class_factors:
+                bs = weight / sum_weights * total_batch_size - carry
+                bs_int = int(round(bs))
+                carry = bs_int - bs
+                self.batch_sizes.append(bs_int)
+        else:
+            # NOTE: when passing a dict, the batch size and sub_process_class_factors have been pre-calculated
+            # therefore no check is needed
+            self.batch_sizes = [batch_size[proc_inst] for proc_inst in data.keys()]
+
+        if total_batch_size != sum(self.batch_sizes):
+            print(f"total_batch_size is {sum(self.batch_sizes)} but should be {batch_size}")
 
         self.max_iter_valid = math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
         self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
         gc.collect()
 
-        for proc_inst, batch_size, count, weight in zip(self.processes, self.batch_sizes, self.counts, self.weights):
+        for proc_inst, batch_size, count, weight in zip(
+            self.processes, self.batch_sizes, self.counts, class_factors,
+        ):
             logger.info(
-                f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen completely "
-                f"(count {count}, weight {weight}, batch size {batch_size})",
+                f"Data of process {proc_inst.name} needs {math.ceil(count / batch_size)} steps to be seen "
+                f"completely (count {count}, weight {weight}, batch size {batch_size})",
             )
 
     @property
@@ -110,11 +134,18 @@ class MultiDataset(object):
             for dataset in datasets
         ]
 
-        # batching
-        datasets = [
-            dataset.batch(bs_size)
-            for dataset, bs_size in zip(datasets, self.batch_sizes)
-        ]
+        if self.kind == "train":
+            # batching
+            datasets = [
+                dataset.batch(bs_size)
+                for dataset, bs_size in zip(datasets, self.batch_sizes)
+            ]
+        else:
+            # for validation, we want to see all data, so we create the same number of batches for each dataset
+            datasets = [
+                dataset.batch(count // self.iter_smallest_process)
+                for dataset, count in zip(datasets, self.counts)
+            ]
 
         its = [iter(dataset) for dataset in datasets]
         while True:
@@ -136,11 +167,13 @@ class MultiDataset(object):
                 continue
             if do_break:
                 break
+
             yield tuple(tf.concat([batch[i] for batch in dataset_batches], axis=0) for i in range(self.tuple_length))
 
             self.batches_seen += 1
-            if self.kind == "valid" and self.batches_seen >= self.max_iter_valid:
-                break
+            # print(self.kind, self.batches_seen, self.iter_smallest_process, self.max_iter_valid)
+            # if self.kind == "valid" and self.batches_seen >= self.iter_smallest_process:
+            #     break
 
     def map(self, *args, **kwargs):
         for key, dataset in list(self._datasets.items()):

@@ -6,13 +6,16 @@ Mixin classes to build ML models
 
 from __future__ import annotations
 
+import functools
+import math
+
 import law
 # import order as od
 
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
-
 from hbw.util import log_memory, call_func_safe
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -33,10 +36,10 @@ class DenseModelMixin(object):
     Mixin that provides an implementation for `prepare_ml_model`
     """
 
-    activation: str = "relu"
-    layers: tuple[int] = (64, 64, 64)
-    dropout: float = 0.50
-    learningrate: float = 0.00050
+    _default__activation: str = "relu"
+    _default__layers: tuple[int] = (64, 64, 64)
+    _default__dropout: float = 0.50
+    _default__learningrate: float = 0.00050
 
     def cast_ml_param_values(self):
         """
@@ -58,7 +61,8 @@ class DenseModelMixin(object):
         from hbw.ml.tf_util import cumulated_crossentropy
 
         n_inputs = len(set(self.input_features))
-        n_outputs = len(self.processes)
+        # n_outputs = len(self.processes)
+        n_outputs = len(self.train_nodes.keys())
 
         # define the DNN model
         model = Sequential()
@@ -110,15 +114,15 @@ class DenseModelMixin(object):
 
 class CallbacksBase(object):
     """ Base class that handles parametrization of callbacks """
-    callbacks: set[str] = {
+    _default__callbacks: set[str] = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
 
     # NOTE: we could remove these parameters since they can be implemented via reduce_lr_kwargs
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
 
     # custom callback kwargs
     checkpoint_kwargs: dict = {}
@@ -215,15 +219,15 @@ class ClassicModelFitMixin(CallbacksBase):
     TODO: this will require a different reweighting
     """
 
-    callbacks: set = {
+    _default__callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
-    epochs: int = 200
-    batchsize: int = 2 ** 12
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
+    _default__epochs: int = 200
+    _default__batchsize: int = 2 ** 12
 
     def cast_ml_param_values(self):
         """
@@ -281,16 +285,16 @@ class ClassicModelFitMixin(CallbacksBase):
 
 class ModelFitMixin(CallbacksBase):
     # parameters related to callbacks
-    callbacks: set = {
+    _default__callbacks: set = {
         "backup", "checkpoint", "reduce_lr",
         # "early_stopping",
     }
     remove_backup: bool = True
-    reduce_lr_factor: float = 0.8
-    reduce_lr_patience: int = 3
+    _default__reduce_lr_factor: float = 0.8
+    _default__reduce_lr_patience: int = 3
 
-    epochs: int = 200
-    batchsize: int = 2 ** 12
+    _default__epochs: int = 200
+    _default__batchsize: int = 2 ** 12
     # either set steps directly or use attribute from the MultiDataset
     steps_per_epoch: Union[int, str] = "iter_smallest_process"
 
@@ -305,6 +309,106 @@ class ModelFitMixin(CallbacksBase):
             self.steps_per_epoch = int(self.steps_per_epoch)
         else:
             self.steps_per_epoch = str(self.steps_per_epoch)
+
+    def resolve_weights_xsec(self, data, max_diff_int: float = 0.3):
+        """
+        Represents cross-section weighting
+        """
+        rel_sumw_dict = {proc_inst: {} for proc_inst in data.keys()}
+        factor = 1
+        smallest_sumw = None
+        for proc_inst, arrays in data.items():
+            sumw = np.sum(arrays.weights) * proc_inst.x.sub_process_class_factor
+            if not smallest_sumw or smallest_sumw >= sumw:
+                smallest_sumw = sumw
+
+        for proc_inst, arrays in data.items():
+            sumw = np.sum(arrays.weights) * proc_inst.x.sub_process_class_factor
+            rel_sumw = sumw / smallest_sumw
+            rel_sumw_dict[proc_inst] = rel_sumw
+
+            if (rel_sumw - round(rel_sumw)) / rel_sumw > max_diff_int:
+                factor = 2
+
+        rel_sumw_dict = {proc_inst: int(rel_sumw * factor) for proc_inst, rel_sumw in rel_sumw_dict.items()}
+
+        return rel_sumw_dict
+
+    def get_batch_sizes(self, data, round: str = "down"):
+        batch_sizes = {}
+        rel_sumw_dicts = {}
+        for train_node_proc_name, node_config in self.train_nodes.items():
+            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            sub_procs = (
+                (set(node_config.get("sub_processes", set())) | {train_node_proc_name}) &
+                {proc.name for proc in data.keys()}
+            )
+            if not sub_procs:
+                raise ValueError(f"Cannot find any sub-processes for {train_node_proc_name} in the data")
+            sub_procs = {self.config_inst.get_process(proc_name) for proc_name in sub_procs}
+            class_factor_mode = train_node_proc.x("class_factor_mode", "equal")
+            if class_factor_mode == "xsec":
+                rel_sumw_dicts[train_node_proc.name] = self.resolve_weights_xsec(
+                    {proc_inst: data[proc_inst] for proc_inst in sub_procs},
+                )
+            elif class_factor_mode == "equal":
+                rel_sumw_dicts[train_node_proc.name] = {
+                    proc_inst: proc_inst.x("sub_process_class_factor", 1) for proc_inst in sub_procs
+                }
+        for train_node_proc_name, node_config in self.train_nodes.items():
+            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            rel_sumw = rel_sumw_dicts[train_node_proc.name]
+            rel_sumw_dicts[train_node_proc.name]["sum"] = sum([rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
+            rel_sumw_dicts[train_node_proc.name]["min"] = min([rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
+
+        lcm_list = lambda numbers: functools.reduce(math.lcm, numbers)
+        lcm = lcm_list([rel_sumw["sum"] for rel_sumw in rel_sumw_dicts.values()])
+
+        for train_node_proc_name, node_config in self.train_nodes.items():
+            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            class_factor = self.class_factors.get(train_node_proc.name, 1)
+            rel_sumw_dict = rel_sumw_dicts[train_node_proc.name]
+            batch_factor = class_factor * lcm // rel_sumw_dict["sum"]
+            if not isinstance(batch_factor, int):
+                raise ValueError(
+                    f"Batch factor {batch_factor} is not an integer. "
+                    "This is likely due to a non-integer class factor.",
+                )
+
+            for proc_inst, rel_sumw in rel_sumw_dict.items():
+                if isinstance(proc_inst, str):
+                    continue
+                batch_sizes[proc_inst] = rel_sumw * batch_factor
+
+        # if we requested a batchsize, scale the batch sizes to the requested batchsize, rounding up or down
+        if not self.batchsize:
+            return batch_sizes
+        elif round == "down":
+            batch_scaler = self.batchsize // sum(batch_sizes.values()) or 1
+        elif round == "up":
+            batch_scaler = math.ceil(self.batchsize / sum(batch_sizes.values()))
+        else:
+            raise ValueError(f"Unknown round option {round}")
+
+        batch_sizes = {proc_inst: int(batch_size * batch_scaler) for proc_inst, batch_size in batch_sizes.items()}
+        return batch_sizes
+
+    def set_validation_weights(self, validation, batch_sizes, train_steps_per_epoch):
+        """
+        Update the train weights such that
+        """
+        for proc_inst, arrays in validation.items():
+            bs = batch_sizes[proc_inst]
+            arrays.validation_weights = arrays.weights / np.sum(arrays.weights) * bs * train_steps_per_epoch
+
+    def _check_weights(self, train):
+        sum_nodes = np.zeros(len(self.train_nodes), dtype=np.float32)
+        for proc, data in train.items():
+            sum_nodes += np.bincount(data.labels, weights=data.train_weights, minlength=len(self.train_nodes))
+            logger.info(f"Sum of weights for process {proc}: {np.sum(data.train_weights)}")
+
+        for proc, node_config in self.train_nodes.items():
+            logger.info(f"Sum of weights for train node process {proc}: {sum_nodes[node_config['ml_id']]}")
 
     def fit_ml_model(
         self,
@@ -323,19 +427,20 @@ class ModelFitMixin(CallbacksBase):
 
         log_memory("start")
 
-        with tf.device("CPU"):
-            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train", buffersize=0)
-            tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.features, validation.target, validation.train_weights),
-            ).batch(self.batchsize)
+        batch_sizes = self.get_batch_sizes(data=train)
+        print("batch_sizes:", batch_sizes)
 
-        log_memory("init")
+        # NOTE: self.batchsize not used at the moment
+        with tf.device("CPU"):
+            tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
 
         # determine the requested steps_per_epoch
         if isinstance(self.steps_per_epoch, str):
-            steps_per_epoch = getattr(tf_train, self.steps_per_epoch)
+            magic_smooth_factor = 1
+            # steps_per_epoch is usually "iter_smallest_process" (TODO: check performance with other factors)
+            steps_per_epoch = getattr(tf_train, self.steps_per_epoch) * magic_smooth_factor
         else:
-            steps_per_epoch = int(self.steps_per_epoch)
+            raise Exception("self.steps_per_epoch is not a string, cannot determine steps_per_epoch")
         if not isinstance(steps_per_epoch, int):
             raise Exception(
                 f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
@@ -343,15 +448,25 @@ class ModelFitMixin(CallbacksBase):
             )
         logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
+        with tf.device("CPU"):
+            # batch_sizes_valid = self.get_batch_sizes(data=validation)
+            self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
+            tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+
+        log_memory("init")
+
+        # check that the weights are set correctly
+        # self._check_weights(train)
+
         # set the kwargs used for training
         model_fit_kwargs = {
-            "validation_data": tf_validation,
+            "validation_data": (x for x in tf_validation),
+            "validation_steps": tf_validation.iter_smallest_process,
             "epochs": self.epochs,
             "verbose": 2,
             "steps_per_epoch": steps_per_epoch,
             "callbacks": self.get_callbacks(output),
         }
-
         # start training by iterating over the MultiDataset
         iterator = (x for x in tf_train)
         logger.info("Starting training...")

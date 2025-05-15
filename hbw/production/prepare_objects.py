@@ -127,12 +127,23 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # coffea behavior for relevant objects
     events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
+    if "ForwardJet" in events.fields:
+        # apply pt cut to forward jets
+        # TODO: decide on forward jet cuts
+        forward_jet_mask = ak.where(
+            (abs(events["ForwardJet"].eta) > 2.5) & (abs(events["ForwardJet"].eta) < 3.0),
+            (events["ForwardJet"].pt > 50),
+            (events["ForwardJet"].pt > 30),
+        )
+        events = set_ak_column(events, "ForwardJet", events["ForwardJet"][forward_jet_mask])
+
     # combine collections if necessary and possible
     events = combine_collections(events, ["Muon", "Electron"], "Lepton", sort_by="pt")
     events = combine_collections(events, ["ForwardJet", "Lightjet"], "VBFCandidateJet", sort_by="pt")
     events = combine_collections(events, ["Jet", "ForwardJet"], "InclJet", sort_by="pt")
+
     if has_ak_column(events, "FatJet.particleNet_XbbVsQCD"):
-        # TODO: change to particleNetWithMass_HbbVsQCD after next selection run
+        # TODO: change to particleNetWithMass_HbbvsQCD after next selection run
         events = combine_collections(events, ["FatJet"], "FatBjet", sort_by="particleNet_XbbVsQCD")
 
     # transform MET into 4-vector
