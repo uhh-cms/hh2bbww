@@ -44,9 +44,9 @@ logger = law.logger.get_logger(__name__)
     uses={
         pu_weight,
     },
-    produces={
-        pu_weight,
-    },
+    # produces={
+    #     pu_weight,
+    # },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -91,22 +91,32 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
-    if not getattr(self, "dataset_inst", None):
-        return
-
+    # used Producers need to be set in the init or decorator
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights}
-        # dont store most btag_weights to save storage space, since we can reproduce them in ProduceColumns
-        # but keep nominal one for checks/synchronization
-        self.produces |= {"btag_weight"}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
-        self.produces |= {murmuf_envelope_weights, murmuf_weights}
 
     if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {pdf_weights}
-        self.produces |= {pdf_weights}
+
+
+@event_weights_to_normalize.post_init
+def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
+    # produced columns can be set in post_init to choose stored columns based on the shift
+    for cls in self.uses:
+        if cls == btag_weights and task.shift == "nominal":
+            self.produces |= {btag_weights}
+        elif cls == btag_weights:
+            self.produces |= self.deps[btag_weights].produced_columns
+        elif task.shift == "nominal":
+            self.produces |= self.deps[cls].produced_columns
+        else:
+            self.produces |= {
+                route for route in self.deps[cls].produced_columns
+                if not route.nano_column.endswith("_up") and not route.nano_column.endswith("_down")
+            }
 
 
 normalized_scale_weights = normalized_weight_factory(
