@@ -475,6 +475,9 @@ def set_config_defaults_and_groups(config_inst):
                 "fontsize": 16,
             },
         },
+        "legend_single_col": {
+            "legend_cfg": {"ncols": 1, "fontsize": 20},
+        },
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16},
         },
