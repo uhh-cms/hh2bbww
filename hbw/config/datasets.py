@@ -51,7 +51,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     data_jetmet_datasets = [
         f"data_jethtmet_{era}"
         for era in data_jetmet_eras
-    
+    ]
+
     ggf_samples = lambda hhdecay: [
         f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
         f"hh_ggf_{hhdecay}_kl1_kt1_powheg",
@@ -109,7 +110,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
             ]),
-        ],
+            ],
         "dy": [
             *config.x.if_era(run=2, values=[  # TODO: update to amcatnlo aswell
                 "dy_m50toinf_ht70to100_madgraph",
@@ -197,31 +198,11 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "ttwh_madgraph",
             ]),
         ],
-<<<<<<< HEAD
-        "hh_ggf_hbb_hvv": [
-            # SL
-            # "hh_ggf_hbb_hvvqqlnu_kl0_kt1_powheg",
-            "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg",
-            # "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1_powheg",
-            # "hh_ggf_hbb_hvvqqlnu_kl5_kt1_powheg",
-            # DL
-            # "hh_ggf_hbb_hvv2l2nu_kl0_kt1_powheg",
-            "hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg",
-            # "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1_powheg",
-            # "hh_ggf_hbb_hvv2l2nu_kl5_kt1_powheg",
-            *config.x.if_era(run=3, values=[
-                # "hh_ggf_hbb_hvv_kl0_kt1_powheg",
-                "hh_ggf_hbb_hvv_kl1_kt1_powheg",
-                # "hh_ggf_hbb_hvv_kl2p45_kt1_powheg",
-                # "hh_ggf_hbb_hvv_kl5_kt1_powheg",
-            ]),
-=======
         "hh_ggf": [
             *ggf_samples("hbb_hvvqqlnu"),
             *ggf_samples("hbb_hvv2l2nu"),
             *ggf_samples("hbb_htt"),
             *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
->>>>>>> master
         ],
         "hh_vbf": [
             *vbf_samples("hbb_hvvqqlnu"),

@@ -316,8 +316,8 @@ class CalculateTriggerScaleFactors(
         # normal procedure for optimised binning, sf_envelope, unc_with_sf_env
         if self.bins_optimised:
 
-            scale_factors, uncertainties, efficiencies, efficiency_unc, sf_env_unc, unc_with_sf_env, alpha_factors, sf_envelope = self.calc_sf_and_unc(hists, envelope=False)  # noqa
-            # scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(hists, envelope=True)  # noqa
+            # scale_factors, uncertainties, efficiencies, efficiency_unc, sf_env_unc, unc_with_sf_env, alpha_factors, sf_envelope = self.calc_sf_and_unc(hists, envelope=False)  # noqa
+            scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(hists, envelope=True)  # noqa
             scale_factors[uncertainties == 0.0] = 1.0
 
             sfhist = hist.Hist(*hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes, data=scale_factors)
@@ -447,21 +447,21 @@ class CalculateTriggerScaleFactors(
                         fmt="o", label=f"{proc_label1}")
                     # rax.errorbar(x=sfhist.axes[0].centers, y=scale_factors, yerr=unc_with_sf_env, fmt="o",
                     #              color="tab:orange")
-                    rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), xerr=4.5, fmt=",", color="tab:grey")
-                    comb_unc = np.sqrt(uncertainties**2 + sf_env_unc**2 + (1-alpha_factors)**2)
-                    rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=comb_unc, fmt=",",
-                                 label="total uncertainty", elinewidth=4)
-                    # ##rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt="o")
+                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), xerr=4.5, fmt=",", color="tab:grey")
+                    # comb_unc = np.sqrt(uncertainties**2 + sf_env_unc**2 + (1-alpha_factors)**2)
+                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=comb_unc, fmt=",",
+                    #              label="total uncertainty", elinewidth=4)
+                    # # ##rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt="o")
                     rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt=",",
                                  label="statistical", elinewidth=4)
-                    rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=np.sqrt((1-alpha_factors)**2),
-                                 fmt=",", label=r"$\alpha$", elinewidth=4)
-                    rax.errorbar(x=sfhist.axes[0].centers+2, y=sfhist.values(), yerr=sf_env_unc, fmt=",",
-                                 label="npv envelope", elinewidth=4)
-                    #   # rax.errorbar(x=sfhist.axes[0].centers, y=sf_envelope["up"], yerr=0.0, fmt="o", color="lightblue",
-                    #   #              label=f"npv>{self.half_point}", markersize=5)
-                    #   # rax.errorbar(x=sfhist.axes[0].centers, y=sf_envelope["down"], yerr=0.0, fmt="o", color="steelblue",
-                    #   #              label=f"npv<{self.half_point}", markersize=5)
+                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=np.sqrt((1-alpha_factors)**2),
+                    #              fmt=",", label=r"$\alpha$", elinewidth=4)
+                    # rax.errorbar(x=sfhist.axes[0].centers+2, y=sfhist.values(), yerr=sf_env_unc, fmt=",",
+                    #              label="npv envelope", elinewidth=4)
+                    # #   # rax.errorbar(x=sfhist.axes[0].centers, y=sf_envelope["up"], yerr=0.0, fmt="o", color="lightblue",
+                    # #   #              label=f"npv>{self.half_point}", markersize=5)
+                    # #   # rax.errorbar(x=sfhist.axes[0].centers, y=sf_envelope["down"], yerr=0.0, fmt="o", color="steelblue",
+                    # #   #              label=f"npv<{self.half_point}", markersize=5)
                     rax.axhline(y=1.0, linestyle="dashed", color="gray")
                     rax_kwargs = {
                         "ylim": (0.92, 1.08),

@@ -35,7 +35,7 @@ from columnflow.plotting.plot_util import (
     remove_residual_axis,
     apply_variable_settings,
     apply_process_settings,
-    apply_density_to_hists,
+    apply_density,
 )
 
 hist = maybe_import("hist")
@@ -174,14 +174,12 @@ def plot_efficiencies(
         for hist_producer, w_hists in hists.items():
             hists[hist_producer] = sum(w_hists.values())
 
-    remove_residual_axis(hists, "shift")
-
     if not kwargs.get("multi_weight", False):
         hists = apply_process_settings(hists, process_settings)
 
     variable_inst = variable_insts[0]
     hists = apply_variable_settings(hists, variable_insts, variable_settings)
-    hists = apply_density_to_hists(hists, density)
+    hists = apply_density(hists, density)
 
     plot_config = OrderedDict()
 
@@ -192,6 +190,9 @@ def plot_efficiencies(
 
     # switch trigger and processes when plotting efficiency of one trigger for multiple processes
     proc_as_label = False
+
+    hists = hists[0][0]
+    hists = remove_residual_axis(hists, "shift")
     if len(hists.keys()) > 1:
         if "bin_sel" in kwargs:
             mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
@@ -223,6 +224,7 @@ def plot_efficiencies(
 
             # get normalisation from first histogram (all events)
             # TODO: this could be possibly be a CLI option
+
             norm_hist = myhist[:, 0]
 
             # plot config for the background distribution

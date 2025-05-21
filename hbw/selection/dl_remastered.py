@@ -309,7 +309,7 @@ def dl1(
     # keep various steps for last-minute selection changes for data/MC debugging
     keep_steps = (
         "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet",
-        "Trigger", "TriggerAndLep", "data_double_counting",
+        # "Trigger", "TriggerAndLep", "data_double_counting",
         "TripleLooseLeptonVeto", "TripleTightLeptonVeto",
         "VetoTau",
     )
