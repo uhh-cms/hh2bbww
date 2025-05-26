@@ -4,8 +4,10 @@ Tasks for creating correctionlib files.
 
 import law
 import luigi
+import order as od
 
 from functools import cached_property
+from collections import OrderedDict, defaultdict
 
 from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
@@ -14,7 +16,15 @@ from columnflow.tasks.framework.mixins import (
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.selection import MergeSelectionStats
-from columnflow.util import maybe_import, dev_sandbox
+from columnflow.util import maybe_import, dev_sandbox, DotDict
+
+# For NJet COrrections
+from columnflow.tasks.framework.histograms import (
+    HistogramsUserSingleShiftBase,
+)
+from columnflow.tasks.framework.parameters import MultiSettingsParameter
+from columnflow.tasks.histograms import MergeHistograms
+
 # from columnflow.config_util import get_datasets_from_process
 from hbw.tasks.base import HBWTask
 
@@ -200,6 +210,7 @@ class GetBtagNormalizationSF(
             # ("",),
         ):
             mode_str = "_".join(mode)
+
             numerator = merged_hists[f"{self.base_key}_per_process_ht_njet_nhf"]
             numerator = self.reduce_hist(numerator, mode).values()
 
@@ -260,6 +271,218 @@ class GetBtagNormalizationSF(
             cset_json = json.loads(cset_json)
 
         outputs["btag_renormalization_sf"].dump(
+            cset_json,
+            formatter="json",
+        )
+
+
+class GetNJetCorrections(
+    HBWTask,
+    # DatasetsProcessesMixin,
+    HistogramsUserSingleShiftBase,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    Loads histograms containing the trigger informations for data and MC and calculates the trigger scale factors.
+    """
+
+    # hist_producers = law.CSVParameter(
+    #     default=("with_dy_weight"),
+    #     description="Weight producers to use for plotting",
+    # )
+
+    variables = law.CSVParameter(
+        # default=("n_jet-n_forwardjet",),
+        default=("n_jet",),
+        description="Weight producers to use for plotting",
+    )
+
+    categories = law.CSVParameter(
+        default=("dycr_nonmixed",),
+        description="Weight producers to use for plotting",
+    )
+
+    # TODO: muss noch angewandt werden oder hardcoded argument anfodern fürs rebinning 
+    # variable_settings = MultiSettingsParameter(
+    #     default=DotDict(),
+    #     significant=False,
+    #     description="parameter for changing different variable settings; format: "
+    #     "'var1,option1=value1,option3=value3:var2,option2=value2'; options implemented: "
+    #     "rebin; can also be the key of a mapping defined in 'variable_settings_groups; "
+    #     "default: value of the 'default_variable_settings' if defined, else empty default",
+    #     brace_expand=True,
+    # )
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        MergeHistograms=MergeHistograms,
+    )
+
+    sm_processes = [
+        "vv", "w_lnu", "st",
+        "tt", "ttv", "h",
+    ]
+
+    sm_processes = DatasetsProcessesMixin.processes.copy(
+        default=(sm_processes),
+        description="Processes to consider for the scale factors",
+        add_default_to_description=True,
+    )
+
+    corrected_processes = DatasetsProcessesMixin.processes.copy(
+        default=("dy",),
+        description="Processes to consider for the scale factors",
+        add_default_to_description=True,
+    )
+
+    # @property
+    # def corr_tag(self):
+    #     if self.corrected_process[0] == "dy":
+    #         return "is_dy"
+    #     elif self.corrected_process[0] == "tt":
+    #         return "is_ttbar"
+    
+    @cached_property
+    def dataset_insts(self):
+        dataset_insts = [self.config_inst.get_dataset(dataset) for dataset in self.datasets]
+        return dataset_insts
+
+    def output(self):
+        return {
+            f"{self.corrected_processes[0]}_njet_corrections": self.target(f"{self.corrected_processes[0]}_njet_corrections.json")
+            # "trigger_sf_plot": self.target(f"{self.trigger}_{self.variables[0]}_sf_plot{self.suffix}.pdf"),
+        }
+    
+    def create_branch_map(self):
+        # single branch without payload
+        return {0: None}
+
+
+    def run(self):
+        import correctionlib
+        import correctionlib.convert
+
+        def safe_div(num, den):
+            return np.where(
+                (num > 0) & (den > 0),
+                num / den,
+                1.0,
+            )
+    
+
+        outputs = self.output()
+        inputs = self.input()
+
+        hists_in = defaultdict(OrderedDict)
+        hists = {}  # defaultdict(OrderedDict)
+        
+        # sorted_processes = {
+        #     "data": [],
+        #     "MC_corr_process": [],
+        #     "MC_subtract": [],
+        # }
+        # sorted_datasets = {
+        #     "data": [],
+        #     "MC_corr_process": [],
+        #     "MC_subtract": [],
+        # }
+        # 
+        # for variable in self.variables:
+        #     for dataset_inst in self.dataset_insts: #TODO: vllt nicht beides dataset/process abspeciehrn gibt sicher was smartes was man in CF machen kann. Aber bis ich weiß was hier überhaupt passiert
+        #         proc_name = dataset_inst.processes.get_first().name
+        #         if dataset_inst.is_data:
+        #             sorted_processes["data"].append(proc_name)
+        #             sorted_datasets["data"].append(dataset_inst)
+        #         # TODO: wenn meherer muss man auch mehrere angeben können 
+        #         elif dataset_inst.has_tag(self.corr_tag):
+        #             sorted_processes["MC_corr_process"].append(proc_name)
+        #             sorted_datasets["MC_corr_process"].append(dataset_inst)
+        #         else:
+        #             sorted_processes["MC_subtract"].append(proc_name)
+        #             sorted_datasets["MC_subtract"].append(dataset_inst)
+                # hists_in[variable][dataset_inst.name] = self.load_histogram(dataset_inst.name, variable)
+
+        for variable in self.variables:
+            for dataset in self.datasets:
+    
+                h_in = self.load_histogram(dataset, variable)
+                h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
+                # __import__("IPython").embed()
+
+                if variable in hists.keys():
+                    hists[variable] += h_in
+                else:
+                    hists[variable] = h_in
+
+        data_proc = self.config_inst.get_process('data')
+        hists_corr = defaultdict(OrderedDict)
+        hists_corr[variable]["data"] = self.slice_histogram(hists[variable], data_proc, self.categories, self.shift, reduce_axes=True)
+        hists_corr[variable]["MC_subtract"] = self.slice_histogram(hists[variable], self.sm_processes, self.categories, self.shift, reduce_axes=True)
+        hists_corr[variable]["MC_corr_process"] = self.slice_histogram(hists[variable], self.corrected_processes, self.categories, self.shift, reduce_axes=True)
+
+
+                # h_data = self.slice_histogram(h_in, data_proc, self.categories, self.shift, reduce_axes=True)
+                # h_non_corr = self.slice_histogram(h_in, self.sm_processes, self.categories, self.shift, reduce_axes=True)
+                # h_corr = self.slice_histogram(h_in, self.corrected_processes, self.categories, self.shift, reduce_axes=True)
+                # if variable in hists.keys():
+                #     hists[variable]["data"] += h_data
+                #     hists[variable]["MC_subtract"] += h_non_corr
+                #     hists[variable]["MC_corr_process"] += h_corr
+                # else:
+                #     hists[variable]["data"] = h_data
+                #     hists[variable]["MC_subtract"] = h_non_corr
+                #     hists[variable]["MC_corr_process"] = h_corr
+        
+
+            # for mode in ["data", "MC_corr_process", "MC_subtract"]:
+            #     hists[mode] = sum([
+            #         hists_in[variable][dataset.name] for dataset in sorted_datasets[mode]
+            #         if dataset.name in hists_in[variable].keys()
+            #     ])
+            #     hists[mode] = self.slice_histogram(hists[mode], sorted_processes[mode], self.categories, self.shift, reduce_axes=True)
+
+        #TODO: Check how this is with 2d variables 
+
+        nominator = hists_corr[variable]["data"].values() - hists_corr[variable]["MC_subtract"].values()
+        denominator = hists_corr[variable]["MC_corr_process"].values()
+        njet_correction = safe_div(nominator, denominator)
+
+        __import__("IPython").embed()
+
+        ax = hists_corr[variable]["data"].axes
+        out_axes = hist.axis.Variable(ax[0].edges, name=ax[0].name, label=ax[0].label)
+
+        out_axes = []
+        for ax in hists_corr[variable]["data"].axes:
+            if isinstance(ax, hist.axis.Variable):
+                out_axes.append(ax)
+            elif isinstance(ax, hist.axis.Integer):
+                out_axes.append(hist.axis.Variable(ax.edges, name=ax.name, label=ax.label))
+            else:
+                raise ValueError(f"Unsupported axis type {type(ax)}")
+                
+        correction_hist = hist.Hist(*out_axes, data=njet_correction) # zero need to be here otherwise 1 length array is passed 
+        correction_hist.name = f"{self.corrected_processes[0]}_njet_corrections"
+        correction_hist.label = "out"
+        
+        njet_corrections = correctionlib.convert.from_histogram(correction_hist)
+        njet_corrections.description = f"corrections for {self.corrected_processes[0]}, binned in njet"
+
+        # TODO: Decied what do do with overflow bins
+        njet_corrections.data.flow = "clamp"
+        # create correction set and store it
+        cset = correctionlib.schemav2.CorrectionSet(
+            schema_version=2,
+            description="njet corrections",
+            corrections=[
+                njet_corrections,
+            ],
+        )
+        cset_json = cset.json(exclude_unset=True)
+
+        outputs[f"{self.corrected_processes[0]}_njet_corrections"].dump(
             cset_json,
             formatter="json",
         )
