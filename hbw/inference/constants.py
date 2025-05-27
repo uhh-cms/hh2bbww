@@ -83,6 +83,8 @@ processes_per_pdf_rate = {
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
 processes_per_shape = {
+    "jec_Total": ["all"],
+    "jer": ["all"],
     "btag_hf": ["all"],
     "btag_lf": ["all"],
     "btag_hfstats1_{year}": ["all"],

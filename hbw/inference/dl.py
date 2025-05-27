@@ -103,11 +103,21 @@ shape_systematics = [
     "top_pt",
 ]
 
+jerc_systematics = [
+    "jer",
+    "jec_Total",
+]
+
 # All systematics to be included in the final datacard
 systematics = rate_systematics + shape_systematics
 
-
-hhprocs = lambda hhdecay: [
+hhprocs_ggf = lambda hhdecay: [
+    f"hh_ggf_{hhdecay}_kl0_kt1",
+    f"hh_ggf_{hhdecay}_kl1_kt1",
+    f"hh_ggf_{hhdecay}_kl2p45_kt1",
+    f"hh_ggf_{hhdecay}_kl5_kt1",
+]
+hhprocs_vbf = lambda hhdecay: [
     f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
     f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
     f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
@@ -118,11 +128,9 @@ hhprocs = lambda hhdecay: [
     f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
     f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
     f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
-    f"hh_ggf_{hhdecay}_kl0_kt1",
-    f"hh_ggf_{hhdecay}_kl1_kt1",
-    f"hh_ggf_{hhdecay}_kl2p45_kt1",
-    f"hh_ggf_{hhdecay}_kl5_kt1",
 ]
+hhprocs = lambda hhdecay: [*hhprocs_ggf(hhdecay), *hhprocs_vbf(hhdecay)]
+
 backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
@@ -147,6 +155,7 @@ processes_dict = {
     "test": ["tt", *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+    "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
 }
 
 default_cls_dict = {
@@ -157,6 +166,7 @@ default_cls_dict = {
     "mc_stats": True,
     "skip_data": True,
 }
+
 
 def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     """
@@ -233,11 +243,19 @@ weight1_hwwzztt_syst = weight1.derive("weight1_hwwzztt_syst", cls_dict={
     "processes": processes_dict["hwwzztt"],
     "systematics": systematics,
 })
+weight1_hwwzztt_fullsyst = weight1.derive("weight1_hwwzztt_fullsyst", cls_dict={
+    "processes": processes_dict["hwwzztt"],
+    "systematics": systematics + jerc_systematics,
+})
+weight1_hwwzztt_ggf_fullsyst = weight1.derive("weight1_hwwzztt_ggf_fullsyst", cls_dict={
+    "processes": processes_dict["hwwzztt_ggf"],
+    "systematics": systematics + jerc_systematics,
+})
 test = weight1.derive("test", cls_dict={
     "processes": processes_dict["test"],
     "systematics": rate_systematics + ["pdf_shape_tt"],
 })
 test_syst = weight1.derive("test_syst", cls_dict={
     "processes": processes_dict["test"],
-    "systematics": systematics,
+    "systematics": rate_systematics + jerc_systematics,
 })
