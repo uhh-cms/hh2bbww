@@ -97,9 +97,9 @@ def unique_process_sanity_check(config: od.Config):
     (i.e. multiple instances of the same process with different settings).
     """
     from collections import defaultdict
-    proc_map = defaultdict(list)
+    proc_map = defaultdict(set)
     for proc, _, _ in config.walk_processes():
-        proc_map[proc.id].append(proc.name)
+        proc_map[proc.id].add(proc.name)
 
     for proc_id, proc_list in proc_map.items():
         if len(proc_list) > 1:
