@@ -295,7 +295,7 @@ input_features = {
         "mli_lep2_tag",
         "mli_maxdr_jj",
         "mli_mindr_jj",
-    ]
+    ],
 }
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
