@@ -60,7 +60,7 @@ def modify_cmsdb_processes():
         },
         "hf": {
             "name": "hf",
-            "id": 60,
+            "id": 70,
             "label": "(hf)",
             "br": -1,
         },

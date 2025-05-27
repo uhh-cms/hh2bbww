@@ -84,6 +84,33 @@ def configure_hbw_processes(config: od.Config):
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)
 
+    # check that all process ids are unique
+    unique_process_sanity_check(config)
+
+
+def unique_process_sanity_check(config: od.Config):
+    """
+    Helper function to check that all process ids are unique in the config.
+    Raises a ValueError if multiple processes with the same id are found.
+
+    Note: this sanity check does not check for the uniqueness of process instances
+    (i.e. multiple instances of the same process with different settings).
+    """
+    from collections import defaultdict
+    proc_map = defaultdict(set)
+    for proc, _, _ in config.walk_processes():
+        proc_map[proc.id].add(proc.name)
+
+    for proc_id, proc_list in proc_map.items():
+        if len(proc_list) > 1:
+            raise ValueError(
+                f"Multiple processes with the same id {proc_id} found: "
+                f"{', '.join([proc_name for proc_name in proc_list])}. "
+                "Please ensure that process ids are unique. Note: you might have to re-run the "
+                "Campaign creation after modifying the processes: \n"
+                f"law run hbw.BuildCampaignSummary --config {config.name} --remove-output 0,a,y",
+            )
+
 
 def set_proc_attr(proc_inst, attr, value):
     if attr in ("id", "name"):

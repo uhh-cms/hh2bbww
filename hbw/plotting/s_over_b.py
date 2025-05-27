@@ -18,7 +18,7 @@ from columnflow.plotting.plot_util import (
     remove_residual_axis,
     apply_variable_settings,
     apply_process_settings,
-    apply_density_to_hists,
+    apply_density,
 )
 
 from hbw.util import round_sig
@@ -84,12 +84,12 @@ def plot_s_over_b(
     if cumsum and reversed_cumsum:
         raise Exception("We can only do the cumulative cumsum in one direction at the time!")
 
-    remove_residual_axis(hists, "shift")
+    hists = remove_residual_axis(hists, "shift")
 
     variable_inst = variable_insts[0]
-    hists = apply_variable_settings(hists, variable_insts, variable_settings)
-    hists = apply_process_settings(hists, process_settings)
-    hists = apply_density_to_hists(hists, density)
+    hists, variable_style_config = apply_variable_settings(hists, variable_insts, variable_settings)
+    hists, process_style_config = apply_process_settings(hists, process_settings)
+    hists = apply_density(hists, density)
 
     # separate histograms into signal and background based on process tag 'is_signal'
     h_sig, h_bkg = separate_sig_bkg_hists(hists)
@@ -140,7 +140,13 @@ def plot_s_over_b(
     default_style_config["ax_cfg"]["ylim"] = None
     default_style_config["ax_cfg"]["ylabel"] = ylabel
 
-    style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
+    style_config = law.util.merge_dicts(
+        default_style_config,
+        process_style_config,
+        variable_style_config[variable_inst],
+        style_config,
+        deep=True,
+    )
     if shape_norm:
         style_config["ax_cfg"]["ylabel"] = r"$\Delta N/N$"
 
@@ -178,10 +184,10 @@ def cutflow_s_over_b(
     """
     from tabulate import tabulate
 
-    remove_residual_axis(hists, "shift")
+    hists = remove_residual_axis(hists, "shift")
 
     hists = apply_process_settings(hists, process_settings)
-    hists = apply_density_to_hists(hists, density)
+    hists = apply_density(hists, density)
 
     selector_steps = list(hists[list(hists.keys())[0]].axes["step"])
     selector_step_labels = config_inst.x("selector_step_labels", {})

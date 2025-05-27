@@ -71,14 +71,17 @@ def normalized_weight_factory(
 
         return events
 
-    @normalized_weight.init
-    def normalized_weight_init(self: Producer) -> None:
+    @normalized_weight.post_init
+    def normalized_weight_post_init(self: Producer, task: law.Task) -> None:
         self.weight_producers = weight_producers
 
         # resolve weight names
         self.weight_names = set()
         for col in self.used_columns:
             col = col.string_nano_column
+            if task.shift != "nominal" and (col.endswith("_up") or col.endswith("_down")):
+                # skip the up/down variations
+                continue
             if "weight" in col and "normalized" not in col and "btag" not in col:
                 self.weight_names.add(col)
 

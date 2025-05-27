@@ -214,6 +214,88 @@ input_features = {
         for obj in ["lep", "lep2"]
         for var in ["pt", "eta"]
     ],
+    "sorted_previous": [
+        "mli_mbb",
+        "mli_b1_pt",
+        "mli_j1_pt",
+        "mli_n_jet",
+        "mli_mbbllMET",
+        "mli_dr_bb_llMET",
+        "mli_j1_eta",
+        "mli_met_pt",
+        "mli_mllMET",
+        "mli_mll",
+        "mli_ll_pt",
+        "mli_lep_pt",
+        "mli_lep2_pt",
+        "mli_dphi_bb_nu",
+        "mli_j1_b_score",
+        "mli_bb_pt",
+        "mli_dr_ll",
+        "mli_b_score_sum",
+        "mli_min_dr_llbb",
+        "mli_b2_pt",
+        "mli_lep_eta",
+        "mli_b1_eta",
+        "mli_dr_bb",
+        "mli_mindr_lb",
+        "mli_ht",
+        "mli_b2_eta",
+        "mli_b2_b_score",
+        "mli_n_btag",
+        "mli_lep2_eta",
+        "mli_dhpi_bb",
+        "mli_b1_b_score",
+        "mli_dhpi_bb_llMET",
+        "mli_dphi_ll",
+        "mli_vbf_mass",
+        "mli_vbf_tag",
+        "mli_vbf_deta",
+    ],
+    "reduced": [
+        "mli_mbb",
+        "mli_b1_pt",
+        "mli_j1_pt",
+        "mli_n_jet",
+        "mli_mbbllMET",
+        "mli_dr_bb_llMET",
+        "mli_j1_eta",
+        "mli_met_pt",
+        "mli_mllMET",
+        "mli_mll",
+        "mli_ll_pt",
+        "mli_lep_pt",
+        "mli_lep2_pt",
+        "mli_dphi_bb_nu",
+        "mli_j1_b_score",
+        "mli_bb_pt",
+        "mli_dr_ll",
+        "mli_b_score_sum",
+        "mli_min_dr_llbb",
+        "mli_b2_pt",
+        # "mli_lep_eta",
+        # "mli_b1_eta",
+        "mli_dr_bb",
+        "mli_mindr_lb",
+        "mli_ht",
+        # "mli_b2_eta",
+        # "mli_b2_b_score",
+        # "mli_n_btag",
+        # "mli_lep2_eta",
+        # "mli_dhpi_bb",
+        # "mli_b1_b_score",
+        # "mli_dhpi_bb_llMET",
+        # "mli_dphi_ll",
+        "mli_vbf_mass",  # important for vbf?
+        "mli_vbf_tag",  # important for vbf?
+        "mli_vbf_deta",  # important for vbf?
+    ],
+    "new": [
+        "mli_lep_tag",
+        "mli_lep2_tag",
+        "mli_maxdr_jj",
+        "mli_mindr_jj",
+    ],
 }
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
@@ -243,34 +325,45 @@ dl_22post_benchmark_v3 = DenseClassifierDL.derive("dl_22post_benchmark_v3", cls_
     "class_factors": class_factors["benchmark"],
 })
 # has been run with same setup as v1
-dl_22post_previous = dl_22post.derive("dl_22post_previous", cls_dict={
+dl_22post_previous = DenseClassifierDL.derive("dl_22post_previous", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "class_factors": class_factors["benchmark"],
     "input_features": input_features["previous"],
 })
-dl_22post_weight1 = dl_22post.derive("dl_22post_weight1", cls_dict={
+dl_22post_weight1 = DenseClassifierDL.derive("dl_22post_weight1", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "class_factors": class_factors["ones"],
     "input_features": input_features["previous"],
 })
-dl_22post_previous_merge_hh = dl_22post.derive("dl_22post_previous_merge_hh", cls_dict={
+dl_22post_added = DenseClassifierDL.derive("dl_22post_added", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "class_factors": class_factors["ones"],
+    "input_features": input_features["previous"] + input_features["new"],
+})
+dl_22post_reduced = DenseClassifierDL.derive("dl_22post_reduced", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "class_factors": class_factors["ones"],
+    "input_features": input_features["reduced"],
+})
+dl_22post_previous_merge_hh = DenseClassifierDL.derive("dl_22post_previous_merge_hh", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": processes["merge_hh"],
     "class_factors": class_factors["benchmark"],
     "input_features": input_features["previous"],
 })
 
-dl_22post_test = dl_22post.derive("dl_22post_test", cls_dict={
+dl_22post_test = DenseClassifierDL.derive("dl_22post_test", cls_dict={
+    "training_configs": lambda self, requested_configs: ["l22post"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
     "epochs": 20,
 })
-dl_22post_limited = dl_22post.derive("dl_22post_limited", cls_dict={
+dl_22post_limited = DenseClassifierDL.derive("dl_22post_limited", cls_dict={
     "training_configs": lambda self, requested_configs: ["l22post"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
     "epochs": 6,
 })
 
-dl_22post_binary_test3 = dl_22post.derive("dl_22post_binary_test3", cls_dict={
+dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
@@ -338,7 +431,7 @@ dl_22post_binary_test3 = dl_22post.derive("dl_22post_binary_test3", cls_dict={
     },
     "epochs": 100,
 })
-dl_22post_vbf = dl_22post.derive("dl_22post_vbf", cls_dict={
+dl_22post_vbf = DenseClassifierDL.derive("dl_22post_vbf", cls_dict={
     "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": [
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",

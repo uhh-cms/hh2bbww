@@ -36,6 +36,8 @@ class MLClassifierBase(MLModel):
     """
     Provides a base structure to implement Multiclass Classifier in Columnflow
     """
+    # flag denoting whether the preparation_producer is invoked before evaluate()
+    preparation_producer_in_ml_evaluation: bool = False
 
     # set some defaults, can be overwritten by subclasses or via cls_dict
     # NOTE: the order of processes is crucial! Do not change after training

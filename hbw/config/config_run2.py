@@ -440,7 +440,7 @@ def add_config(
 
     # electron calibrations
     cfg.x.eec = EGammaCorrectionConfig(
-        correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}",
+        correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
         value_type="scale",
         uncertainty_type="escale",
         compound=True,
@@ -452,7 +452,7 @@ def add_config(
     #     compound=False,
     # )
     cfg.x.eer = EGammaCorrectionConfig(
-        correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}",
+        correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
         value_type="smear",
         uncertainty_type="esmear",
     )
