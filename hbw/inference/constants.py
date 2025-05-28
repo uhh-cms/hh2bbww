@@ -50,7 +50,7 @@ inference_procnames = {
 # mapping: which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
     "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz"],
-    "V": ["dy", "w_lnu"],
+    "V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
     "VV": ["vv", "ww", "zz", "wz", "qqZZ"],
     "VVV": ["vvv"],
     "ggH": ["h_ggf"],
@@ -67,7 +67,7 @@ processes_per_QCDScale = {
 # mapping, which processes are used for which pdf (rate) uncertainty
 processes_per_pdf_rate = {
     "gg": ["tt", "ttz", "ggZZ"],
-    "qqbar": ["st_schannel", "st_tchannel", "dy", "w_lnu", "vvv", "qqZZ", "ttw"],
+    "qqbar": ["st_schannel", "st_tchannel", "dy", "dy_lf", "dy_hf", "w_lnu", "vvv", "qqZZ", "ttw"],
     "qg": ["st_twchannel"],
     "Higgs_gg": ["h_ggf"],
     "Higgs_qqbar": ["h_vbf", "zh", "wh", "vh"],
@@ -78,6 +78,13 @@ processes_per_pdf_rate = {
     "Higgs_hh_vbf": signals_hh_vbf,
     "Higgs_VHH": ["HHZ", "HHW+", "HHW-"],
     "Higgs_ttHH": ["tthh"],
+}
+
+processes_per_rate_unconstrained = {
+    "ttbar": ["tt"],
+    "dy": ["dy", "dy_lf", "dy_hf"],
+    "dy_lf": ["dy_lf"],
+    "dy_hf": ["dy_hf"],
 }
 
 # mapping for each shape uncertainty, which process is used.
@@ -103,7 +110,7 @@ processes_per_shape = {
     "top_pt": ["tt"],
     "pdf_shape_tt": ["tt"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
-    "pdf_shape_dy": ["dy"],
+    "pdf_shape_dy": ["dy", "dy_lf", "dy_hf"],
     "pdf_shape_w": ["w_lnu"],
     "pdf_shape_vv": ["vv", "ww", "zz", "wz"],
     "pdf_shape_ttV": ["ttw", "ttz"],
@@ -126,7 +133,7 @@ processes_per_shape = {
     "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl5_kt1": ["hh_ggf_hbb_hvv2l2nu_kl5_kt1"],
     "murf_envelope_tt": ["tt"],
     "murf_envelope_st": ["st_schannel", "st_tchannel", "st_twchannel"],
-    "murf_envelope_dy": ["dy"],
+    "murf_envelope_dy": ["dy", "dy_lf", "dy_hf"],
     "murf_envelope_w": ["w_lnu"],
     "murf_envelope_vv": ["vv", "ww", "zz", "wz"],
     "murf_envelope_ttv": ["ttw", "ttz"],
