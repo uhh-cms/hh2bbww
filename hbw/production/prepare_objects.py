@@ -127,7 +127,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     # coffea behavior for relevant objects
     events = self[attach_coffea_behavior](events, collections=custom_collections, **kwargs)
 
-    if "ForwardJet" in events.fields:
+    if has_four_vec(events, "ForwardJet"):
         # apply pt cut to forward jets
         # TODO: decide on forward jet cuts
         forward_jet_mask = ak.where(
