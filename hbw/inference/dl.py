@@ -66,6 +66,9 @@ rate_systematics = [
     "pdf_Higgs_hh_vbf",
     "pdf_VHH",
     "pdf_ttHH",
+    # unconstrained rate uncertainties
+    "rate_ttbar",
+    "rate_dy",
 ]
 
 shape_systematics = [
@@ -139,7 +142,7 @@ backgrounds = [
     "tt",
     # "ttw",  # TODO: dataset not working?
     "ttz",
-    "dy",
+    "dy_hf", "dy_lf",
     # "w_lnu",  # TODO: bogus norm?
     "vv",
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
@@ -238,6 +241,16 @@ weight1_hww = weight1.derive("weight1_hww", cls_dict={
 })
 weight1_hwwzztt = weight1.derive("weight1_hwwzztt", cls_dict={
     "processes": processes_dict["hwwzztt"],
+})
+weight1_hwwzztt_nosyst = weight1.derive("weight1_hwwzztt_nosyst", cls_dict={
+    "processes": processes_dict["hwwzztt"],
+    "systematics": ["lumi_13TeV_2022"],
+    "mc_stats": False,
+})
+weight1_hwwzztt_mcstats = weight1.derive("weight1_hwwzztt_mcstats", cls_dict={
+    "processes": processes_dict["hwwzztt"],
+    "systematics": ["lumi_13TeV_2022"],
+    "mc_stats": True,
 })
 weight1_hwwzztt_syst = weight1.derive("weight1_hwwzztt_syst", cls_dict={
     "processes": processes_dict["hwwzztt"],

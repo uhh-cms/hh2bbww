@@ -13,6 +13,7 @@ from columnflow.inference import InferenceModel, ParameterType, ParameterTransfo
 from columnflow.util import maybe_import, DotDict
 from columnflow.config_util import get_datasets_from_process
 
+from hbw.util import timeit_multiple
 import hbw.inference.constants as const  # noqa
 
 
@@ -122,6 +123,7 @@ class HBWInferenceModelBase(InferenceModel):
         # cat_inst.variables_to_plot = variables
         return
 
+    @timeit_multiple
     def __init__(self, config_insts: od.Config, *args, **kwargs):
         super().__init__(config_insts)
         if len(config_insts) != 1:
@@ -223,6 +225,10 @@ class HBWInferenceModelBase(InferenceModel):
         Function that adds processes with their corresponding datasets to all categories
         of the inference model
         """
+        # sanity checks
+        if "dy" in self.processes and any(proc.startswith("dy_") for proc in self.processes):
+            dy_procs = [proc for proc in self.processes if proc.startswith("dy")]
+            raise Exception(f"Overlapping DY processes detected: {', '.join(dy_procs)}. ")
         used_datasets = set()
         for proc in self.processes:
             if not self.config_inst.has_process(proc):
@@ -238,8 +244,10 @@ class HBWInferenceModelBase(InferenceModel):
                 raise Exception(f"No datasets found for process {proc}")
             logger.debug(f"Process {proc} was assigned datasets: {datasets}")
 
-            # check that no dataset is used multiple times
-            if datasets_already_used := used_datasets.intersection(datasets):
+            # check that no dataset is used multiple times (except for some well-defined processes where we know
+            # that multiple processes share the same datasets)
+            skip_check_multiple = (proc == "dy_lf") or ("hbb_hzz" in proc)
+            if not skip_check_multiple and (datasets_already_used := used_datasets.intersection(datasets)):
                 logger.warning(f"{datasets_already_used} datasets are used for multiple processes")
             used_datasets |= set(datasets)
 
@@ -292,6 +300,24 @@ class HBWInferenceModelBase(InferenceModel):
                 transformations=[ParameterTransformation.symmetrize],
             )
 
+        proc_handled_by_unconstrained_rate = set()
+        for k, procs in const.processes_per_rate_unconstrained.items():
+            syst_name = f"rate_{k}"
+            if syst_name not in self.systematics:
+                continue
+
+            for proc in procs:
+                if proc not in self.processes:
+                    continue
+                process_inst = self.config_inst.get_process(proc)
+                self.add_parameter(
+                    syst_name,
+                    process=self.inf_proc(proc),
+                    type=ParameterType.rate_unconstrained,
+                    effect=["1", "[0,2]"],
+                )
+                proc_handled_by_unconstrained_rate.add(proc)
+
         # add QCD scale (rate) uncertainties to inference model
         # TODO: combine scale and mtop uncertainties for specific processes?
         # TODO: some scale/pdf uncertainties should be rounded to 3 digits, others to 4 digits
@@ -304,6 +330,11 @@ class HBWInferenceModelBase(InferenceModel):
 
             for proc in procs:
                 if proc not in self.processes:
+                    continue
+                elif proc in proc_handled_by_unconstrained_rate:
+                    logger.warning(
+                        f"Process {proc} is already handled by rate_unconstrained. Skipping "
+                        f"{syst_name} for process {proc}.")
                     continue
                 process_inst = self.config_inst.get_process(proc)
                 if "scale" not in process_inst.xsecs[ecm]:
@@ -327,6 +358,11 @@ class HBWInferenceModelBase(InferenceModel):
 
             for proc in procs:
                 if proc not in self.processes:
+                    continue
+                elif proc in proc_handled_by_unconstrained_rate:
+                    logger.warning(
+                        f"Process {proc} is already handled by rate_unconstrained. Skipping "
+                        f"{syst_name} for process {proc}.")
                     continue
                 process_inst = self.config_inst.get_process(proc)
                 if "pdf" not in process_inst.xsecs[ecm]:
