@@ -105,6 +105,11 @@ def trigger_selection(
         # final trigger decision
         fired_and_all_legs_match = fired & all_legs_match
 
+        # check if an unprescaled L1 seed has fired as well
+        l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in trigger.x.L1_seeds])
+
+        fired_and_all_legs_match_and_l1_fired = fired_and_all_legs_match & l1_seeds_fired
+
         # store all intermediate results for subsequent selectors
         trigger_data = set_ak_bool(
             trigger_data,
@@ -116,7 +121,12 @@ def trigger_selection(
             f"{trigger.name}.fired_and_all_legs_match",
             fired_and_all_legs_match,
         )
-        ids = ak.where(fired_and_all_legs_match, np.float32(trigger.id), np.float32(np.nan))
+        trigger_data = set_ak_bool(
+            trigger_data,
+            f"{trigger.name}.fired_and_all_legs_match_and_l1_fired",
+            fired_and_all_legs_match_and_l1_fired,
+        )
+        ids = ak.where(fired_and_all_legs_match_and_l1_fired, np.float32(trigger.id), np.float32(np.nan))
         trigger_ids = ak.concatenate([trigger_ids, ak.singletons(ak.nan_to_none(ids))], axis=1)
 
     # store the fired trigger ids
@@ -147,6 +157,13 @@ def trigger_selection_init(self: Selector) -> None:
         for trigger in self.config_inst.x.triggers
         # if trigger.applies_to_dataset(self.dataset_inst)
     }
+
+    # add L1 seed columns
+    for trigger in self.config_inst.x.triggers:
+        self.uses |= {
+            f"L1.{l1_seed}"
+            for l1_seed in trigger.x.L1_seeds
+        }
 
     # testing: add HLT columns to keep columns
     self.config_inst.x.keep_columns["cf.ReduceEvents"] |= {
@@ -241,6 +258,10 @@ def data_double_counting(
         return events, SelectionResult(steps={"data_double_counting": np.ones(len(events), dtype=np.bool_)})
 
     process_inst = self.dataset_inst.processes.get_first()
+
+    if process_inst.name == "data_jethtmet":
+        # return always true for data_jethtmet
+        return events, SelectionResult(steps={"data_double_counting": np.ones(len(events), dtype=np.bool_)})
 
     data_processes_ordered = [f"data_{stream}" for stream in self.config_inst.x.data_streams]
     if process_inst.name not in data_processes_ordered:
