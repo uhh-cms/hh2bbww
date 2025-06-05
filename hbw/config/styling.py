@@ -211,7 +211,8 @@ def stylize_processes(config: od.Config) -> None:
         if "hh_" in proc.name.lower():
             proc.add_tag("is_signal")
             proc.unstack = True
-            proc.scale = "stack"
+            # proc.scale = "stack"
+            # proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
@@ -223,7 +224,7 @@ def stylize_processes(config: od.Config) -> None:
 
 default_var_binning = {
     # General object fields
-    "pt": (40, 0, 400),
+    "pt": (400, 0, 400),
     "eta": (40, -5., 5.),
     "eta_full": (40, -5.0, 5.0),
     "phi": (32, -3.2, 3.2),

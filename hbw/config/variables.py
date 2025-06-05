@@ -180,10 +180,14 @@ def add_variables(config: od.Config) -> None:
 
     config.add_variable(
         name="npvs",
-        expression="PV.npvs",
-        binning=(51, -.5, 50.5),
+        # expression="PV.npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=(81, 0, 81),
         x_title="Number of primary vertices",
-        discrete_x=True,
+        # discrete_x=True,
     )
 
     # some variables for testing of different axis types
@@ -781,7 +785,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(40, 0., 400.),
+            binning=(80, 5., 405.),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$",
@@ -857,7 +861,7 @@ def add_variables(config: od.Config) -> None:
             name=f"{obj.lower()}_pt",
             expression=f"{obj}.pt[:,0]",
             null_value=EMPTY_FLOAT,
-            binning=(40, 0., 350.),
+            binning=(40, 0, 400),
             unit="GeV",
             x_title=obj + r" $p_{T}$",
         )
@@ -926,4 +930,16 @@ def add_variables(config: od.Config) -> None:
         name="met_phi_corr",
         binning=(40, -3.2, 3.2),
         x_title=r"{met_name} $\phi$".format(met_name=met_name),
+    )
+    config.add_variable(
+        name="trigger_ids",
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )
+
+    # trigger ids für scale factors
+    config.add_variable(
+        name="trig_ids",
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
     )

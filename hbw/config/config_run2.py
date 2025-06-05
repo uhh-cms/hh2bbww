@@ -71,6 +71,7 @@ def add_config(
     # create a config by passing the campaign, so id and name will be identical
     # cfg = analysis.add_config(campaign, name=config_name, id=config_id, tags=analysis.tags)
     cfg = od.Config(name=config_name, id=config_id, campaign=campaign, tags=analysis.tags)
+    cfg.x.year = year
 
     # helper to enable processes / datasets only for a specific era
     def if_era(
@@ -842,12 +843,56 @@ def add_config(
         },
     })
 
+    cfg.x.sl_triggers = {}
+    cfg.x.sl_triggers["2022"] = {
+        "e": [
+            "Ele30_WPTight_Gsf",
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+            "Ele28_eta2p1_WPTight_Gsf_HT150",
+            "Ele15_IsoVVVL_PFHT450",
+            "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
+        ],
+        "m": [
+            "IsoMu24",
+            "Mu50",
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+            "Mu15_IsoVVVL_PFHT450",
+        ],
+    }
+    cfg.x.sl_triggers["2023"] = {
+        "e": [
+            "Ele30_WPTight_Gsf",
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
+            "Ele28_eta2p1_WPTight_Gsf_HT150",
+            "Ele15_IsoVVVL_PFHT450",
+            "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
+        ],
+        "m": [
+            "IsoMu24",
+            "Mu50",
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
+            "Mu15_IsoVVVL_PFHT450",
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
+            "Mu3er1p5_PFJet100er2p5_PFMETNoMu100_PFMHTNoMu100_IDTight",
+        ],
+    }
+
     cfg.x.keep_columns["cf.ReduceEvents"] = {
         # general event information, mandatory for reading files with coffea
         "run", "luminosityBlock", "event",
         ColumnCollection.MANDATORY_COFFEA,
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+        # columns for trigger studies
+        "HLT.IsoMu24", "HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",
+        "HLT.Ele30_WPTight_Gsf", "HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+        "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
+        "HLT.PFMET200_BeamHaloCleaned", "HLT.PFHT500_PFMET100_PFMHT100_IDTight",
+        "HLT.PFHT700_PFMET85_PFMHT85_IDTight", "HLT.PFHT800_PFMET75_PFMHT75_IDTight",
+        "HLT.Ele115_CaloIdVT_GsfTrkIdT", "HLT.Ele50_CaloIdVT_GsfTrkIdT_PFJet165", "HLT.DoubleEle33_CaloIdL_MW",
         # Gen information (for categorization)
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
@@ -895,8 +940,30 @@ def add_config(
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     } | {
-        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
+        f"HLT.{trg}" for trg in cfg.x.sl_triggers[f"{year}"]["e"]
+    } | {
+        f"HLT.{trg}" for trg in cfg.x.sl_triggers[f"{year}"]["m"]
     }
+
+    # L1 seeds needed after reduce events (e.g. for the orthogonal trigger in the efficiency measurement)
+    cfg.x.hlt_L1_seeds = {
+        "PFMETNoMu120_PFMHTNoMu120_IDTight": [
+            "ETMHF90",
+            "ETMHF100",
+            "ETMHF110",
+            "ETMHF120",
+            "ETMHF130",
+            "ETMHF140",
+            "ETMHF150",
+            "ETM150",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+        ],
+    }
+    for hlt_path, l1_seeds in cfg.x.hlt_L1_seeds.items():
+        for l1_seed in l1_seeds:
+            if f"L1.{l1_seeds}" not in cfg.x.keep_columns["cf.ReduceEvents"]:
+                cfg.x.keep_columns["cf.ReduceEvents"] |= {f"L1.{l1_seed}"}
 
     # Version of required tasks
     cfg.x.versions = {
