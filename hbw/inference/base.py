@@ -176,7 +176,7 @@ class HBWInferenceModelBase(InferenceModel):
                         variable=var_name,
                         data_datasets=[
                             dataset_inst.name for dataset_inst in
-                            get_datasets_from_process(config_inst, "data", strategy="all")
+                            get_datasets_from_process(config_inst, "data", strategy="all", only_first=False)
                         ],
                     )
                     for config_inst in self.config_insts
