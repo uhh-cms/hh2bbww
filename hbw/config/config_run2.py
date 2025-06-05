@@ -483,14 +483,17 @@ def add_config(
             campaign=electron_sf_campaign,
             working_point="Tight",
         )
-        # names of electron correction sets and working points
-        # (used in the electron_sf producer)
-        if cfg.x.cpn_tag == "2022postEE":
-            # TODO: we might need to use different SFs for control regions
-            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoE+PromptFG", "Tight")
-        elif cfg.x.cpn_tag == "2022preEE":
-            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoBCD", "Tight")
 
+        cfg.x.electron_reco_sf_names = ElectronSFConfig(
+            correction="Electron-ID-SF",
+            campaign=electron_sf_campaign,
+            # working_point=ele_reco_wp_func,
+            working_point={
+                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+            },
+        )
         # names of muon correction sets and working points
         # (used in the muon producer)
         # TODO: we might need to use different SFs for control regions
