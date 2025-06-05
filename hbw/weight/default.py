@@ -306,9 +306,9 @@ ele_ref_cut = ref_cut.derive("ele_ref_cut", cls_dict={
     "mask_columns": ["HLT.Ele30_WPTight_Gsf"],
 })
 large_ref_cut = ref_cut.derive("large_ref_cut", cls_dict={
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight | events.HLT.PFMET200_BeamHaloCleaned
-    | events.HLT.PFHT500_PFMET100_PFMHT100_IDTight | events.HLT.PFHT700_PFMET85_PFMHT85_IDTight
-    | events.HLT.PFHT800_PFMET75_PFMHT75_IDTight,
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight | events.HLT.PFMET200_BeamHaloCleaned |
+    events.HLT.PFHT500_PFMET100_PFMHT100_IDTight | events.HLT.PFHT700_PFMET85_PFMHT85_IDTight |
+    events.HLT.PFHT800_PFMET75_PFMHT75_IDTight,
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "HLT.PFMET200_BeamHaloCleaned", "HLT.PFHT500_PFMET100_PFMHT100_IDTight",
@@ -336,8 +336,8 @@ def check_l1_seeds(self: HistProducer, events: ak.Array, trigger) -> ak.Array:
 
 ref_cut_with_l1_seeds = ref_cut.derive("ref_cut_with_l1_seeds", cls_dict={
     "weight_columns": default_weight_columns,
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight
-    & check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight"),
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
+    check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight"),
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "L1.ETMHF90",
@@ -349,13 +349,13 @@ ref_cut_with_l1_seeds = ref_cut.derive("ref_cut_with_l1_seeds", cls_dict={
         "L1.ETMHF150",
         "L1.ETM150",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
-        "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6"
+        "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
         ],
 })
 ref_cut_with_l1_seeds_and_cut = ref_cut.derive("ref_cut_with_l1_seeds_and_cut", cls_dict={
     "weight_columns": default_weight_columns,
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight
-    & check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight") & (events.PuppiMET.pt > 120),
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
+    check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight") & (events.PuppiMET.pt > 120),
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "L1.ETMHF90",
@@ -372,9 +372,9 @@ ref_cut_with_l1_seeds_and_cut = ref_cut.derive("ref_cut_with_l1_seeds_and_cut", 
         ],
 })
 ele_ref_cut_with_l1_seeds = ref_cut.derive("ele_ref_cut_with_l1_seeds", cls_dict={
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight
-    & check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight")
-    & ak.any(events.trig_ids == "ee", axis=1),
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
+    check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight") &
+    ak.any(events.trig_ids == "ee", axis=1),
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "L1.ETMHF90",
@@ -391,9 +391,9 @@ ele_ref_cut_with_l1_seeds = ref_cut.derive("ele_ref_cut_with_l1_seeds", cls_dict
         ],
 })
 mu_ref_cut_with_l1_seeds = ref_cut.derive("mu_ref_cut_with_l1_seeds", cls_dict={
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight
-    & check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight")
-    & ak.any(events.trig_ids == "mm", axis=1),
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
+    check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight") &
+    ak.any(events.trig_ids == "mm", axis=1),
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "L1.ETMHF90",
@@ -410,9 +410,9 @@ mu_ref_cut_with_l1_seeds = ref_cut.derive("mu_ref_cut_with_l1_seeds", cls_dict={
         ],
 })
 mixed_ref_cut_with_l1_seeds = ref_cut.derive("mixed_ref_cut_with_l1_seeds", cls_dict={
-    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight
-    & check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight")
-    & ak.any(events.trig_ids == "mixed", axis=1),
+    "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
+    check_l1_seeds(self, events, "PFMETNoMu120_PFMHTNoMu120_IDTight") &
+    ak.any(events.trig_ids == "mixed", axis=1),
     "mask_columns": [
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "L1.ETMHF90",
