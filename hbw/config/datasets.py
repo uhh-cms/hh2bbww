@@ -43,14 +43,16 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         for stream in config.x.data_streams
     ]
 
-    data_jetmet_eras = {
+    data_jethtmet_eras = {
         "2022preEE": "cd",
         "2022postEE": "efg",
+        "2023preBPix": "",
+        "2023postBPix": "",  # TODO: add 2023 jetmet datasets
     }[config.x.cpn_tag]
 
-    data_jetmet_datasets = [
+    data_jethtmet_datasets = [
         f"data_jethtmet_{era}"
-        for era in data_jetmet_eras
+        for era in data_jethtmet_eras
     ]
 
     ggf_samples = lambda hhdecay: [
@@ -83,7 +85,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     dataset_names = DotDict.wrap({
         # **data_datasets,
         "data": data_datasets,
-        "data_jethtmet": data_jetmet_datasets,
+        "data_jethtmet": data_jethtmet_datasets,
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
             # "st_schannel_lep_4f_amcatnlo",
@@ -110,7 +112,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
             ]),
-            ],
+        ],
         "dy": [
             *config.x.if_era(run=2, values=[  # TODO: update to amcatnlo aswell
                 "dy_m50toinf_ht70to100_madgraph",

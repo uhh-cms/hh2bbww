@@ -283,11 +283,12 @@ ref_cut = base.derive("ref_cut", cls_dict={
     "weight_columns": default_weight_columns,
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight,
     "mask_columns": ["HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"],
-    })
-ref_cut_with_trigger_weight = base.derive("ref_cut_with_trigger_weight", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    "trigger_weight": [],  # TODO: corrections/shift missing
-    "stitched_normalization_weight": [],
+})
+ref_cut_with_trigger_weight = base.derive("ref_cut_with_trigger_weight", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": [],  # TODO: corrections/shift missing
+        "stitched_normalization_weight": [],
     },
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight,
     "mask_columns": ["HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"],
@@ -299,7 +300,7 @@ only_shape_ref_cut = base.derive("only_shape_ref_cut", cls_dict={
     "weight_columns": default_correction_weights,
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight,
     "mask_columns": ["HLT.PFMETNoMu120_PFMHTNoMu120_IDTight"],
-    })
+})
 default2 = default_hist_producer.derive("default2")
 ele_ref_cut = ref_cut.derive("ele_ref_cut", cls_dict={
     "mask_fn": lambda self, events: events.HLT.Ele30_WPTight_Gsf,
@@ -313,7 +314,7 @@ large_ref_cut = ref_cut.derive("large_ref_cut", cls_dict={
         "HLT.PFMETNoMu120_PFMHTNoMu120_IDTight",
         "HLT.PFMET200_BeamHaloCleaned", "HLT.PFHT500_PFMET100_PFMHT100_IDTight",
         "HLT.PFHT700_PFMET85_PFMHT85_IDTight", "HLT.PFHT800_PFMET75_PFMHT75_IDTight",
-        ],
+    ],
 })
 hard_cut = base.derive("hard_cut", cls_dict={
     "weight_columns": default_weight_columns,
@@ -350,7 +351,7 @@ ref_cut_with_l1_seeds = ref_cut.derive("ref_cut_with_l1_seeds", cls_dict={
         "L1.ETM150",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
-        ],
+    ],
 })
 ref_cut_with_l1_seeds_and_cut = ref_cut.derive("ref_cut_with_l1_seeds_and_cut", cls_dict={
     "weight_columns": default_weight_columns,
@@ -369,7 +370,7 @@ ref_cut_with_l1_seeds_and_cut = ref_cut.derive("ref_cut_with_l1_seeds_and_cut", 
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
         "PuppiMET.*",
-        ],
+    ],
 })
 ele_ref_cut_with_l1_seeds = ref_cut.derive("ele_ref_cut_with_l1_seeds", cls_dict={
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
@@ -388,7 +389,7 @@ ele_ref_cut_with_l1_seeds = ref_cut.derive("ele_ref_cut_with_l1_seeds", cls_dict
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
         "trig_ids",
-        ],
+    ],
 })
 mu_ref_cut_with_l1_seeds = ref_cut.derive("mu_ref_cut_with_l1_seeds", cls_dict={
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
@@ -407,7 +408,7 @@ mu_ref_cut_with_l1_seeds = ref_cut.derive("mu_ref_cut_with_l1_seeds", cls_dict={
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
         "trig_ids",
-        ],
+    ],
 })
 mixed_ref_cut_with_l1_seeds = ref_cut.derive("mixed_ref_cut_with_l1_seeds", cls_dict={
     "mask_fn": lambda self, events: events.HLT.PFMETNoMu120_PFMHTNoMu120_IDTight &
@@ -426,7 +427,7 @@ mixed_ref_cut_with_l1_seeds = ref_cut.derive("mixed_ref_cut_with_l1_seeds", cls_
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
         "L1.ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
         "trig_ids",
-        ],
+    ],
 })
 
 

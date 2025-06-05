@@ -947,18 +947,18 @@ def add_config(
 
     # L1 seeds needed after reduce events (e.g. for the orthogonal trigger in the efficiency measurement)
     cfg.x.hlt_L1_seeds = {
-        'PFMETNoMu120_PFMHTNoMu120_IDTight': [
-                                            "ETMHF90",
-                                            "ETMHF100",
-                                            "ETMHF110",
-                                            "ETMHF120",
-                                            "ETMHF130",
-                                            "ETMHF140",
-                                            "ETMHF150",
-                                            "ETM150",
-                                            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
-                                            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
-                                            ],
+        "PFMETNoMu120_PFMHTNoMu120_IDTight": [
+            "ETMHF90",
+            "ETMHF100",
+            "ETMHF110",
+            "ETMHF120",
+            "ETMHF130",
+            "ETMHF140",
+            "ETMHF150",
+            "ETM150",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+        ],
     }
     for hlt_path, l1_seeds in cfg.x.hlt_L1_seeds.items():
         for l1_seed in l1_seeds:
