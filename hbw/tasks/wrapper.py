@@ -217,7 +217,7 @@ class InferencePlots(
                 if not variables:
                     raise ValueError(
                         f"No variables to plot for inference category '{inference_category.name}' "
-                        f"and config '{config}'. Please check the inference model and the variables parameter."
+                        f"and config '{config}'. Please check the inference model and the variables parameter.",
                     )
 
                 # mc_processes = [p.config_data[config].process for p in inference_category.processes]
