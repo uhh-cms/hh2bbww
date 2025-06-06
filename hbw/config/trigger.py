@@ -278,6 +278,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["mu", "mm", "emu", "mue", "mixed"],
             "data_stream": "data_mu",
+            "L1_seeds": ["SingleMu22"],
         },
         tags={"single_trigger", "single_mu"},
     )
@@ -303,6 +304,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["mm"],
             "data_stream": "data_mu",
+            "L1_seeds": ["DoubleMu_15_7"],
         },
         tags={"di_trigger", "di_mu"},
     )
@@ -321,6 +323,18 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["e", "ee", "emu", "mue", "mixed"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "SingleEG38er2p5",
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+                "SingleEG36er2p5",
+                "SingleIsoEG30er2p1",
+                "SingleIsoEG32er2p1",
+                "SingleIsoEG30er2p5",
+                "SingleIsoEG32er2p5",
+                "SingleIsoEG34er2p5",
+            ],
         },
         tags={"single_trigger", "single_e"},
     )
@@ -347,6 +361,21 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["ee"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "SingleEG38er2p5",
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+                "SingleEG36er2p5",
+                "SingleIsoEG30er2p1",
+                "SingleIsoEG32er2p1",
+                "SingleIsoEG30er2p5",
+                "SingleIsoEG32er2p5",
+                "SingleIsoEG34er2p5",
+                "DoubleEG_25_12_er2p5",
+                "DoubleEG_25_14_er2p5",
+                "DoubleEG_LooseIso22_12_er2p5",
+            ],
         },
         tags={"di_trigger", "di_e"},
     )
@@ -364,6 +393,11 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["e", "ee", "emu", "mue", "mixed"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+            ],
         },
     )
     di_e33_noniso = Trigger(
@@ -386,6 +420,19 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["ee"],
             "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "SingleEG36er2p5",
+                "SingleEG38er2p5",
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+                "DoubleEG_25_12_er2p5",
+                "DoubleEG_25_14_er2p5",
+                "SingleJet180",
+                "SingleJet200",
+                "SingleTau120er2p1",
+                "SingleTau130er2p1",
+            ],
         },
     )
     mixed_mue = Trigger(
@@ -410,6 +457,10 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["mue", "mixed"],
             "data_stream": "data_muoneg",
+            "L1_seeds": [
+                "Mu20_EG10er2p5",
+                "SingleMu22",
+            ],
         },
         tags={"mixed_trigger", "mixed_mue"},
     )
@@ -435,6 +486,12 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         aux={
             "channels": ["emu", "mixed"],
             "data_stream": "data_muoneg",
+            "L1_seeds": [
+                "Mu7_EG20er2p5",
+                "Mu7_EG23er2p5",
+                "Mu7_LooseIsoEG20er2p5",
+                "Mu7_LooseIsoEG23er2p5",
+            ],
         },
         tags={"mixed_trigger", "mixed_emu"},
     )
