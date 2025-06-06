@@ -14,8 +14,8 @@ import luigi
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.mixins import (
-    InferenceModelMixin, MLModelsMixin,
-    ProducerClassesMixin, SelectorClassMixin, CalibratorClassesMixin,
+    InferenceModelMixin, MLModelsMixin, HistProducerClassMixin,
+    ProducerClassesMixin, ReducerClassMixin, SelectorClassMixin, CalibratorClassesMixin,
 )
 from columnflow.tasks.framework.plotting import (
     PlotBase1D, VariablePlotSettingMixin, ProcessPlotSettingMixin,
@@ -151,34 +151,42 @@ class MLInputPlots(
     #     pass
 
 
+from columnflow.tasks.histograms import MergeHistograms
+
+
 class InferencePlots(
     law.WrapperTask,
     HBWTask,
     # pass mixins to directly use plot parameters on command line
     CalibratorClassesMixin,
     SelectorClassMixin,
+    ReducerClassMixin,
     ProducerClassesMixin,
+    MLModelsMixin,
+    HistProducerClassMixin,
+    InferenceModelMixin,
+    # HistHookMixin,
     PlotBase1D,
     VariablePlotSettingMixin,
     ProcessPlotSettingMixin,
-    InferenceModelMixin,
-    MLModelsMixin,
     # law.LocalWorkflow,
     # RemoteWorkflow,
 ):
+    single_config = False
+    resolution_task_cls = MergeHistograms
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     plot_function = PlotVariables1D.plot_function
 
-    # disable some parameters
-    datasets = None
-    processes = None
-    categories = None
+    # disable some parameters (NOTE: disabling datasets/processes breaks things)
+    # datasets = None
+    # processes = None
+    # categories = None
 
-    inference_variables = law.CSVParameter(
-        default=("config_variable", "variables_to_plot"),
-        description="Inference category attributes to use to determine which variables to plot",
-    )
+    # inference_variables = law.CSVParameter(
+    #     default=("config_data.variables", "variables_to_plot"),
+    #     description="Inference category attributes to use to determine which variables to plot",
+    # )
     add_variables = luigi.BoolParameter(
         default=False,
         description="whether to add plotting the variables from the --variables parameter; default: False")
@@ -196,27 +204,35 @@ class InferencePlots(
 
         # NOTE: this is not generally included in an inference model, but only in hbw analysis
         ml_model_name = inference_model.ml_model_name
+        for config in self.configs:
+            for inference_category in inference_model.categories:
+                # decide which variables to plot based on the inference model and the variables parameter
+                variables = []
+                if self.add_variables:
+                    variables.extend(self.variables)
+                config_data = inference_category.config_data[config]
+                variables.append(config_data.variable)
+                category = config_data.category
 
-        for inference_category in inference_model.categories:
-            # decide which variables to plot based on the inference model and the variables parameter
-            variables = []
-            for attr in self.inference_variables:
-                variables.extend(law.util.make_list(getattr(inference_category, attr, [])))
-            if self.add_variables:
-                variables.extend(self.variables)
+                if not variables:
+                    raise ValueError(
+                        f"No variables to plot for inference category '{inference_category.name}' "
+                        f"and config '{config}'. Please check the inference model and the variables parameter."
+                    )
 
-            category = inference_category.config_category
-            processes = inference_category.data_from_processes
+                # mc_processes = [p.config_data[config].process for p in inference_category.processes]
+                # data_datasets = config_data.data_datasets
+                # processes = config_data.data_from_processes
 
-            # data_datasets = inference_category.config_data_datasets
+                # data_datasets = inference_category.config_data_datasets
 
-            reqs[inference_category.name] = self.reqs.PlotVariables1D.req(
-                self,
-                variables=variables,
-                categories=(category,),
-                processes=processes,
-                ml_models=(ml_model_name,),
-            )
+                reqs[inference_category.name] = self.reqs.PlotVariables1D.req(
+                    self,
+                    variables=variables,
+                    categories=(category,),
+                    # processes=self.processes,
+                    ml_models=law.util.make_tuple(ml_model_name),
+                )
 
         return reqs
 
