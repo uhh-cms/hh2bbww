@@ -12,7 +12,8 @@ from columnflow.calibration.cms.jets import jec, jer, jer_horn_handling
 from columnflow.production.cms.jet import msoftdrop
 from columnflow.calibration.cms.egamma import electrons
 from columnflow.production.cms.seeds import (
-    deterministic_seeds, deterministic_electron_seeds, deterministic_event_seeds,
+    deterministic_object_seeds, deterministic_jet_seeds, deterministic_electron_seeds,
+    deterministic_event_seeds,
 )
 from columnflow.production.cms.electron import electron_sceta
 from columnflow.util import maybe_import, try_float
@@ -30,14 +31,88 @@ np = maybe_import("numpy")
 logger = law.logger.get_logger(__name__)
 
 
-# customized electron calibrator (also needs deterministic event seeds...)
+# customized electron calibrator (also needs deterministic event seeds)
 electrons.deterministic_seed_index = 0
+
+# custom fatjet seeds
+deterministic_fatjet_seeds = deterministic_object_seeds.derive(
+    "deterministic_fatjet_seeds",
+    cls_dict={
+        "object_field": "FatJet",
+        "prime_offset": 80,
+    },
+)
 
 
 @calibrator(
+    uses={
+        deterministic_event_seeds,
+        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds,
+    },
+    produces={
+        deterministic_event_seeds,
+        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds,
+    },
+)
+def deterministic_seeds_calibrator(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Calibrator that produces deterministic seeds for events and objects (Jet, Electron, and FatJet).
+    This is defined as a Calibrator such that this can run as separate task before the actual calibration.
+    """
+    # create the event seeds
+    events = self[deterministic_event_seeds](events, **kwargs)
+
+    # create the jet seeds
+    events = self[deterministic_jet_seeds](events, **kwargs)
+
+    # create the electron seeds
+    events = self[deterministic_electron_seeds](events, **kwargs)
+
+    # create the fatjet seeds
+    events = self[deterministic_fatjet_seeds](events, **kwargs)
+
+    return events
+
+
+@calibrator
+def seeds_user_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    raise Exception("This is a base class for user-defined calibrators that use the seeds.")
+
+
+@seeds_user_base.requires
+def seeds_user_base_requires(self: Calibrator, task: law.Task, reqs: dict) -> None:
+    if "seeds" in reqs:
+        return
+
+    # initialize the deterministic seeds calibrator by hand
+    calibrator_inst = task.build_calibrator_inst("deterministic_seeds_calibrator", params={
+        "dataset": task.dataset,
+        "dataset_inst": task.dataset_inst,
+        "config": task.config,
+        "config_inst": task.config_inst,
+        "analysis": task.analysis,
+        "analysis_inst": task.analysis_inst,
+    })
+
+    from columnflow.tasks.calibration import CalibrateEvents
+    reqs["seeds"] = CalibrateEvents.req(
+        task,
+        calibrator=deterministic_seeds_calibrator.cls_name,
+        calibrator_inst=calibrator_inst,
+    )
+
+
+@seeds_user_base.setup
+def seeds_user_base_setup(
+    self: Calibrator, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
+) -> None:
+    reader_targets["seeds"] = inputs["seeds"]["columns"]
+
+
+@seeds_user_base.calibrator(
     version=2,
-    uses={electron_sceta, deterministic_event_seeds, deterministic_electron_seeds},
-    produces={deterministic_event_seeds, deterministic_electron_seeds},
+    uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
+    produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
 def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -45,9 +120,6 @@ def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
     # obtain the electron super cluster eta needed for the calibration
     events = self[electron_sceta](events, **kwargs)
-
-    events = self[deterministic_event_seeds](events, **kwargs)
-    events = self[deterministic_electron_seeds](events, **kwargs)
 
     # apply the electron calibration
     events = self[self.electron_calib_cls](events, **kwargs)
@@ -62,13 +134,10 @@ def ele_init(self: Calibrator) -> None:
     self.produces |= {self.electron_calib_cls}
 
 
-@calibrator(
-    version=2,
-    # add dummy produces such that this calibrator will always be run when requested
-    # (temporary workaround until init's are only run as often as necessary)
-    # TODO: deterministic FatJet seeds
-    uses={msoftdrop},
-    produces={msoftdrop, "FatJet.pt"},
+@seeds_user_base.calibrator(
+    version=3,
+    uses={msoftdrop, deterministic_seeds_calibrator.PRODUCES},
+    produces={msoftdrop, "FatJet.pt"},  # never leave this empty, otherwise the calibrator will not run
 )
 def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     """
@@ -103,12 +172,8 @@ def fatjet_init(self: Calibrator) -> None:
             "raw_met_name": "DO_NOT_USE",
         }
         fatjet_jer_cls_dict = fatjet_jec_cls_dict.copy()
-        # NOTE: deterministic FatJet seeds are not yet possible to produce
-        # fatjet_jer_cls_dict["deterministic_seed_index"] = 0
+        fatjet_jer_cls_dict["deterministic_seed_index"] = 0
 
-        # fatjet_jec = jec.derive("fatjet_jec", cls_dict={
-        #     **fatjet_jec_cls_dict,
-        # })
         self.config_inst.x.fatjet_jec_data_cls = jec.derive("fatjet_jec_data", cls_dict={
             **fatjet_jec_cls_dict,
             "data_only": True,
@@ -143,9 +208,8 @@ def fatjet_init(self: Calibrator) -> None:
 fatjet_test = fatjet.derive("fatjet_test")
 
 
-@calibrator(
-    uses={deterministic_seeds, MET_COLUMN("{pt,phi}")},
-    produces={deterministic_seeds},
+@seeds_user_base.calibrator(
+    uses={deterministic_seeds_calibrator.PRODUCES, MET_COLUMN("{pt,phi}")},
     # jec uncertainty_sources: set to None to use config default
     jec_sources=["Total"],
     bjet_regression=True,
@@ -154,8 +218,6 @@ fatjet_test = fatjet.derive("fatjet_test")
     version=2,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
-    events = self[deterministic_seeds](events, **kwargs)
-
     # keep a copy of non-propagated MET to replace infinite values
     pre_calib_met = events[self.config_inst.x.met_name]
 
@@ -263,3 +325,24 @@ ak4 = jet_base.derive("ak4", cls_dict=dict(
     skip_jer=False,
     jer_horn_handling=True,
 ))
+
+
+@seeds_user_base.calibrator(
+    uses={ak4, fatjet, ele},
+    produces={ak4, fatjet, ele},
+    version=0,
+)
+def default(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Default calibration method that applies the jet, fatjet and electron calibrators.
+    """
+    # apply the jet calibrator
+    events = self[ak4](events, **kwargs)
+
+    # apply the fatjet calibrator
+    events = self[fatjet](events, **kwargs)
+
+    # apply the electron calibrator
+    events = self[ele](events, **kwargs)
+
+    return events
