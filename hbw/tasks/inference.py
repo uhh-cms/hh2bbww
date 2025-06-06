@@ -567,8 +567,7 @@ class PlotShiftedInferencePlots(
                         continue
                     h_nom = f_in[get_hist_name(cat_name, proc_name)].to_hist()
                     h_nom = self.prepare_cf_hist(h_nom, variable_inst, shift_bin="nominal")
-                    # TODO: add back shift axis to histogram
-
+                    # TODO: when no syst_names, make nominal plot only
                     for syst_name in sorted(syst_names):
                         if not syst_name.endswith("Down"):
                             continue
@@ -682,6 +681,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+        multi_card_names = ",".join(cat_names)
+        multi_cards = datacards.replace(",", ":")
 
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
@@ -693,9 +694,18 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         print("\n\n")
+        # creating limits per card for kl=1
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"--multi-datacards {multi_cards}:{datacards} "
+            f"--datacard-names {multi_card_names},{identifier}"
+        )
+        print(base_cmd + cmd, "\n\n")
+
         # creating upper limits for kl=1
         cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} --multi-datacards {datacards} "
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"--multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
         print(base_cmd + cmd, "\n\n")
