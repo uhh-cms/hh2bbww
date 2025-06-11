@@ -110,7 +110,7 @@ def seeds_user_base_setup(
 
 
 @seeds_user_base.calibrator(
-    version=2,
+    version=3,
     uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
     produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -210,12 +210,14 @@ fatjet_test = fatjet.derive("fatjet_test")
 
 @seeds_user_base.calibrator(
     uses={deterministic_seeds_calibrator.PRODUCES, MET_COLUMN("{pt,phi}")},
+    # We produce event seeds here again to be able to keep them after ReduceEvents (required for NN training).
+    produces={deterministic_event_seeds.PRODUCES},
     # jec uncertainty_sources: set to None to use config default
     jec_sources=["Total"],
     bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=False,
-    version=2,
+    version=3,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # keep a copy of non-propagated MET to replace infinite values
