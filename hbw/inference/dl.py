@@ -227,7 +227,7 @@ default_cls_dict = {
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
-dl_jerc = dl.derive("dl_syst", cls_dict={"systematics": systematics + jerc_systematics})
+dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_systematics})
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
     "systematics": systematics + jerc_systematics,
