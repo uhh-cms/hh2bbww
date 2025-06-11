@@ -18,6 +18,7 @@ ak = maybe_import("awkward")
 
 
 @selector(
+    categorizer=None,  # pass list of categorizers to evaluate number of (selected) events that fall in this category
     uses={increment_stats, optional("mc_weight")},
 )
 def hbw_selection_step_stats(
@@ -37,6 +38,17 @@ def hbw_selection_step_stats(
         for step, mask in results.steps.items():
             weight_map[f"sum_mc_weight_step_{step}"] = (events.mc_weight, mask)
 
+    if self.categorizers:
+        # apply list of categorizers and store number of (selected) events in each category
+        event_mask = results.event
+        for categorizer in self.categorizers:
+            if not self.has_dep(categorizer):
+                # skip categorizer if it is not used
+                continue
+            events, mask = self[categorizer](events, results, **kwargs)
+            weight_map[f"num_events_cat_{categorizer.cls_name}"] = mask
+            weight_map[f"num_events_selected_cat_{categorizer.cls_name}"] = mask & event_mask
+
     self[increment_stats](
         events,
         results,
@@ -47,6 +59,13 @@ def hbw_selection_step_stats(
     )
 
     return events
+
+
+@hbw_selection_step_stats.init
+def hbw_selection_step_stats_init(self: Selector) -> None:
+    if self.categorizers:
+        for categorizer in self.categorizers:
+            self.uses |= {categorizer}
 
 
 @selector(
