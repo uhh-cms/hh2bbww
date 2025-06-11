@@ -116,8 +116,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
-    # config_inst.x.default_hist_producer = "default"
-    config_inst.x.default_hist_producer = "with_trigger_weight"
+    config_inst.x.default_hist_producer = "default"
+    # config_inst.x.default_hist_producer = "with_trigger_weight"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -347,6 +347,9 @@ def set_config_defaults_and_groups(config_inst):
             "sr__boosted__ml_signal_vbf2",
         ),
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
+        # Single lepton categories
+        "SR_sig_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{sig_ggf,sig_vbf}"]),
+        "SR_bkg_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{tt,st,w_lnu}"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -507,6 +510,10 @@ def set_config_defaults_and_groups(config_inst):
         "SR_sl_boosted": 5,
         "vbfSR_sl_resolved": 5,
         "vbfSR_sl_boosted": 3,
+        "sr__1e__ml_sig_ggf": 10,
+        "sr__1e__ml_tt": 10,
+        "SR_sig_sl": 10,
+        "SR_bkg_sl": 3,
         # Dilepton
         "SR_dl": 10,
         "vbfSR_dl": 10,
@@ -537,6 +544,8 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_resolved": is_signal_sm,
         "vbfSR_sl_boosted": is_signal_sm,
         "BR_sl": is_background,
+        "sr__1e__ml_sig_ggf": is_signal_sm_ggf,
+        "sr__1e__ml_tt": is_background,
         # Dilepton
         "SR_dl": is_signal_sm_ggf,
         "vbfSR_dl": is_signal_sm_vbf,

@@ -80,6 +80,8 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
+    config.add_process(config.x.procs.n.tt_dy)
+    config.add_process(config.x.procs.n.qcd)
 
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)

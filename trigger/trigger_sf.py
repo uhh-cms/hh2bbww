@@ -18,6 +18,7 @@ from columnflow.tasks.framework.histograms import (
 from columnflow.tasks.framework.parameters import MultiSettingsParameter
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
+from columnflow.plotting.plot_util import use_flow_bins
 
 from hbw.config.hist_hooks import rebin_hist
 from trigger.trigger_util import (
@@ -257,18 +258,18 @@ class CalculateTriggerScaleFactors(
         }
 
 
-        edges1p2 = [0., 25., 35., 44., 51., 57., 64., 80., 110., 400.] # noqa
-        edges2p1 = [0., 15., 24., 35., 64., 400.] # noqa
+        edges1p2 = [0., 15., 25., 35., 44., 51., 57., 64., 80., 110., 240.] # noqa
+        edges2p1 = [0., 15., 25., 35., 64., 240.] # noqa
 
-        mmedges1p1 = [  0.,  25.,  37.,  47.,  55.,  66.,  81.,  96., 111., 146., 400.] # noqa
-        mmedges2p1 = [  0.,  15.,  28.,  37.,  47., 400.] # noqa
+        mmedges1p1 = [  0., 15., 25.,  37.,  47.,  55.,  66.,  81.,  96., 111., 146., 240.] # noqa
+        mmedges2p1 = [  0.,  15.,  28.,  37.,  47., 240.] # noqa
 
-        mixedges1 = [0., 25., 35., 46., 56., 67., 80., 95., 168., 400.]
-        mixedges2 = [0., 15., 25., 35., 46., 400.]
+        mixedges1 = [0., 15., 25., 35., 46., 56., 67., 80., 95., 168., 240.]
+        mixedges2 = [0., 15., 25., 35., 46., 240.]
 
-        edgesee = {"mli_lep_pt": edges1p2, "mli_lep2_pt": edges2p1}
-        edgesmu = {"mli_lep_pt": mmedges1p1, "mli_lep2_pt": mmedges2p1}
-        edgesmix = {"mli_lep_pt": mixedges1, "mli_lep2_pt": mixedges2}
+        edgesee = {"lepton0_pt": edges1p2, "lepton1_pt": edges2p1}
+        edgesmu = {"lepton0_pt": mmedges1p1, "lepton1_pt": mmedges2p1}
+        edgesmix = {"lepton0_pt": mixedges1, "lepton1_pt": mixedges2}
         pre_edges = {"ee": edgesee, "mm": edgesmu, "mixed": edgesmix}
 
         for hist_producer in self.hist_producers:
@@ -278,10 +279,14 @@ class CalculateTriggerScaleFactors(
                     h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
                     h_in = h_in[{"category": sum}]
                     h_in = h_in[{"shift": sum}]
-                    # apply variable settings
                     for var in self.variable_settings:
                         if var in h_in.axes.name:
-                            h_in = h_in[{var: hist.rebin(int(self.variable_settings[var]["rebin"]))}]
+                            # use over and underflow bins unless specified otherwise
+                            if self.variable_settings[var].get("use_flow_bins", True):
+                                h_in = use_flow_bins(h_in, var)
+                            # rebin if specified
+                            if "rebin" in self.variable_settings[var]:
+                                h_in = h_in[{var: hist.rebin(int(self.variable_settings[var]["rebin"]))}]
                         else:
                             logger.warning(f"Variable {var} not found in histogram, skipping rebinning")
                     if self.premade_edges:
@@ -292,6 +297,8 @@ class CalculateTriggerScaleFactors(
                     else:
                         hists[hist_producer][variable] = h_in
 
+        from hbw.util import debugger
+        debugger()
         old_axes = hists[self.hist_producers[0]][self.variables[0]][0, ..., 0].axes
 
         # optimise 1d binning
@@ -394,13 +401,13 @@ class CalculateTriggerScaleFactors(
                                                 f'{value:.2f}\n$\\pm${unc:.2f}',
                                                 ha='center', va='center', color='white', fontsize=12)
                         ax.plot([1, 400], [1, 400], linestyle="dashed", color="gray")
-                        ax.set_xscale("log")
-                        ax.set_yscale("log")
+                        # ax.set_xscale("log")
+                        # ax.set_yscale("log")
 
-                        ax.set_xlim(15, 400)
-                        ax.set_ylim(15, 400)
-                        ax.set_xticks([25, 50, 100, 150, 250, 400])
-                        ax.set_yticks([25, 50, 100, 150, 250, 400])
+                        # ax.set_xlim(15, 400)
+                        # ax.set_ylim(15, 400)
+                        # ax.set_xticks([25, 50, 100, 150, 250, 400])
+                        # ax.set_yticks([25, 50, 100, 150, 250, 400])
 
                         # ax.set_ylim(15, 60)
                         # ax.set_xlim(15, 200)
@@ -430,8 +437,10 @@ class CalculateTriggerScaleFactors(
                 else:
                     # trig_label = r"$e\mu$ trigger" if self.trigger == "mixed" else f"{self.trigger} trigger"
                     if "Data" in self.config_inst.get_process(self.processes[0]).label:
+                        from hbw.util import debugger
+                        debugger()
                         proc_label0 = r"$\varepsilon_{\text{Data}}$"
-                        proc_label1 = r"$\varepsilon_{\text{MC},t\bar{t}}$"
+                        proc_label1 = r"$\varepsilon_{\text{MC},t\bar{t}+DY}$"
                     else:
                         proc_label1 = r"$\varepsilon_{\text{Data}}$"
                         proc_label0 = r"$\varepsilon_{\text{MC},t\bar{t}}$"
@@ -451,9 +460,9 @@ class CalculateTriggerScaleFactors(
                     # comb_unc = np.sqrt(uncertainties**2 + sf_env_unc**2 + (1-alpha_factors)**2)
                     # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=comb_unc, fmt=",",
                     #              label="total uncertainty", elinewidth=4)
-                    # # ##rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt="o")
-                    rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt=",",
-                                 label="statistical", elinewidth=4)
+                    rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=uncertainties, fmt="o")
+                    # rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt=",",
+                    #              label="statistical", elinewidth=4)
                     # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=np.sqrt((1-alpha_factors)**2),
                     #              fmt=",", label=r"$\alpha$", elinewidth=4)
                     # rax.errorbar(x=sfhist.axes[0].centers+2, y=sfhist.values(), yerr=sf_env_unc, fmt=",",
@@ -514,7 +523,7 @@ class CalculateTriggerScaleFactors(
             x_edges = hists[self.hist_producers[0]][self.variables[0]].axes[1].edges
 
             for key, sliced_hist in histslices.items():
-                scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(sliced_hist)
+                scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(sliced_hist, envelope=True)  # noqa
                 scale_factors[uncertainties == 0.0] = None
                 sliced_scale_factors[key] = scale_factors
                 sliced_uncertainties[key] = uncertainties

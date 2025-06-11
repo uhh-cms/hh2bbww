@@ -175,10 +175,10 @@ def plot_efficiencies(
             hists[hist_producer] = sum(w_hists.values())
 
     if not kwargs.get("multi_weight", False):
-        hists = apply_process_settings(hists, process_settings)
+        hists = apply_process_settings(hists, process_settings)[0]
 
     variable_inst = variable_insts[0]
-    hists = apply_variable_settings(hists, variable_insts, variable_settings)
+    hists = apply_variable_settings(hists, variable_insts, variable_settings)[0]
     hists = apply_density(hists, density)
 
     plot_config = OrderedDict()
@@ -191,11 +191,10 @@ def plot_efficiencies(
     # switch trigger and processes when plotting efficiency of one trigger for multiple processes
     proc_as_label = False
 
-    hists = hists[0][0]
     hists = remove_residual_axis(hists, "shift")
     if len(hists.keys()) > 1:
         if "bin_sel" in kwargs:
-            mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
+            mask_bins = kwargs["bin_sel"]
             if len(mask_bins) == 1:
                 legend_title = f"{mask_bins[0]}"
                 proc_as_label = True
@@ -207,6 +206,7 @@ def plot_efficiencies(
         errors = {}
 
     count_key = 0
+    len_label = 0
 
     # for unrolling efficiencies
     subslices = kwargs.get("unroll", [None])
@@ -244,7 +244,7 @@ def plot_efficiencies(
 
             # plot config for the individual triggers
             if "bin_sel" in kwargs:
-                mask_bins = tuple(bin for bin in kwargs["bin_sel"] if bin)
+                mask_bins = kwargs["bin_sel"][:-1] if kwargs["bin_sel"][-1] == "" else kwargs["bin_sel"]
             else:
                 mask_bins = myhist.axes[1]
             for i in mask_bins:
@@ -256,22 +256,23 @@ def plot_efficiencies(
                 else:
                     label_dict = {
                         "mixed": r"$e\mu$ trigger",  # "mixed + ele&jet",
-                        "emu_dilep": "OR dilepton triggers",
-                        "ee_dilep": "OR dilepton triggers",
-                        "mm_dilep": "OR dilepton triggers",
+                        "emu_dilep": "Dilepton triggers",
+                        "ee_dilep": "Dilepton triggers",
+                        "mm_dilep": "Dilepton triggers1",
                         "emu_single": "Single lepton triggers",
                         "ee_single": "Single lepton triggers",
                         "mm_single": "Single lepton triggers",
                         "single": "Single lepton triggers",
                         "electron+jet": "Electron + Jet trigger",
-                        "emu_dilep+emu_single": "OR dilepton triggers",
-                        "ee_dilep+ee_single": "OR dilepton triggers",
-                        "mm_dilep+mm_single": "OR dilepton triggers",
+                        "emu_dilep+emu_single": "OR single lepton triggers",
+                        "ee_dilep+ee_single": "OR single lepton triggers",
+                        "mm_dilep+mm_single": "OR single lepton triggers",
                         "emu_dilep+emu_single+emu_electronjet": "OR Electron + Jet trigger",
                         "ee_dilep+ee_single+ee_electronjet": "OR Electron + Jet trigger",
                         "mm_dilep+mm_single+mm_electronjet": "OR Electron + Jet trigger",
                         "alt_mix": "mixed + ele115",
                         "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
+                        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
                     }
                     if i in label_dict.keys():
                         label = label_dict[i]
@@ -294,6 +295,7 @@ def plot_efficiencies(
                                            nan=0, posinf=1, neginf=0
                                            )
                 efficiency_sum = np.sum(myhist[:, hist.loc(i)].values()) / np.sum(norm_hist.values())
+                label += f" ({efficiency_sum:.3f})"
                 # calculate uncertainties
                 if kwargs.get("skip_errorbars", False):
                     eff_err = None
@@ -309,6 +311,7 @@ def plot_efficiencies(
                         "label": r"$e\mu$ trigger" if label == "mixed" else f"{label}",
                     },
                 }
+                len_label = max(len(label), len_label)
 
                 # calculate ratio of efficiencies
                 if not kwargs.get("skip_ratio", True):
@@ -350,13 +353,22 @@ def plot_efficiencies(
 
     style_config["cms_label_cfg"]["fontsize"] = 21
     style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 1.5))
+    style_config["ax_cfg"]["yscale"] = kwargs.get("yscale", "linear")
     style_config["rax_cfg"]["ylabel"] = "Ratio"
     style_config["rax_cfg"]["ylim"] = kwargs.get("rax_ylim", (0.92, 1.08))
 
     style_config["legend_cfg"]["title_fontsize"] = 23
-    style_config["legend_cfg"]["fontsize"] = 23
+    if len_label > 30:
+        style_config["legend_cfg"]["fontsize"] = 12
+    elif len_label > 20:
+        style_config["legend_cfg"]["fontsize"] = 15
+    else:
+        style_config["legend_cfg"]["fontsize"] = 23
     style_config["legend_cfg"]["ncols"] = 1
     style_config["legend_cfg"]["reverse"] = False
+
+    grid_spec = {"left": 0.1, "right": 0.9, "top": 0.95, "bottom": 0.1}
+    style_config["gridspec_cfg"] = grid_spec
 
     # fig, axs = plot_all(plot_config, style_config, **kwargs)
 

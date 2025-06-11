@@ -785,7 +785,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(80, 5., 405.),
+            binning=(240, 0., 240.),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$",

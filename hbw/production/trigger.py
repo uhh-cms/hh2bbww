@@ -165,7 +165,7 @@ muon_trigger_weights = muon_weights.derive("muon_trigger_weights", cls_dict={
 
 
 @producer(
-    uses={muon_trigger_weights},
+    uses={muon_trigger_weights, "Muon.{pt,eta,phi,mass}", prepare_objects},
 )
 def sl_trigger_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
