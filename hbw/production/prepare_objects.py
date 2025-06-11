@@ -137,6 +137,9 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         )
         events = set_ak_column(events, "ForwardJet", events["ForwardJet"][forward_jet_mask])
 
+    elif "ForwardJet" in events.fields:
+        raise ValueError("ForwardJet arguments incomplete.")
+
     # combine collections if necessary and possible
     events = combine_collections(events, ["Muon", "Electron"], "Lepton", sort_by="pt")
     events = combine_collections(events, ["ForwardJet", "Lightjet"], "VBFCandidateJet", sort_by="pt")

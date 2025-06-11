@@ -309,6 +309,14 @@ def add_categories_production(config: od.Config) -> None:
     )
     logger.info(f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
 
+    dycr__nonmixed = config.add_category(
+        name="dycr_nonmixed",
+        id=2349237509,
+        label="dycr_Nonmixed",
+    )
+    dycr__nonmixed.add_category(config.get_category("dycr__2e"))
+    dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):

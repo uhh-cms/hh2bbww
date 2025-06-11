@@ -178,6 +178,7 @@ def create_hbw_analysis(
     software_tasks = ("cf.BundleBashSandbox", "cf.BundleCMSSWSandbox", "cf.BundleSoftware")
     shareable_analysis_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
+    histogram_tasks = ("cf.CreateHistograms", "cf.MergeHistograms")
     skip_new_version_schema = ()
     known_parts = (
         # from cf
@@ -283,6 +284,12 @@ def create_hbw_analysis(
             store_parts = limited_config_shared_parts(task, store_parts)
         if name not in skip_new_version_schema:
             store_parts = reorganize_parts(task, store_parts)
+        if name in histogram_tasks and task.hist_producer == "with_dy_njet_weight":
+            if not task.dataset.startswith("dy"):
+                store_parts["hist_producer"] = store_parts["hist_producer"].replace(
+                    "with_dy_njet_weight",
+                    "with_dy_weight",
+                )
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

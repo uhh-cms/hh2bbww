@@ -56,6 +56,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
+
     events = self[prepare_objects](events, **kwargs)
 
     # apply mask
@@ -67,7 +68,7 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
     # build the full event weight
-    weight = ak.Array(np.ones(len(events), dtype=np.float32))
+    weight = ak.Array(np.ones(len(events), dtype=np.float64))
     for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
 
@@ -139,6 +140,11 @@ def base_init(self: HistProducer) -> None:
         self.local_weight_columns.pop("vjets_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
+        # remove dependency towards vjets weights
+        self.local_weight_columns.pop("njet_weight", None)
+        self.local_weight_columns.pop("dy_weight", None)
+
+    if dataset_inst and not dataset_inst.has_tag("is_dy"):
         # remove dependency towards dy weights
         self.local_weight_columns.pop("dy_weight", None)
 
@@ -208,6 +214,7 @@ default_weight_columns = {
     **default_correction_weights,
 }
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+
 with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "vjets_weight": [],  # TODO: corrections/shift missing
@@ -215,16 +222,25 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
 }})
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
-    "vjets_weight": [],  # TODO: corrections/shift missing
+    # "vjets_weight": [],  # TODO: corrections/shift missing
     "trigger_weight": ["trigger_sf"],
     "stitched_normalization_weight": [],
 }})
+
 with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     "dy_weight": [],
+    "trigger_weight": ["trigger_sf"],
     "stitched_normalization_weight": [],
 }})
 
+with_dy_njet_weight = default_hist_producer.derive("with_dy_njet_weight", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "njet_weight": [],  # TODO: corrections/shift missing
+    "dy_weight": [],
+    "trigger_weight": ["trigger_sf"],
+    "stitched_normalization_weight": [],
+}})
 
 base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],
@@ -282,12 +298,9 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
 }})
 
 
-from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling
-
+from hbw.categorization.categories import mask_fn_highpt
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
-base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
-base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})
 
 
 # additional hist producers for scale factors
@@ -296,3 +309,4 @@ from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
 dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
 })
+

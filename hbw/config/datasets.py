@@ -397,7 +397,8 @@ def configure_hbw_datasets(
         # add aux info to datasets
         if dataset.name.startswith(("st", "tt")):
             dataset.add_tag("has_top")
-        if dataset.name.startswith("tt"):
+
+        if dataset.name.startswith("tt_"):
             dataset.add_tag("is_ttbar")
 
         if dataset.name.startswith("dy_"):

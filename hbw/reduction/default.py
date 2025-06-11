@@ -60,6 +60,7 @@ def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task
     if self.has_dep(gen_dilepton):
         events = self[gen_dilepton](events, **kwargs)
     if self.has_dep(recoil_corrected_met):
+        recoil_corrected_met.jet_name = "InclJet"
         events = self[recoil_corrected_met](events, **kwargs)
 
     return events

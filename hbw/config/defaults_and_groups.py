@@ -395,6 +395,26 @@ def set_config_defaults_and_groups(config_inst):
     # (used during plotting)
     config_inst.x.shift_groups = {
         "jer": ["nominal", "jer_up", "jer_down"],
+        # TODO this is just a workaround to call cf.PlotShiftedVariables with a group or shift-sources
+        "all_up": [
+            "lumi_13TeV_2022_up",
+            "btag_hf_up",
+            "btag_lf_up",
+            "btag_hfstats1_2022_up",
+            "btag_hfstats2_2022_up",
+            "btag_lfstats1_2022_up",
+            "btag_lfstats2_2022_up",
+            "btag_cferr1_up",
+            "btag_cferr2_up",
+            "mu_id_sf_up",
+            "mu_iso_sf_up",
+            "e_sf_up",
+            "trigger_sf_up",
+            "minbias_xs_up",
+            "top_pt_up",
+            "jer_up",
+            "jec_Total_up",
+        ],
     }
 
     # selector step groups for conveniently looping over certain steps

@@ -349,6 +349,33 @@ def dl1_init(self: Selector) -> None:
     self.produces.add(event_weights_to_normalize)
 
 
+def single_lepton_trigger_config_func(self: Selector) -> ak.Array:
+    sl_triggers = [
+        "HLT_IsoMu24",
+        "HLT_Ele30_WPTight_Gsf",
+    ]
+    triggers = self.config_inst.x.triggers
+    for trig_name in list(triggers.names()):
+        if trig_name not in sl_triggers:
+            triggers.remove(trig_name)
+    # check that all sl_triggers are still there
+    for trig in sl_triggers:
+        if trig not in triggers:
+            raise ValueError(f"Trigger {trig} not found in {self.config_inst.x.triggers}")
+
+
+dl1_sl_triggers = dl1.derive(
+    "dl1_sl_triggers",
+    cls_dict={
+        "trigger_config_func": single_lepton_trigger_config_func,
+        "mu_pt": 25.,
+        "ele_pt": 31.,
+        "mu2_pt": 15.,
+        "ele2_pt": 15.,
+    },
+)
+
+
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})
 test_dl = dl1.derive("test_dl")
 
