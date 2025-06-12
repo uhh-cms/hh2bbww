@@ -49,7 +49,7 @@ def trigger_selection(
 
     NOTE: to use this selector, the *triggers* auxiliary must be set in the config.
     """
-    trigger_ids = ak.Array([[0]] * len(events))
+    trigger_ids = ak.singletons(ak.zeros_like(events.run, dtype=np.int64))
 
     trigger_data = ak.Array({
         "any_fired": ak.zeros_like(events.run, dtype=np.bool_),

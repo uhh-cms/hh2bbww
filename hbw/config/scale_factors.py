@@ -93,24 +93,24 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
                 cfg.x.keep_columns["cf.ReduceEvents"] |= {f"L1.{seed}"}
 
         # Add additional datasets needed for orthogonal efficiency measurements.
-        data_jethtmet_eras = {
-            "2022preEE": "cd",
-            "2022postEE": "efg",
-            "2023preBPix": "",
-            "2023postBPix": "",  # TODO: add 2023 jetmet datasets in cmsdb
-        }[cfg.x.cpn_tag]
+        # data_jethtmet_eras = {
+        #     "2022preEE": "cd",
+        #     "2022postEE": "efg",
+        #     "2023preBPix": "",
+        #     "2023postBPix": "",  # TODO: add 2023 jetmet datasets in cmsdb
+        # }[cfg.x.cpn_tag]
 
-        data_jethtmet_datasets = [
-            f"data_jethtmet_{era}"
-            for era in data_jethtmet_eras
-        ]
+        # data_jethtmet_datasets = [
+        #     f"data_jethtmet_{era}"
+        #     for era in data_jethtmet_eras
+        # ]
 
-        cfg.x.dataset_names.update({"data_jethtmet": data_jethtmet_datasets})
-        cfg.add_process(cfg.x.procs.n.data_jethtmet)
-        for dataset in data_jethtmet_datasets:
-            cfg.add_dataset(cfg.campaign.get_dataset(dataset))
-            if cfg.x.cpn_tag == "2022preEE":
-                cfg.datasets.get(dataset).x.jec_era = "RunCD"
+        # cfg.x.dataset_names.update({"data_jethtmet": data_jethtmet_datasets})
+        # cfg.add_process(cfg.x.procs.n.data_jethtmet)
+        # for dataset in data_jethtmet_datasets:
+        #     cfg.add_dataset(cfg.campaign.get_dataset(dataset))
+        #     if cfg.x.cpn_tag == "2022preEE":
+        #         cfg.datasets.get(dataset).x.jec_era = "RunCD"
 
         #
         # Collection of smaller changes

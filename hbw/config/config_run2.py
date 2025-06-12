@@ -24,6 +24,7 @@ from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
+from hbw.config.scale_factors import configure_for_scale_factors
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
 
@@ -101,6 +102,9 @@ def add_config(
         return (values or []) if match else []
 
     cfg.x.if_era = if_era
+
+    # add tag if used for scale factor calculation
+    # cfg.add_tag("is_for_sf")
 
     # add some important tags to the config
     # TODO: generalize and move to campaign
@@ -935,8 +939,8 @@ def add_config(
         configure_sl_res(cfg)
 
     # add configuration changes for scale factor calculations
-    # from hbw.config.scale_factors import configure_for_scale_factors
-    # configure_for_scale_factors(cfg)
+    if cfg.has_tag("is_for_sf"):
+        configure_for_scale_factors(cfg)
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")

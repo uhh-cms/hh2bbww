@@ -243,12 +243,12 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dr_jj", events.Lightjet[:, 0].delta_r(events.Lightjet[:, 1]))
     events = set_ak_column_f32(events, "mli_dphi_jj", abs(events.Lightjet[:, 0].delta_phi(events.Lightjet[:, 1])))
 
-    wjj = events.Lightjet[:, 0] + events.Lightjet[:, 1] * 1
+    wjj = (events.Lightjet[:, 0] + events.Lightjet[:, 1]) * 1
     events = set_ak_column_f32(events, "mli_mjj", wjj.mass)
 
     # wlnu features
     # NOTE: we might want to consider neutrino reconstruction or transverse masses instead when including MET
-    wlnu = events[met_name] + events.Lepton[:, 0] * 1
+    wlnu = (events[met_name] + events.Lepton[:, 0]) * 1
     events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
     events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events[met_name])))
     events = set_ak_column_f32(events, "mli_dphi_wl", abs(wlnu.delta_phi(events.Lepton[:, 0])))
@@ -261,7 +261,7 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_mjjl", hww_vis.mass)
 
     # hh system angles
-    hbb = events.Bjet[:, 0] + events.Bjet[:, 1] * 1
+    hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1
 
     events = set_ak_column_f32(events, "mli_dphi_bb_jjlnu", abs(hbb.delta_phi(hww)))
     events = set_ak_column_f32(events, "mli_dr_bb_jjlnu", hbb.delta_r(hww))

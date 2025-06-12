@@ -181,13 +181,13 @@ def catid_fake(
 
 @categorizer(uses={MET_COLUMN("pt")})
 def catid_highmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events[self.config_inst.x.met_name].pt >= 20
+    mask = events[self.config_inst.x.met_name]["pt"] >= 20
     return events, mask
 
 
 @categorizer(uses={MET_COLUMN("pt")})
 def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events[self.config_inst.x.met_name].pt < 20
+    mask = events[self.config_inst.x.met_name]["pt"] < 20
     return events, mask
 
 #
