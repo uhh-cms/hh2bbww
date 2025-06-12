@@ -18,7 +18,7 @@ ak = maybe_import("awkward")
 
 
 @selector(
-    categorizer=None,  # pass list of categorizers to evaluate number of (selected) events that fall in this category
+    categorizers=None,  # pass list of categorizers to evaluate number of (selected) events that fall in this category
     uses={increment_stats, optional("mc_weight")},
 )
 def hbw_selection_step_stats(
