@@ -284,12 +284,13 @@ class GetNJetCorrections(
     """
 
     variables = law.CSVParameter(
-        default=("n_jet-n_forwardjet",),
+        # default=("n_jet-n_forwardjet",),
+        default=("n_jet",),
         description="Weight producers to use for plotting",
     )
 
     categories = law.CSVParameter(
-        default=("dycr_nonmixed",),
+        default=("dycr__nonmixed",),
         description="Weight producers to use for plotting",
     )
 
@@ -312,8 +313,11 @@ class GetNJetCorrections(
 
     def output(self):
         return {
-            f"{self.corrected_processes[0]}_njet_corrections":
-            self.target(f"{self.corrected_processes[0]}_njet_corrections.json"),
+            "njet_corrections":
+            self.target(
+                f"{self.variables[0]}_{self.categories[0]}",
+                "_{self.corrected_processes[0]}_njet_corrections.json",
+            ),
         }
 
     def create_branch_map(self):
@@ -338,8 +342,10 @@ class GetNJetCorrections(
                     sub_procs.append(proc)
             return sub_procs
 
-        outputs = self.output()
+        if len(self.corrected_processes) != 1:
+            raise ValueError("Only one corrected process is supported for njet corrections.")
 
+        outputs = self.output()
         hists = {}
 
         for variable in self.variables:
@@ -402,7 +408,7 @@ class GetNJetCorrections(
         )
         cset_json = cset.json(exclude_unset=True)
 
-        outputs[f"{self.corrected_processes[0]}_njet_corrections"].dump(
+        outputs["njet_corrections"].dump(
             cset_json,
             formatter="json",
         )

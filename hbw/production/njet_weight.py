@@ -47,14 +47,15 @@ def njet_weight(
 
     var_map = {
         "n_jet": ak.num(events.Jet.pt, axis=1),
-        "n_forwardjet": ak.num(events.ForwardJet.pt, axis=1),
+        # "n_forwardjet": ak.num(events.ForwardJet.pt, axis=1),
     }
-    corrector = self.correction_set[f"{self.corrected_process}_njet_corrections"]
+    corrector = self.correction_set["njet_corrections"]
 
     inputs = [var_map[inp.name] for inp in corrector.inputs]
     njet_weight = corrector.evaluate(*inputs)
 
     events = set_ak_column(events, "njet_weight", njet_weight)
+    __import__("IPython").embed()
     return events
 
 
@@ -72,12 +73,16 @@ def njet_weight_setup(
     if self.from_file:
         # used when the correction is stored as a JSON dict
         self.correction_set = correctionlib.CorrectionSet.from_file(
-            inputs["njet_corrections"][f"{self.corrected_process}_njet_corrections"].fn,
+            inputs["njet_corrections"][
+                f"{self.variables[0]}_{self.categories[0]}_{self.corrected_processes[0]}_njet_corrections"
+            ].fn,
         )
     else:
         # used when correction is stored as a JSON string
         self.correction_set = correctionlib.CorrectionSet.from_string(
-            inputs["njet_corrections"][f"{self.corrected_process}_njet_corrections"].load(formatter="json"),
+            inputs["njet_corrections"][
+                f"{self.variables[0]}_{self.categories[0]}_{self.corrected_processes[0]}_njet_corrections"
+            ].load(formatter="json"),
         )
 
 
@@ -102,7 +107,7 @@ def njet_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
         task,
         processes=processes,
         hist_producer="with_dy_weight",
-        categories=["dycr_nonmixed"],
+        categories=["dycr__nonmixed"],
         corrected_processes=self.corrected_process,
     )
 
