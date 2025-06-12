@@ -195,6 +195,13 @@ def sl_lepton_selection_init(self: Selector) -> None:
             "e": ["Ele30_WPTight_Gsf"],
             "mu": ["IsoMu24"],
         })
+    elif year == 2023:
+        self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
+        self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 31)
+        self.config_inst.x.trigger = self.config_inst.x("trigger", {
+            "e": ["Ele30_WPTight_Gsf"],
+            "mu": ["IsoMu24"],
+        })
     else:
         raise Exception(f"Single lepton trigger not implemented for year {year}")
 
@@ -333,3 +340,5 @@ sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
     "ele_pt": 15.,
     "ele2_pt": 15.,
 })
+
+sl1_test = sl1.derive("sl1_test", cls_dict={"version": 0})

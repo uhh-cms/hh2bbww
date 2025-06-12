@@ -10,7 +10,7 @@ from columnflow.tasks.framework.base import AnalysisTask
 default_analysis = law.config.get_expanded("analysis", "default_analysis")
 default_config = law.config.get_expanded("analysis", "default_config")
 analysis_inst = ana = AnalysisTask.get_analysis_inst(default_analysis)
-config_inst = cfg = ana.get_config(default_config)
+config_inst = cfg = ana.get_config("c22post")
 
 print(" ================ Processes ======================")
 process_insts = cfg.processes

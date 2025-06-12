@@ -288,3 +288,11 @@ from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, ma
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
 base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})
+
+
+# additional hist producers for scale factors
+from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
+
+dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+})

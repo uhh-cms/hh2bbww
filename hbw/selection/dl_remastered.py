@@ -224,7 +224,7 @@ def dl1(
     events, lepton_results = self[dl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
 
-    # # trigger selection
+    # trigger selection
     events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
     results += trigger_results
 
@@ -389,3 +389,14 @@ dl1_mu18 = dl1.derive(
         "ele2_pt": 15.,
     },
 )
+
+# selectors version for scale factor testing and calculation
+dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
+dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 1})
+dl1_low_lep = dl1.derive("dl1_low_lep", cls_dict={
+    "version": 1,
+    "mu_pt": 15.,
+    "ele_pt": 15.,
+    "mu2_pt": 15.,
+    "ele2_pt": 15.,
+})

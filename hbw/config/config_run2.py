@@ -22,6 +22,7 @@ from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
+from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
@@ -914,7 +915,10 @@ def add_config(
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL
-    set_config_defaults_and_groups(cfg)
+    if cfg.has_tag("is_sl"):
+        set_sl_config_defaults_and_groups(cfg)
+    elif cfg.has_tag("is_dl"):
+        set_config_defaults_and_groups(cfg)
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
@@ -929,6 +933,10 @@ def add_config(
     if cfg.has_tag("is_sl") and cfg.has_tag("is_resonant"):
         from hbw.config.sl_res import configure_sl_res
         configure_sl_res(cfg)
+
+    # add configuration changes for scale factor calculations
+    # from hbw.config.scale_factors import configure_for_scale_factors
+    # configure_for_scale_factors(cfg)
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
