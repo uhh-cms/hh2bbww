@@ -75,8 +75,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "data": data_datasets,
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
-            # "st_schannel_lep_4f_amcatnlo",
-            # "st_schannel_had_4f_amcatnlo",
+            "st_schannel_tbar_lep_4f_amcatnlo",
+            "st_schannel_t_lep_4f_amcatnlo",
             "st_tchannel_t_4f_powheg",
             "st_tchannel_tbar_4f_powheg",
             *config.x.if_era(run=2, values=[
@@ -143,9 +143,16 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "zz_pythia",
             ]),
         ],
+        "vvv": [
+            "www_4f_amcatnlo",
+            "wwz_4f_amcatnlo",
+            "wzz_amcatnlo",
+            "zzz_amcatnlo",
+        ],
         "ttv": [
             # missing pdf weights in 2022postEE uhh samples
-            # "ttw_wlnu_amcatnlo",
+            "ttw_wlnu_amcatnlo",
+            # "ttw_wqq_amcatnlo",  # not existing in 2022postEE uhh samples
             *config.x.if_era(run=3, values=[
                 "ttz_zll_m4to50_amcatnlo",
                 "ttz_zll_m50toinf_amcatnlo",
@@ -153,6 +160,19 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "ttz_zqq_amcatnlo",
             ]),
         ],
+        # NOTE: top + gamma is not used since it is already included in ttbar or single top samples
+        # "ttg": [
+        #     "ttg_pt10to100_amcatnlo",
+        #     "ttg_pt100to200_amcatnlo",
+        #     "ttg_pt200toinf_amcatnlo",
+        # ],
+        # "tg": ["tgqb_4f_amcatnlo"],
+        "ttvv": [
+            "ttww_madgraph",
+            "ttwz_madgraph",
+            "ttzz_madgraph",
+        ],
+        "tttt": ["tttt_amcatnlo"],
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
@@ -182,9 +202,18 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_hzg_zll_powheg",
                 "tth_hbb_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-                # TODO: no cross sections setup for these samples
-                # "ttzh_madgraph",
-                # "ttwh_madgraph",
+                # TODO: preliminary cross sections for ttzh, ttwh
+                "ttzh_madgraph",
+                "ttwh_madgraph",
+                # htt
+                "h_ggf_htt_powheg",
+                "h_vbf_htt_powheg",
+                "zh_htt_powheg",
+                "wph_htt_powheg",
+                "wmh_htt_powheg",
+                # thq, thw
+                "thq_4f_madgraph",
+                "thw_madgraph",
             ]),
         ],
         "hh_ggf": [
@@ -383,7 +412,7 @@ def configure_hbw_datasets(
         # add aux info to datasets
         if dataset.name.startswith(("st", "tt")):
             dataset.add_tag("has_top")
-        if dataset.name.startswith("tt"):
+        if dataset.name.startswith("tt_"):
             dataset.add_tag("is_ttbar")
 
         if dataset.name.startswith("dy_"):
@@ -413,7 +442,7 @@ def configure_hbw_datasets(
             else:
                 dataset.add_tag("is_hbv_incl")
 
-        if dataset.name.endswith("_pythia") or "hh_vbf" in dataset.name:
+        if dataset.name.endswith("_pythia") or "hh_vbf" in dataset.name or dataset.name == "ttw_wlnu_amcatnlo":
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
             dataset.add_tag("no_lhe_weights")
@@ -555,6 +584,6 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         # define custom remote fs's to look at
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
-                f"wlcg_fs_{dataset_inst.x.campaign}",
                 f"local_fs_{dataset_inst.x.campaign}",
+                f"wlcg_fs_{dataset_inst.x.campaign}",
             ])

@@ -135,7 +135,9 @@ def set_config_defaults_and_groups(config_inst):
     backgrounds1 = ["h", "ttv", "vv", "w_lnu", "st", "dy", "tt"]
     hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
     hh_sm = [
-        "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "hh_ggf_hbb_hzz_kl1_kt1", "hh_ggf_hbb_htt_kl1_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
+        "hh_ggf_hbb_htt_kl1_kt1", "hh_vbf_hbb_htt_kv1_k2v1_kl1",
     ]
 
     # process groups for conveniently looping over certain processs
@@ -232,10 +234,12 @@ def set_config_defaults_and_groups(config_inst):
         "table": [*hbbhww_sm, *backgrounds0, "data", "background"],
         "table0": [*hh_sm, *backgrounds0, "data", "background"],
         "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
+        "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor", "h_all"],
         "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
-        "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
-        "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
-        "h_all": ["h", "h_ggf", "h_vbf", "vh", "zh", "zh_gg", "wh", "tth", "ttvh"],
+        "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
+        "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
+        "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
+        "minor": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
     }
     for proc, datasets in config_inst.x.dataset_names.items():
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
@@ -332,6 +336,8 @@ def set_config_defaults_and_groups(config_inst):
         # Dilepton
         "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
         "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
+        "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
+        "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
         "SR_dl_resolved": (
             "sr__resolved__1b__ml_signal_ggf2",
             "sr__resolved__2b__ml_signal_ggf2",
@@ -347,6 +353,7 @@ def set_config_defaults_and_groups(config_inst):
             "sr__boosted__ml_signal_vbf2",
         ),
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
+        "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,h}"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -514,10 +521,15 @@ def set_config_defaults_and_groups(config_inst):
         "SR_dl": 10,
         "vbfSR_dl": 10,
         "BR_dl": 3,
+        "SR_bjets_incl": 14,
+        "vbfSR_bjets_incl": 14,
+        "BR_bjets_incl": 3,
         "SR_dl_resolved": 10,
         "SR_dl_boosted": 10,
         "vbfSR_dl_resolved": 10,
         "vbfSR_dl_boosted": 10,
+        "sr__1b": 20,
+        "sr__2b": 20,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
@@ -528,7 +540,8 @@ def set_config_defaults_and_groups(config_inst):
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
     # is_signal_vbf_kl1 = lambda proc_name: "kv1_k2v1_kl1" in proc_name and "hh_vbf" in proc_name
     is_background = lambda proc_name: (
-        "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and "hbb_hzz" not in proc_name
+        "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and
+        "hbb_hzz" not in proc_name and "hbb_htt" not in proc_name
     )
 
     config_inst.x.inference_category_rebin_processes = {
@@ -543,9 +556,14 @@ def set_config_defaults_and_groups(config_inst):
         # Dilepton
         "SR_dl": is_signal_sm_ggf,
         "vbfSR_dl": is_signal_sm_vbf,
+        "BR_dl": is_background,
+        "SR_bjets_incl": is_signal_sm_ggf,
+        "vbfSR_bjets_incl": is_signal_sm_vbf,
+        "BR_bjets_incl": is_background,
         "SR_dl_resolved": is_signal_sm_ggf,
         "SR_dl_boosted": is_signal_sm_ggf,
         "vbfSR_dl_resolved": is_signal_sm_vbf,
         "vbfSR_dl_boosted": is_signal_sm_vbf,
-        "BR_dl": is_background,
+        "sr__1b": is_signal_sm_ggf,
+        "sr__2b": is_signal_sm_ggf,
     }

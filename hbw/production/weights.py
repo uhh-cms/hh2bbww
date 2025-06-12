@@ -119,21 +119,21 @@ def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
             }
 
 
+# renormalized weights
 normalized_scale_weights = normalized_weight_factory(
     producer_name="normalized_scale_weights",
     weight_producers={murmuf_envelope_weights, murmuf_weights},
 )
-
 normalized_pdf_weights = normalized_weight_factory(
     producer_name="normalized_pdf_weights",
     weight_producers={pdf_weights},
 )
-
 normalized_pu_weights = normalized_weight_factory(
     producer_name="normalized_pu_weights",
     weight_producers={pu_weight},
 )
 
+# muon weights
 muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
     "weight_name": "muon_id_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_iso_sf_names)),
@@ -141,6 +141,12 @@ muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
 muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
+})
+
+# electron weights
+electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
+    "weight_name": "electron_reco_weight",
+    "get_electron_config": (lambda self: self.config_inst.x.electron_reco_sf_names),
 })
 
 
@@ -274,6 +280,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[electron_weights](events, **kwargs)
+        # TODO: wait for merge of c/f PR
+        # events = self[electron_reco_weights](events, **kwargs)
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[muon_id_iso_weights](events, **kwargs)
 
@@ -302,6 +310,9 @@ def event_weights_init(self: Producer) -> None:
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {electron_weights}
         self.produces |= {electron_weights}
+        # TODO: wait for merge of c/f PR
+        # self.uses |= {electron_weights, electron_reco_weights}
+        # self.produces |= {electron_weights, electron_reco_weights}
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {muon_id_iso_weights}

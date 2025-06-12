@@ -27,27 +27,18 @@ cms_color_palette_1 = {
 }
 
 cms_color_palette_2 = {
-    "blue": "#3f90da",  # Tufts Blue
-    "yellow": "#ffa90e",  # Dark Tangerine
-    "red": "#bd1f01",  # International Orange (Engineering)
-    "grey": "#94a4a2",  # Morning Blue
-    "purple": "#832db6",  # Grape
-    "brown": "#a96b59",  # Blast-Off Bronze
-    "orange": "#e76300",  # Spanish Orange
-    "green": "#b9ac70",  # Misty Moss
-    "darkgrey": "#717581",  # AuroMetalSaurus
-    "turqoise": "#92dadd",  # Pale Robin Egg Blue
-    "black": "#000000",
+    "blue": "#3f90da",  # Tufts Blue()                          # qcd
+    "yellow": "#ffa90e",  # Dark Tangerine                      # dy
+    "red": "#bd1f01",  # International Orange (Engineering)     # tt
+    "grey": "#94a4a2",  # Morning Blue                          # other, hh vbf
+    "purple": "#832db6",  # Grape()                             # h
+    "brown": "#a96b59",  # Blast-Off Bronze                     # dy_lf, dy_m10to50
+    "orange": "#e76300",  # Spanish Orange                      # st
+    "green": "#b9ac70",  # Misty Moss                           # w_lnu
+    "darkgrey": "#717581",  # AuroMetalSaurus                   # dy_m4to10
+    "turqoise": "#92dadd",  # Pale Robin Egg Blue               # ttv
+    "black": "#000000",                                         # data, hh sm
 }
-
-# tt: red
-# dy: yellow
-# st: orange
-# vv
-# ttV ?
-# w_lnu
-# h
-# qcd: blue
 
 color_palette_1 = {
     "black": "#000000",
@@ -75,7 +66,6 @@ default_process_colors = {
     "h": color_palette["purple"],
     "st": color_palette["orange"],
     "t_bkg": color_palette["orange"],
-    # "dy": color_palette["yellow"],
     "dy": color_palette["yellow"],
     "dy_hf": color_palette["yellow"],
     "dy_lf": color_palette["brown"],

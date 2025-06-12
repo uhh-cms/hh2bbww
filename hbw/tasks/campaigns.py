@@ -42,7 +42,6 @@ campaign_map = {
         "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
         "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
     },
-    # TODO: merge cmsdb PR
     "c23pre": {
         "cmsdb.campaigns.run3_2023_preBPix_nano_v12": "campaign_run3_2023_preBPix_nano_v12",
         "cmsdb.campaigns.run3_2023_preBPix_nano_v13": "campaign_run3_2023_preBPix_nano_v13",
@@ -50,6 +49,19 @@ campaign_map = {
     "c23post": {
         "cmsdb.campaigns.run3_2023_postBPix_nano_v12": "campaign_run3_2023_postBPix_nano_v12",
         "cmsdb.campaigns.run3_2023_postBPix_nano_v13": "campaign_run3_2023_postBPix_nano_v13",
+    },
+    # Nano V14
+    "c22preV14": {
+        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v14": "campaign_run3_2022_preEE_nano_uhh_v14",
+    },
+    "c22postV14": {
+        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v14": "campaign_run3_2022_postEE_nano_uhh_v14",
+    },
+    "c23preV14": {
+        "cmsdb.campaigns.run3_2023_preBPix_nano_uhh_v14": "campaign_run3_2023_preBPix_nano_uhh_v14",
+    },
+    "c23postV14": {
+        "cmsdb.campaigns.run3_2023_postBPix_nano_uhh_v14": "campaign_run3_2023_postBPix_nano_uhh_v14",
     },
 }
 

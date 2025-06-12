@@ -19,6 +19,7 @@ def modify_cmsdb_processes():
         qcd_mu, qcd_em, qcd_bctoe,
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+        ttvv, tttt, vvv,
     )
 
     qcd_mu.label = "QCD Muon enriched"
@@ -49,6 +50,13 @@ def modify_cmsdb_processes():
         id=99999,
         label="background",
         color=color_palette["blue"],
+    )
+
+    other = create_parent_process(  # noqa: F841
+        [ttvv, tttt, vvv],
+        name="other",
+        id=99998,
+        label="other",
     )
 
     decay_map = {

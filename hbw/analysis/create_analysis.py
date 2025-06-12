@@ -155,11 +155,19 @@ def create_hbw_analysis(
         "c23pre",
         2300,
     )
+    add_lazy_config(
+        "c23preV14",
+        2301,
+    )
 
     # 2023 postPBix
     add_lazy_config(
         "c23post",
         2310,
+    )
+    add_lazy_config(
+        "c23postV14",
+        2311,
     )
 
     add_lazy_config(
