@@ -257,10 +257,58 @@ def add_variables(config: od.Config) -> None:
         },
     )
 
+    # ptll binned to derive njet correction -> should be a fit at some point
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in HistProducer
+        name="ptll_for_corr",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=[0., 10., 20., 30., 40., 50., 100., 150., 200., 250., 300, 350., 400.],
+        unit="GeV",
+        x_title=r"$p_{T}^{ll}$",
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
+            "rebin": 2,
+            "x_max": 400,
+        },
+    )
+
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in HistProducer
+        name="ptll_short",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=(75, 0., 150.),
+        unit="GeV",
+        x_title=r"$p_{T}^{ll}$",
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
+            "x_max": 150,
+        },
+    )
+
     config.add_variable(
         name="n_jet",
         expression=lambda events: ak.num(events.Jet["pt"], axis=1),
         aux={"inputs": {"Jet.pt"}},
+        binning=(12, -0.5, 11.5),
+        x_title="Number of jets",
+        discrete_x=True,
+    )
+
+    config.add_variable(
+        name="n_incljet",
+        expression=lambda events: ak.num(events.Jet["pt"], axis=1) + ak.num(events.ForwardJet["pt"], axis=1),
+        aux={"inputs": {"{ForwardJet,Jet}.pt"}},
+        binning=(12, -0.5, 11.5),
+        x_title="Number of jets",
+        discrete_x=True,
+    )
+
+    config.add_variable(
+        name="n_forwardjet",
+        expression=lambda events: ak.num(events.ForwardJet["pt"], axis=1),
+        aux={"inputs": {"{ForwardJet,Jet}.{eta,pt,phi,mass}"}},
         binning=(12, -0.5, 11.5),
         x_title="Number of jets",
         discrete_x=True,
@@ -915,15 +963,44 @@ def add_variables(config: od.Config) -> None:
         x_title=r"{met_name} $\phi$".format(met_name=met_name),
     )
 
-    # corrected MET
+
+# corrected MET
     config.add_variable(
         name="met_pt_corr",
+        binning=(50, 0., 150.),
+        unit="GeV",
+        x_title=r"Corr. {met_name} $p_{{T}}$".format(met_name=met_name),
+    )
+    config.add_variable(
+        name="met_pt_long_corr",
+        expression="met_pt_corr",
         binning=(40, 0., 400.),
         unit="GeV",
-        x_title=r"{met_name} $p_{{T}}$".format(met_name=met_name),
+        x_title=r"Corr. {met_name} $p_{{T}}$".format(met_name=met_name),
     )
     config.add_variable(
         name="met_phi_corr",
-        binning=(40, -3.2, 3.2),
-        x_title=r"{met_name} $\phi$".format(met_name=met_name),
+        binning=(60, -3.2, 3.2),
+        x_title=r"Corr. {met_name} $\phi$".format(met_name=met_name),
+    )
+    config.add_variable(
+        name="upara_corr",
+        expression="upara_corr",
+        binning=(60, -150., 150.),
+        x_title=r"U$_{para}^{corr}$",
+    )
+    config.add_variable(
+        name="uperp_corr",
+        binning=(60, -150., 150.),
+        x_title=r"U$_{perp}^{corr}$",
+    )
+    config.add_variable(
+        name="upara",
+        binning=(60, -150., 150.),
+        x_title=r"U$_{para}$",
+    )
+    config.add_variable(
+        name="uperp",
+        binning=(60, -150., 150.),
+        x_title=r"U$_{perp}$",
     )

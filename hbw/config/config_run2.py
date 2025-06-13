@@ -760,8 +760,10 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
-    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v1"))
-    add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
+    recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
+    add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
+    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v2"))
+    # add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
 
     cfg.x.dy_weight_config = DrellYanConfig(
         era="2022postEE",
@@ -895,6 +897,8 @@ def add_config(
         "HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        # Recoil corrected MET
+        "RecoilCorrMET.{pt,phi}_{recoilresp,recoilres}_{up,down}",
         # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
