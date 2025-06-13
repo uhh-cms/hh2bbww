@@ -181,13 +181,13 @@ def catid_fake(
 
 @categorizer(uses={MET_COLUMN("pt")})
 def catid_highmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events[self.config_inst.x.met_name].pt >= 20
+    mask = events[self.config_inst.x.met_name]["pt"] >= 20
     return events, mask
 
 
 @categorizer(uses={MET_COLUMN("pt")})
 def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = events[self.config_inst.x.met_name].pt < 20
+    mask = events[self.config_inst.x.met_name]["pt"] < 20
     return events, mask
 
 #
@@ -294,7 +294,7 @@ ml_processes = [
     "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-    "tt", "st", "w_lnu", "dy", "v_lep", "h",
+    "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd",
     "dy_m50toinf", "tt_dl", "st_tchannel_t",
     "bkg_binary", "sig_ggf_binary", "sig_vbf_binary",
     "sig_ggf", "sig_vbf",
