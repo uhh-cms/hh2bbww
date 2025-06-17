@@ -90,7 +90,7 @@ def default_producers(cls, container, task_params):
     return default_producers
 
 
-def set_config_defaults_and_groups(config_inst):
+def set_sl_config_defaults_and_groups(config_inst):
     """ Configuration function that sets all the defaults and groups in the config_inst """
     year = config_inst.campaign.x.year
 
@@ -116,8 +116,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
-    # config_inst.x.default_hist_producer = "default"
-    config_inst.x.default_hist_producer = "with_trigger_weight"
+    config_inst.x.default_hist_producer = "default"
+    # config_inst.x.default_hist_producer = "with_trigger_weight"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -135,9 +135,7 @@ def set_config_defaults_and_groups(config_inst):
     backgrounds1 = ["h", "ttv", "vv", "w_lnu", "st", "dy", "tt"]
     hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
     hh_sm = [
-        "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
-        "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
-        "hh_ggf_hbb_htt_kl1_kt1", "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+        "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "hh_ggf_hbb_hzz_kl1_kt1", "hh_ggf_hbb_htt_kl1_kt1",
     ]
 
     # process groups for conveniently looping over certain processs
@@ -234,12 +232,10 @@ def set_config_defaults_and_groups(config_inst):
         "table": [*hbbhww_sm, *backgrounds0, "data", "background"],
         "table0": [*hh_sm, *backgrounds0, "data", "background"],
         "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
-        "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor", "h_all"],
         "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
-        "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
-        "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
-        "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
-        "minor": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
+        "tt_all": ["tt", "tt_dl", "tt_sl", "tt_fh"],
+        "st_all": ["st", "st_schannel", "st_tchannel", "st_twchannel"],
+        "h_all": ["h", "h_ggf", "h_vbf", "vh", "zh", "zh_gg", "wh", "tth", "ttvh"],
     }
     for proc, datasets in config_inst.x.dataset_names.items():
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
@@ -279,28 +275,8 @@ def set_config_defaults_and_groups(config_inst):
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
-        "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
-        "dl_preml_incl": bracket_expansion(["incl", "{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
-        "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
-        "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
-        "dl_preml_1": bracket_expansion(["incl", "{,sr,ttcr,dycr}__{,2e,2mu,emu}"]),
-        "dl_preml_boosted": bracket_expansion(["{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}boosted"]),
-        "dl_ttcr": ["ttcr", "ttcr__1b", "ttcr__2b", "ttcr__2e", "ttcr__2mu", "ttcr__emu"],
-        "dl_dycr": ["dycr", "dycr__1b", "dycr__2b", "dycr__2e", "dycr__2mu", "dycr__emu"],
-        "dl_sr": ["sr", "sr__1b", "sr__2b", "sr__2e", "sr__2mu", "sr__emu"],
-        "dl_resolved": ["sr__resolved", "sr__2e__resolved", "sr__2mu__resolved", "sr__emu__resolved"],
-        "dl_2much": ["sr__2mu", "sr__2mu__1b", "sr__2mu__2b", "dycr__2mu", "dycr__2mu__1b", "dycr__2mu__2b", "ttcr__2mu", "ttcr__2mu__1b", "ttcr__2mu__2b"],  # noqa: E501
-        "dl_2ech": ["sr__2e", "sr__2e__1b", "sr__2e__2b", "dycr__2e", "dycr__2e__1b", "dycr__2e__2b", "ttcr__2e", "ttcr__2e__1b", "ttcr__2e__2b"],  # noqa: E501
-        "dl_emuch": ["sr__emu", "sr__emu__1b", "sr__emu__2b", "dycr__emu", "dycr__emu__1b", "dycr__emu__2b", "ttcr__emu", "ttcr__emu__1b", "ttcr__emu__2b"],  # noqa: E501
-        "dl_2much_resolved": ["sr__2mu__resolved", "sr__2mu__resolved__1b", "sr__2mu__resolved__2b"],
-        "dl_2ech_resolved": ["sr__2e__resolved", "sr__2e__resolved__1b", "sr__2e__resolved__2b"],
-        "dl_emuch_resolved": ["sr__emu__resolved", "sr__emu__resolved__1b", "sr__emu__resolved__2b"],
-        "dl_2much_boosted": ["sr__2mu__boosted"],
-        "dl_2ech_boosted": ["sr__2e__boosted"],
-        "dl_emuch_boosted": ["sr__emu__boosted"],
         "default": ["incl", "sr__1e", "sr__1mu"],
         "test": ["incl", "sr__1e"],
-        "dilep": ["incl", "sr__2e", "sr__2mu", "sr__emu"],
         # Single lepton
         "SR_sl": (
             "sr__1e__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1", "sr__1mu__1b__ml_hh_ggf_hbb_hvvqqlnu_kl1_kt1",
@@ -333,27 +309,9 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1e__ml_tt", "sr__1e__ml_st", "sr__1e__ml_v_lep",
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
-        # Dilepton
-        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
-        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
-        "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
-        "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
-        "SR_dl_resolved": (
-            "sr__resolved__1b__ml_signal_ggf2",
-            "sr__resolved__2b__ml_signal_ggf2",
-        ),
-        "vbfSR_dl_resolved": (
-            "sr__resolved__1b__ml_signal_vbf2",
-            "sr__resolved__2b__ml_signal_vbf2",
-        ),
-        "SR_dl_boosted": (
-            "sr__boosted__ml_signal_ggf2",
-        ),
-        "vbfSR_dl_boosted": (
-            "sr__boosted__ml_signal_vbf2",
-        ),
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
-        "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,h}"]),
+        "SR_sig_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{sig_ggf,sig_vbf}"]),
+        "SR_bkg_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{tt,st,w_lnu}"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -365,63 +323,12 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "dl": bracket_expansion([
-            "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
-            "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
-            "met_{pt,phi}",
-            "incljets_{pt,eta}",
-            "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
-            "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
-            "ht", "lt", "mll", "ptll", "npvs",
-        ]),
-        "dl_eta_studies": bracket_expansion([
-            "n_{jet,jet_pt30,bjet,btag}",
-            "lepton{0,1}_{pt,eta}",
-            "met_{pt,phi}",
-            "jet{0,1,2}_{pt,eta,phi,mass,btagpnetb}",
-            "bjet{0,1}_{pt,eta,phi,mass,btagpnetb}",
-            "ht", "mll", "ptll",
-            "barreljet{0,1,2}_{pt,eta}",
-            "endcapjet{0,1,2}_{pt,eta}",
-            "barrellep{0,1}_pt",
-            "endcaplep{0,1}_pt",
-        ]),
-        "dl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht", "lt", "mll", "ptll"],
-        "dl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*", "lt", "mll", "ptll"],
-        "default": ["n_jet", "n_muon", "n_electron", "ht", "m_bb", "deltaR_bb", "jet1_pt"],  # n_deepjet, ....
-        "test": ["n_jet", "n_electron", "jet1_pt"],
-        "cutflow": ["cf_jet1_pt", "cf_jet4_pt", "cf_n_jet", "cf_n_electron", "cf_n_muon"],  # cf_n_deepjet
-        "dilep": [
-            "n_jet", "n_muon", "n_electron", "ht", "m_bb", "m_ll", "deltaR_bb", "deltaR_ll",
-            "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj",
-            "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
-        ],
     }
 
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)
     config_inst.x.shift_groups = {
         "jer": ["nominal", "jer_up", "jer_down"],
-        # TODO this is just a workaround to call cf.PlotShiftedVariables with a group or shift-sources
-        "all_up": [
-            "lumi_13TeV_2022_up",
-            "btag_hf_up",
-            "btag_lf_up",
-            "btag_hfstats1_2022_up",
-            "btag_hfstats2_2022_up",
-            "btag_lfstats1_2022_up",
-            "btag_lfstats2_2022_up",
-            "btag_cferr1_up",
-            "btag_cferr2_up",
-            "mu_id_sf_up",
-            "mu_iso_sf_up",
-            "e_sf_up",
-            "trigger_sf_up",
-            "minbias_xs_up",
-            "top_pt_up",
-            "jer_up",
-            "jec_Total_up",
-        ],
     }
 
     # selector step groups for conveniently looping over certain steps
@@ -537,19 +444,8 @@ def set_config_defaults_and_groups(config_inst):
         "SR_sl_boosted": 5,
         "vbfSR_sl_resolved": 5,
         "vbfSR_sl_boosted": 3,
-        # Dilepton
-        "SR_dl": 10,
-        "vbfSR_dl": 10,
-        "BR_dl": 3,
-        "SR_bjets_incl": 14,
-        "vbfSR_bjets_incl": 14,
-        "BR_bjets_incl": 3,
-        "SR_dl_resolved": 10,
-        "SR_dl_boosted": 10,
-        "vbfSR_dl_resolved": 10,
-        "vbfSR_dl_boosted": 10,
-        "sr__1b": 20,
-        "sr__2b": 20,
+        "SR_sig_sl": 10,
+        "SR_bkg_sl": 3,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
@@ -560,8 +456,7 @@ def set_config_defaults_and_groups(config_inst):
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
     # is_signal_vbf_kl1 = lambda proc_name: "kv1_k2v1_kl1" in proc_name and "hh_vbf" in proc_name
     is_background = lambda proc_name: (
-        "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and
-        "hbb_hzz" not in proc_name and "hbb_htt" not in proc_name
+        "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and "hbb_hzz" not in proc_name
     )
 
     config_inst.x.inference_category_rebin_processes = {
@@ -573,17 +468,6 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_resolved": is_signal_sm,
         "vbfSR_sl_boosted": is_signal_sm,
         "BR_sl": is_background,
-        # Dilepton
-        "SR_dl": is_signal_sm_ggf,
-        "vbfSR_dl": is_signal_sm_vbf,
-        "BR_dl": is_background,
-        "SR_bjets_incl": is_signal_sm_ggf,
-        "vbfSR_bjets_incl": is_signal_sm_vbf,
-        "BR_bjets_incl": is_background,
-        "SR_dl_resolved": is_signal_sm_ggf,
-        "SR_dl_boosted": is_signal_sm_ggf,
-        "vbfSR_dl_resolved": is_signal_sm_vbf,
-        "vbfSR_dl_boosted": is_signal_sm_vbf,
-        "sr__1b": is_signal_sm_ggf,
-        "sr__2b": is_signal_sm_ggf,
+        "SR_sig_sl": is_signal_sm,
+        "SR_bkg_sl": is_background,
     }

@@ -91,13 +91,13 @@ def add_abcd_categories(config: od.Config) -> None:
         name="highmet",
         id=3,
         selection="catid_highmet",
-        label=r"$MET \geq 20$",
+        label=r"$MET \geq 20$GeV",
     )
     config.add_category(
         name="lowmet",
         id=6,
         selection="catid_lowmet",
-        label=r"$MET < 20$",
+        label=r"$MET < 20$GeV",
     )
 
 
@@ -111,25 +111,25 @@ def add_mll_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_mll_low",
-        label=r"$m_{\ell\ell} < 81$",
+        label=r"$m_{\ell\ell} < 81$GeV",
     )
     cr = config.add_category(
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$m_{\ell\ell} \geq 81$",
+        label=r"$m_{\ell\ell} \geq 81$GeV",
     )
     cr.add_category(
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        label=r"$81 \leq m_{\ell\ell} < 101$",
+        label=r"$81 \leq m_{\ell\ell} < 101$GeV",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        label=r"$m_{\ell\ell} \geq 101$",
+        label=r"$m_{\ell\ell} \geq 101$GeV",
     )
 
 
@@ -308,6 +308,14 @@ def add_categories_production(config: od.Config) -> None:
         skip_existing=False,  # there should be no existing sub-categories
     )
     logger.info(f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
+
+    dycr__nonmixed = config.add_category(
+        name="dycr__nonmixed",
+        id=2349237509,
+        label="dycr (Nonmixed)",
+    )
+    dycr__nonmixed.add_category(config.get_category("dycr__2e"))
+    dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
 
 
 @call_once_on_config()

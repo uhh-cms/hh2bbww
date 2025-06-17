@@ -133,3 +133,40 @@ def vbf_candidates(
         events = set_ak_f32(events, f"VBFPair.{field}", getattr(chosen_vbf_pair, field))
 
     return events
+
+
+@producer(
+    uses={
+        "{Jet,ForwardJet}.{pt,eta,phi,mass}",
+    },
+    produces={
+        "njet_for_recoil",
+    },
+)
+def njet_for_recoil(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Helper producer for njet used in recoil_corrected_met, assuming only the jet pt is different and jet definition
+    See https://cms-higgs-leprare.docs.cern.ch/htt-common/V_recoil for more info and explicit jet definition
+    """
+
+    # Count the number of selected jets per event
+    njet = ak.num(events.Jet[events.Jet.pt > 30], axis=1) + ak.num(events.ForwardJet[events.ForwardJet.pt > 50], axis=1)
+
+    # Set the njet_for_recoil column
+    events = set_ak_column(events, "njet_for_recoil", njet, value_type=np.float32)
+
+    return events
+
+
+@njet_for_recoil.skip
+def njet_for_recoil_skip(self: Producer) -> bool:
+    """
+    Skip if running on anything except ttbar MC simulation.
+    """
+    # never skip when there is no dataset
+    if not getattr(self, "dataset_inst", None):
+        return False
+
+    return self.dataset_inst.is_data or not (
+        self.dataset_inst.has_tag("is_dy")
+    )

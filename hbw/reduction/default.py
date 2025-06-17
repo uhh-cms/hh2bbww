@@ -13,6 +13,7 @@ from columnflow.util import maybe_import
 from hbw.util import IF_TOP, IF_VJETS, IF_DY
 from columnflow.production.cms.top_pt_weight import gen_parton_top
 from hbw.production.gen_v import gen_v_boson
+from hbw.production.jets import njet_for_recoil
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met
 
 ak = maybe_import("awkward")
@@ -20,18 +21,21 @@ coffea = maybe_import("coffea")
 maybe_import("coffea.nanoevents.methods.nanoaod")
 
 
+recoil_corrected_met.njet_column = "njet_for_recoil"
+
+
 @reducer(
     uses={
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met),
+        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
     },
     produces={
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met),
+        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
     },
 )
 def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task, **kwargs) -> ak.Array:
@@ -60,6 +64,7 @@ def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task
     if self.has_dep(gen_dilepton):
         events = self[gen_dilepton](events, **kwargs)
     if self.has_dep(recoil_corrected_met):
+        events = self[njet_for_recoil](events, **kwargs)
         events = self[recoil_corrected_met](events, **kwargs)
 
     return events

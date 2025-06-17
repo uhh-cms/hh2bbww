@@ -22,7 +22,9 @@ from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
+from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
 from hbw.config.hist_hooks import add_hist_hooks
+from hbw.config.scale_factors import configure_for_scale_factors
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
 
@@ -100,6 +102,9 @@ def add_config(
         return (values or []) if match else []
 
     cfg.x.if_era = if_era
+
+    # add tag if used for scale factor calculation
+    # cfg.add_tag("is_for_sf")
 
     # add some important tags to the config
     # TODO: generalize and move to campaign
@@ -758,8 +763,10 @@ def add_config(
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
 
-    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v1"))
-    add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
+    recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
+    add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
+    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v2"))
+    # add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
 
     cfg.x.dy_weight_config = DrellYanConfig(
         era="2022postEE",
@@ -893,6 +900,8 @@ def add_config(
         "HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+        # Recoil corrected MET
+        "RecoilCorrMET.{pt,phi}_{recoilresp,recoilres}_{up,down}",
         # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,
@@ -917,7 +926,10 @@ def add_config(
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL
-    set_config_defaults_and_groups(cfg)
+    if cfg.has_tag("is_sl"):
+        set_sl_config_defaults_and_groups(cfg)
+    elif cfg.has_tag("is_dl"):
+        set_config_defaults_and_groups(cfg)
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10
@@ -932,6 +944,10 @@ def add_config(
     if cfg.has_tag("is_sl") and cfg.has_tag("is_resonant"):
         from hbw.config.sl_res import configure_sl_res
         configure_sl_res(cfg)
+
+    # add configuration changes for scale factor calculations
+    if cfg.has_tag("is_for_sf"):
+        configure_for_scale_factors(cfg)
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")

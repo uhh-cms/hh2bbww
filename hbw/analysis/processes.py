@@ -59,6 +59,14 @@ def modify_cmsdb_processes():
         label="other",
     )
 
+    tt_dy = create_parent_process(  # noqa: F841
+        [tt, dy],
+        name="tt_dy",
+        id=99890206,
+        label="tt + DY",
+        color=color_palette["red"],
+    )
+
     decay_map = {
         "lf": {
             "name": "lf",

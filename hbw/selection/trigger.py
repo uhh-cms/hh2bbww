@@ -49,7 +49,7 @@ def trigger_selection(
 
     NOTE: to use this selector, the *triggers* auxiliary must be set in the config.
     """
-    trigger_ids = ak.Array([[0]] * len(events))
+    trigger_ids = ak.singletons(ak.zeros_like(events.run, dtype=np.int64))
 
     trigger_data = ak.Array({
         "any_fired": ak.zeros_like(events.run, dtype=np.bool_),
@@ -107,6 +107,7 @@ def trigger_selection(
 
         # check if an unprescaled L1 seed has fired as well
         l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in trigger.x.L1_seeds])
+
         fired_and_all_legs_match_and_l1_fired = fired_and_all_legs_match & l1_seeds_fired
 
         # store all intermediate results for subsequent selectors
@@ -156,6 +157,12 @@ def trigger_selection_init(self: Selector) -> None:
         for trigger in self.config_inst.x.triggers
         # if trigger.applies_to_dataset(self.dataset_inst)
     }
+    # add L1 seed columns
+    for trigger in self.config_inst.x.triggers:
+        self.uses |= {
+            f"L1.{l1_seed}"
+            for l1_seed in trigger.x.L1_seeds
+        }
 
     # add L1 seed columns
     for trigger in self.config_inst.x.triggers:

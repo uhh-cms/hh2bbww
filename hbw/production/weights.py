@@ -233,6 +233,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
 @producer(
     uses={
         combined_normalization_weights,
+        IF_DY(dy_weights),
         top_pt_weight,
         vjets_weight,
         IF_DY(dy_weights),
@@ -240,6 +241,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
     },
     produces={
         combined_normalization_weights,
+        IF_DY(dy_weights),
         top_pt_weight,
         vjets_weight,
         IF_DY(dy_weights),
@@ -259,6 +261,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
         events = self[top_pt_weight](events, **kwargs)
+
+    if self.dataset_inst.has_tag("is_dy"):
+        events = self[dy_weights](events, **kwargs)
 
     # compute gen vjet pt weights
     if self.dataset_inst.has_tag("is_v_jets"):

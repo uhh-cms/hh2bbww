@@ -12,5 +12,10 @@ import order as od
 
 
 def configure_sl(config: od.Config):
-    # dummy function for now
+    """
+    Configure the SL-specific settings of the HH -> bbWW analysis.
+    """
+
+    # add qcd as process
+    config.add_process(config.x.procs.n.qcd)
     return
