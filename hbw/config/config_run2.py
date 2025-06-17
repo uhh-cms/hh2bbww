@@ -712,9 +712,9 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
+    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
     if cfg.x.run == 2:
-        # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
         corr_tag = f"{year}_Summer{year2}{jerc_postfix}"
