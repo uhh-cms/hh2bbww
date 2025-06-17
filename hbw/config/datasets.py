@@ -24,17 +24,20 @@ logger = law.logger.get_logger(__name__)
 def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
     # define data streams based on the run
     # NOTE: the order of the streams is important for data trigger filtering (removing double counting)
+    nano_version = config.campaign.x.version
     if config.campaign.x.run == 2:
         config.x.data_streams = ["mu", "e"]
+    elif config.campaign.x.run == 3 and nano_version == 14:
+        config.x.data_streams = ["mu", "e", "muoneg"]
     elif config.campaign.x.run == 3:
         config.x.data_streams = ["mu", "egamma", "muoneg"]
 
     data_eras = {
-        "2017": "cdef",
-        "2022preEE": "cd",
-        "2022postEE": "efg",
-        "2023preBPix": "c",
-        "2023postBPix": "d",
+        "2017": list("cdef"),
+        "2022preEE": list("cd"),
+        "2022postEE": list("efg"),
+        "2023preBPix": ["c1", "c2", "c3", "c4"],
+        "2023postBPix": ["d1", "d2"],
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -180,26 +183,25 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_ggf_hww2l2nu_powheg",
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
-                # "h_ggf_htt_amcatnlo",  # TODO: check if empty
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",
                 "zh_zll_hbb_powheg",
-                "zh_zll_hcc_powheg",
+                # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
                 "zh_hww2l2nu_powheg",
                 "zh_gg_zll_hbb_powheg",
                 "zh_gg_zqq_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
-                "zh_gg_zll_hcc_powheg",
+                # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hbb_powheg",
                 # "wph_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                "wph_wlnu_hcc_powheg",
-                "wph_hzg_zll_powheg",
+                # "wph_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # "wph_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 # "wmh_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hbb_powheg",
                 # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                "wmh_wlnu_hcc_powheg",
-                "wmh_hzg_zll_powheg",
+                # "wmh_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # "wmh_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "tth_hbb_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
                 # TODO: preliminary cross sections for ttzh, ttwh
@@ -371,8 +373,18 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
 
     # loop over all dataset names and add them to the config
+    missing_datasets = set()
     for dataset_name in list(itertools.chain(*dataset_names.values())):
-        config.add_dataset(campaign.get_dataset(dataset_name))
+        if campaign.has_dataset(dataset_name):
+            config.add_dataset(campaign.get_dataset(dataset_name))
+        else:
+            logger.warning(
+                f"Dataset '{dataset_name}' not found in config '{config.name}', "
+                "skipping it. Please check the campaign configuration.",
+            )
+            missing_datasets.add(dataset_name)
+    if missing_datasets:
+        print(f"Missing datasets in config {config.name}:\n" + "\n".join(sorted(missing_datasets)))
 
 
 def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
