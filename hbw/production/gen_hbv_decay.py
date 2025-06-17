@@ -27,7 +27,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
     uses={"GenPart.{pt,eta,phi,mass,pdgId,statusFlags,genPartIdxMother}"},
     produces={"gen_hbw_decay.{h1,h2,b1,b2,v1,v2,v1d1,v1d2,v2d1,v2d2}.{pt,eta,phi,mass,pdgId}"},
 )
-def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def gen_hbv_decay(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Produce gen-level Z or W bosons from `GenParticle` collection.
     """
@@ -134,14 +134,14 @@ def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-@gen_vbf_candidate.skip
-def gen_vbf_candidate_skip(self: Producer) -> ak.Array:
+@gen_hbv_decay.skip
+def gen_hbv_decay_skip(self: Producer) -> ak.Array:
     # skip Producer if the dataset is not a HH->bbWW dataset
     return not self.dataset_inst.has_tag("is_hbv")
 
 
-@gen_vbf_candidate.init
-def gen_vbf_candidate_init(self: Producer) -> None:
+@gen_hbv_decay.init
+def gen_hbv_decay_init(self: Producer) -> None:
     add_gen_variables(self.config_inst)
 
 
