@@ -74,14 +74,16 @@ def deterministic_seeds_calibrator(self: Calibrator, events: ak.Array, **kwargs)
     return events
 
 
-@calibrator
+@calibrator(
+    skip_req_seeds=False,  # toggling this allows skipping the seeds requires
+)
 def seeds_user_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     raise Exception("This is a base class for user-defined calibrators that use the seeds.")
 
 
 @seeds_user_base.requires
 def seeds_user_base_requires(self: Calibrator, task: law.Task, reqs: dict) -> None:
-    if "seeds" in reqs:
+    if "seeds" in reqs or self.skip_req_seeds or task.pilot:
         return
 
     # initialize the deterministic seeds calibrator by hand
@@ -106,6 +108,8 @@ def seeds_user_base_requires(self: Calibrator, task: law.Task, reqs: dict) -> No
 def seeds_user_base_setup(
     self: Calibrator, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
 ) -> None:
+    if self.skip_req_seeds:
+        return
     reader_targets["seeds"] = inputs["seeds"]["columns"]
 
 
@@ -329,15 +333,21 @@ ak4 = jet_base.derive("ak4", cls_dict=dict(
 ))
 
 
-@seeds_user_base.calibrator(
-    uses={ak4, fatjet, ele},
-    produces={ak4, fatjet, ele},
+@calibrator(
+    uses={deterministic_seeds_calibrator, ak4, fatjet, ele},
+    produces={deterministic_seeds_calibrator, ak4, fatjet, ele},
     version=0,
+    skip_req_seeds=True,
 )
-def default(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+def combined(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Default calibration method that applies the jet, fatjet and electron calibrators.
+    Calibration method that applies the jet, fatjet and electron calibrators.
+    NOTE: we do not use this as default, because we prefer to keep the
+    modularity of producing outputs for each Calibrator separately.
     """
+    # calculate the deterministic seeds for events and objects
+    events = self[deterministic_seeds_calibrator](events, **kwargs)
+
     # apply the jet calibrator
     events = self[ak4](events, **kwargs)
 
@@ -348,3 +358,10 @@ def default(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[ele](events, **kwargs)
 
     return events
+
+
+@combined.pre_init
+def combined_init(self: Calibrator, **kwargs) -> None:
+    self.deps_kwargs[ak4]["skip_req_seeds"] = True
+    self.deps_kwargs[fatjet]["skip_req_seeds"] = True
+    self.deps_kwargs[ele]["skip_req_seeds"] = True
