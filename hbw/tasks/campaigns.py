@@ -18,50 +18,83 @@ from hbw.tasks.base import HBWTask
 logger = law.logger.get_logger(__name__)
 
 
+valid_campaigns = {
+    "run2_2016_nano_v9",  # includes NanoV7 hh2bbvv signal samples
+    "run2_2016_nano_uhh_v12",  # no hh2bbvv signal samples
+    "run2_2017_nano_v9",  # includes NanoV7 hh2bbvv signal samples
+    "run2_2017_nano_uhh_v12",  # no hh2bbvv signal samples
+    "run2_2018_nano_v9",  # includes NanoV7 hh2bbvv signal samples
+    "run2_2018_nano_uhh_v12",  # no hh2bbvv signal samples
+    "run3_2022_preEE_nano_uhh_v12",
+    "run3_2022_preEE_nano_v12",
+    "run3_2022_preEE_nano_v13",
+    "run3_2022_preEE_nano_uhh_v14",
+    "run3_2022_postEE_nano_v12",
+    "run3_2022_postEE_nano_v13",
+    "run3_2022_postEE_nano_uhh_v12",
+    "run3_2022_postEE_nano_uhh_v14",
+    "run3_2023_preBPix_nano_v12",
+    "run3_2023_preBPix_nano_v13",
+    "run3_2023_preBPix_nano_uhh_v12",
+    "run3_2023_preBPix_nano_uhh_v14",
+    "run3_2023_postBPix_nano_v12",
+    "run3_2023_postBPix_nano_v13",
+    "run3_2023_postBPix_nano_uhh_v12",
+    "run3_2023_postBPix_nano_uhh_v14",
+}
+
+cpn_module = lambda campaign: f"cmsdb.campaigns.{campaign}"
+cpn_local_name = lambda campaign: f"campaign_{campaign}"
+
+is_data_func = lambda dataset_name: dataset_name.startswith("data_")
+is_mc_func = lambda dataset_name: not dataset_name.startswith("data_")
+
 campaign_map = {
-    "c17": {
-        "cmsdb.campaigns.run2_2017_nano_v9": "campaign_run2_2017_nano_v9",
+    "c17v9": {
+        "run2_2017_nano_v9": {},
     },
-    "c22pre": {
-        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
-        "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
-        "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
+    "c22prev12": {
+        "run3_2022_preEE_nano_uhh_v12": {},
+        "run3_2022_preEE_nano_v12": {"dataset_prio_func": is_data_func},
+        "run3_2022_preEE_nano_v13": {},
     },
-    "c22post": {
-        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
-        "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
-        "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
+    "c22postv12": {
+        "run3_2022_postEE_nano_uhh_v12": {},
+        "run3_2022_postEE_nano_v12": {"dataset_prio_func": is_data_func},
+        "run3_2022_postEE_nano_v13": {},
     },
-    "c22post_das": {
-        "cmsdb.campaigns.run3_2022_postEE_nano_v12": "campaign_run3_2022_postEE_nano_v12",
-        "cmsdb.campaigns.run3_2022_postEE_nano_v13": "campaign_run3_2022_postEE_nano_v13",
-        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v12": "campaign_run3_2022_postEE_nano_uhh_v12",
+    "c23prev14": {
+        "run3_2023_preBPix_nano_uhh_v14": {},
+        # "run3_2023_preBPix_nano_v12": {"skip_data_func": is_mc_func},
     },
-    "c22pre_das": {
-        "cmsdb.campaigns.run3_2022_preEE_nano_v12": "campaign_run3_2022_preEE_nano_v12",
-        "cmsdb.campaigns.run3_2022_preEE_nano_v13": "campaign_run3_2022_preEE_nano_v13",
-        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v12": "campaign_run3_2022_preEE_nano_uhh_v12",
+    "c23postv14": {
+        "run3_2023_postBPix_nano_uhh_v14": {},
+        # "run3_2023_postBPix_nano_v12": {"skip_data_func": is_mc_func},
     },
-    "c23pre": {
-        "cmsdb.campaigns.run3_2023_preBPix_nano_v12": "campaign_run3_2023_preBPix_nano_v12",
-        "cmsdb.campaigns.run3_2023_preBPix_nano_v13": "campaign_run3_2023_preBPix_nano_v13",
+    "c22postv12_das": {
+        "run3_2022_postEE_nano_v12": {},
+        "run3_2022_postEE_nano_v13": {},
+        "run3_2022_postEE_nano_uhh_v12": {},
     },
-    "c23post": {
-        "cmsdb.campaigns.run3_2023_postBPix_nano_v12": "campaign_run3_2023_postBPix_nano_v12",
-        "cmsdb.campaigns.run3_2023_postBPix_nano_v13": "campaign_run3_2023_postBPix_nano_v13",
+    "c22prev12_das": {
+        "run3_2022_preEE_nano_v12": {},
+        "run3_2022_preEE_nano_v13": {},
+        "run3_2022_preEE_nano_uhh_v12": {},
+    },
+    "c23prev12": {
+        "run3_2023_preBPix_nano_v12": {},
+        "run3_2023_preBPix_nano_v13": {},
+    },
+    "c23postv12": {
+        "run3_2023_postBPix_nano_v12": {},
+        "run3_2023_postBPix_nano_v13": {},
     },
     # Nano V14
-    "c22preV14": {
-        "cmsdb.campaigns.run3_2022_preEE_nano_uhh_v14": "campaign_run3_2022_preEE_nano_uhh_v14",
+    "c22prev14": {
+        "run3_2022_preEE_nano_uhh_v14": {},
     },
-    "c22postV14": {
-        "cmsdb.campaigns.run3_2022_postEE_nano_uhh_v14": "campaign_run3_2022_postEE_nano_uhh_v14",
-    },
-    "c23preV14": {
-        "cmsdb.campaigns.run3_2023_preBPix_nano_uhh_v14": "campaign_run3_2023_preBPix_nano_uhh_v14",
-    },
-    "c23postV14": {
-        "cmsdb.campaigns.run3_2023_postBPix_nano_uhh_v14": "campaign_run3_2023_postBPix_nano_uhh_v14",
+    "c22postv14": {
+        "run3_2022_postEE_nano_uhh_v14": {},
     },
 }
 
@@ -176,7 +209,16 @@ class BuildCampaignSummary(
     def campaigns(self):
         if self.config not in campaign_map:
             raise ValueError(f"Unknown config {self.config}")
-        return campaign_map[self.config]
+
+        campaigns = campaign_map[self.config].copy()
+
+        for campaign, cpn_config in campaigns.items():
+            mod = cpn_module(campaign)
+            campaign_inst = getattr(importlib.import_module(mod), cpn_local_name(campaign)).copy()
+            self.modify_campaign(campaign_inst)
+            cpn_config["inst"] = campaign_inst
+
+        return campaigns
 
     def modify_campaign(self, campaign_inst):
         """
@@ -196,26 +238,11 @@ class BuildCampaignSummary(
             # n_events not known for all broken files, but is not used anyways
             dataset_inst_nominal.n_events = -1
 
-    @cached_property
+    @property
     def campaign_insts(self):
-        campaign_insts = []
-        for mod, campaign in self.campaigns.items():
-            campaign_inst = getattr(importlib.import_module(mod), campaign).copy()
-            self.modify_campaign(campaign_inst)
-            campaign_insts.append(campaign_inst)
-        return campaign_insts
+        return [cpn_config["inst"] for cpn_config in self.campaigns.values()]
 
-    def get_dataset_prio(self, dataset_name, campaign):
-        """
-        If dataset should be overwritten from this campaign, return True.
-        Otherwise, return False.
-        (not currently used, but could be used to prioritize e.g. the central tt dataset (less stats))
-        """
-        if "v12" in campaign.name and "uhh" not in campaign.name:
-            # Take data from the central v12 campaign
-            if "data" in dataset_name:
-                return True
-
+    def skip_dataset(self, dataset_name, campaign):
         return False
 
     def output(self):
@@ -231,11 +258,20 @@ class BuildCampaignSummary(
         dataset_summary = defaultdict(dict)
         used_datasets = set()
         # create campaign summary with one key per dataset (to fulfill dataset uniqueness)
-        for campaign in self.campaign_insts:
-            for dataset in campaign.datasets:
-                if dataset.name not in used_datasets or self.get_dataset_prio(dataset.name, campaign):
+        for campaign, cpn_config in self.campaigns.items():
+            campaign_inst = cpn_config["inst"]
+            skip_data_func = cpn_config.get("skip_data_func")
+            dataset_prio_func = cpn_config.get("dataset_prio_func")
+            for dataset in campaign_inst.datasets:
+                if skip_data_func and skip_data_func(dataset.name):
+                    continue
+
+                if (
+                    dataset.name not in used_datasets or
+                    (dataset_prio_func and dataset_prio_func(dataset.name))
+                ):
                     dataset_summary[dataset.name] = {
-                        "campaign": campaign.name,
+                        "campaign": campaign_inst.name,
                         "n_events": dataset.n_events,
                         "n_files": dataset.n_files,
                     }

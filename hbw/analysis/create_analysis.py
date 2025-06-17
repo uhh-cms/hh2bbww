@@ -134,49 +134,57 @@ def create_hbw_analysis(
 
     # 2017
     add_lazy_config(
-        "c17",
+        "c17v9",
         1700,
     )
 
     # 2022 preEE
     add_lazy_config(
-        "c22pre",
+        "c22prev12",
         2200,
+    )
+    add_lazy_config(
+        "c22prev14",
+        2202,
     )
 
     # 2022 postEE
     add_lazy_config(
-        "c22post",
+        "c22postv12",
         2210,
+    )
+    add_lazy_config(
+        "c22postv14",
+        2212,
     )
 
     # 2023 prePBix
     add_lazy_config(
-        "c23pre",
+        "c23prev12",
         2300,
     )
     add_lazy_config(
-        "c23preV14",
+        "c23prev12",
         2301,
     )
 
     # 2023 postPBix
     add_lazy_config(
-        "c23post",
+        "c23postv14",
         2310,
     )
     add_lazy_config(
-        "c23postV14",
+        "c23postv14",
         2311,
     )
 
     add_lazy_config(
-        "c22pre_das",
-        2201,
+        "c22prev12_das",
+        2202,
     )
     add_lazy_config(
-        "c22post_das",
-        2211,
+        "c22postv12_das",
+        2212,
     )
 
     #

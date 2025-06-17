@@ -11,7 +11,7 @@ from columnflow.types import Callable
 
 import law
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import EMPTY_FLOAT, get_ak_routes
+from columnflow.columnar_util import EMPTY_FLOAT  # , get_ak_routes
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -57,8 +57,8 @@ def check_columns(
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
     # apply behavior (for variable reconstruction)
-    events = self[prepare_objects](events, **kwargs)
-    routes = get_ak_routes(events)  # noqa
+    # events = self[prepare_objects](events, **kwargs)
+    # routes = get_ak_routes(events)  # noqa
     from hbw.util import debugger
     debugger()
     raise Exception("This Selector is only for checking nano content")
