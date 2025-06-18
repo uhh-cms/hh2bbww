@@ -469,7 +469,12 @@ def configure_hbw_datasets(
             else:
                 dataset.add_tag("is_hbv_incl")
 
-        if dataset.name.endswith("_pythia") or "hh_vbf" in dataset.name or dataset.name == "ttw_wlnu_amcatnlo":
+        if (
+            dataset.name.endswith("_pythia") or
+            "hh_vbf" in dataset.name or
+            dataset.name == "ttw_wlnu_amcatnlo" or
+            dataset.name == "zzz_amcatnlo"  # due to one broken file in 2022postEE uhh samples
+        ):
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
             dataset.add_tag("no_lhe_weights")
@@ -611,6 +616,6 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         # define custom remote fs's to look at
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
-                f"local_fs_{dataset_inst.x.campaign}",
                 f"wlcg_fs_{dataset_inst.x.campaign}",
+                f"local_fs_{dataset_inst.x.campaign}",
             ])
