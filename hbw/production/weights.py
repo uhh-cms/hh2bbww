@@ -44,12 +44,10 @@ logger = law.logger.get_logger(__name__)
 @producer(
     uses={
         pu_weight,
-        ps_weights,
     },
-    produces={
-        # pu_weight,
-        ps_weights,
-    },
+    # produces={
+    #     pu_weight,
+    # },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -60,9 +58,10 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
-    events = self[ps_weights](events, **kwargs)
+    if self.has_dep(ps_weights):
+        events = self[ps_weights](events, **kwargs)
 
-    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(btag_weights):
         # compute btag SF weights (for renormalization tasks)
         events = self[btag_weights](
             events,
@@ -73,14 +72,15 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
         )
 
     # skip scale/pdf weights for some datasets (missing columns)
-    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(murmuf_envelope_weights):
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
+    if self.has_dep(murmuf_weights):
         # read out mur and weights
         events = self[murmuf_weights](events, **kwargs)
 
-    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(pdf_weights):
         # compute pdf weights
         events = self[pdf_weights](
             events,
@@ -105,20 +105,23 @@ def event_weights_to_normalize_init(self) -> None:
     if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {pdf_weights}
 
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {ps_weights}
+
 
 @event_weights_to_normalize.post_init
 def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
-    for cls in self.uses:
-        if cls == btag_weights and task.shift == "nominal":
+    for _cls in self.uses:
+        if _cls == btag_weights and task.shift == "nominal":
             self.produces |= {btag_weights}
-        elif cls == btag_weights:
+        elif _cls == btag_weights:
             self.produces |= self.deps[btag_weights].produced_columns
         elif task.shift == "nominal":
-            self.produces |= self.deps[cls].produced_columns
+            self.produces |= self.deps[_cls].produced_columns
         else:
             self.produces |= {
-                route for route in self.deps[cls].produced_columns
+                route for route in self.deps[_cls].produced_columns
                 if not route.nano_column.endswith("_up") and not route.nano_column.endswith("_down")
             }
 

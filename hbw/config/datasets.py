@@ -468,7 +468,11 @@ def configure_hbw_datasets(
                 dataset.add_tag("is_hbv_sl")
             else:
                 dataset.add_tag("is_hbv_incl")
-
+        if dataset.name in (
+            "h_ggf_htt_powheg",
+            "h_vbf_htt_powheg",
+        ):
+            dataset.add_tag("no_ps_weights")
         if (
             dataset.name.endswith("_pythia") or
             "hh_vbf" in dataset.name or

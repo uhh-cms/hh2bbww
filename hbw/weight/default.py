@@ -126,6 +126,10 @@ def base_init(self: HistProducer) -> None:
         ]:
             self.local_weight_columns.pop(column, None)
 
+    if dataset_inst and dataset_inst.has_tag("no_ps_weights"):
+        self.local_weight_columns.pop("normalized_isr_weight", None)
+        self.local_weight_columns.pop("normalized_fsr_weight", None)
+
     if dataset_inst and dataset_inst.has_tag("skip_pdf"):
         # remove dependency towards pdf weights
         for column in ["pdf_weight", "normalized_pdf_weight"]:
