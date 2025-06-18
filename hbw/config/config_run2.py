@@ -223,9 +223,7 @@ def add_config(
         if year == 2022:
             jer_campaign = jec_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         elif year == 2023:
-            # NOTE: this might be totally wrong, ask Daniel
-            # TODO: fix for 2023postBPix....
-            era = "Cv4" if campaign.has_tag("preBPix") else "D"
+            era = "Cv1234" if campaign.has_tag("preBPix") else "D"
             jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
             jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
         jet_type = "AK4PFPuppi"
@@ -241,11 +239,19 @@ def add_config(
         # "CorrelationGroupUncorrelated",
     ]
 
+    jec_ak4_version = jec_ak8_version = {
+        2016: "V7",
+        2017: "V5",
+        2018: "V5",
+        2022: "V2",
+        2023: "V2" if jerc_postfix == "" else "V3",
+    }[year]
+
     cfg.x.jec = DotDict.wrap({
         # NOTE: currently, we set the uncertainty_sources in the calibrator itself
         "Jet": {
             "campaign": jec_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
+            "version": jec_ak4_version,
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
@@ -254,7 +260,7 @@ def add_config(
         },
         "FatJet": {
             "campaign": jec_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
+            "version": jec_ak8_version,
             "jet_type": fatjet_type,
             "external_file_key": "fat_jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
