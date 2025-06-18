@@ -15,6 +15,9 @@ from columnflow.production.cms.top_pt_weight import gen_parton_top
 from hbw.production.gen_v import gen_v_boson
 from hbw.production.jets import njet_for_recoil
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met
+from hbw.production.gen_hbv_decay import gen_hbv_decay
+from columnflow.production.util import attach_coffea_behavior
+
 
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
@@ -26,16 +29,20 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
 
 @reducer(
     uses={
+        attach_coffea_behavior,
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
         IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        gen_hbv_decay,
     },
     produces={
+        attach_coffea_behavior,
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
         IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        gen_hbv_decay,
     },
 )
 def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task, **kwargs) -> ak.Array:
@@ -66,6 +73,10 @@ def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task
     if self.has_dep(recoil_corrected_met):
         events = self[njet_for_recoil](events, **kwargs)
         events = self[recoil_corrected_met](events, **kwargs)
+
+    if self.has_dep(gen_hbv_decay):
+        events = self[attach_coffea_behavior](events, **kwargs)
+        events = self[gen_hbv_decay](events, **kwargs)
 
     return events
 

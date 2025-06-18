@@ -314,39 +314,39 @@ class_factors = {
 #
 
 dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
 })
 # v0: using MultiDataset for validation, looping 2x
 # v1: modifying MultiDataset to loop over all events in validation, but incorrect weights
 # v2: use validation_weights that reweight sum of weights to the requested batchsize
 # v3: final ?
 dl_22post_benchmark_v3 = DenseClassifierDL.derive("dl_22post_benchmark_v3", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "class_factors": class_factors["benchmark"],
 })
 # has been run with same setup as v1
 dl_22post_previous = DenseClassifierDL.derive("dl_22post_previous", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "class_factors": class_factors["benchmark"],
     "input_features": input_features["previous"],
 })
 dl_22post_weight1 = DenseClassifierDL.derive("dl_22post_weight1", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "class_factors": class_factors["ones"],
     "input_features": input_features["previous"],
 })
 dl_22post_added = DenseClassifierDL.derive("dl_22post_added", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "class_factors": class_factors["ones"],
     "input_features": input_features["previous"] + input_features["new"],
 })
 dl_22post_reduced = DenseClassifierDL.derive("dl_22post_reduced", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "class_factors": class_factors["ones"],
     "input_features": input_features["reduced"],
 })
 dl_22post_previous_merge_hh = DenseClassifierDL.derive("dl_22post_previous_merge_hh", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "processes": processes["merge_hh"],
     "class_factors": class_factors["benchmark"],
     "input_features": input_features["previous"],
@@ -364,7 +364,7 @@ dl_22post_limited = DenseClassifierDL.derive("dl_22post_limited", cls_dict={
 })
 
 dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -432,7 +432,7 @@ dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_
     "epochs": 100,
 })
 dl_22post_vbf = DenseClassifierDL.derive("dl_22post_vbf", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
+    "training_configs": lambda self, requested_configs: ["c22postv14"],
     "processes": [
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",

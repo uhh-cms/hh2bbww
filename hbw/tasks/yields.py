@@ -16,6 +16,7 @@ from scinum import Number
 
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.yields import _CreateYieldTable
+from columnflow.tasks.framework.mixins import MLModelsMixin
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.util import dev_sandbox, try_int
@@ -28,7 +29,7 @@ logger = law.logger.get_logger(__name__)
 class CustomCreateYieldTable(
     HBWTask,
     _CreateYieldTable,
-    # MLModelsMixin,
+    MLModelsMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
@@ -142,7 +143,7 @@ class CustomCreateYieldTable(
         inputs = self.input()
         outputs = self.output()
 
-        category_insts = list(map(self.config_inst.get_category, sorted(self.categories)))
+        category_insts = list(map(self.config_inst.get_category, self.categories))
         process_insts = list(map(self.config_inst.get_process, self.processes))
         sub_process_insts = {
             proc: [sub for sub, _, _ in proc.walk_processes(include_self=True)]
@@ -257,7 +258,6 @@ class CustomCreateYieldTable(
             main_label = "Category" if self.transpose else "Process"
             yields_str = defaultdict(list, {main_label: [proc.label for proc in processes]})
             raw_yields = defaultdict(dict, {})
-
             # apply normalization and format
             for category, category_yields in yields.items():
                 for i, value in enumerate(category_yields):
