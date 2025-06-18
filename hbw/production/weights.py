@@ -12,6 +12,7 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
+from columnflow.production.cms.parton_shower import ps_weights
 from columnflow.production.normalization import (
     normalization_weights,
     stitched_normalization_weights,
@@ -43,10 +44,12 @@ logger = law.logger.get_logger(__name__)
 @producer(
     uses={
         pu_weight,
+        ps_weights,
     },
-    # produces={
-    #     pu_weight,
-    # },
+    produces={
+        # pu_weight,
+        ps_weights,
+    },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -57,6 +60,7 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
+    events = self[ps_weights](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute btag SF weights (for renormalization tasks)
@@ -131,6 +135,10 @@ normalized_pdf_weights = normalized_weight_factory(
 normalized_pu_weights = normalized_weight_factory(
     producer_name="normalized_pu_weights",
     weight_producers={pu_weight},
+)
+normalized_ps_weights = normalized_weight_factory(
+    producer_name="normalized_ps_weights",
+    weight_producers={ps_weights},
 )
 
 # muon weights
@@ -238,6 +246,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
+        normalized_ps_weights,
     },
     produces={
         combined_normalization_weights,
@@ -246,6 +255,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
+        normalized_ps_weights,
     },
     mc_only=True,
     version=law.config.get_expanded("analysis", "event_weights_version", 0),
@@ -285,8 +295,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[electron_weights](events, **kwargs)
-        # TODO: wait for merge of c/f PR
-        # events = self[electron_reco_weights](events, **kwargs)
+        events = self[electron_reco_weights](events, **kwargs)
+
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[muon_id_iso_weights](events, **kwargs)
 
@@ -295,6 +305,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
+    events = self[normalized_ps_weights](events, **kwargs)
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_scale_weights](events, **kwargs)
@@ -313,11 +324,8 @@ def event_weights_init(self: Producer) -> None:
         return
 
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {electron_weights}
-        self.produces |= {electron_weights}
-        # TODO: wait for merge of c/f PR
-        # self.uses |= {electron_weights, electron_reco_weights}
-        # self.produces |= {electron_weights, electron_reco_weights}
+        self.uses |= {electron_weights, electron_reco_weights}
+        self.produces |= {electron_weights, electron_reco_weights}
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {muon_id_iso_weights}

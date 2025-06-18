@@ -562,7 +562,10 @@ def add_config(
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
+    cfg.add_shift(name="e_reco_sf_up", id=44, type="shape")
+    cfg.add_shift(name="e_reco_sf_down", id=45, type="shape")
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
+    add_shift_aliases(cfg, "e_reco_sf", {"electron_reco_weight": "electron_reco_weight_{direction}"})
     # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
 
     # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
@@ -617,8 +620,12 @@ def add_config(
     cfg.add_shift(name="murf_envelope_down", id=206, type="shape")
     cfg.add_shift(name="pdf_up", id=207, type="shape")
     cfg.add_shift(name="pdf_down", id=208, type="shape")
+    cfg.add_shift(name="isr_up", id=209, type="shape")
+    cfg.add_shift(name="isr_down", id=210, type="shape")
+    cfg.add_shift(name="fsr_up", id=211, type="shape")
+    cfg.add_shift(name="fsr_down", id=212, type="shape")
 
-    for unc in ["mur", "muf", "murf_envelope", "pdf"]:
+    for unc in ["mur", "muf", "murf_envelope", "pdf", "isr", "fsr"]:
         col = "murmuf_envelope" if unc == "murf_envelope" else unc
         add_shift_aliases(
             cfg,
@@ -629,17 +636,17 @@ def add_config(
             },
         )
 
-    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=209, type="shape")
-    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=210, type="shape")
-    add_shift_aliases(
-        cfg,
-        f"dummy_{cfg.x.cpn_tag}",
-        {
-            "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
-        },
-    )
-    # cfg.add_shift(name="dummy_2022postEE_up", id=209, type="shape")
-    # cfg.add_shift(name="dummy_2022postEE_down", id=210, type="shape")
+    # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=999209, type="shape")
+    # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=999210, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     f"dummy_{cfg.x.cpn_tag}",
+    #     {
+    #         "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
+    #     },
+    # )
+    # cfg.add_shift(name="dummy_2022postEE_up", id=999209, type="shape")
+    # cfg.add_shift(name="dummy_2022postEE_down", id=999210, type="shape")
     # add_shift_aliases(
     #     cfg,
     #     "dummy_2022postEE",
@@ -647,8 +654,8 @@ def add_config(
     #         "dummy_weight": "dummy_2022postEE_weight_" + "{direction}",
     #     },
     # )
-    # cfg.add_shift(name="dummy_2022preEE_up", id=211, type="shape")
-    # cfg.add_shift(name="dummy_2022preEE_down", id=212, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_up", id=999211, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_down", id=999212, type="shape")
     # add_shift_aliases(
     #     cfg,
     #     "dummy_2022preEE",
