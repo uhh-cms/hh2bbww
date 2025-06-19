@@ -322,7 +322,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         ],
         aux={
             "channels": ["e", "ee", "emu", "mue", "mixed"],
-            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "data_stream": "data_e" if "e" in config.x.data_streams else "data_egamma",
             "L1_seeds": [
                 "SingleEG38er2p5",
                 "SingleEG40er2p5",
@@ -360,7 +360,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         ],
         aux={
             "channels": ["ee"],
-            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "data_stream": "data_e" if "e" in config.x.data_streams else "data_egamma",
             "L1_seeds": [
                 "SingleEG38er2p5",
                 "SingleEG40er2p5",
@@ -392,7 +392,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         ],
         aux={
             "channels": ["e", "ee", "emu", "mue", "mixed"],
-            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "data_stream": "data_e" if "e" in config.x.data_streams else "data_egamma",
             "L1_seeds": [
                 "SingleEG40er2p5",
                 "SingleEG42er2p5",
@@ -419,7 +419,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         ],
         aux={
             "channels": ["ee"],
-            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "data_stream": "data_e" if "e" in config.x.data_streams else "data_egamma",
             "L1_seeds": [
                 "SingleEG36er2p5",
                 "SingleEG38er2p5",
