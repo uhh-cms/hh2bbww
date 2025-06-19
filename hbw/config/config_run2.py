@@ -257,6 +257,7 @@ def add_config(
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
+            "data_per_era": False if year == 2023 else True,
         },
         "FatJet": {
             "campaign": jec_campaign,
@@ -266,6 +267,7 @@ def add_config(
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
+            "data_per_era": False if year == 2023 else True,
         },
     })
 
