@@ -98,6 +98,9 @@ campaign_map = {
     },
 }
 
+# NOTE: hh2bbtt implemented a better solution to handle missing LHEScaleWeights. See here:
+# https://github.com/uhh-cms/hh2bbtautau/blob/75e6cbcf326b375d08f90ad3e99d51e9ce77f963/hbt/selection/default.py#L62-L81
+
 broken_files = {
     "run3_2022_preEE_nano_uhh_v14": {
         "w_lnu_amcatnlo": [
