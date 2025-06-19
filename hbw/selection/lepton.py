@@ -23,6 +23,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from hbw.selection.common import masked_sorted_indices
 from hbw.selection.jet import jet_selection
 from hbw.util import call_once_on_config
+from hbw.production.electrons import electron_ee_veto
 
 
 np = maybe_import("numpy")
@@ -38,7 +39,7 @@ logger = law.logger.get_logger(__name__)
         "Electron.{dxy,dz,cutBased}",
         "Muon.{dxy,dz,looseId,pfIsoId}",
         "Tau.{dz,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet,decayMode}",
-        jet_selection,
+        jet_selection, electron_ee_veto,
     },
     produces={
         "Muon.is_tight", "Electron.is_tight",
@@ -68,10 +69,18 @@ def lepton_definition(
     # initialize dicts for the selection steps
     steps = DotDict()
 
+    # obtain electrons that should be vetoed in 2022 post-EE campaign
+    ee_veto_mask = None
+    if self.has_dep(electron_ee_veto):
+        if not self.config_inst.campaign.has_tag("postEE"):
+            raise ValueError("The electron_ee_veto Producer should only be used in 2022 post-EE campaign.")
+        # apply the electron ee veto
+        events = self[electron_ee_veto](events, **kwargs)
+        ee_veto_mask = events.Electron.ee_leak_veto_mask
+
     electron = events.Electron
     muon = events.Muon
 
-    #
     # loose masks
     # TODO: the loose id + iso reqs might depend on the requested (tight) id + iso
     e_mask_loose = (
@@ -80,6 +89,10 @@ def lepton_definition(
         (abs(electron.dz) <= 1) &
         (electron.cutBased >= 1)  # veto Id
     )
+    if ee_veto_mask is not None:
+        # apply the ee veto mask in 2022postEE
+        e_mask_loose = e_mask_loose & ee_veto_mask
+
     mu_mask_loose = (
         (muon.pt >= 5) &
         (abs(muon.eta) <= 2.4) &
