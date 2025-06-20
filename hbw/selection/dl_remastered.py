@@ -17,11 +17,12 @@ from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.selection import Selector, SelectionResult, selector
 
-from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
+from hbw.selection.common import (
+    masked_sorted_indices, pre_selection, get_weights_and_no_sel_mask, post_selection, configure_selector,
+)
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, dl_boosted_jet_selection, vbf_jet_selection
 from hbw.selection.trigger import hbw_trigger_selection
-from hbw.production.weights import event_weights_to_normalize
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -232,6 +233,10 @@ def dl1(
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
 
+    # derive event weights and add base mask of all events that are not considered bad to "cleanup" step
+    events, results = self[get_weights_and_no_sel_mask](events, results, **kwargs)
+    results.steps["cleanup"] = results.steps.cleanup & results.steps["no_sel_mask"]
+
     # boosted selection
     events, boosted_results = self[dl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
@@ -321,6 +326,7 @@ def dl1_init(self: Selector) -> None:
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
         hbw_trigger_selection,
+        get_weights_and_no_sel_mask,
         post_selection,
     }
     self.produces |= {
@@ -328,6 +334,7 @@ def dl1_init(self: Selector) -> None:
         vbf_jet_selection, dl_boosted_jet_selection,
         jet_selection, dl_lepton_selection,
         hbw_trigger_selection,
+        get_weights_and_no_sel_mask,
         post_selection,
     }
 
@@ -340,13 +347,6 @@ def dl1_init(self: Selector) -> None:
             r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
         ),
     })
-
-    # NOTE: the init's of the following Producers will not run if this is not a DatasetTask
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses.add(event_weights_to_normalize)
-    self.produces.add(event_weights_to_normalize)
 
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})

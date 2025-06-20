@@ -11,7 +11,7 @@ from columnflow.types import Callable
 
 import law
 from columnflow.util import maybe_import, DotDict
-from columnflow.columnar_util import EMPTY_FLOAT  # , get_ak_routes
+from columnflow.columnar_util import EMPTY_FLOAT, fill_at
 from columnflow.production.util import attach_coffea_behavior
 
 from columnflow.selection import Selector, SelectionResult, selector
@@ -28,7 +28,8 @@ from hbw.production.weights import event_weights_to_normalize, large_weights_kil
 from hbw.production.prepare_objects import prepare_objects
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
-
+from hbw.selection.bad_events import extend_bad_events, get_outlier_scale_weights
+from hbw.util import IF_MC
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -172,6 +173,43 @@ def pre_selection_post_init(self: Selector, task: law.Task) -> None:
 
 @selector(
     uses={
+        get_outlier_scale_weights, extend_bad_events,
+        event_weights_to_normalize,
+    },
+    produces={
+        event_weights_to_normalize,
+        IF_MC("mc_weight"),
+    },
+)
+def get_weights_and_no_sel_mask(
+    self: Selector,
+    events: ak.Array,
+    results: SelectionResult,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    """
+    Helper to get the weights and bad mask for the events.
+    """
+    events, results = self[get_outlier_scale_weights](events, results=results, **kwargs)
+
+    # produce event weights
+    if self.dataset_inst.is_mc:
+        events = self[event_weights_to_normalize](events, results=results, **kwargs)
+    events, results = self[extend_bad_events](events, results=results, **kwargs)
+
+    # set mc_weight to 0 for events that are considered bad for simplified downstream processing
+    if ak.any(bad := ~results.steps.no_sel_mask):
+        logger.warning(
+            f"Found {ak.sum(bad)} events ({100 * ak.mean(bad):.1f}%) that are considered bad, setting mc_weight to 0",
+        )
+        if self.dataset_inst.is_mc:
+            events = fill_at(events, bad, "mc_weight", 0.0, value_type=np.float32)
+
+    return events, results
+
+
+@selector(
+    uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
         hbw_selection_hists,
     },
@@ -194,11 +232,6 @@ def post_selection(
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
 
-    # produce event weights
-    if self.dataset_inst.is_mc:
-        events = self[event_weights_to_normalize](events, results=results, **kwargs)
-
-    # increment stats
     events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
     events = self[hbw_increment_stats](events, results, stats, **kwargs)
     events = self[hbw_selection_hists](events, results, hists, **kwargs)
@@ -220,16 +253,6 @@ def post_selection(
 
     logger.info(f"Selected {ak.sum(results.event)} from {len(events)} events")
     return events, results
-
-
-@post_selection.init
-def post_selection_init(self: Selector) -> None:
-
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses.update({event_weights_to_normalize})
-    self.produces.update({event_weights_to_normalize})
 
 
 configurable_attributes = {

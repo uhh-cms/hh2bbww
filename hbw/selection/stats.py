@@ -82,6 +82,7 @@ def hbw_increment_stats(
     Main selector to increment stats needed for weight normalization
     """
     # collect important information from the results
+    no_sel_mask = results.steps.no_sel_mask
     event_mask = results.event
     event_mask_no_bjet = results.steps.all_but_bjet
     # n_jets = results.x.n_central_jets
@@ -89,7 +90,8 @@ def hbw_increment_stats(
     # weight map definition
     weight_map = {
         # "num" operations
-        "num_events": Ellipsis,  # all events
+        "num_events_pre_bad_mask": Ellipsis,  # all events
+        "num_events": no_sel_mask,  # all events after base mask
         "num_events_selected": event_mask,  # selected events only
         "num_events_selected_no_bjet": event_mask_no_bjet,
     }
@@ -103,7 +105,8 @@ def hbw_increment_stats(
         weight_map["num_raw_met_isinf"] = (~np.isfinite(raw_puppi_met.pt))
         weight_map["num_raw_met_isinf_selected"] = (~np.isfinite(raw_puppi_met.pt) & event_mask)
         # "sum" operations
-        weight_map["sum_mc_weight"] = events.mc_weight  # weights of all events
+        weight_map["sum_mc_weight_pre_bad_mask"] = events.mc_weight  # weights of all events
+        weight_map["sum_mc_weight"] = (events.mc_weight, no_sel_mask)  # weights of all events after base mask
         weight_map["sum_mc_weight_selected"] = (events.mc_weight, event_mask)  # weights of selected events
         weight_map["sum_mc_weight_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
         weight_map["sum_mc_weight_selected_no_bjet"] = (events.mc_weight, event_mask_no_bjet)
@@ -124,7 +127,7 @@ def hbw_increment_stats(
                 # btag weights are handled via histograms
                 continue
 
-            weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], Ellipsis)
+            weight_map[f"sum_mc_weight_{name}"] = (events.mc_weight * events[name], no_sel_mask)
 
             # weights for selected events
             weight_map[f"sum_mc_weight_{name}_selected"] = (events.mc_weight * events[name], event_mask)

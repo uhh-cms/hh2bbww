@@ -482,6 +482,13 @@ def configure_hbw_datasets(
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
             dataset.add_tag("no_lhe_weights")
+        elif dataset.name.endswith("_amcatnlo") and any(
+            dataset.name.startswith(name) for name in ("dy_", "w_lnu_")
+        ):
+            # tag to skip only events with missing LHE weights
+            dataset.add_tag("partial_lhe_weights")
+        else:
+            dataset.add_tag("has_lhe_weights")
 
         if dataset.has_tag("is_hbv") and "custom" in dataset.name:
             # No PDF weights and 6 scale weights in custom HH samples
@@ -618,6 +625,7 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         cfg.x.get_dataset_lfns = get_dataset_lfns_uhh
 
         # define custom remote fs's to look at
+        # NOTE: using local_fs seems to be better when running on local machine, but is terribly slow on HTCondor
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
                 f"wlcg_fs_{dataset_inst.x.campaign}",
