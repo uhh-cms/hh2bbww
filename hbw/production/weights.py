@@ -8,7 +8,7 @@ import functools
 import law
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, fill_at
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
@@ -86,7 +86,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
             events,
             outlier_threshold=0.99,
             outlier_action="remove",
-            outlier_log_mode="warning",
+            outlier_log_mode="debug",
+            invalid_weights_action="ignore" if self.dataset_inst.has_tag("partial_lhe_weights") else "raise",
             **kwargs,
         )
 
@@ -249,7 +250,6 @@ def combined_normalization_weights_init(self: Producer) -> None:
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
-        normalized_ps_weights,
     },
     produces={
         combined_normalization_weights,
@@ -258,7 +258,6 @@ def combined_normalization_weights_init(self: Producer) -> None:
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
-        normalized_ps_weights,
     },
     mc_only=True,
     version=law.config.get_expanded("analysis", "event_weights_version", 0),
@@ -308,7 +307,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
-    events = self[normalized_ps_weights](events, **kwargs)
+
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        events = self[normalized_ps_weights](events, **kwargs)
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_scale_weights](events, **kwargs)
@@ -346,6 +347,10 @@ def event_weights_init(self: Producer) -> None:
         self.uses |= {btag_weights, normalized_btag_weights}
         self.produces |= {normalized_btag_weights}
 
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {normalized_ps_weights}
+        self.produces |= {normalized_ps_weights}
+
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_scale_weights}
         self.produces |= {normalized_scale_weights}
@@ -372,7 +377,8 @@ def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs
         # TODO: this feels very unsafe because genWeight can also be just 1 for all events. To be revisited
         weight_too_large = abs(events.genWeight) > 0.5
         logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
-        events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+
+        events = fill_at(events, weight_too_large, "mc_weight", 0.0, value_type=np.float32)
 
     # check for anomalous weights and store in stats
     median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]
