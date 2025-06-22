@@ -320,6 +320,26 @@ for proc in ml_processes:
 
         return events, outp_mask
 
+    @categorizer(
+        uses=set(f"mlscore_best.{proc1}" for proc1 in ml_processes),
+        cls_name=f"catid_ml_{proc}_best",
+        proc_col_name=f"{proc}",
+        # skip check because we don't know which ML processes were used from the MLModel
+        check_used_columns=False,
+    )
+    def dnn_mask_best(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+        """
+        dynamically built Categorizer that categorizes events based on dnn scores
+        """
+        # start with true mask
+        outp_mask = np.ones(len(events), dtype=bool)
+        for col_name in events.mlscore_best.fields:
+            # check for each mlscore_best if *this* score is larger and combine all masks
+            mask = events.mlscore_best[self.proc_col_name] >= events.mlscore_best[col_name]
+            outp_mask = outp_mask & mask
+
+        return events, outp_mask
+
 
 @categorizer(uses={"{Electron,Muon}.{pt,eta,phi,mass}", "mll"})
 def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:

@@ -46,8 +46,9 @@ def pre_ml_cats_init(self: Producer) -> None:
 
 @producer(
     # uses in init, produces should not be empty
-    produces={"category_ids", "mlscore.max_score"},
+    produces={"category_ids"},
     ml_model_name=None,
+    mlscore_name="mlscore",
     version=1,
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -55,8 +56,8 @@ def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Reproduces category ids after ML Training. Calling this producer also
     automatically adds `MLEvaluation` to the requirements.
     """
-    max_score = ak.fill_none(ak.max([events.mlscore[f] for f in events.mlscore.fields], axis=0), 0)
-    events = set_ak_column(events, "mlscore.max_score", max_score, value_type=np.float32)
+    max_score = ak.fill_none(ak.max([events[self.mlscore_name][f] for f in events[self.mlscore_name].fields], axis=0), 0)
+    events = set_ak_column(events, f"{self.mlscore_name}.max_score", max_score, value_type=np.float32)
     # category ids
     events = self[category_ids](events, **kwargs)
 
@@ -91,19 +92,21 @@ def cats_ml_init(self: Producer) -> None:
     # NOTE: if necessary, we could initialize the MLModel ourselves, e.g. via:
     # MLModelMixinBase.get_ml_model_inst(self.ml_model_name, self.analysis_inst, requested_configs=[self.config_inst])
 
-    if not self.config_inst.has_variable("mlscore.max_score"):
+    self.produces.add(f"{self.mlscore_name}.max_score")
+    if not self.config_inst.has_variable(f"{self.mlscore_name}.max_score"):
         self.config_inst.add_variable(
-            name="mlscore.max_score",
-            expression="mlscore.max_score",
+            name=f"{self.mlscore_name}.max_score",
+            expression=f"{self.mlscore_name}.max_score",
             binning=(1000, 0., 1.),
-            x_title="DNN max output score",
+            x_title=f"DNN max output {self.ml_model_name} ({self.ml_model_name})",
             aux={
                 "rebin": 25,
             },
         )
 
     # add categories to config inst
-    add_categories_ml(self.config_inst, self.ml_model_name)
+    use_best = True if self.mlscore_name == "mlscore_best" else False
+    add_categories_ml(self.config_inst, self.ml_model_name, use_best=use_best)
 
     self.uses.add(category_ids)
     self.produces.add(category_ids)
@@ -116,3 +119,7 @@ logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
 for ml_model_name in ml_model_names:
     cats_ml.derive(f"cats_ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
+    cats_ml.derive(f"cats_ml_{ml_model_name}_best", cls_dict={
+        "ml_model_name": ml_model_name,
+        "mlscore_name": "mlscore_best",
+    })

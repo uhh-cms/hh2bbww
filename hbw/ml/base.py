@@ -284,7 +284,8 @@ class MLClassifierBase(MLModel):
         # NOTE: this function might not be called for all configs when the requested configs
         # between MLTraining and the requested task are different
 
-        # setup processes for training
+        # setup processes for training (TODO: fix multiconfig)
+        # for config_inst in self.config_insts:
         prepare_ml_processes(self.config_inst, self.train_nodes, self.sub_process_class_factors)
         self.valid_ml_id_sanity_check()
 
@@ -298,7 +299,7 @@ class MLClassifierBase(MLModel):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        # x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
                         aux={
                             "rebin": 25,
                             "rebin_config": {
@@ -312,9 +313,40 @@ class MLClassifierBase(MLModel):
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
                         binning=(1000, -2., 10.),
-                        x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
+                            "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
+                    )
+
+                    # variables using "best" model based on the validation loss
+                    config_inst.add_variable(
+                        name=f"mlscore_best.{proc}",
+                        expression=f"mlscore_best.{proc}",
+                        null_value=-1,
+                        binning=(1000, 0., 1.),
+                        # x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        aux={
+                            "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
+                    )
+                    config_inst.add_variable(
+                        name=f"logit_mlscore_best.{proc}",
+                        expression=lambda events, proc=proc: np.log(events.mlscore_best[proc] / (1 - events.mlscore_best[proc])),
+                        null_value=-1,
+                        binning=(1000, -2., 10.),
+                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        aux={
+                            "inputs": {f"mlscore_best.{proc}"},
                             "rebin": 25,
                             "rebin_config": {
                                 "processes": [proc],
@@ -419,6 +451,7 @@ class MLClassifierBase(MLModel):
         produced = set()
         for proc in self.train_nodes.keys():
             produced.add(f"mlscore.{proc}")
+            produced.add(f"mlscore_best.{proc}")
 
         return produced
 
@@ -567,6 +600,8 @@ class MLClassifierBase(MLModel):
         """ Function to run the ml training loop. Needs to be implemented in daughter class """
         return
 
+    use_best_model = "both"
+
     def evaluate(
         self,
         task: law.Task,
@@ -578,7 +613,6 @@ class MLClassifierBase(MLModel):
         """
         Evaluation function that is run as part of the MLEvaluation task
         """
-        use_best_model = False  # TODO ML, hier auf True setzen?
 
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
@@ -590,7 +624,6 @@ class MLClassifierBase(MLModel):
 
         process = task.dataset_inst.x("ml_process", task.dataset_inst.processes.get_first().name)
         process_inst = task.config_inst.get_process(process)
-        node_processes = list(self.train_nodes.keys())
 
         ml_dataset = self.data_loader(self, process_inst, events, skip_mask=True)
 
@@ -611,11 +644,23 @@ class MLClassifierBase(MLModel):
                     f"fold {i} differ from fold 0; diff: {diff}",
                 )
 
-        if use_best_model:
-            models = [model["best_model"] for model in models]
+        if self.use_best_model is True:
+            _models = [model["best_model"] for model in models]
+            events = self.evaluate_models(events, _models, ml_dataset, fold_indices, basename="mlscore_best")
+        elif self.use_best_model is False:
+            _models = [model["model"] for model in models]
+            events = self.evaluate_models(events, _models, ml_dataset, fold_indices)
+        elif self.use_best_model == "both":
+            _models = [model["model"] for model in models]
+            events = self.evaluate_models(events, _models, ml_dataset, fold_indices)
+            _models = [model["best_model"] for model in models]
+            events = self.evaluate_models(events, _models, ml_dataset, fold_indices, basename="mlscore_best")
         else:
-            models = [model["model"] for model in models]
+            raise NotImplementedError(f"invalid use_best_model: {self.use_best_model}")
+        return events
 
+    def evaluate_models(self, events, models, ml_dataset, fold_indices, basename="mlscore"):
+        node_processes = list(self.train_nodes.keys())
         # do prediction for all models and all inputs
         predictions = []
         for i, model in enumerate(models):
@@ -624,11 +669,11 @@ class MLClassifierBase(MLModel):
             if len(pred[0]) != len(node_processes):
                 raise Exception("Number of output nodes should be equal to number of processes")
             predictions.append(pred)
-            # store predictions for each model
-            for j, proc in enumerate(node_processes):
-                events = set_ak_column(
-                    events, f"fold{i}_mlscore.{proc}", pred[:, j],
-                )
+            # # store predictions for each model
+            # for j, proc in enumerate(node_processes):
+            #     events = set_ak_column(
+            #         events, f"fold{i}_mlscore.{proc}", pred[:, j],
+            #     )
 
         # combine all models into 1 output score, using the model that has not yet seen the test set
         outputs = ak.where(ak.ones_like(predictions[0]), -1, -1)
@@ -647,7 +692,7 @@ class MLClassifierBase(MLModel):
 
         for proc, node_config in self.train_nodes.items():
             events = set_ak_column(
-                events, f"mlscore.{proc}", outputs[:, node_config["ml_id"]],
+                events, f"{basename}.{proc}", outputs[:, node_config["ml_id"]],
             )
 
         return events

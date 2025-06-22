@@ -319,7 +319,7 @@ def add_categories_production(config: od.Config) -> None:
 
 
 @call_once_on_config()
-def add_categories_ml(config, ml_model_inst):
+def add_categories_ml(config, ml_model_inst, use_best=False):
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
 
@@ -353,7 +353,7 @@ def add_categories_ml(config, ml_model_inst):
             name=f"ml_{proc}",
             # NOTE: the +1 is necessary to avoid reusing ID of non-ml categories
             id=_id,
-            selection=f"catid_ml_{proc}",
+            selection=f"catid_ml_{proc}{'_best' if use_best else ''}",
             # label=f"{cat_label} category",
             aux={"ml_proc": proc},
         ))
