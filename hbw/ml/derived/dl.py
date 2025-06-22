@@ -290,6 +290,35 @@ input_features = {
         "mli_vbf_tag",  # important for vbf?
         "mli_vbf_deta",  # important for vbf?
     ],
+    "v0": [  # reduced + mixed channel
+        "mli_mbb",
+        "mli_b1_pt",
+        "mli_j1_pt",
+        "mli_n_jet",
+        "mli_mbbllMET",
+        "mli_dr_bb_llMET",
+        "mli_j1_eta",
+        "mli_met_pt",
+        "mli_mllMET",
+        "mli_mll",
+        "mli_ll_pt",
+        "mli_lep_pt",
+        "mli_lep2_pt",
+        "mli_dphi_bb_nu",
+        "mli_j1_b_score",
+        "mli_bb_pt",
+        "mli_dr_ll",
+        "mli_b_score_sum",
+        "mli_min_dr_llbb",
+        "mli_b2_pt",
+        "mli_dr_bb",
+        "mli_mindr_lb",
+        "mli_ht",
+        "mli_vbf_mass",  # important for vbf?
+        "mli_vbf_tag",  # important for vbf?
+        "mli_vbf_deta",  # important for vbf?
+        "mli_mixed_channel",
+    ],
     "new": [
         "mli_lep_tag",
         "mli_lep2_tag",
@@ -309,51 +338,19 @@ class_factors = {
         "h": 1,
     },
 }
+
 #
 # derived MLModels
 #
 
-dl_22post = DenseClassifierDL.derive("dl_22post", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-})
-# v0: using MultiDataset for validation, looping 2x
-# v1: modifying MultiDataset to loop over all events in validation, but incorrect weights
-# v2: use validation_weights that reweight sum of weights to the requested batchsize
-# v3: final ?
-dl_22post_benchmark_v3 = DenseClassifierDL.derive("dl_22post_benchmark_v3", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-    "class_factors": class_factors["benchmark"],
-})
-# has been run with same setup as v1
-dl_22post_previous = DenseClassifierDL.derive("dl_22post_previous", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-    "class_factors": class_factors["benchmark"],
-    "input_features": input_features["previous"],
-})
-dl_22post_weight1 = DenseClassifierDL.derive("dl_22post_weight1", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
+multiclass = DenseClassifierDL.derive("multiclass", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+    "input_features": input_features["v0"],
     "class_factors": class_factors["ones"],
-    "input_features": input_features["previous"],
-})
-dl_22post_added = DenseClassifierDL.derive("dl_22post_added", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-    "class_factors": class_factors["ones"],
-    "input_features": input_features["previous"] + input_features["new"],
-})
-dl_22post_reduced = DenseClassifierDL.derive("dl_22post_reduced", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-    "class_factors": class_factors["ones"],
-    "input_features": input_features["reduced"],
-})
-dl_22post_previous_merge_hh = DenseClassifierDL.derive("dl_22post_previous_merge_hh", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
-    "processes": processes["merge_hh"],
-    "class_factors": class_factors["benchmark"],
-    "input_features": input_features["previous"],
 })
 
 dl_22post_test = DenseClassifierDL.derive("dl_22post_test", cls_dict={
-    "training_configs": lambda self, requested_configs: ["l22post"],
+    "training_configs": lambda self, requested_configs: ["c22post"],
     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
     "epochs": 20,
 })
@@ -363,8 +360,11 @@ dl_22post_limited = DenseClassifierDL.derive("dl_22post_limited", cls_dict={
     "epochs": 6,
 })
 
-dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
+# TODO: include minor processes in training: VVV, ttVV, tttt, w_lnu
+
+ggf = DenseClassifierDL.derive("ggf", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+    "input_features": input_features["v0"],
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -392,7 +392,7 @@ dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_
                 "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
             ),
         },
-        "bkg_binary": {
+        "bkg_binary_for_ggf": {
             "ml_id": 1,
             "label": "Background",
             "color": "#e76300",  # Spanish Orange
@@ -411,8 +411,8 @@ dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_
     },
     # relative class factors between different nodes
     "class_factors": {
-        "sig_ggf": 1,
-        "bkg": 1,
+        "sig_ggf_binary": 1,
+        "bkg_binary_for_ggf": 1,
     },
     # relative process weights within one class
     "sub_process_class_factors": {
@@ -422,17 +422,18 @@ dl_22post_binary_test3 = DenseClassifierDL.derive("dl_22post_binary_test3", cls_
         "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
         "tt": 1,
         "st": 1,
-        "dy_m4to10": 0.1,  # assign small weight due to low statistics
+        "dy_m4to10": 0.1,  # assign small weight due to too low statistics for training
         "dy_m10to50": 1,
         "dy_m50toinf": 1,
-        "vv": 1,
-        "ttv": 1,
-        "h": 1,
+        "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+        "ttv": 2,
+        "h": 2,
     },
     "epochs": 100,
 })
-dl_22post_vbf = DenseClassifierDL.derive("dl_22post_vbf", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22postv14"],
+vbf = DenseClassifierDL.derive("vbf", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+    "input_features": input_features["v0"],
     "processes": [
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
@@ -498,9 +499,9 @@ dl_22post_vbf = DenseClassifierDL.derive("dl_22post_vbf", cls_dict={
         "dy_m4to10": 0.1,  # assign small weight due to low statistics
         "dy_m10to50": 1,
         "dy_m50toinf": 1,
-        "vv": 1,
-        "ttv": 1,
-        "h": 1,
+        "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+        "ttv": 2,
+        "h": 2,
     },
     "epochs": 100,
 })

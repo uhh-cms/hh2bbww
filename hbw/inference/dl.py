@@ -17,7 +17,7 @@ logger = law.logger.get_logger(__name__)
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = ["dl_22post_weight1", "dl_22post_binary_test3", "dl_22post_vbf"]
+ml_model_name = ["multiclass", "ggf", "vbf"]
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
@@ -227,6 +227,7 @@ default_cls_dict = {
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
+dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": jerc_systematics})
 dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_systematics})
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
