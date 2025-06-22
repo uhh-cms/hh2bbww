@@ -156,4 +156,10 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         events[met_name] = set_ak_column(events[met_name], "eta", 0)
         events[met_name] = ak.with_name(events[met_name], "PtEtaPhiMLorentzVector")
 
+    if "RecoilCorrMET" in events.fields:
+        # transform RecoilCorrMET into 4-vector
+        events["RecoilCorrMET"] = set_ak_column(events["RecoilCorrMET"], "mass", 0)
+        events["RecoilCorrMET"] = set_ak_column(events["RecoilCorrMET"], "eta", 0)
+        events["RecoilCorrMET"] = ak.with_name(events["RecoilCorrMET"], "PtEtaPhiMLorentzVector")
+
     return events
