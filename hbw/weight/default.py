@@ -190,13 +190,15 @@ def base_init(self: HistProducer) -> None:
 
 @base.post_init
 def base_post_init(self: HistProducer, task: law.Task):
+    if self.dataset_inst.is_data:
+        return
     if "isr" not in task.shift:
         # no nominal ISR weight --> remove it from uses and local_weight_columns
-        self.uses.remove("normalized_isr_weight")
+        self.uses.discard("normalized_isr_weight")
         self.local_weight_columns.pop("normalized_isr_weight", None)
     if "fsr" not in task.shift:
         # no nominal FSR weight --> remove it from uses and local_weight_columns
-        self.uses.remove("normalized_fsr_weight")
+        self.uses.discard("normalized_fsr_weight")
         self.local_weight_columns.pop("normalized_fsr_weight", None)
 
 

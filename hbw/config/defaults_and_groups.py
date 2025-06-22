@@ -367,7 +367,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "dl": bracket_expansion([
             "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
-            "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso,mvatth}",
+            "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso}",  # ,mvatth}",
             "met_{pt,phi}",
             "incljets_{pt,eta}",
             "jet{0,1,2,3}_{pt,eta,phi,mass,btagpnetb}",
