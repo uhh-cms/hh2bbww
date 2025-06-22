@@ -891,15 +891,15 @@ def add_config(
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
-        "FatJet.particleNet*",
+        # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
         "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
         # isolations for testing
-        "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH}",
-        "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH}",
+        "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH,promptMVA}",
+        "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH,promptMVA}",
         # Taus
         "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET
