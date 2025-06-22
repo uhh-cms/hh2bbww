@@ -285,6 +285,7 @@ class MLClassifierBase(MLModel):
         # between MLTraining and the requested task are different
 
         # setup processes for training
+        # NOTE: this function needs to be called per config, but there are still some issues here.
         prepare_ml_processes(self.config_inst, self.train_nodes, self.sub_process_class_factors)
         self.valid_ml_id_sanity_check()
 
@@ -298,7 +299,7 @@ class MLClassifierBase(MLModel):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(1000, 0., 1.),
-                        x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        # x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
                         aux={
                             "rebin": 25,
                             "rebin_config": {
@@ -312,7 +313,7 @@ class MLClassifierBase(MLModel):
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
                         binning=(1000, -2., 10.),
-                        x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
                             "rebin": 25,
