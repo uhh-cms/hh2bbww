@@ -98,10 +98,12 @@ campaign_map = {
     },
 }
 
-# NOTE: hh2bbtt implemented a better solution to handle missing LHEScaleWeights. See here:
+# NOTE: missing LHEScaleWeights are now vetoed per sample and taken out of the sum of weights pre selection.
+# See implementation e.g. in bbtt:
 # https://github.com/uhh-cms/hh2bbtautau/blob/75e6cbcf326b375d08f90ad3e99d51e9ce77f963/hbt/selection/default.py#L62-L81
+# this dictionary will be removed soon
 
-broken_files = {
+broken_files_including_lhe_weights = {
     "run3_2022_preEE_nano_uhh_v14": {
         "w_lnu_amcatnlo": [
             # missing LHEScaleWeights
@@ -190,7 +192,6 @@ broken_files = {
     "run3_2023_postBPix_nano_uhh_v14": {
         "dy_m50toinf_2j_amcatnlo": [
             # missing LHEScaleWeights
-            # missing LHEScaleWeights
             "/store/mc/Run3Summer23BPixMiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_postBPix_v2-v3/0/7293B1A9-0D6E-0335-8EA6-7FFD9A49EB98.root",  # noqa: E501
             "/store/mc/Run3Summer23BPixMiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_postBPix_v2-v3/0/AC8C1AC9-563C-2D7B-7C90-EF5CE8A9FF73.root",  # noqa: E501
         ],
@@ -275,6 +276,19 @@ broken_files = {
         "w_lnu_amcatnlo": [
             # missing LHEScaleWeights
             "/store/mc/Run3Summer22MiniAODv4_NanoAODv12UHH/WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/33E9A5A9-73C5-42C6-D337-08D23E9144BF.root",  # noqa: E501
+        ],
+    },
+}
+
+broken_files = {
+    "run3_2022_postEE_nano_uhh_v12": {
+        "dy_m50toinf_amcatnlo": [
+            # broken
+            "/store/mc/Run3Summer22EEMiniAODv4_NanoAODv12UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6_ext1-v1/0/3FE6B8C0-4234-4EE4-5BEA-E232539E0D85.root",  # noqa: E501
+        ],
+        "dy_m50toinf_2j_amcatnlo": [
+            # broken
+            "/store/mc/Run3Summer22EEMiniAODv4_NanoAODv12UHH/DYto2L-2Jets_MLL-50_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/0/FD427E18-2F78-5055-7B38-8929DDF4F1EA.root",  # noqa: E501
         ],
     },
 }

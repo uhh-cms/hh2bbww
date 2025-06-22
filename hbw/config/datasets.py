@@ -476,14 +476,13 @@ def configure_hbw_datasets(
         if (
             dataset.name.endswith("_pythia") or
             "hh_vbf" in dataset.name or
-            dataset.name == "ttw_wlnu_amcatnlo" or
-            dataset.name == "zzz_amcatnlo"  # due to one broken file in 2022postEE uhh samples
+            dataset.name == "ttw_wlnu_amcatnlo"
         ):
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
             dataset.add_tag("no_lhe_weights")
         elif dataset.name.endswith("_amcatnlo") and any(
-            dataset.name.startswith(name) for name in ("dy_", "w_lnu_")
+            dataset.name.startswith(name) for name in ("dy_", "w_lnu_", "zzz_")
         ):
             # tag to skip only events with missing LHE weights
             dataset.add_tag("partial_lhe_weights")
