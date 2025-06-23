@@ -92,8 +92,6 @@ def default_producers(cls, container, task_params):
 
 def set_config_defaults_and_groups(config_inst):
     """ Configuration function that sets all the defaults and groups in the config_inst """
-    year = config_inst.campaign.x.year
-
     # define the default dataset and process based on the analysis tags
     signal_tag = "qqlnu" if config_inst.has_tag("is_sl") else "2l2nu"
     default_signal_process = "hh_ggf_hbb_hvv_kl1_kt1"
@@ -119,7 +117,7 @@ def set_config_defaults_and_groups(config_inst):
     # config_inst.x.default_hist_producer = "default"
     config_inst.x.default_hist_producer = "with_trigger_weight"
     config_inst.x.default_ml_model = default_ml_model
-    config_inst.x.default_inference_model = "default" if year == 2017 else "sl_22"
+    config_inst.x.default_inference_model = "dl"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
     config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 

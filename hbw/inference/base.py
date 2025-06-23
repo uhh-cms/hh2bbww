@@ -9,6 +9,8 @@ import re
 import law
 import order as od
 
+from collections import defaultdict
+
 from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation
 from columnflow.util import maybe_import, DotDict
 from columnflow.config_util import get_datasets_from_process
@@ -68,11 +70,6 @@ class HBWInferenceModelBase(InferenceModel):
         # logger.warning(f"used datasets {used_datasets}")
         return used_datasets
 
-    @property
-    def config_inst(self):
-        # workaround as long as we do not consider multi config
-        return self.config_insts[0]
-
     def inf_proc(self, proc):
         """
         Helper function that translates our process names to the inference model process names
@@ -126,19 +123,19 @@ class HBWInferenceModelBase(InferenceModel):
     @timeit_multiple
     def __init__(self, config_insts: od.Config, *args, **kwargs):
         super().__init__(config_insts)
-        if len(config_insts) != 1:
-            raise NotImplementedError("Multi-config inference model not yet fully supported.")
-        config_inst = config_insts[0]
-        year = config_inst.campaign.x.year
-        self.systematics = [syst.format(year=year) for syst in self.systematics]
+
+        years = {config_inst.campaign.x.year for config_inst in self.config_insts}
+
+        self.systematics = sorted({
+            syst.format(year=year)
+            for syst in self.systematics
+            for year in years
+        })
 
         self.add_inference_categories()
         self.add_inference_processes()
         self.add_inference_parameters()
         # self.print_model()
-
-        # tmp: remove w_lnu process from higgs nodes
-        # self.remove_process("w_lnu", "*__ml_h")
 
         #
         # post-processing
@@ -161,14 +158,32 @@ class HBWInferenceModelBase(InferenceModel):
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
         for config_category in self.config_categories:
             # TODO: loop over configs here
-            cat_inst = self.config_inst.get_category(config_category)
 
-            # check that variable inst is available
-            var_name = self.config_variable(cat_inst)
-            if not self.config_inst.has_variable(var_name):
-                raise ValueError(f"Variable {var_name} not found in config {self.config_inst.name}")
+            cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
 
-            cat_name = self.cat_name(cat_inst)
+            var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
+            if len(var_names) > 1:
+                raise ValueError(
+                    f"Multiple variables found for category {config_category}: {var_names}. "
+                    "Please ensure that all config categories use the same variable.",
+                )
+            var_name = var_names.pop()
+            if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
+                missing_var_configs = [
+                    config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                ]
+                raise ValueError(
+                    f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
+                    f"for {config_category}. Please ensure that {var_name} is part of all configs.",
+                )
+
+            cat_names = {self.cat_name(cat_inst) for cat_inst in cat_insts}
+            if len(cat_names) > 1:
+                raise ValueError(
+                    f"Multiple category names found for category {config_category}: {cat_names}. "
+                    "Please ensure that all config categories use the same name.",
+                )
+            cat_name = cat_names.pop()
             cat_kwargs = dict(
                 config_data={
                     config_inst.name: self.category_config_spec(
@@ -192,7 +207,7 @@ class HBWInferenceModelBase(InferenceModel):
             # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
             # do some customization of the inference category
-            self.customize_category(self.get_category(cat_name), cat_inst)
+            self.customize_category(self.get_category(cat_name), cat_insts[0])
 
     def add_dummy_variation(self, proc, datasets):
         if self.dummy_ggf_variation and "_kl1_kt1" in proc:
@@ -229,34 +244,47 @@ class HBWInferenceModelBase(InferenceModel):
         if "dy" in self.processes and any(proc.startswith("dy_") for proc in self.processes):
             dy_procs = [proc for proc in self.processes if proc.startswith("dy")]
             raise Exception(f"Overlapping DY processes detected: {', '.join(dy_procs)}. ")
-        used_datasets = set()
+        used_datasets = defaultdict(set)
         for proc in self.processes:
-            if not self.config_inst.has_process(proc):
-                raise Exception(f"Process {proc} not included in the config {self.config_inst.name}")
+            if any(missing_proc := [not config.has_process(proc) for config in self.config_insts]):
+                config_missing = [
+                    config_inst.name for config_inst, missing in zip(self.config_insts, missing_proc)
+                    if missing
+                ]
+                raise Exception(f"Process {proc} is not defined in configs {', '.join(config_missing)}.")
 
             # get datasets corresponding to this process
-            datasets = [
+            datasets = {config_inst.name: [
                 d.name for d in
-                get_datasets_from_process(self.config_inst, proc, strategy="all", check_deep=True, only_first=False)
-            ]
+                get_datasets_from_process(config_inst, proc, strategy="all", check_deep=True, only_first=False)
+            ] for config_inst in self.config_insts}
 
-            if not datasets:
-                raise Exception(f"No datasets found for process {proc}")
-            logger.debug(f"Process {proc} was assigned datasets: {datasets}")
+            for config, _datasets in datasets.items():
+                if not _datasets:
+                    raise Exception(
+                        f"No datasets found for process {proc} in config {config}. "
+                        "Please check your configuration.",
+                    )
+                logger.debug(f"Process {proc} in config {config} was assigned datasets: {datasets}")
 
-            # check that no dataset is used multiple times (except for some well-defined processes where we know
-            # that multiple processes share the same datasets)
-            skip_check_multiple = (proc == "dy_lf") or ("hbb_hzz" in proc)
-            if not skip_check_multiple and (datasets_already_used := used_datasets.intersection(datasets)):
-                logger.warning(f"{datasets_already_used} datasets are used for multiple processes")
-            used_datasets |= set(datasets)
+                # check that no dataset is used multiple times (except for some well-defined processes where we know
+                # that multiple processes share the same datasets)
+                skip_check_multiple = (proc == "dy_lf") or ("hbb_hzz" in proc)
+                if not skip_check_multiple and (
+                    datasets_already_used := used_datasets[config].intersection(_datasets)
+                ):
+                    logger.warning(
+                        f"{datasets_already_used} datasets are used for multiple processes in "
+                        f"config {config}. This might lead to unexpected results. ",
+                    )
+                used_datasets[config] |= set(_datasets)
 
             self.add_process(
                 name=self.inf_proc(proc),
                 config_data={
                     config_inst.name: self.process_config_spec(
                         process=proc,
-                        mc_datasets=datasets,
+                        mc_datasets=datasets[config_inst.name],
                     )
                     for config_inst in self.config_insts
                 },
@@ -285,20 +313,27 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        ecm = self.config_inst.campaign.ecm
-
         # lumi
-        lumi = self.config_inst.x.luminosity
-        for unc_name in lumi.uncertainties:
-            if unc_name not in self.systematics:
+        lumi_uncertainties = {
+            lumi_unc: config_inst.x.luminosity.get(names=lumi_unc, direction=("down", "up"), factor=True)
+            for config_inst in self.config_insts
+            for lumi_unc in config_inst.x.luminosity.uncertainties
+        }
+        for lumi_unc_name, effect in lumi_uncertainties.items():
+            if lumi_unc_name not in self.systematics:
                 continue
-
             self.add_parameter(
-                unc_name,
+                lumi_unc_name,
                 type=ParameterType.rate_gauss,
-                effect=lumi.get(names=unc_name, direction=("down", "up"), factor=True),
+                effect=effect,
                 transformations=[ParameterTransformation.symmetrize],
             )
+
+        # assuming campaign independent rate uncertainties
+        # -> use the first config instance to get the campaign
+        # NOTE: this might get tricky when including Run-2 (different ecm)
+        config_inst = self.config_insts[0]
+        ecm = config_inst.campaign.ecm
 
         proc_handled_by_unconstrained_rate = set()
         for k, procs in const.processes_per_rate_unconstrained.items():
@@ -309,7 +344,7 @@ class HBWInferenceModelBase(InferenceModel):
             for proc in procs:
                 if proc not in self.processes:
                     continue
-                process_inst = self.config_inst.get_process(proc)
+                process_inst = config_inst.get_process(proc)
                 self.add_parameter(
                     syst_name,
                     process=self.inf_proc(proc),
@@ -336,7 +371,7 @@ class HBWInferenceModelBase(InferenceModel):
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
-                process_inst = self.config_inst.get_process(proc)
+                process_inst = config_inst.get_process(proc)
                 if "scale" not in process_inst.xsecs[ecm]:
                     continue
                 self.add_parameter(
@@ -364,7 +399,7 @@ class HBWInferenceModelBase(InferenceModel):
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
-                process_inst = self.config_inst.get_process(proc)
+                process_inst = config_inst.get_process(proc)
                 if "pdf" not in process_inst.xsecs[ecm]:
                     continue
 
@@ -383,30 +418,37 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        year = self.config_inst.campaign.x.year
+        shapes_already_added = set()
+        years = {config_inst.campaign.x.year for config_inst in self.config_insts}
         for shape_uncertainty, shape_processes in const.processes_per_shape.items():
-            shape_uncertainty_formatted = shape_uncertainty.format(year=year)
-            if shape_uncertainty_formatted not in self.systematics:
-                continue
+            for year in years:
+                shape_uncertainty_formatted = shape_uncertainty.format(year=year)
+                if shape_uncertainty_formatted not in self.systematics:
+                    # skip if the shape uncertainty is not requested
+                    continue
+                if shape_uncertainty_formatted in shapes_already_added:
+                    # skip if the shape uncertainty was already added (happens when {year} is not used in the name)
+                    continue
+                shapes_already_added.add(shape_uncertainty_formatted)
 
-            # If "all" is included, takes all processes except for the ones specified (starting with !)
-            if "all" in shape_processes:
-                _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
-                shape_processes = set(self.processes) - _remove_processes
-            self.add_parameter(
-                shape_uncertainty_formatted,
-                type=ParameterType.shape,
-                process=[self.inf_proc(proc) for proc in shape_processes],
-                config_data={
-                    config_inst.name: self.parameter_config_spec(
-                        shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
-                    )
-                    for config_inst in self.config_insts
-                },
-            )
+                # If "all" is included, takes all processes except for the ones specified (starting with !)
+                if "all" in shape_processes:
+                    _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
+                    shape_processes = set(self.processes) - _remove_processes
+                self.add_parameter(
+                    shape_uncertainty_formatted,
+                    type=ParameterType.shape,
+                    process=[self.inf_proc(proc) for proc in shape_processes],
+                    config_data={
+                        config_inst.name: self.parameter_config_spec(
+                            shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
+                        )
+                        for config_inst in self.config_insts
+                    },
+                )
 
-            is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
-            if is_theory:
-                self.add_parameter_to_group(shape_uncertainty, "theory")
-            else:
-                self.add_parameter_to_group(shape_uncertainty, "experiment")
+                is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
+                if is_theory:
+                    self.add_parameter_to_group(shape_uncertainty, "theory")
+                else:
+                    self.add_parameter_to_group(shape_uncertainty, "experiment")

@@ -214,6 +214,24 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
         return "logit_mlscore.sig_ggf_binary"
 
 
+def best_config_variable_binary_ggf_and_vbf(self, config_cat_inst):
+    """
+    Function to set the config variable for the binary model.
+    """
+    if "sig_ggf" in config_cat_inst.name:
+        return "logit_mlscore_best.sig_ggf_binary"
+    elif "sig_vbf" in config_cat_inst.name:
+        return "logit_mlscore_best.sig_vbf_binary"
+    elif config_cat_inst.x.root_cats.get("dnn"):
+        return "mlscore_best.max_score"
+    else:
+        # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+        logger.warning(
+            f"Category {config_cat_inst.name} is not a DNN category, using binary classifier score.",
+        )
+        return "logit_mlscore_best.sig_ggf_binary"
+
+
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes_dict["hwwzztt"],
@@ -226,8 +244,9 @@ default_cls_dict = {
 
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
-dl_test = HBWInferenceModelBase.derive("dl_test", cls_dict=default_cls_dict)
-dl_bkg_cats = dl.derive("dl_bkg_cats", cls_dict={"config_categories": config_categories.background})
+dl_best = dl.derive("dl_best", cls_dict={
+    "config_variable": best_config_variable_binary_ggf_and_vbf,
+})
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
 dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": jerc_systematics})
 dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_systematics})
