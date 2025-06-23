@@ -141,7 +141,7 @@ def base_init(self: HistProducer) -> None:
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
         # remove dependency towards vjets weights
-        self.local_weight_columns.pop("njet_weight", None)
+        self.local_weight_columns.pop("dy_correction_weight", None)
         self.local_weight_columns.pop("dy_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
@@ -227,20 +227,13 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
     "stitched_normalization_weight": [],
 }})
 
-with_dy_weight = default_hist_producer.derive("with_dy_weight", cls_dict={"weight_columns": {
+with_dy_correction_weight = default_hist_producer.derive("with_dy_correction_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
-    "dy_weight": [],
+    "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
     "stitched_normalization_weight": [],
 }})
 
-with_dy_njet_weight = default_hist_producer.derive("with_dy_njet_weight", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    "njet_weight": [],  # TODO: corrections/shift missing
-    "dy_weight": [],
-    "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
 
 base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],
@@ -309,4 +302,3 @@ from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
 dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
 })
-

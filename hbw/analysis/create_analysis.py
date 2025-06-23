@@ -284,11 +284,11 @@ def create_hbw_analysis(
             store_parts = limited_config_shared_parts(task, store_parts)
         if name not in skip_new_version_schema:
             store_parts = reorganize_parts(task, store_parts)
-        if name in histogram_tasks and task.hist_producer == "with_dy_njet_weight":
+        if name in histogram_tasks and task.hist_producer == "with_dy_correction_weight":
             if not task.dataset.startswith("dy"):
                 store_parts["hist_producer"] = store_parts["hist_producer"].replace(
-                    "with_dy_njet_weight",
-                    "with_dy_weight",
+                    "with_dy_correction_weight",
+                    "with_trigger_weight",
                 )
         return store_parts
 

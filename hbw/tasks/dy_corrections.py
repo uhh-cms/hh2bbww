@@ -1,0 +1,546 @@
+# coding: utf-8
+
+"""
+Tasks to study and create weights for DY events.
+"""
+
+from __future__ import annotations
+
+import gzip
+
+import law
+
+from collections import OrderedDict, defaultdict
+
+from columnflow.tasks.framework.base import ConfigTask
+from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
+from columnflow.util import maybe_import, dev_sandbox
+from columnflow.tasks.framework.mixins import (
+    DatasetsProcessesMixin,
+)
+
+from hbw.tasks.base import HBWTask
+
+hist = maybe_import("hist")
+np = maybe_import("numpy")
+special = maybe_import("scipy.special")
+plt = maybe_import("matplotlib.pyplot")
+
+
+# use scipy erf function definition
+def window(x, r, s):
+    """
+    x: dependent variable (i.g., dilep_pt)
+    r: regime boundary between two fit functions
+    s: sign of erf function (+1 to active second fit function, -1 to active first fit function)
+    """
+
+    sci_erf = 0.5 * (special.erf(s * 0.1 * (x - r)) + 1)
+
+    return sci_erf
+
+
+# Fit funciton: Gaussian * constant connected by erf windows
+def fit_function2(x, c, n, mu, sigma, a, r):
+
+    """
+    A fit function.
+    x: dependent variable (i.g., dilep_pt)
+    c: Gaussian offset
+    n: Gaussian normalization
+    mu and sigma: Gaussian parameters
+    a and b: slope parameters
+    r: regime boundary between Guassian and linear fits
+    """
+
+    gauss = c + (n * (1 / sigma) * np.exp(-0.5 * ((x - mu) / sigma) ** 2))
+    pol = a
+
+    return window(x, r, -1) * gauss + window(x, r, 1) * pol
+
+
+def get_fit2_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c2, n2, mu2, sigma2, a, r1 = params
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*((x-{mu2})/{sigma2})^2)))"
+        pol = f"({a})"
+        w1 = f"(0.5*(erf(-0.1*(x-{r1}))+1))"
+        w2 = f"(0.5*(erf(0.1*(x-{r1}))+1))"
+        return f"({w1}*{gauss2} + {w2}*{pol})"
+    else:
+        start_values = [1, 1, 10, 3, 1, 50]
+        lower_bounds = [0.5, 0, 0, 0, 0, 0]
+        upper_bounds = [1.5, 10, 50, 20, 2, 60]
+        return start_values, lower_bounds, upper_bounds
+
+
+# Attach it
+fit_function2.get_fit_args = get_fit2_args
+
+
+# Fit function: Gaussian * Gaussian * linear connected by erf windows
+def fit_function3(x, c1, n1, mu1, sigma1,  # Gaussian 1
+                c2, n2, mu2, sigma2,  # Gaussian 2
+                a, b,                 # Linear
+                r1, r2):              # Boundaries
+
+    """
+    A fit function.
+    x: dependent variable (i.g., dilep_pt)
+    c: Gaussian offset
+    n: Gaussian normalization
+    mu and sigma: Gaussian parameters
+    a and b: slope parameters
+    r: regime boundary between Guassian and linear fits
+    """
+
+    # Region 1: Gaussian 1 (x < r1)
+    gauss1 = c1 + n1 * (1 / sigma1) * np.exp(-0.5 * ((x - mu1) / sigma1) ** 2)
+    w1 = window(x, r1, -1)
+
+    # Region 2: Gaussian 2 (r1 < x < r2)
+    gauss2 = c2 + n2 * (1 / sigma2) * np.exp(-0.5 * ((x - mu2) / sigma2) ** 2)
+    w2 = window(x, r1, 1) * window(x, r2, -1)
+
+    # Region 3: Linear (x > r2)
+    pol = a + b * x
+    w3 = window(x, r2, 1)
+
+    return w1 * gauss1 + w2 * gauss2 + w3 * pol
+
+
+# Attach helper to get params or string representation
+def get_fit3_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c1, n1, mu1, sigma1, c2, n2, mu2, sigma2, a, b, r1, r2 = params
+        gauss1 = f"(({c1})+(({n1})*(1/{sigma1})*exp(-0.5*((x-{mu1})/{sigma1})^2)))"
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*((x-{mu2})/{sigma2})^2)))"
+        pol = f"(({a})+({b})*x)"
+        w1 = f"(0.5*(erf(-0.1*(x-{r1}))+1))"
+        w2 = f"(0.5*(erf(0.1*(x-{r1}))+1))*(0.5*(erf(-0.1*(x-{r2}))+1))"
+        w3 = f"(0.5*(erf(0.1*(x-{r2}))+1))"
+        return f"({w1}*{gauss1} + {w2}*{gauss2} + {w3}*{pol})"
+    else:
+        start_values = [1, 1, 3, 10, 1, 1, 30, 30, 1, 0, 15, 50]
+        lower_bounds = [0.6, 0, 0, 0, 0.8, 0, 10, 3, 0, -1, 0, 15]
+        upper_bounds = [1.2, 10, 10, 20, 1.2, 10, 70, 50, 2, 2, 20, 60]
+        return start_values, lower_bounds, upper_bounds
+
+
+# Attach it
+fit_function3.get_fit_args = get_fit3_args
+
+
+# Fit function Gaussian * Gaussian * constant connected by erf windows
+def fit_function4(x, c1, n1, mu1, sigma1,
+                c2, n2, mu2, sigma2,
+                a, r1, r2):
+    gauss1 = c1 + n1 * (1 / sigma1) * np.exp(-0.5 * ((x - mu1) / sigma1) ** 2)
+    w1 = window(x, r1, -1)
+
+    gauss2 = c2 + n2 * (1 / sigma2) * np.exp(-0.5 * ((x - mu2) / sigma2) ** 2)
+    w2 = window(x, r1, 1) * window(x, r2, -1)
+
+    pol = a
+    w3 = window(x, r2, 1)
+
+    return w1 * gauss1 + w2 * gauss2 + w3 * pol
+
+
+# Attach helper to get params or string representation
+def get_fit4_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c1, n1, mu1, sigma1, c2, n2, mu2, sigma2, a, r1, r2 = params
+        x = "x"
+        gauss1 = f"(({c1})+(({n1})*(1/{sigma1})*exp(-0.5*(({x}-{mu1})/{sigma1})^2)))"
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*(({x}-{mu2})/{sigma2})^2)))"
+        pol = f"({a})"
+        w1 = f"(0.5*(erf(-0.1*({x}-{r1}))+1))"
+        w2 = f"(0.5*(erf(0.1*({x}-{r1}))+1))*(0.5*(erf(-0.1*({x}-{r2}))+1))"
+        w3 = f"(0.5*(erf(0.1*({x}-{r2}))+1))"
+        return f"({w1}*{gauss1} + {w2}*{gauss2} + {w3}*{pol})"
+    else:
+        start_values = [1, 1, 0.5, 10, 1, 1, 30, 30, 1, 15, 50]
+        lower_bounds = [0.6, 0, 0, 0, 0.8, 0, 10, 3, 0, -1, 15]
+        upper_bounds = [1.2, 1, 1, 20, 1.2, 10, 70, 50, 2, 20, 60]  # mu1 fixed to supress first Gaussian
+        return start_values, lower_bounds, upper_bounds
+
+
+# Attach it
+fit_function4.get_fit_args = get_fit4_args
+
+
+# Fit function: erf + Gaussian * constant connceted by another erf
+def fit_function5(x, c2, n2, mu2, sigma2,  # Gaussian 2
+                a,                # Linear constant
+                r1, r2):              # Boundaries
+
+    """
+    A fit function.
+    x: dependent variable (i.g., dilep_pt)
+    c: Gaussian offset
+    n: Gaussian normalization
+    mu and sigma: Gaussian parameters
+    a and b: slope parameters
+    r: regime boundary between Guassian and linear fits
+    """
+
+    w1 = window(x, r1, -1)
+
+    # Region 2: Gaussian 2 (r1 < x < r2)
+    gauss2 = c2 + n2 * (1 / sigma2) * np.exp(-0.5 * ((x - mu2) / sigma2) ** 2)
+    w2 = window(x, r1, 1) * window(x, r2, -1)
+
+    # Region 3: Linear (x > r2)
+    pol = a
+    w3 = window(x, r2, 1)
+
+    return w1 + w2 * gauss2 + w3 * pol
+
+
+def get_fit5_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c2, n2, mu2, sigma2, a, r1, r2 = params
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*((x-{mu2})/{sigma2})^2)))"
+        print(f"gauss2: {gauss2}")
+        pol = f"({a})"
+        w1 = f"(0.5*(erf(-0.1*(x-{r1}))+1))"
+        w2 = f"(0.5*(erf(0.1*(x-{r1}))+1))*(0.5*(erf(-0.1*(x-{r2}))+1))"
+        w3 = f"(0.5*(erf(0.1*(x-{r2}))+1))"
+        return f"({w1} + {w2}*{gauss2} + {w3}*{pol})"
+    else:
+        start_values = [1, 1, 10, 3, 1, 15, 50]
+        lower_bounds = [0.5, 0, 0, 0, 0, 0, 15]
+        upper_bounds = [1.5, 10, 50, 20, 2, 20, 60]
+        return start_values, lower_bounds, upper_bounds
+
+
+# Attach it
+fit_function5.get_fit_args = get_fit5_args
+
+
+# Define a safe division function to avoid division by zero
+def safe_div(num, den):
+    return np.where(
+        (num > 0) & (den > 0),  # NOTE: in high n_jet bins there are negative weights.
+        num / den,
+        1.0,
+    )
+
+
+# Helper fucntion to get the rate factor for each n_jet bin individually
+def get_rate_factor(h, ptll_var):
+
+    nominator = h["data"][{ptll_var: sum}].values() - h["MC_subtract"][{ptll_var: sum}].values()
+    denominator = h["MC_corr_process"][{ptll_var: sum}].values()
+    njet_rate = safe_div(nominator, denominator)
+
+    return njet_rate
+
+
+# build fit function string
+def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist) -> dict:
+    from scipy import optimize
+
+    # Check if number of jets are valid
+    total_n_jet = np.arange(1, 12)
+    if njet not in total_n_jet:
+        raise ValueError(f"Invalid njets value {njet}, expected int between 1 and 11.")
+
+    # Helper function to plot the fit and string function
+    def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet):
+        #  plot the fit function and the string function (as sanity)
+        def str_function(x, fit_str):
+            from scipy import special
+            fit_str = fit_str.replace("^2", "**2")
+            str_function = eval(fit_str, {"x": x, "exp": np.exp, "erf": special.erf})
+            return str_function
+
+        s = np.linspace(0, 400, 1000)
+        y = [(rate_factor * fit_func(v, *param_fit)) for v in s]
+        z = [str_function(v, fit_string) for v in s]
+        fig, ax = plt.subplots()
+        ax.plot(s, y, color="grey", label="Fit function")
+        ax.plot(s, z, color="black", linestyle="--", label="String function")
+        ax.errorbar(
+            bin_centers,
+            ratio_values,
+            yerr=ratio_err,
+            fmt=".",
+            color="black",
+            linestyle="none",
+            ecolor="black",
+            elinewidth=0.5,
+        )
+        ax.legend(loc="upper right")
+        ax.set_xscale("log")
+        ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
+        ax.set_ylabel("Ratio")
+        ax.set_ylim(0.4, 1.5)
+        ax.set_title(f"Fit function for NLO 2022postEE, njets {njet}")
+        ax.grid(True)
+        fig.savefig(f"plot_fit_njet{njet}.pdf")
+
+    # Define binning
+    if njet < njet_overflow:
+        jet_tuple = (njet, njet + 1)
+    elif njet >= njet_overflow:
+        jet_tuple = (njet_overflow, 11)
+
+    data_h = h["data"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+    dy_h = h["MC_corr_process"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+    mc_h = h["MC_subtract"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+
+    # get bin centers
+    bin_centers = dy_h.axes[-1].centers
+
+    # get histogram values and errors, summing over njets axis
+    dy_values = (dy_h.values()).sum(axis=0)
+    data_values = (data_h.values()).sum(axis=0)
+    mc_values = (mc_h.values()).sum(axis=0)
+    dy_err = (dy_h.variances()).sum(axis=0)
+    data_err = (data_h.variances()).sum(axis=0)
+    mc_err = (mc_h.variances()).sum(axis=0)
+
+    rate_factor_for_fit = (data_values.sum(axis=0) - mc_values.sum(axis=0)) / dy_values.sum(axis=0)
+
+    # calculate (data-mc)/dy ratio and its error
+    ratio_values = (data_values - mc_values) / dy_values
+    ratio_err = (1 / dy_values) * np.sqrt(data_err + mc_err + (ratio_values)**2 * dy_err)
+
+    # fill nans/infs and negative errors with 0
+    ratio_values = np.nan_to_num(ratio_values, nan=0.0)
+    ratio_values = np.where(np.isinf(ratio_values), 0.0, ratio_values)
+    ratio_values = np.where(ratio_values < 0, 0.0, ratio_values)
+    ratio_err = np.nan_to_num(ratio_err, nan=0.0)
+    ratio_err = np.where(np.isinf(ratio_err), 0.0, ratio_err)
+    ratio_err = np.where(ratio_err < 0, 0.0, ratio_err)
+
+    # Retrieve fit parameters
+    starting_values, lower_bounds, upper_bounds = fit_function4.get_fit_args()
+
+    # Fit
+    param_fit, _ = optimize.curve_fit(
+        fit_function4,
+        bin_centers,
+        ratio_values / rate_factor_for_fit,
+        p0=starting_values,
+        method="trf",
+        sigma=np.maximum(ratio_err, 1e-5),
+        absolute_sigma=True,
+        bounds=(lower_bounds, upper_bounds),
+    )
+    print("Fit parameters:", param_fit)
+
+    # Build string
+    fit_func_str = fit_function4.get_fit_args(*param_fit, return_str=True)
+    fit_str = f"{rate_factor}*{fit_func_str}"
+    print(fit_str)
+
+    # Plot Fit and String fucntion with data/MC ratio as cross check
+    plot_fit_func(fit_function4, fit_str, param_fit, rate_factor, ratio_values, njet)
+
+    return fit_str
+
+
+def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
+    """
+    Compute the DY weight data from the given histogram *h* that supposed to contain the following axis:
+
+        - n_jet (int)
+        - ptll (float)
+
+    The returned dictionary follows a nested structure:
+
+        year -> syst -> (min_njet, max_njet) -> [(lower_bound, upper_bound, formula), ...]
+
+        - *year* is one of 2022, 2022EE, 2023, 2023BPix
+        - *syst* is one of nominal, up, down (maybe up1, down1, up2, down2, ... in case of multiple sources)
+        - *(min_njet, max_njet)* is a tuple of integers defining the right-exclusive range of njets
+        - the inner-most list contains 3-tuples with lower and upper bounds of a formula
+    """
+    # prepare constants
+    inf = float("inf")
+    era = f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}"
+
+    # initialize fit dictionary
+    fit_dict = {
+        era: {
+            "nominal": {},
+            # "up": {},
+            # "down": {},
+        },
+    }
+
+    ptll_var = "ptll_for_dy_corr"
+    rate_factor_lst = get_rate_factor(h, ptll_var)
+    print(rate_factor_lst)
+    for njet in np.arange(1, 11):
+        rate_factor = rate_factor_lst[njet]
+        print(rate_factor)
+        fit_str = get_fit_str(njet, 3, rate_factor, h)
+
+        fit_dict[era]["nominal"][(njet, njet + 1)] = [(0.0, inf, fit_str)]
+
+    return fit_dict
+
+
+class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalWorkflow, RemoteWorkflow):
+    """
+    Example command:
+
+        > law run hbw.ComputeDYWeights \
+            --config 22pre_v14 \
+            --processes sm_nlo_data_bkg \
+            --version prod8_dy \
+            --hist-producer no_dy_weight \
+            --categories mumu__dy__os \
+            --variables njets-dilep_pt
+    """
+
+    single_config = True
+
+    corrected_process = DatasetsProcessesMixin.processes.copy(
+        default=("dy",),
+        description="Processes to consider for the scale factors",
+        add_default_to_description=True,
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        # only one category is allowed right now
+        if len(self.categories) != 1:
+            raise ValueError(f"{self.task_family} requires exactly one category, got {self.categories}")
+        # ensure that the category matches a specific pattern: starting with "ee"/"mumu" and ending in "os"
+        if "dycr" not in self.categories[0]:
+            raise ValueError(f"category must start with 'dycr' to derive dy crorections, got {self.categories[0]}")
+        self.category_inst = self.config_inst.get_category(self.categories[0])
+
+        # only one variable is allowed
+        if len(self.variables) != 1:
+            raise ValueError(f"{self.task_family} requires exactly one variable, got {self.variables}")
+        self.variable = self.variables[0]
+        # for now, variable must be "n_jet-ptll_for_dy_corr"
+        if self.variable != "n_jet-ptll_for_dy_corr":
+            raise ValueError(f"variable must be 'n_jet-ptll_ptll_for_dy_corr', got {self.variable}")
+
+        # Only one processes is allowed to correct for
+        if len(self.corrected_process) != 1:
+            raise ValueError(
+                f"Only one corrected process is supported for njet corrections. Got {self.corrected_process}",
+            )
+
+    def output(self):
+        return self.target("dy_weight_data.pkl")
+
+    def run(self):
+
+        def get_subtract_processes():
+            sub_procs = []
+            corrected_proc_inst = self.config_inst.get_process(self.corrected_process[0])
+            data_proc_inst = self.config_inst.get_process("data")
+            corrected_process = [proc.name for proc, _, _ in corrected_proc_inst.walk_processes(include_self=True)]
+            data_processes = [proc.name for proc, _, _ in data_proc_inst.walk_processes(include_self=True)]
+            for proc in self.processes:
+                if proc not in corrected_process and proc not in data_processes:
+                    # TODO hier muss noch ein chekc rein für alle childprocesses
+                    sub_procs.append(proc)
+            return sub_procs
+
+        hists = {}
+
+        for dataset in self.datasets:
+
+            h_in = self.load_histogram(dataset, self.variable)
+            h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
+
+            if self.variable in hists.keys():
+                hists[self.variable] += h_in
+            else:
+                hists[self.variable] = h_in
+
+        data_proc = self.config_inst.get_process("data")
+        subtract_processes = get_subtract_processes()
+
+        hists_corr = defaultdict(OrderedDict)
+        hists_corr["data"] = self.slice_histogram(
+            hists[self.variable], data_proc, self.categories, self.shift, reduce_axes=True,
+        )
+        hists_corr["MC_subtract"] = self.slice_histogram(
+            hists[self.variable], subtract_processes, self.categories, self.shift, reduce_axes=True,
+        )
+        hists_corr["MC_corr_process"] = self.slice_histogram(
+            hists[self.variable], self.corrected_process, self.categories, self.shift, reduce_axes=True,
+        )
+
+        # compute the dy weight data
+        dy_weight_data = compute_weight_data(self, hists_corr)
+
+        # store them
+        self.output().dump(dy_weight_data, formatter="pickle")
+
+
+class ExportDYWeights(HBWTask, ConfigTask):
+    """
+    Example command:
+
+        > law run hbt.ExportDYWeights \
+            --configs 22pre_v14,22post_v14,... \
+            --version prod8_dy
+    """
+
+    sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
+
+    single_config = False
+
+    def requires(self):
+        return {
+            config: ComputeDYWeights.req(
+                self,
+                config=config,
+                processes=[
+                    "vv", "w_lnu", "st",
+                    "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+                    "tt", "ttv", "h", "data",
+                ],
+                corrected_process=("dy",),
+                # use the no_dy_weight hist producer to get the DY weight data
+                hist_producer="with_trigger_weight",
+                categories=("dycr__nonmixed",),
+                variables=("n_jet-ptll_for_dy_corr",),
+            )
+            for config in self.configs
+        }
+
+    def output(self):
+        return self.target("dy_correction_weight.json.gz")
+
+    def run(self):
+        import correctionlib.schemav2 as cs
+        from hbw.tasks.create_clib_file import create_dy_weight_correction
+
+        # load all weight data per config and merge them into a single dictionary
+        dy_weight_data = law.util.merge_dicts(*(
+            inp.load(formatter="pickle") for inp in self.input().values()
+        ))
+
+        print(dy_weight_data)
+
+        # create and save the correction set
+        cset = cs.CorrectionSet(
+            schema_version=2,
+            description="Corrections derived for the hh2bbWW analysis.",
+            corrections=[create_dy_weight_correction(dy_weight_data)],
+        )
+        with self.output().localize("w") as outp:
+            outp.path += ".json.gz"
+            with gzip.open(outp.abspath, "wt") as f:
+                f.write(cset.model_dump_json(exclude_unset=True))
+
+            # validate the content
+            law.util.interruptable_popen(f"correction summary {outp.abspath}", shell=True)
