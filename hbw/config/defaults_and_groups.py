@@ -137,6 +137,9 @@ def set_config_defaults_and_groups(config_inst):
         "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
         "hh_ggf_hbb_htt_kl1_kt1", "hh_vbf_hbb_htt_kv1_k2v1_kl1",
     ]
+    hh_sm1 = [
+        "hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1",
+    ]
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -189,7 +192,8 @@ def set_config_defaults_and_groups(config_inst):
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
-        "dl3": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl4": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -238,12 +242,14 @@ def set_config_defaults_and_groups(config_inst):
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
         "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
         "minor": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
+        "hh_sm1": hh_sm1,
+        "signals": [*hh_sm, *hh_sm1],
     }
     for proc, datasets in config_inst.x.dataset_names.items():
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         # thanks to double counting removal, we can (and should) now use all datasets in each channel
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
@@ -444,12 +450,14 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simpw",
             "yscale": "log",
             "hide_signal_errors": True,
+            "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
             "cms_label": "pw",
             "yscale": "log",
+            "blinding_threshold": 0.008,
         },
     }
     config_inst.x.process_settings_groups = {
