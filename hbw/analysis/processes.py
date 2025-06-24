@@ -20,6 +20,8 @@ def modify_cmsdb_processes():
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
         ttvv, tttt, vvv,
+        h_ggf, h_vbf, vh,
+        tth, thq, thw,
     )
 
     qcd_mu.label = "QCD Muon enriched"
@@ -57,6 +59,39 @@ def modify_cmsdb_processes():
         name="other",
         id=99998,
         label="other",
+        color=color_palette["grey"],
+    )
+
+    minor = create_parent_process(  # noqa: F841
+        [w_lnu, vv, vvv, ttv, ttvv, tth, thq, thw, h_ggf, h_vbf, vh],
+        name="minor",
+        id=99997,
+        label="minor processes",
+        color=color_palette["purple"],
+    )
+
+    multiboson = create_parent_process(  # noqa: F841
+        [vv, vvv],
+        name="multiboson",
+        id=99997,
+        label="multiboson",
+        color=color_palette["green"],
+    )
+
+    ttboson = create_parent_process(  # noqa: F841
+        [tttt, ttv, ttvv, tth, thq, thw],
+        name="ttboson",
+        id=99996,
+        label="tt + boson",
+        color=color_palette["orange"],
+    )
+
+    minor_bosons = create_parent_process(  # noqa: F841
+        [w_lnu, vv, vvv, h_ggf, h_vbf, vh],
+        name="minor_bosons",
+        id=99995,
+        label="",
+        color=color_palette["purple"],
     )
 
     tt_dy = create_parent_process(  # noqa: F841
