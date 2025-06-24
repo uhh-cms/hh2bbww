@@ -25,6 +25,12 @@ def catid_incl(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     return events, mask
 
 
+@categorizer(uses={catid_incl})
+def catid_never(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    events, mask = self[catid_incl](events, **kwargs)
+    return events, ~mask
+
+
 #
 # Categorizers based on gen info
 #

@@ -281,7 +281,10 @@ def add_categories_production(config: od.Config) -> None:
     Adds categories to a *config*, that are typically produced in `ProduceColumns`.
     """
     if config.has_tag("add_categories_ml_called"):
-        logger.warning("We should not call *add_categories_production* when also building ML categories")
+        logger.warning(
+            "We should not call *add_categories_production* when also building ML categories."
+            "This function will not add any categories.",
+        )
         # when ML categories already exist, don't do anything
         return
 
@@ -392,3 +395,34 @@ def add_categories_ml(config, ml_model_inst):
         skip_existing=True,
     )
     logger.info(f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
+
+    # NOTE: needed for downstream tasks that use the non-mixed dycr categories, but
+    # category_ids Producer would not produce the corresponding categories as it is right now
+    dycr__nonmixed = config.add_category(  # noqa: F841
+        name="dycr__nonmixed",
+        selection="catid_never",  # dummy Categorizer, never selected
+        id=2349237509,
+        label="dycr (Nonmixed)",
+    )
+
+    # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
+    # # to be discussed and included in future versions.
+    # category_blocks_bkg = OrderedDict({
+    #     "main": [config.get_category("ttcr"), config.get_category("dycr")],
+    #     "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
+    #     # "jet": [config.get_category("resolved"), config.get_category("boosted")],
+    #     # "b": [config.get_category("1b"), config.get_category("2b")],
+    #     # "dnn": ml_categories,
+    # })
+    # # create combination of categories
+    # n_cats_vr = create_category_combinations(
+    #     config,
+    #     category_blocks_bkg,
+    #     name_fn=name_fn,
+    #     kwargs_fn=kwargs_fn,
+    #     skip_existing=True,
+    # )
+    # logger.info(f"Number of produced VR category insts: {n_cats_vr} (took {(time() - t0):.3f}s)")
+
+    # dycr__nonmixed.add_category(config.get_category("dycr__2e"))
+    # dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
