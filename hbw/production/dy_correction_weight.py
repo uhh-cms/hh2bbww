@@ -51,7 +51,7 @@ def dy_correction_weight(
     njets = ak.where(njet > 10, 10, njet)
 
     var_map = {
-        "era": "2022EE",
+        "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
         "njets": njets,
         "ptll": (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         "syst": "nominal",
@@ -100,6 +100,17 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
+        config=task.config,
+        shift="nominal",
+        processes=[
+            "vv", "w_lnu", "st",
+            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "tt", "ttv", "h", "data",
+        ],
+        # use the no_dy_weight hist producer to get the DY weight data
+        hist_producer="with_trigger_weight",
+        categories=("dycr__nonmixed",),
+        variables=("n_jet-ptll_for_dy_corr",),
     )
 
 

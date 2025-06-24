@@ -12,12 +12,15 @@ import law
 
 from collections import OrderedDict, defaultdict
 
-from columnflow.tasks.framework.base import ConfigTask
+from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.tasks.framework.mixins import (
+    # CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, HistProducerClassMixin,
+    # CategoriesMixin, ShiftSourcesMixin, HistHookMixin, MLModelsMixin,
     DatasetsProcessesMixin,
 )
+from columnflow.tasks.framework.remote import RemoteWorkflow
 
 from hbw.tasks.base import HBWTask
 
@@ -389,7 +392,58 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
     return fit_dict
 
 
-class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalWorkflow, RemoteWorkflow):
+class DYCorrBase(
+    HBWTask,
+    HistogramsUserSingleShiftBase,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    Base class for DY correction tasks.
+    """
+    # TODO: enable MultiConfig in HistogramsUserSingleShiftBase
+    single_config = True
+
+    corrected_process = DatasetsProcessesMixin.processes.copy(
+        default=("dy",),
+        description="Processes to consider for the scale factors",
+        add_default_to_description=True,
+    )
+    processes = DatasetsProcessesMixin.processes.copy(
+        default=(
+            "vv", "w_lnu", "st",
+            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "tt", "ttv", "h", "data",
+        ),
+        description="Processes to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    variables = HistogramsUserSingleShiftBase.variables.copy(
+        default=("n_jet-ptll_for_dy_corr",),
+        description="Variables to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    categories = HistogramsUserSingleShiftBase.categories.copy(
+        default=("dycr__nonmixed",),
+        description="Categories to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    shift = HistogramsUserSingleShiftBase.shift.copy(
+        default="nominal",
+        description="Shift to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    hist_producer = HistogramsUserSingleShiftBase.hist_producer.copy(
+        default="with_trigger_weight",
+        description="Histogram producer to use for the DY corrections",
+        add_default_to_description=True,
+    )
+
+    def create_branch_map(self):
+        return {0: None}
+
+
+class ComputeDYWeights(DYCorrBase):
     """
     Example command:
 
@@ -402,12 +456,9 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
             --variables njets-dilep_pt
     """
 
-    single_config = True
-
-    corrected_process = DatasetsProcessesMixin.processes.copy(
-        default=("dy",),
-        description="Processes to consider for the scale factors",
-        add_default_to_description=True,
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        HistogramsUserSingleShiftBase.reqs,
     )
 
     def __init__(self, *args, **kwargs) -> None:
@@ -485,7 +536,7 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
         self.output().dump(dy_weight_data, formatter="pickle")
 
 
-class ExportDYWeights(HBWTask, ConfigTask):
+class ExportDYWeights(DYCorrBase):
     """
     Example command:
 
@@ -496,26 +547,20 @@ class ExportDYWeights(HBWTask, ConfigTask):
 
     sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
 
-    single_config = False
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        ComputeDYWeights=ComputeDYWeights,
+    )
 
     def requires(self):
-        return {
-            config: ComputeDYWeights.req(
-                self,
-                config=config,
-                processes=[
-                    "vv", "w_lnu", "st",
-                    "dy_m4to10", "dy_m10to50", "dy_m50toinf",
-                    "tt", "ttv", "h", "data",
-                ],
-                corrected_process=("dy",),
-                # use the no_dy_weight hist producer to get the DY weight data
-                hist_producer="with_trigger_weight",
-                categories=("dycr__nonmixed",),
-                variables=("n_jet-ptll_for_dy_corr",),
-            )
-            for config in self.configs
+        return {self.config: self.reqs.ComputeDYWeights.req(self)}
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs["dy_correction_weight"] = {
+            self.config: self.reqs.ComputeDYWeights.req(self),
         }
+        return reqs
 
     def output(self):
         return self.target("dy_correction_weight.json.gz")
@@ -526,7 +571,7 @@ class ExportDYWeights(HBWTask, ConfigTask):
 
         # load all weight data per config and merge them into a single dictionary
         dy_weight_data = law.util.merge_dicts(*(
-            inp.load(formatter="pickle") for inp in self.input().values()
+            inp.load(formatter="pickle") for inp in self.input()["dy_correction_weight"].values()
         ))
 
         print(dy_weight_data)
