@@ -257,14 +257,20 @@ def add_variables(config: od.Config) -> None:
         },
     )
 
-    # ptll binned to derive njet correction -> should be a fit at some point
+    log_binning = (
+        list(np.logspace(0., 0.60206, 5)) +
+        list(np.logspace(0.60206, 1.47712, 15))[1:] +
+        list(np.logspace(1.47712, 2, 15))[1:] +
+        list(np.logspace(2, 2.69897, 4))[1:]
+    )
     config.add_variable(
         # NOTE: only works when running `prepare_objects` in HistProducer
-        name="ptll_for_corr",
+        name="ptll_for_dy_corr",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
-        binning=[0., 10., 20., 30., 40., 50., 100., 150., 200., 250., 300, 350., 400.],
+        binning=log_binning,
+        log_x=True,
         unit="GeV",
-        x_title=r"$p_{T}^{ll}$",
+        x_title=r"$p_{T}^{ll} (binned for DY weights)$",
         aux={
             # NOTE: to add electron and muon objects, we need 4-vector components + the charge
             "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
@@ -310,7 +316,7 @@ def add_variables(config: od.Config) -> None:
         expression=lambda events: ak.num(events.ForwardJet["pt"], axis=1),
         aux={"inputs": {"{ForwardJet,Jet}.{eta,pt,phi,mass}"}},
         binning=(12, -0.5, 11.5),
-        x_title="Number of jets",
+        x_title="Number of jets (forward region)",
         discrete_x=True,
     )
 
