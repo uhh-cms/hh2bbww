@@ -39,7 +39,7 @@ def add_dl_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="m_lljjMET",
-        binning=(40, 0, 600),
+        binning=(40, 0, 1200),
         x_title=r"$m_{lljj \not{E_T}}}$",
         unit="GeV",
     )
@@ -143,7 +143,8 @@ def add_dl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mllMET",
         expression="mli_mllMET",
-        binning=(40, 0, 200),
+        binning=(60, 0, 1200),
+        aux={"overflow": True},
         x_title=r"$m_{llMET}$",
     )
     config.add_variable(
@@ -161,8 +162,9 @@ def add_dl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mbbllMET",
         expression="mli_mbbllMET",
-        binning=(40, 0, 500),
+        binning=(40, 0, 1200),
         unit="GeV",
+        aux={"overflow": True},
         x_title=r"$m_{bbllMET}$",
     )
     config.add_variable(

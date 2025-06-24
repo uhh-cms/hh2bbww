@@ -89,8 +89,9 @@ def add_common_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mbb",
         expression="mli_mbb",
-        binning=(40, 0, 400),
+        binning=(40, 0, 1200),
         unit="GeV",
+        aux={"overflow": True},
         x_title=r"$m_{bb}$",
     )
     config.add_variable(

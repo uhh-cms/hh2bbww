@@ -6,7 +6,6 @@ import law
 import luigi
 
 from functools import cached_property
-from collections import OrderedDict, defaultdict
 
 from columnflow.tasks.framework.base import Requirements, ShiftTask
 from columnflow.tasks.framework.mixins import (
@@ -16,12 +15,6 @@ from columnflow.tasks.framework.mixins import (
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.selection import MergeSelectionStats
 from columnflow.util import maybe_import, dev_sandbox
-
-# For NJet Corrections
-from columnflow.tasks.framework.histograms import (
-    HistogramsUserSingleShiftBase,
-)
-from columnflow.tasks.histograms import MergeHistograms
 
 # from columnflow.config_util import get_datasets_from_process
 from hbw.tasks.base import HBWTask
@@ -287,147 +280,6 @@ class GetBtagNormalizationSF(
             cset_json = json.loads(cset_json)
 
         outputs["btag_renormalization_sf"].dump(
-            cset_json,
-            formatter="json",
-        )
-
-
-class GetNJetCorrections(
-    HBWTask,
-    HistogramsUserSingleShiftBase,
-    law.LocalWorkflow,
-    RemoteWorkflow,
-):
-    """
-    Loads histograms containing the trigger informations for data and MC and calculates the trigger scale factors.
-    """
-
-    variables = law.CSVParameter(
-        # default=("n_jet-n_forwardjet",),
-        default=("n_jet",),
-        description="Weight producers to use for plotting",
-    )
-
-    categories = law.CSVParameter(
-        default=("dycr__nonmixed",),
-        description="Weight producers to use for plotting",
-    )
-
-    # upstream requirements
-    reqs = Requirements(
-        RemoteWorkflow.reqs,
-        MergeHistograms=MergeHistograms,
-    )
-
-    corrected_processes = DatasetsProcessesMixin.processes.copy(
-        default=("dy",),
-        description="Processes to consider for the scale factors",
-        add_default_to_description=True,
-    )
-
-    @cached_property
-    def dataset_insts(self):
-        dataset_insts = [self.config_inst.get_dataset(dataset) for dataset in self.datasets]
-        return dataset_insts
-
-    def output(self):
-        return {
-            "njet_corrections":
-            self.target(
-                f"{self.variables[0]}_{self.categories[0]}",
-                "_{self.corrected_processes[0]}_njet_corrections.json",
-            ),
-        }
-
-    def create_branch_map(self):
-        # single branch without payload
-        return {0: None}
-
-    def run(self):
-        import correctionlib
-        import correctionlib.convert
-
-        def safe_div(num, den):
-            return np.where(
-                (num != 0) & (den != 0),  # TODO could be also beneficial to use > 0
-                num / den,
-                1.0,
-            )
-
-        def get_subtract_processes():
-            sub_procs = []
-            for proc in self.processes:
-                if proc not in self.corrected_processes and "data" not in proc:
-                    sub_procs.append(proc)
-            return sub_procs
-
-        if len(self.corrected_processes) != 1:
-            raise ValueError("Only one corrected process is supported for njet corrections.")
-
-        outputs = self.output()
-        hists = {}
-
-        for variable in self.variables:
-            for dataset in self.datasets:
-
-                h_in = self.load_histogram(dataset, variable)
-                h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
-
-                if variable in hists.keys():
-                    hists[variable] += h_in
-                else:
-                    hists[variable] = h_in
-
-        data_proc = self.config_inst.get_process("data")
-        subtract_processes = get_subtract_processes()
-
-        hists_corr = defaultdict(OrderedDict)
-        hists_corr[variable]["data"] = self.slice_histogram(
-            hists[variable], data_proc, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr[variable]["MC_subtract"] = self.slice_histogram(
-            hists[variable], subtract_processes, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr[variable]["MC_corr_process"] = self.slice_histogram(
-            hists[variable], self.corrected_processes, self.categories, self.shift, reduce_axes=True,
-        )
-
-        nominator = hists_corr[variable]["data"].values() - hists_corr[variable]["MC_subtract"].values()
-        denominator = hists_corr[variable]["MC_corr_process"].values()
-        njet_correction = safe_div(nominator, denominator)
-
-        ax = hists_corr[variable]["data"].axes
-        out_axes = hist.axis.Variable(ax[0].edges, name=ax[0].name, label=ax[0].label)
-
-        out_axes = []
-        for ax in hists_corr[variable]["data"].axes:
-            if isinstance(ax, hist.axis.Variable):
-                out_axes.append(ax)
-            elif isinstance(ax, hist.axis.Integer):
-                out_axes.append(hist.axis.Variable(ax.edges, name=ax.name, label=ax.label))
-            else:
-                raise ValueError(f"Unsupported axis type {type(ax)}")
-
-        correction_hist = hist.Hist(*out_axes, data=njet_correction)
-        correction_hist.name = f"{self.corrected_processes[0]}_njet_corrections"
-        correction_hist.label = "out"
-
-        njet_corrections = correctionlib.convert.from_histogram(correction_hist)
-        njet_corrections.description = f"corrections for {self.corrected_processes[0]}, binned in njet"
-
-        # TODO: Decied what do do with overflow bins
-        njet_corrections.data.flow = "clamp"
-        # create correction set and store it
-        cset = correctionlib.schemav2.CorrectionSet(
-            schema_version=2,
-            description="njet corrections",
-            corrections=[
-                njet_corrections,
-            ],
-        )
-        cset_json = cset.json(exclude_unset=True)
-
-        outputs["njet_corrections"].dump(
             cset_json,
             formatter="json",
         )
