@@ -147,6 +147,7 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
 
     if has_ak_column(events, "FatJet.particleNet_XbbVsQCD"):
         # TODO: change to particleNetWithMass_HbbvsQCD after next selection run
+        # NOTE: this sometimes produces errors due to NaN values in the column
         events = combine_collections(events, ["FatJet"], "FatBjet", sort_by="particleNet_XbbVsQCD")
 
     # transform MET into 4-vector
