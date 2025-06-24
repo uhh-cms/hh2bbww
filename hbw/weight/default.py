@@ -93,6 +93,23 @@ def base_setup(
         f"HistProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
         f"{', '.join(self.weight_columns.keys())}",
     )
+    if "dy_correction_weight" in self.local_weight_columns.keys():
+        # add dy_correction_weight to the reader targets
+        reader_targets["dy_correction_weight"] = inputs["dy_correction_weight_producer"]["columns"]
+
+
+@base.requires
+def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableDict) -> None:
+    """
+    Define the requirements for the base HistProducer.
+    This is called before the setup method.
+    """
+    from columnflow.tasks.production import ProduceColumns
+    if "dy_correction_weight" in self.local_weight_columns.keys():
+        reqs["dy_correction_weight_producer"] = ProduceColumns.req(
+            task,
+            producer="dy_correction_weight",
+        )
 
 
 @base.init
@@ -109,6 +126,8 @@ def base_init(self: HistProducer) -> None:
 
     dataset_inst = getattr(self, "dataset_inst", None)
     if dataset_inst and dataset_inst.is_data:
+        # if we are on data, we do not need any weights
+        self.local_weight_columns = {}
         return
 
     year = self.config_inst.campaign.x.year
