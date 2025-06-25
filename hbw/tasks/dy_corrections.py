@@ -570,8 +570,9 @@ class ExportDYWeights(DYCorrBase):
         from hbw.tasks.create_clib_file import create_dy_weight_correction
 
         # load all weight data per config and merge them into a single dictionary
+        inputs = self.input()
         dy_weight_data = law.util.merge_dicts(*(
-            inp.load(formatter="pickle") for inp in self.input()["dy_correction_weight"].values()
+            inp.load(formatter="pickle") for inp in inputs.values()
         ))
 
         print(dy_weight_data)
