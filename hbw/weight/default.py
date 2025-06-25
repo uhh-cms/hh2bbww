@@ -262,7 +262,10 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
     "stitched_normalization_weight": [],
 }})
 
-with_dy_correction_weight = default_hist_producer.derive("with_dy_correction_weight", cls_dict={"weight_columns": {
+# NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
+# because the dy_correction_weight is only relevant for DY processes. This is implemented in
+# hbw/analysis/create_analysis.py
+with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={"weight_columns": {
     **default_correction_weights,
     "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
