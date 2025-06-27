@@ -68,11 +68,15 @@ def cats_ml_reqs(self: Producer, task: law.Task, reqs: dict) -> None:
     if "ml" in reqs:
         return
 
-    from columnflow.tasks.ml import MLEvaluation
-    reqs["ml"] = MLEvaluation.req(
-        task,
-        ml_model=self.ml_model_name,
-    )
+    from columnflow.tasks.ml import MLTraining, MLEvaluation
+    if task.pilot:
+        # skip MLEvaluation in pilot, but ensure that MLTraining has already been run
+        reqs["mlmodel"] = MLTraining.req(task, ml_model=self.ml_model_name)
+    else:
+        reqs["ml"] = MLEvaluation.req(
+            task,
+            ml_model=self.ml_model_name,
+        )
 
 
 @cats_ml.setup
