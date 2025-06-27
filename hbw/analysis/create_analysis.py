@@ -317,5 +317,7 @@ def create_hbw_analysis(
         "hbw_parts": hbw_parts,
         "pre_reducer": pre_reducer_parts,
     }
+    from hbw.config.hist_hooks import add_hist_hooks
+    add_hist_hooks(analysis_inst)
 
     return analysis_inst

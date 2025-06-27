@@ -23,7 +23,6 @@ from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_da
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
-from hbw.config.hist_hooks import add_hist_hooks
 from hbw.config.scale_factors import configure_for_scale_factors
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
@@ -935,9 +934,6 @@ def add_config(
 
     # add variables
     add_variables(cfg)
-
-    # add hist hooks
-    add_hist_hooks(cfg)
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL
