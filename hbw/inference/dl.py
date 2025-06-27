@@ -65,6 +65,7 @@ config_categories = DotDict({
     ],
 })
 
+
 rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
     "lumi_13TeV_2016",
@@ -111,7 +112,7 @@ shape_systematics = [
     "murf_envelope_tt",
     "murf_envelope_st",
     "murf_envelope_dy",
-    "murf_envelope_w_lnu",
+    # "murf_envelope_w_lnu",
     # "murf_envelope_ttv",
     # "murf_envelope_vv",
     # "murf_envelope_h",
@@ -119,7 +120,7 @@ shape_systematics = [
     "pdf_shape_tt",
     "pdf_shape_st",
     "pdf_shape_dy",
-    "pdf_shape_w_lnu",
+    # "pdf_shape_w_lnu",
     # "pdf_shape_ttv",
     # "pdf_shape_vv",
     # "pdf_shape_h",
@@ -135,8 +136,11 @@ shape_systematics = [
     "mu_id_sf",
     "mu_iso_sf",
     "e_sf",
+    "e_reco_sf",
     "trigger_sf",
     "minbias_xs",
+    "isr",
+    "fsr",
     "top_pt",
 ]
 
@@ -144,6 +148,10 @@ jerc_systematics = [
     "jer",
     "jec_Total",
 ]
+
+# systematics = DotDict({
+#     "all": rate_systematics + shape_systematics + jerc_systematics,
+# })
 
 # All systematics to be included in the final datacard
 systematics = rate_systematics + shape_systematics
@@ -172,7 +180,7 @@ backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    "st_schannel",
+    # "st_schannel",  # TODO: bogus norm?
     "tt",
     "ttw",
     "ttz",
@@ -234,6 +242,17 @@ dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_syste
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
     "systematics": systematics + jerc_systematics,
+    "skip_data": False,
+})
+dl_data_full = dl.derive("dl_data_full", cls_dict={
+    # NOTE: needs to be run with --hist-hooks blind !!!!
+    "config_categories": config_categories.default,
+    "systematics": systematics + jerc_systematics,
+    "skip_data": False,
+})
+dl_data_test = dl.derive("dl_data_test", cls_dict={
+    "config_categories": config_categories.default,
+    "systematics": rate_systematics,
     "skip_data": False,
 })
 

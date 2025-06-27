@@ -300,6 +300,7 @@ class MLClassifierBase(MLModel):
                         null_value=-1,
                         binning=(1000, 0., 1.),
                         # x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
+                        x_title=f"DNN output score {proc}",
                         aux={
                             "rebin": 25,
                             "rebin_config": {
@@ -314,6 +315,7 @@ class MLClassifierBase(MLModel):
                         null_value=-1,
                         binning=(1000, -2., 10.),
                         # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        x_title=f"logit(DNN output score {proc})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
                             "rebin": 25,
