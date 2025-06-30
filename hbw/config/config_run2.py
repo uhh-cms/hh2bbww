@@ -418,6 +418,17 @@ def add_config(
         "b_down": -0.0005 * 0.5,
     }
 
+    cfg.x.top_pt_theory_weight = {
+        "a": 0.103,
+        "b": -0.0118,
+        "c": 0.000134,
+        "d": 0.973,
+    }
+    for param in list(cfg.x.top_pt_theory_weight.keys()):
+        # dummy variations (TODO!!!)
+        cfg.x.top_pt_theory_weight[f"{param}_up"] = cfg.x.top_pt_theory_weight[param]
+        cfg.x.top_pt_theory_weight[f"{param}_down"] = cfg.x.top_pt_theory_weight[param]
+
     # V+jets reweighting
     cfg.x.vjets_reweighting = DotDict.wrap({
         "z": {
