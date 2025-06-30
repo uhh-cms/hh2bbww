@@ -300,6 +300,13 @@ def create_hbw_analysis(
             store_parts = limited_config_shared_parts(task, store_parts)
         if name not in skip_new_version_schema:
             store_parts = reorganize_parts(task, store_parts)
+        if name in histogram_tasks and task.hist_producer == "top_pt_theory":
+            # if not task.dataset.startswith("tt_"):
+            if not task.dataset_inst.has_tag("is_ttbar"):
+                store_parts["hist_producer"] = store_parts["hist_producer"].replace(
+                    "top_pt_theory",
+                    "with_dy_corr" if task.dataset.startswith("dy") else "with_trigger_weight",
+                )
         if name in histogram_tasks and task.hist_producer == "with_dy_corr":
             if not task.dataset.startswith("dy"):
                 store_parts["hist_producer"] = store_parts["hist_producer"].replace(
@@ -317,7 +324,7 @@ def create_hbw_analysis(
         "hbw_parts": hbw_parts,
         "pre_reducer": pre_reducer_parts,
     }
-    from hbw.config.hist_hooks import add_hist_hooks
+    from hbw.analysis.hist_hooks import add_hist_hooks
     add_hist_hooks(analysis_inst)
 
     return analysis_inst

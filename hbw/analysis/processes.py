@@ -70,14 +70,6 @@ def modify_cmsdb_processes():
         color=color_palette["purple"],
     )
 
-    multiboson = create_parent_process(  # noqa: F841
-        [vv, vvv],
-        name="multiboson",
-        id=99997,
-        label="multiboson",
-        color=color_palette["green"],
-    )
-
     ttboson = create_parent_process(  # noqa: F841
         [tttt, ttv, ttvv, tth, thq, thw],
         name="ttboson",
@@ -94,6 +86,14 @@ def modify_cmsdb_processes():
         color=color_palette["purple"],
     )
 
+    multiboson = create_parent_process(  # noqa: F841
+        [vv, vvv],
+        name="multiboson",
+        id=99994,
+        label="multiboson",
+        color=color_palette["green"],
+    )
+
     tt_dy = create_parent_process(  # noqa: F841
         [tt, dy],
         name="tt_dy",
@@ -101,6 +101,7 @@ def modify_cmsdb_processes():
         label="tt + DY",
         color=color_palette["red"],
     )
+
 
     decay_map = {
         "lf": {
