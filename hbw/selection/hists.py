@@ -39,7 +39,7 @@ def hbw_selection_hists(
     # collect important information from the results
     no_weights = ak.values_astype(ak.Array(np.ones(len(events))), np.int64)
     event_masks = {
-        "Initial": no_weights,
+        "Initial": results.steps.no_sel_mask,
         "selected_no_bjet": results.steps.all_but_bjet,
         "selected": results.event,
     }

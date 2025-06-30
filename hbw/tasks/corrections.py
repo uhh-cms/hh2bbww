@@ -37,6 +37,25 @@ class GetBtagNormalizationSF(
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    """
+    This task computes btag re-normalization scale factors based on the selection statistics.
+    It merges the selection statistics across datasets and processes, and computes the scale factors
+    based on the provided rescaling mode (either "nevents" or "xs"). The scale factors are stored
+    as correctionlib evaluators in a JSON file.
+
+    The scale factors are computed in different binnings, such as:
+    - `ht`, `njet`, `nhf`
+    - `ht`, `njet`
+    - `ht`
+    - `njet`
+    - `nhf`
+
+    The output is a JSON file containing the scale factors, which can be used for re-normalization
+    of btag weights in the analysis.
+
+    Resources:
+    - https://btv-wiki.docs.cern.ch/PerformanceCalibration/shapeCorrectionSFRecommendations/#effect-on-event-yields
+    """
     resolution_task_cls = MergeSelectionStats
 
     single_config = True

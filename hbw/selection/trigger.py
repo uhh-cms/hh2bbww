@@ -164,6 +164,15 @@ def trigger_selection_init(self: Selector) -> None:
             for l1_seed in trigger.x.L1_seeds
         }
 
+    # add L1 seed columns
+    for trigger in self.config_inst.x.triggers:
+        if not trigger.x("L1_seeds", None):
+            logger.warning(f"Trigger '{trigger.name}' does not have L1 seeds defined")
+        self.uses |= {
+            f"L1.{l1_seed}"
+            for l1_seed in trigger.x.L1_seeds
+        }
+
     # testing: add HLT columns to keep columns
     self.config_inst.x.keep_columns["cf.ReduceEvents"] |= {
         f"HLT.{trigger.hlt_field}"

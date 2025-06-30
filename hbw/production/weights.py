@@ -8,10 +8,11 @@ import functools
 import law
 
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column
+from columnflow.columnar_util import set_ak_column, fill_at
 from columnflow.selection import SelectionResult
 from columnflow.production import Producer, producer
 from columnflow.production.cms.pileup import pu_weight
+from columnflow.production.cms.parton_shower import ps_weights
 from columnflow.production.normalization import (
     normalization_weights,
     stitched_normalization_weights,
@@ -57,8 +58,10 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
     # compute pu weights
     events = self[pu_weight](events, **kwargs)
+    if self.has_dep(ps_weights):
+        events = self[ps_weights](events, **kwargs)
 
-    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(btag_weights):
         # compute btag SF weights (for renormalization tasks)
         events = self[btag_weights](
             events,
@@ -69,20 +72,22 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
         )
 
     # skip scale/pdf weights for some datasets (missing columns)
-    if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(murmuf_envelope_weights):
         # compute scale weights
         events = self[murmuf_envelope_weights](events, **kwargs)
 
+    if self.has_dep(murmuf_weights):
         # read out mur and weights
         events = self[murmuf_weights](events, **kwargs)
 
-    if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
+    if self.has_dep(pdf_weights):
         # compute pdf weights
         events = self[pdf_weights](
             events,
             outlier_threshold=0.99,
             outlier_action="remove",
-            outlier_log_mode="warning",
+            outlier_log_mode="debug",
+            invalid_weights_action="ignore" if self.dataset_inst.has_tag("partial_lhe_weights") else "raise",
             **kwargs,
         )
 
@@ -101,39 +106,46 @@ def event_weights_to_normalize_init(self) -> None:
     if not has_tag("skip_pdf", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {pdf_weights}
 
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {ps_weights}
+
 
 @event_weights_to_normalize.post_init
 def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
-    for cls in self.uses:
-        if cls == btag_weights and task.shift == "nominal":
+    for _cls in self.uses:
+        if _cls == btag_weights and task.shift == "nominal":
             self.produces |= {btag_weights}
-        elif cls == btag_weights:
+        elif _cls == btag_weights:
             self.produces |= self.deps[btag_weights].produced_columns
         elif task.shift == "nominal":
-            self.produces |= self.deps[cls].produced_columns
+            self.produces |= self.deps[_cls].produced_columns
         else:
             self.produces |= {
-                route for route in self.deps[cls].produced_columns
+                route for route in self.deps[_cls].produced_columns
                 if not route.nano_column.endswith("_up") and not route.nano_column.endswith("_down")
             }
 
 
+# renormalized weights
 normalized_scale_weights = normalized_weight_factory(
     producer_name="normalized_scale_weights",
     weight_producers={murmuf_envelope_weights, murmuf_weights},
 )
-
 normalized_pdf_weights = normalized_weight_factory(
     producer_name="normalized_pdf_weights",
     weight_producers={pdf_weights},
 )
-
 normalized_pu_weights = normalized_weight_factory(
     producer_name="normalized_pu_weights",
     weight_producers={pu_weight},
 )
+normalized_ps_weights = normalized_weight_factory(
+    producer_name="normalized_ps_weights",
+    weight_producers={ps_weights},
+)
 
+# muon weights
 muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
     "weight_name": "muon_id_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_iso_sf_names)),
@@ -141,6 +153,12 @@ muon_id_weights = muon_weights.derive("muon_id_weights", cls_dict={
 muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
+})
+
+# electron weights
+electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
+    "weight_name": "electron_reco_weight",
+    "get_electron_config": (lambda self: self.config_inst.x.electron_reco_sf_names),
 })
 
 
@@ -279,6 +297,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[electron_weights](events, **kwargs)
+        events = self[electron_reco_weights](events, **kwargs)
+
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[muon_id_iso_weights](events, **kwargs)
 
@@ -287,6 +307,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # normalize event weights using stats
     events = self[normalized_pu_weights](events, **kwargs)
+
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        events = self[normalized_ps_weights](events, **kwargs)
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_scale_weights](events, **kwargs)
@@ -305,8 +328,8 @@ def event_weights_init(self: Producer) -> None:
         return
 
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {electron_weights}
-        self.produces |= {electron_weights}
+        self.uses |= {electron_weights, electron_reco_weights}
+        self.produces |= {electron_weights, electron_reco_weights}
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {muon_id_iso_weights}
@@ -323,6 +346,10 @@ def event_weights_init(self: Producer) -> None:
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights, normalized_btag_weights}
         self.produces |= {normalized_btag_weights}
+
+    if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {normalized_ps_weights}
+        self.produces |= {normalized_ps_weights}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_scale_weights}
@@ -350,7 +377,8 @@ def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs
         # TODO: this feels very unsafe because genWeight can also be just 1 for all events. To be revisited
         weight_too_large = abs(events.genWeight) > 0.5
         logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
-        events = set_ak_column(events, "mc_weight", ak.where(weight_too_large, 0, events.mc_weight))
+
+        events = fill_at(events, weight_too_large, "mc_weight", 0.0, value_type=np.float32)
 
     # check for anomalous weights and store in stats
     median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]

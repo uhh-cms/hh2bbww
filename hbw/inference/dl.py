@@ -4,32 +4,66 @@
 hbw(dl) inference model.
 """
 
+import law
+from columnflow.util import DotDict
 import hbw.inference.constants as const  # noqa
 from hbw.inference.base import HBWInferenceModelBase
 
+
+logger = law.logger.get_logger(__name__)
 
 #
 # Defaults for all the Inference Model parameters
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = "dl_22post_benchmark"
+ml_model_name = ["multiclass", "ggf", "vbf"]
 
 # All categories to be included in the final datacard
-config_categories = [
-    "sr__1b__ml_sig_ggf",
-    "sr__1b__ml_sig_vbf",
-    "sr__1b__ml_tt",
-    "sr__1b__ml_st",
-    "sr__1b__ml_dy",
-    "sr__1b__ml_h",
-    "sr__2b__ml_sig_ggf",
-    "sr__2b__ml_sig_vbf",
-    "sr__2b__ml_tt",
-    "sr__2b__ml_st",
-    "sr__2b__ml_dy",
-    "sr__2b__ml_h",
-]
+config_categories = DotDict({
+    "default": [
+        "sr__1b__ml_sig_ggf",
+        "sr__1b__ml_sig_vbf",
+        "sr__1b__ml_tt",
+        "sr__1b__ml_st",
+        "sr__1b__ml_dy",
+        "sr__1b__ml_h",
+        "sr__2b__ml_sig_ggf",
+        "sr__2b__ml_sig_vbf",
+        "sr__2b__ml_tt",
+        "sr__2b__ml_st",
+        "sr__2b__ml_dy",
+        "sr__2b__ml_h",
+    ],
+    "sr": [
+        "sr__1b__ml_sig_ggf",
+        "sr__1b__ml_sig_vbf",
+        "sr__2b__ml_sig_ggf",
+        "sr__2b__ml_sig_vbf",
+    ],
+    "background": [
+        "sr__1b__ml_tt",
+        "sr__1b__ml_st",
+        "sr__1b__ml_dy",
+        "sr__1b__ml_h",
+        "sr__2b__ml_tt",
+        "sr__2b__ml_st",
+        "sr__2b__ml_dy",
+        "sr__2b__ml_h",
+    ],
+    "no_nn_cats": [
+        "sr__1b",
+        "sr__2b",
+    ],
+    "bjet_incl": [
+        "sr__ml_sig_ggf",
+        "sr__ml_sig_vbf",
+        "sr__ml_tt",
+        "sr__ml_st",
+        "sr__ml_dy",
+        "sr__ml_h",
+    ],
+})
 
 rate_systematics = [
     # Lumi: should automatically choose viable uncertainties based on campaign
@@ -138,36 +172,27 @@ backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    # "st_schannel",  # Not datasets anyways
+    "st_schannel",
     "tt",
-    # "ttw",  # TODO: dataset not working?
+    "ttw",
     "ttz",
     "dy_hf", "dy_lf",
     # "w_lnu",  # TODO: bogus norm?
     "vv",
+    "vvv",
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    # "ttv",  # TODO
-    # "ttvv",  # TODO
-    # "vvv",  # TODO
-    # TODO: add thq, thw, bbh
+    "thq", "thw", "ttvh",
+    "tttt",
+    "ttvv",
+    # TODO: add bbh
     # "qcd",  # probably not needed
 ]
 
 processes_dict = {
-    "default": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
     "test": ["tt", *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
     "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
-}
-
-default_cls_dict = {
-    "ml_model_name": ml_model_name,
-    "processes": processes_dict["default"],
-    "config_categories": config_categories,
-    "systematics": rate_systematics,
-    "mc_stats": True,
-    "skip_data": True,
 }
 
 
@@ -182,93 +207,51 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     elif config_cat_inst.x.root_cats.get("dnn"):
         return "mlscore.max_score"
     else:
-        raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+        # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+        logger.warning(
+            f"Category {config_cat_inst.name} is not a DNN category, using binary classifier score.",
+        )
+        return "logit_mlscore.sig_ggf_binary"
+
+
+default_cls_dict = {
+    "ml_model_name": ml_model_name,
+    "processes": processes_dict["hwwzztt"],
+    "config_categories": config_categories.default,
+    "systematics": rate_systematics,
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "mc_stats": True,
+    "skip_data": True,
+}
 
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl_test = HBWInferenceModelBase.derive("dl_test", cls_dict=default_cls_dict)
+dl_bkg_cats = dl.derive("dl_bkg_cats", cls_dict={"config_categories": config_categories.background})
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
-
-# TODO: remove since outdated model
-dl_binary = dl.derive("dl_binary", cls_dict={
-    "ml_model_name": ["dl_22post_benchmark", "dl_22post_binary_test2"],
-    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
-    "systematics": rate_systematics,
+dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": jerc_systematics})
+dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_systematics})
+dl_data = dl.derive("dl_data", cls_dict={
+    "config_categories": config_categories.background,
+    "systematics": systematics + jerc_systematics,
+    "skip_data": False,
 })
 
-
-previous = dl.derive("previous", cls_dict={
-    "ml_model_name": ["dl_22post_previous_merge_hh"],
-    "systematics": rate_systematics,
-})
-previous_and_binary = dl.derive("previous_and_binary", cls_dict={
-    "ml_model_name": ["dl_22post_previous_merge_hh", "dl_22post_binary_test3"],
-    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
-    "systematics": rate_systematics,
-})
-# TODO: change config variable to use the correct scores per category
-benchmark = dl.derive("benchmark", cls_dict={
-    "ml_model_name": ["dl_22post_benchmark_v3", "dl_22post_binary_test3"],
-    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
-    "systematics": rate_systematics,
-})
-hh_multi_dataset = dl.derive("hh_multi_dataset", cls_dict={
-    "ml_model_name": ["dl_22post_previous"],
-    "systematics": rate_systematics,
-})
-hh_multi_dataset_and_binary = dl.derive("hh_multi_dataset_and_binary", cls_dict={
-    "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3"],
-    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
-    "systematics": rate_systematics,
-})
-
-with_vbf_binary = dl.derive("with_vbf_binary", cls_dict={
-    "ml_model_name": ["dl_22post_previous", "dl_22post_binary_test3", "dl_22post_vbf"],
-    "config_variable": config_variable_binary_ggf_and_vbf,
-    "systematics": rate_systematics,
-})
-
-weight1 = dl.derive("weight1", cls_dict={
-    "ml_model_name": ["dl_22post_weight1", "dl_22post_binary_test3", "dl_22post_vbf"],
-    "config_variable": config_variable_binary_ggf_and_vbf,
-    "systematics": rate_systematics,
-})
-weight1_syst = weight1.derive("weight1_syst", cls_dict={
-    "systematics": systematics,
-})
-
-weight1_hww = weight1.derive("weight1_hww", cls_dict={
-    "processes": processes_dict["hww"],
-})
-weight1_hwwzztt = weight1.derive("weight1_hwwzztt", cls_dict={
-    "processes": processes_dict["hwwzztt"],
-})
-weight1_hwwzztt_nosyst = weight1.derive("weight1_hwwzztt_nosyst", cls_dict={
-    "processes": processes_dict["hwwzztt"],
-    "systematics": ["lumi_13TeV_2022"],
-    "mc_stats": False,
-})
-weight1_hwwzztt_mcstats = weight1.derive("weight1_hwwzztt_mcstats", cls_dict={
-    "processes": processes_dict["hwwzztt"],
-    "systematics": ["lumi_13TeV_2022"],
-    "mc_stats": True,
-})
-weight1_hwwzztt_syst = weight1.derive("weight1_hwwzztt_syst", cls_dict={
-    "processes": processes_dict["hwwzztt"],
-    "systematics": systematics,
-})
-weight1_hwwzztt_fullsyst = weight1.derive("weight1_hwwzztt_fullsyst", cls_dict={
+no_nn_cats = dl.derive("no_nn_cats", cls_dict={
     "processes": processes_dict["hwwzztt"],
     "systematics": systematics + jerc_systematics,
+    "config_categories": config_categories.no_nn_cats,
 })
-weight1_hwwzztt_ggf_fullsyst = weight1.derive("weight1_hwwzztt_ggf_fullsyst", cls_dict={
-    "processes": processes_dict["hwwzztt_ggf"],
+bjet_incl = dl.derive("bjet_incl", cls_dict={
+    "processes": processes_dict["hwwzztt"],
     "systematics": systematics + jerc_systematics,
+    "config_categories": config_categories.bjet_incl,
 })
-test = weight1.derive("test", cls_dict={
+test = dl.derive("test", cls_dict={
     "processes": processes_dict["test"],
     "systematics": rate_systematics + ["pdf_shape_tt"],
 })
-test_syst = weight1.derive("test_syst", cls_dict={
+test_syst = dl.derive("test_syst", cls_dict={
     "processes": processes_dict["test"],
     "systematics": rate_systematics + jerc_systematics,
 })

@@ -10,10 +10,11 @@ from typing import Tuple
 from columnflow.util import maybe_import
 from columnflow.selection import Selector, SelectionResult, selector
 
-from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
+from hbw.selection.common import (
+    masked_sorted_indices, pre_selection, get_weights_and_no_sel_mask, post_selection, configure_selector,
+)
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
-from hbw.production.weights import event_weights_to_normalize
 from hbw.util import ak_any
 
 np = maybe_import("numpy")
@@ -242,6 +243,10 @@ def sl1(
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
     results += jet_results
 
+    # derive event weights and add base mask of all events that are not considered bad to "cleanup" step
+    events, results = self[get_weights_and_no_sel_mask](events, results, **kwargs)
+    results.steps["cleanup"] = results.steps.cleanup & results.steps["no_sel_mask"]
+
     # boosted selection
     events, boosted_results = self[sl_boosted_jet_selection](events, lepton_results, jet_results, stats, **kwargs)
     results += boosted_results
@@ -306,12 +311,14 @@ def sl1_init(self: Selector) -> None:
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
+        get_weights_and_no_sel_mask,
         post_selection,
     }
     self.produces = {
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
         jet_selection, sl_lepton_selection,
+        get_weights_and_no_sel_mask,
         post_selection,
     }
 
@@ -324,12 +331,6 @@ def sl1_init(self: Selector) -> None:
             r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
         ),
     })
-
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
-        return
-
-    self.uses.add(event_weights_to_normalize)
-    self.produces.add(event_weights_to_normalize)
 
 
 sl1_no_btag = sl1.derive("sl1_no_btag", cls_dict={"n_btag": 0, "b_tagger": "deepjet"})

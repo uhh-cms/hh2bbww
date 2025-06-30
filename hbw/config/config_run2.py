@@ -223,9 +223,7 @@ def add_config(
         if year == 2022:
             jer_campaign = jec_campaign = f"Summer{year2}{jerc_postfix}_22Sep2023"
         elif year == 2023:
-            # NOTE: this might be totally wrong, ask Daniel
-            # TODO: fix for 2023postBPix....
-            era = "Cv4" if campaign.has_tag("preBPix") else "D"
+            era = "Cv1234" if campaign.has_tag("preBPix") else "D"
             jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
             jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
         jet_type = "AK4PFPuppi"
@@ -241,25 +239,35 @@ def add_config(
         # "CorrelationGroupUncorrelated",
     ]
 
+    jec_ak4_version = jec_ak8_version = {
+        2016: "V7",
+        2017: "V5",
+        2018: "V5",
+        2022: "V2",
+        2023: "V2" if jerc_postfix == "" else "V3",
+    }[year]
+
     cfg.x.jec = DotDict.wrap({
         # NOTE: currently, we set the uncertainty_sources in the calibrator itself
         "Jet": {
             "campaign": jec_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
+            "version": jec_ak4_version,
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
+            "data_per_era": False if year == 2023 else True,
         },
         "FatJet": {
             "campaign": jec_campaign,
-            "version": {2016: "V7", 2017: "V5", 2018: "V5", 2022: "V2", 2023: "V1"}[year],
+            "version": jec_ak8_version,
             "jet_type": fatjet_type,
             "external_file_key": "fat_jet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
+            "data_per_era": False if year == 2023 else True,
         },
     })
 
@@ -488,14 +496,17 @@ def add_config(
             campaign=electron_sf_campaign,
             working_point="Tight",
         )
-        # names of electron correction sets and working points
-        # (used in the electron_sf producer)
-        if cfg.x.cpn_tag == "2022postEE":
-            # TODO: we might need to use different SFs for control regions
-            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoE+PromptFG", "Tight")
-        elif cfg.x.cpn_tag == "2022preEE":
-            cfg.x.electron_sf_names = ("Electron-ID-SF", "2022Re-recoBCD", "Tight")
 
+        cfg.x.electron_reco_sf_names = ElectronSFConfig(
+            correction="Electron-ID-SF",
+            campaign=electron_sf_campaign,
+            # working_point=ele_reco_wp_func,
+            working_point={
+                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+            },
+        )
         # names of muon correction sets and working points
         # (used in the muon producer)
         # TODO: we might need to use different SFs for control regions
@@ -553,7 +564,10 @@ def add_config(
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
     cfg.add_shift(name="e_trig_sf_up", id=42, type="shape")
     cfg.add_shift(name="e_trig_sf_down", id=43, type="shape")
+    cfg.add_shift(name="e_reco_sf_up", id=44, type="shape")
+    cfg.add_shift(name="e_reco_sf_down", id=45, type="shape")
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
+    add_shift_aliases(cfg, "e_reco_sf", {"electron_reco_weight": "electron_reco_weight_{direction}"})
     # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
 
     # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
@@ -608,8 +622,12 @@ def add_config(
     cfg.add_shift(name="murf_envelope_down", id=206, type="shape")
     cfg.add_shift(name="pdf_up", id=207, type="shape")
     cfg.add_shift(name="pdf_down", id=208, type="shape")
+    cfg.add_shift(name="isr_up", id=209, type="shape")
+    cfg.add_shift(name="isr_down", id=210, type="shape")
+    cfg.add_shift(name="fsr_up", id=211, type="shape")
+    cfg.add_shift(name="fsr_down", id=212, type="shape")
 
-    for unc in ["mur", "muf", "murf_envelope", "pdf"]:
+    for unc in ["mur", "muf", "murf_envelope", "pdf", "isr", "fsr"]:
         col = "murmuf_envelope" if unc == "murf_envelope" else unc
         add_shift_aliases(
             cfg,
@@ -620,17 +638,17 @@ def add_config(
             },
         )
 
-    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=209, type="shape")
-    cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=210, type="shape")
-    add_shift_aliases(
-        cfg,
-        f"dummy_{cfg.x.cpn_tag}",
-        {
-            "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
-        },
-    )
-    # cfg.add_shift(name="dummy_2022postEE_up", id=209, type="shape")
-    # cfg.add_shift(name="dummy_2022postEE_down", id=210, type="shape")
+    # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=999209, type="shape")
+    # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=999210, type="shape")
+    # add_shift_aliases(
+    #     cfg,
+    #     f"dummy_{cfg.x.cpn_tag}",
+    #     {
+    #         "dummy_weight": f"dummy_{cfg.x.cpn_tag}_weight_" + "{direction}",
+    #     },
+    # )
+    # cfg.add_shift(name="dummy_2022postEE_up", id=999209, type="shape")
+    # cfg.add_shift(name="dummy_2022postEE_down", id=999210, type="shape")
     # add_shift_aliases(
     #     cfg,
     #     "dummy_2022postEE",
@@ -638,8 +656,8 @@ def add_config(
     #         "dummy_weight": "dummy_2022postEE_weight_" + "{direction}",
     #     },
     # )
-    # cfg.add_shift(name="dummy_2022preEE_up", id=211, type="shape")
-    # cfg.add_shift(name="dummy_2022preEE_down", id=212, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_up", id=999211, type="shape")
+    # cfg.add_shift(name="dummy_2022preEE_down", id=999212, type="shape")
     # add_shift_aliases(
     #     cfg,
     #     "dummy_2022preEE",
@@ -709,9 +727,9 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
+    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
     if cfg.x.run == 2:
-        # json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-9ea86c4c"
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
         corr_tag = f"{year}_Summer{year2}{jerc_postfix}"
@@ -873,15 +891,15 @@ def add_config(
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
-        "FatJet.particleNet*",
+        # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
         "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
         # isolations for testing
-        "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH}",
-        "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH}",
+        "Electron.{pfRelIso03_all,miniPFRelIso_all,mvaIso,mvaTTH,promptMVA}",
+        "Muon.{pfRelIso03_all,miniPFRelIso_all,mvaMuID,mvaTTH,promptMVA}",
         # Taus
         "VetoTau.{pt,eta,phi,mass,decayMode}",
         # MET

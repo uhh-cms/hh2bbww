@@ -126,6 +126,10 @@ def base_init(self: HistProducer) -> None:
         ]:
             self.local_weight_columns.pop(column, None)
 
+    if dataset_inst and dataset_inst.has_tag("no_ps_weights"):
+        self.local_weight_columns.pop("normalized_isr_weight", None)
+        self.local_weight_columns.pop("normalized_fsr_weight", None)
+
     if dataset_inst and dataset_inst.has_tag("skip_pdf"):
         # remove dependency towards pdf weights
         for column in ["pdf_weight", "normalized_pdf_weight"]:
@@ -184,9 +188,18 @@ def base_init(self: HistProducer) -> None:
     # self.uses = {"*"}
 
 
-# @base.post_init
-# def base_post_init(self: HistProducer, task: law.Task):
-#     from hbw.util import debugger; debugger()
+@base.post_init
+def base_post_init(self: HistProducer, task: law.Task):
+    if self.dataset_inst.is_data:
+        return
+    if "isr" not in task.shift:
+        # no nominal ISR weight --> remove it from uses and local_weight_columns
+        self.uses.discard("normalized_isr_weight")
+        self.local_weight_columns.pop("normalized_isr_weight", None)
+    if "fsr" not in task.shift:
+        # no nominal FSR weight --> remove it from uses and local_weight_columns
+        self.uses.discard("normalized_fsr_weight")
+        self.local_weight_columns.pop("normalized_fsr_weight", None)
 
 
 btag_uncs = [
@@ -201,11 +214,14 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
     "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
     "normalized_pdf_weight": ["pdf"],
+    "normalized_isr_weight": ["isr"],
+    "normalized_fsr_weight": ["fsr"],
     "top_pt_weight": ["top_pt"],
 }
 

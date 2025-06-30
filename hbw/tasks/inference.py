@@ -247,7 +247,7 @@ def resolve_category_groups_new(param: dict[str, any], config_inst: od.Config):
     return outp_param
 
 
-class ModifyDatacardsFlatRebin(
+class HBWInferenceModelBase(
     HBWTask,
     CalibratorClassesMixin,
     SelectorClassMixin,
@@ -257,13 +257,18 @@ class ModifyDatacardsFlatRebin(
     HistProducerClassMixin,
     InferenceModelMixin,
     HistHookMixin,
-    law.LocalWorkflow,
-    RemoteWorkflow,
 ):
     resolution_task_cls = MergeHistograms
     single_config = False
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+
+class ModifyDatacardsFlatRebin(
+    HBWInferenceModelBase,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
 
     bins_per_category = SettingsParameter(
         default={},
@@ -441,27 +446,191 @@ class ModifyDatacardsFlatRebin(
                     out_file[key] = h_rebin
 
 
-class PrepareInferenceTaskCalls(
-    HBWTask,
-    CalibratorClassesMixin,
-    SelectorClassMixin,
-    ReducerClassMixin,
-    ProducerClassesMixin,
-    MLModelsMixin,
-    HistProducerClassMixin,
-    InferenceModelMixin,
-    HistHookMixin,
-    # law.LocalWorkflow,
-    # RemoteWorkflow,
+from columnflow.tasks.framework.plotting import (
+    PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
+)
+
+
+class PlotShiftedInferencePlots(
+    HBWInferenceModelBase,
+    PlotBase1D,
+    ProcessPlotSettingMixin,
+    VariablePlotSettingMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
 ):
+    """
+    Task to create plots from the inference model output for each category, process, and shift.
+
+    Example task call:
+    law run hbw.PlotShiftedInferencePlots --custom-style-config legend_single_col \
+        --inference-model weight1_hwwzztt_fullsyst
+    """
+    # TODO: disable unnecessary parameters
+    # datasets = processes = variables = None
+
+    plot_function = PlotBase.plot_function.copy(
+        default="columnflow.plotting.plot_functions_1d.plot_shifted_variable",
+        add_default_to_description=True,
+    )
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
+    )
+
+    def create_branch_map(self):
+        return list(self.inference_model_inst.categories)
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        reqs["rebinned_datacards"] = self.reqs.ModifyDatacardsFlatRebin.req(self)
+
+        return reqs
+
+    def requires(self):
+        reqs = {
+            "rebinned_datacards": self.reqs.ModifyDatacardsFlatRebin.req(self),
+        }
+        return reqs
+
+    def output(self):
+        return {
+            # NOTE: removing target directory on remote target seems to not work, therefore we add incomplete dummy
+            # such that we can rerun without having to remove this directory manually
+            "combined_plots": self.target(f"combined_plots__{self.branch_data.name}.pdf"),
+            "plots": self.target(f"plots__{self.branch_data.name}", dir=True),
+        }
+
+    def prepare_cf_hist(self, h: hist.Hist, variable_inst, shift_bin="nominal") -> hist.Hist:
+        """
+        Add a shift axis to the histogram if it does not exist.
+        """
+        if len(h.axes) != 1:
+            raise ValueError("Expected histogram with only one axis")
+        var_ax = h.axes[0]
+        out_axes = [
+            hist.axis.StrCategory([shift_bin], name="shift", growth=True),
+            hist.axis.Variable(var_ax.edges, name=variable_inst.name, label=variable_inst.x_title),
+        ]
+        return hist.Hist(*out_axes, storage=h.storage_type(), data=[h.view(flow=True)])
+
+    def skip_process(self, process_inst, category_inst) -> bool:
+        # skip non-SM signal processes
+        if "hh_ggf" in process_inst.name and "kl1_kt1" not in process_inst.name:
+            return True
+        if "hh_vbf" in process_inst.name and "kv1_k2v1_kl1" not in process_inst.name:
+            return True
+        return False
+
+    @law.decorator.log
+    @law.decorator.localize
+    @law.decorator.safe_output
+    def run(self):
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+
+        inf_inst = self.inference_model_inst
+        inputs = self.input()
+        output = self.output()
+
+        inp_shapes = inputs["rebinned_datacards"]["shapes"]
+
+        config_inst = self.config_insts[0]
+        config_data = self.branch_data.config_data[config_inst.name]
+        category_inst = config_inst.get_category(config_data.category)
+        variable_inst = config_inst.get_variable(config_data.variable)
+        variable_inst.x.rebin = 1  # do not try rebinning here, we already did that in the datacard modification
+
+        with uproot.open(inp_shapes.fn) as f_in:
+            # determine which histograms are present
+            cat_names, proc_names, syst_names = get_cat_proc_syst_names(f_in)
+
+            if len(cat_names) != 1:
+                raise Exception("Expected 1 category per file")
+
+            cat_name = list(cat_names)[0]
+            if cat_name != self.branch_data.name:
+                raise Exception(
+                    f"Category name in the histograms {cat_name} does not agree with the "
+                    f"datacard category name {self.branch_data.name}",
+                )
+
+            # create plots for each process and shift
+            with PdfPages(output["combined_plots"].abspath) as pdf:
+                for config_proc_name in inf_inst.processes:
+                    proc_name = inf_inst.inf_proc(config_proc_name)
+                    proc_inst = config_inst.get_process(config_proc_name)
+                    if self.skip_process(proc_inst, category_inst):
+                        logger.info(f"Skipping process {proc_inst.name} for category {cat_name}")
+                        continue
+                    h_nom = f_in[get_hist_name(cat_name, proc_name)].to_hist()
+                    h_nom = self.prepare_cf_hist(h_nom, variable_inst, shift_bin="nominal")
+                    # TODO: when no syst_names, make nominal plot only
+                    for syst_name in sorted(syst_names):
+                        if not syst_name.endswith("Down"):
+                            continue
+
+                        hist_name = get_hist_name(cat_name, proc_name, syst_name)
+                        h_down = f_in.get(hist_name)
+                        if not h_down:
+                            continue
+
+                        # mapping of shift names to config shift names
+                        config_shift_name = syst_name.replace("Down", "_down")
+                        if "murf_envelope" in config_shift_name:
+                            config_shift_name = "murf_envelope_down"
+                        elif "pdf" in config_shift_name:
+                            config_shift_name = "pdf_down"
+
+                        shift_source = config_shift_name.replace("_down", "")
+                        plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
+                        print(f"Preparing plot {plot_name}")
+
+                        shift_insts = {
+                            "nominal": config_inst.get_shift("nominal").copy_shallow(),
+                            "down": config_inst.get_shift(f"{shift_source}_down").copy_shallow(),
+                            "up": config_inst.get_shift(f"{shift_source}_up").copy_shallow(),
+                        }
+                        # convert to hist.Histogram
+                        h_down = h_down.to_hist()
+
+                        # if down is present, up must be present as well
+                        h_up = f_in.get(hist_name.replace("Down", "Up")).to_hist()
+
+                        h_combined = (
+                            h_nom.copy() +
+                            self.prepare_cf_hist(h_down, variable_inst, shift_bin=shift_insts["down"].name) +
+                            self.prepare_cf_hist(h_up, variable_inst, shift_bin=shift_insts["up"].name)
+                        )
+
+                        hists = {proc_inst: h_combined}
+
+                        # temporarily use a merged luminostiy value, assigned to the first config
+                        lumi = sum([_config_inst.x.luminosity for _config_inst in self.config_insts])
+                        with law.util.patch_object(config_inst.x, "luminosity", lumi):
+                            # call the plot function
+                            fig, _ = self.call_plot_func(
+                                self.plot_function,
+                                hists=hists,
+                                config_inst=config_inst,
+                                category_inst=category_inst.copy_shallow(),
+                                variable_insts=[variable_inst.copy_shallow()],
+                                shift_insts=list(shift_insts.values()),
+                                **self.get_plot_parameters(),
+                            )
+                            output["plots"].child(plot_name, type="f").dump(fig, formatter="mpl")
+                            # save the figure to the pdf
+                            pdf.savefig(fig)
+                            # close the figure to avoid memory issues
+                            plt.close(fig)
+
+
+class PrepareInferenceTaskCalls(HBWInferenceModelBase):
     """
     Simple task that produces string to run certain tasks in Inference
     """
-    resolution_task_cls = MergeHistograms
-    single_config = False
-
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
-
     # upstream requirements
     reqs = Requirements(
         ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
@@ -512,6 +681,8 @@ class PrepareInferenceTaskCalls(
 
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+        multi_card_names = ",".join(cat_names)
+        multi_cards = datacards.replace(",", ":")
 
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
@@ -523,9 +694,18 @@ class PrepareInferenceTaskCalls(
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         print("\n\n")
+        # creating limits per card for kl=1
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"--multi-datacards {multi_cards}:{datacards} "
+            f"--datacard-names {multi_card_names},{identifier}"
+        )
+        print(base_cmd + cmd, "\n\n")
+
         # creating upper limits for kl=1
         cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} --multi-datacards {datacards} "
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"--multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
         print(base_cmd + cmd, "\n\n")

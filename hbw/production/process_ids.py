@@ -49,7 +49,10 @@ def hbw_process_ids(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     internal py:attr:`dataset_inst`. This is rather a dummy method and should be further implemented
     depending on future needs (e.g. for sample stitching).
     """
-    logger.info(f"running process Producer {self.process_producer.cls_name} for dataset {self.dataset_inst.name}")
+    logger.info_once(
+        f"{id(self)}_hbw_process_ids",
+        f"running process Producer {self.process_producer.cls_name} for dataset {self.dataset_inst.name}",
+    )
     events = self[self.process_producer](events, **kwargs)
 
     return events

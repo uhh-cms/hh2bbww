@@ -17,7 +17,6 @@ from hbw.production.prepare_objects import prepare_objects
 from hbw.production.jets import vbf_candidates
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
-from hbw.config.sl_res.variables import add_sl_res_ml_variables
 from columnflow.production.cms.dy import recoil_corrected_met
 
 from hbw.util import MET_COLUMN, IF_DY
@@ -70,7 +69,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         "FatJet.{msoftdrop,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}",
         "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
         "{Electron,Muon}.{pdgId}",
-        MET_COLUMN("pt"), MET_COLUMN("phi"),
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
     },
     # produced columns set in the init function
 )
@@ -81,6 +80,8 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
     met_name = self.config_inst.x.met_name
+    if self.dataset_inst.has_tag("is_dy"):
+        met_name = "RecoilCorrMET"
 
     # vbf with and without forward region
     # NOTE: we need to clear the cache since we have to run the same Producer twice
@@ -236,6 +237,9 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Producer used for ML Training in the SL analysis.
     """
     met_name = self.config_inst.x.met_name
+    if self.dataset_inst.has_tag("is_dy"):
+        met_name = "RecoilCorrMET"
+
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
 
@@ -334,6 +338,9 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Producer used for ML Training in the DL analysis.
     """
     met_name = self.config_inst.x.met_name
+    if self.dataset_inst.has_tag("is_dy"):
+        met_name = "RecoilCorrMET"
+
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
 
@@ -425,112 +432,3 @@ def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 test_dl_ml_inputs = dl_ml_inputs.derive("test_dl_ml_inputs")
-
-
-@producer(
-    uses={common_ml_inputs},
-    produces={common_ml_inputs},
-    # produced columns set in the init function
-)
-def sl_res_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Producer used for ML Training in the SL analysis.
-    """
-    met_name = self.config_inst.x.met_name
-    # produce common input features
-    events = self[common_ml_inputs](events, **kwargs)
-
-    hbb = events.Bjet[:, 0] + events.Bjet[:, 1]
-    events = set_ak_column_f32(events, "mli_pt_bb", hbb.pt)
-    events = set_ak_column_f32(events, "mli_eta_bb", hbb.eta)
-    events = set_ak_column_f32(events, "mli_phi_bb", hbb.phi)
-
-    # wjj features
-    events = set_ak_column_f32(events, "mli_dr_jj", events.Lightjet[:, 0].delta_r(events.Lightjet[:, 1]))
-    events = set_ak_column_f32(events, "mli_dphi_jj", abs(events.Lightjet[:, 0].delta_phi(events.Lightjet[:, 1])))
-
-    wjj = events.Lightjet[:, 0] + events.Lightjet[:, 1]
-    events = set_ak_column_f32(events, "mli_mjj", wjj.mass)
-    events = set_ak_column_f32(events, "mli_pt_jj", wjj.pt)
-    events = set_ak_column_f32(events, "mli_eta_jj", wjj.eta)
-    events = set_ak_column_f32(events, "mli_phi_jj", wjj.phi)
-
-    # wlnu features
-    wlnu = events[met_name] + events.Lepton[:, 0]
-    events = set_ak_column_f32(events, "mli_dphi_lnu", abs(events.Lepton[:, 0].delta_phi(events[met_name])))
-    # NOTE: this column can be set to nan value
-    events = set_ak_column_f32(events, "mli_mlnu", wlnu.mass)
-    events = set_ak_column_f32(events, "mli_pt_lnu", wlnu.pt)
-    events = set_ak_column_f32(events, "mli_eta_lnu", wlnu.eta)
-    events = set_ak_column_f32(events, "mli_phi_lnu", wlnu.phi)
-
-    # hww features
-    hww = wlnu + wjj
-    hww_vis = events.Lepton[:, 0] + wjj
-
-    events = set_ak_column_f32(events, "mli_mjjlnu", hww.mass)
-    events = set_ak_column_f32(events, "mli_pt_jjlnu", hww.pt)
-    events = set_ak_column_f32(events, "mli_phi_jjlnu", hww.phi)
-    events = set_ak_column_f32(events, "mli_eta_jjlnu", hww.eta)
-    events = set_ak_column_f32(events, "mli_mjjl", hww_vis.mass)
-    events = set_ak_column_f32(events, "mli_pt_jjl", hww_vis.pt)
-    events = set_ak_column_f32(events, "mli_eta_jjl", hww_vis.eta)
-    events = set_ak_column_f32(events, "mli_phi_jjl", hww_vis.phi)
-
-    # angles
-    events = set_ak_column_f32(events, "mli_dphi_bb_jjlnu", abs(hbb.delta_phi(hww)))
-    events = set_ak_column_f32(events, "mli_dr_bb_jjlnu", hbb.delta_r(hww))
-
-    events = set_ak_column_f32(events, "mli_dphi_bb_jjl", abs(hbb.delta_phi(hww_vis)))
-    events = set_ak_column_f32(events, "mli_dr_bb_jjl", hbb.delta_r(hww_vis))
-
-    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
-    events = set_ak_column_f32(events, "mli_dphi_jj_nu", abs(wjj.delta_phi(events[met_name])))
-    events = set_ak_column_f32(events, "mli_dr_bb_l", hbb.delta_r(events[met_name]))
-    events = set_ak_column_f32(events, "mli_dr_jj_l", hbb.delta_r(events[met_name]))
-
-    # hh features
-    hh = hbb + hww
-    hh_vis = hbb + hww_vis
-
-    events = set_ak_column_f32(events, "mli_mbbjjlnu", hh.mass)
-    events = set_ak_column_f32(events, "mli_mbbjjl", hh_vis.mass)
-
-    s_min = (
-        2 * events[met_name].pt * ((hh_vis.mass ** 2 + hh_vis.energy ** 2) ** 0.5 -
-        hh_vis.pt * np.cos(hh_vis.delta_phi(events[met_name])) + hh_vis.mass ** 2)
-    ) ** 0.5
-    events = set_ak_column_f32(events, "mli_s_min", s_min)
-
-    # fill nan/none values of all produced columns
-    for col in self.ml_input_columns:
-        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-
-    check_column_bookkeeping(self, events)
-    return events
-
-
-@sl_res_ml_inputs.init
-def sl_res_ml_inputs_init(self: Producer) -> None:
-    # define ML input separately to self.produces
-    self.ml_input_columns = {
-        "mli_dr_jj", "mli_dphi_jj", "mli_mjj",
-        "mli_dphi_lnu", "mli_mlnu", "mli_mjjlnu", "mli_mjjl", "mli_dphi_bb_jjlnu", "mli_dr_bb_jjlnu",
-        "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
-        "mli_mbbjjlnu", "mli_mbbjjl", "mli_s_min",
-        "mli_pt_jj", "mli_eta_jj", "mli_phi_jj",
-        "mli_pt_lnu", "mli_eta_lnu", "mli_phi_lnu",
-        "mli_pt_jjlnu", "mli_eta_jjlnu", "mli_phi_jjlnu",
-        "mli_pt_jjl", "mli_eta_jjl", "mli_phi_jjl",
-        "mli_pt_bb", "mli_eta_bb", "mli_phi_bb",
-
-    }
-
-    self.produces |= self.ml_input_columns
-
-    # bookkeep used ml_input_columns over multiple Producers
-    self.config_inst.x.ml_input_columns = self.config_inst.x("ml_input_columns", set()) | self.ml_input_columns
-
-    # add variable instances to config
-    add_sl_res_ml_variables(self.config_inst)
-    check_variable_existence(self)

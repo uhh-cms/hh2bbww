@@ -24,17 +24,20 @@ logger = law.logger.get_logger(__name__)
 def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
     # define data streams based on the run
     # NOTE: the order of the streams is important for data trigger filtering (removing double counting)
+    nano_version = config.campaign.x.version
     if config.campaign.x.run == 2:
         config.x.data_streams = ["mu", "e"]
+    elif config.campaign.x.run == 3 and nano_version == 14:
+        config.x.data_streams = ["mu", "e", "muoneg"]
     elif config.campaign.x.run == 3:
         config.x.data_streams = ["mu", "egamma", "muoneg"]
 
     data_eras = {
-        "2017": "cdef",
-        "2022preEE": "cd",
-        "2022postEE": "efg",
-        "2023preBPix": "c",
-        "2023postBPix": "d",
+        "2017": list("cdef"),
+        "2022preEE": list("cd"),
+        "2022postEE": list("efg"),
+        "2023preBPix": ["c1", "c2", "c3", "c4"],
+        "2023postBPix": ["d1", "d2"],
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -89,8 +92,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "data_jethtmet": config.x.if_era(cfg_tag="is_for_sf", values=data_jethtmet_datasets),
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
-            # "st_schannel_lep_4f_amcatnlo",
-            # "st_schannel_had_4f_amcatnlo",
+            "st_schannel_tbar_lep_4f_amcatnlo",
+            "st_schannel_t_lep_4f_amcatnlo",
             "st_tchannel_t_4f_powheg",
             "st_tchannel_tbar_4f_powheg",
             *config.x.if_era(run=2, values=[
@@ -157,9 +160,16 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "zz_pythia",
             ]),
         ],
+        "vvv": [
+            "www_4f_amcatnlo",
+            "wwz_4f_amcatnlo",
+            "wzz_amcatnlo",
+            "zzz_amcatnlo",
+        ],
         "ttv": [
             # missing pdf weights in 2022postEE uhh samples
-            # "ttw_wlnu_amcatnlo",
+            "ttw_wlnu_amcatnlo",
+            # "ttw_wqq_amcatnlo",  # not existing in 2022postEE uhh samples
             *config.x.if_era(run=3, values=[
                 "ttz_zll_m4to50_amcatnlo",
                 "ttz_zll_m50toinf_amcatnlo",
@@ -167,6 +177,19 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "ttz_zqq_amcatnlo",
             ]),
         ],
+        # NOTE: top + gamma is not used since it is already included in ttbar or single top samples
+        # "ttg": [
+        #     "ttg_pt10to100_amcatnlo",
+        #     "ttg_pt100to200_amcatnlo",
+        #     "ttg_pt200toinf_amcatnlo",
+        # ],
+        # "tg": ["tgqb_4f_amcatnlo"],
+        "ttvv": [
+            "ttww_madgraph",
+            "ttwz_madgraph",
+            "ttzz_madgraph",
+        ],
+        "tttt": ["tttt_amcatnlo"],
         "h": [
             *config.x.if_era(run=3, values=[
                 # TODO: remove whatever is not really necessary
@@ -174,31 +197,39 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_ggf_hww2l2nu_powheg",
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
-                # "h_ggf_htt_amcatnlo",  # TODO: check if empty
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",
                 "zh_zll_hbb_powheg",
-                "zh_zll_hcc_powheg",
+                # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
                 "zh_hww2l2nu_powheg",
                 "zh_gg_zll_hbb_powheg",
                 "zh_gg_zqq_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
-                "zh_gg_zll_hcc_powheg",
+                # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wph_wlnu_hbb_powheg",
                 # "wph_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                "wph_wlnu_hcc_powheg",
-                "wph_hzg_zll_powheg",
+                # "wph_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # "wph_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 # "wmh_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "wmh_wlnu_hbb_powheg",
                 # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                "wmh_wlnu_hcc_powheg",
-                "wmh_hzg_zll_powheg",
+                # "wmh_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # "wmh_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 "tth_hbb_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
-                # TODO: no cross sections setup for these samples
-                # "ttzh_madgraph",
-                # "ttwh_madgraph",
+                # TODO: preliminary cross sections for ttzh, ttwh
+                "ttzh_madgraph",
+                "ttwh_madgraph",
+                # htt
+                "h_ggf_htt_powheg",
+                "h_vbf_htt_powheg",
+                "zh_htt_powheg",
+                "wph_htt_powheg",
+                "wmh_htt_powheg",
+                # thq, thw
+                "thq_4f_madgraph",
+                "thw_madgraph",
             ]),
         ],
         "hh_ggf": [
@@ -356,8 +387,18 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
 
     # loop over all dataset names and add them to the config
+    missing_datasets = set()
     for dataset_name in list(itertools.chain(*dataset_names.values())):
-        config.add_dataset(campaign.get_dataset(dataset_name))
+        if campaign.has_dataset(dataset_name):
+            config.add_dataset(campaign.get_dataset(dataset_name))
+        else:
+            logger.warning(
+                f"Dataset '{dataset_name}' not found in config '{config.name}', "
+                "skipping it. Please check the campaign configuration.",
+            )
+            missing_datasets.add(dataset_name)
+    if missing_datasets:
+        print(f"Missing datasets in config {config.name}:\n" + "\n".join(sorted(missing_datasets)))
 
 
 def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
@@ -427,11 +468,26 @@ def configure_hbw_datasets(
                 dataset.add_tag("is_hbv_sl")
             else:
                 dataset.add_tag("is_hbv_incl")
-
-        if dataset.name.endswith("_pythia") or "hh_vbf" in dataset.name:
+        if dataset.name in (
+            "h_ggf_htt_powheg",
+            "h_vbf_htt_powheg",
+        ):
+            dataset.add_tag("no_ps_weights")
+        if (
+            dataset.name.endswith("_pythia") or
+            "hh_vbf" in dataset.name or
+            dataset.name == "ttw_wlnu_amcatnlo"
+        ):
             dataset.add_tag("skip_scale")
             dataset.add_tag("skip_pdf")
             dataset.add_tag("no_lhe_weights")
+        elif dataset.name.endswith("_amcatnlo") and any(
+            dataset.name.startswith(name) for name in ("dy_", "w_lnu_", "zzz_")
+        ):
+            # tag to skip only events with missing LHE weights
+            dataset.add_tag("partial_lhe_weights")
+        else:
+            dataset.add_tag("has_lhe_weights")
 
         if dataset.has_tag("is_hbv") and "custom" in dataset.name:
             # No PDF weights and 6 scale weights in custom HH samples
@@ -568,6 +624,7 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
         cfg.x.get_dataset_lfns = get_dataset_lfns_uhh
 
         # define custom remote fs's to look at
+        # NOTE: using local_fs seems to be better when running on local machine, but is terribly slow on HTCondor
         cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: (
             None if "uhh" not in dataset_inst.x("campaign", "") else [
                 f"wlcg_fs_{dataset_inst.x.campaign}",

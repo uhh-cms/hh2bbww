@@ -24,13 +24,10 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 
 
 @producer(
-    uses={
-        "GenPart.pdgId", "GenPart.statusFlags",
-        "GenPart.pt", "GenPart.eta", "GenPart.phi", "GenPart.mass",
-    },
-    produces={"gen_hbw_decay.*.*"},
+    uses={"GenPart.{pt,eta,phi,mass,pdgId,statusFlags,genPartIdxMother}"},
+    produces={"gen_hbw_decay.{h1,h2,b1,b2,v1,v2,v1d1,v1d2,v2d1,v2d2}.{pt,eta,phi,mass,pdgId}"},
 )
-def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def gen_hbv_decay(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Produce gen-level Z or W bosons from `GenParticle` collection.
     """
@@ -70,34 +67,61 @@ def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     nb = ak.num(b, axis=1)
     all_or_raise(nb == 2, "number of bottom quarks from Higgs decay != 2")
 
-    # # Ws from H decay
-    # w = gp[abs_id == 24]
-    # w = w[(abs(w.distinctParent.pdgId) == 25)]
-    # w = w[~ak.is_none(w, axis=1)]
-    # # nw = ak.num(w, axis=1)
+    # Ws or Zs from H decay
+    v = gp[(abs_id == 24) | (abs_id == 23)]
+    v = v[(abs(v.distinctParent.pdgId) == 25)]
+    v = v[~ak.is_none(v, axis=1)]
+    nv = ak.num(v, axis=1)
+    all_or_raise(nv == 2, "number of Vector bosons from Higgs decay != 2")
 
-    # # non-top quarks from W decays
-    # qs = gp[(abs_id >= 1) & (abs_id <= 5)]
-    # qs = qs[(abs(qs.distinctParent.pdgId) == 24)]
-    # qs = qs[~ak.is_none(qs, axis=1)]
-    # # nqs = ak.num(qs, axis=1)
+    # leptons from W decays
+    is_lepton = (abs_id >= 11) & (abs_id <= 16)
+    is_quark = (abs_id >= 1) & (abs_id <= 5)
+    vdecays = gp[(is_lepton | is_quark)]
+    vdecays = vdecays[(abs(vdecays.distinctParent.pdgId) == 24) | (abs(vdecays.distinctParent.pdgId) == 23)]
+    vdecays = vdecays[~ak.is_none(vdecays, axis=1)]
+    nvdecays = ak.num(vdecays, axis=1)
+    all_or_raise((nvdecays % 2) == 0, "number of leptons or quarks from V decays is not dividable by 2")
+    all_or_raise(nvdecays == 4, "number of leptons or quarks from V decays != 4")
 
     # check if decay product charges are valid
     sign = lambda part: (part.pdgId > 0) * 2 - 1
     all_or_raise(ak.sum(sign(b), axis=1) == 0, "two ss bottoms")
 
-    # identify b1 as particle, b2 as antiparticle
-    b1 = b[sign(b) == 1][:, 0]
-    b2 = b[sign(b) == -1][:, 0]
+    b1 = b[:, 0]
+    b2 = b[:, 1]
+    v1 = v[:, 0]
+    v2 = v[:, 1]
 
-    # TODO: identify H->bb and H->WW and switch from h1/h2 to hbb/hww
-    # TODO: most fields have type='len(events) * ?genParticle' -> get rid of the '?'
+    all_or_raise(sign(b1) == 1, "b1 should have positive charge")
+    all_or_raise(sign(b2) == -1, "b2 should have negative charge")
+    all_or_raise(sign(v1) == 1, "v1 should have positive charge")
+    all_or_raise((sign(v2) == -1) | (v2.pdgId == 23), "v2 should have negative charge or be Z boson")
+
+    # assign decay products to v1 and v2, assuming that the first two decay products are from v1
+    # and the last two from v2
+    v1decays = vdecays[:, :2]
+    v2decays = vdecays[:, 2:]
+
+    v1_valid = ak.sum(sign(v1decays.distinctParent), axis=1) == 2
+    all_or_raise(v1_valid, "Both parents of v1decays should have positive charge")
+    v2_valid = (
+        (ak.sum(sign(v2decays.distinctParent), axis=1) == -2) |
+        (ak.sum(v2decays.distinctParent.pdgId == 23, axis=1))
+    )
+    all_or_raise(v2_valid, "Both parents of v2decays should have negative charge or be Z bosons")
 
     hhgen = {
         "h1": h[:, 0],
         "h2": h[:, 1],
         "b1": b1,
         "b2": b2,
+        "v1": v1,
+        "v2": v2,
+        "v1d1": v1decays[:, 0],
+        "v1d2": v1decays[:, 1],
+        "v2d1": v2decays[:, 0],
+        "v2d2": v2decays[:, 1],
         "sec1": sec[:, 0],
         "sec2": sec[:, 1],
     }
@@ -110,14 +134,14 @@ def gen_vbf_candidate(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-@gen_vbf_candidate.skip
-def gen_vbf_candidate_skip(self: Producer) -> ak.Array:
+@gen_hbv_decay.skip
+def gen_hbv_decay_skip(self: Producer) -> ak.Array:
     # skip Producer if the dataset is not a HH->bbWW dataset
     return not self.dataset_inst.has_tag("is_hbv")
 
 
-@gen_vbf_candidate.init
-def gen_vbf_candidate_init(self: Producer) -> None:
+@gen_hbv_decay.init
+def gen_hbv_decay_init(self: Producer) -> None:
     add_gen_variables(self.config_inst)
 
 

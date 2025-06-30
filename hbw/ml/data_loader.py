@@ -123,11 +123,13 @@ class MLDatasetLoader:
 
         proc_mask, _ = get_proc_mask(events, process, ml_model_inst.config_inst)
         self._stats = stats
-        if not skip_mask:
+        # NOTE: the skip_mask is currently used both for skipping process mask and for removing negative weights.
+        # we might want to separate the negative weights handling into some other flag.
+        if skip_mask:
+            self._events = events
+        else:
             self._events = events[proc_mask]
             self._events = events[events.event_weight >= 0.0]
-        else:
-            self._events = events
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
