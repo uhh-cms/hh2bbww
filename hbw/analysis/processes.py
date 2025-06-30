@@ -102,7 +102,6 @@ def modify_cmsdb_processes():
         color=color_palette["red"],
     )
 
-
     decay_map = {
         "lf": {
             "name": "lf",
