@@ -155,9 +155,16 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         "vv": [
             *config.x.if_era(run=3, values=[
-                "ww_pythia",
-                "wz_pythia",
-                "zz_pythia",
+                "ww_2l2nu_powheg",
+                "ww_lnu2q_powheg",
+                "wz_3lnu_powheg",
+                "wz_2l2q_powheg",
+                "wz_lnu2q_powheg",
+                "zz_2l2nu_powheg",
+                "zz_2l2q_powheg",
+                # "ww_pythia",
+                # "wz_pythia",
+                # "zz_pythia",
             ]),
         ],
         "vvv": [
