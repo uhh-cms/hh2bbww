@@ -124,19 +124,11 @@ class HBWInferenceModelBase(InferenceModel):
     def __init__(self, config_insts: od.Config, *args, **kwargs):
         super().__init__(config_insts)
 
-        years = {config_inst.campaign.x.year for config_inst in self.config_insts}
-
-        self.systematics = sorted({
-            syst.format(year=year)
-            for syst in self.systematics
-            for year in years
-        })
-
+        self.format_systematics()
         self.add_inference_categories()
         self.add_inference_processes()
         self.add_inference_parameters()
         # self.print_model()
-
         #
         # post-processing
         #
@@ -149,6 +141,84 @@ class HBWInferenceModelBase(InferenceModel):
             print(f"Variable {cat.config_variable} \nCategory {cat.config_category}")
             print(f"Processes {[p.name for p in cat.processes]}")
             print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
+
+    def format_systematics(self):
+        """ Function to format the systematics and prepare the processes_per_* dictionaries
+        """
+        years = {config_inst.campaign.x.year for config_inst in self.config_insts}
+
+        systematics_formatted = sorted({
+            syst.format(year=year, bjet_cat=bjet_cat)
+            for syst in self.systematics
+            for year in years
+            for bjet_cat in ("1b", "2b")
+        })
+
+        available_procs = set(self.processes)
+
+        self.processes_per_QCDScale = {
+            unc_formatted: available_procs
+            for unc, procs in const.processes_per_QCDScale.items()
+            if (
+                (unc_formatted := f"QCDScale_{unc}")
+                in self.systematics and
+                any(available_procs := [proc for proc in procs if proc in self.processes])
+            )
+        }
+        self.processes_per_pdf_rate = {
+            unc_formatted: available_procs
+            for unc, procs in const.processes_per_pdf_rate.items()
+            if (
+                (unc_formatted := f"pdf_{unc}")
+                in self.systematics and
+                any(available_procs := [proc for proc in procs if proc in self.processes])
+            )
+        }
+
+        self.processes_per_rate_unconstrained = {
+            unc_formatted: available_procs
+            for year in years
+            for bjet_cat in ("1b", "2b")
+            for unc, procs in const.processes_per_rate_unconstrained.items()
+            if (
+                (unc_formatted := "rate_" + unc.format(year=year, bjet_cat=bjet_cat))
+                in systematics_formatted and
+                any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
+            )
+        }
+        self.processes_per_shape = {
+            unc_formatted: available_procs
+            for year in years
+            for bjet_cat in ("1b", "2b")
+            for unc, procs in const.processes_per_shape.items()
+            if (
+                (unc_formatted := unc.format(year=year, bjet_cat=bjet_cat))
+                in systematics_formatted and
+                any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
+            )
+        }
+        # check that all systematics are considered and warn if not
+        all_systs = set()
+        for processes_per_syst in (
+            self.processes_per_QCDScale,
+            self.processes_per_pdf_rate,
+            self.processes_per_rate_unconstrained,
+            self.processes_per_shape,
+        ):
+            for syst, procs in processes_per_syst.items():
+                if procs:
+                    all_systs.add(syst)
+                else:
+                    logger.warning(
+                        f"No processes found for systematic {syst}. "
+                        "Please check your configuration.",
+                    )
+                    processes_per_syst.pop(syst)
+        if not_considered := set(systematics_formatted) - all_systs:
+            logger.warning(
+                f"The following systematics were not considered in the inference model: "
+                f"{', '.join(not_considered)}. Please check your configuration.",
+            )
 
     def add_inference_categories(self: InferenceModel):
         """
@@ -336,10 +406,19 @@ class HBWInferenceModelBase(InferenceModel):
         ecm = config_inst.campaign.ecm
 
         proc_handled_by_unconstrained_rate = set()
-        for k, procs in const.processes_per_rate_unconstrained.items():
-            syst_name = f"rate_{k}"
-            if syst_name not in self.systematics:
-                continue
+        for syst_name, procs in self.processes_per_rate_unconstrained.items():
+            # if syst_name not in self.systematics:
+            #     continue
+
+            param_kwargs = {
+                "type": ParameterType.rate_unconstrained,
+                "effect": ["1", "[0,2]"],
+            }
+
+            for bjet_cat in ("1b", "2b"):
+                if syst_name.endswith(bjet_cat):
+                    param_kwargs["category"] = f"*_{bjet_cat}_*"
+                    param_kwargs["category_match_mode"] = "all"
 
             for proc in procs:
                 if proc not in self.processes:
@@ -348,8 +427,7 @@ class HBWInferenceModelBase(InferenceModel):
                 self.add_parameter(
                     syst_name,
                     process=self.inf_proc(proc),
-                    type=ParameterType.rate_unconstrained,
-                    effect=["1", "[0,2]"],
+                    **param_kwargs,
                 )
                 proc_handled_by_unconstrained_rate.add(proc)
 
@@ -358,10 +436,10 @@ class HBWInferenceModelBase(InferenceModel):
         # TODO: some scale/pdf uncertainties should be rounded to 3 digits, others to 4 digits
         # NOTE: it might be easier to just take the recommended uncertainty values from HH conventions at
         #       https://gitlab.cern.ch/hh/naming-conventions instead of taking the values from CMSDB
-        for k, procs in const.processes_per_QCDScale.items():
-            syst_name = f"QCDScale_{k}"
-            if syst_name not in self.systematics:
-                continue
+        for syst_name, procs in self.processes_per_QCDScale.items():
+            # syst_name = f"QCDScale_{k}"
+            # if syst_name not in self.systematics:
+            #     continue
 
             for proc in procs:
                 if proc not in self.processes:
@@ -386,10 +464,10 @@ class HBWInferenceModelBase(InferenceModel):
             self.add_parameter_to_group(syst_name, "theory")
 
         # add PDF rate uncertainties to inference model
-        for k, procs in const.processes_per_pdf_rate.items():
-            syst_name = f"pdf_{k}"
-            if syst_name not in self.systematics:
-                continue
+        for syst_name, procs in self.processes_per_pdf_rate.items():
+            # syst_name = f"pdf_{k}"
+            # if syst_name not in self.systematics:
+            #     continue
 
             for proc in procs:
                 if proc not in self.processes:
@@ -404,7 +482,7 @@ class HBWInferenceModelBase(InferenceModel):
                     continue
 
                 self.add_parameter(
-                    f"pdf_{k}",
+                    syst_name,
                     process=self.inf_proc(proc),
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
@@ -418,37 +496,38 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        shapes_already_added = set()
-        years = {config_inst.campaign.x.year for config_inst in self.config_insts}
-        for shape_uncertainty, shape_processes in const.processes_per_shape.items():
-            for year in years:
-                shape_uncertainty_formatted = shape_uncertainty.format(year=year)
-                if shape_uncertainty_formatted not in self.systematics:
-                    # skip if the shape uncertainty is not requested
-                    continue
-                if shape_uncertainty_formatted in shapes_already_added:
-                    # skip if the shape uncertainty was already added (happens when {year} is not used in the name)
-                    continue
-                shapes_already_added.add(shape_uncertainty_formatted)
+        for shape_uncertainty, shape_processes in self.processes_per_shape.items():
 
-                # If "all" is included, takes all processes except for the ones specified (starting with !)
-                if "all" in shape_processes:
-                    _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
-                    shape_processes = set(self.processes) - _remove_processes
-                self.add_parameter(
-                    shape_uncertainty_formatted,
-                    type=ParameterType.shape,
-                    process=[self.inf_proc(proc) for proc in shape_processes],
-                    config_data={
-                        config_inst.name: self.parameter_config_spec(
-                            shift_source=const.source_per_shape[shape_uncertainty].format(year=year),
-                        )
-                        for config_inst in self.config_insts
-                    },
+            # If "all" is included, takes all processes except for the ones specified (starting with !)
+            if "all" in shape_processes:
+                _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
+                shape_processes = set(self.processes) - _remove_processes
+
+            param_kwargs = {
+                "type": ParameterType.shape,
+                "process": [self.inf_proc(proc) for proc in shape_processes],
+            }
+            shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
+            for bjet_cat in ("1b", "2b"):
+                if shape_uncertainty.endswith(bjet_cat):
+                    param_kwargs["category"] = f"*_{bjet_cat}_*"
+                    param_kwargs["category_match_mode"] = "all"
+                    shift_source = shift_source.replace(f"_{bjet_cat}", "")
+
+            param_kwargs["config_data"] = {
+                config_inst.name: self.parameter_config_spec(
+                    shift_source=shift_source,
                 )
+                for config_inst in self.config_insts
+            }
 
-                is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
-                if is_theory:
-                    self.add_parameter_to_group(shape_uncertainty, "theory")
-                else:
-                    self.add_parameter_to_group(shape_uncertainty, "experiment")
+            self.add_parameter(
+                shape_uncertainty,
+                **param_kwargs,
+            )
+
+            is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
+            if is_theory:
+                self.add_parameter_to_group(shape_uncertainty, "theory")
+            else:
+                self.add_parameter_to_group(shape_uncertainty, "experiment")

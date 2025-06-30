@@ -137,14 +137,11 @@ def get_rebin_values(
                 this_edge = rebin_hist.axes[0].edges[i]
                 logger.info(
                     f"++++++++++ Append bin edge {bin_count} of {N_bins_final} at edge "
-                    f"{rebin_hist.axes[0].edges[i]}",
+                    f"{this_edge}",
                 )
-                previous_edge = rebin_values[-1]
-                rebin_values.append(this_edge)
-                bin_count += 1
 
                 # recalculate events per bin
-                last_bin_index = rebin_hist.axes[0].index(rebin_values[-1])
+                last_bin_index = rebin_hist.axes[0].index(this_edge)
                 _sum = rebin_hist.values()[:last_bin_index].sum()
                 events_per_bin = _sum / (N_bins_final - bin_count + 1)
                 logger.info(f"============ Continuing with {round(events_per_bin, 3)} events per bin")
@@ -152,14 +149,18 @@ def get_rebin_values(
                 # check if this bin should be blinded
                 should_be_blinded = blind_bool_func(N_signal, N_bkg_value)
                 if should_be_blinded:
-                    logger.warning(f"Blinding condition fulfilled, removing bin from {this_edge} to {previous_edge}")
-                    rebin_values.remove(previous_edge)
+                    logger.warning(f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
+                    rebin_values = [this_edge]
+
+                # append bin edge and reset event counts
+                rebin_values.append(this_edge)
+                bin_count += 1
                 N_events = N_signal = N_bkg_value = N_bkg_variance = 0
             else:
                 logger.warning_once(
                     f"get_rebin_values_{bin_count}",
                     f"Background variance {N_bkg_variance} is too large for bin {i} with value {N_bkg_value}, "
-                    f"skipping bin edge {rebin_hist.axes[0].edges[i]}",
+                    f"skipping bin edge {this_edge}",
                 )
 
     rebin_values.append(x_min)

@@ -266,7 +266,7 @@ input_features = {
         "mli_ll_pt",
         "mli_lep_pt",
         "mli_lep2_pt",
-        "mli_dphi_bb_nu",
+        "mli_dphi_bb_nu",  # badly modelled ---> please remove in future
         "mli_j1_b_score",
         "mli_bb_pt",
         "mli_dr_ll",
@@ -286,9 +286,9 @@ input_features = {
         # "mli_b1_b_score",
         # "mli_dhpi_bb_llMET",
         # "mli_dphi_ll",
-        "mli_vbf_mass",  # important for vbf?
-        "mli_vbf_tag",  # important for vbf?
-        "mli_vbf_deta",  # important for vbf?
+        "mli_vbf_mass",  # important for vbf? ---> not really
+        "mli_vbf_tag",  # important for vbf? ---> not really
+        "mli_vbf_deta",  # important for vbf? ---> not really
     ],
     "v0": [  # reduced + mixed channel
         "mli_mbb",
@@ -314,9 +314,9 @@ input_features = {
         "mli_dr_bb",
         "mli_mindr_lb",
         "mli_ht",
-        "mli_vbf_mass",  # important for vbf?
-        "mli_vbf_tag",  # important for vbf?
-        "mli_vbf_deta",  # important for vbf?
+        "mli_vbf_mass",  # important for vbf? --> not really
+        "mli_vbf_tag",  # important for vbf? --> not really
+        "mli_vbf_deta",  # important for vbf? --> not really
         "mli_mixed_channel",
     ],
     "new": [
