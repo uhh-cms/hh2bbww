@@ -66,95 +66,150 @@ config_categories = DotDict({
 })
 
 
-rate_systematics = [
-    # Lumi: should automatically choose viable uncertainties based on campaign
-    "lumi_13TeV_2016",
-    "lumi_13TeV_2017",
-    "lumi_13TeV_1718",
-    "lumi_13TeV_2022",
-    "lumi_13TeV_2023",
-    "lumi_13TeV_correlated",
-    # Rate QCDScale uncertainties
-    "QCDScale_ttbar",
-    "QCDScale_V",
-    "QCDScale_VV",
-    "QCDScale_VVV",
-    "QCDScale_ggH",
-    "QCDScale_qqH",
-    "QCDScale_VH",
-    "QCDScale_ttH",
-    "QCDScale_bbH",
-    "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
-    "QCDScale_hh_vbf",
-    "QCDScale_VHH",
-    "QCDScale_ttHH",
-    # Rate PDF uncertainties
-    "pdf_gg",
-    "pdf_qqbar",
-    "pdf_qg",
-    "pdf_Higgs_gg",
-    "pdf_Higgs_qqbar",
-    "pdf_Higgs_qg",  # none so far
-    "pdf_Higgs_ttH",
-    "pdf_Higgs_bbH",  # removed
-    "pdf_Higgs_hh_ggf",
-    "pdf_Higgs_hh_vbf",
-    "pdf_VHH",
-    "pdf_ttHH",
-    # unconstrained rate uncertainties
-    "rate_ttbar",
-    "rate_dy",
+systematics = DotDict({
+    "lumi": [
+        "lumi_13TeV_2016",
+        "lumi_13TeV_2017",
+        "lumi_13TeV_1718",
+        "lumi_13TeV_2022",
+        "lumi_13TeV_2023",
+        "lumi_13TeV_correlated",
+    ],
+    "QCDScale": [
+        "QCDScale_ttbar",
+        "QCDScale_V",
+        "QCDScale_VV",
+        "QCDScale_VVV",
+        "QCDScale_ggH",
+        "QCDScale_qqH",
+        "QCDScale_VH",
+        "QCDScale_ttH",
+        "QCDScale_bbH",
+        "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+        "QCDScale_hh_vbf",
+        "QCDScale_VHH",
+        "QCDScale_ttHH",
+    ],
+    "pdf": [
+        "pdf_gg",
+        "pdf_qqbar",
+        "pdf_qg",
+        "pdf_Higgs_gg",
+        "pdf_Higgs_qqbar",
+        "pdf_Higgs_qg",  # none so far
+        "pdf_Higgs_ttH",
+        "pdf_Higgs_bbH",  # removed
+        "pdf_Higgs_hh_ggf",
+        "pdf_Higgs_hh_vbf",
+        "pdf_VHH",
+        "pdf_ttHH",
+    ],
+    "rate_unconstrained": [
+        "rate_ttbar",
+        "rate_dy",
+    ],
+    "rate_unconstrained_bjet_uncorr": [
+        "rate_ttbar_{bjet_cat}",
+        "rate_dy_{bjet_cat}",
+    ],
+    "murf_envelope": [
+        # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "murf_envelope_tt",
+        "murf_envelope_st",
+        "murf_envelope_dy",
+        # "murf_envelope_w_lnu",
+        # "murf_envelope_ttv",
+        # "murf_envelope_vv",
+        # "murf_envelope_h",
+    ],
+    "pdf_shape": [
+        "pdf_shape_tt",
+        "pdf_shape_st",
+        "pdf_shape_dy",
+        # "pdf_shape_w_lnu",
+        # "pdf_shape_ttv",
+        # "pdf_shape_vv",
+        # "pdf_shape_h",
+    ],
+    "btag": [
+        "btag_hf",
+        "btag_lf",
+        "btag_hfstats1_{year}",
+        "btag_hfstats2_{year}",
+        "btag_lfstats1_{year}",
+        "btag_lfstats2_{year}",
+        "btag_cferr1",
+        "btag_cferr2",
+    ],
+    "btag_bjet_uncorr": [
+        "btag_hf_{bjet_cat}",
+        "btag_lf_{bjet_cat}",
+        "btag_hfstats1_{year}_{bjet_cat}",
+        "btag_hfstats2_{year}_{bjet_cat}",
+        "btag_lfstats1_{year}_{bjet_cat}",
+        "btag_lfstats2_{year}_{bjet_cat}",
+        "btag_cferr1_{bjet_cat}",
+        "btag_cferr2_{bjet_cat}",
+    ],
+    "experiment": [
+        "mu_id_sf",
+        "mu_iso_sf",
+        "e_sf",
+        "e_reco_sf",
+        "trigger_sf",
+        "minbias_xs",
+    ],
+    "other": [
+        "isr",
+        "fsr",
+        "top_pt",
+    ],
+    "jerc_only": [
+        "jer",
+        "jec_Total",
+    ],
+})
+systematics["rate"] = [
+    *systematics.QCDScale,
+    *systematics.pdf,
+    *systematics.rate_unconstrained,
 ]
-
-shape_systematics = [
-    # Shape Scale uncertainties
-    # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-    "murf_envelope_tt",
-    "murf_envelope_st",
-    "murf_envelope_dy",
-    # "murf_envelope_w_lnu",
-    # "murf_envelope_ttv",
-    # "murf_envelope_vv",
-    # "murf_envelope_h",
-    # Shape PDF Uncertainties
-    "pdf_shape_tt",
-    "pdf_shape_st",
-    "pdf_shape_dy",
-    # "pdf_shape_w_lnu",
-    # "pdf_shape_ttv",
-    # "pdf_shape_vv",
-    # "pdf_shape_h",
-    # Scale Factors
-    "btag_hf",
-    "btag_lf",
-    "btag_hfstats1_{year}",
-    "btag_hfstats2_{year}",
-    "btag_lfstats1_{year}",
-    "btag_lfstats2_{year}",
-    "btag_cferr1",
-    "btag_cferr2",
-    "mu_id_sf",
-    "mu_iso_sf",
-    "e_sf",
-    "e_reco_sf",
-    "trigger_sf",
-    "minbias_xs",
-    "isr",
-    "fsr",
-    "top_pt",
+systematics["shape_only"] = [
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag,
+    *systematics.experiment,
+    *systematics.other,
 ]
-
-jerc_systematics = [
-    "jer",
-    "jec_Total",
+systematics["shape"] = [
+    *systematics.rate,
+    *systematics.shape_only,
 ]
-
-# systematics = DotDict({
-#     "all": rate_systematics + shape_systematics + jerc_systematics,
-# })
-
-# All systematics to be included in the final datacard
-systematics = rate_systematics + shape_systematics
+# default set of all systematics
+systematics["jerc"] = [
+    *systematics.rate,
+    *systematics.shape,
+    *systematics.jerc_only,
+]
+systematics["rate_bjet_uncorr"] = [
+    *systematics.QCDScale,
+    *systematics.pdf,
+    *systematics.rate_unconstrained_bjet_uncorr,
+]
+systematics["shape_bjet_uncorr"] = [
+    *systematics.rate_bjet_uncorr,
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_bjet_uncorr,
+    *systematics.experiment,
+    *systematics.other,
+]
+# All systematics with btag and rate uncertainites decorrelated between bjet categories
+systematics["jerc_bjet_uncorr"] = [
+    *systematics.rate_bjet_uncorr,
+    *systematics.shape_bjet_uncorr,
+    *systematics.jerc_only,
+]
 
 hhprocs_ggf = lambda hhdecay: [
     f"hh_ggf_{hhdecay}_kl0_kt1",
@@ -226,7 +281,7 @@ default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes_dict["hwwzztt"],
     "config_categories": config_categories.default,
-    "systematics": rate_systematics,
+    "systematics": systematics.rate,
     "config_variable": config_variable_binary_ggf_and_vbf,
     "mc_stats": True,
     "skip_data": True,
@@ -236,41 +291,44 @@ default_cls_dict = {
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 dl_test = HBWInferenceModelBase.derive("dl_test", cls_dict=default_cls_dict)
 dl_bkg_cats = dl.derive("dl_bkg_cats", cls_dict={"config_categories": config_categories.background})
-dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics})
-dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": jerc_systematics})
-dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics + jerc_systematics})
+dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics.shape})
+dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": systematics.jerc_only})
+dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics.jerc})
+dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})
+dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
-    "systematics": systematics + jerc_systematics,
+    "systematics": systematics.jerc,
     "skip_data": False,
 })
 dl_data_full = dl.derive("dl_data_full", cls_dict={
     # NOTE: needs to be run with --hist-hooks blind !!!!
     "config_categories": config_categories.default,
-    "systematics": systematics + jerc_systematics,
+    "systematics": systematics.jerc,
     "skip_data": False,
 })
 dl_data_test = dl.derive("dl_data_test", cls_dict={
     "config_categories": config_categories.default,
-    "systematics": rate_systematics,
+    "systematics": systematics.rate,
     "skip_data": False,
 })
 
+# testing models
 no_nn_cats = dl.derive("no_nn_cats", cls_dict={
     "processes": processes_dict["hwwzztt"],
-    "systematics": systematics + jerc_systematics,
+    "systematics": systematics.jerc,
     "config_categories": config_categories.no_nn_cats,
 })
 bjet_incl = dl.derive("bjet_incl", cls_dict={
     "processes": processes_dict["hwwzztt"],
-    "systematics": systematics + jerc_systematics,
+    "systematics": systematics.jerc,
     "config_categories": config_categories.bjet_incl,
 })
-test = dl.derive("test", cls_dict={
+test_pdf = dl.derive("test_pdf", cls_dict={
     "processes": processes_dict["test"],
-    "systematics": rate_systematics + ["pdf_shape_tt"],
+    "systematics": systematics.rate + ["pdf_shape_tt"],
 })
-test_syst = dl.derive("test_syst", cls_dict={
+test_jec = dl.derive("test_jec", cls_dict={
     "processes": processes_dict["test"],
-    "systematics": rate_systematics + jerc_systematics,
+    "systematics": systematics.rate + ["jec_Total"],
 })
