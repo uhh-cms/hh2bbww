@@ -470,6 +470,16 @@ class ComputeDYWeights(DYCorrBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        # datasets/processes instances
+        self.process_insts = {
+            config_inst: list(map(config_inst.get_process, processes))
+            for config_inst, processes in zip(self.config_insts, self.processes)
+        }
+        self.dataset_insts = {
+            config_inst: list(map(config_inst.get_dataset, datasets))
+            for config_inst, datasets in zip(self.config_insts, self.datasets)
+        }
+
         # only one category is allowed right now
         if len(self.categories) != 1:
             raise ValueError(f"{self.task_family} requires exactly one category, got {self.categories}")
