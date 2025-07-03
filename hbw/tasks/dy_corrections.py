@@ -582,14 +582,14 @@ class ComputeDYWeights(DYCorrBase):
                     **slice_kwargs,
                 )
 
-            if variable in hists.keys():
-                hists[variable]["data"] += hist_data
-                hists[variable]["MC_subtract"] += hist_mc_subtract
-                hists[variable]["MC_corr_process"] += hist_corrected
-            else:
-                hists[variable]["data"] = hist_data
-                hists[variable]["MC_subtract"] = hist_mc_subtract
-                hists[variable]["MC_corr_process"] = hist_corrected
+                if variable in hists.keys():
+                    hists[variable]["data"] += hist_data
+                    hists[variable]["MC_subtract"] += hist_mc_subtract
+                    hists[variable]["MC_corr_process"] += hist_corrected
+                else:
+                    hists[variable]["data"] = hist_data
+                    hists[variable]["MC_subtract"] = hist_mc_subtract
+                    hists[variable]["MC_corr_process"] = hist_corrected
 
         # compute the dy weight data
         hists_corr = hists[self.variable]
