@@ -289,9 +289,17 @@ default_cls_dict = {
 
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl1 = HBWInferenceModelBase.derive("dl1", cls_dict=default_cls_dict)
+dl_skip_mc_stats = dl.derive("dl_skip_mc_stats", cls_dict={
+    "mc_stats": False,
+})
+dl_skip_dy_m4to10 = dl.derive("dl_skip_dy_m4to10", cls_dict={
+    "skip_datasets": {"dy": "dy_m4to10_amcatnlo"},
+})
 dl_test = HBWInferenceModelBase.derive("dl_test", cls_dict=default_cls_dict)
 dl_bkg_cats = dl.derive("dl_bkg_cats", cls_dict={"config_categories": config_categories.background})
 dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics.shape})
+dl_syst1 = dl.derive("dl_syst1", cls_dict={"systematics": systematics.shape})
 dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": systematics.jerc_only})
 dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics.jerc})
 dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})

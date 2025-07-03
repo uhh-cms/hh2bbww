@@ -42,6 +42,9 @@ class HBWInferenceModelBase(InferenceModel):
     config_categories: list = []
     systematics: list = []
 
+    # dictionary to allow skipping specfic datasets for a process
+    skip_datasets: dict = {}
+
     # customization of channels
     mc_stats: bool = True
     skip_data: bool = True
@@ -327,6 +330,7 @@ class HBWInferenceModelBase(InferenceModel):
             datasets = {config_inst.name: [
                 d.name for d in
                 get_datasets_from_process(config_inst, proc, strategy="all", check_deep=True, only_first=False)
+                if d.name not in self.skip_datasets.get(proc, [])
             ] for config_inst in self.config_insts}
 
             for config, _datasets in datasets.items():

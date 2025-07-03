@@ -304,7 +304,7 @@ input_features = {
         "mli_ll_pt",
         "mli_lep_pt",
         "mli_lep2_pt",
-        "mli_dphi_bb_nu",
+        "mli_dphi_bb_nu",  # badly modelled ---> please remove in future
         "mli_j1_b_score",
         "mli_bb_pt",
         "mli_dr_ll",
@@ -319,13 +319,49 @@ input_features = {
         "mli_vbf_deta",  # important for vbf? --> not really
         "mli_mixed_channel",
     ],
-    "new": [
-        "mli_lep_tag",
-        "mli_lep2_tag",
+    "v1": [
+        # dphi_bb_nu, vbf_pair_eta, vbf_pair_mass, mindr_lj
+        # new input features
         "mli_maxdr_jj",
-        "mli_mindr_jj",
+        # v0 sorted from GGF SHAP
+        "mli_mbbllMET",
+        "mli_mbb",
+        "mli_mll",
+        "mli_b1_pt",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        "mli_mixed_channel",
+        # mli_dphi_bb_nu: removed due to bad modelling
+        "mli_dr_bb_llMET",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_met_pt",
+        "mli_b_score_sum",
+        "mli_ll_pt",
+        "mli_min_dr_llbb",
+        "mli_ht",
+        "mli_j1_pt",
+        "mli_dr_ll",
+        # mli_j1_b_score: removed due to low stats and low importance
+        "mli_dr_bb",
+        "mli_mindr_lb",
+        "mli_n_jet",
+        "mli_j1_eta",
+        # vbf_tag, vbf_deta and vbf_mass removed due to bad modelling and low importance
+    ],
+    "fatjet": [
+        "mli_fj_particleNetWithMass_HbbvsQCD",
+        # "mli_fj_particleNet_XbbvsQCD",
+        "mli_fj_pt",
+        "mli_fj_eta",
+        "mli_fj_phi",
+        # "mli_fj_mass",
+        # "mli_fj_msoftdrop",
     ],
 }
+input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
+
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
     "ones": {},  # defaults to 1 (NOTE: do not try to use defaultdict! does not work with hash generation)
