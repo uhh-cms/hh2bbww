@@ -251,23 +251,36 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     return events, mask
 
 
-@categorizer(uses={"Jet.pt"})
-def catid_njet1(
+@categorizer(
+    uses={"Jet.pt"},
+    n_jet=2,
+)
+def catid_njet2(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
     if results:
         return events, results.steps.nJet1
-    mask = ak.num(events.Jet.pt, axis=-1) >= 1
+    mask = ak.num(events.Jet["pt"], axis=-1) >= self.n_jet
     return events, mask
 
 
-@categorizer(uses={"Jet.pt"})
-def catid_njet3(
-    self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
-) -> tuple[ak.Array, ak.Array]:
-    if results:
-        return events, results.steps.nJet3
-    mask = ak.num(events.Jet.pt, axis=-1) >= 3
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_le1b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    b_tagger = self.config_inst.x.b_tagger
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["loose"]
+    n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
+    mask = (n_deepjet_loose <= 1)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_ge2b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    b_tagger = self.config_inst.x.b_tagger
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["loose"]
+    n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
+    mask = (n_deepjet_loose >= 2)
     return events, mask
 
 
@@ -280,30 +293,6 @@ def catid_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     return events, mask
 
 
-@categorizer(uses={BTAG_COLUMN("Jet")})
-def catid_1b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    btagger = self.config_inst.x.b_btagger
-    btag_column = self.config_inst.x.btag_column
-    btag_wp_score_med = self.config_inst.x.btag_working_points[btagger]["medium"]
-    btag_wp_score_loose = self.config_inst.x.btag_working_points[btagger]["loose"]
-    # use medium WP for 2b categorization
-    n_deepjet_med = ak.sum(events.Jet[btag_column] >= btag_wp_score_med, axis=-1)
-    n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
-    mask = (n_deepjet_med <= 1) & (n_deepjet_loose <= 1)
-    return events, mask
-
-
-@categorizer(uses={BTAG_COLUMN("Jet")})
-def catid_2b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    btagger = self.config_inst.x.b_btagger
-    btag_column = self.config_inst.x.btag_column
-    btag_wp_score_med = self.config_inst.x.btag_working_points[btagger]["medium"]
-    btag_wp_score_loose = self.config_inst.x.btag_working_points[btagger]["loose"]
-    # use medium WP for 2b categorization
-    n_deepjet_med = ak.sum(events.Jet[btag_column] >= btag_wp_score_med, axis=-1)
-    n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
-    mask = (n_deepjet_med <= 1) & (n_deepjet_loose >= 2)
-    return events, mask
 
 
 @categorizer(uses={BTAG_COLUMN("Jet")})
@@ -370,3 +359,11 @@ def mask_fn_gen_barrel(self: Categorizer, events: ak.Array, **kwargs) -> tuple[a
     """
     mask = (abs(events.gen_hbw_decay["sec1"]["eta"]) < 2.4) & (abs(events.gen_hbw_decay["sec2"]["eta"]) < 2.4)
     return events, mask
+
+
+@categorizer(uses={"mll"}, mll=20)
+def mask_fn_mll20(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, (events.mll > self.mll)
+
+
+mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})
