@@ -61,7 +61,7 @@ dataset_mapping = {
     "data": [
         f"/Muon*/{data_campaign}/NANOAOD",
         f"/EGamma*/{data_campaign}/NANOAOD",
-        f"/MuonEG/{data_campaign}/NANOAOD"
+        f"/MuonEG/{data_campaign}/NANOAOD",
     ],
     "hbw_minis": [
         # f"/GluGlutoHHto2B2V*/{campaign}*/MINIAODSIM",

@@ -293,8 +293,6 @@ def catid_1b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     return events, mask
 
 
-
-
 @categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column

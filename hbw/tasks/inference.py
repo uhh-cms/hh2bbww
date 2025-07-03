@@ -752,15 +752,15 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"{cat_name}=$CARDS_PATH/{card_fn}"
             for cat_name, card_fn in zip(cat_names, card_fns) if "sig_" in cat_name
         ])
-        multi_sig_card_names = ",".join(
-            [cat_name for cat_name in cat_names if "sig_" in cat_name]
-        )
-        cards_1b = ",".join(
-            [f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name]
-        )
-        cards_2b = ",".join(
-            [f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2b" in cat_name]
-        )
+        multi_sig_card_names = ",".join([
+            cat_name for cat_name in cat_names if "sig_" in cat_name
+        ])
+        cards_1b = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name
+        ])
+        cards_2b = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2b" in cat_name
+        ])
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
             f"--multi-datacards {multi_sig_cards}:{cards_1b}:{cards_2b}:{datacards} "
