@@ -6,14 +6,17 @@ Tasks to study and create weights for DY events.
 
 from __future__ import annotations
 
+from functools import cached_property
+
 import gzip
 
 import law
 
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
 from columnflow.tasks.framework.base import Requirements
-from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
+from hbw.tasks.histograms import HistogramsUserSingleShiftBase
+# from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.tasks.framework.mixins import (
     # CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, HistProducerClassMixin,
@@ -284,7 +287,7 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
         ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
         ax.set_ylim(0.4, 1.5)
-        ax.set_title(f"Fit function for NLO 2022postEE, njets {njet}")
+        ax.set_title(f"Fit function for NLO PLACEHOLDER, njets {njet}")
         ax.grid(True)
         fig.savefig(f"plot_fit_njet{njet}.pdf")
 
@@ -368,7 +371,9 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
     """
     # prepare constants
     inf = float("inf")
-    era = f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}"
+    era = "_".join([
+        f"{config_inst.campaign.x.year}{config_inst.campaign.x.postfix}" for config_inst in task.config_insts
+    ])
 
     # initialize fit dictionary
     fit_dict = {
@@ -402,19 +407,20 @@ class DYCorrBase(
     Base class for DY correction tasks.
     """
     # TODO: enable MultiConfig in HistogramsUserSingleShiftBase
-    single_config = True
+    single_config = False
 
+    # NOTE: we assume that the corrected process is always the same for all configs
     corrected_process = DatasetsProcessesMixin.processes.copy(
         default=("dy",),
         description="Processes to consider for the scale factors",
         add_default_to_description=True,
     )
-    processes = DatasetsProcessesMixin.processes.copy(
-        default=(
+    processes = DatasetsProcessesMixin.processes_multi.copy(
+        default=((
             "vv", "w_lnu", "st",
             "dy_m4to10", "dy_m10to50", "dy_m50toinf",
             "tt", "ttv", "h", "data",
-        ),
+        ),),
         description="Processes to use for the DY corrections",
         add_default_to_description=True,
     )
@@ -470,7 +476,7 @@ class ComputeDYWeights(DYCorrBase):
         # ensure that the category matches a specific pattern: starting with "ee"/"mumu" and ending in "os"
         if "dycr" not in self.categories[0]:
             raise ValueError(f"category must start with 'dycr' to derive dy crorections, got {self.categories[0]}")
-        self.category_inst = self.config_inst.get_category(self.categories[0])
+        self.category_inst = self.config_insts[0].get_category(self.categories[0])
 
         # only one variable is allowed
         if len(self.variables) != 1:
@@ -481,6 +487,7 @@ class ComputeDYWeights(DYCorrBase):
             raise ValueError(f"variable must be 'n_jet-ptll_ptll_for_dy_corr', got {self.variable}")
 
         # Only one processes is allowed to correct for
+        # NOTE: might have to change due to MultiConfig
         if len(self.corrected_process) != 1:
             raise ValueError(
                 f"Only one corrected process is supported for njet corrections. Got {self.corrected_process}",
@@ -489,47 +496,93 @@ class ComputeDYWeights(DYCorrBase):
     def output(self):
         return self.target("dy_weight_data.pkl")
 
+    @cached_property
+    def corrected_proc_inst(self):
+        return {
+            config_inst: config_inst.get_process(self.corrected_process[0])
+            for config_inst in self.config_insts
+        }
+
+    @property
+    def corrected_sub_proc_insts(self):
+        return {
+            config_inst: [proc for proc, _, _ in proc_inst.walk_processes(include_self=True)]
+            for config_inst, proc_inst in self.corrected_proc_inst.items()
+        }
+
+    @cached_property
+    def subtract_proc_insts(self):
+        return {
+            config_inst: [
+                proc for proc in self.process_insts[config_inst]
+                if proc.is_mc and proc not in self.corrected_sub_proc_insts[config_inst]
+            ]
+            for config_inst in self.config_insts
+        }
+
+    @cached_property
+    def data_proc_insts(self):
+        return {
+            config_inst: [
+                proc for proc in self.process_insts[config_inst]
+                if proc.is_data and proc not in self.corrected_sub_proc_insts[config_inst]
+            ]
+            for config_inst in self.config_insts
+        }
+
     def run(self):
+        shifts = ["nominal", self.shift]
+        hists = defaultdict(dict)
 
-        def get_subtract_processes():
-            sub_procs = []
-            corrected_proc_inst = self.config_inst.get_process(self.corrected_process[0])
-            data_proc_inst = self.config_inst.get_process("data")
-            corrected_process = [proc.name for proc, _, _ in corrected_proc_inst.walk_processes(include_self=True)]
-            data_processes = [proc.name for proc, _, _ in data_proc_inst.walk_processes(include_self=True)]
-            for proc in self.processes:
-                if proc not in corrected_process and proc not in data_processes:
-                    # TODO hier muss noch ein chekc rein für alle childprocesses
-                    sub_procs.append(proc)
-            return sub_procs
+        for variable in self.variables:
+            for i, config_inst in enumerate(self.config_insts):
+                hist_per_config = None
+                # sub_processes = self.processes[i]
+                for dataset in self.datasets[i]:
+                    # sum over all histograms of the same variable and config
+                    if hist_per_config is None:
+                        hist_per_config = self.load_histogram(
+                            config=config_inst, dataset=dataset, variable=variable,
+                        )
+                    else:
+                        h = self.load_histogram(
+                            config=config_inst, dataset=dataset, variable=variable,
+                        )
+                        hist_per_config += h
 
-        hists = {}
+                # slice histogram per config according to the sub_processes and categories
 
-        for dataset in self.datasets:
+                slice_kwargs = {
+                    "histogram": hist_per_config,
+                    "config_inst": config_inst,
+                    "categories": self.categories,
+                    "shifts": shifts,
+                    "reduce_axes": True,
+                }
+                hist_data = self.slice_histogram(
+                    processes=self.data_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
+                hist_mc_subtract = self.slice_histogram(
+                    processes=self.subtract_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
+                hist_corrected = self.slice_histogram(
+                    processes=self.corrected_sub_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
 
-            h_in = self.load_histogram(dataset, self.variable)
-            h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
-
-            if self.variable in hists.keys():
-                hists[self.variable] += h_in
+            if variable in hists.keys():
+                hists[variable]["data"] += hist_data
+                hists[variable]["MC_subtract"] += hist_mc_subtract
+                hists[variable]["MC_corr_process"] += hist_corrected
             else:
-                hists[self.variable] = h_in
-
-        data_proc = self.config_inst.get_process("data")
-        subtract_processes = get_subtract_processes()
-
-        hists_corr = defaultdict(OrderedDict)
-        hists_corr["data"] = self.slice_histogram(
-            hists[self.variable], data_proc, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr["MC_subtract"] = self.slice_histogram(
-            hists[self.variable], subtract_processes, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr["MC_corr_process"] = self.slice_histogram(
-            hists[self.variable], self.corrected_process, self.categories, self.shift, reduce_axes=True,
-        )
+                hists[variable]["data"] = hist_data
+                hists[variable]["MC_subtract"] = hist_mc_subtract
+                hists[variable]["MC_corr_process"] = hist_corrected
 
         # compute the dy weight data
+        hists_corr = hists[self.variable]
         dy_weight_data = compute_weight_data(self, hists_corr)
 
         # store them
@@ -553,12 +606,16 @@ class ExportDYWeights(DYCorrBase):
     )
 
     def requires(self):
-        return {self.config: self.reqs.ComputeDYWeights.req(self)}
+        return {
+            config: self.reqs.ComputeDYWeights.req(self)
+            for config in self.configs
+        }
 
     def workflow_requires(self):
         reqs = super().workflow_requires()
         reqs["dy_correction_weight"] = {
-            self.config: self.reqs.ComputeDYWeights.req(self),
+            config: self.reqs.ComputeDYWeights.req(self)
+            for config in self.configs
         }
         return reqs
 
