@@ -9,6 +9,7 @@ import functools
 import law
 
 from columnflow.production import Producer, producer
+from columnflow.categorization import Categorizer
 from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
@@ -46,6 +47,7 @@ def del_sub_proc_stats(
 @producer(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
     produces={IF_MC("event_weight")},
+    extra_categorizer=None,
 )
 def ml_preparation(
     self: Producer,
@@ -66,6 +68,13 @@ def ml_preparation(
         events, mask = self[sr_categorizer](events, **kwargs)
         logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
         events = events[mask]
+
+        if self.extra_categorizer:
+            for cat_cls in self.categorizers_cls:
+                # apply additional categorizer if specified
+                events, mask = self[cat_cls](events, **kwargs)
+                logger.info(f"Select {ak.sum(mask)} from {len(events)} events using {cat_cls.cls_name}")
+                events = events[mask]
 
     weight_map = {
         "num_events": Ellipsis,  # all events
@@ -127,3 +136,18 @@ def ml_preparation_init(self):
 
     self.uses.add("stitched_normalization_weight")
     self.uses.add(default_hist_producer)
+
+    if self.extra_categorizer:
+        self.categorizers_cls = []
+        for cls_name in law.util.make_list(self.extra_categorizer):
+            if not Categorizer.has_cls(cls_name):
+                logger.warning(
+                    f"Extra categorizer {cls_name} not found, skipping it in {self.cls_name}.",
+                )
+                continue
+            cat_cls = Categorizer.get_cls(cls_name)
+            self.categorizers_cls.append(cat_cls)
+            self.uses.add(cat_cls)
+
+
+ml_preparation_mll20 = ml_preparation.derive("ml_preparation_mll20", cls_dict={"extra_categorizer": "catid_mll_low"})
