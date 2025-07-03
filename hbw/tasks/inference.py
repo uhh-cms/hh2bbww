@@ -157,6 +157,7 @@ def get_rebin_values(
                 bin_count += 1
                 N_events = N_signal = N_bkg_value = N_bkg_variance = 0
             else:
+                this_edge = rebin_hist.axes[0].edges[i]
                 logger.warning_once(
                     f"get_rebin_values_{bin_count}",
                     f"Background variance {N_bkg_variance} is too large for bin {i} with value {N_bkg_value}, "
@@ -735,8 +736,6 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
-        multi_card_names = ",".join(cat_names)
-        multi_cards = datacards.replace(",", ":")
 
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
@@ -748,11 +747,24 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         print("\n\n")
-        # creating limits per card for kl=1
+        # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
+        multi_sig_cards = ":".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}"
+            for cat_name, card_fn in zip(cat_names, card_fns) if "sig_" in cat_name
+        ])
+        multi_sig_card_names = ",".join(
+            [cat_name for cat_name in cat_names if "sig_" in cat_name]
+        )
+        cards_1b = ",".join(
+            [f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name]
+        )
+        cards_2b = ",".join(
+            [f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2b" in cat_name]
+        )
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
-            f"--multi-datacards {multi_cards}:{datacards} "
-            f"--datacard-names {multi_card_names},{identifier}"
+            f"--multi-datacards {multi_sig_cards}:{cards_1b}:{cards_2b}:{datacards} "
+            f"--datacard-names {multi_sig_card_names},1b_combined,2b_combined,{identifier}"
         )
         print(base_cmd + cmd, "\n\n")
 
