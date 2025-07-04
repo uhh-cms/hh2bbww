@@ -194,7 +194,7 @@ def plot_efficiencies(
     hists = remove_residual_axis(hists, "shift")
     if len(hists.keys()) > 1:
         if "bin_sel" in kwargs:
-            mask_bins = kwargs["bin_sel"]
+            mask_bins = kwargs["bin_sel"][:-1] if kwargs["bin_sel"][-1] == "" else kwargs["bin_sel"]
             if len(mask_bins) == 1:
                 legend_title = f"{mask_bins[0]}"
                 proc_as_label = True
@@ -234,7 +234,7 @@ def plot_efficiencies(
                     "method": "draw_hist_twin",
                     "hist": myhist[:, 0],
                     "kwargs": {
-                        "norm": 1,
+                        "norm": sum(myhist[:, 0].values()) if shape_norm else 1,
                         "label": None,
                         "color": "grey",
                         "histtype": "fill",
@@ -303,11 +303,14 @@ def plot_efficiencies(
                     eff_err = calc_efficiency_errors(myhist[:, hist.loc(i)], norm_hist, count_key)
 
                 plot_config[f"hist_{proc_label}_{label}"] = {
-                    "method": "draw_custom_errorbars",
+                    "method": "draw_errorbars",
                     "hist": myhist[:, hist.loc(i)],
                     "kwargs": {
                         "y": efficiency,
                         "yerr": eff_err,
+                        "xerr": myhist.axes[0].widths / 2,
+                        "color": f"C{count_key}",
+                        "marker": "o",
                         "label": r"$e\mu$ trigger" if label == "mixed" else f"{label}",
                     },
                 }
@@ -324,6 +327,7 @@ def plot_efficiencies(
                             "y": np.nan_to_num(efficiencies[0] / efficiencies[1], nan=1, posinf=1, neginf=1),
                             "yerr": calc_ratio_uncertainty(efficiencies, errors),
                             "label": f"{label}",
+                            "color": f"C{count_key-2}",
                             # "annotate": f"alpha={efficiency_sums[0]/efficiency_sums[1]:.2f}",
                         }
                     # else:
@@ -367,8 +371,9 @@ def plot_efficiencies(
     style_config["legend_cfg"]["ncols"] = 1
     style_config["legend_cfg"]["reverse"] = False
 
-    grid_spec = {"left": 0.1, "right": 0.9, "top": 0.95, "bottom": 0.1}
-    style_config["gridspec_cfg"] = grid_spec
+    if not kwargs.get("skip_background", False):
+        grid_spec = {"left": 0.11, "right": 0.89, "top": 0.95, "bottom": 0.1}
+        style_config["gridspec_cfg"] = grid_spec
 
     # fig, axs = plot_all(plot_config, style_config, **kwargs)
 
