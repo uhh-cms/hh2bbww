@@ -262,7 +262,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 0),
+    version=law.config.get_expanded("analysis", "event_weights_version", 2),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

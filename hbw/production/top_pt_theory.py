@@ -63,13 +63,16 @@ def top_pt_theory_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array
 
     # compute weight from SF product for top and anti-top
     weight = np.sqrt(np.prod(sf, axis=1))
+    weight = ak.fill_none(weight, 1.0)
 
-    weight_diff = np.abs(sf - 1.0)
+    # declare down variation as 1.0 and up variation as symmetric to the down variation
+    weight_down = ak.ones_like(weight)
+    weight_up = 2 * (weight - 1.0) + 1.0
 
     # write out weights
-    events = set_ak_column(events, "top_pt_theory_weight", ak.fill_none(weight, 1.0))
-    events = set_ak_column(events, "top_pt_theory_weight_down", ak.ones_like(weight))
-    events = set_ak_column(events, "top_pt_theory_weight_down", ak.ones_like(weight)) + 2 * weight_diff
+    events = set_ak_column(events, "top_pt_theory_weight", weight)
+    events = set_ak_column(events, "top_pt_theory_weight_up", weight_up)
+    events = set_ak_column(events, "top_pt_theory_weight_down", weight_down)
 
     return events
 

@@ -129,6 +129,14 @@ def add_variables(config: od.Config) -> None:
         x_title="Luminosity block",
         # discrete_x=True,
     )
+    config.add_variable(
+        name="gen_top_pt",
+        expression="GenPartonTop.pt",
+        binning=(240, 0., 1200.),
+        unit="GeV",
+        x_title=r"$p_{T}^{t}$ (generator level)",
+        aux={"x_max": 600, "rebin": 2},
+    )
 
     #
     # Weights

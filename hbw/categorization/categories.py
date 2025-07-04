@@ -364,4 +364,9 @@ def mask_fn_mll20(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     return events, (events.mll > self.mll)
 
 
+@categorizer(uses={"mli_mbb"}, mbb=80)
+def mask_fn_mbb80(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, (events.mli_mbb > self.mbb)
+
+
 mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})

@@ -331,7 +331,7 @@ def sl_ml_inputs_init(self: Producer) -> None:
     uses={common_ml_inputs},
     produces={common_ml_inputs},
     # produced columns set in the init function
-    version=law.config.get_expanded("analysis", "dl_ml_inputs_version", 1),
+    version=law.config.get_expanded("analysis", "dl_ml_inputs_version", 2),
 )
 def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

@@ -562,7 +562,7 @@ def add_config(
     # top pt reweighting
     cfg.add_shift(name="top_pt_up", id=9, type="shape")
     cfg.add_shift(name="top_pt_down", id=10, type="shape")
-    add_shift_aliases(cfg, "top_pt", {"top_pt_weight": "top_pt_weight_{direction}"})
+    add_shift_aliases(cfg, "top_pt", {"top_pt_theory_weight": "top_pt_theory_weight_{direction}"})
 
     # V+jets reweighting
     cfg.add_shift(name="vjets_up", id=11, type="shape")

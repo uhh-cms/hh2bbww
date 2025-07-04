@@ -164,6 +164,7 @@ def base_init(self: HistProducer) -> None:
     if dataset_inst and not dataset_inst.has_tag("is_ttbar"):
         # remove dependency towards top pt weights
         self.local_weight_columns.pop("top_pt_weight", None)
+        self.local_weight_columns.pop("top_pt_theory_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_v_jets"):
         # remove dependency towards vjets weights
@@ -248,7 +249,7 @@ default_correction_weights = {
     "normalized_pdf_weight": ["pdf"],
     "normalized_isr_weight": ["isr"],
     "normalized_fsr_weight": ["fsr"],
-    "top_pt_weight": ["top_pt"],
+    "top_pt_theory_weight": ["top_pt"],
 }
 
 default_weight_columns = {
@@ -280,19 +281,15 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={"weight_co
 }})
 
 #
-#
+# HistProducers with masks via categorization
 #
 
-from hbw.categorization.categories import mask_fn_mll15, mask_fn_mll20, catid_ge2b_loose, catid_njet2
+from hbw.categorization.categories import mask_fn_mbb80, catid_ge2b_loose, catid_njet2
 
-mll15 = with_dy_corr.derive("mll15", cls_dict={
-    "categorizer_cls": mask_fn_mll15,
+mbb80 = with_dy_corr.derive("mbb80", cls_dict={
+    "categorizer_cls": mask_fn_mbb80,
 })
-mll20 = with_dy_corr.derive("mll20", cls_dict={
-    "categorizer_cls": mask_fn_mll20,
-})
-mll20_poormans_postfit = with_dy_corr.derive("mll20_poormans_postfit", cls_dict={
-    "categorizer_cls": mask_fn_mll20,
+poormans_postfit = with_dy_corr.derive("poormans_postfit", cls_dict={
     "tt_weight": 0.90,
     "dy_weight": 1.04,
 })
@@ -312,7 +309,7 @@ base.derive("minimal", cls_dict={"weight_columns": {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "top_pt_weight": ["top_pt"],
+    "top_pt_theory_weight": ["top_pt"],
 }})
 
 weight_columns_execpt_btag = default_weight_columns.copy()
