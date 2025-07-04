@@ -23,7 +23,7 @@ logger = law.logger.get_logger(__name__)
 @producer(
     # uses in init, produces should not be empty
     produces={"category_ids"},
-    version=1,
+    version=2,
 )
 def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -48,7 +48,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     # uses in init, produces should not be empty
     produces={"category_ids", "mlscore.max_score"},
     ml_model_name=None,
-    version=1,
+    version=2,
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -68,11 +68,15 @@ def cats_ml_reqs(self: Producer, task: law.Task, reqs: dict) -> None:
     if "ml" in reqs:
         return
 
-    from columnflow.tasks.ml import MLEvaluation
-    reqs["ml"] = MLEvaluation.req(
-        task,
-        ml_model=self.ml_model_name,
-    )
+    from columnflow.tasks.ml import MLTraining, MLEvaluation
+    if task.pilot:
+        # skip MLEvaluation in pilot, but ensure that MLTraining has already been run
+        reqs["mlmodel"] = MLTraining.req(task, ml_model=self.ml_model_name)
+    else:
+        reqs["ml"] = MLEvaluation.req(
+            task,
+            ml_model=self.ml_model_name,
+        )
 
 
 @cats_ml.setup

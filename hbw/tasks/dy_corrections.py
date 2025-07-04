@@ -6,18 +6,24 @@ Tasks to study and create weights for DY events.
 
 from __future__ import annotations
 
+from functools import cached_property
+
 import gzip
 
 import law
 
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
-from columnflow.tasks.framework.base import ConfigTask
-from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
+from columnflow.tasks.framework.base import Requirements
+from hbw.tasks.histograms import HistogramsUserSingleShiftBase
+# from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.tasks.framework.mixins import (
+    # CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, HistProducerClassMixin,
+    # CategoriesMixin, ShiftSourcesMixin, HistHookMixin, MLModelsMixin,
     DatasetsProcessesMixin,
 )
+from columnflow.tasks.framework.remote import RemoteWorkflow
 
 from hbw.tasks.base import HBWTask
 
@@ -281,7 +287,7 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
         ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
         ax.set_ylim(0.4, 1.5)
-        ax.set_title(f"Fit function for NLO 2022postEE, njets {njet}")
+        ax.set_title(f"Fit function for NLO PLACEHOLDER, njets {njet}")
         ax.grid(True)
         fig.savefig(f"plot_fit_njet{njet}.pdf")
 
@@ -365,7 +371,9 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
     """
     # prepare constants
     inf = float("inf")
-    era = f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}"
+    era = "_".join([
+        f"{config_inst.campaign.x.year}{config_inst.campaign.x.postfix}" for config_inst in task.config_insts
+    ])
 
     # initialize fit dictionary
     fit_dict = {
@@ -389,7 +397,59 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
     return fit_dict
 
 
-class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalWorkflow, RemoteWorkflow):
+class DYCorrBase(
+    HBWTask,
+    HistogramsUserSingleShiftBase,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    Base class for DY correction tasks.
+    """
+    # TODO: enable MultiConfig in HistogramsUserSingleShiftBase
+    single_config = False
+
+    # NOTE: we assume that the corrected process is always the same for all configs
+    corrected_process = DatasetsProcessesMixin.processes.copy(
+        default=("dy",),
+        description="Processes to consider for the scale factors",
+        add_default_to_description=True,
+    )
+    processes = DatasetsProcessesMixin.processes_multi.copy(
+        default=((
+            "vv", "w_lnu", "st",
+            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "tt", "ttv", "h", "data",
+        ),),
+        description="Processes to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    variables = HistogramsUserSingleShiftBase.variables.copy(
+        default=("n_jet-ptll_for_dy_corr",),
+        description="Variables to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    categories = HistogramsUserSingleShiftBase.categories.copy(
+        default=("dycr__nonmixed",),
+        description="Categories to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    shift = HistogramsUserSingleShiftBase.shift.copy(
+        default="nominal",
+        description="Shift to use for the DY corrections",
+        add_default_to_description=True,
+    )
+    hist_producer = HistogramsUserSingleShiftBase.hist_producer.copy(
+        default="with_trigger_weight",
+        description="Histogram producer to use for the DY corrections",
+        add_default_to_description=True,
+    )
+
+    def create_branch_map(self):
+        return {0: None}
+
+
+class ComputeDYWeights(DYCorrBase):
     """
     Example command:
 
@@ -402,16 +462,23 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
             --variables njets-dilep_pt
     """
 
-    single_config = True
-
-    corrected_process = DatasetsProcessesMixin.processes.copy(
-        default=("dy",),
-        description="Processes to consider for the scale factors",
-        add_default_to_description=True,
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        HistogramsUserSingleShiftBase.reqs,
     )
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+        # datasets/processes instances
+        self.process_insts = {
+            config_inst: list(map(config_inst.get_process, processes))
+            for config_inst, processes in zip(self.config_insts, self.processes)
+        }
+        self.dataset_insts = {
+            config_inst: list(map(config_inst.get_dataset, datasets))
+            for config_inst, datasets in zip(self.config_insts, self.datasets)
+        }
 
         # only one category is allowed right now
         if len(self.categories) != 1:
@@ -419,7 +486,7 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
         # ensure that the category matches a specific pattern: starting with "ee"/"mumu" and ending in "os"
         if "dycr" not in self.categories[0]:
             raise ValueError(f"category must start with 'dycr' to derive dy crorections, got {self.categories[0]}")
-        self.category_inst = self.config_inst.get_category(self.categories[0])
+        self.category_inst = self.config_insts[0].get_category(self.categories[0])
 
         # only one variable is allowed
         if len(self.variables) != 1:
@@ -430,6 +497,7 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
             raise ValueError(f"variable must be 'n_jet-ptll_ptll_for_dy_corr', got {self.variable}")
 
         # Only one processes is allowed to correct for
+        # NOTE: might have to change due to MultiConfig
         if len(self.corrected_process) != 1:
             raise ValueError(
                 f"Only one corrected process is supported for njet corrections. Got {self.corrected_process}",
@@ -438,54 +506,100 @@ class ComputeDYWeights(HBWTask, HistogramsUserSingleShiftBase):   # , law.LocalW
     def output(self):
         return self.target("dy_weight_data.pkl")
 
+    @cached_property
+    def corrected_proc_inst(self):
+        return {
+            config_inst: config_inst.get_process(self.corrected_process[0])
+            for config_inst in self.config_insts
+        }
+
+    @property
+    def corrected_sub_proc_insts(self):
+        return {
+            config_inst: [proc for proc, _, _ in proc_inst.walk_processes(include_self=True)]
+            for config_inst, proc_inst in self.corrected_proc_inst.items()
+        }
+
+    @cached_property
+    def subtract_proc_insts(self):
+        return {
+            config_inst: [
+                proc for proc in self.process_insts[config_inst]
+                if proc.is_mc and proc not in self.corrected_sub_proc_insts[config_inst]
+            ]
+            for config_inst in self.config_insts
+        }
+
+    @cached_property
+    def data_proc_insts(self):
+        return {
+            config_inst: [
+                proc for proc in self.process_insts[config_inst]
+                if proc.is_data and proc not in self.corrected_sub_proc_insts[config_inst]
+            ]
+            for config_inst in self.config_insts
+        }
+
     def run(self):
+        shifts = ["nominal", self.shift]
+        hists = defaultdict(dict)
 
-        def get_subtract_processes():
-            sub_procs = []
-            corrected_proc_inst = self.config_inst.get_process(self.corrected_process[0])
-            data_proc_inst = self.config_inst.get_process("data")
-            corrected_process = [proc.name for proc, _, _ in corrected_proc_inst.walk_processes(include_self=True)]
-            data_processes = [proc.name for proc, _, _ in data_proc_inst.walk_processes(include_self=True)]
-            for proc in self.processes:
-                if proc not in corrected_process and proc not in data_processes:
-                    # TODO hier muss noch ein chekc rein für alle childprocesses
-                    sub_procs.append(proc)
-            return sub_procs
+        for variable in self.variables:
+            for i, config_inst in enumerate(self.config_insts):
+                hist_per_config = None
+                # sub_processes = self.processes[i]
+                for dataset in self.datasets[i]:
+                    # sum over all histograms of the same variable and config
+                    if hist_per_config is None:
+                        hist_per_config = self.load_histogram(
+                            config=config_inst, dataset=dataset, variable=variable,
+                        )
+                    else:
+                        h = self.load_histogram(
+                            config=config_inst, dataset=dataset, variable=variable,
+                        )
+                        hist_per_config += h
 
-        hists = {}
+                # slice histogram per config according to the sub_processes and categories
 
-        for dataset in self.datasets:
+                slice_kwargs = {
+                    "histogram": hist_per_config,
+                    "config_inst": config_inst,
+                    "categories": self.categories,
+                    "shifts": shifts,
+                    "reduce_axes": True,
+                }
+                hist_data = self.slice_histogram(
+                    processes=self.data_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
+                hist_mc_subtract = self.slice_histogram(
+                    processes=self.subtract_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
+                hist_corrected = self.slice_histogram(
+                    processes=self.corrected_sub_proc_insts[config_inst],
+                    **slice_kwargs,
+                )
 
-            h_in = self.load_histogram(dataset, self.variable)
-            h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
-
-            if self.variable in hists.keys():
-                hists[self.variable] += h_in
-            else:
-                hists[self.variable] = h_in
-
-        data_proc = self.config_inst.get_process("data")
-        subtract_processes = get_subtract_processes()
-
-        hists_corr = defaultdict(OrderedDict)
-        hists_corr["data"] = self.slice_histogram(
-            hists[self.variable], data_proc, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr["MC_subtract"] = self.slice_histogram(
-            hists[self.variable], subtract_processes, self.categories, self.shift, reduce_axes=True,
-        )
-        hists_corr["MC_corr_process"] = self.slice_histogram(
-            hists[self.variable], self.corrected_process, self.categories, self.shift, reduce_axes=True,
-        )
+                if variable in hists.keys():
+                    hists[variable]["data"] += hist_data
+                    hists[variable]["MC_subtract"] += hist_mc_subtract
+                    hists[variable]["MC_corr_process"] += hist_corrected
+                else:
+                    hists[variable]["data"] = hist_data
+                    hists[variable]["MC_subtract"] = hist_mc_subtract
+                    hists[variable]["MC_corr_process"] = hist_corrected
 
         # compute the dy weight data
+        hists_corr = hists[self.variable]
         dy_weight_data = compute_weight_data(self, hists_corr)
 
         # store them
         self.output().dump(dy_weight_data, formatter="pickle")
 
 
-class ExportDYWeights(HBWTask, ConfigTask):
+class ExportDYWeights(DYCorrBase):
     """
     Example command:
 
@@ -496,26 +610,24 @@ class ExportDYWeights(HBWTask, ConfigTask):
 
     sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/venv_columnar.sh")
 
-    single_config = False
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        ComputeDYWeights=ComputeDYWeights,
+    )
 
     def requires(self):
         return {
-            config: ComputeDYWeights.req(
-                self,
-                config=config,
-                processes=[
-                    "vv", "w_lnu", "st",
-                    "dy_m4to10", "dy_m10to50", "dy_m50toinf",
-                    "tt", "ttv", "h", "data",
-                ],
-                corrected_process=("dy",),
-                # use the no_dy_weight hist producer to get the DY weight data
-                hist_producer="with_trigger_weight",
-                categories=("dycr__nonmixed",),
-                variables=("n_jet-ptll_for_dy_corr",),
-            )
+            config: self.reqs.ComputeDYWeights.req(self)
             for config in self.configs
         }
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs["dy_correction_weight"] = {
+            config: self.reqs.ComputeDYWeights.req(self)
+            for config in self.configs
+        }
+        return reqs
 
     def output(self):
         return self.target("dy_correction_weight.json.gz")
@@ -525,8 +637,9 @@ class ExportDYWeights(HBWTask, ConfigTask):
         from hbw.tasks.create_clib_file import create_dy_weight_correction
 
         # load all weight data per config and merge them into a single dictionary
+        inputs = self.input()
         dy_weight_data = law.util.merge_dicts(*(
-            inp.load(formatter="pickle") for inp in self.input().values()
+            inp.load(formatter="pickle") for inp in inputs.values()
         ))
 
         print(dy_weight_data)

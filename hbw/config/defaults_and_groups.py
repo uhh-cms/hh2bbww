@@ -114,8 +114,8 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
-    # config_inst.x.default_hist_producer = "default"
-    config_inst.x.default_hist_producer = "with_trigger_weight"
+    # config_inst.x.default_hist_producer = "with_trigger_weight"
+    config_inst.x.default_hist_producer = "with_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "dl"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -408,7 +408,15 @@ def set_config_defaults_and_groups(config_inst):
         "jer": ["nominal", "jer_up", "jer_down"],
         # TODO this is just a workaround to call cf.PlotShiftedVariables with a group or shift-sources
         "all_up": [
+            # # theory unc.
+            "pdf_up",
+            "murf_envelope_up",
+            "isr_up",
+            "fsr_up",
+            "top_pt_up",
+            # # experimental unc.
             "lumi_13TeV_2022_up",
+            # b-tagging
             "btag_hf_up",
             "btag_lf_up",
             "btag_hfstats1_2022_up",
@@ -417,16 +425,55 @@ def set_config_defaults_and_groups(config_inst):
             "btag_lfstats2_2022_up",
             "btag_cferr1_up",
             "btag_cferr2_up",
+            # other experimental unc.
             "mu_id_sf_up",
             "mu_iso_sf_up",
             "e_sf_up",
+            "e_reco_sf_up",
             "trigger_sf_up",
             "minbias_xs_up",
+            # jerc
+            "jer_up",
+            "jec_Total_up",
+        ],
+        "theory_up": [
+            "pdf_up",
+            "murf_envelope_up",
+            "isr_up",
+            "fsr_up",
             "top_pt_up",
+        ],
+        "btag_up": [
+            "btag_hf_up",
+            "btag_lf_up",
+            "btag_hfstats1_2022_up",
+            "btag_hfstats2_2022_up",
+            "btag_lfstats1_2022_up",
+            "btag_lfstats2_2022_up",
+            "btag_cferr1_up",
+            "btag_cferr2_up",
+        ],
+        "experimental_up": [
+            "mu_id_sf_up",
+            "mu_iso_sf_up",
+            "e_sf_up",
+            "e_reco_sf_up",
+            "trigger_sf_up",
+            "minbias_xs_up",
+        ],
+        "jerc_up": [
             "jer_up",
             "jec_Total_up",
         ],
     }
+    for shift_groups in ("all", "theory", "btag", "experimental", "jerc"):
+        config_inst.x.shift_groups[shift_groups + "_down"] = [
+            shift.replace("_up", "_down") for shift in config_inst.x.shift_groups[shift_groups + "_up"]
+        ]
+        config_inst.x.shift_groups[shift_groups] = (
+            config_inst.x.shift_groups[shift_groups + "_up"] +
+            config_inst.x.shift_groups[shift_groups + "_down"]
+        )
 
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)

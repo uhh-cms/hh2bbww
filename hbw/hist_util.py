@@ -1,23 +1,33 @@
 # coding: utf-8
 
 """
-Histogram hooks.
+Helper functions for histogram manipulation.
 """
 
 from __future__ import annotations
 
 import law
-import order as od
 
-from columnflow.util import maybe_import, DotDict
+from columnflow.util import maybe_import
 
+array = maybe_import("array")
+uproot = maybe_import("uproot")
 np = maybe_import("numpy")
 hist = maybe_import("hist")
+
 
 logger = law.logger.get_logger(__name__)
 
 
-def rebin_hist(h, axis_name, edges):
+def apply_rebinning_edges(h: hist.Histogram, axis_name: str, edges: list):
+    """
+    Generalized rebinning of a single axis from a hist.Histogram, using predefined edges.
+
+    :param h: histogram to rebin
+    :param axis_name: string representing the axis to rebin
+    :param edges: list of floats representing the new bin edges. Must be a subset of the original edges.
+    :return: rebinned histogram
+    """
     if isinstance(edges, int):
         return h[{axis_name: hist.rebin(edges)}]
 
@@ -62,46 +72,3 @@ def rebin_hist(h, axis_name, edges):
         hnew.variances(flow=flow)[...] = np.add.reduceat(h.variances(flow=flow), edge_idx,
                 axis=ax_idx).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
     return hnew
-
-
-def add_hist_hooks(config: od.Config) -> None:
-    """
-    Add histogram hooks to a configuration.
-    """
-
-    def rebin(task, hists: hist.Histogram):
-        """
-        Rebin histograms with edges that are pre-defined for a certain variable and category.
-        Lots of hard-coded stuff at the moment.
-        """
-        # get variable inst assuming we created a 1D histogram
-        variable_inst = task.config_inst.get_variable(task.branch_data.variable)
-
-        # edges for 2b channel
-        edges = {
-            "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
-            "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
-            "mlscore.tt": [0.0, 0.533, 0.669, 1.0],
-            "mlscore.h": [0.0, 0.494, 0.651, 1.0],
-        }
-
-        h_rebinned = DotDict()
-
-        edges = edges[variable_inst.name]
-        for proc, h in hists.items():
-            old_axis = h.axes[variable_inst.name]
-
-            h_rebin = rebin_hist(h.copy(), old_axis.name, edges)
-
-            if not np.isclose(h.sum().value, h_rebin.sum().value):
-                raise Exception(f"Rebinning changed histogram value: {h.sum().value} -> {h_rebin.sum().value}")
-            if not np.isclose(h.sum().variance, h_rebin.sum().variance):
-                raise Exception(f"Rebinning changed histogram variance: {h.sum().variance} -> {h_rebin.sum().variance}")
-            h_rebinned[proc] = h_rebin
-
-        return h_rebinned
-
-    # add hist hooks to config
-    config.x.hist_hooks = {
-        "rebin": rebin,
-    }

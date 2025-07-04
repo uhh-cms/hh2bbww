@@ -53,6 +53,8 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     mc_only=False,
     # optional categorizer to obtain baseline event mask
     categorizer_cls=None,
+    tt_weight=None,
+    dy_weight=None,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -71,6 +73,11 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
     weight = ak.Array(np.ones(len(events), dtype=np.float64))
     for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
+
+    if self.tt_weight and self.tt_weight > 0 and self.dataset_inst.has_tag("is_ttbar"):
+        weight = weight * self.tt_weight
+    if self.dy_weight and self.dy_weight > 0 and self.dataset_inst.has_tag("is_dy"):
+        weight = weight * self.dy_weight
 
     # implement dummy shift by varying weight by factor of 2
     if "dummy" in task.local_shift_inst.name:
@@ -93,6 +100,23 @@ def base_setup(
         f"HistProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
         f"{', '.join(self.weight_columns.keys())}",
     )
+    if "dy_correction_weight" in self.local_weight_columns.keys():
+        # add dy_correction_weight to the reader targets
+        reader_targets["dy_correction_weight"] = inputs["dy_correction_weight_producer"]["columns"]
+
+
+@base.requires
+def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableDict) -> None:
+    """
+    Define the requirements for the base HistProducer.
+    This is called before the setup method.
+    """
+    from columnflow.tasks.production import ProduceColumns
+    if "dy_correction_weight" in self.local_weight_columns.keys():
+        reqs["dy_correction_weight_producer"] = ProduceColumns.req(
+            task,
+            producer="dy_correction_weight",
+        )
 
 
 @base.init
@@ -109,6 +133,8 @@ def base_init(self: HistProducer) -> None:
 
     dataset_inst = getattr(self, "dataset_inst", None)
     if dataset_inst and dataset_inst.is_data:
+        # if we are on data, we do not need any weights
+        self.local_weight_columns = {}
         return
 
     year = self.config_inst.campaign.x.year
@@ -243,13 +269,39 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
     "stitched_normalization_weight": [],
 }})
 
-with_dy_correction_weight = default_hist_producer.derive("with_dy_correction_weight", cls_dict={"weight_columns": {
+# NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
+# because the dy_correction_weight is only relevant for DY processes. This is implemented in
+# hbw/analysis/create_analysis.py
+with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={"weight_columns": {
     **default_correction_weights,
     "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
     "stitched_normalization_weight": [],
 }})
 
+#
+#
+#
+
+from hbw.categorization.categories import mask_fn_mll15, mask_fn_mll20, catid_ge2b_loose, catid_njet2
+
+mll15 = with_dy_corr.derive("mll15", cls_dict={
+    "categorizer_cls": mask_fn_mll15,
+})
+mll20 = with_dy_corr.derive("mll20", cls_dict={
+    "categorizer_cls": mask_fn_mll20,
+})
+mll20_poormans_postfit = with_dy_corr.derive("mll20_poormans_postfit", cls_dict={
+    "categorizer_cls": mask_fn_mll20,
+    "tt_weight": 0.90,
+    "dy_weight": 1.04,
+})
+ge2jets = with_dy_corr.derive("ge2jets", cls_dict={
+    "categorizer_cls": catid_njet2,
+})
+ge2looseb = with_dy_corr.derive("ge2looseb", cls_dict={
+    "categorizer_cls": catid_ge2b_loose,
+})
 
 base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],

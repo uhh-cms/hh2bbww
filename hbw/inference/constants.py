@@ -81,6 +81,8 @@ processes_per_pdf_rate = {
 }
 
 processes_per_rate_unconstrained = {
+    "ttbar_{bjet_cat}": ["tt"],
+    "dy_{bjet_cat}": ["dy", "dy_lf", "dy_hf"],
     "ttbar": ["tt"],
     "dy": ["dy", "dy_lf", "dy_hf"],
     "dy_lf": ["dy_lf"],
@@ -89,9 +91,18 @@ processes_per_rate_unconstrained = {
 
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
+# NOTE: '+' is identifier to signal that afterwards a placeholder is used.
 processes_per_shape = {
     "jec_Total": ["all"],
     "jer": ["all"],
+    "btag_hf_{bjet_cat}": ["all"],
+    "btag_lf_{bjet_cat}": ["all"],
+    "btag_hfstats1_{year}_{bjet_cat}": ["all"],
+    "btag_hfstats2_{year}_{bjet_cat}": ["all"],
+    "btag_lfstats1_{year}_{bjet_cat}": ["all"],
+    "btag_lfstats2_{year}_{bjet_cat}": ["all"],
+    "btag_cferr1_{bjet_cat}": ["all"],
+    "btag_cferr2_{bjet_cat}": ["all"],
     "btag_hf": ["all"],
     "btag_lf": ["all"],
     "btag_hfstats1_{year}": ["all"],
@@ -102,12 +113,17 @@ processes_per_shape = {
     "btag_cferr2": ["all"],
     "mu_id_sf": ["all"],
     "mu_iso_sf": ["all"],
-    "mu_trig_sf": ["all"],
+    # "mu_trig_sf": ["all"],
     "e_sf": ["all"],
-    "e_trig_sf": ["all"],
+    "e_reco_sf": ["all"],
+    # "e_trig_sf": ["all"],
     "trigger_sf": ["all"],
     "minbias_xs": ["all"],
+    "isr": ["all"],
+    "fsr": ["all"],
     "top_pt": ["tt"],
+    # "pdf_shape_{proc}": ["{proc}"],
+    # "murf_envelope_{proc}": ["{proc}"],
     "pdf_shape_tt": ["tt"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
     "pdf_shape_dy": ["dy", "dy_lf", "dy_hf"],

@@ -23,7 +23,6 @@ from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_da
 from hbw.config.processes import configure_hbw_processes
 from hbw.config.defaults_and_groups import set_config_defaults_and_groups
 from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
-from hbw.config.hist_hooks import add_hist_hooks
 from hbw.config.scale_factors import configure_for_scale_factors
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
@@ -418,6 +417,17 @@ def add_config(
         "b_up": -0.0005 * 1.5,
         "b_down": -0.0005 * 0.5,
     }
+
+    cfg.x.top_pt_theory_weight = {
+        "a": 0.103,
+        "b": -0.0118,
+        "c": 0.000134,
+        "d": 0.973,
+    }
+    for param in list(cfg.x.top_pt_theory_weight.keys()):
+        # dummy variations (TODO!!!)
+        cfg.x.top_pt_theory_weight[f"{param}_up"] = cfg.x.top_pt_theory_weight[param]
+        cfg.x.top_pt_theory_weight[f"{param}_down"] = cfg.x.top_pt_theory_weight[param]
 
     # V+jets reweighting
     cfg.x.vjets_reweighting = DotDict.wrap({
@@ -935,9 +945,6 @@ def add_config(
 
     # add variables
     add_variables(cfg)
-
-    # add hist hooks
-    add_hist_hooks(cfg)
 
     # set some config defaults and groups
     # TODO: it might make sense to completely separate this for SL/DL
