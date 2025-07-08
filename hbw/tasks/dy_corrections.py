@@ -229,6 +229,71 @@ def get_fit5_args(*params, return_str=False):
 fit_function5.get_fit_args = get_fit5_args
 
 
+def erf_window(x, x0, s, sign=1):
+    """Smooth window using erf.
+
+    sign=1 => turn-on window
+    sign=-1 => turn-off window
+    """
+    return 0.5 * (1 + sign * special.erf((x - x0) / (np.sqrt(2) * s)))
+
+
+def fit_function9(x, c1, n1, mu1, sigma1,
+                c2, n2, mu2, sigma2,
+                a, r1, r2, s1, s2):
+    gauss1 = c1 + n1 * (1 / sigma1) * np.exp(-0.5 * ((x - mu1) / sigma1) ** 2)
+    w1 = erf_window(x, r1, s1, -1)
+
+    gauss2 = c2 + n2 * (1 / sigma2) * np.exp(-0.5 * ((x - mu2) / sigma2) ** 2)
+    w2 = erf_window(x, r1, s1, 1) * erf_window(x, r2, s2, -1)
+
+    pol = a
+    w3 = erf_window(x, r2, s2, 1)
+
+    return w1 * (-1) * gauss1 + w2 * (-1) * gauss2 + w3 * pol
+
+
+def get_fit9_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c1, n1, mu1, sigma1, c2, n2, mu2, sigma2, a, r1, r2, s1, s2 = params
+        x = "x"
+        gauss1 = f"(({c1})+(({n1})*(1/{sigma1})*exp(-0.5*(({x}-{mu1})/{sigma1})^2)))"
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*(({x}-{mu2})/{sigma2})^2)))"
+        pol = f"({a})"
+        w1 = f"(0.5*(1-erf(({x}-{r1})/(sqrt(2)*{s1}))))"
+        w2 = f"(0.5*(1+erf(({x}-{r1})/(sqrt(2)*{s1}))))*(0.5*(1-erf(({x}-{r2})/(sqrt(2)*{s2}))))"
+        w3 = f"(0.5*(1+erf(({x}-{r2})/(sqrt(2)*{s2}))))"
+        return f"({w1}*(-1)*{gauss1} + {w2}*(-1)*{gauss2} + {w3}*{pol})"
+    else:
+        start_values = []
+        lower_bounds = []
+        upper_bounds = []
+        fit_args = {
+            "c1": [-0.8, -1.6, 1.0],
+            "n1": [0.5, 0.01, 1.],
+            "mu1": [0.1, 0.001, 7.],
+            "sigma1": [1.5, 0.1, 30.],
+            "c2": [-0.8, -2, 0.0],
+            "n2": [10, 0.1, 30],
+            "mu2": [40, 10, 90],
+            "sigma2": [40, 10, 80],
+            "a": [0.8, 0.6, 3],
+            "r1": [10, 2, 30],
+            "r2": [80, 30, 150],
+            "s1": [10, 1, 10],
+            "s2": [5, 1, 50],
+        }
+        for param in fit_args:
+            start_values.append(fit_args[param][0])
+            lower_bounds.append(fit_args[param][1])
+            upper_bounds.append(fit_args[param][2])
+        return start_values, lower_bounds, upper_bounds
+
+
+fit_function9.get_fit_args = get_fit9_args
+
+
 # Define a safe division function to avoid division by zero
 def safe_div(num, den):
     return np.where(
@@ -249,7 +314,14 @@ def get_rate_factor(h, ptll_var):
 
 
 # build fit function string
-def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist) -> dict:
+def get_fit_str(
+        njet: int,
+        njet_overflow: int,
+        rate_factor: float,
+        h: hist.Hist,
+        fit_function,
+        era: str,
+        outputs) -> dict:
     from scipy import optimize
 
     # Check if number of jets are valid
@@ -258,16 +330,16 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
         raise ValueError(f"Invalid njets value {njet}, expected int between 1 and 11.")
 
     # Helper function to plot the fit and string function
-    def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet):
+    def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet, era, outputs):
         #  plot the fit function and the string function (as sanity)
         def str_function(x, fit_str):
             from scipy import special
             fit_str = fit_str.replace("^2", "**2")
-            str_function = eval(fit_str, {"x": x, "exp": np.exp, "erf": special.erf})
+            str_function = eval(fit_str, {"x": x, "exp": np.exp, "sqrt": np.sqrt, "erf": special.erf})
             return str_function
 
         s = np.linspace(0, 400, 1000)
-        y = [(rate_factor * fit_func(v, *param_fit)) for v in s]
+        y = [(rate_factor_for_fit * fit_func(v, *param_fit)) for v in s]
         z = [str_function(v, fit_string) for v in s]
         fig, ax = plt.subplots()
         ax.plot(s, y, color="grey", label="Fit function")
@@ -287,9 +359,9 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
         ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
         ax.set_ylim(0.4, 1.5)
-        ax.set_title(f"Fit function for NLO PLACEHOLDER, njets {njet}")
+        ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
         ax.grid(True)
-        fig.savefig(f"plot_fit_njet{njet}.pdf")
+        outputs.child(f"Fit_function_{era}_njet_{njet}.pdf", type="f").dump(fig, formatter="mpl")
 
     # Define binning
     if njet < njet_overflow:
@@ -327,11 +399,11 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
     ratio_err = np.where(ratio_err < 0, 0.0, ratio_err)
 
     # Retrieve fit parameters
-    starting_values, lower_bounds, upper_bounds = fit_function4.get_fit_args()
+    starting_values, lower_bounds, upper_bounds = fit_function.get_fit_args()
 
     # Fit
     param_fit, _ = optimize.curve_fit(
-        fit_function4,
+        fit_function,
         bin_centers,
         ratio_values / rate_factor_for_fit,
         p0=starting_values,
@@ -343,12 +415,12 @@ def get_fit_str(njet: int, njet_overflow: int, rate_factor: float, h: hist.Hist)
     print("Fit parameters:", param_fit)
 
     # Build string
-    fit_func_str = fit_function4.get_fit_args(*param_fit, return_str=True)
+    fit_func_str = fit_function.get_fit_args(*param_fit, return_str=True)
     fit_str = f"{rate_factor}*{fit_func_str}"
-    print(fit_str)
+    print("String of fit function:", fit_str)
 
     # Plot Fit and String fucntion with data/MC ratio as cross check
-    plot_fit_func(fit_function4, fit_str, param_fit, rate_factor, ratio_values, njet)
+    plot_fit_func(fit_function, fit_str, param_fit, rate_factor, ratio_values, njet, era, outputs["fit_function"])
 
     return fit_str
 
@@ -370,6 +442,7 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
         - the inner-most list contains 3-tuples with lower and upper bounds of a formula
     """
     # prepare constants
+    outputs = task.output()
     inf = float("inf")
     era = "_".join([
         f"{config_inst.campaign.x.year}{config_inst.campaign.x.postfix}" for config_inst in task.config_insts
@@ -386,11 +459,12 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
 
     ptll_var = "ptll_for_dy_corr"
     rate_factor_lst = get_rate_factor(h, ptll_var)
-    print(rate_factor_lst)
     for njet in np.arange(1, 11):
         rate_factor = rate_factor_lst[njet]
-        print(rate_factor)
-        fit_str = get_fit_str(njet, 3, rate_factor, h)
+        if njet > 7:  # NOTE: DOn't use rate_factor for njet > 7, due to neg weights / no DY in those bins
+            rate_factor = rate_factor_lst[7]
+        print(f"Rate factor for njet={njet}: {rate_factor}")
+        fit_str = get_fit_str(njet, 3, rate_factor, h, fit_function9, era, outputs)
 
         fit_dict[era]["nominal"][(njet, njet + 1)] = [(0.0, inf, fit_str)]
 
@@ -418,7 +492,7 @@ class DYCorrBase(
     processes = DatasetsProcessesMixin.processes_multi.copy(
         default=((
             "vv", "w_lnu", "st",
-            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "dy_m10to50", "dy_m50toinf",
             "tt", "ttv", "h", "data",
         ),),
         description="Processes to use for the DY corrections",
@@ -430,7 +504,7 @@ class DYCorrBase(
         add_default_to_description=True,
     )
     categories = HistogramsUserSingleShiftBase.categories.copy(
-        default=("dycr__nonmixed",),
+        default=("dycr__2mu",),
         description="Categories to use for the DY corrections",
         add_default_to_description=True,
     )
@@ -440,7 +514,7 @@ class DYCorrBase(
         add_default_to_description=True,
     )
     hist_producer = HistogramsUserSingleShiftBase.hist_producer.copy(
-        default="with_trigger_weight",
+        default="met70",
         description="Histogram producer to use for the DY corrections",
         add_default_to_description=True,
     )
@@ -504,7 +578,10 @@ class ComputeDYWeights(DYCorrBase):
             )
 
     def output(self):
-        return self.target("dy_weight_data.pkl")
+        return {
+            "dy_weight": self.target("dy_weight_data.pkl"),
+            "fit_function": self.target("fit_function", dir=True),
+        }
 
     @cached_property
     def corrected_proc_inst(self):
@@ -596,7 +673,7 @@ class ComputeDYWeights(DYCorrBase):
         dy_weight_data = compute_weight_data(self, hists_corr)
 
         # store them
-        self.output().dump(dy_weight_data, formatter="pickle")
+        self.output()["dy_weight"].dump(dy_weight_data, formatter="pickle")
 
 
 class ExportDYWeights(DYCorrBase):
@@ -638,9 +715,11 @@ class ExportDYWeights(DYCorrBase):
 
         # load all weight data per config and merge them into a single dictionary
         inputs = self.input()
-        dy_weight_data = law.util.merge_dicts(*(
-            inp.load(formatter="pickle") for inp in inputs.values()
-        ))
+        configs = self.configs
+        for config in configs:
+            dy_weight_data = law.util.merge_dicts((
+                inputs[config]["dy_weight"].load(formatter="pickle")
+            ))
 
         print(dy_weight_data)
 

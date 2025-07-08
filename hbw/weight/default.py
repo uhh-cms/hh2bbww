@@ -284,7 +284,11 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={"weight_co
 # HistProducers with masks via categorization
 #
 
-from hbw.categorization.categories import mask_fn_mbb80, catid_ge2b_loose, catid_njet2
+from hbw.categorization.categories import mask_fn_mbb80, mask_fn_mll15, mask_fn_mll20, catid_ge2b_loose, catid_njet2, mask_fn_met70
+
+met70 = with_trigger_weight.derive("met70", cls_dict={
+    "categorizer_cls": mask_fn_met70,
+})
 
 mbb80 = with_dy_corr.derive("mbb80", cls_dict={
     "categorizer_cls": mask_fn_mbb80,

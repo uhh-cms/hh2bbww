@@ -13,7 +13,7 @@ from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
 from columnflow.columnar_util import has_ak_column, optional_column
 
-from hbw.util import MET_COLUMN, BTAG_COLUMN
+from hbw.util import MET_COLUMN, BTAG_COLUMN, IF_DY
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -370,3 +370,12 @@ def mask_fn_mbb80(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
 
 
 mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})
+
+
+@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met=70)
+def mask_fn_met70(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt < 70
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] < 70
+    return events, mask

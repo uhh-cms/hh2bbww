@@ -22,6 +22,7 @@ logger = law.logger.get_logger(__name__)
 @producer(
     uses={
         "{Jet,Electron,Muon}.{pt,eta,phi,mass}",
+        "gen_dilepton_pt",
         prepare_objects,
     },
     # both used columns and dependent shifts are defined in init below
@@ -48,12 +49,12 @@ def dy_correction_weight(
     events = self[prepare_objects](events, **kwargs)
     njet = ak.num(events.Jet.pt, axis=1)
 
-    njets = ak.where(njet > 10, 10, njet)
+    njets = ak.where(njet > 7, 7, njet)
 
     var_map = {
-        "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+        "era": self.era,  # NOTE: f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
         "njets": njets,
-        "ptll": (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         "syst": "nominal",
     }
     corrector = self.correction_set["dy_correction_weight"]
@@ -90,6 +91,13 @@ def dy_correction_weight_init(self: Producer) -> None:
     if not self.dataset_inst.has_tag("is_dy"):
         return
     self.corrected_process = "dy"
+    if "22" in self.config_inst.name:
+        self.era = "2022_2022EE"
+        self.configs = ("c22prev14", "c22postv14")
+    else:
+        self.era = "2023_2023BPix"
+        self.configs = ("c23prev14", "c23postv14")
+    # self.era = "2022_2022EE_2023_2023BPix"
     self.produces.add(self.produced_column)
     self.uses.add(self.uses_column)
 
@@ -100,16 +108,17 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
-        config=task.config,
+        configs=self.configs,
         shift="nominal",
-        processes=[
+        processes=((
             "vv", "w_lnu", "st",
-            "dy_m4to10", "dy_m10to50", "dy_m50toinf",
+            "dy_m10to50", "dy_m50toinf",
             "tt", "ttv", "h", "data",
-        ],
-        # use the no_dy_weight hist producer to get the DY weight data
-        hist_producer="with_trigger_weight",
-        categories=("dycr__nonmixed",),
+        ),),
+        # Use Hist producer without dy corrections and cut for MET < 70 GeV to deplete ttbar contributions
+        hist_producer="met70",
+        # Use 2µ category when calculating weight with gen level ptll because of linear behaviour
+        categories=("dycr__2mu",),
         variables=("n_jet-ptll_for_dy_corr",),
     )
 
