@@ -32,6 +32,18 @@ pickle = maybe_import("pickle")
 logger = law.logger.get_logger(__name__)
 
 
+class ClassPropertyDescriptor:
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, instance, owner):
+        return self.fget(owner)
+
+
+def classproperty(func):
+    return ClassPropertyDescriptor(func)
+
+
 class MLClassifierBase(MLModel):
     """
     Provides a base structure to implement Multiclass Classifier in Columnflow
@@ -49,8 +61,13 @@ class MLClassifierBase(MLModel):
 
     input_features: set = {"mli_ht", "mli_n_jet"}
 
-    # identifier of the PrepareMLEvents and MergeMLEvents outputs. Needs to be changed when producing new input features
-    store_name: str = "inputs_base"
+    # name of the PreparationProducer class that is used to prepare the input features
+    # this is also used to determine the preml_store_name
+    preparation_producer_name: str = "prepml"
+
+    @classproperty
+    def store_name(cls) -> str:
+        return cls.preparation_producer_name
 
     # Class for data loading and it's dependencies.
     data_loader = MLDatasetLoader
@@ -343,7 +360,7 @@ class MLClassifierBase(MLModel):
 
     def preparation_producer(self: MLModel, analysis_inst: od.Analysis):
         """ producer that is run as part of PrepareMLEvents and MLEvaluation (before `evaluate`) """
-        return "ml_preparation"
+        return self.preparation_producer_name
 
     def training_calibrators(self, analysis_inst: od.Analysis, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
@@ -387,7 +404,7 @@ class MLClassifierBase(MLModel):
             # get datasets corresponding to this process
             dataset_insts = [
                 dataset_inst for dataset_inst in
-                get_datasets_from_process(config_inst, proc, strategy="all")
+                get_datasets_from_process(config_inst, proc, strategy="all", only_first=False)
             ]
 
             # store assignment of datasets and processes in the instances
@@ -570,6 +587,18 @@ class MLClassifierBase(MLModel):
         """ Function to run the ml training loop. Needs to be implemented in daughter class """
         return
 
+    def patch_events(self, events):
+        from columnflow.columnar_util import fill_at
+        # TODO: this function is currently copy-pasted from MLPreTraining task
+        # change padding value to -1 for btag scores
+        for col in (
+            "mli_fj_particleNetWithMass_HbbvsQCD",
+            "mli_fj_particleNet_XbbVsQCD",
+        ):
+            events = fill_at(events, events[col] == -10, col, -1, value_type=np.float32)
+
+        return events
+
     def evaluate(
         self,
         task: law.Task,
@@ -586,6 +615,8 @@ class MLClassifierBase(MLModel):
         if len(events) == 0:
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
             return events
+
+        events = self.patch_events(events)
 
         # check that the input features are the same for all models
         for model in models:

@@ -10,10 +10,11 @@ from columnflow.types import Union
 
 import law
 
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, DotDict
 
 from hbw.ml.base import MLClassifierBase
 from hbw.ml.mixins import DenseModelMixin, ModelFitMixin
+from hbw.config.styling import color_palette
 
 
 np = maybe_import("numpy")
@@ -23,9 +24,6 @@ logger = law.logger.get_logger(__name__)
 
 
 class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
-
-    combine_processes = ()
-
     _default__processes: tuple = (
         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -118,7 +116,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         for var in ["pt", "eta"]
     ]
 
-    store_name: str = "inputs_inclusive"
+    preparation_producer_name = "prepml"
 
     folds: int = 5
     negative_weights: str = "ignore"
@@ -183,11 +181,37 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
 # configs
 #
 
-processes = {
-    "default": DenseClassifierDL._default__processes,
+hh_train_procs_ggf = lambda hhdecay: [
+    f"hh_ggf{hhdecay}_kl0_kt1",
+    f"hh_ggf{hhdecay}_kl1_kt1",
+    f"hh_ggf{hhdecay}_kl2p45_kt1",
+    f"hh_ggf{hhdecay}_kl5_kt1",
+]
+hh_train_procs_vbf = lambda hhdecay: [
+    f"hh_vbf{hhdecay}_kv1_k2v1_kl1",
+    f"hh_vbf{hhdecay}_kv1_k2v0_kl1",
+    f"hh_vbf{hhdecay}_kvm0p962_k2v0p959_klm1p43",
+    f"hh_vbf{hhdecay}_kvm1p21_k2v1p94_klm0p94",
+    f"hh_vbf{hhdecay}_kvm1p6_k2v2p72_klm1p36",
+    f"hh_vbf{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+]
+
+processes = DotDict({
     "merge_hh": ["sig_ggf", "sig_vbf", "tt", "st", "dy", "h"],
-}
-input_features = {
+    "backgrounds_binary": [
+        "tt", "st", "dy_m10to50", "dy_m50toinf",
+        "vv", "ttv", "h", "other",
+    ],
+    "backgrounds_multiclass": [
+        "tt", "st", "dy_m10to50", "dy_m50toinf",
+        "vv", "h",
+    ],
+    "ggf_hbb_hvv2l2nu": hh_train_procs_ggf("_hbb_hvv2l2nu"),
+    "vbf_hbb_hvv2l2nu": hh_train_procs_vbf("_hbb_hvv2l2nu"),
+    "ggf_hh": hh_train_procs_ggf(""),
+    "vbf_hh": hh_train_procs_vbf(""),
+})
+input_features = DotDict({
     "default": DenseClassifierDL.input_features,
     "previous": [
         # event features
@@ -359,7 +383,7 @@ input_features = {
         # "mli_fj_mass",
         # "mli_fj_msoftdrop",
     ],
-}
+})
 input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
 
 class_factors = {
@@ -375,45 +399,225 @@ class_factors = {
     },
 }
 
+configs = DotDict({
+    "22post": lambda self, requested_configs: ["c22postv14"],
+    "22": lambda self, requested_configs: ["c22prev14", "c22postv14"],
+    "23": lambda self, requested_configs: ["c23prev14", "c23postv14"],
+    "full": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+})
+
 #
 # derived MLModels
 #
 
-multiclass = DenseClassifierDL.derive("multiclass", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
-    "input_features": input_features["v0"],
-    "class_factors": class_factors["ones"],
-})
+# multiclass = DenseClassifierDL.derive("multiclass", cls_dict={
+#     "training_configs": configs.full,
+#     "input_features": input_features["v0"],
+#     "class_factors": class_factors["ones"],
+# })
+# dl_22post_test = DenseClassifierDL.derive("dl_22post_test", cls_dict={
+#     "training_configs": lambda self, requested_configs: ["c22post"],
+#     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+#     "epochs": 20,
+# })
+# dl_22post_limited = DenseClassifierDL.derive("dl_22post_limited", cls_dict={
+#     "training_configs": lambda self, requested_configs: ["l22post"],
+#     "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
+#     "epochs": 6,
+# })
 
-dl_22post_test = DenseClassifierDL.derive("dl_22post_test", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22post"],
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
-    "epochs": 20,
-})
-dl_22post_limited = DenseClassifierDL.derive("dl_22post_limited", cls_dict={
-    "training_configs": lambda self, requested_configs: ["l22post"],
-    "processes": ["hh_ggf_hbb_hvv2l2nu_kl1_kt1", "st_tchannel_t"],
-    "epochs": 6,
-})
+# # TODO: include minor processes in training: VVV, ttVV, tttt, w_lnu
 
-# TODO: include minor processes in training: VVV, ttVV, tttt, w_lnu
+# ggf = DenseClassifierDL.derive("ggf", cls_dict={
+#     "training_configs": configs.full,
+#     "input_features": input_features["v0"],
+#     "processes": [
+#         "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+#         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#         "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+#         "tt",
+#         "st",
+#         "dy_m4to10",
+#         "dy_m10to50",
+#         "dy_m50toinf",
+#         "vv",
+#         "ttv",
+#         "h",
+#     ],
+#     "train_nodes": {
+#         "sig_ggf_binary": {
+#             "ml_id": 0,
+#             "label": "Signal",
+#             "color": "#000000",
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
+#                 "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#                 "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#                 "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+#             ),
+#         },
+#         "bkg_binary_for_ggf": {
+#             "ml_id": 1,
+#             "label": "Background",
+#             "color": "#e76300",  # Spanish Orange
+#             "class_factor_mode": "xsec",
+#             "sub_processes": (
+#                 "tt",
+#                 "st",
+#                 "dy_m4to10",
+#                 "dy_m10to50",
+#                 "dy_m50toinf",
+#                 "vv",
+#                 "ttv",
+#                 "h",
+#             ),
+#         },
+#     },
+#     # relative class factors between different nodes
+#     "class_factors": {
+#         "sig_ggf_binary": 1,
+#         "bkg_binary_for_ggf": 1,
+#     },
+#     # relative process weights within one class
+#     "sub_process_class_factors": {
+#         "hh_ggf_hbb_hvv2l2nu_kl0_kt1": 1,
+#         "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+#         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
+#         "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
+#         "tt": 1,
+#         "st": 1,
+#         "dy_m4to10": 0.1,  # assign small weight due to too low statistics for training
+#         "dy_m10to50": 1,
+#         "dy_m50toinf": 1,
+#         "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+#         "ttv": 2,
+#         "h": 2,
+#     },
+#     "epochs": 100,
+# })
+# vbf = DenseClassifierDL.derive("vbf", cls_dict={
+#     "training_configs": configs.full,
+#     "input_features": input_features["v0"],
+#     "processes": [
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "tt",
+#         "st",
+#         "dy_m4to10",
+#         "dy_m10to50",
+#         "dy_m50toinf",
+#         "vv",
+#         "ttv",
+#         "h",
+#     ],
+#     "train_nodes": {
+#         "sig_vbf_binary": {
+#             "ml_id": 0,
+#             "label": "HH VBF",
+#             "color": "#000000",
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#             ),
+#         },
+#         "bkg_binary_for_vbf": {
+#             "ml_id": 1,
+#             "label": "Background",
+#             "color": "#e76300",  # Spanish Orange
+#             "class_factor_mode": "xsec",
+#             "sub_processes": (
+#                 "tt",
+#                 "st",
+#                 "dy_m4to10",
+#                 "dy_m10to50",
+#                 "dy_m50toinf",
+#                 "vv",
+#                 "ttv",
+#                 "h",
+#             ),
+#         },
+#     },
+#     "class_factors": {
+#         "sig_vbf_binary": 1,
+#         "bkg_binary_for_vbf": 1,
+#     },
+#     # relative process weights within one class
+#     "sub_process_class_factors": {
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
+#         "tt": 1,
+#         "st": 1,
+#         "dy_m4to10": 0.1,  # assign small weight due to low statistics
+#         "dy_m10to50": 1,
+#         "dy_m50toinf": 1,
+#         "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+#         "ttv": 2,
+#         "h": 2,
+#     },
+#     "epochs": 100,
+# })
 
-ggf = DenseClassifierDL.derive("ggf", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
-    "input_features": input_features["v0"],
-    "processes": [
-        "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
+
+multiclassv1 = DenseClassifierDL.derive("multiclassv1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": (
+        *processes.ggf_hbb_hvv2l2nu,
+        *processes.vbf_hbb_hvv2l2nu,
         "tt",
         "st",
-        "dy_m4to10",
         "dy_m10to50",
         "dy_m50toinf",
-        "vv",
-        "ttv",
         "h",
+    ),
+    "train_nodes": {
+        "sig_ggf": {
+            "ml_id": 0,
+            "label": r"HH_{GGF}",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": processes.ggf_hbb_hvv2l2nu,
+        },
+        "sig_vbf": {
+            "ml_id": 1,
+            "label": r"HH_{VBF}",
+            "color": "#999999",  # grey
+            "class_factor_mode": "equal",
+            "sub_processes": processes.vbf_hbb_hvv2l2nu,
+        },
+        "tt": {"ml_id": 2},
+        "st": {"ml_id": 3},
+        "dy_m10toinf": {
+            "ml_id": 4,
+            "sub_processes": ["dy_m10to50", "dy_m50toinf"],
+            "label": "DY (m>10)",
+            "color": color_palette["yellow"],
+            "class_factor_mode": "xsec",
+        },
+        "h": {"ml_id": 5},
+    },
+})
+ggfv1 = DenseClassifierDL.derive("ggfv1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": [
+        *processes.ggf_hbb_hvv2l2nu,
+        *processes.backgrounds_binary,
     ],
     "train_nodes": {
         "sig_ggf_binary": {
@@ -421,28 +625,14 @@ ggf = DenseClassifierDL.derive("ggf", cls_dict={
             "label": "Signal",
             "color": "#000000",
             "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_ggf_hbb_hvv2l2nu_kl0_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl5_kt1",
-            ),
+            "sub_processes": processes.ggf_hbb_hvv2l2nu,
         },
         "bkg_binary_for_ggf": {
             "ml_id": 1,
             "label": "Background",
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
-            "sub_processes": (
-                "tt",
-                "st",
-                "dy_m4to10",
-                "dy_m10to50",
-                "dy_m50toinf",
-                "vv",
-                "ttv",
-                "h",
-            ),
+            "sub_processes": processes.backgrounds_binary,
         },
     },
     # relative class factors between different nodes
@@ -458,33 +648,21 @@ ggf = DenseClassifierDL.derive("ggf", cls_dict={
         "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
         "tt": 1,
         "st": 1,
-        "dy_m4to10": 0.1,  # assign small weight due to too low statistics for training
         "dy_m10to50": 1,
         "dy_m50toinf": 1,
-        "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+        "vv": 2,
         "ttv": 2,
         "h": 2,
+        "other": 8,
     },
     "epochs": 100,
 })
-vbf = DenseClassifierDL.derive("vbf", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
-    "input_features": input_features["v0"],
+vbfv1 = DenseClassifierDL.derive("vbfv1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
     "processes": [
-        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
-        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "tt",
-        "st",
-        "dy_m4to10",
-        "dy_m10to50",
-        "dy_m50toinf",
-        "vv",
-        "ttv",
-        "h",
+        *processes.vbf_hbb_hvv2l2nu,
+        *processes.backgrounds_binary,
     ],
     "train_nodes": {
         "sig_vbf_binary": {
@@ -492,30 +670,14 @@ vbf = DenseClassifierDL.derive("vbf", cls_dict={
             "label": "HH VBF",
             "color": "#000000",
             "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-            ),
+            "sub_processes": processes.vbf_hbb_hvv2l2nu,
         },
         "bkg_binary_for_vbf": {
             "ml_id": 1,
             "label": "Background",
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
-            "sub_processes": (
-                "tt",
-                "st",
-                "dy_m4to10",
-                "dy_m10to50",
-                "dy_m50toinf",
-                "vv",
-                "ttv",
-                "h",
-            ),
+            "sub_processes": processes.backgrounds_binary,
         },
     },
     "class_factors": {
@@ -532,12 +694,267 @@ vbf = DenseClassifierDL.derive("vbf", cls_dict={
         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
         "tt": 1,
         "st": 1,
-        "dy_m4to10": 0.1,  # assign small weight due to low statistics
         "dy_m10to50": 1,
         "dy_m50toinf": 1,
-        "vv": 4,  # assign larger weight due similarity to signal & low MC stats.
+        "vv": 2,
         "ttv": 2,
         "h": 2,
+        "other": 8,
+    },
+    "epochs": 100,
+})
+
+
+vbfv1_2b = vbfv1.derive("vbfv1_2b", cls_dict={"preparation_producer_name": "prepml_2b"})
+ggfv1_2b = ggfv1.derive("ggfv1_2b", cls_dict={"preparation_producer_name": "prepml_2b"})
+
+multiclass_fatjetv1 = multiclassv1.derive("multiclass_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
+ggf_fatjetv1 = ggfv1.derive("ggf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
+vbf_fatjetv1 = vbfv1.derive("vbf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
+
+
+#
+# adding bbtautau
+#
+multiclass_allsig = DenseClassifierDL.derive("multiclass_allsig", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": (
+        *processes.ggf_hh,
+        *processes.vbf_hh,
+        "tt",
+        "st",
+        "dy_m10to50",
+        "dy_m50toinf",
+        "h",
+    ),
+    "train_nodes": {
+        "sig_ggf": {
+            "ml_id": 0,
+            "label": r"HH_{GGF}",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": processes.ggf_hh,
+        },
+        "sig_vbf": {
+            "ml_id": 1,
+            "label": r"HH_{VBF}",
+            "color": "#999999",  # grey
+            "class_factor_mode": "equal",
+            "sub_processes": processes.vbf_hh,
+        },
+        "tt": {"ml_id": 2},
+        "st": {"ml_id": 3},
+        "dy_m10toinf": {
+            "ml_id": 4,
+            "sub_processes": ["dy_m10to50", "dy_m50toinf"],
+            "label": "DY (m>10)",
+            "color": color_palette["yellow"],
+            "class_factor_mode": "xsec",
+        },
+        "h": {"ml_id": 5},
+    },
+})
+ggf_allsig = DenseClassifierDL.derive("ggf_allsig", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": [
+        *processes.ggf_hh,
+        *processes.backgrounds_binary,
+    ],
+    "train_nodes": {
+        "sig_ggf_binary": {
+            "ml_id": 0,
+            "label": "Signal",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": processes.ggf_hh,
+        },
+        "bkg_binary_for_ggf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": processes.backgrounds_binary,
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "sig_ggf_binary": 1,
+        "bkg_binary_for_ggf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_ggf_kl0_kt1": 1,
+        "hh_ggf_kl1_kt1": 1,
+        "hh_ggf_kl2p45_kt1": 1,
+        "hh_ggf_kl5_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "epochs": 100,
+})
+vbf_allsig = DenseClassifierDL.derive("vbf_allsig", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": [
+        *processes.vbf_hh,
+        *processes.backgrounds_binary,
+    ],
+    "train_nodes": {
+        "sig_vbf_binary": {
+            "ml_id": 0,
+            "label": "HH VBF",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": processes.vbf_hh,
+        },
+        "bkg_binary_for_vbf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": processes.backgrounds_binary,
+        },
+    },
+    "class_factors": {
+        "sig_vbf_binary": 1,
+        "bkg_binary_for_vbf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_vbf_kv1_k2v1_kl1": 1,
+        "hh_vbf_kv1_k2v0_kl1": 1,
+        "hh_vbf_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_kvm1p83_k2v3p57_klm3p39": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "epochs": 100,
+})
+
+
+#
+# only kl1
+#
+
+multiclass_kl1 = DenseClassifierDL.derive("multiclass_kl1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": (
+        "hh_ggf_kl1_kt1",
+        "hh_vbf_kv1_k2v1_kl1",
+        "tt",
+        "st",
+        "dy_m10to50",
+        "dy_m50toinf",
+        "h",
+    ),
+    "train_nodes": {
+        "hh_ggf_kl1_kt1": {"ml_id": 0},
+        "hh_vbf_kv1_k2v1_kl1": {"ml_id": 1},
+        "tt": {"ml_id": 2},
+        "st": {"ml_id": 3},
+        "dy_m10toinf": {
+            "ml_id": 4,
+            "sub_processes": ["dy_m10to50", "dy_m50toinf"],
+            "label": "DY (m>10)",
+            "color": color_palette["yellow"],
+            "class_factor_mode": "xsec",
+        },
+        "h": {"ml_id": 5},
+    },
+})
+ggf_kl1 = DenseClassifierDL.derive("ggf_kl1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": [
+        "hh_ggf_kl1_kt1",
+        *processes.backgrounds_binary,
+    ],
+    "train_nodes": {
+        "hh_ggf_kl1_kt1": {"ml_id": 0},
+        "bkg_binary_for_ggf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": processes.backgrounds_binary,
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "hh_ggf_kl1_kt1": 1,
+        "bkg_binary_for_ggf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_ggf_kl0_kt1": 1,
+        "hh_ggf_kl1_kt1": 1,
+        "hh_ggf_kl2p45_kt1": 1,
+        "hh_ggf_kl5_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "epochs": 100,
+})
+vbf_kl1 = DenseClassifierDL.derive("vbf_kl1", cls_dict={
+    "training_configs": configs.full,
+    "input_features": input_features["v1"],
+    "processes": [
+        "hh_vbf_kv1_k2v1_kl1",
+        *processes.backgrounds_binary,
+    ],
+    "train_nodes": {
+        "hh_vbf_kv1_k2v1_kl1": {"ml_id": 0},
+        "bkg_binary_for_vbf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": processes.backgrounds_binary,
+        },
+    },
+    "class_factors": {
+        "hh_vbf_kv1_k2v1_kl1": 1,
+        "bkg_binary_for_vbf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_vbf_kv1_k2v1_kl1": 1,
+        "hh_vbf_kv1_k2v0_kl1": 1,
+        "hh_vbf_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_kvm1p83_k2v3p57_klm3p39": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
     },
     "epochs": 100,
 })

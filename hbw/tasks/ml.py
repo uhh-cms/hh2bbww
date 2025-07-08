@@ -400,6 +400,8 @@ class MLPreTraining(
         stats = self.merge_stats(inputs)
         events = self.merge_datasets(inputs)[process]
 
+        events = self.ml_model_inst.patch_events(events)
+
         # dump stats
         outputs["stats"].dump(stats, formatter="json")
 

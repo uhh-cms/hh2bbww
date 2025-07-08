@@ -23,9 +23,6 @@ logger = law.logger.get_logger(__name__)
 
 
 class DenseClassifierSL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
-
-    combine_processes = ()
-
     _default__processes: tuple = (
         "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
         "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
@@ -126,7 +123,7 @@ class DenseClassifierSL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         for var in ["pt", "eta"]
     ]
 
-    store_name: str = "inputs_inclusive"
+    preparation_producer_name = "prepml"
 
     folds: int = 5
     negative_weights: str = "ignore"

@@ -49,7 +49,7 @@ def del_sub_proc_stats(
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
 )
-def ml_preparation(
+def prepml(
     self: Producer,
     events: ak.Array,
     task: law.Task,
@@ -129,8 +129,8 @@ def ml_preparation(
     return events
 
 
-@ml_preparation.init
-def ml_preparation_init(self):
+@prepml.init
+def prepml_init(self):
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
@@ -150,4 +150,5 @@ def ml_preparation_init(self):
             self.uses.add(cat_cls)
 
 
-ml_preparation_mll20 = ml_preparation.derive("ml_preparation_mll20", cls_dict={"extra_categorizer": "catid_mll_low"})
+prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"})
+prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
