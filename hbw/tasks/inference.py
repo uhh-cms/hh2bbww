@@ -764,7 +764,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2b" in cat_name
         ])
         cards_boosted = ",".join([
-            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "boosted" in cat_name
+            f"{cat_name}=$CARDS_PATH/{card_fn}"
+            for cat_name, card_fn in zip(cat_names, card_fns) if "boosted" in cat_name
         ])
 
         multi_datacards = []
