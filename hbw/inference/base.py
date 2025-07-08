@@ -465,7 +465,7 @@ class HBWInferenceModelBase(InferenceModel):
                         process_inst.xsecs[ecm].get(names=("scale"), direction=("down", "up"), factor=True),
                     )),
                 )
-            self.add_parameter_to_group(syst_name, "theory")
+            # self.add_parameter_to_group(syst_name, "theory")
 
         # add PDF rate uncertainties to inference model
         for syst_name, procs in self.processes_per_pdf_rate.items():
@@ -494,7 +494,7 @@ class HBWInferenceModelBase(InferenceModel):
                         process_inst.xsecs[ecm].get(names=("pdf"), direction=("down", "up"), factor=True),
                     )),
                 )
-            self.add_parameter_to_group(syst_name, "theory")
+            # self.add_parameter_to_group(syst_name, "theory")
 
     def add_shape_parameters(self: InferenceModel):
         """
@@ -530,8 +530,8 @@ class HBWInferenceModelBase(InferenceModel):
                 **param_kwargs,
             )
 
-            is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
-            if is_theory:
-                self.add_parameter_to_group(shape_uncertainty, "theory")
-            else:
-                self.add_parameter_to_group(shape_uncertainty, "experiment")
+            # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
+            # if is_theory:
+            #     self.add_parameter_to_group(shape_uncertainty, "theory")
+            # else:
+            #     self.add_parameter_to_group(shape_uncertainty, "experiment")
