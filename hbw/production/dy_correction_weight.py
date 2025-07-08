@@ -52,7 +52,7 @@ def dy_correction_weight(
     njets = ak.where(njet > 7, 7, njet)
 
     var_map = {
-        "era": self.era,  # NOTE: f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+        "era": self.dy_corr_era,  # NOTE: f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
         "njets": njets,
         "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         "syst": "nominal",
@@ -92,12 +92,12 @@ def dy_correction_weight_init(self: Producer) -> None:
         return
     self.corrected_process = "dy"
     if "22" in self.config_inst.name:
-        self.era = "2022_2022EE"
-        self.configs = ("c22prev14", "c22postv14")
+        self.dy_corr_era = "2022_2022EE"
+        self.dy_corr_configs = ("c22prev14", "c22postv14")
     else:
-        self.era = "2023_2023BPix"
-        self.configs = ("c23prev14", "c23postv14")
-    # self.era = "2022_2022EE_2023_2023BPix"
+        self.dy_corr_era = "2023_2023BPix"
+        self.dy_corr_configs = ("c23prev14", "c23postv14")
+    # self._dy_corr_era = "2022_2022EE_2023_2023BPix"
     self.produces.add(self.produced_column)
     self.uses.add(self.uses_column)
 
@@ -108,7 +108,7 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
-        configs=self.configs,
+        configs=self.dy_corr_configs,
         shift="nominal",
         processes=((
             "vv", "w_lnu", "st",
