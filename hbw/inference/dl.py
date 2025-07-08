@@ -17,7 +17,7 @@ logger = law.logger.get_logger(__name__)
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = ["multiclass", "ggf", "vbf"]
+ml_model_name = ["multiclassv1", "ggfv1", "vbfv1"]
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
@@ -26,13 +26,13 @@ config_categories = DotDict({
         "sr__1b__ml_sig_vbf",
         "sr__1b__ml_tt",
         "sr__1b__ml_st",
-        "sr__1b__ml_dy",
+        "sr__1b__ml_dy_m10toinf",
         "sr__1b__ml_h",
         "sr__2b__ml_sig_ggf",
         "sr__2b__ml_sig_vbf",
         "sr__2b__ml_tt",
         "sr__2b__ml_st",
-        "sr__2b__ml_dy",
+        "sr__2b__ml_dy_m10toinf",
         "sr__2b__ml_h",
     ],
     "sr": [
@@ -41,15 +41,42 @@ config_categories = DotDict({
         "sr__2b__ml_sig_ggf",
         "sr__2b__ml_sig_vbf",
     ],
+    "sr_splitvbf": [
+        "sr__1b__ml_sig_ggf",
+        "sr__2b__ml_sig_ggf",
+        "sr__resolved__1b__ml_sig_vbf",
+        "sr__resolved__2b__ml_sig_vbf",
+        "sr__boosted__ml_sig_vbf",
+    ],
+    "sr_boosted": [
+        "sr__boosted__ml_sig_ggf",
+        "sr__boosted__ml_sig_vbf",
+    ],
+    "sr_resolved": [
+        "sr__resolved__1b__ml_sig_ggf",
+        "sr__resolved__1b__ml_sig_vbf",
+        "sr__resolved__2b__ml_sig_ggf",
+        "sr__resolved__2b__ml_sig_vbf",
+    ],
     "background": [
         "sr__1b__ml_tt",
         "sr__1b__ml_st",
-        "sr__1b__ml_dy",
+        "sr__1b__ml_dy_m10toinf",
         "sr__1b__ml_h",
         "sr__2b__ml_tt",
         "sr__2b__ml_st",
-        "sr__2b__ml_dy",
+        "sr__2b__ml_dy_m10toinf",
         "sr__2b__ml_h",
+    ],
+    "background_resolved": [
+        "sr__resolved__1b__ml_tt",
+        "sr__resolved__1b__ml_st",
+        "sr__resolved__1b__ml_dy_m10toinf",
+        "sr__resolved__1b__ml_h",
+        "sr__resolved__2b__ml_tt",
+        "sr__resolved__2b__ml_st",
+        "sr__resolved__2b__ml_dy_m10toinf",
+        "sr__resolved__2b__ml_h",
     ],
     "no_nn_cats": [
         "sr__1b",
@@ -263,6 +290,8 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     """
     Function to set the config variable for the binary model.
     """
+    if config_cat_inst.name == "sr__boosted":
+        return "logit_mlscore.sig_vbf_binary"
     if "sig_ggf" in config_cat_inst.name:
         return "logit_mlscore.sig_ggf_binary"
     elif "sig_vbf" in config_cat_inst.name:
@@ -289,6 +318,15 @@ default_cls_dict = {
 
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl_boosted = dl.derive("dl_boosted", cls_dict={
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_boosted1 = dl.derive("dl_boosted1", cls_dict={
+    "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background,
+})
+dl_boosted2 = dl.derive("dl_boosted2", cls_dict={
+    "config_categories": config_categories.sr_splitvbf + config_categories.background,
+})
 dl1 = HBWInferenceModelBase.derive("dl1", cls_dict=default_cls_dict)
 dl_skip_mc_stats = dl.derive("dl_skip_mc_stats", cls_dict={
     "mc_stats": False,
