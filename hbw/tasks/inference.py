@@ -746,14 +746,16 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
+        is_signal_region = lambda cat_name: "sig_" in cat_name or cat_name == "cat_sr__boosted"
+
         print("\n\n")
         # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
         multi_sig_cards = ":".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}"
-            for cat_name, card_fn in zip(cat_names, card_fns) if "sig_" in cat_name
+            for cat_name, card_fn in zip(cat_names, card_fns) if is_signal_region(cat_name)
         ])
         multi_sig_card_names = ",".join([
-            cat_name for cat_name in cat_names if "sig_" in cat_name
+            cat_name for cat_name in cat_names if is_signal_region(cat_name)
         ])
         cards_1b = ",".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name
@@ -761,10 +763,29 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         cards_2b = ",".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2b" in cat_name
         ])
+        cards_boosted = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "boosted" in cat_name
+        ])
+
+        multi_datacards = []
+        multi_datacard_names = []
+        for cards, identifier in [
+            (multi_sig_cards, multi_sig_card_names),
+            (cards_1b, "1b_combined"),
+            (cards_2b, "2b_combined"),
+            (cards_boosted, "boosted_combined"),
+            (datacards, identifier),
+        ]:
+            if cards:
+                multi_datacards.append(cards)
+                multi_datacard_names.append(identifier)
+
+        multi_datacards = ":".join(multi_datacards)
+        multi_datacard_names = ",".join(multi_datacard_names)
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
-            f"--multi-datacards {multi_sig_cards}:{cards_1b}:{cards_2b}:{datacards} "
-            f"--datacard-names {multi_sig_card_names},1b_combined,2b_combined,{identifier}"
+            f"--multi-datacards {multi_datacards} "
+            f"--datacard-names {multi_datacard_names} "
         )
         print(base_cmd + cmd, "\n\n")
 

@@ -229,6 +229,15 @@ def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
 # Jet categorization
 #
 
+@categorizer(uses={"FatJet.pt"})
+def catid_fatjet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Presence of at least 1 AK8 jet candidate
+    """
+    mask = (ak.num(events.FatJet["pt"], axis=-1) >= 1)
+    return events, mask
+
+
 @categorizer(uses={"Jet.pt", "FatJet.particleNet_XbbVsQCD"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
@@ -314,6 +323,7 @@ ml_processes = [
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
     "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd",
+    "dy_m10toinf",
     "dy_m50toinf", "tt_dl", "st_tchannel_t",
     "bkg_binary", "sig_ggf_binary", "sig_vbf_binary",
     "sig_ggf", "sig_vbf",

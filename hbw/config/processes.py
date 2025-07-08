@@ -8,6 +8,7 @@ import order as od
 import law
 
 from scinum import Number
+from hbw.config.styling import color_palette
 
 logger = law.logger.get_logger(__name__)
 
@@ -80,6 +81,31 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
+    config.add_process(config.x.procs.n.other)
+
+    color, sub_id = {
+        "2022preEE": (color_palette["blue"], 1),
+        "2022postEE": (color_palette["yellow"], 2),
+        "2023preBPix": (color_palette["red"], 3),
+        "2023postBPix": (color_palette["grey"], 4),
+    }[config.x.cpn_tag]
+
+    config.x.procs.n.background.add_process(
+        name=f"bkg_{config.x.cpn_tag}",
+        id=900000 + sub_id,
+        label=f"Background {config.x.cpn_tag}",
+        color=color,
+        processes=config.x.procs.n.background.processes,
+        aux={"unstack": True},
+    )
+    config.x.procs.n.data.add_process(
+        name=f"data_{config.x.cpn_tag}",
+        id=900010 + sub_id,
+        label=f"Data {config.x.cpn_tag}",
+        color=color,
+        processes=config.x.procs.n.data.processes,
+        aux={"unstack": True},
+    )
 
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)

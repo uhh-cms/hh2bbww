@@ -193,7 +193,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
-        "dl4": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl4": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -237,11 +237,13 @@ def set_config_defaults_and_groups(config_inst):
         "table0": [*hh_sm, *backgrounds0, "data", "background"],
         "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
         "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor", "h_all"],
+        "table3": ["background", "tt", "dy", "st", "w", "h", "vv", "ttv", "other"],
         "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
         "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
         "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
         "minor": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
+        "hh_sm": hh_sm,
         "hh_sm1": hh_sm1,
         "signals": [*hh_sm, *hh_sm1],
     }
@@ -343,21 +345,21 @@ def set_config_defaults_and_groups(config_inst):
         "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
         "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
         "SR_dl_resolved": (
-            "sr__resolved__1b__ml_signal_ggf2",
-            "sr__resolved__2b__ml_signal_ggf2",
+            "sr__resolved__1b__ml_sig_ggf",
+            "sr__resolved__2b__ml_sig_ggf",
         ),
         "vbfSR_dl_resolved": (
-            "sr__resolved__1b__ml_signal_vbf2",
-            "sr__resolved__2b__ml_signal_vbf2",
+            "sr__resolved__1b__ml_sig_vbf",
+            "sr__resolved__2b__ml_sig_vbf",
         ),
         "SR_dl_boosted": (
-            "sr__boosted__ml_signal_ggf2",
+            "sr__boosted__ml_sig_ggf",
         ),
         "vbfSR_dl_boosted": (
-            "sr__boosted__ml_signal_vbf2",
+            "sr__boosted__ml_sig_vbf",
         ),
-        "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
-        "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,h}"]),
+        "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,dy_m10toinf,h}"]),
+        "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -598,11 +600,12 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_bjets_incl": 14,
         "BR_bjets_incl": 3,
         "SR_dl_resolved": 10,
-        "SR_dl_boosted": 10,
+        "SR_dl_boosted": 3,
         "vbfSR_dl_resolved": 10,
-        "vbfSR_dl_boosted": 10,
+        "vbfSR_dl_boosted": 3,
         "sr__1b": 20,
         "sr__2b": 20,
+        "sr__boosted": 3,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
@@ -639,4 +642,5 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": is_signal_sm_vbf,
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
+        "sr__boosted": is_signal_sm_vbf,
     }

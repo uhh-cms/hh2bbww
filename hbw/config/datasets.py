@@ -132,7 +132,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # NLO samples
                 "dy_m50toinf_amcatnlo",
                 "dy_m10to50_amcatnlo",
-                "dy_m4to10_amcatnlo",
+                # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
                 "dy_m50toinf_0j_amcatnlo",
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",
