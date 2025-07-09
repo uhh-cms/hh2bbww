@@ -11,6 +11,7 @@ from functools import cached_property
 import gzip
 
 import law
+import luigi
 
 from collections import defaultdict
 
@@ -464,7 +465,7 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
         if njet > 7:  # NOTE: DOn't use rate_factor for njet > 7, due to neg weights / no DY in those bins
             rate_factor = rate_factor_lst[7]
         print(f"Rate factor for njet={njet}: {rate_factor}")
-        fit_str = get_fit_str(njet, 3, rate_factor, h, fit_function9, era, outputs)
+        fit_str = get_fit_str(njet, task.njet_overflow, rate_factor, h, fit_function9, era, outputs)
 
         fit_dict[era]["nominal"][(njet, njet + 1)] = [(0.0, inf, fit_str)]
 
@@ -482,6 +483,11 @@ class DYCorrBase(
     """
     # TODO: enable MultiConfig in HistogramsUserSingleShiftBase
     single_config = False
+    njet_overflow = luigi.IntParameter(
+        default=2,
+        description="Overflow bin for the n_jet variable in the fits",
+        significant=True,
+    )
 
     # NOTE: we assume that the corrected process is always the same for all configs
     corrected_process = DatasetsProcessesMixin.processes.copy(
@@ -576,6 +582,12 @@ class ComputeDYWeights(DYCorrBase):
             raise ValueError(
                 f"Only one corrected process is supported for njet corrections. Got {self.corrected_process}",
             )
+
+    def store_parts(self):
+        parts = super().store_parts()
+
+        parts.insert_before("version", "njetflow", str(self.njet_overflow))
+        return parts
 
     def output(self):
         return {
