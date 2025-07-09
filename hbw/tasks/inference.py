@@ -746,7 +746,9 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
-        is_signal_region = lambda cat_name: "sig_" in cat_name or cat_name == "cat_sr__boosted"
+        is_signal_region = lambda cat_name: (
+            "sig_" in cat_name or cat_name == "cat_sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
+        )
 
         print("\n\n")
         # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
@@ -781,12 +783,14 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
                 multi_datacards.append(cards)
                 multi_datacard_names.append(identifier)
 
+        n_multi_datacards = len(multi_datacards)
         multi_datacards = ":".join(multi_datacards)
         multi_datacard_names = ",".join(multi_datacard_names)
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
             f"--multi-datacards {multi_datacards} "
             f"--datacard-names {multi_datacard_names} "
+            f"--workers {n_multi_datacards} "
         )
         print(base_cmd + cmd, "\n\n")
 
@@ -803,7 +807,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating kl scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log"
+            f"--xsec fb --y-log --workers 6"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -812,7 +816,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating C2V scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11"
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --workers 3"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"

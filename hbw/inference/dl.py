@@ -296,6 +296,8 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
         return "logit_mlscore.sig_ggf_binary"
     elif "sig_vbf" in config_cat_inst.name:
         return "logit_mlscore.sig_vbf_binary"
+    elif "ggf" in config_cat_inst.name or "vbf" in config_cat_inst.name:
+        return f"logit_mlscore.{config_cat_inst.x.root_cats.get('dnn').replace('ml_', '')}"
     elif config_cat_inst.x.root_cats.get("dnn"):
         return "mlscore.max_score"
     else:
@@ -318,6 +320,15 @@ default_cls_dict = {
 
 
 dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl_kl1_dnn = dl.derive("dl_kl1_dnn", cls_dict={
+    "config_categories": [
+        "sr__1b__ml_hh_ggf_kl1_kt1",
+        "sr__1b__ml_hh_vbf_kv1_k2v1_kl1",
+        "sr__2b__ml_hh_ggf_kl1_kt1",
+        "sr__2b__ml_hh_vbf_kv1_k2v1_kl1",
+    ] + config_categories.background,
+    "ml_model_name": ["multiclass_kl1", "ggf_kl1", "vbf_kl1"],
+})
 dl_boosted = dl.derive("dl_boosted", cls_dict={
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })

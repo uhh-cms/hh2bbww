@@ -340,24 +340,14 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
-        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
-        "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1}"]),
-        "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1}"]),
-        "SR_dl_resolved": (
-            "sr__resolved__1b__ml_sig_ggf",
-            "sr__resolved__2b__ml_sig_ggf",
-        ),
-        "vbfSR_dl_resolved": (
-            "sr__resolved__1b__ml_sig_vbf",
-            "sr__resolved__2b__ml_sig_vbf",
-        ),
-        "SR_dl_boosted": (
-            "sr__boosted__ml_sig_ggf",
-        ),
-        "vbfSR_dl_boosted": (
-            "sr__boosted__ml_sig_vbf",
-        ),
+        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),
+        "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        "SR_dl_resolved": bracket_expansion(["sr__resolved__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        "vbfSR_dl_resolved": bracket_expansion(["sr__resolved__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
@@ -593,19 +583,19 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_resolved": 5,
         "vbfSR_sl_boosted": 3,
         # Dilepton
-        "SR_dl": 10,
-        "vbfSR_dl": 10,
+        "SR_dl": 20,
+        "vbfSR_dl": 20,
         "BR_dl": 3,
         "SR_bjets_incl": 14,
         "vbfSR_bjets_incl": 14,
         "BR_bjets_incl": 3,
         "SR_dl_resolved": 10,
-        "SR_dl_boosted": 3,
+        "SR_dl_boosted": 5,
         "vbfSR_dl_resolved": 10,
-        "vbfSR_dl_boosted": 3,
+        "vbfSR_dl_boosted": 5,
         "sr__1b": 20,
         "sr__2b": 20,
-        "sr__boosted": 3,
+        "sr__boosted": 5,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name

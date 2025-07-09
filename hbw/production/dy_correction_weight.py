@@ -36,6 +36,7 @@ logger = law.logger.get_logger(__name__)
     # produced dy weight column
     produced_column="dy_correction_weight",
     uses_column=None,
+    version=0,
 )
 def dy_correction_weight(
     self: Producer,
@@ -120,6 +121,7 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
         # Use 2µ category when calculating weight with gen level ptll because of linear behaviour
         categories=("dycr__2mu",),
         variables=("n_jet-ptll_for_dy_corr",),
+        njet_overflow=2,
     )
 
 
