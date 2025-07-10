@@ -55,6 +55,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     categorizer_cls=None,
     tt_weight=None,
     dy_weight=None,
+    nondy_hist_producer=None,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -254,8 +255,13 @@ default_correction_weights = {
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
+    "dy_correction_weight": [],
+    "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
+weight_columns_execpt_btag = default_weight_columns.copy()
+weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
+
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 
 with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
@@ -273,12 +279,16 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
 # NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
 # because the dy_correction_weight is only relevant for DY processes. This is implemented in
 # hbw/analysis/create_analysis.py
-with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    "dy_correction_weight": [],
-    "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
+with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
+    "nondy_hist_producer": "with_trigger_weight",
+    "version": 0,
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": [],
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+})
 
 #
 # HistProducers with masks via categorization
@@ -316,8 +326,6 @@ base.derive("minimal", cls_dict={"weight_columns": {
     "top_pt_theory_weight": ["top_pt"],
 }})
 
-weight_columns_execpt_btag = default_weight_columns.copy()
-weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {

@@ -290,6 +290,18 @@ def create_hbw_analysis(
 
         return store_parts
 
+    def reuse_hist_producer(task, store_parts):
+        from columnflow.histogramming import HistProducer
+        hist_producer_cls = HistProducer.get_cls(task.hist_producer)
+        if hist_producer_cls.nondy_hist_producer and not task.dataset.startswith("dy"):
+            from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
+            # nondy_hist_producer_cls = HistProducer.get_cls(hist_producer_cls.nondy_hist_producer)
+            store_parts["hist_producer"] = ArrayFunctionClassMixin.array_function_cls_repr(
+                task,
+                hist_producer_cls.nondy_hist_producer,
+            )
+        return store_parts
+
     def hbw_parts(task, store_parts):
         name = task.task_family
         if name in software_tasks:
@@ -300,19 +312,8 @@ def create_hbw_analysis(
             store_parts = limited_config_shared_parts(task, store_parts)
         if name not in skip_new_version_schema:
             store_parts = reorganize_parts(task, store_parts)
-        if name in histogram_tasks and task.hist_producer == "top_pt_theory":
-            # if not task.dataset.startswith("tt_"):
-            if not task.dataset_inst.has_tag("is_ttbar"):
-                store_parts["hist_producer"] = store_parts["hist_producer"].replace(
-                    "top_pt_theory",
-                    "with_dy_corr" if task.dataset.startswith("dy") else "with_trigger_weight",
-                )
-        if name in histogram_tasks and task.hist_producer == "with_dy_corr":
-            if not task.dataset.startswith("dy"):
-                store_parts["hist_producer"] = store_parts["hist_producer"].replace(
-                    "with_dy_corr",
-                    "with_trigger_weight",
-                )
+        if name in histogram_tasks and task.hist_producer:
+            reuse_hist_producer(task, store_parts)
         return store_parts
 
     def pre_reducer_parts(task, store_parts):
