@@ -200,7 +200,6 @@ def set_config_defaults_and_groups(config_inst):
         "2much": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "2ech": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "emuch": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
-        "inference": ["hh_ggf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "postfit": [*hbbhww_sm, *backgrounds1],
         "k2v": ["hh_vbf_*", "tt", "st", "w_lnu", "dy", "qcd_*"],
         "ml": [default_signal_process, "tt", "st", "w_lnu", "dy"],
@@ -238,6 +237,23 @@ def set_config_defaults_and_groups(config_inst):
         "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
         "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor", "h_all"],
         "table3": ["background", "tt", "dy", "st", "w", "h", "vv", "ttv", "other"],
+        "inference": [
+            # TODO: merge st_schannel, st_tchannel
+            "st_tchannel",
+            "st_twchannel",
+            "st_schannel",  # TODO: bogus norm?
+            "tt",
+            "ttw",
+            "ttz",
+            "dy_hf", "dy_lf",
+            "w_lnu",  # TODO: bogus norm?
+            "vv",
+            "vvv",
+            "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+            "thq", "thw", "ttvh",
+            "tttt",
+            "ttvv",
+        ],
         "dy_all": ["dy", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "dy_m50toinf_0j", "dy_m50toinf_1j", "dy_m50toinf_2j"],  # noqa: E501
         "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
@@ -354,6 +370,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
+    from hbw.ml.derived.dl import input_features as ml_inputs
     config_inst.x.variable_groups = {
         "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
@@ -361,6 +378,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
+        "ml_inputs": ml_inputs.v1,  # should correspond to our currently used ML input features
         "dl": bracket_expansion([
             "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso}",  # ,mvatth}",
@@ -407,7 +425,7 @@ def set_config_defaults_and_groups(config_inst):
             "fsr_up",
             "top_pt_up",
             # # experimental unc.
-            "lumi_13TeV_2022_up",
+            # "lumi_13TeV_2022_up",
             # b-tagging
             "btag_hf_up",
             "btag_lf_up",
@@ -415,6 +433,10 @@ def set_config_defaults_and_groups(config_inst):
             "btag_hfstats2_2022_up",
             "btag_lfstats1_2022_up",
             "btag_lfstats2_2022_up",
+            "btag_hfstats1_2023_up",
+            "btag_hfstats2_2023_up",
+            "btag_lfstats1_2023_up",
+            "btag_lfstats2_2023_up",
             "btag_cferr1_up",
             "btag_cferr2_up",
             # other experimental unc.
@@ -438,10 +460,10 @@ def set_config_defaults_and_groups(config_inst):
         "btag_up": [
             "btag_hf_up",
             "btag_lf_up",
-            "btag_hfstats1_2022_up",
-            "btag_hfstats2_2022_up",
-            "btag_lfstats1_2022_up",
-            "btag_lfstats2_2022_up",
+            "btag_hfstats1_2023_up",
+            "btag_hfstats2_2023_up",
+            "btag_lfstats1_2023_up",
+            "btag_lfstats2_2023_up",
             "btag_cferr1_up",
             "btag_cferr2_up",
         ],
@@ -458,6 +480,11 @@ def set_config_defaults_and_groups(config_inst):
             "jec_Total_up",
         ],
     }
+    config_inst.x.shift_groups["shapes_up"] = [
+        *config_inst.x.shift_groups["theory_up"],
+        *config_inst.x.shift_groups["btag_up"],
+        *config_inst.x.shift_groups["experimental_up"],
+    ],
     for shift_groups in ("all", "theory", "btag", "experimental", "jerc"):
         config_inst.x.shift_groups[shift_groups + "_down"] = [
             shift.replace("_up", "_down") for shift in config_inst.x.shift_groups[shift_groups + "_up"]
@@ -583,8 +610,8 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_sl_resolved": 5,
         "vbfSR_sl_boosted": 3,
         # Dilepton
-        "SR_dl": 20,
-        "vbfSR_dl": 20,
+        "SR_dl": 10,
+        "vbfSR_dl": 10,
         "BR_dl": 3,
         "SR_bjets_incl": 14,
         "vbfSR_bjets_incl": 14,

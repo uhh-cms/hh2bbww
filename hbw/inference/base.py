@@ -523,6 +523,7 @@ class HBWInferenceModelBase(InferenceModel):
                     shift_source=shift_source,
                 )
                 for config_inst in self.config_insts
+                if config_inst.has_shift(f"{shift_source}_up")
             }
 
             self.add_parameter(

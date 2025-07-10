@@ -681,6 +681,8 @@ class PlotShiftedInferencePlots(
                             # close the figure to avoid memory issues
                             plt.close(fig)
 
+            logger.info(f"Finished creating plots for shifted inference model {cat_name}.")
+
 
 class PrepareInferenceTaskCalls(HBWInferenceModelBase):
     """
