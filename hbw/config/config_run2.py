@@ -643,11 +643,10 @@ def add_config(
             cfg,
             unc,
             {
-                f"normalized_{col}_weight": f"normalized_{unc}_weight_" + "{direction}",
-                f"{col}_weight": f"{unc}_weight_" + "{direction}",
+                f"normalized_{col}_weight": f"normalized_{col}_weight_" + "{direction}",
+                f"{col}_weight": f"{col}_weight_" + "{direction}",
             },
         )
-
     # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=999209, type="shape")
     # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=999210, type="shape")
     # add_shift_aliases(
