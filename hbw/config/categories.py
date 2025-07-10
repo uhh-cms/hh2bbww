@@ -398,11 +398,11 @@ def add_categories_ml(config, ml_model_inst):
 
     # NOTE: needed for downstream tasks that use the non-mixed dycr categories, but
     # category_ids Producer would not produce the corresponding categories as it is right now
-    dycr__nonmixed = config.add_category(  # noqa: F841
-        name="dycr__nonmixed",
+    dycr__2mu = config.add_category(  # noqa: F841
+        name="dycr__2mu",
         selection="catid_never",  # dummy Categorizer, never selected
         id=2349237509,
-        label="dycr (Nonmixed)",
+        label="dycr (2mu)",
     )
 
     # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
