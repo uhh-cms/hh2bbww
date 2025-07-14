@@ -31,12 +31,14 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     This producer is only to explore the different possible triggers and their combinations.
     """
 
+    year = self.config_inst.campaign.x.year
+
     # TODO: check if trigger were fired by unprescaled L1 seed
     trig_ids = ak.Array([["allEvents"]] * len(events))
 
     for channel in self.channel:
         # add individual triggers
-        for trigger in self.config_inst.x.sl_triggers[f"{self.config_inst.x.year}"][channel]:
+        for trigger in self.config_inst.x.sl_triggers[f"{year}"][channel]:
             if not ak.any(trig_ids == trigger):  # avoid double counting
                 trig_passed = ak.where(events.HLT[trigger], [[trigger]], [[]])
                 trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
@@ -238,9 +240,9 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         2023: combinations23
     }
 
-    for key in combinations[self.config_inst.x.year].keys():
+    for key in combinations[year].keys():
         trig_passed = ak.Array([0] * len(events))
-        for trigger in combinations[self.config_inst.x.year][key]:
+        for trigger in combinations[year][key]:
             trig_passed = trig_passed | (events.HLT[trigger])
         trig_passed = ak.where(trig_passed, [[key]], [[]])
         trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
@@ -253,10 +255,40 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 # initialize the trigger producer, triggers can be set in the trigger config
 @trigger_prod_sl.init
 def trigger_prod_sl_init(self: Producer) -> None:
-
-    for channel in self.config_inst.x.sl_triggers[f"{self.config_inst.x.year}"]:
-        for trigger in self.config_inst.x.sl_triggers[f"{self.config_inst.x.year}"][channel]:
+    year = self.config_inst.campaign.x.year
+    for channel in self.config_inst.x.sl_triggers[f"{year}"]:
+        for trigger in self.config_inst.x.sl_triggers[f"{year}"][channel]:
             self.uses.add(f"HLT.{trigger}")
+
+
+# sl trigger prod using the single lepton trigger ids
+@producer(
+    produces={"trig_ids"},
+    channel=["m", "e"],
+    version=1,
+)
+def trigger_prod_sl_ids(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Uses the trigger_ids produced during the selection to build additional combinations of triggers.
+    """
+    # initialize the trigger ids column filled with the labels
+    trig_ids = ak.Array([["allEvents"]] * len(events))
+    # add individual triggers
+    for trigger in self.config_inst.x.triggers:
+        trig_passed = ak.any(events.trigger_ids == trigger.id, axis=1)
+        trig_ids = ak.concatenate([trig_ids, ak.where(trig_passed, [[trigger.hlt_field]], [[]])], axis=1)
+
+    events = set_ak_column(events, "trig_ids", trig_ids)
+
+    return events
+
+
+@trigger_prod_sl_ids.init
+def trigger_prod_sl_ids_init(self: Producer) -> None:
+    """
+    Initialize the single lepton trigger producer, triggers can be set in the trigger config.
+    """
+    self.uses.add("trigger_ids")
 
 
 ########################################################################################################################
@@ -430,7 +462,42 @@ def trigger_prod_db(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         trig_passed = ak.where(events.HLT[trigger.hlt_field], [[trigger.hlt_field]], [[]])
         trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
-    trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+    mixed_trigger_sequence = {
+        "emu_dilep": ["Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ"],
+        "emu_single": ["Ele30_WPTight_Gsf", "IsoMu24"],
+        "emu_electronjet": ["Ele50_CaloIdVT_GsfTrkIdT_PFJet165"],
+    }
+    ee_trigger_sequence = {
+        "ee_dilep": ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL", "DoubleEle33_CaloIdL_MW"],
+        "ee_single": ["Ele30_WPTight_Gsf"],
+        "ee_electronjet": ["Ele50_CaloIdVT_GsfTrkIdT_PFJet165"],
+    }
+    mm_trigger_sequence = {
+        "mm_dilep": ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8"],
+        "mm_single": ["IsoMu24"],
+    }
+    trigger_sequence = {
+        "ee": ee_trigger_sequence,
+        "mm": mm_trigger_sequence,
+        "mixed": mixed_trigger_sequence
+    }
+
+    for channel in self.channel:
+        seq_trigger = ak.Array([0] * len(events))
+        seq_label = ""
+        for label, triggers in trigger_sequence[channel].items():
+            triggers_mask = ak.Array([0] * len(events))
+            for trigger in triggers:
+                triggers_mask = triggers_mask | (events.HLT[trigger])
+                seq_trigger = seq_trigger | (events.HLT[trigger])
+
+            trig_passed = ak.where(triggers_mask, [[label]], [[]])
+            trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
+
+            seq_label += label + "+"
+            if "+" in seq_label[:-1]:
+                trig_passed = ak.where(seq_trigger, [[seq_label[:-1]]], [[]])
+                trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
     events = set_ak_column(events, "trig_ids", trig_ids)
 
@@ -442,4 +509,30 @@ def trigger_prod_db(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def trigger_prod_db_init(self: Producer) -> None:
 
     for trigger in self.config_inst.x("triggers", []):
+        self.uses.add(f"HLT.{trigger.hlt_field}")
+    self.uses.add("run")
+
+
+# checks to see what the individual trigger checks do
+@producer(
+    produces={"trig_ids"},
+    version=1,
+)
+def trigger_check(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Checks the individual trigger checks and returns a column with the results.
+    This is only for debugging purposes.
+    """
+
+    from hbw.util import debugger
+    debugger()
+
+    return events
+
+
+# initialize the trigger check producer
+@trigger_check.init
+def trigger_check_init(self: Producer) -> None:
+
+    for trigger in self.config_inst.x.triggers:
         self.uses.add(f"HLT.{trigger.hlt_field}")

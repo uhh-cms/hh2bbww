@@ -81,6 +81,11 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
 
+    if config.has_tag("is_sl"):
+        config.add_process(config.x.procs.n.qcd)
+    if config.has_tag("is_dl") and config.has_tag("is_for_sf"):
+        config.add_process(config.x.procs.n.sf_bkg)
+
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)
 

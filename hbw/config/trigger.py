@@ -317,7 +317,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=30.0,
                 # filter names:
                 # hltEle30WPTightGsfTrackIsoFilter
-                trigger_bits=2**1,  # 1e (WPTight) (bit 1)
+                trigger_bits=2**1,  # 1e (WPTight) (bit 1) + 2**18 + 2**11
             ),
         ],
         aux={
@@ -348,7 +348,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=23.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0) 2**5 (leg 2)
             ),
             TriggerLeg(
                 pdg_id=11,
@@ -408,13 +408,13 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 pdg_id=11,
                 min_pt=33.0,
                 # filter names: TODO
-                trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
+                trigger_bits=2**4,  # 2e (bit 4) wrong + CaloIdL_MW (no bit?) 2**16
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=33.0,
                 # filter names: TODO
-                trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
+                trigger_bits=2**4,  # 2e (bit 4) wrong + CaloIdL_MW (no bit?) 2**16
             ),
         ],
         aux={
@@ -444,7 +444,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=23.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0)
+                trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0) (bit 6 for electrons exist but is wrong)
             ),
             TriggerLeg(
                 pdg_id=11,
@@ -515,3 +515,219 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         ])
     else:
         raise ValueError("Analysis, please set the 'is_dl' or 'is_sl' tag")
+
+
+# new triggers for single lepton channel
+@call_once_on_config()
+def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
+    """
+    Adds all single lepton triggers to a *config*.
+    """
+    if not config.has_tag("is_sl"):
+        raise ValueError("This function should only be called for single lepton analysis")
+
+    single_mu = Trigger(
+        name="HLT_IsoMu24",
+        id=101,
+        legs=[
+            TriggerLeg(
+                pdg_id=13,
+                min_pt=24.0,
+                # filter names:
+                # hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p08 (1mu + Iso)
+                trigger_bits=2**1 + 2**3,  # Iso (bit 1) + 1mu (bit 3)
+            ),
+        ],
+        aux={
+            "channels": ["mu", "mm", "emu", "mue", "mixed"],
+            "data_stream": "data_mu",
+            "L1_seeds": ["SingleMu22"],
+        },
+        tags={"single_trigger", "single_mu"},
+    )
+    single_e = Trigger(
+        name="HLT_Ele30_WPTight_Gsf",
+        id=201,
+        legs=[
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=30.0,
+                # filter names:102
+                # hltEle30WPTightGsfTrackIsoFilter
+                trigger_bits=2**1,  # 1e (WPTight) (bit 1)
+            ),
+        ],
+        aux={
+            "channels": ["e", "ee", "emu", "mue", "mixed"],
+            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "SingleEG38er2p5",
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+                "SingleEG36er2p5",
+                "SingleIsoEG30er2p1",
+                "SingleIsoEG32er2p1",
+                "SingleIsoEG30er2p5",
+                "SingleIsoEG32er2p5",
+                "SingleIsoEG34er2p5",
+            ],
+        },
+        tags={"single_trigger", "single_e"},
+    )
+    ele28_ht150 = Trigger(
+        name="HLT_Ele28_eta2p1_WPTight_Gsf_HT150",
+        id=202,
+        legs=[
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=28.0,
+                # filter names: TODO
+                trigger_bits=2**1,  # 1e (WPTight) (bit 1)
+            ),
+            TriggerLeg(
+                pdg_id=3,  # ht
+                min_pt=150.0,
+                # filter names: TODO
+                # trigger_bits=2**2,  # HT (bit 2)
+            ),
+        ],
+        aux={
+            "channels": ["e"],
+            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": [
+                "LooseIsoEG28er2p1_HTT100er",
+                "SingleEG38er2p5",
+                "SingleEG40er2p5",
+                "SingleEG42er2p5",
+                "SingleEG45er2p5",
+                "SingleEG36er2p5",
+                "SingleIsoEG30er2p1",
+                "SingleIsoEG32er2p1",
+                "SingleIsoEG30er2p5",
+                "SingleIsoEG32er2p5",
+                "SingleIsoEG34er2p5",
+            ],
+        },
+        tags={"ele_trigger", "ele28_ht150"},
+    )
+    ele15_ht450 = Trigger(
+        name="HLT_Ele15_IsoVVVL_PFHT450",
+        id=203,  # TODO: change id, same as ele50, dont use both
+        legs=[
+            TriggerLeg(
+                pdg_id=11,
+                min_pt=15.0,
+                # filter names: TODO
+                # no bits
+            ),
+            TriggerLeg(
+                pdg_id=3,  # ht
+                min_pt=450.0,
+                # filter names: TODO
+                # no bits
+            ),
+        ],
+        aux={
+            "channels": ["e"],
+            "data_stream": "data_egamma" if config.x.run == 3 else "data_e",
+            "L1_seeds": ["HTT360er", "ETT2000"],
+        },
+        tags={"ele_trigger", "ele15_ht450"},
+    )
+    quad_pfjet_70_50_40_35 = Trigger(
+        name="HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+        id=501,
+        legs=[
+            TriggerLeg(
+                pdg_id=1,  # jet
+                min_pt=70.0,
+                # filter names: TODO
+                trigger_bits=2**22 + 2**23 + 2**26,
+            ),
+            TriggerLeg(
+                pdg_id=1,  # jet
+                min_pt=50.0,
+                # filter names: TODO
+                trigger_bits=2**6 + 2**21 + 2**26,
+            ),
+            TriggerLeg(
+                pdg_id=1,  # jet
+                min_pt=40.0,
+                # filter names: TODO
+                trigger_bits=2**1 + 2**8 + 2**26,
+            ),
+            TriggerLeg(
+                pdg_id=1,  # jet
+                min_pt=35.0,
+                # filter names: TODO
+                trigger_bits=2**0 + 2**4 + 2**26,
+            ),
+        ],
+        aux={
+            "channels": ["e", "mu"],
+            "data_stream": "data_jethtmet",
+            "L1_seeds": [
+                "HTT360er",
+                "HTT400er",
+                "HTT450er",
+                "HTT320er_QuadJet_70_55_40_40_er2p5",
+                "HTT320er_QuadJet_80_60_er2p1_45_40_er2p3",
+                "HTT320er_QuadJet_80_60_er2p1_50_45_er2p3",
+                "Mu6_HTT240er",
+            ],
+        },
+        tags={"jet_trigger", "quad_pfjet_70_50_40_35"},
+    )
+    mu50 = Trigger(
+        name="HLT_Mu50",
+        id=103,
+        legs=[
+            TriggerLeg(
+                pdg_id=13,
+                min_pt=50.0,
+                # filter names: TODO
+                trigger_bits=2**10,  # 1mu (Mu50) (bit 10)
+            ),
+        ],
+        aux={
+            "channels": ["mu"],
+            "data_stream": "data_mu",
+            "L1_seeds": ["SingleMu22", "SingleMu25"],
+        },
+        tags={"mu_trigger", "mu50"},
+    )
+    mu15_ht450 = Trigger(
+        name="HLT_Mu15_IsoVVVL_PFHT450",
+        id=104,
+        legs=[
+            TriggerLeg(
+                pdg_id=13,
+                min_pt=15.0,
+                # filter names: TODO
+                # no bits
+            ),
+            TriggerLeg(
+                pdg_id=3,  # ht
+                min_pt=450.0,
+                # filter names: TODO
+                # no bits
+            ),
+        ],
+        aux={
+            "channels": ["mu"],
+            "data_stream": "data_mu",
+            "L1_seeds": ["HTT360er", "ETT2000"],
+        },
+        tags={"mu_trigger", "mu15_ht450"},
+    )
+
+    config.x.triggers = od.UniqueObjectIndex(Trigger, [
+        single_e,
+        single_mu,
+        ele28_ht150,
+        ele15_ht450,
+        quad_pfjet_70_50_40_35,
+        mu50,
+        mu15_ht450,
+    ])

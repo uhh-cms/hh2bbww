@@ -253,7 +253,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             *config.x.if_era(cfg_tag="is_sl", values=[
                 # "qcd_em_pt15to20_pythia",
                 # "qcd_em_pt20to30_pythia",
-                "qcd_em_pt30to50_pythia",
+                # "qcd_em_pt30to50_pythia",
                 "qcd_em_pt50to80_pythia",
                 "qcd_em_pt80to120_pythia",
                 "qcd_em_pt120to170_pythia",

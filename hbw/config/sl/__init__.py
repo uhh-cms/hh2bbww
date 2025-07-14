@@ -17,5 +17,5 @@ def configure_sl(config: od.Config):
     """
 
     # add qcd as process
-    config.add_process(config.x.procs.n.qcd)
+    # config.add_process(config.x.procs.n.qcd)
     return

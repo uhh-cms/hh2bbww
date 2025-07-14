@@ -12,7 +12,7 @@ import order as od
 
 from columnflow.tasks.framework.base import Requirements, ShiftTask, TaskShifts
 from columnflow.tasks.framework.mixins import (
-    CalibratorClassesMixin, SelectorClassMixin, ProducerClassesMixin,
+    CalibratorClassesMixin, SelectorClassMixin, ProducerClassesMixin, ReducerClassMixin, HistProducerClassMixin,
     # CalibratorsMixin, SelectorMixin, ProducersMixin,
     MLModelsMixin,
     CategoriesMixin,
@@ -113,8 +113,10 @@ class PlotVariablesMultiHistProducer(
     HBWTask,
     CalibratorClassesMixin,
     SelectorClassMixin,
+    ReducerClassMixin,
     ProducerClassesMixin,
     MLModelsMixin,
+    HistProducerClassMixin,
     CategoriesMixin,
     ProcessPlotSettingMixin,
     VariablePlotSettingMixin,
@@ -271,9 +273,9 @@ class PlotVariablesMultiHistProducer(
                         # axis selections
                         h = h[{
                             "process": [
-                                hist.loc(p.id)
+                                hist.loc(p.name)
                                 for p in sub_process_insts[process_inst]
-                                if p.id in h.axes["process"]
+                                if p.name in h.axes["process"]
                             ],
                             "category": [
                                 hist.loc(c.name)

@@ -38,27 +38,17 @@ processes = [
 # All categories to be included in the final datacard
 config_categories = [
     # Signal regions
-    "sr__1e__1b__ml_sig_ggf",
-    "sr__1e__2b__ml_sig_ggf",
-    "sr__1e__1b__ml_sig_vbf",
-    "sr__1e__2b__ml_sig_vbf",
-    "sr__1mu__1b__ml_sig_ggf",
-    "sr__1mu__2b__ml_sig_ggf",
-    "sr__1mu__1b__ml_sig_vbf",
-    "sr__1mu__2b__ml_sig_vbf",
+    "sr__1b__ml_sig_ggf",
+    "sr__2b__ml_sig_ggf",
+    "sr__1b__ml_sig_vbf",
+    "sr__2b__ml_sig_vbf",
     # Background regions
-    "sr__1e__1b__ml_tt",
-    "sr__1e__2b__ml_tt",
-    "sr__1e__1b__ml_st",
-    "sr__1e__2b__ml_st",
-    "sr__1e__1b__ml_w_lnu",
-    "sr__1e__2b__ml_w_lnu",
-    "sr__1mu__1b__ml_tt",
-    "sr__1mu__2b__ml_tt",
-    "sr__1mu__1b__ml_st",
-    "sr__1mu__2b__ml_st",
-    "sr__1mu__1b__ml_w_lnu",
-    "sr__1mu__2b__ml_w_lnu",
+    "sr__1b__ml_tt",
+    "sr__2b__ml_tt",
+    "sr__1b__ml_st",
+    "sr__2b__ml_st",
+    "sr__1b__ml_dy_w_lnu",
+    "sr__2b__ml_dy_w_lnu",
 ]
 
 rate_systematics = [
@@ -141,7 +131,7 @@ default_cls_dict = {
     "processes": processes,
     "config_categories": config_categories,
     "systematics": rate_systematics,
-    "mc_stats": True,
+    "mc_stats": False,
     "skip_data": True,
 }
 
@@ -165,20 +155,16 @@ backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    # "st_schannel",  # Not datasets anyways
+    # "st_schannel",  # No datasets anyways
     "tt",
-    # "st",
-    # "ttw",  # TODO: dataset not working?
-    # "ttz",
     "dy",
     "w_lnu",
-    # "vv",
-    # "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    # "ttv",  # TODO
-    # "ttvv",  # TODO
+    "vv",
+    "h",
+    "ttv",  # TODO
     # "vvv",  # TODO
     # TODO: add thq, thw, bbh
-    "qcd",  # probably not needed
+    "qcd",
 ]
 
 processes_dict = {
@@ -193,9 +179,9 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     Function to set the config variable for the binary model.
     """
     if "sig_ggf" in config_cat_inst.name:
-        return "logit_mlscore.sig_ggf_binary"
+        return "logit_mlscore.sig_binary_ggf"
     elif "sig_vbf" in config_cat_inst.name:
-        return "logit_mlscore.sig_vbf_binary"
+        return "logit_mlscore.sig_binary_vbf"
     elif config_cat_inst.x.root_cats.get("dnn"):
         return "mlscore.max_score"
     else:
@@ -204,75 +190,44 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
 
 sl = HBWInferenceModelBase.derive("sl", cls_dict=default_cls_dict)
 
-sl_syst = sl.derive("sl_syst", cls_dict={"systematics": systematics})
+sl_rate = sl.derive("sl_rate", cls_dict={
+    "ml_model_name": ["sl_22post", "sl_22post_binary_ggf", "sl_22post_binary_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": rate_systematics,
+    "processes": processes_dict["hwwzztt"],
+})
 
-cls_dict_test = {
-    "ml_model_name": "sl_22post",
-    "processes": [
-        "hh_ggf_hbb_hwwqqlnu_kl0_kt1",
-        "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
-        "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
-        "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
-        "tt",
-    ],
-    "config_categories": [
-        "sr__1e__ml_sig_ggf",
-        "sr__1e__ml_tt",
-    ],
-    "systematics": [
-        "lumi_13TeV_2016",
-        "lumi_13TeV_2017",
-        "lumi_13TeV_1718",
-        "lumi_13TeV_2022",
-        "lumi_13TeV_2023",
-        "lumi_13TeV_correlated",
-    ],
-}
-
-sl_test = sl.derive("sl_test", cls_dict=cls_dict_test)
-
-processes_ggf = [
-    "hh_ggf_hbb_hwwqqlnu_kl0_kt1",
-    "hh_ggf_hbb_hwwqqlnu_kl1_kt1",
-    "hh_ggf_hbb_hwwqqlnu_kl2p45_kt1",
-    "hh_ggf_hbb_hwwqqlnu_kl5_kt1",
-    # "hh_vbf_hbb_hwwqqlnu_kv1_k2v1_kl1",
-    # "hh_vbf_hbb_hwwqqlnu_kv1_k2v0_kl1",
-    # "hh_vbf_hbb_hwwqqlnu_kvm0p962_k2v0p959_klm1p43",
-    # "hh_vbf_hbb_hwwqqlnu_kvm1p21_k2v1p94_klm0p94",
-    # "hh_vbf_hbb_hwwqqlnu_kvm1p6_k2v2p72_klm1p36",
-    # "hh_vbf_hbb_hwwqqlnu_kvm1p83_k2v3p57_klm3p39",
-    "tt",
-    "st_tchannel", "st_twchannel",
-    "dy",
-    "w_lnu",
-    "qcd",
-    "vv",
-]
-
-config_categories_ggf = [
-    # Signal regions
-    "sr__1e__1b__ml_sig_ggf",
-    "sr__1e__2b__ml_sig_ggf",
-    "sr__1mu__1b__ml_sig_ggf",
-    "sr__1mu__2b__ml_sig_ggf",
-    # Background regions
-    "sr__1e__1b__ml_tt",
-    "sr__1e__2b__ml_tt",
-    "sr__1e__1b__ml_st",
-    "sr__1e__2b__ml_st",
-    "sr__1e__1b__ml_w_lnu",
-    "sr__1e__2b__ml_w_lnu",
-    "sr__1mu__1b__ml_tt",
-    "sr__1mu__2b__ml_tt",
-    "sr__1mu__1b__ml_st",
-    "sr__1mu__2b__ml_st",
-    "sr__1mu__1b__ml_w_lnu",
-    "sr__1mu__2b__ml_w_lnu",
-]
-
-sl_syst_ggf = sl.derive("sl_syst_ggf", cls_dict={
+sl_syst = sl.derive("sl_syst", cls_dict={
+    "ml_model_name": ["sl_22post", "sl_22post_binary_ggf", "sl_22post_binary_vbf"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": systematics,
-    "processes": processes_ggf,
-    "config_categories": config_categories_ggf,
+    "processes": processes_dict["hwwzztt"],
+})
+
+sl_rate_v0 = sl.derive("sl_rate_v0", cls_dict={
+    "ml_model_name": ["sl_22post_v0", "sl_22post_binary_ggf_v0", "sl_22post_binary_vbf_v0"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": rate_systematics,
+    "processes": processes_dict["hwwzztt"],
+})
+
+sl_syst_v0 = sl.derive("sl_syst_v0", cls_dict={
+    "ml_model_name": ["sl_22post_v0", "sl_22post_binary_ggf_v0", "sl_22post_binary_vbf_v0"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": systematics,
+    "processes": processes_dict["hwwzztt"],
+})
+
+sl_rate_old = sl.derive("sl_rate_old", cls_dict={
+    "ml_model_name": ["sl_22post_old", "sl_22post_binary_ggf_old", "sl_22post_binary_vbf_old"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": rate_systematics,
+    "processes": processes_dict["hwwzztt"],
+})
+
+sl_syst_old = sl.derive("sl_syst_old", cls_dict={
+    "ml_model_name": ["sl_22post_old", "sl_22post_binary_ggf_old", "sl_22post_binary_vbf_old"],
+    "config_variable": config_variable_binary_ggf_and_vbf,
+    "systematics": systematics,
+    "processes": processes_dict["hwwzztt"],
 })

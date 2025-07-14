@@ -103,9 +103,6 @@ def add_config(
 
     cfg.x.if_era = if_era
 
-    # add tag if used for scale factor calculation
-    # cfg.add_tag("is_for_sf")
-
     # add some important tags to the config
     # TODO: generalize and move to campaign
     cfg.x.cpn_tag = f"{year}{corr_postfix}"
@@ -117,6 +114,9 @@ def add_config(
         cfg.x.lepton_tag = "dl"
     else:
         raise Exception(f"config {cfg.name} needs either the 'is_sl' or 'is_dl' tag")
+
+    # add tag if used for scale factor calculation
+    cfg.add_tag("is_for_sf")
 
     # define all resonant masspoints
     if cfg.has_tag("is_resonant"):
@@ -901,6 +901,8 @@ def add_config(
         skip_column("cutflow.*"),
     } | {
         "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
+    } | {
+        *cfg.x.if_era(cfg_tag="is_sl", values=["Lightjet.btagPNetQvG"])
     }
 
     # Version of required tasks

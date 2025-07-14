@@ -7,6 +7,7 @@ Contains changes to the config needed for the calculation of trigger efficiencie
 
 import order as od
 
+from columnflow.columnar_util import EMPTY_FLOAT
 
 from hbw.util import call_once_on_config
 
@@ -121,42 +122,53 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
         # add combined process with ttbar and drell-yan
         cfg.add_process(cfg.x.procs.n.tt_dy)
 
-        # Change variables
-        # need npvs as floats in the scale factor calculation
-        cfg.variables.remove("npvs")
-        cfg.add_variable(
-            name="npvs",
-            expression=lambda events: events.PV.npvs * 1.0,
-            aux={
-                "inputs": {"PV.npvs"},
-            },
-            binning=(81, 0, 81),
-            x_title="Number of primary vertices",
-            discrete_x=True,
-        )
-        # change lepton pt binning
-        for i in [0, 1]:
-            cfg.variables.get(f"lepton{i}_pt").binning = (240, 0., 240.)
-        # add trigger ids as variables
-        cfg.add_variable(
-            name="trigger_ids",  # these are the trigger IDs saved during the selection
-            aux={"axis_type": "intcat"},
-            x_title="Trigger IDs",
-        )
-        # trigger ids für scale factors
-        cfg.add_variable(
-            name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
-            aux={"axis_type": "strcat"},
-            x_title="Trigger IDs for scale factors",
-        )
-
     ####################################################################################################################
     # Changes for both channels
     ####################################################################################################################
-    # change process scale for signal processes
-    for proc, _, _ in cfg.walk_processes():
-        # unstack signal in plotting
-        if "hh_" in proc.name.lower():
-            proc.add_tag("is_signal")
-            proc.unstack = True
-            proc.scale = None
+    # Change variables
+    # need npvs as floats in the scale factor calculation
+    cfg.add_variable(
+        name="trg_npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=(81, 0, 81),
+        x_title="Number of primary vertices",
+        discrete_x=True,
+    )
+    # change lepton pt binning
+    cfg.add_variable(
+        name="trg_lepton0_pt",
+        expression=lambda events: events.Lepton[:, 0].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Leading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="trg_lepton1_pt",
+        expression=lambda events: events.Lepton[:, 1].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    # add trigger ids as variables
+    cfg.add_variable(
+        name="trigger_ids",  # these are the trigger IDs saved during the selection
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )
+    # trigger ids für scale factors
+    cfg.add_variable(
+        name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
+    )

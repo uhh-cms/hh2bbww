@@ -291,8 +291,26 @@ base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_han
 
 
 # additional hist producers for scale factors
-from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
+from trigger.trigger_cats import (
+    mask_fn_dl_orth_with_l1_seeds, mask_fn_dl_orth, mask_fn_lep_pt_orth,
+    mask_fn_lep_pt, mask_fn_mll_lep, mask_fn_mll_lep_orth,
+)
 
 dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+})
+dl_orth = default_hist_producer.derive("dl_orth", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth,
+})
+dl_lep_pt_orth = default_hist_producer.derive("dl_lep_pt_orth", cls_dict={
+    "categorizer_cls": mask_fn_lep_pt_orth,
+})
+dl_lep_pt = default_hist_producer.derive("dl_lep_pt", cls_dict={
+    "categorizer_cls": mask_fn_lep_pt,
+})
+dl_mll_lep = default_hist_producer.derive("dl_mll_lep", cls_dict={
+    "categorizer_cls": mask_fn_mll_lep,
+})
+dl_mll_lep_orth = default_hist_producer.derive("dl_mll_lep_orth", cls_dict={
+    "categorizer_cls": mask_fn_mll_lep_orth,
 })

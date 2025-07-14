@@ -4,20 +4,28 @@
 Selection modules for HH -> bbWW(qqlnu).
 """
 
+from importlib import import_module
+from functools import partial
+
 from collections import defaultdict
 from typing import Tuple
 
 from columnflow.util import maybe_import
+from columnflow.columnar_util import set_ak_column
 from columnflow.selection import Selector, SelectionResult, selector
 
 from hbw.selection.common import masked_sorted_indices, pre_selection, post_selection, configure_selector
 from hbw.selection.lepton import lepton_definition
 from hbw.selection.jet import jet_selection, sl_boosted_jet_selection, vbf_jet_selection
+from hbw.selection.trigger import hbw_trigger_selection
 from hbw.production.weights import event_weights_to_normalize
 from hbw.util import ak_any
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+
+# helper functions
+set_ak_bool = partial(set_ak_column, value_type=np.bool_)
 
 
 @selector(
@@ -110,30 +118,31 @@ def sl_lepton_selection(
         (ak.sum(electron.is_tight, axis=1) + ak.sum(muon.is_tight, axis=1) == 1)
     )
 
-    for channel, trigger_columns in self.config_inst.x.trigger.items():
-        # apply the "or" of all triggers of this channel
-        if trigger_columns:
-            trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
-        else:
-            # if no trigger is defined, we assume that the event passes the trigger
-            trigger_mask = np.ones(len(events), dtype=np.bool_)
-        lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
+    if self.config_inst.campaign.x.year <= 2018:
+        for channel, trigger_columns in self.config_inst.x.trigger.items():
+            # apply the "or" of all triggers of this channel
+            if trigger_columns:
+                trigger_mask = ak_any([events.HLT[trigger_column] for trigger_column in trigger_columns], axis=0)
+            else:
+                # if no trigger is defined, we assume that the event passes the trigger
+                trigger_mask = np.ones(len(events), dtype=np.bool_)
+            lepton_results.steps[f"Trigger_{channel}"] = trigger_mask
 
-        # ensure that Lepton channel is in agreement with trigger
-        lepton_results.steps[f"TriggerAndLep_{channel}"] = (
-            lepton_results.steps[f"Trigger_{channel}"] & lepton_results.steps[f"Lep_{channel}"]
-        )
+            # ensure that Lepton channel is in agreement with trigger
+            lepton_results.steps[f"TriggerAndLep_{channel}"] = (
+                lepton_results.steps[f"Trigger_{channel}"] & lepton_results.steps[f"Lep_{channel}"]
+            )
 
-    # combine results of each individual channel
-    lepton_results.steps["Trigger"] = ak_any([
-        lepton_results.steps[f"Trigger_{channel}"]
-        for channel in self.config_inst.x.trigger.keys()
-    ], axis=0)
+        # combine results of each individual channel
+        lepton_results.steps["Trigger"] = ak_any([
+            lepton_results.steps[f"Trigger_{channel}"]
+            for channel in self.config_inst.x.trigger.keys()
+        ], axis=0)
 
-    lepton_results.steps["TriggerAndLep"] = ak_any([
-        lepton_results.steps[f"TriggerAndLep_{channel}"]
-        for channel in self.config_inst.x.trigger.keys()
-    ], axis=0)
+        lepton_results.steps["TriggerAndLep"] = ak_any([
+            lepton_results.steps[f"TriggerAndLep_{channel}"]
+            for channel in self.config_inst.x.trigger.keys()
+        ], axis=0)
 
     return events, lepton_results
 
@@ -191,24 +200,17 @@ def sl_lepton_selection_init(self: Selector) -> None:
     elif year == 2022:
         self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
         self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 31)
-        self.config_inst.x.trigger = self.config_inst.x("trigger", {
-            "e": ["Ele30_WPTight_Gsf"],
-            "mu": ["IsoMu24"],
-        })
     elif year == 2023:
         self.config_inst.x.mu_pt = self.config_inst.x("mu_pt", 25)
         self.config_inst.x.ele_pt = self.config_inst.x("ele_pt", 31)
-        self.config_inst.x.trigger = self.config_inst.x("trigger", {
-            "e": ["Ele30_WPTight_Gsf"],
-            "mu": ["IsoMu24"],
-        })
     else:
         raise Exception(f"Single lepton trigger not implemented for year {year}")
 
-    # add all required trigger to the uses
-    for trigger_columns in self.config_inst.x.trigger.values():
-        for column in trigger_columns:
-            self.uses.add(f"HLT.{column}")
+    if year in (2016, 2017, 2018):
+        # add all required trigger to the uses
+        for trigger_columns in self.config_inst.x.trigger.values():
+            for column in trigger_columns:
+                self.uses.add(f"HLT.{column}")
 
 
 @selector(
@@ -220,6 +222,7 @@ def sl_lepton_selection_init(self: Selector) -> None:
     ele2_pt=None,
     trigger=None,
     jet_pt=None,
+    trigger_config_func=lambda self: getattr(import_module("hbw.config.trigger"), "add_triggers")(self.config_inst),
     n_jet=None,
     n_btag=None,
     version=1,
@@ -237,6 +240,11 @@ def sl1(
     # lepton selection
     events, lepton_results = self[sl_lepton_selection](events, stats, **kwargs)
     results += lepton_results
+
+    # trigger selection
+    if self.config_inst.campaign.x.year >= 2022:
+        events, trigger_results = self[hbw_trigger_selection](events, lepton_results, stats, **kwargs)
+        results += trigger_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, lepton_results, stats, **kwargs)
@@ -260,17 +268,28 @@ def sl1(
         (jet_step & bjet_step) | results.steps.HbbJet
     )
 
-    # combined event selection after all steps except b-jet selection
-    results.steps["all_but_bjet"] = (
+    results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
-        (jet_step | results.steps.HbbJet_no_bjet) &
+        jet_step &
         results.steps.ll_lowmass_veto &
         results.steps.ll_zmass_veto &
         results.steps.DileptonVeto &
         results.steps.Lepton &
         results.steps.VetoTau &
+        results.steps.SR
+    )
+
+    # combined event selection after all steps except b-jet selection
+    results.steps["all_but_bjet"] = (
+        results.steps.all_but_trigger_and_bjet &
+        results.steps.data_double_counting &
         results.steps.Trigger &
         results.steps.TriggerAndLep
+    )
+
+    results.steps["all_but_trigger"] = (
+        results.steps.all_but_trigger_and_bjet &
+        bjet_step
     )
 
     # combined event selection after all steps
@@ -278,13 +297,20 @@ def sl1(
     #       gets categorized into the resolved category, we might need to cut again on the number of b-jets
     results.steps["all"] = results.event = (
         results.steps.all_but_bjet &
-        ((jet_step & bjet_step) | results.steps.HbbJet)
+        (jet_step & bjet_step)
     )
     results.steps["all_SR"] = results.event & results.steps.SR
     results.steps["all_Fake"] = results.event & results.steps.Fake
 
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
+
+    # keep various steps for last-minute selection changes
+    keep_steps = (
+        "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet"
+    )
+    for step in keep_steps:
+        events = set_ak_bool(events, f"steps.{step}", results.steps[step])
 
     return events, results
 
@@ -305,13 +331,13 @@ def sl1_init(self: Selector) -> None:
     self.uses = {
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, sl_lepton_selection,
+        jet_selection, sl_lepton_selection, hbw_trigger_selection,
         post_selection,
     }
     self.produces = {
         pre_selection,
         vbf_jet_selection, sl_boosted_jet_selection,
-        jet_selection, sl_lepton_selection,
+        jet_selection, sl_lepton_selection, hbw_trigger_selection,
         post_selection,
     }
 
@@ -342,3 +368,12 @@ sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
 })
 
 sl1_test = sl1.derive("sl1_test", cls_dict={"version": 0})
+
+sl_22new = sl1.derive("sl_22new", cls_dict={
+    "version": 0,
+    "trigger_config_func": lambda self: getattr(import_module("hbw.config.trigger"), "add_new_sl_triggers")(self.config_inst),  # noqa: E501
+    "mu_pt": 15.,
+    "mu2_pt": 15.,
+    "ele_pt": 15.,
+    "ele2_pt": 15.,
+})

@@ -294,10 +294,10 @@ ml_processes = [
     "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
     "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-    "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd",
+    "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd", "dy_w_lnu",
     "dy_m50toinf", "tt_dl", "st_tchannel_t",
-    "bkg_binary", "sig_ggf_binary", "sig_vbf_binary",
-    "sig_ggf", "sig_vbf",
+    "bkg_binary", "sig_ggf_binary", "sig_vbf_binary", "sig_binary_ggf", "sig_binary_vbf",
+    "sig_ggf", "sig_vbf", "bkg_binary_ggf", "bkg_binary_vbf",
 ]
 for proc in ml_processes:
     @categorizer(

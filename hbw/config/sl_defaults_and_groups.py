@@ -137,6 +137,27 @@ def set_sl_config_defaults_and_groups(config_inst):
     hh_sm = [
         "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "hh_ggf_hbb_hzz_kl1_kt1", "hh_ggf_hbb_htt_kl1_kt1",
     ]
+    # hhprocs = lambda hhdecay: [
+    #     f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
+    #     f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
+    #     f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
+    #     f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
+    #     f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
+    #     f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
+    #     f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
+    #     f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
+    #     f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
+    #     f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+    #     f"hh_ggf_{hhdecay}_kl0_kt1",
+    #     f"hh_ggf_{hhdecay}_kl1_kt1",
+    #     f"hh_ggf_{hhdecay}_kl2p45_kt1",
+    #     f"hh_ggf_{hhdecay}_kl5_kt1",
+    # ]
+    # processes_dict = {
+    #     "default": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
+    #     "hww": [*backgrounds, *hhprocs("hbb_hww")],
+    #     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+    # }
 
     # process groups for conveniently looping over certain processs
     # (used in wrapper_factory and during plotting)
@@ -186,6 +207,7 @@ def set_sl_config_defaults_and_groups(config_inst):
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "sl1": ["hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -258,6 +280,7 @@ def set_sl_config_defaults_and_groups(config_inst):
         "ml": ["hh_ggf*kl1_kt1", "tt_*", "st_*", "dy_*", "w_lnu_*"],
         "dilep": ["tt_*", "st_*", "dy_*", "w_lnu_*", "hh_ggf_*"],
         "h": ["h_ggf_*", "h_vbf_*", "zh_*", "wph_*", "wmh_*", "tth_*", "ttzh_*", "ttwh_*"],
+        "sl_inf": ["hh_ggf*", "hh_vbf*", "tt_*", "st_*", "w_lnu_*", "dy_*", "qcd_*", "ttz_*", "ww_*", "wz_*", "zz_*"],
     }
     if config_inst.name == "l22post":
         config_inst.x.dataset_groups["test123"] = ["tt_dl_powheg", "tt_sl_powheg"]
@@ -310,8 +333,8 @@ def set_sl_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
-        "SR_sig_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{sig_ggf,sig_vbf}"]),
-        "SR_bkg_sl": bracket_expansion(["sr__{1e,1mu}__{1b,2b}__ml_{tt,st,w_lnu}"]),
+        "SR_sig_sl": bracket_expansion(["sr{,__1e,__1mu}{,__1b,__2b}__ml_{sig_ggf,sig_vbf,sig_binary_ggf,sig_binary_vbf}"]),  # noqa: E501
+        "SR_bkg_sl": bracket_expansion(["sr{,__1e,__1mu}{,__1b,__2b}__ml_{tt,st,w_lnu,dy_w_lnu,qcd,bkg_binary_ggf,bkg_binary_vbf}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables

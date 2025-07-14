@@ -126,6 +126,9 @@ class MLDatasetLoader:
         if not skip_mask:
             self._events = events[proc_mask]
             self._events = events[events.event_weight >= 0.0]
+            if "tt" in process:
+                # only use every tenth event for tt process
+                self._events = self._events[::10]
         else:
             self._events = events
 

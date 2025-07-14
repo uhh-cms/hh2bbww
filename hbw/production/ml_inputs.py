@@ -226,7 +226,7 @@ def common_ml_inputs_init(self: Producer) -> None:
 
 
 @producer(
-    uses={common_ml_inputs},
+    uses={common_ml_inputs, "Lightjet.btagPNetQvG"},
     produces={common_ml_inputs},
     # produced columns set in the init function
     version=1,
@@ -238,6 +238,12 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     met_name = self.config_inst.x.met_name
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
+
+    # jet features
+    events = set_ak_column_f32(events, "mli_j1_btagPNetQvG", events.Lightjet[:, 0].btagPNetQvG)
+    events = set_ak_column_f32(events, "mli_j2_btagPNetQvG", events.Lightjet[:, 1].btagPNetQvG)
+    events = set_ak_column_f32(events, "mli_dphi_j1l", abs(events.Lightjet[:, 0].delta_phi(events.Lepton[:, 0])))
+    events = set_ak_column_f32(events, "mli_dphi_j2l", abs(events.Lightjet[:, 1].delta_phi(events.Lepton[:, 0])))
 
     # wjj features
     events = set_ak_column_f32(events, "mli_dr_jj", events.Lightjet[:, 0].delta_r(events.Lightjet[:, 1]))
@@ -312,6 +318,8 @@ def sl_ml_inputs_init(self: Producer) -> None:
         "mli_dphi_bb_jjl", "mli_dr_bb_jjl", "mli_dphi_bb_nu", "mli_dphi_jj_nu", "mli_dr_bb_l", "mli_dr_jj_l",
         "mli_mbbjjlnu", "mli_mbbjjl", "mli_mindr_jj",
         "mli_s_min",
+        # jet features
+        "mli_j1_btagPNetQvG", "mli_j2_btagPNetQvG", "mli_dphi_j1l", "mli_dphi_j2l",
     }
     self.produces |= self.ml_input_columns
 

@@ -329,3 +329,27 @@ def add_sl_ml_variables(config: od.Config) -> None:
         log_x=True,
         x_title=r"$S_{min}$",
     )
+    config.add_variable(
+        name="mli_j1_btagPNetQvG",
+        expression="mli_j1_btagPNetQvG",
+        binning=(40, 0, 1),
+        x_title=r"Lightjet 1 btag PNet QvG score",
+    )
+    config.add_variable(
+        name="mli_j2_btagPNetQvG",
+        expression="mli_j2_btagPNetQvG",
+        binning=(40, 0, 1),
+        x_title=r"Lightjet 2 btag PNet QvG score",
+    )
+    config.add_variable(
+        name="mli_dphi_j1l",
+        expression="mli_dphi_j1l",
+        binning=(40, 0, 3.2),
+        x_title=r"$\Delta\Phi(j1,l)$",
+    )
+    config.add_variable(
+        name="mli_dphi_j2l",
+        expression="mli_dphi_j2l",
+        binning=(40, 0, 3.2),
+        x_title=r"$\Delta\Phi(j2,l)$",
+    )

@@ -59,6 +59,14 @@ def modify_cmsdb_processes():
         color=color_palette["red"],
     )
 
+    sf_bkg = create_parent_process(  # noqa: F841
+        [h, ttv, vv, w_lnu, dy, st, tt],
+        name="sf_bkg",
+        id=99890207,
+        label="sf_bkg",
+        color=color_palette["green"],
+    )
+
     decay_map = {
         "lf": {
             "name": "lf",
