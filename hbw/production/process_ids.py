@@ -68,6 +68,9 @@ def hbw_process_ids_init(self: Producer) -> None:
     elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
         # stitching of DY NLO samples
         self.process_producer = dy_nlo_process_producer
+    elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
+        # stitching of DY NLO samples
+        self.process_producer = w_lnu_nlo_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
     else:
@@ -195,6 +198,30 @@ def hh_bbvv_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.A
         f"{base_proc_name}_hbb_hzz2q2nu_{k_params}": (n_clep == 0) & (n_neutrino == 2) & (n_z == 2),
         f"{base_proc_name}_hbb_hzz4nu_{k_params}": (n_clep == 0) & (n_neutrino == 4) & (n_z == 2),
         f"{base_proc_name}_hbb_hzz4q_{k_params}": (n_clep == 0) & (n_neutrino == 0) & (n_z == 2),
+    }
+
+    process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)
+    events = set_ak_column(events, "process_id", process_id, value_type=np.int32)
+
+    return events
+
+
+@producer(
+    uses={"LHE.NpNLO"},
+    produces={"process_id"},
+)
+def w_lnu_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    n_partons = events.LHE.NpNLO
+    base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
+    if base_proc_name != "w_lnu":
+        raise NotImplementedError(
+            f"Process Producer {self.cls_name} for dataset {self.dataset_inst.name} not implemented",
+        )
+    process_masks = {
+        f"{base_proc_name}_0j": n_partons == 0,
+        f"{base_proc_name}_1j": n_partons == 1,
+        f"{base_proc_name}_2j": n_partons == 2,
+        f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
     }
 
     process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)

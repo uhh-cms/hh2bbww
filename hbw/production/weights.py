@@ -234,6 +234,8 @@ def combined_normalization_weights_init(self: Producer) -> None:
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
     elif "dy_" in self.dataset_inst.name:
         self.norm_weights_producer = stitched_normalization_weights
+    elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
+        self.norm_weights_producer = stitched_normalization_weights
     else:
         self.norm_weights_producer = normalization_weights
 

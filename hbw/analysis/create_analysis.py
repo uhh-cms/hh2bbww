@@ -58,7 +58,7 @@ def create_hbw_analysis(
 
     # cmssw sandboxes that should be bundled for remote jobs in case they are needed
     analysis_inst.set_aux("cmssw_sandboxes", [
-        "$CF_BASE/sandboxes/cmssw_default.sh",
+        # "$CF_BASE/sandboxes/cmssw_default.sh",
     ])
 
     # clear the list when cmssw bundling is disabled
@@ -67,7 +67,9 @@ def create_hbw_analysis(
 
     # config groups for conveniently looping over certain configs
     # (used in wrapper_factory)
-    analysis_inst.set_aux("config_groups", {})
+    analysis_inst.set_aux("config_groups", {  # NOTE: not resolved by ConfigTask
+        "run3": ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+    })
 
     # used by our MLModel (also set in config_inst, so be careful)
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
@@ -112,6 +114,7 @@ def create_hbw_analysis(
                     # cpn_task.run()
 
                 hbw_campaign_inst = cpn_task.output()["hbw_campaign_inst"].load(formatter="pickle")
+                # TODO: here would be the best place to modify the campaign processes
                 return add_config(
                     analysis_inst,
                     hbw_campaign_inst,
@@ -292,14 +295,37 @@ def create_hbw_analysis(
 
     def reuse_hist_producer(task, store_parts):
         from columnflow.histogramming import HistProducer
+        from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
         hist_producer_cls = HistProducer.get_cls(task.hist_producer)
         if hist_producer_cls.nondy_hist_producer and not task.dataset.startswith("dy"):
-            from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
-            # nondy_hist_producer_cls = HistProducer.get_cls(hist_producer_cls.nondy_hist_producer)
-            store_parts["hist_producer"] = ArrayFunctionClassMixin.array_function_cls_repr(
+            hist_producer_repr = ArrayFunctionClassMixin.array_function_cls_repr(
+                task,
+                task.hist_producer,
+            )
+            nondy_hist_producer_repr = ArrayFunctionClassMixin.array_function_cls_repr(
                 task,
                 hist_producer_cls.nondy_hist_producer,
             )
+            store_parts["hist_producer"] = store_parts["hist_producer"].replace(
+                hist_producer_repr,
+                nondy_hist_producer_repr,
+            )
+        return store_parts
+
+    def dataset_version(task, store_parts):
+        """
+        Add the dataset version to the store_parts.
+        This is used to distinguish between different versions of the same dataset.
+        """
+        dataset = store_parts["dataset"]
+        if (dataset_inst := getattr(task, "dataset_inst", None)) and dataset_inst.has_aux("version"):
+            if dataset != dataset_inst.name:
+                raise ValueError(
+                    f"dataset {dataset} does not match dataset_inst {dataset_inst.name}",
+                )
+            if dataset_version := dataset_inst.get_aux("version"):
+                # use the version from the dataset_inst
+                store_parts["dataset"] = f"{dataset}V{dataset_version}"
         return store_parts
 
     def hbw_parts(task, store_parts):
@@ -314,6 +340,8 @@ def create_hbw_analysis(
             store_parts = reorganize_parts(task, store_parts)
         if name in histogram_tasks and task.hist_producer:
             reuse_hist_producer(task, store_parts)
+        if "dataset" in store_parts:
+            store_parts = dataset_version(task, store_parts)
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

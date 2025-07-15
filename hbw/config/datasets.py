@@ -151,6 +151,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
             *config.x.if_era(run=3, values=[
                 "w_lnu_amcatnlo",
+                "w_lnu_0j_amcatnlo",
+                "w_lnu_1j_amcatnlo",
+                "w_lnu_2j_amcatnlo",
             ]),
         ],
         "vv": [
@@ -432,6 +435,8 @@ def configure_hbw_datasets(
 ):
     # allow usage of UHH campaign
     enable_uhh_campaign_usage(config)
+
+    config.get_dataset("w_lnu_amcatnlo").x.version = 1
 
     for dataset in config.datasets:
         if add_dataset_extensions:
