@@ -35,7 +35,8 @@ class CustomCreateYieldTable(
 ):
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    yields_variable = "ptll"
+    # yields_variable = "ptll"
+    yields_variable = "mlscore.max_score"
 
     table_format = luigi.Parameter(
         default="fancy_grid",
@@ -76,6 +77,14 @@ class CustomCreateYieldTable(
         significant=False,
         description="Ratio of two processes to be calculated and added to the table",
     )
+    ratio_modes = law.CSVParameter(
+        default=("ratio", "subtract"),
+        significant=False,
+        description="Mode for the ratio calculation; "
+        "choices: 'ratio' (default) or 'subtract'; "
+        "if 'ratio', the ratio of the two processes is calculated, "
+        "if 'subtract', (p[0] - p[1] + p[2]) / p[2] is calculated, ",
+    )
 
     # upstream requirements
     reqs = Requirements(
@@ -101,15 +110,18 @@ class CustomCreateYieldTable(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
-        reqs["merged_hists"] = [
-            self.reqs.MergeHistograms.req(
-                self,
-                dataset=d,
-                variables=(self.yields_variable,),
-                _exclude={"branches"},
-            )
-            for d in self.datasets
-        ]
+        reqs["merged_hists"] = {
+            config_inst.name: [
+                self.reqs.MergeHistograms.req(
+                    self,
+                    dataset=d,
+                    variables=(self.yields_variable,),
+                    _exclude={"branches"},
+                )
+                for d in self.datasets
+            ]
+            for config_inst in self.config_insts
+        }
 
         return reqs
 
@@ -203,8 +215,6 @@ class CustomCreateYieldTable(
             for process_inst, h in hists.items():
                 processes.append(process_inst)
 
-                # TODO: ratio
-
                 for category_inst in category_insts:
                     leaf_category_insts = category_inst.get_leaf_categories() or [category_inst]
 
@@ -228,13 +238,34 @@ class CustomCreateYieldTable(
                 missing_for_ratio = set(self.ratio[:2]) - set(p.name for p in processes)
                 if missing_for_ratio:
                     logger.warning(f"Cannot do ratio, missing requested processes: {', '.join(missing_for_ratio)}")
-                else:
-                    processes.append(od.Process("Ratio", id=-9871, label=f"{self.ratio[0]} / {self.ratio[1]}"))
-                    num_idx, den_idxs = [processes.index(self.config_inst.get_process(_p)) for _p in self.ratio]
+
+                # default ratio
+                if len(self.ratio) >= 2 and "ratio" in self.ratio_modes:
+                    processes.append(od.Process("Ratio", id=-9870, label=f"{self.ratio[0]} / {self.ratio[1]}"))
+                    num_idx, den_idxs = [processes.index(self.config_inst.get_process(_p)) for _p in self.ratio[:2]]
                     for category_inst in category_insts:
                         num = yields[category_inst][num_idx]
                         den = yields[category_inst][den_idxs]
                         yields[category_inst].append(num / den)
+
+                if len(self.ratio) >= 3 and "subtract" in self.ratio_modes:
+                    num_idx = processes.index(self.config_inst.get_process(self.ratio[0]))
+                    subtract_idx = processes.index(self.config_inst.get_process(self.ratio[1]))
+
+                    for i, estimate_proc in enumerate(self.ratio[2:]):
+                        estimate_idx = processes.index(self.config_inst.get_process(estimate_proc))
+
+                        # subtract the second process from the first one
+                        processes.append(od.Process(
+                            f"Ratio_diff_{estimate_proc}",
+                            id=-9871 + i,
+                            label=f"({self.ratio[0]} - {self.ratio[1]} + {estimate_proc}) / {estimate_proc}",
+                        ))
+                        for category_inst in category_insts:
+                            num = yields[category_inst][num_idx]
+                            subtract = yields[category_inst][subtract_idx]
+                            estimate = yields[category_inst][estimate_idx]
+                            yields[category_inst].append((num - subtract + estimate) / estimate)
 
             # obtain normalizaton factors
             norm_factors = 1
