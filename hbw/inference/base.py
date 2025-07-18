@@ -55,6 +55,8 @@ class HBWInferenceModelBase(InferenceModel):
 
     version = 1
 
+    bjet_cats = {"1b", "2b", "boosted"}
+
     #
     # helper functions and properties
     #
@@ -157,7 +159,7 @@ class HBWInferenceModelBase(InferenceModel):
             syst.format(year=year, bjet_cat=bjet_cat)
             for syst in self.systematics
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
         })
 
         available_procs = set(self.processes)
@@ -184,7 +186,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_rate_unconstrained = {
             unc_formatted: available_procs
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_rate_unconstrained.items()
             if (
                 (unc_formatted := "rate_" + unc.format(year=year, bjet_cat=bjet_cat))
@@ -195,7 +197,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_shape = {
             unc_formatted: available_procs
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_shape.items()
             if (
                 (unc_formatted := unc.format(year=year, bjet_cat=bjet_cat))
@@ -430,7 +432,7 @@ class HBWInferenceModelBase(InferenceModel):
                 "effect": ["1", "[0,2]"],
             }
 
-            for bjet_cat in ("1b", "2b"):
+            for bjet_cat in self.bjet_cats:
                 if syst_name.endswith(bjet_cat):
                     param_kwargs["category"] = f"*_{bjet_cat}_*"
                     param_kwargs["category_match_mode"] = "all"
@@ -523,7 +525,7 @@ class HBWInferenceModelBase(InferenceModel):
                 "process": [self.inf_proc(proc) for proc in shape_processes],
             }
             shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
-            for bjet_cat in ("1b", "2b"):
+            for bjet_cat in self.bjet_cats:
                 if shape_uncertainty.endswith(bjet_cat):
                     param_kwargs["category"] = f"*_{bjet_cat}_*"
                     param_kwargs["category_match_mode"] = "all"

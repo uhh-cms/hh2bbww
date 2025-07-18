@@ -365,6 +365,10 @@ dl_jerc_boosted = dl.derive("dl_jerc_boosted", cls_dict={
     "systematics": systematics.jerc,
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
+dl_jerc_boosted_bjet_uncorr1 = dl.derive("dl_jerc_boosted_bjet_uncorr1", cls_dict={
+    "systematics": systematics.jerc_bjet_uncorr1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
 dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})
 dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
 dl_jerc_bjet_uncorr1 = dl.derive("dl_jerc_bjet_uncorr1", cls_dict={"systematics": systematics.jerc_bjet_uncorr1})
