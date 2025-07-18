@@ -522,7 +522,7 @@ def set_config_defaults_and_groups(config_inst):
         "default_norm": {"shape_norm": True, "yscale": "log"},
         "postfit": {
             "whitespace_fraction": 0.4,
-            "cms_label": "simpw",
+            "cms_label": "simwip",
             "yscale": "log",
             "hide_signal_errors": True,
             "blinding_threshold": 0.008,
@@ -530,7 +530,7 @@ def set_config_defaults_and_groups(config_inst):
         "data_mc_plots": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
-            "cms_label": "pw",
+            "cms_label": "wip",
             "yscale": "log",
             "blinding_threshold": 0.008,
         },

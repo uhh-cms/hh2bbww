@@ -91,13 +91,13 @@ def add_abcd_categories(config: od.Config) -> None:
         name="highmet",
         id=3,
         selection="catid_highmet",
-        label=r"$MET \geq 20$GeV",
+        label=r"$MET \geq 20$",
     )
     config.add_category(
         name="lowmet",
         id=6,
         selection="catid_lowmet",
-        label=r"$MET < 20$GeV",
+        label=r"$MET < 20$",
     )
 
 
@@ -111,25 +111,25 @@ def add_mll_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_mll_low",
-        label=r"$20 \leq m_{\ell\ell} < 70$GeV",
+        label=r"$20 \leq m_{\ell\ell} < 70$",
     )
     cr = config.add_category(
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$20 \leq m_{\ell\ell} \geq 70$GeV",
+        label=r"$20 \leq m_{\ell\ell} \geq 70$",
     )
     cr.add_category(
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        label=r"$70 \leq m_{\ell\ell} < 110$GeV",
+        label=r"$70 \leq m_{\ell\ell} < 110$",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        label=r"$m_{\ell\ell} \geq 110$GeV",
+        label=r"$m_{\ell\ell} \geq 110$",
     )
 
 
@@ -267,7 +267,7 @@ def name_fn(root_cats):
 def kwargs_fn(root_cats):
     kwargs = {
         "id": sum([c.id for c in root_cats.values()]),
-        "label": ",\n".join([c.label for c in root_cats.values()]),
+        "label": "\n".join([c.label for c in root_cats.values()]),
         "aux": {
             "root_cats": {key: value.name for key, value in root_cats.items()},
         },
