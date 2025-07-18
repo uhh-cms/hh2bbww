@@ -22,6 +22,32 @@ logger = law.logger.get_logger(__name__)
 
 
 @memoize
+def patch_pilots():
+    from columnflow.tasks.histograms import MergeShiftedHistograms
+    from columnflow.tasks.framework.remote import RemoteWorkflow
+
+    def workflow_requires(self):
+        # cannot call super() here; hopefully we only need the workflow_requires from RemoteWorkflow
+        reqs = RemoteWorkflow.workflow_requires(self)
+
+        if not self.pilot:
+            # add nominal and both directions per shift source
+            for shift in ["nominal"] + self.shifts:
+                reqs[shift] = self.reqs.MergeHistograms.req(self, shift=shift, _prefer_cli={"variables"})
+        else:
+            # in pilot mode, only require the nominal histograms.
+            # NOTE: would be nice to add all non-weight shifts instead of only nominal
+            reqs["nominal"] = self.reqs.MergeHistograms.req(self, shift="nominal", _prefer_cli={"variables"})
+
+        return reqs
+
+    MergeShiftedHistograms.workflow_requires = workflow_requires
+    logger.info(
+        f"patched {MergeShiftedHistograms.task_family} to only require nominal histograms in pilot mode",
+    )
+
+
+@memoize
 def patch_mltraining():
     from columnflow.tasks.framework.remote import RemoteWorkflow
 
@@ -152,3 +178,4 @@ def patch_all():
     # patch_column_alias_strategy()
     patch_csp_versioning()
     patch_default_version()
+    patch_pilots()
