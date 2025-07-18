@@ -86,9 +86,9 @@ class HistogramsUserBase(
         self,
         histogram: hist.Hist,
         config_inst: od.Config,
-        processes: str | list[str],
-        categories: str | list[str],
-        shifts: str | list[str],
+        processes: str | list[str] | None = None,
+        categories: str | list[str] | None = None,
+        shifts: str | list[str] | None = None,
         reduce_axes: bool = False,
     ) -> hist.Hist:
         """
@@ -109,49 +109,56 @@ class HistogramsUserBase(
         def flatten_nested_list(nested_list):
             return [item for sublist in nested_list for item in sublist]
 
-        # transform into lists if necessary
-        processes = law.util.make_list(processes)
-        categories = law.util.make_list(categories)
-        shifts = law.util.make_list(shifts)
+        selection_dict = {}
 
-        # get all leaf categories
-        category_insts = list(map(config_inst.get_category, categories))
-        leaf_category_insts = set(flatten_nested_list([
-            category_inst.get_leaf_categories() or [category_inst]
-            for category_inst in category_insts
-        ]))
+        if processes:
+            # transform into lists if necessary
+            processes = law.util.make_list(processes)
+            # get all sub processes
 
-        # get all sub processes
-        process_insts = list(map(config_inst.get_process, processes))
-        sub_process_insts = set(flatten_nested_list([
-            [sub for sub, _, _ in proc.walk_processes(include_self=True)]
-            for proc in process_insts
-        ]))
+            process_insts = list(map(config_inst.get_process, processes))
+            sub_process_insts = set(flatten_nested_list([
+                [sub for sub, _, _ in proc.walk_processes(include_self=True)]
+                for proc in process_insts
+            ]))
+            selection_dict["process"] = [
+                hist.loc(p.name)
+                for p in sub_process_insts
+                if p.name in histogram.axes["process"]
+            ]
+        if categories:
+            # transform into lists if necessary
+            categories = law.util.make_list(categories)
 
-        # get all shift instances
-        shift_insts = [config_inst.get_shift(shift) for shift in shifts]
+            # get all leaf categories
+            category_insts = list(map(config_inst.get_category, categories))
+            leaf_category_insts = set(flatten_nested_list([
+                category_inst.get_leaf_categories() or [category_inst]
+                for category_inst in category_insts
+            ]))
+            selection_dict["category"] = [
+                hist.loc(c.name)
+                for c in leaf_category_insts
+                if c.name in histogram.axes["category"]
+            ]
+
+        if shifts:
+            # transform into lists if necessary
+            shifts = law.util.make_list(shifts)
+
+            # get all shift instances
+            shift_insts = [config_inst.get_shift(shift) for shift in shifts]
+            selection_dict["shift"] = [
+                hist.loc(s.name)
+                for s in shift_insts
+                if s.name in histogram.axes["shift"]
+            ]
 
         # work on a copy
         h = histogram.copy()
 
         # axis selections
-        h = h[{
-            "process": [
-                hist.loc(p.name)
-                for p in sub_process_insts
-                if p.name in h.axes["process"]
-            ],
-            "category": [
-                hist.loc(c.name)
-                for c in leaf_category_insts
-                if c.name in h.axes["category"]
-            ],
-            "shift": [
-                hist.loc(s.name)
-                for s in shift_insts
-                if s.name in h.axes["shift"]
-            ],
-        }]
+        h = h[selection_dict]
 
         if reduce_axes:
             # axis reductions
