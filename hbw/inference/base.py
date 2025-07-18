@@ -100,7 +100,7 @@ class HBWInferenceModelBase(InferenceModel):
         """ Function to determine inference category name from config category """
         # NOTE: the name of the inference category cannot start with a Number
         # -> use config category with single letter added at the start?
-        return f"cat_{config_cat_inst.name}"
+        return f"{config_cat_inst.name}"
 
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """
@@ -130,6 +130,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.format_systematics()
         self.add_inference_categories()
         self.add_inference_processes()
+        self.remove_inference_processes()
         self.add_inference_parameters()
         # self.print_model()
         #
@@ -140,8 +141,10 @@ class HBWInferenceModelBase(InferenceModel):
     def print_model(self):
         """ Helper to print categories, processes and parameters of the InferenceModel """
         for cat in self.categories:
+            variable = set(cat.config_data[cfg.name].variable for cfg in self.config_insts)
+            config_cat = set(cat.config_data[cfg.name].category for cfg in self.config_insts)
             print(f"{'=' * 20} {cat.name}")
-            print(f"Variable {cat.config_variable} \nCategory {cat.config_category}")
+            print(f"Variable {variable} \nCategory {config_cat}")
             print(f"Processes {[p.name for p in cat.processes]}")
             print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
 
@@ -368,6 +371,14 @@ class HBWInferenceModelBase(InferenceModel):
 
             # add dummy variations if requested
             self.add_dummy_variation(proc, datasets)
+
+    def remove_inference_processes(self: InferenceModel):
+        for proc, remove_kwargs in const.remove_processes.items():
+            if proc in self.processes:
+                self.remove_process(proc, **remove_kwargs)
+                logger.warning(f"Removed process {proc} from inference model.")
+            else:
+                logger.warning(f"Process {proc} not found in inference model. Skipping removal.")
 
     def add_inference_parameters(self: InferenceModel):
         """

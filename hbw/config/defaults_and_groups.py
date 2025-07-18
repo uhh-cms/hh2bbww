@@ -35,6 +35,7 @@ def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
     default_ml_model = ()
+    # default_ml_model = ("multiclassv1", "ggfv1", "vbfv1")
 
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
@@ -193,7 +194,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
-        "dl4": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -356,12 +357,16 @@ def set_config_defaults_and_groups(config_inst):
             "sr__1mu__ml_tt", "sr__1mu__ml_st", "sr__1mu__ml_v_lep",
         ),
         # Dilepton
-        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
-        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "SR_bjets_incl": bracket_expansion(["sr__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),
         "vbfSR_bjets_incl": bracket_expansion(["sr__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        "SR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        "vbfSR_dl": bracket_expansion(["sr__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "SR_dl_resolved": bracket_expansion(["sr__resolved__{1b,2b}__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_resolved": bracket_expansion(["sr__resolved__{1b,2b}__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        # "SR_1b_dl": bracket_expansion(["sr__1b__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        # "vbfSR_1b_dl": bracket_expansion(["sr__1b__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
+        # "SR_2b_dl_resolved": bracket_expansion(["sr__resolved__2b__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
+        # "vbfSR_2b_dl_resolved": bracket_expansion(["sr__resolved__2b__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,dy_m10toinf,h}"]),
@@ -460,6 +465,10 @@ def set_config_defaults_and_groups(config_inst):
         "btag_up": [
             "btag_hf_up",
             "btag_lf_up",
+            "btag_hfstats1_2022_up",
+            "btag_hfstats2_2022_up",
+            "btag_lfstats1_2022_up",
+            "btag_lfstats2_2022_up",
             "btag_hfstats1_2023_up",
             "btag_hfstats2_2023_up",
             "btag_lfstats1_2023_up",
@@ -484,7 +493,7 @@ def set_config_defaults_and_groups(config_inst):
         *config_inst.x.shift_groups["theory_up"],
         *config_inst.x.shift_groups["btag_up"],
         *config_inst.x.shift_groups["experimental_up"],
-    ],
+    ]
     for shift_groups in ("all", "theory", "btag", "experimental", "jerc"):
         config_inst.x.shift_groups[shift_groups + "_down"] = [
             shift.replace("_up", "_down") for shift in config_inst.x.shift_groups[shift_groups + "_up"]
@@ -612,14 +621,24 @@ def set_config_defaults_and_groups(config_inst):
         # Dilepton
         "SR_dl": 10,
         "vbfSR_dl": 10,
-        "BR_dl": 3,
+        "BR_dl": 1,
         "SR_bjets_incl": 14,
         "vbfSR_bjets_incl": 14,
         "BR_bjets_incl": 3,
-        "SR_dl_resolved": 10,
-        "SR_dl_boosted": 5,
-        "vbfSR_dl_resolved": 10,
-        "vbfSR_dl_boosted": 5,
+        "sr__1b__ml_sig_ggf": 10,
+        "sr__2b__ml_sig_ggf": 10,
+        "sr__1b__ml_sig_vbf": 10,
+        "sr__2b__ml_sig_vbf": 8,
+        "sr__resolved__1b__ml_sig_ggf": 10,
+        "sr__resolved__2b__ml_sig_ggf": 10,
+        "sr__resolved__1b__ml_sig_vbf": 10,
+        "sr__resolved__2b__ml_sig_vbf": 8,
+        "sr__boosted__ml_sig_ggf": 3,
+        "sr__boosted__ml_sig_vbf": 3,
+        # "SR_dl_resolved": 6,
+        # "SR_dl_boosted": 3,
+        # "vbfSR_dl_resolved": 6,
+        # "vbfSR_dl_boosted": 3,
         "sr__1b": 20,
         "sr__2b": 20,
         "sr__boosted": 5,

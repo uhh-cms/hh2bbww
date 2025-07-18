@@ -91,10 +91,11 @@ processes_per_rate_unconstrained = {
 
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
-# NOTE: '+' is identifier to signal that afterwards a placeholder is used.
 processes_per_shape = {
     "jec_Total": ["all"],
     "jer": ["all"],
+    "jec_Total_{bjet_cat}": ["all"],
+    "jer_{bjet_cat}": ["all"],
     "btag_hf_{bjet_cat}": ["all"],
     "btag_lf_{bjet_cat}": ["all"],
     "btag_hfstats1_{year}_{bjet_cat}": ["all"],
@@ -154,6 +155,14 @@ processes_per_shape = {
     "murf_envelope_vv": ["vv", "ww", "zz", "wz"],
     "murf_envelope_ttv": ["ttw", "ttz"],
     "murf_envelope_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
+}
+
+remove_processes = {
+    # NOTE: empty, because it is better to remove processes on the final datacards
+    # "dy_lf": {"category": "sr__2b__ml_sig_vbf", "category_match_mode": all},
+    # "st_schannel": {"category": "sr__2b__ml_*", "category_match_mode": all},
+    # "w_lnu": {"category": "sr__2b__ml_*", "category_match_mode": all},
+    # "ttw": {"category": "sr__2b__ml_dy_m10toinf", "category_match_mode": all},
 }
 
 # mapping for each shape uncertainty, which shift source is used

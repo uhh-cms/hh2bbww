@@ -396,7 +396,7 @@ def bracket_expansion(inputs: list, clean_chars: str = "_") -> list:
     """
     pattern = re.compile(r"\{([^{}]+)\}")
     outp = set()
-
+    inputs = law.util.make_list(inputs)
     for inp in inputs:
         # Find all bracketed groups and extract options by splitting on ","
         matches = pattern.findall(inp)

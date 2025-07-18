@@ -195,6 +195,10 @@ systematics = DotDict({
         "jer",
         "jec_Total",
     ],
+    "jerc_only_bjet_uncorr": [
+        "jer_{bjet_cat}",
+        "jec_Total_{bjet_cat}",
+    ],
 })
 systematics["rate"] = [
     *systematics.QCDScale,
@@ -237,6 +241,11 @@ systematics["jerc_bjet_uncorr"] = [
     *systematics.shape_bjet_uncorr,
     *systematics.jerc_only,
 ]
+systematics["jerc_bjet_uncorr1"] = [
+    *systematics.rate_bjet_uncorr,
+    *systematics.shape_bjet_uncorr,
+    *systematics.jerc_only_bjet_uncorr,
+]
 
 hhprocs_ggf = lambda hhdecay: [
     f"hh_ggf_{hhdecay}_kl0_kt1",
@@ -262,12 +271,13 @@ backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    # "st_schannel",  # TODO: bogus norm?
+    "st_schannel",  # TODO: bogus norm?
     "tt",
     "ttw",
     "ttz",
-    "dy_hf", "dy_lf",
-    # "w_lnu",  # TODO: bogus norm?
+    "dy_hf",
+    "dy_lf",
+    "w_lnu",  # TODO: bogus norm?
     "vv",
     "vvv",
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
@@ -351,8 +361,13 @@ dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics.shape})
 dl_syst1 = dl.derive("dl_syst1", cls_dict={"systematics": systematics.shape})
 dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": systematics.jerc_only})
 dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics.jerc})
+dl_jerc_boosted = dl.derive("dl_jerc_boosted", cls_dict={
+    "systematics": systematics.jerc,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
 dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})
 dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
+dl_jerc_bjet_uncorr1 = dl.derive("dl_jerc_bjet_uncorr1", cls_dict={"systematics": systematics.jerc_bjet_uncorr1})
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
     "systematics": systematics.jerc,
