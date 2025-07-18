@@ -7,6 +7,7 @@ Tasks related to the creation and modification of datacards for inference purpos
 from __future__ import annotations
 
 from typing import Callable
+from collections import defaultdict
 
 import law
 import order as od
@@ -38,6 +39,21 @@ def get_hist_name(cat_name: str, proc_name: str, syst_name: str | None = None) -
     if syst_name:
         hist_name += f"__{syst_name}"
     return hist_name
+
+
+def get_cat_proc_syst_name_from_key(key: str) -> tuple[str, str, str | None]:
+    """
+    Extracts the category, process, and systematics name from a ROOT key.
+    The key is expected to be in the format "cat_name/proc_name__syst_name".
+    If no systematics name is present, it returns None for the syst_name.
+    """
+    key = key.split(";")[0]  # remove ";1" appendix
+    parts = key.split("/")
+    cat_name = parts[0]
+    proc_syst = parts[1].split("__")
+    proc_name = proc_syst[0]
+    syst_name = proc_syst[1] if len(proc_syst) > 1 else "nominal"
+    return cat_name, proc_name, syst_name
 
 
 def get_cat_proc_syst_names(root_file):
@@ -399,6 +415,7 @@ class ModifyDatacardsFlatRebin(
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
             "shapes": self.target(basename(f"shapes_rebin_{n_bins}", "root")),
             "edges": self.target(basename(f"edges_{n_bins}", "json")),
+            "inspection": self.target(basename(f"inspection_{n_bins}", "json")),
         }
 
     def run(self):
@@ -478,7 +495,9 @@ class ModifyDatacardsFlatRebin(
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)
-            rebinned_histograms = {}
+            negative_norms = {cat_name: defaultdict(dict)}
+            variance_too_large = {cat_name: defaultdict(dict)}
+            limited_stats = {cat_name: defaultdict(dict)}
             for key, h in f_in.items():
 
                 key = key.split(";")[0]
@@ -487,18 +506,41 @@ class ModifyDatacardsFlatRebin(
                         h = f_in[key].to_hist()
                     except AttributeError:
                         continue
-                    h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
-                    # problematic_bin_count = check_empty_bins(h_rebin)
-                    # TODO: we should reimplement check empty bins, check for all bkg not per process
 
-                    rebinned_histograms[key] = h_rebin
+                    h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
+
+                    # log whether norms are negative or variances too large
+                    cat_name, proc_name, syst_name = get_cat_proc_syst_name_from_key(key)
+                    h_rebin_sum = h_rebin.sum()
+                    if (h_rebin_sum.value <= 0):
+                        negative_norms[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
+                    if (h_rebin_sum.variance >= h_rebin_sum.value ** 2):
+                        variance_too_large[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
+                    if syst_name == "nominal" and (h_rebin_sum.variance >= h_rebin_sum.value):
+                        limited_stats[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
 
                     logger.debug(f"Inserting histogram with name {key}")
                     out_file[key] = h_rebin
 
         # TODO: update cards based on changed yields etc. At the moment I changed the
         # "observation" and "rate" lines in the datacard to -1 in c/f
+
+
         outputs["card"].dump(datacard, formatter="text")
+        outputs["inspection"].dump({
+            "negative_norms": negative_norms,
+            "variance_too_large": variance_too_large,
+            "limited_stats": limited_stats,
+        }, indent=4, formatter="json")
 
 
 from columnflow.tasks.framework.plotting import (
@@ -721,7 +763,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         output = self.output()
 
         # string that represents the version of datacards
-        identifier = "__".join([*self.configs, self.selector, self.inference_model, self.version])
+        identifier_list = [*self.configs, self.selector, self.inference_model, self.version]
+        identifier = "__".join(identifier_list)
 
         # get the datacard names from the inputs
         collection = inputs["rebinned_datacards"]["collection"]
@@ -729,6 +772,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         if len(cards_path) != 1:
             raise Exception("Expected only one datacard path")
         cards_path = cards_path.pop()
+        pruned_cards_path = f"{cards_path}/pruned"
 
         card_fns = [collection[key]["card"].basename for key in collection.keys()]
 
@@ -737,22 +781,33 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         cat_names = [c.name for c in categories]
 
         # combine category names with card fn to a single string
+        # datacards = ",".join([f"$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
 
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
 
-        base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
+        base_cmd = f"export CARDS_PATH={cards_path}" + "\n" + f"export PRUNED_CARDS_PATH={pruned_cards_path}" + "\n"
         full_cmd = base_cmd
+
+        # run pruning helper on cards
+        for card_fn in card_fns:
+            cmd = f"prepare_cards.py $CARDS_PATH/{card_fn} $PRUNED_CARDS_PATH"
+            # print(cmd)
+            full_cmd += cmd + "\n"
+        # print("\n\n")
+
+        print(full_cmd)
+
+        base_cmd = f"export CARDS_PATH={pruned_cards_path}" + "\n"
 
         lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
 
         is_signal_region = lambda cat_name: (
-            "sig_" in cat_name or cat_name == "cat_sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
+            "sig_" in cat_name or cat_name == "sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
         )
 
-        print("\n\n")
         # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
         multi_sig_cards = ":".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}"
@@ -774,7 +829,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         multi_datacards = []
         multi_datacard_names = []
-        for cards, identifier in [
+        for cards, this_identifier in [
             (multi_sig_cards, multi_sig_card_names),
             (cards_1b, "1b_combined"),
             (cards_2b, "2b_combined"),
@@ -783,11 +838,19 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         ]:
             if cards:
                 multi_datacards.append(cards)
-                multi_datacard_names.append(identifier)
+                multi_datacard_names.append(this_identifier)
 
         n_multi_datacards = len(multi_datacards)
         multi_datacards = ":".join(multi_datacards)
         multi_datacard_names = ",".join(multi_datacard_names)
+        print("\n\n")
+
+        # print(base_cmd)
+        # for card, _ident in zip(card_fns, identifier):
+        #     cmd = f"ValidateDatacard.py $CARDS_PATH/{card} --jsonFile $CARDS_PATH//validation_{_ident}.json"
+        #     print(cmd)
+        # print("\n\n")
+
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
             f"--multi-datacards {multi_datacards} "
@@ -809,7 +872,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating kl scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log --workers 6"
+            f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -818,7 +881,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating C2V scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --workers 3"
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -836,7 +899,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--order-by-impact"
+            f"--order-by-impact --PullsAndImpacts-workflow htcondor --mc-stats --parameters-per-page 30"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
