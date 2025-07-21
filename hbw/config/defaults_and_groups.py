@@ -34,8 +34,10 @@ def ml_inputs_producer(container):
 def default_ml_model(cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
-    default_ml_model = ()
-    # default_ml_model = ("multiclassv1", "ggfv1", "vbfv1")
+    default_ml_model = law.config.get_expanded("analysis", "default_ml_models", ())
+    if isinstance(default_ml_model, str):
+        default_ml_model = default_ml_model.split(",")
+
 
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
