@@ -135,6 +135,11 @@ systematics = DotDict({
         "rate_ttbar",
         "rate_dy",
     ],
+    "rate_unconstrained1": [
+        "rate_ttbar",
+        "rate_dy_lf",
+        "rate_dy_hf",
+    ],
     "rate_unconstrained_bjet_uncorr": [
         "rate_ttbar_{bjet_cat}",
         "rate_dy_{bjet_cat}",
@@ -205,6 +210,11 @@ systematics["rate"] = [
     *systematics.pdf,
     *systematics.rate_unconstrained,
 ]
+systematics["rate1"] = [
+    *systematics.QCDScale,
+    *systematics.pdf,
+    *systematics.rate_unconstrained1,
+]
 systematics["shape_only"] = [
     *systematics.murf_envelope,
     *systematics.pdf_shape,
@@ -219,6 +229,11 @@ systematics["shape"] = [
 # default set of all systematics
 systematics["jerc"] = [
     *systematics.rate,
+    *systematics.shape,
+    *systematics.jerc_only,
+]
+systematics["jerc1"] = [
+    *systematics.rate1,
     *systematics.shape,
     *systematics.jerc_only,
 ]
@@ -365,10 +380,20 @@ dl_jerc_boosted = dl.derive("dl_jerc_boosted", cls_dict={
     "systematics": systematics.jerc,
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
+dl_jerc1_boosted = dl.derive("dl_jerc1_boosted", cls_dict={
+    "systematics": systematics.jerc1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
 dl_jerc_boosted_bjet_uncorr1 = dl.derive("dl_jerc_boosted_bjet_uncorr1", cls_dict={
     "systematics": systematics.jerc_bjet_uncorr1,
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
+dl_jerc_boosted_bjet_uncorr1_data = dl.derive("dl_jerc_boosted_bjet_uncorr1_data", cls_dict={
+    "systematics": systematics.jerc_bjet_uncorr1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_data": False,
+})
+# TODO: data dings ehhh diese rate und data_obs values in den rebin anpassen
 dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})
 dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
 dl_jerc_bjet_uncorr1 = dl.derive("dl_jerc_bjet_uncorr1", cls_dict={"systematics": systematics.jerc_bjet_uncorr1})
