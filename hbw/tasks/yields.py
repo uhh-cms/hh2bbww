@@ -7,7 +7,7 @@ TODO: after merging MultiConfigPlotting, we should propagate the changes back to
 """
 
 import math
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 
 import law
 import luigi
@@ -189,7 +189,12 @@ class CustomCreateYieldTable(
         if len(set(self.processes)) != 1:
             raise NotImplementedError("The yields table task currently assumes same processes for all configs.")
 
-        yields_hist = hist.Hist.new.StrCat([], name="process", growth=True).StrCat([], name="category", growth=True).Weight()
+        yields_hist = hist.Hist.new.StrCat(
+            [], name="process", growth=True,
+        ).StrCat(
+            [], name="category", growth=True,
+        ).Weight()
+
         for process in self.processes[0]:
             for category in self.categories:
                 yields_hist.fill(process, category, weight=0)

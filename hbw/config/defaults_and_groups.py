@@ -38,7 +38,6 @@ def default_ml_model(cls, container, task_params):
     if isinstance(default_ml_model, str):
         default_ml_model = default_ml_model.split(",")
 
-
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
     if hasattr(cls, "ml_model"):
