@@ -794,7 +794,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         if len(cards_path) != 1:
             raise Exception("Expected only one datacard path")
         cards_path = cards_path.pop()
-        pruned_cards_path = f"{cards_path}/pruned"
+        # pruned_cards_path = f"{cards_path}/pruned"
+        decorrelated_cards_path = f"{cards_path}/decorrelated"
 
         card_fns = [collection[key]["card"].basename for key in collection.keys()]
 
@@ -808,18 +809,18 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
 
-        base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={pruned_cards_path}" + "\n"
+        base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
         full_cmd = base_cmd
 
         # run pruning helper on cards
         for card_fn in card_fns:
-            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn} $CARDS_PATH"
+            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
             full_cmd += cmd + "\n"
 
         full_cmd += "\n\n"
         print(full_cmd)
 
-        base_cmd = f"export CARDS_PATH={pruned_cards_path}" + "\n"
+        base_cmd = f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
 
         lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
         lumi = f"'{lumi:.1f} fb^{{-1}}'"
@@ -919,11 +920,15 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--order-by-impact --PullsAndImpacts-workflow htcondor --mc-stats --parameters-per-page 30"
+            f"--order-by-impact --PullsAndImpacts-workflow htcondor --mc-stats --parameters-per-page 50"
         )
+        pulls_and_imacts_params = "workflow=htcondor"
         if not self.unblind and not self.inference_model_inst.skip_data:
+            pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
             # NOTE: the custom args do not work in combination with job submission
-            cmd += " --PullsAndImpacts-custom-args '--rMax 200 --rMin -200' --unblinded"
+            cmd += " --unblinded"
+        cmd += f" --PullsAndImpacts-{{{pulls_and_imacts_params}}}"
+
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
         output["PullsAndImpacts"].dump(cmd, formatter="text")
