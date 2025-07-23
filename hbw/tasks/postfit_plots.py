@@ -66,7 +66,7 @@ def get_hists_from_fit_diagnostics(tfile):
         fit, channel, process = key
         process = process.split(";")[0]
 
-        if "data" in process or "total" in process:
+        if "total" in process:
             continue
         else:
             # transform TH1F to hist
@@ -82,6 +82,7 @@ def get_hists_from_multidimfit(tfile):
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
+
     for key in keys:
         if len(key) != 2:
             continue
@@ -95,9 +96,8 @@ def get_hists_from_multidimfit(tfile):
         channel = fit_and_channel.replace(f"_{fit}", "")
         process = process.split(";")[0]
 
-        if "data" in process or "Total" in process:
+        if "Total" in process:
             continue
-            # transform TH1F to hist
         else:
             h_in = h_in.to_hist()
 
@@ -238,10 +238,6 @@ class PlotPostfitShapes(
         description="Whether to do prefit or postfit plots; defaults to False",
     )
 
-    # @property
-    # def config_inst(self) -> od.Config:
-    #     return self.config_insts[0]
-
     @property
     def fit_type(self) -> str:
         if self.prefit:
@@ -265,12 +261,21 @@ class PlotPostfitShapes(
             # try getting the config process via InferenceModel
             # NOTE: Only the first category is taken to get the config process instance,
             # assuming they are the same for all categories
-            channel = self.inference_model_inst.get_categories_with_process(proc_key)[0]
-            has_category = self.inference_model_inst.has_category(channel)
-            if has_category:
+            channel = self.inference_model_inst.get_categories_with_process(proc_key)
+
+            if not channel:  # sometimes channel can be an empty list
+                has_category = False
+            else:
+                channel = channel[0]
+                has_category = self.inference_model_inst.has_category(channel)
+
+            if has_category and proc_key != "data_obs":
                 # config_data = channel.config_data.get(self.config_inst.name)
                 inference_process = self.inference_model_inst.get_process(proc_key, channel)
                 proc_inst = self.config_inst.get_process(inference_process.config_data[self.config_inst.name].process)
+            # Mao data_obs to data process
+            elif proc_key == "data_obs":
+                proc_inst = self.config_inst.get_process("data", default=None)
             else:
                 # try getting proc inst directly via config
                 proc_inst = self.config_inst.get_process(proc_key, default=None)
@@ -282,10 +287,14 @@ class PlotPostfitShapes(
                     proc for proc in process_insts if proc.has_process(proc_inst) or proc.name == proc_inst.name
                 ]
                 if len(plot_proc) > 1:
-                    logger.warning(
-                        f"{proc_key} was assigned to ({','.join([p.name for p in plot_proc])})",
-                        f" but {plot_proc[0].name} was chosen",
-                    )
+                    plot_proc_names = [p.name for p in plot_proc]
+                    if len(plot_proc) == 2 and "background" in plot_proc_names:
+                        plot_proc = [p for p in plot_proc if p.name != "background"]
+                    else:
+                        logger.warning(
+                            f"{proc_key} was assigned to ({','.join([p.name for p in plot_proc])})",
+                            f" but {plot_proc[0].name} was chosen",
+                        )
                 elif len(plot_proc) == 0:
                     logger.warning(f"{proc_key} in root file, but won't be plotted.")
                     continue
@@ -315,12 +324,17 @@ class PlotPostfitShapes(
         hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
         hist_map = self.prepare_hist_map(hist_processes, process_insts)
         # Plot Pre/Postfit plot for each channel
+
         for channel, h_in in all_hists.items():
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
+            # Some inference models have differnet naming schemes for categories (starting with cat)
             if not has_category:
-                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
-                continue
+                channel = "cat_" + channel
+                has_category = self.inference_model_inst.has_category(channel)
+                if not has_category:
+                    logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
+                    continue
 
             # Create Histograms
             hists = defaultdict(OrderedDict)
