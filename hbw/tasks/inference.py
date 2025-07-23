@@ -7,7 +7,9 @@ Tasks related to the creation and modification of datacards for inference purpos
 from __future__ import annotations
 
 from typing import Callable
+from collections import defaultdict
 
+import luigi
 import law
 import order as od
 
@@ -38,6 +40,21 @@ def get_hist_name(cat_name: str, proc_name: str, syst_name: str | None = None) -
     if syst_name:
         hist_name += f"__{syst_name}"
     return hist_name
+
+
+def get_cat_proc_syst_name_from_key(key: str) -> tuple[str, str, str | None]:
+    """
+    Extracts the category, process, and systematics name from a ROOT key.
+    The key is expected to be in the format "cat_name/proc_name__syst_name".
+    If no systematics name is present, it returns None for the syst_name.
+    """
+    key = key.split(";")[0]  # remove ";1" appendix
+    parts = key.split("/")
+    cat_name = parts[0]
+    proc_syst = parts[1].split("__")
+    proc_name = proc_syst[0]
+    syst_name = proc_syst[1] if len(proc_syst) > 1 else "nominal"
+    return cat_name, proc_name, syst_name
 
 
 def get_cat_proc_syst_names(root_file):
@@ -150,7 +167,7 @@ def get_rebin_values(
                 should_be_blinded = blind_bool_func(N_signal, N_bkg_value)
                 if should_be_blinded:
                     logger.warning(f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
-                    rebin_values = [this_edge]
+                    rebin_values = []
 
                 # append bin edge and reset event counts
                 rebin_values.append(this_edge)
@@ -273,6 +290,10 @@ class HBWInferenceModelBase(
     single_config = False
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    unblind = luigi.BoolParameter(
+        default=False,
+    )
 
 
 class ModifyDatacardsFlatRebin(
@@ -399,10 +420,26 @@ class ModifyDatacardsFlatRebin(
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
             "shapes": self.target(basename(f"shapes_rebin_{n_bins}", "root")),
             "edges": self.target(basename(f"edges_{n_bins}", "json")),
+            "inspection": self.target(basename(f"inspection_{n_bins}", "json")),
         }
 
-    def run(self):
+    def update_rates_and_obs_str(self, datacard: str) -> str:
+        """
+        Replace rates and observation with -1 in the datacard when blinding is enabled
+        """
+        rates_post = rates = datacard.split("\nrate")[1].split("\n")[0]
+        for number in rates.split(" "):
+            if number != "":
+                # replace with -1 and keep the same length
+                rates_post = rates_post.replace(number, f"-1{' ' * (len(number) - 2)}", 1)
 
+        datacard = datacard.replace(rates, rates_post)
+
+        n_obs = datacard.split("\nobservation")[1].split("\n")[0]
+        datacard = datacard.replace(n_obs, f"{' ' * (len(n_obs) - 2)}-1")  # replace with -1 and keep the same length
+        return datacard
+
+    def run(self):
         inputs = self.input()
         outputs = self.output()
 
@@ -412,6 +449,9 @@ class ModifyDatacardsFlatRebin(
         # create a copy of the datacard with modified name of the shape file
         datacard = inp_datacard.load(formatter="text")
         datacard = datacard.replace(inp_shapes.basename, outputs["shapes"].basename)
+
+        if not self.unblind and not self.inference_model_inst.skip_data:
+            datacard = self.update_rates_and_obs_str(datacard)
 
         with uproot.open(inp_shapes.fn) as f_in:
             # determine which histograms are present
@@ -478,7 +518,9 @@ class ModifyDatacardsFlatRebin(
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file
             out_file = uproot.recreate(outputs["shapes"].fn)
-            rebinned_histograms = {}
+            negative_norms = {cat_name: defaultdict(dict)}
+            variance_too_large = {cat_name: defaultdict(dict)}
+            limited_stats = {cat_name: defaultdict(dict)}
             for key, h in f_in.items():
 
                 key = key.split(";")[0]
@@ -487,18 +529,40 @@ class ModifyDatacardsFlatRebin(
                         h = f_in[key].to_hist()
                     except AttributeError:
                         continue
-                    h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
-                    # problematic_bin_count = check_empty_bins(h_rebin)
-                    # TODO: we should reimplement check empty bins, check for all bkg not per process
 
-                    rebinned_histograms[key] = h_rebin
+                    cat_name, proc_name, syst_name = get_cat_proc_syst_name_from_key(key)
+                    h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
+                    h_rebin_sum = h_rebin.sum()
+
+                    # log whether norms are negative or variances too large
+                    if (h_rebin_sum.value <= 0):
+                        negative_norms[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
+                    if (h_rebin_sum.variance >= h_rebin_sum.value ** 2):
+                        variance_too_large[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
+                    if syst_name == "nominal" and (h_rebin_sum.variance >= h_rebin_sum.value):
+                        limited_stats[cat_name][proc_name][syst_name] = {
+                            "value": h_rebin_sum.value,
+                            "variance": h_rebin_sum.variance,
+                        }
 
                     logger.debug(f"Inserting histogram with name {key}")
                     out_file[key] = h_rebin
 
         # TODO: update cards based on changed yields etc. At the moment I changed the
         # "observation" and "rate" lines in the datacard to -1 in c/f
+
         outputs["card"].dump(datacard, formatter="text")
+        outputs["inspection"].dump({
+            "negative_norms": negative_norms,
+            "variance_too_large": variance_too_large,
+            "limited_stats": limited_stats,
+        }, indent=4, formatter="json")
 
 
 from columnflow.tasks.framework.plotting import (
@@ -681,6 +745,8 @@ class PlotShiftedInferencePlots(
                             # close the figure to avoid memory issues
                             plt.close(fig)
 
+            logger.info(f"Finished creating plots for shifted inference model {cat_name}.")
+
 
 class PrepareInferenceTaskCalls(HBWInferenceModelBase):
     """
@@ -719,7 +785,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         output = self.output()
 
         # string that represents the version of datacards
-        identifier = "__".join([*self.configs, self.selector, self.inference_model, self.version])
+        identifier_list = [*self.configs, self.selector, self.inference_model, self.version]
+        identifier = "__".join(identifier_list)
 
         # get the datacard names from the inputs
         collection = inputs["rebinned_datacards"]["collection"]
@@ -727,6 +794,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         if len(cards_path) != 1:
             raise Exception("Expected only one datacard path")
         cards_path = cards_path.pop()
+        # pruned_cards_path = f"{cards_path}/pruned"
+        decorrelated_cards_path = f"{cards_path}/decorrelated"
 
         card_fns = [collection[key]["card"].basename for key in collection.keys()]
 
@@ -740,17 +809,23 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
 
-        base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
+        # prepare the base command to set the environment variables
+        base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
         full_cmd = base_cmd
 
-        lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
-        lumi = f"'{lumi:.1f} fb^{{-1}}'"
+        # prepare strings for campaign name and card names
+        if len(self.configs) == 4:
+            campaign = "run3"
+        elif len(self.configs) == 1:
+            campaign = self.configs[0]
+        else:
+            lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
+            campaign = f"'{lumi:.1f} fb^{{-1}}'"
 
         is_signal_region = lambda cat_name: (
-            "sig_" in cat_name or cat_name == "cat_sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
+            "sig_" in cat_name or cat_name == "sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
         )
 
-        print("\n\n")
         # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
         multi_sig_cards = ":".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}"
@@ -772,7 +847,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         multi_datacards = []
         multi_datacard_names = []
-        for cards, identifier in [
+        for cards, this_identifier in [
             (multi_sig_cards, multi_sig_card_names),
             (cards_1b, "1b_combined"),
             (cards_2b, "2b_combined"),
@@ -781,33 +856,51 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         ]:
             if cards:
                 multi_datacards.append(cards)
-                multi_datacard_names.append(identifier)
+                multi_datacard_names.append(this_identifier)
 
-        n_multi_datacards = len(multi_datacards)
         multi_datacards = ":".join(multi_datacards)
         multi_datacard_names = ",".join(multi_datacard_names)
-        cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
-            f"--multi-datacards {multi_datacards} "
-            f"--datacard-names {multi_datacard_names} "
-            f"--workers {n_multi_datacards} "
-        )
-        print(base_cmd + cmd, "\n\n")
+
+        # run pruning helper on cards
+        for card_fn in card_fns:
+            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
+            full_cmd += cmd + "\n"
+
+        print("\n\n")
+        full_cmd += "\n\n"
+        print(full_cmd)
+
+        base_cmd = f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
+
+        # print(base_cmd)
+        # for card, _ident in zip(card_fns, identifier):
+        #     cmd = f"ValidateDatacard.py $CARDS_PATH/{card} --jsonFile $CARDS_PATH//validation_{_ident}.json"
+        #     print(cmd)
+        # print("\n\n")
 
         # creating upper limits for kl=1
         cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
+            f"--multi-datacards {multi_datacards} "
+            f"--datacard-names {multi_datacard_names} "
+            f"--UpperLimits-workflow htcondor --workers 10 "
+        )
+        full_cmd += cmd + "\n\n"
+        print(base_cmd + cmd, "\n\n")
+        output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
+
+        # creating upper limits for kl=1
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
             f"--multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
         print(base_cmd + cmd, "\n\n")
-        full_cmd += cmd + "\n\n"
-        output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
 
         # creating kl scan
         cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log --workers 6"
+            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -815,8 +908,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # creating C2V scan
         cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --workers 3"
+            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -828,14 +921,20 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"--skip-b-only"
         )
         print(base_cmd + cmd, "\n\n")
-        full_cmd += cmd + "\n\n"
         output["FitDiagnostics"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
-            f"law run PlotPullsAndImpacts --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--order-by-impact"
+            f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"--order-by-impact --mc-stats --parameters-per-page 50"
         )
+        pulls_and_imacts_params = "workflow=htcondor,retries=1"
+        if not self.unblind and not self.inference_model_inst.skip_data:
+            pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
+            # NOTE: the custom args do not work in combination with job submission
+            cmd += " --unblinded"
+        cmd += f" --PullsAndImpacts-{{{pulls_and_imacts_params}}}"
+
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
         output["PullsAndImpacts"].dump(cmd, formatter="text")
@@ -846,7 +945,34 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             # f"--output-name {output_file}"
         )
         print(base_cmd + cmd, "\n\n")
+        full_cmd += cmd + "\n\n"
         output["FitDiagnostics"].dump(cmd, formatter="text")
 
         # dump the full command to one output file
-        output["Run"].dump(full_cmd, formatter="text")
+        run_script = self.create_run_script(identifier, full_cmd)
+        output["Run"].dump(run_script, formatter="text")
+
+        print("# combined task calls")
+        print(f"bash {output['Run'].abspath}")
+
+    def create_run_script(self, identifier, full_cmd):
+        full_cmd_with_fetch = full_cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
+        run_script = f"""#!/bin/bash
+
+mkdir -p $DHI_DATA/fetched_plots/{identifier} && cd $DHI_DATA/fetched_plots/{identifier}
+
+run_and_fetch_cmd() {{
+    local folder="$1"
+    cd "$DHI_DATA/fetched_plots/$folder" || exit 1
+    if [[ "$dry_run" == "true" ]]; then
+        echo "[DRY-RUN] ${{*:2}}"
+        echo "[DRY-RUN] ${{*:2}} --fetch-output 0,a"
+    else
+        eval "${{@:2}}"
+        eval "${{@:2}} --fetch-output 0,a"
+    fi
+}}
+
+{full_cmd_with_fetch}
+"""
+        return run_script

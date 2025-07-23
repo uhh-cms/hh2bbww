@@ -524,6 +524,11 @@ class DYCorrBase(
         description="Histogram producer to use for the DY corrections",
         add_default_to_description=True,
     )
+    ml_models = HistogramsUserSingleShiftBase.ml_models.copy(
+        default=(),
+        description="ML models to use for the DY corrections",
+        add_default_to_description=True,
+    )
 
     def create_branch_map(self):
         return {0: None}

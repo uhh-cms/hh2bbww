@@ -55,6 +55,8 @@ class HBWInferenceModelBase(InferenceModel):
 
     version = 1
 
+    bjet_cats = {"1b", "2b", "boosted"}
+
     #
     # helper functions and properties
     #
@@ -100,7 +102,7 @@ class HBWInferenceModelBase(InferenceModel):
         """ Function to determine inference category name from config category """
         # NOTE: the name of the inference category cannot start with a Number
         # -> use config category with single letter added at the start?
-        return f"cat_{config_cat_inst.name}"
+        return f"{config_cat_inst.name}"
 
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """
@@ -130,6 +132,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.format_systematics()
         self.add_inference_categories()
         self.add_inference_processes()
+        self.remove_inference_processes()
         self.add_inference_parameters()
         # self.print_model()
         #
@@ -140,8 +143,10 @@ class HBWInferenceModelBase(InferenceModel):
     def print_model(self):
         """ Helper to print categories, processes and parameters of the InferenceModel """
         for cat in self.categories:
+            variable = set(cat.config_data[cfg.name].variable for cfg in self.config_insts)
+            config_cat = set(cat.config_data[cfg.name].category for cfg in self.config_insts)
             print(f"{'=' * 20} {cat.name}")
-            print(f"Variable {cat.config_variable} \nCategory {cat.config_category}")
+            print(f"Variable {variable} \nCategory {config_cat}")
             print(f"Processes {[p.name for p in cat.processes]}")
             print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
 
@@ -154,7 +159,7 @@ class HBWInferenceModelBase(InferenceModel):
             syst.format(year=year, bjet_cat=bjet_cat)
             for syst in self.systematics
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
         })
 
         available_procs = set(self.processes)
@@ -181,7 +186,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_rate_unconstrained = {
             unc_formatted: available_procs
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_rate_unconstrained.items()
             if (
                 (unc_formatted := "rate_" + unc.format(year=year, bjet_cat=bjet_cat))
@@ -192,7 +197,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_shape = {
             unc_formatted: available_procs
             for year in years
-            for bjet_cat in ("1b", "2b")
+            for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_shape.items()
             if (
                 (unc_formatted := unc.format(year=year, bjet_cat=bjet_cat))
@@ -369,6 +374,14 @@ class HBWInferenceModelBase(InferenceModel):
             # add dummy variations if requested
             self.add_dummy_variation(proc, datasets)
 
+    def remove_inference_processes(self: InferenceModel):
+        for proc, remove_kwargs in const.remove_processes.items():
+            if proc in self.processes:
+                self.remove_process(proc, **remove_kwargs)
+                logger.warning(f"Removed process {proc} from inference model.")
+            else:
+                logger.warning(f"Process {proc} not found in inference model. Skipping removal.")
+
     def add_inference_parameters(self: InferenceModel):
         """
         Function that adds all parameters (systematic variations) to the inference model
@@ -419,7 +432,7 @@ class HBWInferenceModelBase(InferenceModel):
                 "effect": ["1", "[0,2]"],
             }
 
-            for bjet_cat in ("1b", "2b"):
+            for bjet_cat in self.bjet_cats:
                 if syst_name.endswith(bjet_cat):
                     param_kwargs["category"] = f"*_{bjet_cat}_*"
                     param_kwargs["category_match_mode"] = "all"
@@ -512,7 +525,7 @@ class HBWInferenceModelBase(InferenceModel):
                 "process": [self.inf_proc(proc) for proc in shape_processes],
             }
             shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
-            for bjet_cat in ("1b", "2b"):
+            for bjet_cat in self.bjet_cats:
                 if shape_uncertainty.endswith(bjet_cat):
                     param_kwargs["category"] = f"*_{bjet_cat}_*"
                     param_kwargs["category_match_mode"] = "all"
@@ -523,6 +536,7 @@ class HBWInferenceModelBase(InferenceModel):
                     shift_source=shift_source,
                 )
                 for config_inst in self.config_insts
+                if config_inst.has_shift(f"{shift_source}_up")
             }
 
             self.add_parameter(

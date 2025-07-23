@@ -135,6 +135,11 @@ systematics = DotDict({
         "rate_ttbar",
         "rate_dy",
     ],
+    "rate_unconstrained1": [
+        "rate_ttbar",
+        "rate_dy_lf",
+        "rate_dy_hf",
+    ],
     "rate_unconstrained_bjet_uncorr": [
         "rate_ttbar_{bjet_cat}",
         "rate_dy_{bjet_cat}",
@@ -195,11 +200,20 @@ systematics = DotDict({
         "jer",
         "jec_Total",
     ],
+    "jerc_only_bjet_uncorr": [
+        "jer_{bjet_cat}",
+        "jec_Total_{bjet_cat}",
+    ],
 })
 systematics["rate"] = [
     *systematics.QCDScale,
     *systematics.pdf,
     *systematics.rate_unconstrained,
+]
+systematics["rate1"] = [
+    *systematics.QCDScale,
+    *systematics.pdf,
+    *systematics.rate_unconstrained1,
 ]
 systematics["shape_only"] = [
     *systematics.murf_envelope,
@@ -215,7 +229,12 @@ systematics["shape"] = [
 # default set of all systematics
 systematics["jerc"] = [
     *systematics.rate,
-    *systematics.shape,
+    *systematics.shape_only,
+    *systematics.jerc_only,
+]
+systematics["jerc1"] = [
+    *systematics.rate1,
+    *systematics.shape_only,
     *systematics.jerc_only,
 ]
 systematics["rate_bjet_uncorr"] = [
@@ -236,6 +255,11 @@ systematics["jerc_bjet_uncorr"] = [
     *systematics.rate_bjet_uncorr,
     *systematics.shape_bjet_uncorr,
     *systematics.jerc_only,
+]
+systematics["jerc_bjet_uncorr1"] = [
+    *systematics.rate_bjet_uncorr,
+    *systematics.shape_bjet_uncorr,
+    *systematics.jerc_only_bjet_uncorr,
 ]
 
 hhprocs_ggf = lambda hhdecay: [
@@ -262,12 +286,13 @@ backgrounds = [
     # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    # "st_schannel",  # TODO: bogus norm?
+    "st_schannel",  # TODO: bogus norm?
     "tt",
     "ttw",
     "ttz",
-    "dy_hf", "dy_lf",
-    # "w_lnu",  # TODO: bogus norm?
+    "dy_hf",
+    "dy_lf",
+    "w_lnu",  # TODO: bogus norm?
     "vv",
     "vvv",
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
@@ -351,8 +376,32 @@ dl_syst = dl.derive("dl_syst", cls_dict={"systematics": systematics.shape})
 dl_syst1 = dl.derive("dl_syst1", cls_dict={"systematics": systematics.shape})
 dl_jerc_only = dl.derive("dl_jerc_only", cls_dict={"systematics": systematics.jerc_only})
 dl_jerc = dl.derive("dl_jerc", cls_dict={"systematics": systematics.jerc})
-dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc})
+dl_jerc_boosted = dl.derive("dl_jerc_boosted", cls_dict={
+    "systematics": systematics.jerc,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_jerc1_boosted = dl.derive("dl_jerc1_boosted", cls_dict={
+    "systematics": systematics.jerc1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_jerc1_boosted_data = dl.derive("dl_jerc1_boosted_data", cls_dict={
+    "systematics": systematics.jerc1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_data": False,
+})
+dl_jerc_boosted_bjet_uncorr1 = dl.derive("dl_jerc_boosted_bjet_uncorr1", cls_dict={
+    "systematics": systematics.jerc_bjet_uncorr1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_jerc_boosted_bjet_uncorr1_data = dl.derive("dl_jerc_boosted_bjet_uncorr1_data", cls_dict={
+    "systematics": systematics.jerc_bjet_uncorr1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_data": False,
+})
+# TODO: data dings ehhh diese rate und data_obs values in den rebin anpassen
+dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc1})
 dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
+dl_jerc_bjet_uncorr1 = dl.derive("dl_jerc_bjet_uncorr1", cls_dict={"systematics": systematics.jerc_bjet_uncorr1})
 dl_data = dl.derive("dl_data", cls_dict={
     "config_categories": config_categories.background,
     "systematics": systematics.jerc,

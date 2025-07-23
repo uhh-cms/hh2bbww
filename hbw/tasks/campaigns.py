@@ -342,6 +342,9 @@ class BuildCampaignSummary(
     def store_parts(self):
         parts = super().store_parts()
 
+        # Should not depend on the version parameter
+        parts.pop("version", None)
+
         # add the config name
         parts.insert_after("task_family", "config", self.config)
 

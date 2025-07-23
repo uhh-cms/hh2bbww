@@ -133,7 +133,7 @@ def trigger_selection(
     # trigger_ids = ak.concatenate(trigger_ids, axis=1)
     events = set_ak_int32(events, "trigger_ids", trigger_ids)
     events = set_ak_bool(events, "trigger_data", trigger_data)
-
+    # check_trigger_data(trigger_data)
     return events, SelectionResult(
         steps={
             "trigger": trigger_data.any_fired,
@@ -142,6 +142,18 @@ def trigger_selection(
         #     "trigger_data": trigger_data,
         # },
     )
+
+
+def check_trigger_data(trigger_data):
+    for field in trigger_data.fields:
+        if field == "any_fired":
+            continue
+        fired = trigger_data[field].fired
+        fired_and_all_legs_match = trigger_data[field].fired_and_all_legs_match
+        print(field)
+        print("fired", ak.sum(fired))
+        print("fired_and_all_legs_match", ak.sum(fired_and_all_legs_match))
+        print("ratio", ak.sum(fired_and_all_legs_match) / ak.sum(fired))
 
 
 @trigger_selection.init
