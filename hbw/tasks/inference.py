@@ -809,21 +809,18 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
 
+        # prepare the base command to set the environment variables
         base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
         full_cmd = base_cmd
 
-        # run pruning helper on cards
-        for card_fn in card_fns:
-            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
-            full_cmd += cmd + "\n"
-
-        full_cmd += "\n\n"
-        print(full_cmd)
-
-        base_cmd = f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
-
-        lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
-        lumi = f"'{lumi:.1f} fb^{{-1}}'"
+        # prepare strings for campaign name and card names
+        if len(self.configs) == 4:
+            campaign = "run3"
+        elif len(self.configs) == 1:
+            campaign = self.configs[0]
+        else:
+            lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
+            campaign = f"'{lumi:.1f} fb^{{-1}}'"
 
         is_signal_region = lambda cat_name: (
             "sig_" in cat_name or cat_name == "sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
@@ -863,7 +860,17 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         multi_datacards = ":".join(multi_datacards)
         multi_datacard_names = ",".join(multi_datacard_names)
+
+        # run pruning helper on cards
+        for card_fn in card_fns:
+            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
+            full_cmd += cmd + "\n"
+
         print("\n\n")
+        full_cmd += "\n\n"
+        print(full_cmd)
+
+        base_cmd = f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
 
         # print(base_cmd)
         # for card, _ident in zip(card_fns, identifier):
@@ -871,11 +878,12 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         #     print(cmd)
         # print("\n\n")
 
+        # creating upper limits for kl=1
         cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
             f"--multi-datacards {multi_datacards} "
             f"--datacard-names {multi_datacard_names} "
-            f"--UpperLimits-workflow htcondor "
+            f"--UpperLimits-workflow htcondor --workers 10 "
         )
         full_cmd += cmd + "\n\n"
         print(base_cmd + cmd, "\n\n")
@@ -883,16 +891,15 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # creating upper limits for kl=1
         cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {lumi} "
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
             f"--multi-datacards {datacards} "
             f"--datacard-names {identifier}"
         )
         print(base_cmd + cmd, "\n\n")
-        # full_cmd += cmd + "\n\n"
 
         # creating kl scan
         cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
+            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
@@ -901,7 +908,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # creating C2V scan
         cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {lumi} --datacards {datacards} "
+            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
@@ -914,15 +921,14 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"--skip-b-only"
         )
         print(base_cmd + cmd, "\n\n")
-        # full_cmd += cmd + "\n\n"
         output["FitDiagnostics"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
-            f"law run PlotPullsAndImpacts --version {identifier} --campaign {lumi} --datacards {datacards} "
-            f"--order-by-impact --PullsAndImpacts-workflow htcondor --mc-stats --parameters-per-page 50"
+            f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"--order-by-impact --mc-stats --parameters-per-page 50"
         )
-        pulls_and_imacts_params = "workflow=htcondor"
+        pulls_and_imacts_params = "workflow=htcondor,retries=1"
         if not self.unblind and not self.inference_model_inst.skip_data:
             pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
             # NOTE: the custom args do not work in combination with job submission
@@ -945,6 +951,9 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # dump the full command to one output file
         run_script = self.create_run_script(identifier, full_cmd)
         output["Run"].dump(run_script, formatter="text")
+
+        print("# combined task calls")
+        print(f"bash {output['Run'].abspath}")
 
     def create_run_script(self, identifier, full_cmd):
         full_cmd_with_fetch = full_cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")

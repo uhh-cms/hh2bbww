@@ -376,6 +376,8 @@ class MLClassifierBase(MLModel):
         return ["event_weights", analysis_inst.x.ml_inputs_producer]
 
     def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
+        # TODO: this currently includes event_weights, but only needs the ml_inputs_producer
+        # return [analysis_inst.x.ml_inputs_producer]
         return self.training_producers(analysis_inst, requested_producers)
 
     def requires(self, task: law.Task) -> dict[str, Any]:
