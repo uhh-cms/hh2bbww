@@ -109,14 +109,14 @@ def add_common_ml_variables(config: od.Config) -> None:
         name="mli_mindr_lb",
         expression="mli_mindr_lb",
         binning=(40, 0, 8),
-        x_title=r"min $\Delta R(l,b)$",
+        x_title=r"min $\Delta R(\ell,b)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_mindr_lj",
         expression="mli_mindr_lj",
         binning=(40, 0, 8),
-        x_title=r"min $\Delta R(l,j)$",
+        x_title=r"min $\Delta R(\ell,j)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -259,14 +259,14 @@ def add_sl_ml_variables(config: od.Config) -> None:
         name="mli_dphi_lnu",
         expression="mli_dphi_lnu",
         binning=(40, 0, 3.2),
-        x_title=r"$\Delta\Phi(l,\nu)$",
+        x_title=r"$\Delta\Phi(\elll,\nu)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dphi_wl",
         expression="mli_dphi_wl",
         binning=(40, 0, 3.2),
-        x_title=r"$\Delta\Phi(W,l)$",
+        x_title=r"$\Delta\Phi(W,\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -275,7 +275,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         aux={"overflow": True},
-        x_title=r"$m(l,\nu)$",
+        x_title=r"$m(\ell,\nu)$",
     )
     config.add_variable(
         name="mli_mjjlnu",
@@ -283,7 +283,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         aux={"overflow": True},
-        x_title=r"$m(jj,l\nu)$",
+        x_title=r"$m(jj,\ell\nu)$",
     )
     config.add_variable(
         name="mli_mjjl",
@@ -291,34 +291,34 @@ def add_sl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 400),
         unit="GeV",
         aux={"overflow": True},
-        x_title=r"$m(jj,l)$",
+        x_title=r"$m(jj,\ell)$",
     )
     config.add_variable(
         name="mli_dphi_bb_jjlnu",
         expression="mli_dphi_bb_jjlnu",
         binning=(40, 0, 3.2),
-        x_title=r"$\Delta\Phi(bb,jjl\nu)$",
+        x_title=r"$\Delta\Phi(bb,jj\ell\nu)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dr_bb_jjlnu",
         expression="mli_dr_bb_jjlnu",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(nn,jjlnu)$",
+        x_title=r"$\Delta R(bb,jj\ell\nu)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dphi_bb_jjl",
         expression="mli_dphi_bb_jjl",
         binning=(40, 0, 3.2),
-        x_title=r"$\Delta\Phi(bb,jjl)$",
+        x_title=r"$\Delta\Phi(bb,jj\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dr_bb_jjl",
         expression="mli_dr_bb_jjl",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(nn,jjl)$",
+        x_title=r"$\Delta R(bb,jj\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -339,14 +339,14 @@ def add_sl_ml_variables(config: od.Config) -> None:
         name="mli_dr_bb_l",
         expression="mli_dr_bb_l",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(bb,l)$",
+        x_title=r"$\Delta R(bb,\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dr_jj_l",
         expression="mli_dr_jj_l",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(jj,l)$",
+        x_title=r"$\Delta R(jj,\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -354,7 +354,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
         expression="mli_mbbjjlnu",
         binning=(40, 0, 800),
         unit="GeV",
-        x_title=r"$m(bbjjlnu)$",
+        x_title=r"$m(bbjj\ell\nu)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -362,7 +362,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
         expression="mli_mbbjjl",
         binning=(40, 0, 800),
         unit="GeV",
-        x_title=r"$m(bbjjl)$",
+        x_title=r"$m(bbjj\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(

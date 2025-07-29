@@ -120,44 +120,44 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_min_dr_llbb",
         expression="mli_min_dr_llbb",
         binning=(40, 0, 8),
-        x_title=r"$minimum \Delta R(b,l)$",
+        x_title=r"$minimum \Delta R(bb,\ell\ell)$",
     )
     config.add_variable(
         name="mli_mll",
         expression="mli_mll",
         binning=(40, 0, 160),
-        x_title=r"$m_{ll}$",
+        x_title=r"$m_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_dr_ll",
         expression="mli_dr_ll",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(ll)$",
+        x_title=r"$\Delta R(\ell,\ell)$",
     )
     config.add_variable(
         name="mli__min_dr_llbb",
         expression="mli_min_dr_llbb",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(bb,ll)$",
+        x_title=r"$\Delta R(bb,\ell\ell)$",
     )
     config.add_variable(
         name="mli_mllMET",
         expression="mli_mllMET",
         binning=(60, 0, 1200),
         aux={"overflow": True},
-        x_title=r"$m_{llMET}$",
+        x_title=r"$m_{\ell\ell MET}$",
     )
     config.add_variable(
         name="mli_dr_bb_llMET",
         expression="mli_dr_bb_llMET",
         binning=(40, 0, 8),
-        x_title=r"$\Delta R(bb,llMET)$",
+        x_title=r"$\Delta R(bb,\ell\ell MET)$",
     )
     config.add_variable(
         name="mli_dphi_bb_llMET",
         expression="mli_dphi_bb_llMET",
         binning=(40, 0, 8),
-        x_title=r"$\Delta \phi(bb,llMET)$",
+        x_title=r"$\Delta \phi(bb,\ell\ell MET)$",
     )
     config.add_variable(
         name="mli_mbbllMET",
@@ -165,19 +165,19 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 1200),
         unit="GeV",
         aux={"overflow": True},
-        x_title=r"$m_{bbllMET}$",
+        x_title=r"$m_{\ell\ell MET}$",
     )
     config.add_variable(
         name="mli_dphi_ll",
         expression="mli_dphi_ll",
         binning=(40, 0, 8),
-        x_title=r"$\Delta \phi_{ll}$",
+        x_title=r"$\Delta \phi_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_deta_ll",
         expression="mli_deta_ll",
         binning=(40, 0, 6),
-        x_title=r"$\Delta \eta_{ll}$",
+        x_title=r"$\Delta \eta_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_ll_pt",

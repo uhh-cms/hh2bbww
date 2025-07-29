@@ -104,6 +104,8 @@ for decay in ("", "qqlnu", "2l2nu"):
 
 
 default_labels = {
+    "hh_ggf_hbb_htt_kl1_kt1": r"$HH_{ggf}^{\kappa_\lambda=1}$$\rightarrow bb\tau\tau$",
+    "hh_vbf_hbb_htt_kv1_k2v1_kl1": r"$HH_{vbf}^{1,1,1}$$\rightarrow bb\tau\tau$",
     "dy_m50toinf": "DY ($M > 50$)",
     "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
     "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",

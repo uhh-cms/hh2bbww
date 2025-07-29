@@ -24,6 +24,37 @@ def modify_cmsdb_processes():
         tth, thq, thw,
     )
 
+    decay_map = {
+        "lf": {
+            "name": "lf",
+            "id": 50,
+            "label": "(lf)",
+            "br": -1,
+        },
+        "hf": {
+            "name": "hf",
+            "id": 70,
+            "label": "(hf)",
+            "br": -1,
+        },
+    }
+
+    for dy_proc_inst in (
+        dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+    ):
+        add_production_mode_parent = dy_proc_inst.name != "dy"
+        for flavour in ("hf", "lf"):
+            # the 'add_decay_process' function helps us to create all parent-daughter relationships
+            add_decay_process(
+                dy_proc_inst,
+                decay_map[flavour],
+                add_production_mode_parent=add_production_mode_parent,
+                name_func=lambda parent_name, decay_name: f"{parent_name}_{decay_name}",
+                label_func=lambda parent_label, decay_label: f"{parent_label} {decay_label}",
+                xsecs=None,
+                aux={"flavour": flavour},
+            )
+
     qcd_mu.label = "QCD Muon enriched"
     qcd_ele = create_parent_process(
         [qcd_em, qcd_bctoe],
@@ -63,7 +94,7 @@ def modify_cmsdb_processes():
     )
 
     minor = create_parent_process(  # noqa: F841
-        [w_lnu, vv, vvv, ttv, ttvv, tth, thq, thw, h_ggf, h_vbf, vh],
+        [w_lnu, vv, vvv, ttv, ttvv, tttt, tth, thq, thw, h_ggf, h_vbf, vh],
         name="minor",
         id=99997,
         label="minor processes",
@@ -101,34 +132,3 @@ def modify_cmsdb_processes():
         label="tt + DY",
         color=color_palette["red"],
     )
-
-    decay_map = {
-        "lf": {
-            "name": "lf",
-            "id": 50,
-            "label": "(lf)",
-            "br": -1,
-        },
-        "hf": {
-            "name": "hf",
-            "id": 70,
-            "label": "(hf)",
-            "br": -1,
-        },
-    }
-
-    for dy_proc_inst in (
-        dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
-    ):
-        add_production_mode_parent = dy_proc_inst.name != "dy"
-        for flavour in ("hf", "lf"):
-            # the 'add_decay_process' function helps us to create all parent-daughter relationships
-            add_decay_process(
-                dy_proc_inst,
-                decay_map[flavour],
-                add_production_mode_parent=add_production_mode_parent,
-                name_func=lambda parent_name, decay_name: f"{parent_name}_{decay_name}",
-                label_func=lambda parent_label, decay_label: f"{parent_label} {decay_label}",
-                xsecs=None,
-                aux={"flavour": flavour},
-            )
