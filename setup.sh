@@ -113,6 +113,7 @@ setup_hbw() {
 
     # ammend paths that are not covered by the central cf setup
     export PATH="${HBW_BASE}/bin:${PATH}"
+    export PATH="${HBW_BASE}/hbw/scripts:${PATH}"
     export PYTHONPATH="${HBW_BASE}:${HBW_BASE}/modules/cmsdb:${PYTHONPATH}"
 
     # initialze submodules
