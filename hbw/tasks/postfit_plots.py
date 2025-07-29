@@ -134,6 +134,7 @@ def plot_postfit_shapes(
     yscale: str | None = "",
     hide_errors: bool | None = None,
     hide_signal_errors: bool | None = False,
+    lumi: float | None = None,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
@@ -189,6 +190,8 @@ def plot_postfit_shapes(
     if shape_norm:
         style_config["ax_cfg"]["ylabel"] = r"$\Delta N/N$"
 
+    if lumi:
+        style_config["cms_label_cfg"]["lumi"] = lumi
     return plot_all(plot_config, style_config, **kwargs)
 
 
