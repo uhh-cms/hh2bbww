@@ -172,27 +172,24 @@ def add_config(
             "lumi_13TeV_correlated": 0.02j,
         })
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
+    # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=26
     elif year == 2022:
         if campaign.has_tag("preEE"):
-            cfg.x.luminosity = Number(7971, {
-                "lumi_13TeV_2022": 0.01j,
-                "lumi_13TeV_correlated": 0.006j,
+            cfg.x.luminosity = Number(7980.4, {
+                "lumi_13TeV_2022": 0.013j,
             })
         elif campaign.has_tag("postEE"):
-            cfg.x.luminosity = Number(26337, {
-                "lumi_13TeV_2022": 0.01j,
-                "lumi_13TeV_correlated": 0.006j,
+            cfg.x.luminosity = Number(26671.7, {
+                "lumi_13TeV_2022": 0.013j,
             })
     elif year == 2023:
         if campaign.has_tag("preBPix"):
             cfg.x.luminosity = Number(17794, {
-                "lumi_13TeV_2023": 0.01j,
-                "lumi_13TeV_correlated": 0.006j,
+                "lumi_13TeV_2023": 0.014j,
             })
         elif campaign.has_tag("postBPix"):
             cfg.x.luminosity = Number(9451, {
-                "lumi_13TeV_2023": 0.01j,
-                "lumi_13TeV_correlated": 0.006j,
+                "lumi_13TeV_2023": 0.014j,
             })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
@@ -793,13 +790,13 @@ def add_config(
     # add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
 
     cfg.x.dy_weight_config = DrellYanConfig(
-        era="2022postEE",
+        era=cfg.x.cpn_tag,
         order="NLO",  # only when using v2
         correction="DY_pTll_reweighting",
         unc_correction="DY_pTll_reweighting_N_uncertainty",
     )
     cfg.x.dy_recoil_config = DrellYanConfig(
-        era="2022postEE",
+        era=cfg.x.cpn_tag,
         order="NLO",  # only when using v2
         correction="Recoil_correction_QuantileMapHist",
         unc_correction="Recoil_correction_Uncertainty",
