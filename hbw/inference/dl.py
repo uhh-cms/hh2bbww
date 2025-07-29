@@ -398,7 +398,6 @@ dl_jerc_boosted_bjet_uncorr1_data = dl.derive("dl_jerc_boosted_bjet_uncorr1_data
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
     "skip_data": False,
 })
-# TODO: data dings ehhh diese rate und data_obs values in den rebin anpassen
 dl_jerc1 = dl.derive("dl_jerc1", cls_dict={"systematics": systematics.jerc1})
 dl_jerc_bjet_uncorr = dl.derive("dl_jerc_bjet_uncorr", cls_dict={"systematics": systematics.jerc_bjet_uncorr})
 dl_jerc_bjet_uncorr1 = dl.derive("dl_jerc_bjet_uncorr1", cls_dict={"systematics": systematics.jerc_bjet_uncorr1})
