@@ -74,13 +74,13 @@ def default_producers(cls, container, task_params):
     # check if a mlmodel has been set
     ml_model = task_params.get("ml_models", None)
 
-    # only consider 1 ml_model
-    if ml_model and isinstance(ml_model, (list, tuple)):
-        ml_model = ml_model[0]
-
     # try and get the default ml model if not set
     if ml_model in (None, law.NO_STR, RESOLVE_DEFAULT):
         ml_model = default_ml_model(cls, container, task_params)
+
+    # only consider 1 ml_model
+    if ml_model and isinstance(ml_model, (list, tuple)):
+        ml_model = ml_model[0]
 
     # if a ML model is set, and the task is not part of the MLTraining pipeline,
     # use the ml categorization producer instead of the default categorization producer
@@ -116,6 +116,9 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_reducer = "default"
     config_inst.x.ml_inputs_producer = ml_inputs_producer(config_inst)
     config_inst.x.default_producer = default_producers
+    # config_inst.x.producer_groups = {
+    #     "default": default_producers(None, config_inst, {}),
+    # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     config_inst.x.default_hist_producer = "with_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
@@ -131,8 +134,8 @@ def set_config_defaults_and_groups(config_inst):
     # Groups
     #
 
-    backgrounds0 = ["h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"]
-    backgrounds1 = ["h", "ttv", "vv", "w_lnu", "st", "dy", "tt"]
+    backgrounds0 = ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"]
+    backgrounds1 = ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"]
     hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
     hh_sm = [
         "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
@@ -210,6 +213,8 @@ def set_config_defaults_and_groups(config_inst):
         "mlsl": ["hh_ggf_hbb_hvvqqlnu_kl1_kt1", "tt", "st", "w_lnu", "dy"],
         "test": [default_signal_process, "tt_sl"],
         "small": [default_signal_process, "tt", "st"],
+        "bkgmajor": ["st", "dy_lf", "dy_hf", "tt"],
+        "bkgminor": ["other", "h", "ttv", "vv", "w_lnu"],
         "bkg": ["tt", "st", "w_lnu", "dy"],
         # signal groups
         "signal": ["hh_ggf_*", "hh_vbf_*"],
@@ -234,11 +239,13 @@ def set_config_defaults_and_groups(config_inst):
         # background groups (separated for plotting)
         "dy_m": ["dy_m4to10", "dy_m10to50", "dy_m50toinf"],
         # background groups (for yield tables)
-        "table": [*hbbhww_sm, *backgrounds0, "data", "background"],
-        "table0": [*hh_sm, *backgrounds0, "data", "background"],
-        "table1": [*hbbhww_sm, *backgrounds1, "data", "background"],
-        "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor", "h_all"],
+        "table": [*hbbhww_sm, *backgrounds0[::-1], "data", "background"],
+        "table0": [*hh_sm, *backgrounds0[::-1], "data", "background"],
+        "table1": [*hh_sm, *backgrounds1[::-1], "data", "background"],
+        "table2": [*hh_sm, "dy_m", "tt_all", "st_all", "w_lnu", "minor_all", "h_all"],
         "table3": ["background", "tt", "dy", "st", "w", "h", "vv", "ttv", "other"],
+        "table4": [*hh_sm, *backgrounds1[::-1], "background"],
+        "table5": ["tt", "dy", "st", "minor", "data", "background"],
         "inference": [
             # TODO: merge st_schannel, st_tchannel
             "st_tchannel",
@@ -260,7 +267,7 @@ def set_config_defaults_and_groups(config_inst):
         "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
         "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
-        "minor": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
+        # "minor_all": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
         "hh_sm": hh_sm,
         "hh_sm1": hh_sm1,
         "signals": [*hh_sm, *hh_sm1],
@@ -535,6 +542,19 @@ def set_config_defaults_and_groups(config_inst):
             "yscale": "log",
             "blinding_threshold": 0.008,
         },
+        "data_mc_plots_blind_conservative": {
+            # "custom_style_config": "default",  # NOTE: does not work in combination with group
+            "whitespace_fraction": 0.4,
+            "cms_label": "wip",
+            "yscale": "log",
+            "blinding_threshold": 0.004,
+        },
+        "unstacked": {
+            "whitespace_fraction": 0.4,
+            "cms_label": "simwip",
+            "yscale": "log",
+            "shape_norm": True,
+        }
     }
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},
