@@ -98,8 +98,8 @@ systematics = DotDict({
         "lumi_13TeV_2016",
         "lumi_13TeV_2017",
         "lumi_13TeV_1718",
-        "lumi_13TeV_2022",
-        "lumi_13TeV_2023",
+        "lumi_13p6TeV_2022",
+        "lumi_13p6TeV_2023",
         "lumi_13TeV_correlated",
     ],
     "QCDScale": [

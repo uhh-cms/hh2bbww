@@ -176,20 +176,20 @@ def add_config(
     elif year == 2022:
         if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(7980.4, {
-                "lumi_13TeV_2022": 0.013j,
+                "lumi_13p6TeV_2022": 0.013j,
             })
         elif campaign.has_tag("postEE"):
             cfg.x.luminosity = Number(26671.7, {
-                "lumi_13TeV_2022": 0.013j,
+                "lumi_13p6TeV_2022": 0.013j,
             })
     elif year == 2023:
         if campaign.has_tag("preBPix"):
             cfg.x.luminosity = Number(17794, {
-                "lumi_13TeV_2023": 0.014j,
+                "lumi_13p6TeV_2023": 0.014j,
             })
         elif campaign.has_tag("postBPix"):
             cfg.x.luminosity = Number(9451, {
-                "lumi_13TeV_2023": 0.014j,
+                "lumi_13p6TeV_2023": 0.014j,
             })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")

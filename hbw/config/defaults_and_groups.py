@@ -438,7 +438,7 @@ def set_config_defaults_and_groups(config_inst):
             "fsr_up",
             "top_pt_up",
             # # experimental unc.
-            # "lumi_13TeV_2022_up",
+            # "lumi_13p6TeV_2022_up",
             # b-tagging
             "btag_hf_up",
             "btag_lf_up",
