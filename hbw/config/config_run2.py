@@ -286,6 +286,32 @@ def add_config(
         },
     })
 
+    if cfg.x.run == 2:
+        cfg.x.met_phi_correction_set = "{variable}_metphicorr_pfmet_{data_source}"
+    else:
+        cfg.x.met_phi_correction_set = "met_xy_corrections"
+        cfg.x.met_phi_correction = {
+            "met_name": "PuppiMET",
+            "correction_set": "met_xy_corrections",
+            "keep_uncorrected": False,
+            "variable_config": {
+                "pt": (
+                    "pt",
+                    "pt_stat_yup",
+                    "pt_stat_ydn",
+                    "pt_stat_xup",
+                    "pt_stat_xdn",
+                ),
+                "phi": (
+                    "phi",
+                    "phi_stat_yup",
+                    "phi_stat_ydn",
+                    "phi_stat_xup",
+                    "phi_stat_xdn",
+                ),
+            },
+        }
+
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
     cfg.x.btag_sf_jec_sources = [
@@ -734,7 +760,8 @@ def add_config(
         cfg.x.external_files[name] = value
 
     # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
+    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
     if cfg.x.run == 2:
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
@@ -783,6 +810,13 @@ def add_config(
     if cfg.x.run == 2:
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
+    else:
+        # Run3 met phi corrector (used in Run3)
+        met_corr_tag = f"{year}_{year}{jerc_postfix}"
+        add_external(
+            "met_phi_corr",
+            (f"{json_mirror}/POG/JME/{corr_tag}/met_xyCorrections_{met_corr_tag}.json.gz", "v1"),
+        )
 
     recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
     add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
@@ -879,6 +913,7 @@ def add_config(
         ColumnCollection.MANDATORY_COFFEA,
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+        "PV.npvsGood",  # needed for met phi correction
         # Gen information (for categorization)
         "HardGenPart.pdgId",
         # Gen information for pt reweighting
