@@ -554,7 +554,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simwip",
             "yscale": "log",
             "shape_norm": True,
-        }
+        },
     }
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},

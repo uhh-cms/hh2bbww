@@ -31,7 +31,7 @@ logger = law.logger.get_logger(__name__)
     data_only=True,
 )
 def ECALBadCalibrationFilter(
-    self: Producer, events: ak.Array, **kwargs
+    self: Producer, events: ak.Array, **kwargs,
 ) -> ak.Array:
     """
     Producer that applies the ECAL bad calibration filter.
