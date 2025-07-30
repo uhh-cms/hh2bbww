@@ -386,8 +386,10 @@ def add_config(
             "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "particlenet_hbb_vs_qcd": {
-            # AK4 medium WP as placeholder (TODO: replace with actual values)
-            "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            # Values copied from Xbb tagger, might need to be adjusted/studied later
+            "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
 
@@ -416,9 +418,9 @@ def add_config(
     )
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
-    cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
-    if cfg.x.xbb_btag_wp_score == 0.0:
-        raise ValueError(f"Unknown xbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
+    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
+    if cfg.x.hbb_btag_wp_score == 0.0:
+        raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
