@@ -272,6 +272,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=24.0,
                 # filter names:
                 # hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p08 (1mu + Iso)
+                # TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**1 + 2**3,  # Iso (bit 1) + 1mu (bit 3)
             ),
         ],
@@ -290,14 +291,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 pdg_id=13,
                 min_pt=17.0,
                 # filter names:
-                # TODO
+                # TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**0 + 2**4,  # TrkIsoVVL (bit 0) + 2mu (bit 4)
             ),
             TriggerLeg(
                 pdg_id=13,
                 min_pt=8.0,
                 # filter names:
-                # TODO
+                # TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**0 + 2**4,  # TrkIsoVVL (bit 0) + 2mu (bit 4) + DZ_Mass3p8 (bit ?)
             ),
         ],
@@ -347,14 +348,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 pdg_id=11,
                 min_pt=23.0,
                 # filter names:
-                # TODO
+                # TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=12.0,
                 # filter names:
-                # TODO
+                # TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
@@ -386,7 +387,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
             TriggerLeg(
                 pdg_id=11,
                 min_pt=50.0,
-                # filter names: TODO
+                # filter names: TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**11 + 2**12,  # CaloIdVT_GsfTrkIdT (bit 11) + PFJet (bit 12)
             ),
         ],
@@ -407,13 +408,13 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
             TriggerLeg(
                 pdg_id=11,
                 min_pt=33.0,
-                # filter names: TODO
+                # filter names: TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=33.0,
-                # filter names: TODO
+                # filter names: TODO: bit numbers should be checked before being used (especially for NanoV14)
                 trigger_bits=2**4,  # 2e (bit 4) + CaloIdL_MW (no bit?)
             ),
         ],
@@ -443,15 +444,15 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 pdg_id=13,
                 min_pt=23.0,
                 # filter names:
-                # TODO
-                trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0)
+                # TODO: likely faulty implementation of bits
+                # trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=12.0,
                 # filter names:
-                # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                # TODO: likely faulty implementation of bits
+                # trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
         aux={
@@ -472,15 +473,15 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 pdg_id=13,
                 min_pt=8.0,
                 # filter names:
-                # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + TrkIsoVVL (bit 0)
+                # TODO: likely faulty implementation of bits
+                # trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + TrkIsoVVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=23.0,
                 # filter names:
-                # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                # TODO: likely faulty implementation of bits
+                # trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
         aux={
