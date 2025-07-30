@@ -81,16 +81,16 @@ def dl_lepton_selection(
     ) <= 2
 
     # select events
-    mu_mask_fakeable = lepton_results.x.mu_mask_fakeable
-    e_mask_fakeable = lepton_results.x.e_mask_fakeable
+    mu_mask_tight = lepton_results.x.mu_mask_tight
+    e_mask_tight = lepton_results.x.e_mask_tight
 
     # NOTE: leading lepton pt could be reduced to trigger threshold + 1
-    leading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.mu_pt)
-    leading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.ele_pt)
+    leading_mu_mask = (mu_mask_tight) & (events.Muon.pt > self.mu_pt)
+    leading_e_mask = (e_mask_tight) & (events.Electron.pt > self.ele_pt)
 
     # NOTE: we might need pt > 15 for lepton SFs. Needs to be checked in Run 3.
-    subleading_mu_mask = (mu_mask_fakeable) & (events.Muon.pt > self.mu2_pt)
-    subleading_e_mask = (e_mask_fakeable) & (events.Electron.pt > self.ele2_pt)
+    subleading_mu_mask = (mu_mask_tight) & (events.Muon.pt > self.mu2_pt)
+    subleading_e_mask = (e_mask_tight) & (events.Electron.pt > self.ele2_pt)
 
     # For further analysis after Reduction, we consider all tight leptons with pt > 15 GeV
     lepton_results.objects["Electron"]["Electron"] = masked_sorted_indices(subleading_e_mask, events.Electron.pt)
@@ -120,25 +120,23 @@ def dl_lepton_selection(
         ak.fill_none(ak.nan_to_none(dilepton.mass), EMPTY_FLOAT),
         value_type=np.float32,
     )
+    # since we veto additional loose leptons, we can use the mass of the selected lepton pair for mll cuts
+    lepton_results.steps["DiLeptonMass20"] = ak.fill_none(dilepton.mass >= 20, False)
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
-        lepton_results.steps.ll_lowmass_veto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_ee"] = ee_mask = (
-        lepton_results.steps.ll_lowmass_veto &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 2)
     )
     lepton_results.steps["Lep_emu"] = emu_mask = (
-        lepton_results.steps.ll_lowmass_veto &
         (ak.sum(leading_e_mask, axis=1) >= 1) &
         (ak.sum(subleading_mu_mask, axis=1) >= 1)
     )
     lepton_results.steps["Lep_mue"] = mue_mask = (
-        lepton_results.steps.ll_lowmass_veto &
         (ak.sum(leading_mu_mask, axis=1) >= 1) &
         (ak.sum(subleading_e_mask, axis=1) >= 1)
     )
@@ -257,8 +255,8 @@ def dl1(
     results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
         jet_step &
-        results.steps.ll_lowmass_veto &
-        results.steps.TripleLeptonVeto &
+        results.steps.DiLeptonMass20 &
+        results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &
         results.steps.SR  # exactly 2 tight leptons
