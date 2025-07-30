@@ -283,36 +283,6 @@ broken_files_including_lhe_weights = {
 broken_files = {
     # NOTE: these broken files are only included because this was the state during the last
     # running of this campaign. Should be removed next time we re-run this campaign from scratch
-    "run3_2022_preEE_nano_uhh_v14": {
-        "w_lnu_amcatnlo": [
-            # missing LHEScaleWeights
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/8FC68130-292C-D4DC-DE4B-0BE42409485F.root",  # noqa: E501
-        ],
-        # "zzz_amcatnlo": [
-        #     # missing LHEScaleWeights -> skip Pdf and Scale producer for ZZZ
-        #     "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/ZZZ_TuneCP5_13p6TeV_amcatnlo-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/2D166D87-29B1-25A6-D8AE-AF46AA2FB3C0.root",  # noqa: E501
-        # ],
-        "dy_m10to50_amcatnlo": [
-            # missing LHEScaleWeights
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/AFDF65AD-2E7D-0DF1-C4F0-73E2A9ACF9C6.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/AE124AE8-4777-DCE3-9B44-A6ABE615BBB3.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext1-v1/0/374E71E8-660F-C286-3975-A16B3A81292E.root",  # noqa: E501
-        ],
-        "dy_m50toinf_amcatnlo": [
-            # missing LHEScaleWeights
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/AAF7BE65-3E51-0B7F-8A12-D53A96229A9A.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/7D333F43-59B3-0295-667B-04C9EFDDC14A.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/0/0B9DFE76-58A9-CAF8-99B6-3F8426373E7A.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext1-v1/0/ACE3A66A-733B-0A54-E5E0-078BC650922B.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/D141F1EE-BDBE-A61A-44CE-FC4FAB528F77.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/D7F923CF-5F49-281A-A07D-433A2A41D64B.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/24D50EBA-3847-9739-57E5-D1C5BAA92F6A.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/722D7954-ECE7-F7D3-ECA4-A817395DA63B.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/A95B69A3-0E32-078C-0B01-4576C55EA14A.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/DB6132D4-8EF6-8CA7-2838-6793A3292CCA.root",  # noqa: E501
-            "/store/mc/Run3Summer22MiniAODv4_NanoAODv14UHH/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5_ext2-v2/0/D9C3A7D5-C015-DA7E-CA28-4D6EF5A0739A.root",  # noqa: E501
-        ],
-    },
     "run3_2022_postEE_nano_uhh_v12": {
         "dy_m50toinf_amcatnlo": [
             # broken
