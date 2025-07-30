@@ -392,9 +392,9 @@ class MLClassifierBase(MLModel):
         return ["event_weights", analysis_inst.x.ml_inputs_producer]
 
     def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
-        # TODO: this currently includes event_weights, but only needs the ml_inputs_producer
-        # return [analysis_inst.x.ml_inputs_producer]
-        return self.training_producers(analysis_inst, requested_producers)
+        # NOTE: there is still an issue that this can only remove (not add) Producers, so the
+        # ml_inputs_producer also needs to be added in all task calls that use the evaluation of this model
+        return [analysis_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
         # Custom requirements (none currently)
