@@ -335,6 +335,9 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 "SingleIsoEG30er2p5",
                 "SingleIsoEG32er2p5",
                 "SingleIsoEG34er2p5",
+                *config.x.if_era(run=3, year=2023, values=[
+                    "SingleEG60",
+                ]),
             ],
         },
         tags={"single_trigger", "single_e"},
@@ -376,6 +379,9 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 "DoubleEG_25_12_er2p5",
                 "DoubleEG_25_14_er2p5",
                 "DoubleEG_LooseIso22_12_er2p5",
+                *config.x.if_era(run=3, year=2023, values=[
+                    "SingleEG60",
+                ]),
             ],
         },
         tags={"di_trigger", "di_e"},
@@ -398,6 +404,9 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 "SingleEG40er2p5",
                 "SingleEG42er2p5",
                 "SingleEG45er2p5",
+                *config.x.if_era(run=3, year=2023, values=[
+                    "SingleEG60",
+                ]),
             ],
         },
     )
@@ -433,6 +442,9 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 "SingleJet200",
                 "SingleTau120er2p1",
                 "SingleTau130er2p1",
+                *config.x.if_era(run=3, year=2023, values=[
+                    "SingleEG60",
+                ]),
             ],
         },
     )
