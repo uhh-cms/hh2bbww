@@ -255,7 +255,7 @@ def plot_efficiencies(
                     label = f"{proc_label}"
                 else:
                     label_dict = {
-                        "mixed": r"$e\mu$ trigger",  # "mixed + ele&jet",
+                        "mixed": r"$e^\pm\mu^\pm$ trigger",  # "mixed + ele&jet",
                         "emu_dilep": "Dilepton triggers",
                         "ee_dilep": "Dilepton triggers",
                         "mm_dilep": "Dilepton triggers1",
@@ -273,6 +273,10 @@ def plot_efficiencies(
                         "alt_mix": "mixed + ele115",
                         "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
                         "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
+                        "ee": r"$e^+e^-$ trigger",
+                        "mm": r"$\mu^+\mu^-$ trigger",
+                        "ee_old": r"$e^+e^-$ trigger (old)",
+                        "emu_old": r"$e^\pm\mu^\pm$ trigger (old)",
                     }
                     if i in label_dict.keys():
                         label = label_dict[i]
@@ -295,7 +299,7 @@ def plot_efficiencies(
                                            nan=0, posinf=1, neginf=0
                                            )
                 efficiency_sum = np.sum(myhist[:, hist.loc(i)].values()) / np.sum(norm_hist.values())
-                label += f" ({efficiency_sum:.3f})"
+                label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
                 # calculate uncertainties
                 if kwargs.get("skip_errorbars", False):
                     eff_err = None
@@ -336,6 +340,8 @@ def plot_efficiencies(
                     #        "yerr": None,
                     #        "label": f"{label}",
                     #    }
+                else:
+                    count_key += 1
 
             # set legend title to process name
             if proc_as_label:
@@ -355,7 +361,8 @@ def plot_efficiencies(
     if "xlim" in kwargs:
         style_config["ax_cfg"]["xlim"] = kwargs["xlim"]
 
-    style_config["cms_label_cfg"]["fontsize"] = 21
+    style_config["cms_label_cfg"]["fontsize"] = 23
+    style_config["annotate_cfg"]["fontsize"] = 22
     style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 1.5))
     style_config["ax_cfg"]["yscale"] = kwargs.get("yscale", "linear")
     style_config["rax_cfg"]["ylabel"] = "Ratio"
@@ -363,16 +370,14 @@ def plot_efficiencies(
 
     style_config["legend_cfg"]["title_fontsize"] = 23
     if len_label > 30:
-        style_config["legend_cfg"]["fontsize"] = 12
-    elif len_label > 20:
-        style_config["legend_cfg"]["fontsize"] = 15
+        style_config["legend_cfg"]["fontsize"] = 22
     else:
-        style_config["legend_cfg"]["fontsize"] = 23
+        style_config["legend_cfg"]["fontsize"] = 22
     style_config["legend_cfg"]["ncols"] = 1
     style_config["legend_cfg"]["reverse"] = False
 
     if not kwargs.get("skip_background", False):
-        grid_spec = {"left": 0.11, "right": 0.89, "top": 0.95, "bottom": 0.1}
+        grid_spec = {"left": 0.11, "right": 0.88, "top": 0.95, "bottom": 0.1}
         style_config["gridspec_cfg"] = grid_spec
 
     # fig, axs = plot_all(plot_config, style_config, **kwargs)

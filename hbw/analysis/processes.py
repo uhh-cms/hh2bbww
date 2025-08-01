@@ -60,7 +60,7 @@ def modify_cmsdb_processes():
     )
 
     sf_bkg = create_parent_process(  # noqa: F841
-        [h, ttv, vv, w_lnu, dy, st, tt],
+        [h, ttv, vv, dy, st, tt],
         name="sf_bkg",
         id=99890207,
         label="sf_bkg",

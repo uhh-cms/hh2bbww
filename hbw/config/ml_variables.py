@@ -353,3 +353,22 @@ def add_sl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 3.2),
         x_title=r"$\Delta\Phi(j2,l)$",
     )
+    for i in [1, 2]:
+        config.add_variable(
+            name=f"mli_dphi_j{i}nu",
+            expression=f"mli_dphi_j{i}nu",
+            binning=(40, 0, 3.2),
+            x_title=fr"$\Delta\Phi(j{i}, MET)$",
+        )
+    config.add_variable(
+        name="mli_met_over_ht",
+        expression="mli_met_over_ht",
+        binning=(40, 0, 2.4),
+        x_title="MET/HT",
+    )
+    config.add_variable(
+        name="mli_pfRelIso03_all",
+        expression="mli_pfRelIso03_all",
+        binning=(40, 0, 0.4),
+        x_title="Lepton pfRelIso03_all",
+    )

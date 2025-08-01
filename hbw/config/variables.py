@@ -927,3 +927,11 @@ def add_variables(config: od.Config) -> None:
         binning=(40, -3.2, 3.2),
         x_title=r"{met_name} $\phi$".format(met_name=met_name),
     )
+
+    config.add_variable(
+        name="met_over_ht",
+        expression=lambda events: events[met_name]["pt"] / ak.sum(events.Jet.pt, axis=1),
+        aux={"inputs": {"Jet.{pt,eta,phi,mass}", f"{met_name}.pt"}},
+        binning=(40, 0, 2.4),
+        x_title=f"{met_name} / HT",
+    )

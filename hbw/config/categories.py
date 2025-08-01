@@ -172,7 +172,7 @@ def add_lepton_categories(config: od.Config) -> None:
         name="emu",
         id=50,
         selection="catid_emu",
-        label="1 Electron 1 Muon",
+        label="1 Electron\n1 Muon",
     )
 
     cat_emu = config.add_category(  # noqa: F841

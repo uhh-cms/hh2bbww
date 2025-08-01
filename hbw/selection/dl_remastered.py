@@ -394,7 +394,7 @@ dl1_mu18 = dl1.derive(
 dl1_test = dl1.derive("dl1_test", cls_dict={"version": 3})
 dl1_no_trigger = dl1.derive("dl1_no_trigger", cls_dict={"version": 1})
 dl1_low_lep = dl1.derive("dl1_low_lep", cls_dict={
-    "version": 1,
+    "version": 2,
     "mu_pt": 15.,
     "ele_pt": 15.,
     "mu2_pt": 15.,

@@ -206,8 +206,10 @@ def set_sl_config_defaults_and_groups(config_inst):
         ],
         "all": ["*"],
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
-        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "sl1": ["hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "qcd", "tt"],  # noqa: E501
+        "sl2": ["hh_ggf_hbb_hwwqqlnu_kl1_kt1", "hh_vbf_hbb_hwwqqlnu_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "sl3": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -334,7 +336,7 @@ def set_sl_config_defaults_and_groups(config_inst):
         ),
         "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,h}"]),
         "SR_sig_sl": bracket_expansion(["sr{,__1e,__1mu}{,__1b,__2b}__ml_{sig_ggf,sig_vbf,sig_binary_ggf,sig_binary_vbf}"]),  # noqa: E501
-        "SR_bkg_sl": bracket_expansion(["sr{,__1e,__1mu}{,__1b,__2b}__ml_{tt,st,w_lnu,dy_w_lnu,qcd,bkg_binary_ggf,bkg_binary_vbf}"]),  # noqa: E501
+        "SR_bkg_sl": bracket_expansion(["sr{,__1e,__1mu}{,__1b,__2b}__ml_{tt,st,dy,w_lnu,dy_w_lnu,qcd,bkg_binary_ggf,bkg_binary_vbf}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables

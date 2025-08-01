@@ -57,7 +57,6 @@ def trigger_selection(
 
     # index of TrigObj's to repeatedly convert masks to indices
     index = ak.local_index(events.TrigObj)
-
     for trigger in self.config_inst.x.triggers:
         # # skip the trigger if it does not apply to the dataset
         # if not trigger.applies_to_dataset(self.dataset_inst):
@@ -103,7 +102,7 @@ def trigger_selection(
             leg_match_or = leg_match_or | leg_mask
 
         # final trigger decision
-        fired_and_all_legs_match = fired & all_legs_match
+        fired_and_all_legs_match = fired  # & all_legs_match trigger legs only relevant when doing object matching
 
         # check if an unprescaled L1 seed has fired as well
         l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in trigger.x.L1_seeds])

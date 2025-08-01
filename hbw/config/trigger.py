@@ -355,7 +355,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=12.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**4 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                trigger_bits=2**5 + 2**0,  # 2e (bit 4) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
         aux={
@@ -444,14 +444,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=23.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**5 + 2**0,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0) (bit 6 for electrons exist but is wrong)
+                trigger_bits=2**5,  # 1e-1mu (bit 5) + TrkIsoVVL (bit 0) (bit 6 for electrons exist but is wrong)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=12.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                trigger_bits=2**6 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
         aux={
@@ -473,14 +473,14 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
                 min_pt=8.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + TrkIsoVVL (bit 0)
+                trigger_bits=2**5,  # 1mu-1e (bit 5) + TrkIsoVVL (bit 0)
             ),
             TriggerLeg(
                 pdg_id=11,
                 min_pt=23.0,
                 # filter names:
                 # TODO
-                trigger_bits=2**5 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
+                trigger_bits=2**6 + 2**0,  # 1mu-1e (bit 5) + CaloIdL_TrackIdL_IsoVL (bit 0)
             ),
         ],
         aux={
@@ -519,7 +519,7 @@ def add_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
 
 # new triggers for single lepton channel
 @call_once_on_config()
-def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
+def add_new_sl_triggers(config: od.Config, use_jet_trigger: bool = True) -> od.UniqueObjectIndex[Trigger]:
     """
     Adds all single lepton triggers to a *config*.
     """
@@ -579,18 +579,7 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         name="HLT_Ele28_eta2p1_WPTight_Gsf_HT150",
         id=202,
         legs=[
-            TriggerLeg(
-                pdg_id=11,
-                min_pt=28.0,
-                # filter names: TODO
-                trigger_bits=2**1,  # 1e (WPTight) (bit 1)
-            ),
-            TriggerLeg(
-                pdg_id=3,  # ht
-                min_pt=150.0,
-                # filter names: TODO
-                # trigger_bits=2**2,  # HT (bit 2)
-            ),
+            TriggerLeg(),
         ],
         aux={
             "channels": ["e"],
@@ -613,20 +602,9 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
     )
     ele15_ht450 = Trigger(
         name="HLT_Ele15_IsoVVVL_PFHT450",
-        id=203,  # TODO: change id, same as ele50, dont use both
+        id=205,
         legs=[
-            TriggerLeg(
-                pdg_id=11,
-                min_pt=15.0,
-                # filter names: TODO
-                # no bits
-            ),
-            TriggerLeg(
-                pdg_id=3,  # ht
-                min_pt=450.0,
-                # filter names: TODO
-                # no bits
-            ),
+            TriggerLeg(),
         ],
         aux={
             "channels": ["e"],
@@ -639,30 +617,7 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         name="HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         id=501,
         legs=[
-            TriggerLeg(
-                pdg_id=1,  # jet
-                min_pt=70.0,
-                # filter names: TODO
-                trigger_bits=2**22 + 2**23 + 2**26,
-            ),
-            TriggerLeg(
-                pdg_id=1,  # jet
-                min_pt=50.0,
-                # filter names: TODO
-                trigger_bits=2**6 + 2**21 + 2**26,
-            ),
-            TriggerLeg(
-                pdg_id=1,  # jet
-                min_pt=40.0,
-                # filter names: TODO
-                trigger_bits=2**1 + 2**8 + 2**26,
-            ),
-            TriggerLeg(
-                pdg_id=1,  # jet
-                min_pt=35.0,
-                # filter names: TODO
-                trigger_bits=2**0 + 2**4 + 2**26,
-            ),
+            TriggerLeg(),
         ],
         aux={
             "channels": ["e", "mu"],
@@ -683,12 +638,7 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         name="HLT_Mu50",
         id=103,
         legs=[
-            TriggerLeg(
-                pdg_id=13,
-                min_pt=50.0,
-                # filter names: TODO
-                trigger_bits=2**10,  # 1mu (Mu50) (bit 10)
-            ),
+            TriggerLeg(),
         ],
         aux={
             "channels": ["mu"],
@@ -701,18 +651,7 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         name="HLT_Mu15_IsoVVVL_PFHT450",
         id=104,
         legs=[
-            TriggerLeg(
-                pdg_id=13,
-                min_pt=15.0,
-                # filter names: TODO
-                # no bits
-            ),
-            TriggerLeg(
-                pdg_id=3,  # ht
-                min_pt=450.0,
-                # filter names: TODO
-                # no bits
-            ),
+            TriggerLeg(),
         ],
         aux={
             "channels": ["mu"],
@@ -722,12 +661,22 @@ def add_new_sl_triggers(config: od.Config) -> od.UniqueObjectIndex[Trigger]:
         tags={"mu_trigger", "mu15_ht450"},
     )
 
-    config.x.triggers = od.UniqueObjectIndex(Trigger, [
-        single_e,
-        single_mu,
-        ele28_ht150,
-        ele15_ht450,
-        quad_pfjet_70_50_40_35,
-        mu50,
-        mu15_ht450,
-    ])
+    if use_jet_trigger:
+        config.x.triggers = od.UniqueObjectIndex(Trigger, [
+            single_e,
+            single_mu,
+            ele28_ht150,
+            ele15_ht450,
+            quad_pfjet_70_50_40_35,
+            mu50,
+            mu15_ht450,
+        ])
+    else:
+        config.x.triggers = od.UniqueObjectIndex(Trigger, [
+            single_e,
+            single_mu,
+            ele28_ht150,
+            ele15_ht450,
+            mu50,
+            mu15_ht450,
+        ])

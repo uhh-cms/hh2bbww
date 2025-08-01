@@ -60,6 +60,33 @@ def mask_fn_dl_orth_with_l1_seeds_init(self: Categorizer) -> None:
         self.uses.add(f"L1.{l1_seed}")
 
 
+@categorizer()
+def mask_fn_dl_orth2_with_l1_seeds(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Applies the orthogonal trigger for the dilepton channel, checking if the L1 seeds have fired
+    """
+
+    trigger_fired = events.HLT[self.config_inst.x.dl_orthogonal_trigger2]
+    l1_seeds_fired = check_l1_seeds(self, events, self.config_inst.x.dl_orthogonal_trigger2)
+
+    mask = trigger_fired & l1_seeds_fired
+
+    return events, mask
+
+
+@mask_fn_dl_orth2_with_l1_seeds.init
+def mask_fn_dl_orth2_with_l1_seeds_init(self: Categorizer) -> None:
+    """
+    Add HLT and L1 columns for the orthogonal trigger
+    """
+    if not self.config_inst.x.dl_orthogonal_trigger2 or not self.config_inst.x.hlt_L1_seeds:
+        raise ValueError("No orthogonal trigger or associated L1 seeds set for dilepton channel")
+
+    self.uses.add(f"HLT.{self.config_inst.x.dl_orthogonal_trigger2}")
+    for l1_seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger2]:
+        self.uses.add(f"L1.{l1_seed}")
+
+
 # orthogonal trigger for the dilepton channel without L1 seeds
 @categorizer()
 def mask_fn_dl_orth(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:

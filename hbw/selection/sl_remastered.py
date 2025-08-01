@@ -370,8 +370,17 @@ sl1_no_trig = sl1.derive("sl1_no_trig", cls_dict={
 sl1_test = sl1.derive("sl1_test", cls_dict={"version": 0})
 
 sl_22new = sl1.derive("sl_22new", cls_dict={
-    "version": 0,
+    "version": 2,
     "trigger_config_func": lambda self: getattr(import_module("hbw.config.trigger"), "add_new_sl_triggers")(self.config_inst),  # noqa: E501
+    "mu_pt": 15.,
+    "mu2_pt": 15.,
+    "ele_pt": 15.,
+    "ele2_pt": 15.,
+})
+
+sl_22new_nojet = sl_22new.derive("sl_22new_nojet", cls_dict={
+    "version": 2,
+    "trigger_config_func": lambda self: getattr(import_module("hbw.config.trigger"), "add_new_sl_triggers")(self.config_inst, use_jet_trigger=False),  # noqa: E501
     "mu_pt": 15.,
     "mu2_pt": 15.,
     "ele_pt": 15.,

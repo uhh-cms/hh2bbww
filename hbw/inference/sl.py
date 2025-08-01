@@ -166,11 +166,22 @@ backgrounds = [
     # TODO: add thq, thw, bbh
     "qcd",
 ]
+backgrounds_qcd_free = [
+    "st_tchannel",
+    "st_twchannel",
+    "tt",
+    "dy",
+    "w_lnu",
+    "vv",
+    "h",
+    "ttv",
+]
 
 processes_dict = {
     "default": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+    "qcd_free": [*backgrounds_qcd_free, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
 }
 
 
@@ -230,4 +241,39 @@ sl_syst_old = sl.derive("sl_syst_old", cls_dict={
     "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": systematics,
     "processes": processes_dict["hwwzztt"],
+})
+
+sl_rate_qcd_free = sl_rate.derive("sl_rate_qcd_free", cls_dict={
+    "processes": processes_dict["qcd_free"],
+})
+
+sl_rate_qcd_binary = sl_rate.derive("sl_rate_qcd_binary", cls_dict={
+    "ml_model_name": ["sl_22post", "sl_22post_binary_ggf_qcd", "sl_22post_binary_vbf_qcd"],
+})
+
+sl_rate_reduced = sl_rate.derive("sl_rate_reduced", cls_dict={
+    "ml_model_name": ["sl_22post_reduced", "sl_22post_binary_ggf_reduced", "sl_22post_binary_vbf_reduced"],
+})
+
+sl_rate_new = sl_rate.derive("sl_rate_new", cls_dict={
+    "ml_model_name": ["sl_22post_new", "sl_22post_binary_ggf_new", "sl_22post_binary_vbf_new"],
+})
+sl_rate_dy_w_split = sl_rate.derive("sl_rate_dy_w_split", cls_dict={
+    "ml_model_name": ["sl_22post_dy_w_split", "sl_22post_binary_ggf_new", "sl_22post_binary_vbf_new"],
+    "config_categories": [
+        # Signal regions
+        "sr__1b__ml_sig_ggf",
+        "sr__2b__ml_sig_ggf",
+        "sr__1b__ml_sig_vbf",
+        "sr__2b__ml_sig_vbf",
+        # Background regions
+        "sr__1b__ml_tt",
+        "sr__2b__ml_tt",
+        "sr__1b__ml_st",
+        "sr__2b__ml_st",
+        "sr__1b__ml_w_lnu",
+        "sr__2b__ml_w_lnu",
+        "sr__1b__ml_dy",
+        "sr__2b__ml_dy",
+    ],
 })

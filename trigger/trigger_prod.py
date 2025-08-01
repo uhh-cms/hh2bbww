@@ -271,12 +271,39 @@ def trigger_prod_sl_ids(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Uses the trigger_ids produced during the selection to build additional combinations of triggers.
     """
+    combinations = {
+        "e30_e28_e15_quadjet": [201, 202, 205, 501],
+        "e30_e28_e15": [201, 202, 205],
+        "e30_e15_quadjet": [201, 205, 501],
+        "e30_e28_quadjet": [201, 202, 501],
+        "e15_e28_quadjet": [202, 205, 501],
+        "e30_quadjet": [201, 501],
+        "e30_e15": [201, 205],
+        "e30_e28": [201, 202],
+        "m24_m50_m15_quadjet": [101, 103, 104, 501],
+        "m24_m50_m15": [101, 103, 104],
+        "m24_m50_quadjet": [101, 103, 501],
+        "m24_m15_quadjet": [101, 104, 501],
+        "m15_m50_quadjet": [103, 104, 501],
+        "m24_quadjet": [101, 501],
+        "m24_m50": [101, 103],
+        "m24_m15": [101, 104],
+    }
+
     # initialize the trigger ids column filled with the labels
     trig_ids = ak.Array([["allEvents"]] * len(events))
     # add individual triggers
     for trigger in self.config_inst.x.triggers:
         trig_passed = ak.any(events.trigger_ids == trigger.id, axis=1)
         trig_ids = ak.concatenate([trig_ids, ak.where(trig_passed, [[trigger.hlt_field]], [[]])], axis=1)
+
+    # add combinations of triggers
+    for label, trigger_ids in combinations.items():
+        trigger_mask = events.run * 0
+        for trigger_id in trigger_ids:
+            trigger_mask = trigger_mask | ak.any(events.trigger_ids == trigger_id, axis=1)
+        trig_passed = ak.where(trigger_mask, [[label]], [[]])
+        trig_ids = ak.concatenate([trig_ids, trig_passed], axis=1)
 
     events = set_ak_column(events, "trig_ids", trig_ids)
 
@@ -311,11 +338,13 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "emu_dilep": [301, 401],
         "emu_single": [201, 101],
         "emu_electronjet": [203],
+        "emu_old": [301, 401, 201, 101],
     }
     ee_trigger_sequence = {
         "ee_dilep": [202, 204],
         "ee_single": [201],
         "ee_electronjet": [203],
+        "ee_old": [202, 201],
     }
     mm_trigger_sequence = {
         "mm_dilep": [102],

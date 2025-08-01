@@ -73,8 +73,21 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
         # Double lepton triggers for non-resonant searches, only the orthgonal trigger needs to be set here
         # TODO: At some point this should probably time dependent as well
         cfg.x.dl_orthogonal_trigger = "PFMETNoMu120_PFMHTNoMu120_IDTight"
+        cfg.x.dl_orthogonal_trigger2 = "PFMET120_PFMHT120_IDTight"
         cfg.x.hlt_L1_seeds = {
             "PFMETNoMu120_PFMHTNoMu120_IDTight": [
+                "ETMHF90",
+                "ETMHF100",
+                "ETMHF110",
+                "ETMHF120",
+                "ETMHF130",
+                "ETMHF140",
+                "ETMHF150",
+                "ETM150",
+                "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+                "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+            ],
+            "PFMET120_PFMHT120_IDTight": [
                 "ETMHF90",
                 "ETMHF100",
                 "ETMHF110",
@@ -89,6 +102,7 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
         }
         # Add paths to keep after ReduceEvents
         cfg.x.keep_columns["cf.ReduceEvents"] |= {f"HLT.{cfg.x.dl_orthogonal_trigger}"}
+        cfg.x.keep_columns["cf.ReduceEvents"] |= {f"HLT.{cfg.x.dl_orthogonal_trigger2}"}
         for seed in cfg.x.hlt_L1_seeds[cfg.x.dl_orthogonal_trigger]:
             if f"L1.{seed}" not in cfg.x.keep_columns["cf.ReduceEvents"]:
                 cfg.x.keep_columns["cf.ReduceEvents"] |= {f"L1.{seed}"}

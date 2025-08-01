@@ -34,7 +34,7 @@ class CustomCreateYieldTable(
 ):
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    yields_variable = "ptll"
+    yields_variable = "event"
 
     table_format = luigi.Parameter(
         default="fancy_grid",
@@ -74,6 +74,12 @@ class CustomCreateYieldTable(
         default=("data", "background"),
         significant=False,
         description="Ratio of two processes to be calculated and added to the table",
+    )
+    s_over_sqrt_b = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="When True, the yields table will contain the s/sqrt(b) values for each process and category; "
+        "default: False",
     )
 
     # upstream requirements
@@ -234,6 +240,44 @@ class CustomCreateYieldTable(
                         num = yields[category_inst][num_idx]
                         den = yields[category_inst][den_idxs]
                         yields[category_inst].append(num / den)
+
+            if self.s_over_sqrt_b:
+                num_idxs = [
+                    processes.index(self.config_inst.get_process(_p)) for _p in processes if "hh_ggf" in _p.name
+                ]
+                den_idxs = [
+                    processes.index(self.config_inst.get_process(_p)) for _p in processes if "hh" not in _p.name
+                ]
+                processes.append(
+                    od.Process("s_over_b (ggf)", id=-9872, label="s/sqrt(b) (ggf)")
+                )
+                for category_inst in category_insts:
+                    num = 0
+                    den = 0
+                    for num_idx in num_idxs:
+                        num += yields[category_inst][num_idx]
+                    for den_idx in den_idxs:
+                        den += yields[category_inst][den_idx]
+                    yields[category_inst].append(num / math.sqrt(den))
+
+                num_idxs = [
+                    processes.index(self.config_inst.get_process(_p)) for _p in processes if "hh" in _p.name
+                ]
+                den_idxs = [
+                    processes.index(self.config_inst.get_process(_p)) for _p in processes if "hh" not in _p.name and
+                    "ggf" not in _p.name
+                ]
+                processes.append(
+                    od.Process("s_over_b", id=-9873, label="s/sqrt(b)")
+                )
+                for category_inst in category_insts:
+                    num = 0
+                    den = 0
+                    for num_idx in num_idxs:
+                        num += yields[category_inst][num_idx]
+                    for den_idx in den_idxs:
+                        den += yields[category_inst][den_idx]
+                    yields[category_inst].append(num / math.sqrt(den))
 
             # obtain normalizaton factors
             norm_factors = 1
