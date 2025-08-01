@@ -4,6 +4,13 @@
 Collection of configurations that stay constant for the analysis
 """
 
+# TODO
+# - decorrelate lepton SFs, trigger SFs per campaign
+# - decorrelate jer/jer per campaign
+# - decorrelate btag hfstats/lfstats per campaign?
+# - add signal murf/pdf shape uncertainties
+
+
 # TODO: mapping to naming that is accepted by inference
 # collection of all signal processes
 signals_hh_ggf = {
@@ -49,7 +56,7 @@ inference_procnames = {
 
 # mapping: which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
-    "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz"],
+    "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz", "tttt"],
     "V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
     "VV": ["vv", "ww", "zz", "wz", "qqZZ"],
     "VVV": ["vvv"],
@@ -66,8 +73,11 @@ processes_per_QCDScale = {
 
 # mapping, which processes are used for which pdf (rate) uncertainty
 processes_per_pdf_rate = {
-    "gg": ["tt", "ttz", "ggZZ"],
-    "qqbar": ["st_schannel", "st_tchannel", "dy", "dy_lf", "dy_hf", "w_lnu", "vvv", "qqZZ", "ttw"],
+    "gg": ["tt", "ttz", "ggZZ", "tttt"],
+    "qqbar": [
+        "ww", "zz", "wz", "st_schannel", "st_tchannel", "dy", "dy_lf", "dy_hf",
+        "w_lnu", "vvv", "qqZZ", "ttw",
+    ],
     "qg": ["st_twchannel"],
     "Higgs_gg": ["h_ggf"],
     "Higgs_qqbar": ["h_vbf", "zh", "wh", "vh"],

@@ -3,7 +3,6 @@
 """
 Tasks to produce yield tables.
 Taken from columnflow and customized.
-TODO: after merging MultiConfigPlotting, we should propagate the changes back to columnflow
 """
 
 import math
@@ -34,10 +33,13 @@ class CustomCreateYieldTable(
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    # TODO: order of categories is not always maintained, see: https://github.com/columnflow/columnflow/issues/717
+    # flag that does not yet exist :)
+    categories_order_sensitive = True
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     variables = HistogramsUserSingleShiftBase.variables.copy(
-        default=("ptll",),
+        default=("mli_mbb",),
         description="Variable to use for the yields table. Should be a single variable",
         add_default_to_description=True,
     )
@@ -112,35 +114,6 @@ class CustomCreateYieldTable(
             config_inst: list(map(config_inst.get_dataset, datasets))
             for config_inst, datasets in zip(self.config_insts, self.datasets)
         }
-
-    # def requires(self):
-    #     return {
-    #         d: self.reqs.MergeHistograms.req(
-    #             self,
-    #             dataset=d,
-    #             variables=(self.yields_variable,),
-    #             _prefer_cli={"variables"},
-    #         )
-    #         for d in self.datasets
-    #     }
-
-    # def workflow_requires(self):
-    #     reqs = super().workflow_requires()
-
-    #     reqs["merged_hists"] = {
-    #         config_inst.name: [
-    #             self.reqs.MergeHistograms.req(
-    #                 self,
-    #                 dataset=d,
-    #                 variables=(self.yields_variable,),
-    #                 _exclude={"branches"},
-    #             )
-    #             for d in self.datasets
-    #         ]
-    #         for config_inst in self.config_insts
-    #     }
-
-    #     return reqs
 
     @classmethod
     def resolve_param_values(cls, params):
@@ -355,8 +328,9 @@ class CustomCreateYieldTable(
                 )
                 if "latex" in self.table_format:
                     yield_str = f"${yield_str}$"
-                cat_label = category.name.replace("__", " ")
-                # cat_label = category.label
+                # cat_label = category.name.replace("__", " ")
+                cat_label = category.label.replace("\n", ", ")
+                # cat_label = f"\\labelfunc{{{category.name}}}"
                 yields_str[cat_label].append(yield_str)
 
         return raw_yields, yields_str

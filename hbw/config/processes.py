@@ -82,6 +82,8 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
     config.add_process(config.x.procs.n.other)
+    minor = config.add_process(config.x.procs.n.minor)
+    minor.label = "minor"
 
     color, sub_id = {
         "2022preEE": (color_palette["blue"], 1),
@@ -141,7 +143,9 @@ def unique_process_sanity_check(config: od.Config):
 def set_proc_attr(proc_inst, attr, value):
     if attr in ("id", "name"):
         raise ValueError(f"Setting {attr} via `set_proc_attr` helper is not allowed")
-    if attr in ("label", "color"):
+    elif attr == "label":
+        setattr(proc_inst, attr, f"${value}$")
+    elif attr == "color":
         setattr(proc_inst, attr, value)
     else:
         proc_inst.set_aux(attr, value)

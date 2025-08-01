@@ -280,7 +280,10 @@ class HBWInferenceModelBase(InferenceModel):
             )
             # TODO: check that data datasets are requested as expected
             if self.skip_data:
-                cat_kwargs["data_from_processes"] = self.inf_processes
+                cat_kwargs["data_from_processes"] = [
+                    proc for proc in self.inf_processes
+                    if not proc.startswith("hh_")
+                ]
 
             # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
