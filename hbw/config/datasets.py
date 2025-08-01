@@ -436,8 +436,6 @@ def configure_hbw_datasets(
     # allow usage of UHH campaign
     enable_uhh_campaign_usage(config)
 
-    config.get_dataset("w_lnu_amcatnlo").x.version = 1
-
     for dataset in config.datasets:
         if add_dataset_extensions:
             add_dataset_extension_to_nominal(dataset)

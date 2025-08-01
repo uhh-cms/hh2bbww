@@ -60,19 +60,19 @@ def jet_selection(
     # get correct jet Ids (Jet.TightId and Jet.TightLepVeto)
     if self.has_dep(jetId_v12):
         events = self[jetId_v12](events, **kwargs)
-        tight_lep_veto = events.Jet.TightLepVeto
+        tight_jet_id = events.Jet.TightId
     elif self.has_dep(jet_id):
         events = self[jet_id](events, **kwargs)
-        tight_lep_veto = events.Jet.jetId & 6 == 6
+        tight_jet_id = events.Jet.jetId & 2 == 2
     else:
         logger.warning("No Producer found to fix the Jet.jetId, using default Jet.jetId")
-        tight_lep_veto = events.Jet.jetId & 6 == 6
+        tight_jet_id = events.Jet.jetId & 2 == 2
 
     # default jet definition
     jet_mask_loose = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 2.4) &
-        (tight_lep_veto)
+        (tight_jet_id)
     )
 
     electron = events.Electron[lepton_results.objects.Electron.Electron]
@@ -81,7 +81,7 @@ def jet_selection(
     jet_mask_incl = (
         (events.Jet.pt >= self.jet_pt) &
         (abs(events.Jet.eta) <= 4.7) &
-        tight_lep_veto &
+        tight_jet_id &
         # ak.all(events.Jet.metric_table(lepton_results.x.lepton) > 0.4, axis=2)
         ak.all(events.Jet.metric_table(electron) > 0.4, axis=2) &
         ak.all(events.Jet.metric_table(muon) > 0.4, axis=2)
@@ -321,19 +321,19 @@ def sl_boosted_jet_selection(
     # get correct fatjet Ids (FatJet.TightId and FatJet.TightLepVeto)
     if self.has_dep(fatjetId_v12):
         events = self[fatjetId_v12](events, **kwargs)
-        tight_lep_veto = events.FatJet.TightLepVeto
+        tight_id = events.FatJet.TightId
     elif self.has_dep(fatjet_id):
         events = self[fatjet_id](events, **kwargs)
-        tight_lep_veto = events.FatJet.jetId & 6 == 6
+        tight_id = events.FatJet.jetId & 2 == 2
     else:
         logger.warning("No Producer found to fix the FatJet.jetId, using default FatJet.jetId")
-        tight_lep_veto = events.FatJet.jetId & 6 == 6
+        tight_id = events.FatJet.jetId & 2 == 2
 
     # baseline fatjet selection
     fatjet_mask = (
         (events.FatJet.pt > 170) &
         (abs(events.FatJet.eta) < 2.4) &
-        tight_lep_veto &
+        tight_id &
         (ak.all(events.FatJet.metric_table(electron) > 0.8, axis=2)) &
         (ak.all(events.FatJet.metric_table(muon) > 0.8, axis=2))
     )

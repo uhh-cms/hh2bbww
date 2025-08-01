@@ -16,7 +16,8 @@ def default_selector(container):
     if container.has_tag("is_sl"):
         selector = "sl1"
     elif container.has_tag("is_dl"):
-        selector = "dl1"
+        # selector = "dl1"
+        selector = "test_dl"
 
     return selector
 
@@ -438,7 +439,7 @@ def set_config_defaults_and_groups(config_inst):
             "fsr_up",
             "top_pt_up",
             # # experimental unc.
-            # "lumi_13TeV_2022_up",
+            # "lumi_13p6TeV_2022_up",
             # b-tagging
             "btag_hf_up",
             "btag_lf_up",
@@ -554,7 +555,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simwip",
             "yscale": "log",
             "shape_norm": True,
-        }
+        },
     }
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},

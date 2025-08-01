@@ -108,7 +108,7 @@ def trigger_selection(
         # check if an unprescaled L1 seed has fired as well
         l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in trigger.x.L1_seeds])
 
-        fired_and_all_legs_match_and_l1_fired = fired_and_all_legs_match & l1_seeds_fired
+        fired_and_l1_fired = fired & l1_seeds_fired
 
         # store all intermediate results for subsequent selectors
         trigger_data = set_ak_bool(
@@ -124,9 +124,9 @@ def trigger_selection(
         trigger_data = set_ak_bool(
             trigger_data,
             f"{trigger.name}.fired_and_all_legs_match_and_l1_fired",
-            fired_and_all_legs_match_and_l1_fired,
+            fired_and_l1_fired,
         )
-        ids = ak.where(fired_and_all_legs_match_and_l1_fired, np.float32(trigger.id), np.float32(np.nan))
+        ids = ak.where(fired_and_l1_fired, np.float32(trigger.id), np.float32(np.nan))
         trigger_ids = ak.concatenate([trigger_ids, ak.singletons(ak.nan_to_none(ids))], axis=1)
 
     # store the fired trigger ids

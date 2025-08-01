@@ -176,20 +176,20 @@ def add_config(
     elif year == 2022:
         if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(7980.4, {
-                "lumi_13TeV_2022": 0.013j,
+                "lumi_13p6TeV_2022": 0.013j,
             })
         elif campaign.has_tag("postEE"):
             cfg.x.luminosity = Number(26671.7, {
-                "lumi_13TeV_2022": 0.013j,
+                "lumi_13p6TeV_2022": 0.013j,
             })
     elif year == 2023:
         if campaign.has_tag("preBPix"):
             cfg.x.luminosity = Number(17794, {
-                "lumi_13TeV_2023": 0.014j,
+                "lumi_13p6TeV_2023": 0.014j,
             })
         elif campaign.has_tag("postBPix"):
             cfg.x.luminosity = Number(9451, {
-                "lumi_13TeV_2023": 0.014j,
+                "lumi_13p6TeV_2023": 0.014j,
             })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
@@ -286,6 +286,32 @@ def add_config(
         },
     })
 
+    if cfg.x.run == 2:
+        cfg.x.met_phi_correction_set = "{variable}_metphicorr_pfmet_{data_source}"
+    else:
+        cfg.x.met_phi_correction_set = "met_xy_corrections"
+        cfg.x.met_phi_correction = {
+            "met_name": "PuppiMET",
+            "correction_set": "met_xy_corrections",
+            "keep_uncorrected": False,
+            "variable_config": {
+                "pt": (
+                    "pt",
+                    "pt_stat_yup",
+                    "pt_stat_ydn",
+                    "pt_stat_xup",
+                    "pt_stat_xdn",
+                ),
+                "phi": (
+                    "phi",
+                    "phi_stat_yup",
+                    "phi_stat_ydn",
+                    "phi_stat_xup",
+                    "phi_stat_xdn",
+                ),
+            },
+        }
+
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
     cfg.x.btag_sf_jec_sources = [
@@ -360,8 +386,10 @@ def add_config(
             "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
         "particlenet_hbb_vs_qcd": {
-            # AK4 medium WP as placeholder (TODO: replace with actual values)
-            "PLACEHOLDER": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            # Values copied from Xbb tagger, might need to be adjusted/studied later
+            "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
     })
 
@@ -390,9 +418,9 @@ def add_config(
     )
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
-    cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
-    if cfg.x.xbb_btag_wp_score == 0.0:
-        raise ValueError(f"Unknown xbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
+    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
+    if cfg.x.hbb_btag_wp_score == 0.0:
+        raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
@@ -734,7 +762,8 @@ def add_config(
         cfg.x.external_files[name] = value
 
     # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
+    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
     if cfg.x.run == 2:
         corr_tag = f"{cfg.x.cpn_tag}_UL"
     elif cfg.x.run == 3:
@@ -783,6 +812,13 @@ def add_config(
     if cfg.x.run == 2:
         # met phi corrector (still unused and missing in Run3)
         add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
+    else:
+        # Run3 met phi corrector (used in Run3)
+        met_corr_tag = f"{year}_{year}{jerc_postfix}"
+        add_external(
+            "met_phi_corr",
+            (f"{json_mirror}/POG/JME/{corr_tag}/met_xyCorrections_{met_corr_tag}.json.gz", "v1"),
+        )
 
     recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
     add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
@@ -879,6 +915,7 @@ def add_config(
         ColumnCollection.MANDATORY_COFFEA,
         # columns added during selection, required in general
         "mc_weight", "PV.npvs", "process_id", "category_ids", "deterministic_seed",
+        "PV.npvsGood",  # needed for met phi correction
         # Gen information (for categorization)
         "HardGenPart.pdgId",
         # Gen information for pt reweighting

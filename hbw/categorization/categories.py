@@ -238,25 +238,25 @@ def catid_fatjet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.particleNet_XbbVsQCD"})
+@categorizer(uses={"Jet.pt", "FatJet.particleNetWithMass_HbbvsQCD"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
     fulfilling medium WP of PNetHbb
     """
-    xbb_btag_wp_score = self.config_inst.x.xbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > xbb_btag_wp_score, axis=-1) >= 1)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score, axis=-1) >= 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "HbbJet.pt"})
+@categorizer(uses={"Jet.pt", "FatJet.particleNetWithMass_HbbvsQCD"})
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the resolved category: presence of no AK8 jet candidate
     for the H->bb decay
     """
-    xbb_btag_wp_score = self.config_inst.x.xbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNet_XbbVsQCD > xbb_btag_wp_score, axis=-1) == 0)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    mask = (ak.sum(events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score, axis=-1) == 0)
     return events, mask
 
 

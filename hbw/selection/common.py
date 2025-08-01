@@ -26,6 +26,7 @@ from columnflow.production.cms.seeds import deterministic_seeds
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
 from hbw.production.prepare_objects import prepare_objects
+from hbw.production.filter import ECALBadCalibrationFilter
 from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
 from hbw.selection.bad_events import extend_bad_events, get_outlier_scale_weights
@@ -87,11 +88,13 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
         hbw_met_filters, json_filter, "PV.npvsGood",
         hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
+        ECALBadCalibrationFilter,
     },
     produces={
         hbw_met_filters, json_filter,
         hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
+        ECALBadCalibrationFilter,
     },
     exposed=False,
 )
@@ -133,7 +136,15 @@ def pre_selection(
     # apply some general quality criteria on events
     results.steps["good_vertex"] = events.PV.npvsGood >= 1
     events, met_results = self[hbw_met_filters](events, **kwargs)  # produces "met_filter" step
+
+    # recompute ecalBadCalibrationFilter
+    if self.has_dep(ECALBadCalibrationFilter):
+        events = self[ECALBadCalibrationFilter](events, **kwargs)
+        logger.info("patching met_filter with patchedEcalBadCalibFilter")
+        met_results.steps["met_filter"] = met_results.steps.met_filter & events.patchedEcalBadCalibFilter
+
     results += met_results
+
     if self.dataset_inst.is_data:
         events, json_results = self[json_filter](events, **kwargs)  # produces "json" step
         results += json_results
