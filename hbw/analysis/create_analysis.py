@@ -53,7 +53,7 @@ def create_hbw_analysis(
         "$CF_BASE/sandboxes/venv_columnar.sh",
         # "$CF_BASE/sandboxes/venv_ml_tf.sh",
         "$HBW_BASE/sandboxes/venv_ml_plotting.sh",
-        "$HBW_BASE/sandboxes/venv_onnx.sh",
+        # "$HBW_BASE/sandboxes/venv_onnx.sh",
     ]
 
     # cmssw sandboxes that should be bundled for remote jobs in case they are needed
