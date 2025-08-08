@@ -712,6 +712,9 @@ multiclass_fatjetv1 = multiclassv1.derive("multiclass_fatjetv1", cls_dict={"inpu
 ggf_fatjetv1 = ggfv1.derive("ggf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
 vbf_fatjetv1 = vbfv1.derive("vbf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
 
+multiclass_dr20 = multiclassv1.derive("multiclass_dr20", cls_dict={"dropout": 0.20})
+ggf_dr20 = multiclassv1.derive("ggf_dr20", cls_dict={"dropout": 0.20})
+vbf_dr20 = multiclassv1.derive("vbf_dr20", cls_dict={"dropout": 0.20})
 
 #
 # adding bbtautau
