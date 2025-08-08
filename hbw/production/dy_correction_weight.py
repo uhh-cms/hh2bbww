@@ -53,7 +53,8 @@ def dy_correction_weight(
     njets = ak.where(njet > 7, 7, njet)
 
     var_map = {
-        "era": self.dy_corr_era,  # NOTE: f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+        "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+        # "era": self.dy_corr_era,
         "njets": njets,
         "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         "syst": "nominal",
@@ -109,7 +110,8 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
-        configs=self.dy_corr_configs,
+        configs=(task.config,),
+        # configs=self.dy_corr_configs,
         shift="nominal",
         processes=((
             "vv", "w_lnu", "st",
