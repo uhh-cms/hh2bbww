@@ -269,6 +269,12 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
+no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    # "vjets_weight": [],  # TODO: corrections/shift missing
+    # "trigger_weight": ["trigger_sf"],
+    "stitched_normalization_weight": [],
+}})
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     # "vjets_weight": [],  # TODO: corrections/shift missing
