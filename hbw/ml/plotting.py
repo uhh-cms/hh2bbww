@@ -104,6 +104,7 @@ def plot_history(
     output: law.FileSystemDirectoryTarget,
     metric: str = "loss",
     ylabel: str | None = None,
+    yscale: str = "linear",
     output_name: str | None = None,
 ):
     """
@@ -121,6 +122,7 @@ def plot_history(
     ax.plot(history[f"val_{metric}"])
     ax.set(**{
         "ylabel": ylabel,
+        "yscale": yscale,
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")

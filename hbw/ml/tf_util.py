@@ -38,6 +38,7 @@ class MultiDataset(object):
 
         # create datasets, store counts and relative weights
         self.processes = tuple(data.keys())
+        self.data = data  # Store original data for alternative method
         self.datasets = []
         self.counts = []
         class_factors = []
@@ -57,9 +58,9 @@ class MultiDataset(object):
         self.batches_seen = None
 
         if self.kind == "valid":
-            # always batch validation data to the same size (10 batches)
-            self.max_iter_valid = 10
-            self.iter_smallest_process = 10
+            # always batch validation data to the same size (100 batches)
+            self.max_iter_valid = 100
+            self.iter_smallest_process = 100
             return
 
         # determine batch sizes per dataset
@@ -69,6 +70,8 @@ class MultiDataset(object):
             total_batch_size = batch_size
         else:
             total_batch_size = sum([batch_size[proc_inst] for proc_inst in data.keys()])
+
+        self.total_batch_size = total_batch_size  # Store for alternative method
 
         if isinstance(batch_size, int):
             # check if requested batch size and weights are compatible
@@ -117,22 +120,52 @@ class MultiDataset(object):
         return len(self.datasets)
 
     def __iter__(self):
+        """Optimized iterator with GPU-friendly data pipeline and prefetching"""
         self.batches_seen = 0
 
+        # Create the optimized dataset pipeline
+        dataset = self._create_optimized_dataset()
+
+        # Add crucial optimizations for GPU performance
+        dataset = dataset.prefetch(tf.data.AUTOTUNE)
+
+        # If GPU is available, prefetch to GPU for even better performance
+        if tf.config.list_physical_devices('GPU'):
+            try:
+                dataset = dataset.apply(tf.data.experimental.prefetch_to_device('/GPU:0'))
+            except Exception:
+                # Fallback if prefetch_to_device fails
+                pass
+
+        return iter(dataset)
+
+    def _create_optimized_dataset(self):
+        """Create an optimized tf.data.Dataset that handles multi-process batching efficiently"""
         datasets = self.datasets
 
         if self.buffersize > 0 and self.kind == "train":
             # shuffling
             datasets = [
-                dataset.shuffle(int(self.buffersize * count), reshuffle_each_iteration=False, seed=self.seed)
+                dataset.shuffle(int(self.buffersize * count), reshuffle_each_iteration=True, seed=self.seed)
                 for dataset, count in zip(datasets, self.counts)
             ]
 
-        # repitition
-        datasets = [
-            dataset.repeat(-1)
-            for dataset in datasets
-        ]
+        # Finite repetition to prevent infinite memory growth
+        # Use a large but finite number for training, exact count for validation
+        if self.kind == "train":
+            # Large finite repetition - enough for long training but prevents infinite accumulation
+            repeat_count = 10000  # Should be more than enough epochs
+            datasets = [
+                dataset.repeat(repeat_count)
+                for dataset in datasets
+            ]
+        else:
+            # For validation, calculate exact repetitions needed
+            max_validation_epochs = 1000  # Reasonable upper bound
+            datasets = [
+                dataset.repeat(max_validation_epochs)
+                for dataset in datasets
+            ]
 
         if self.kind == "train":
             # batching
@@ -141,39 +174,106 @@ class MultiDataset(object):
                 for dataset, bs_size in zip(datasets, self.batch_sizes)
             ]
         else:
-            # for validation, we want to see all data, so we create the same number of batches for each dataset
+            # for validation, use reasonable batch sizes instead of massive batches
             datasets = [
                 dataset.batch(count // self.iter_smallest_process)
                 for dataset, count in zip(datasets, self.counts)
             ]
 
-        its = [iter(dataset) for dataset in datasets]
-        while True:
-            dataset_batches = []
-            do_continue = False
-            do_break = False
-            for i, it in enumerate(its):
-                try:
-                    dataset_batches.append(next(it))
-                except tf.errors.DataLossError as e:
-                    print(f"\nDataLossError in dataset {i}:\n{e}\n")
-                    do_continue = True
-                    break
-                except StopIteration:
-                    do_break = True
-                    break
+        # Create a generator function that handles the batching logic with proper cleanup
+        def batch_generator():
+            its = [iter(dataset) for dataset in datasets]
+            batches_seen = 0
+            max_batches = getattr(self, '_max_batches', None)  # Allow external batch limit
 
-            if do_continue:
-                continue
-            if do_break:
-                break
+            try:
+                while True:
+                    # Break if we've hit a batch limit (useful for debugging/testing)
+                    if max_batches and batches_seen >= max_batches:
+                        break
 
-            yield tuple(tf.concat([batch[i] for batch in dataset_batches], axis=0) for i in range(self.tuple_length))
+                    dataset_batches = []
+                    do_continue = False
+                    do_break = False
 
-            self.batches_seen += 1
-            # print(self.kind, self.batches_seen, self.iter_smallest_process, self.max_iter_valid)
-            # if self.kind == "valid" and self.batches_seen >= self.iter_smallest_process:
-            #     break
+                    for i, it in enumerate(its):
+                        try:
+                            dataset_batches.append(next(it))
+                        except tf.errors.DataLossError as e:
+                            print(f"\nDataLossError in dataset {i}:\n{e}\n")
+                            do_continue = True
+                            break
+                        except StopIteration:
+                            do_break = True
+                            break
+
+                    if do_continue:
+                        continue
+                    if do_break:
+                        break
+
+                    # Use optimized concatenation function
+                    result = self._concat_batches_optimized(dataset_batches)
+                    yield result
+                    batches_seen += 1
+
+                    # Periodic memory cleanup
+                    if batches_seen % 100 == 0:
+                        gc.collect()
+
+            finally:
+                # Cleanup iterators
+                del its
+                gc.collect()
+
+        # Define output signature based on batched datasets (not original)
+        batched_spec = datasets[0].element_spec
+        output_signature = tuple(
+            tf.TensorSpec(shape=(None,) + batched_spec[i].shape[1:],
+                         dtype=batched_spec[i].dtype)
+            for i in range(len(batched_spec))
+        )
+
+        # Create dataset from generator
+        dataset = tf.data.Dataset.from_generator(
+            batch_generator,
+            output_signature=output_signature
+        )
+
+        return dataset
+
+    @tf.function(experimental_relax_shapes=True)
+    def _concat_batches_optimized(self, dataset_batches):
+        """GPU-optimized batch concatenation using tf.function for better performance
+
+        Note: experimental_relax_shapes=True helps prevent memory accumulation
+        from different batch shapes creating new computation graphs
+        """
+        return tuple(
+            tf.concat([batch[i] for batch in dataset_batches], axis=0)
+            for i in range(self.tuple_length)
+        )
+
+    def cleanup_resources(self):
+        """Explicit cleanup method to prevent memory leaks"""
+        # Clear any cached data
+        if hasattr(self, 'data'):
+            del self.data
+        if hasattr(self, 'datasets'):
+            del self.datasets
+
+        # Force garbage collection
+        gc.collect()
+
+        # Clear TensorFlow function cache if needed
+        try:
+            tf.keras.backend.clear_session()
+        except Exception:
+            pass
+
+    def set_batch_limit(self, max_batches):
+        """Set a maximum number of batches for debugging/testing"""
+        self._max_batches = max_batches
 
     def map(self, *args, **kwargs):
         for key, dataset in list(self._datasets.items()):
