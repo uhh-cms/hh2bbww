@@ -6,6 +6,8 @@ Collection of helpers
 
 from __future__ import annotations
 
+# NOTE: needs to be added to cf sandbox
+import os
 import re
 import itertools
 import time
@@ -21,6 +23,7 @@ from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+psutil = maybe_import("psutil")
 
 _logger = law.logger.get_logger(__name__)
 
@@ -164,14 +167,30 @@ def round_sig(
     return rounded_value
 
 
+def get_memory_usage():
+    """Get current memory usage in MB"""
+    if not psutil:
+        return "? (psutil not available)"
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024
+
+
 def log_memory(
     message: str = "",
     unit: str = "MB",
     restart: bool = False,
     logger=None,
+    prefer_psutil: bool = True,
 ):
     if logger is None:
         logger = _logger
+
+    if psutil:
+        current_memory = get_memory_usage()
+        if unit == "GB":
+            current_memory /= 1024
+        logger.info(f"Memory after {message}: {current_memory:.3f}{unit}")
+        return
 
     if restart or not tracemalloc.is_tracing():
         logger.info("Start tracing memory")
