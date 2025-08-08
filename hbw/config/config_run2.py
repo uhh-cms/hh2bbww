@@ -293,7 +293,7 @@ def add_config(
         cfg.x.met_phi_correction = {
             "met_name": "PuppiMET",
             "correction_set": "met_xy_corrections",
-            "keep_uncorrected": False,
+            "keep_uncorrected": True,
             "variable_config": {
                 "pt": (
                     "pt",
@@ -722,7 +722,12 @@ def add_config(
         add_shift_aliases(
             cfg,
             f"jec_{jec_source}",
-            {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"},
+            {
+                "Jet.pt": "Jet.pt_{name}",
+                "Jet.mass": "Jet.mass_{name}",
+                "FatJet.pt": "FatJet.pt_{name}",
+                "FatJet.mass": "FatJet.mass_{name}",
+            },
         )
 
         if jec_source in ["Total", *cfg.x.btag_sf_jec_sources]:
@@ -745,7 +750,12 @@ def add_config(
 
     cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"jer"})
     cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
-    add_shift_aliases(cfg, "jer", {"Jet.pt": "Jet.pt_{name}", "Jet.mass": "Jet.mass_{name}"})
+    add_shift_aliases(cfg, "jer", {
+        "Jet.pt": "Jet.pt_{name}",
+        "Jet.mass": "Jet.mass_{name}",
+        "FatJet.pt": "FatJet.pt_{name}",
+        "FatJet.mass": "FatJet.mass_{name}",
+    })
 
     ################################################################################################
     #
