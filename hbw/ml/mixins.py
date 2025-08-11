@@ -14,7 +14,7 @@ import law
 
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
-from hbw.util import log_memory, call_func_safe
+from hbw.util import log_memory, call_func_safe, timeit
 
 
 np = maybe_import("numpy")
@@ -410,6 +410,7 @@ class ModelFitMixin(CallbacksBase):
         for proc, node_config in self.train_nodes.items():
             logger.info(f"Sum of weights for train node process {proc}: {sum_nodes[node_config['ml_id']]}")
 
+    @timeit
     def fit_ml_model(
         self,
         task: law.Task,
@@ -430,8 +431,14 @@ class ModelFitMixin(CallbacksBase):
         batch_sizes = self.get_batch_sizes(data=train)
         print("batch_sizes:", batch_sizes)
 
-        # Create optimized MultiDataset - NO CPU device constraint!
+        # Create MultiDataset
         tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
+        log_memory("tf_train")
+
+        # cleanup memory (TODO: seems to not do much if anything)
+        for key, ml_dataset in train.items():
+            ml_dataset.cleanup()
+        log_memory("train cleanup")
 
         # determine the requested steps_per_epoch
         if isinstance(self.steps_per_epoch, str):
@@ -447,11 +454,14 @@ class ModelFitMixin(CallbacksBase):
             )
         logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
-        # Create optimized validation dataset - NO CPU device constraint!
+        # Create validation dataset
         self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
         tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+        log_memory("tf_validation")
 
-        log_memory("init")
+        for key, ml_dataset in validation.items():
+            ml_dataset.cleanup()
+        log_memory("validation cleanup")
 
         # check that the weights are set correctly
         # self._check_weights(train)

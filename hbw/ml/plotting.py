@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 
 # import tabulate
+import gc
 import law
 import order as od
 
@@ -126,7 +127,7 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, **cms_label_kwargs)
+    mplhep.cms.label(ax=ax, **cms_label_kwargs, com=13.6)
 
     plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -231,6 +232,8 @@ def plot_roc_ovr(
     """
     Simple function to create and store some ROC plots;
     mode: OvR (one versus rest)
+
+    NOTE: seems to be using a lot of memory, to be optimized!
     """
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
@@ -290,6 +293,8 @@ def plot_roc_ovr(
     mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
+    plt.close(fig)
+    gc.collect()
 
     if isinstance(stats, dict):
         # append AUC scores to stats dict
@@ -310,6 +315,8 @@ def plot_roc_ovo(
     """
     Simple function to create and store some ROC plots;
     mode: OvO (one versus one)
+
+    NOTE: seems to be using a lot of memory (more than OvR), to be optimized!
     """
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
@@ -373,6 +380,8 @@ def plot_roc_ovo(
         mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+        gc.collect()
 
 
 @timeit

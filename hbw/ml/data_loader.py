@@ -428,8 +428,8 @@ class MLDatasetLoader:
         # List all cached array attributes for MLDatasetLoader
         cached_attrs = [
             "_features", "_weights", "_train_weights", "_equal_weights",
-            "_shuffle_indices", "_input_features", "_n_events", "_parameters",
-            "_events"  # Include the awkward array events
+            "_shuffle_indices", "_input_features", "_parameters",
+            # "_events"  # Include the awkward array events
         ]
 
         for attr in cached_attrs:
