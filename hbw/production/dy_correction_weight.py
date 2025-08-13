@@ -64,8 +64,12 @@ def dy_correction_weight(
     inputs = [var_map[inp.name] for inp in corrector.inputs]
 
     dy_correction_weight = corrector.evaluate(*inputs)
+    weight_up = 0.5 * (dy_correction_weight - 1.0) + 1.0
+    weight_down = 1.5 * (dy_correction_weight - 1.0) + 1.0
 
     events = set_ak_column(events, self.produced_column, dy_correction_weight)
+    events = set_ak_column(events, f"{self.produced_column}_up", weight_up)
+    events = set_ak_column(events, f"{self.produced_column}_down", weight_down)
     return events
 
 
@@ -93,14 +97,22 @@ def dy_correction_weight_init(self: Producer) -> None:
     if not self.dataset_inst.has_tag("is_dy"):
         return
     self.corrected_process = "dy"
-    if "22" in self.config_inst.name:
-        self.dy_corr_era = "2022_2022EE"
-        self.dy_corr_configs = ("c22prev14", "c22postv14")
-    else:
-        self.dy_corr_era = "2023_2023BPix"
-        self.dy_corr_configs = ("c23prev14", "c23postv14")
+    if "22post" in self.config_inst.name:
+        self.dy_corr_era = "2022EE"
+        self.dy_corr_configs = ("c22postv14")
+    elif "22pre" in self.config_inst.name:
+        self.dy_corr_era = "2022"
+        self.dy_corr_configs = ("c22prev14")
+    elif "23pre" in self.config_inst.name:
+        self.dy_corr_era = "2023"
+        self.dy_corr_configs = ("c23prev14")
+    elif "23post" in self.config_inst.name:
+        self.dy_corr_era = "2023BPix"
+        self.dy_corr_configs = ("c23postv14")
     # self._dy_corr_era = "2022_2022EE_2023_2023BPix"
     self.produces.add(self.produced_column)
+    self.produces.add(f"{self.produced_column}_up")
+    self.produces.add(f"{self.produced_column}_down")
     self.uses.add(self.uses_column)
 
 
