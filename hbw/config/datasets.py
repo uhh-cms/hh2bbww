@@ -315,6 +315,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
 
     })
+    # HOTFIX: broken dataset in custom NanoAODv14 production
+    if config.x.cpn_tag == "2023preBPix":
+        dataset_names["hh_vbf"].remove("hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39_madgraph")
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
 
