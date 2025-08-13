@@ -170,7 +170,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dphi_ll",
         expression="mli_dphi_ll",
-        binning=(40, 0, 8),
+        binning=(64, 0, 3.2),
         x_title=r"$\Delta \phi_{\ell\ell}$",
     )
     config.add_variable(

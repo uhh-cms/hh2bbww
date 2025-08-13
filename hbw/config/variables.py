@@ -137,6 +137,24 @@ def add_variables(config: od.Config) -> None:
         x_title=r"$p_{T}^{t}$ (generator level)",
         aux={"x_max": 600, "rebin": 2},
     )
+    config.add_variable(
+        name="weight_unweighted",  # used in histProducer specificially accessing this name to set weight=1
+        expression="weight",
+        binning=(100, -10, 10),
+        x_title="Event weight per MC event",
+    )
+    config.add_variable(
+        name="weight_unweighted1",  # used in histProducer specificially accessing this name to set weight=1
+        expression="weight",
+        binning=(100, -1, 1),
+        x_title="Event weight per MC event",
+    )
+    config.add_variable(
+        name="weight_unweighted2",  # used in histProducer specificially accessing this name to set weight=1
+        expression="weight",
+        binning=(100, -0.1, 0.1),
+        x_title="Event weight per MC event",
+    )
 
     #
     # Weights
@@ -298,6 +316,21 @@ def add_variables(config: od.Config) -> None:
             # NOTE: to add electron and muon objects, we need 4-vector components + the charge
             "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
             "x_max": 150,
+        },
+    )
+
+    config.add_variable(
+        name="dphi_lep_met",
+        expression=lambda events: abs(events.Lepton[:, 0].delta_phi(events[met_name])),
+        binning=(40, 0., 3.2),
+        unit="GeV",
+        x_title=r"$\Delta \phi (l, MET)$",
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {
+                "{Electron,Muon}.{pt,eta,phi,mass,charge}", "PuppiMET.{pt,phi}",
+                # IF_DY("RecoilCorrMET.{pt,phi}"),
+            },
         },
     )
 
@@ -748,14 +781,14 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i particleNet_XbbVsQCD" % i,
                 aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
             )
-            # config.add_variable(
-            #     name=f"{obj}{i}_particleNetWithMass_HbbvsQCD".lower(),
-            #     expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
-            #     null_value=EMPTY_FLOAT,
-            #     binning=(40, 0, 1),
-            #     x_title=rf"{obj} %i particleNetWithMass_HbbVsQCD" % i,
-            #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD}"} if obj == "FatBjet" else set()},
-            # )
+            config.add_variable(
+                name=f"{obj}{i}_particleNetWithMass_HbbvsQCD".lower(),
+                expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                x_title=rf"{obj} %i particleNetWithMass_HbbVsQCD" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbVsQCD}"} if obj == "FatBjet" else set()},  # noqa: E501
+            )
             # config.add_variable(
             #     name=f"{obj}{i}_tau1".lower(),
             #     expression=f"{obj}.tau1[:,{i}]",
