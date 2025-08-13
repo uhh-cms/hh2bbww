@@ -130,9 +130,9 @@ class MultiDataset(object):
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
         # If GPU is available, prefetch to GPU for even better performance
-        if tf.config.list_physical_devices('GPU'):
+        if tf.config.list_physical_devices("GPU"):
             try:
-                dataset = dataset.apply(tf.data.experimental.prefetch_to_device('/GPU:0'))
+                dataset = dataset.apply(tf.data.experimental.prefetch_to_device("/GPU:0"))
             except Exception:
                 # Fallback if prefetch_to_device fails
                 pass
@@ -184,7 +184,7 @@ class MultiDataset(object):
         def batch_generator():
             its = [iter(dataset) for dataset in datasets]
             batches_seen = 0
-            max_batches = getattr(self, '_max_batches', None)  # Allow external batch limit
+            max_batches = getattr(self, "_max_batches", None)  # Allow external batch limit
 
             try:
                 while True:
@@ -237,7 +237,7 @@ class MultiDataset(object):
         # Create dataset from generator
         dataset = tf.data.Dataset.from_generator(
             batch_generator,
-            output_signature=output_signature
+            output_signature=output_signature,
         )
 
         return dataset
@@ -257,9 +257,9 @@ class MultiDataset(object):
     def cleanup_resources(self):
         """Explicit cleanup method to prevent memory leaks"""
         # Clear any cached data
-        if hasattr(self, 'data'):
+        if hasattr(self, "data"):
             del self.data
-        if hasattr(self, 'datasets'):
+        if hasattr(self, "datasets"):
             del self.datasets
 
         # Force garbage collection

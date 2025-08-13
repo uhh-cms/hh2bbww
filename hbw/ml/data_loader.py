@@ -437,9 +437,9 @@ class MLDatasetLoader:
                 # Get the attribute and explicitly delete it
                 arr = getattr(self, attr, None)
                 if arr is not None:
-                    if hasattr(arr, '__array__'):  # numpy array
+                    if hasattr(arr, "__array__"):  # numpy array
                         del arr
-                    elif hasattr(arr, '__del__'):  # awkward array or other objects with destructor
+                    elif hasattr(arr, "__del__"):  # awkward array or other objects with destructor
                         del arr
                     delattr(self, attr)
 
@@ -495,7 +495,7 @@ class MLProcessData:
         cached_attrs = [
             "_features", "_weights", "_train_weights", "_equal_weights",
             "_target", "_labels", "_prediction", "_m_negative_weights",
-            "_shuffle_indices", "_input_features", "_n_events", "_folds"
+            "_shuffle_indices", "_input_features", "_n_events", "_folds",
         ]
 
         for attr in cached_attrs:
@@ -503,7 +503,7 @@ class MLProcessData:
                 # Get the attribute and explicitly delete it
                 arr = getattr(self, attr, None)
                 if arr is not None:
-                    if hasattr(arr, '__array__'):  # numpy array
+                    if hasattr(arr, "__array__"):  # numpy array
                         # For numpy arrays, explicitly delete the data
                         del arr
                     delattr(self, attr)
