@@ -591,6 +591,7 @@ class ComputeDYWeights(DYCorrBase):
     def store_parts(self):
         parts = super().store_parts()
 
+        parts.insert_before("version", "category", str(self.categories[0]))
         parts.insert_before("version", "njetflow", str(self.njet_overflow))
         return parts
 
