@@ -14,7 +14,7 @@ import law
 
 from columnflow.types import Union
 from columnflow.util import maybe_import, DotDict
-from hbw.util import log_memory, call_func_safe
+from hbw.util import log_memory, call_func_safe, timeit
 
 
 np = maybe_import("numpy")
@@ -252,13 +252,12 @@ class ClassicModelFitMixin(CallbacksBase):
 
         log_memory("start")
 
-        with tf.device("CPU"):
-            tf_train = tf.data.Dataset.from_tensor_slices(
-                (train["inputs"], train["target"], train["weights"]),
-            ).batch(self.batchsize)
-            tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation["inputs"], validation["target"], validation["weights"]),
-            ).batch(self.batchsize)
+        tf_train = tf.data.Dataset.from_tensor_slices(
+            (train["inputs"], train["target"], train["weights"]),
+        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        tf_validation = tf.data.Dataset.from_tensor_slices(
+            (validation["inputs"], validation["target"], validation["weights"]),
+        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
 
         log_memory("init")
 
@@ -271,6 +270,7 @@ class ClassicModelFitMixin(CallbacksBase):
         }
 
         logger.info("Starting training...")
+        tf.debugging.set_log_device_placement(True)
         model.fit(
             tf_train,
             **model_fit_kwargs,
@@ -410,6 +410,7 @@ class ModelFitMixin(CallbacksBase):
         for proc, node_config in self.train_nodes.items():
             logger.info(f"Sum of weights for train node process {proc}: {sum_nodes[node_config['ml_id']]}")
 
+    @timeit
     def fit_ml_model(
         self,
         task: law.Task,
@@ -421,7 +422,7 @@ class ModelFitMixin(CallbacksBase):
         """
         Training loop but with custom dataset
         """
-        import tensorflow as tf
+        # import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
         from hbw.ml.plotting import plot_history
 
@@ -430,9 +431,14 @@ class ModelFitMixin(CallbacksBase):
         batch_sizes = self.get_batch_sizes(data=train)
         print("batch_sizes:", batch_sizes)
 
-        # NOTE: self.batchsize not used at the moment
-        with tf.device("CPU"):
-            tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
+        # Create MultiDataset
+        tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
+        log_memory("tf_train")
+
+        # cleanup memory (TODO: seems to not do much if anything)
+        for key, ml_dataset in train.items():
+            ml_dataset.cleanup()
+        log_memory("train cleanup")
 
         # determine the requested steps_per_epoch
         if isinstance(self.steps_per_epoch, str):
@@ -448,12 +454,14 @@ class ModelFitMixin(CallbacksBase):
             )
         logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
 
-        with tf.device("CPU"):
-            # batch_sizes_valid = self.get_batch_sizes(data=validation)
-            self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
-            tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+        # Create validation dataset
+        self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
+        tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+        log_memory("tf_validation")
 
-        log_memory("init")
+        for key, ml_dataset in validation.items():
+            ml_dataset.cleanup()
+        log_memory("validation cleanup")
 
         # check that the weights are set correctly
         # self._check_weights(train)
@@ -470,15 +478,42 @@ class ModelFitMixin(CallbacksBase):
         # start training by iterating over the MultiDataset
         iterator = (x for x in tf_train)
         logger.info("Starting training...")
+        # Removed debugger call for performance
         model.fit(
             iterator,
             **model_fit_kwargs,
         )
 
+        # Explicit cleanup to prevent memory leaks
+        try:
+            tf_train.cleanup_resources()
+            tf_validation.cleanup_resources()
+        except AttributeError:
+            # Fallback if cleanup_resources doesn't exist
+            pass
+
+        # Delete references to datasets
+        del tf_train
+        del tf_validation
+        del iterator
+
         # create history plots
-        for metric, ylabel in (
-            ("loss", "Loss"),
-            ("categorical_accuracy", "Accuracy"),
-            ("weighted_categorical_accuracy", "Weighted Accuracy"),
+        for metric, ylabel, yscale in (
+            ("loss", "Loss", "log"),
+            ("categorical_accuracy", "Accuracy", "linear"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy", "linear"),
         ):
-            call_func_safe(plot_history, model.history.history, output["plots"], metric, ylabel)
+            call_func_safe(
+                plot_history,
+                model.history.history,
+                output["plots"],
+                metric=metric,
+                ylabel=ylabel,
+                yscale=yscale,
+            )
+
+        # Force garbage collection
+        import gc
+        gc.collect()
+
+        log_memory("cleanup")

@@ -418,6 +418,34 @@ class MLDatasetLoader:
 
         return data[:train_end], data[train_end:val_end], data[val_end:]
 
+    def cleanup(self):
+        """
+        Explicitly clean up memory-intensive cached arrays.
+        Call this method when you're done with the data to ensure memory is freed.
+        """
+        import gc
+
+        # List all cached array attributes for MLDatasetLoader
+        cached_attrs = [
+            "_features", "_weights", "_train_weights", "_equal_weights",
+            "_shuffle_indices", "_input_features", "_parameters",
+            # "_events"  # Include the awkward array events
+        ]
+
+        for attr in cached_attrs:
+            if hasattr(self, attr):
+                # Get the attribute and explicitly delete it
+                arr = getattr(self, attr, None)
+                if arr is not None:
+                    if hasattr(arr, "__array__"):  # numpy array
+                        del arr
+                    elif hasattr(arr, "__del__"):  # awkward array or other objects with destructor
+                        del arr
+                    delattr(self, attr)
+
+        # Force garbage collection
+        gc.collect()
+
 
 class MLProcessData:
     """
@@ -456,18 +484,43 @@ class MLProcessData:
         # initialize input features
         self.input_features
 
+    def cleanup(self):
+        """
+        Explicitly clean up memory-intensive cached arrays.
+        Call this method when you're done with the data to ensure memory is freed.
+        """
+        import gc
+
+        # List all cached array attributes
+        cached_attrs = [
+            "_features", "_weights", "_train_weights", "_equal_weights",
+            "_target", "_labels", "_prediction", "_m_negative_weights",
+            "_shuffle_indices", "_input_features", "_n_events", "_folds",
+        ]
+
+        for attr in cached_attrs:
+            if hasattr(self, attr):
+                # Get the attribute and explicitly delete it
+                arr = getattr(self, attr, None)
+                if arr is not None:
+                    if hasattr(arr, "__array__"):  # numpy array
+                        # For numpy arrays, explicitly delete the data
+                        del arr
+                    delattr(self, attr)
+
+        # Force garbage collection
+        gc.collect()
+
     def __del__(self):
         """
         Destructor for the MLDatasetLoader class.
-
-        This method is called when the object is about to be destroyed.
-        It deletes the attributes that are numpy arrays to free up memory.
+        Note: __del__ is not guaranteed to be called, use cleanup() explicitly.
         """
-        for attr in ("features", "weights", "train_weights", "equal_weights", "target", "labels"):
-            if hasattr(self, f"_{attr}"):
-                delattr(self, f"_{attr}")
-
-        del self
+        try:
+            self.cleanup()
+        except Exception:
+            # Ignore errors in destructor
+            pass
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._ml_model_inst.cls_name}, {self._data_split}, {self._processes})"

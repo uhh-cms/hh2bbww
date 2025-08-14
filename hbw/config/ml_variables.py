@@ -109,7 +109,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         name="mli_mindr_lb",
         expression="mli_mindr_lb",
         binning=(40, 0, 8),
-        x_title=r"min $\Delta R(\ell,b)$",
+        x_title=r"min $\Delta R(\ell0,b)$",
         aux={"overflow": True},
     )
     config.add_variable(

@@ -554,14 +554,16 @@ class MLClassifierBase(MLModel):
         log_memory("start")
         # np.random.seed(1337)  # for reproducibility
 
-        # input preparation
-        train, validation = self.load_data(task, input, output)
         physical_devices = tf.config.list_physical_devices("GPU")
+        logger.warning(f"Found {len(physical_devices)} physical GPU devices: {physical_devices}")
         try:
             tf.config.experimental.set_memory_growth(physical_devices[0], True)
         except:
             # Invalid device or cannot modify virtual devices once initialized.
             pass
+
+        # input preparation
+        train, validation = self.load_data(task, input, output)
 
         # hyperparameter bookkeeping
         output["mlmodel"].child("parameters.yaml", type="f").dump(dict(self.parameters), formatter="yaml")
@@ -772,11 +774,11 @@ class ExampleDNN(MLClassifierBase):
         import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
 
-        with tf.device("CPU"):
-            tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
-            tf_validation = tf.data.Dataset.from_tensor_slices(
-                (validation.features, validation.target, validation.ml_weights),
-            ).batch(self.batchsize)
+        # with tf.device("CPU"):
+        tf_train = MultiDataset(data=train, batch_size=self.batchsize, kind="train")
+        tf_validation = tf.data.Dataset.from_tensor_slices(
+            (validation.features, validation.target, validation.ml_weights),
+        ).batch(self.batchsize)
 
         logger.info("Starting training...")
         model.fit(

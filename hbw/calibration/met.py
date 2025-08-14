@@ -235,3 +235,50 @@ def met_phi_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     events = self[met_phi](events, **kwargs)
     return events
+
+
+from hbw.util import call_once_on_config
+import order as od
+
+
+@call_once_on_config
+def add_met_phi_variable(config: od.Config):
+    """
+    Add the MET phi variable to the config.
+
+    This function adds the MET phi variable to the config, which is used in the
+    :py:class:`~columnflow.calibration.met.MetPhiConfig` class.
+    """
+    config.add_variable(
+        name="met_phi_corrected",
+        expression="PuppiMET.phi",
+        binning=(40, -3.2, 3.2),
+        x_title=r"$\phi(\mathrm{MET})$ (after MET phi correction)",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="met_pt_corrected",
+        expression="PuppiMET.pt",
+        binning=(40, 0, 400),
+        x_title=r"$p_T(\mathrm{MET})$ (after MET phi correction)",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="met_phi_uncorrected",
+        expression="PuppiMET.phi_uncorrected",
+        binning=(40, -3.2, 3.2),
+        x_title=r"$\phi(\mathrm{MET})$ (before MET phi correction)",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="met_pt_uncorrected",
+        expression="PuppiMET.pt_uncorrected",
+        binning=(40, 0, 400),
+        x_title=r"$p_T(\mathrm{MET})$ (before MET phi correction)",
+        aux={"overflow": True},
+    )
+
+
+@met_phi_prod.init
+def met_phi_prod_init(self: Producer, **kwargs) -> None:
+    add_met_phi_variable(self.config_inst)

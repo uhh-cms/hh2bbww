@@ -17,7 +17,7 @@ logger = law.logger.get_logger(__name__)
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
-ml_model_name = ["multiclassv1", "ggfv1", "vbfv1"]
+ml_model_name = ["multiclassv2", "ggfv2", "vbfv2"]
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
@@ -278,7 +278,7 @@ hhprocs_vbf = lambda hhdecay: [
     f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
     f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
     f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
-    f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+    # f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",  # missing bbtt sample
 ]
 hhprocs = lambda hhdecay: [*hhprocs_ggf(hhdecay), *hhprocs_vbf(hhdecay)]
 

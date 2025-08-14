@@ -117,12 +117,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
         x_title=r"$\Delta\Phi(bb,\nu)$",
     )
     config.add_variable(
-        name="mli_min_dr_llbb",
-        expression="mli_min_dr_llbb",
-        binning=(40, 0, 8),
-        x_title=r"$minimum \Delta R(bb,\ell\ell)$",
-    )
-    config.add_variable(
         name="mli_mll",
         expression="mli_mll",
         binning=(40, 0, 160),
@@ -135,8 +129,14 @@ def add_dl_ml_variables(config: od.Config) -> None:
         x_title=r"$\Delta R(\ell,\ell)$",
     )
     config.add_variable(
-        name="mli__min_dr_llbb",
+        name="mli_min_dr_llbb",
         expression="mli_min_dr_llbb",
+        binning=(40, 0, 8),
+        x_title=r"$min_{b,l} \Delta R(b,\ell)$",
+    )
+    config.add_variable(
+        name="mli_dr_ll_bb",
+        expression="mli_dr_ll_bb",
         binning=(40, 0, 8),
         x_title=r"$\Delta R(bb,\ell\ell)$",
     )
@@ -170,7 +170,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dphi_ll",
         expression="mli_dphi_ll",
-        binning=(40, 0, 8),
+        binning=(64, 0, 3.2),
         x_title=r"$\Delta \phi_{\ell\ell}$",
     )
     config.add_variable(

@@ -128,7 +128,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
-    config_inst.x.default_general_settings = ("data_mc_plots",)
+    config_inst.x.default_general_settings = ("data_mc_plots_blind_conservative",)
     config_inst.x.default_custom_style_config = "default"
 
     #
@@ -200,6 +200,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -277,7 +278,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         # thanks to double counting removal, we can (and should) now use all datasets in each channel
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
@@ -392,7 +393,8 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "ml_inputs": ml_inputs.v1,  # should correspond to our currently used ML input features
+        "ml_inputs_v1": ml_inputs.v1,
+        "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
         "dl": bracket_expansion([
             "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso}",  # ,mvatth}",

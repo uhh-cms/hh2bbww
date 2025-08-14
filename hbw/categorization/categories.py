@@ -310,10 +310,10 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     mask = (n_deepjet >= 2)
     return events, mask
 
-
 #
 # DNN categorizer
 #
+
 
 # TODO: not hard-coded -> use config?
 ml_processes = [
@@ -383,10 +383,45 @@ def mask_fn_mbb80(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
 mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})
 
 
-@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met=70)
+@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met_req=70)
 def mask_fn_met70(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     if self.dataset_inst.has_tag("is_dy"):
-        mask = events.RecoilCorrMET.pt < 70
+        mask = events.RecoilCorrMET.pt < self.met_req
     else:
-        mask = events[self.config_inst.x.met_name]["pt"] < 70
+        mask = events[self.config_inst.x.met_name]["pt"] < self.met_req
+    return events, mask
+
+
+@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met_req=40)
+def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt >= self.met_req
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+    return events, mask
+
+
+def require_triggers(events, require_trigger_ids=None, veto_trigger_ids=None):
+    """
+    Helper function to check for required and vetoed triggers.
+    Returns a mask for the events that fulfill the requirements.
+    """
+    if require_trigger_ids is None:
+        # if no trigger is required, we just return all events
+        mask = ak.ones_like(events.event, dtype=bool)
+    else:
+        mask = ak.zeros_like(events.event, dtype=bool)
+        for _id in law.util.make_tuple(require_trigger_ids):
+            mask = mask | ak.any(events.trigger_ids == _id, axis=1)
+
+    if veto_trigger_ids is not None:
+        for _id in law.util.make_tuple(veto_trigger_ids):
+            mask = mask & ak.all(events.trigger_ids != _id, axis=1)
+
+    return mask
+
+
+@categorizer(uses={"trigger_ids"}, require_trigger_ids=None, veto_trigger_ids=None)
+def catid_triggers(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = require_triggers(events, self.require_trigger_ids, self.veto_trigger_ids)
     return events, mask

@@ -16,6 +16,7 @@ from collections import defaultdict
 import numpy as np
 
 from hbw.ml.data_loader import get_proc_mask
+from hbw.util import log_memory
 import law
 import luigi
 
@@ -631,7 +632,7 @@ class PlotMLResultsSingleFold(
         "terminal; no default",
     )
 
-    data_splits = ("test", "val", "train")
+    data_splits = ("train", "val", "test")
 
     @property
     def config_inst(self):
@@ -685,10 +686,8 @@ class PlotMLResultsSingleFold(
     @law.decorator.timeit()
     @view_output_plots
     def run(self):
-        # imports
-        from hbw.ml.data_loader import MLProcessData
-
         logger.info(f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
+        log_memory("Start")
         # prepare inputs and outputs
         inputs = self.input()
 
@@ -700,7 +699,7 @@ class PlotMLResultsSingleFold(
         self.ml_model_inst.trained_model = training_results["model"]
         self.ml_model_inst.best_model = training_results["best_model"]
 
-        # load data
+        # Load data lazily and process incrementally to reduce memory usage
         input_files_preml = inputs["preml"]["collection"]
         input_files_mlpred = {data_split: value["collection"] for data_split, value in inputs["mlpred"].items()}
         input_files = law.util.merge_dicts(
@@ -712,6 +711,9 @@ class PlotMLResultsSingleFold(
             ],
             deep=True,
         )
+
+        # Load all data at once (original approach) but with memory-efficient plotting
+        from hbw.ml.data_loader import MLProcessData
         data = DotDict({
             data_split: MLProcessData(
                 self.ml_model_inst,
@@ -721,10 +723,15 @@ class PlotMLResultsSingleFold(
                 self.fold,
             ) for data_split in self.data_splits
         })
-
         self.create_plots(data)
 
     def create_plots(self, data):
+        """Create plots with matplotlib cleanup for memory efficiency"""
+        import gc
+        import matplotlib
+        matplotlib.use("Agg")  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         output = self.output()
         stats = {}
         from hbw.ml.plotting import (
@@ -735,6 +742,7 @@ class PlotMLResultsSingleFold(
             plot_input_features,
             plot_introspection,
         )
+
         # create plots
         # NOTE: could be more parallelized since input reading is quite fast,
         # while producing certain plots takes a long time
@@ -742,7 +750,38 @@ class PlotMLResultsSingleFold(
         # NOTE: making plots per sub-process (`self.ml_model_inst.process_insts`) might be nice,
         # but at the moment we can only plot per DNN node process (`self.ml_model_inst.train_node_process_insts`)
 
+        # input features
+        log_memory("Before plotting input features")
+        plot_input_features(
+            self.ml_model_inst,
+            data.train,
+            data.val,
+            output["plots"],
+            self.ml_model_inst.train_node_process_insts,
+        )
+        log_memory("After plotting input features")
+        data.train.cleanup()
+        data.val.cleanup()
+        plt.close("all")
+        gc.collect()
+
+        # output nodes
+        log_memory("Before plotting output nodes")
+        plot_output_nodes(
+            self.ml_model_inst,
+            data,
+            output["plots"],
+            self.ml_model_inst.train_node_process_insts,
+        )
+        log_memory("After plotting output nodes")
+        plt.close("all")
+        gc.collect()
+
+        # iterate over all data splits and create plots
         for data_split in self.data_splits:
+            logger.info(f"Creating plots for {data_split} split...")
+
+            log_memory("Before plotting confusion matrix")
             # confusion matrix
             plot_confusion(
                 self.ml_model_inst,
@@ -752,7 +791,11 @@ class PlotMLResultsSingleFold(
                 self.ml_model_inst.train_node_process_insts,
                 stats,
             )
+            log_memory("After plotting confusion matrix")
+            plt.close("all")
+            gc.collect()
 
+            log_memory("Before plotting ROC curves")
             # ROC curves
             plot_roc_ovr(
                 self.ml_model_inst,
@@ -762,6 +805,12 @@ class PlotMLResultsSingleFold(
                 self.ml_model_inst.train_node_process_insts,
                 stats,
             )
+            log_memory("After plotting ROC curves")
+            plt.close("all")
+            gc.collect()
+
+            # ROC curves for one-vs-one classification
+            log_memory("Before plotting ROC OVO curves")
             plot_roc_ovo(
                 self.ml_model_inst,
                 data[data_split],
@@ -769,25 +818,22 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
             )
+            log_memory("After plotting ROC OVO curves")
+            plt.close("all")
+            gc.collect()
 
-        # input features
-        plot_input_features(
-            self.ml_model_inst,
-            data.train,
-            data.val,
-            output["plots"],
-            self.ml_model_inst.train_node_process_insts,
-        )
+            if data_split != "test":
+                # remove the train and val data to save memory
+                data[data_split].cleanup()
+                gc.collect()
+                log_memory(f"After cleaning up {data_split} split")
 
-        # output nodes
-        plot_output_nodes(
-            self.ml_model_inst,
-            data,
-            output["plots"],
-            self.ml_model_inst.train_node_process_insts,
-        )
+        # # remove the train and val data to save memory
+        # del data.train
+        # del data.val
 
         # introspection plot for variable importance ranking
+        log_memory("Before plotting introspection")
         plot_introspection(
             self.ml_model_inst,
             output["plots"],
@@ -795,6 +841,9 @@ class PlotMLResultsSingleFold(
             input_features=self.ml_model_inst.input_features_ordered,
             stats=stats,
         )
+        log_memory("After plotting introspection")
+        plt.close("all")
+        gc.collect()
 
         # dump all stats into yaml file
         output["stats"].dump(stats, formatter="json")
@@ -804,6 +853,12 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
     data_splits = ("test",)
 
     def create_plots(self, data):
+        """Memory-efficient plotting for test-only data"""
+        import gc
+        import matplotlib
+        matplotlib.use("Agg")  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         output = self.output()
         stats = {}
         from hbw.ml.plotting import (
@@ -811,11 +866,13 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             plot_roc_ovr,
             plot_roc_ovo,
             plot_output_nodes,
-            # plot_input_features,
             plot_introspection,
         )
-        # create plots
+
+        # Since we only have test data, process sequentially with cleanup
         for data_split in self.data_splits:
+            logger.info(f"Creating plots for {data_split} split...")
+
             # confusion matrix
             plot_confusion(
                 self.ml_model_inst,
@@ -825,6 +882,8 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
                 self.ml_model_inst.train_node_process_insts,
                 stats,
             )
+            plt.close("all")
+            gc.collect()
 
             # ROC curves
             plot_roc_ovr(
@@ -835,6 +894,9 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
                 self.ml_model_inst.train_node_process_insts,
                 stats,
             )
+            plt.close("all")
+            gc.collect()
+
             plot_roc_ovo(
                 self.ml_model_inst,
                 data[data_split],
@@ -842,6 +904,8 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
             )
+            plt.close("all")
+            gc.collect()
 
         # output nodes
         plot_output_nodes(
@@ -850,6 +914,8 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             output["plots"],
             self.ml_model_inst.train_node_process_insts,
         )
+        plt.close("all")
+        gc.collect()
 
         # introspection plot for variable importance ranking
         plot_introspection(
@@ -859,6 +925,8 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             input_features=self.ml_model_inst.input_features_ordered,
             stats=stats,
         )
+        plt.close("all")
+        gc.collect()
 
         # dump all stats into yaml file
         output["stats"].dump(stats, formatter="json")

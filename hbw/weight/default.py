@@ -10,7 +10,7 @@ from columnflow.util import maybe_import
 from columnflow.histogramming import HistProducer
 from columnflow.histogramming.default import cf_default
 from columnflow.config_util import get_shifts_from_sources
-from columnflow.columnar_util import Route
+from columnflow.columnar_util import Route, set_ak_column
 from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
@@ -85,6 +85,10 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
         logger.warning("Applying dummy weight shift (should never be use for real analysis)")
         variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
+
+    if len(task.variables) == 1 and task.variables[0].startswith("weight_unweighted"):
+        events = set_ak_column(events, "weight", weight, value_type=np.float32)
+        return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
     return events, weight
 
@@ -269,6 +273,12 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
+no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    # "vjets_weight": [],  # TODO: corrections/shift missing
+    # "trigger_weight": ["trigger_sf"],
+    "stitched_normalization_weight": [],
+}})
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     # "vjets_weight": [],  # TODO: corrections/shift missing
@@ -294,23 +304,32 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
 # HistProducers with masks via categorization
 #
 
-from hbw.categorization.categories import mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70
+from hbw.categorization.categories import mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70, mask_fn_met_geq40
 
 met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,
 })
 
+met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
+
 mbb80 = with_dy_corr.derive("mbb80", cls_dict={
+    "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_mbb80,
 })
 poormans_postfit = with_dy_corr.derive("poormans_postfit", cls_dict={
+    "nondy_hist_producer": None,
     "tt_weight": 0.90,
     "dy_weight": 1.04,
 })
 ge2jets = with_dy_corr.derive("ge2jets", cls_dict={
+    "nondy_hist_producer": None,
     "categorizer_cls": catid_njet2,
 })
 ge2looseb = with_dy_corr.derive("ge2looseb", cls_dict={
+    "nondy_hist_producer": None,
     "categorizer_cls": catid_ge2b_loose,
 })
 
@@ -318,14 +337,60 @@ base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights, "normalization_weight": [],
 }})
 
-base.derive("minimal", cls_dict={"weight_columns": {
+base.derive("stitched_only", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+}})
+base.derive("stitched_ttdycorr", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "dy_correction_weight": [],
+    "top_pt_theory_weight": ["top_pt"],
+}})
+base.derive("stitched_leptonsf", cls_dict={"weight_columns": {
     "stitched_normalization_weight": [],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+}})
+base.derive("stitched_leptonsf_btag", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+}})
+base.derive("stitched_leptonsf_btag_pu", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_pu_weight": ["minbias_xs"],
+}})
+base.derive("stitched_leptonsf_btag_pu_trigger", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_pu_weight": ["minbias_xs"],
+    "trigger_weight": ["trigger_sf"],
+}})
+base.derive("stitched_leptonsf_btag_pu_trigger_ttdycorr", cls_dict={"weight_columns": {
+    "stitched_normalization_weight": [],
+    "muon_id_weight": ["mu_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "trigger_weight": ["trigger_sf"],
+    "normalized_pu_weight": ["minbias_xs"],
+    "dy_correction_weight": [],
     "top_pt_theory_weight": ["top_pt"],
 }})
-
 
 no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
 base.derive("btag_not_normalized", cls_dict={"weight_columns": {
