@@ -305,7 +305,36 @@ def safe_div(num, den):
 
 
 # Helper fucntion to get the rate factor for each n_jet bin individually
-def get_rate_factor(h, ptll_var):
+def get_bin_wise_stats(h, ptll_var, jet_tuple):
+
+    data_h = h["data"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+    dy_h = h["MC_corr_process"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+    mc_h = h["MC_subtract"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
+
+    # get histogram values and errors, summing over njets axis
+    dy_values = (dy_h.values()).sum(axis=0)
+    data_values = (data_h.values()).sum(axis=0)
+    mc_values = (mc_h.values()).sum(axis=0)
+    dy_err = (dy_h.variances()).sum(axis=0)
+    data_err = (data_h.variances()).sum(axis=0)
+    mc_err = (mc_h.variances()).sum(axis=0)
+
+    njet_rate = (data_values.sum(axis=0) - mc_values.sum(axis=0)) / dy_values.sum(axis=0)
+    ratio_values = (data_values - mc_values) / dy_values
+    ratio_err = (1 / dy_values) * np.sqrt(data_err + mc_err + (ratio_values)**2 * dy_err)
+
+    # fill nans/infs and negative errors with 0
+    ratio_values = np.nan_to_num(ratio_values, nan=0.0)
+    ratio_values = np.where(np.isinf(ratio_values), 0.0, ratio_values)
+    ratio_values = np.where(ratio_values < 0, 0.0, ratio_values)
+    ratio_err = np.nan_to_num(ratio_err, nan=0.0)
+    ratio_err = np.where(np.isinf(ratio_err), 0.0, ratio_err)
+    ratio_err = np.where(ratio_err < 0, 0.0, ratio_err)
+
+    return ratio_values, ratio_err, njet_rate
+
+# Helper fucntion to get the rate factor for each n_jet bin individually
+def get_rate_factors(h, ptll_var):
 
     nominator = h["data"][{ptll_var: sum}].values() - h["MC_subtract"][{ptll_var: sum}].values()
     denominator = h["MC_corr_process"][{ptll_var: sum}].values()
@@ -318,6 +347,7 @@ def get_rate_factor(h, ptll_var):
 def get_fit_str(
         njet: int,
         njet_overflow: int,
+        # rate_factor_overflow: int,
         rate_factor: float,
         h: hist.Hist,
         fit_function,
@@ -331,20 +361,21 @@ def get_fit_str(
         raise ValueError(f"Invalid njets value {njet}, expected int between 1 and 11.")
 
     # Helper function to plot the fit and string function
-    def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet, era, outputs):
+    def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet, era, outputs, mode=""):
         #  plot the fit function and the string function (as sanity)
         def str_function(x, fit_str):
             from scipy import special
             fit_str = fit_str.replace("^2", "**2")
             str_function = eval(fit_str, {"x": x, "exp": np.exp, "sqrt": np.sqrt, "erf": special.erf})
             return str_function
-
+        y_max = np.percentile(ratio_values + ratio_err, 90)*1.1
+        y_min = np.percentile(ratio_values - ratio_err, 10)*0.9
         s = np.linspace(0, 400, 1000)
-        y = [(rate_factor_for_fit * fit_func(v, *param_fit)) for v in s]
+        y = [(rate_factor* fit_func(v, *param_fit)) for v in s]
         z = [str_function(v, fit_string) for v in s]
         fig, ax = plt.subplots()
         ax.plot(s, y, color="grey", label="Fit function")
-        ax.plot(s, z, color="black", linestyle="--", label="String function")
+        # ax.plot(s, z, color="black", linestyle="--", label="String function")
         ax.errorbar(
             bin_centers,
             ratio_values,
@@ -359,11 +390,13 @@ def get_fit_str(
         ax.set_xscale("log")
         ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
-        ax.set_ylim(0.4, 1.5)
+        ax.set_ylim(y_min, y_max)
         ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
         ax.grid(True)
-        outputs.child(f"Fit_function_{era}_njet_{njet}.pdf", type="f").dump(fig, formatter="mpl")
+        outputs.child(f"Fit_function_{era}_njet_{mode}_{njet}.pdf", type="f").dump(fig, formatter="mpl")
 
+
+    # NOTE: this can now be modified and made more convenient with the binwise function
     # Define binning
     if njet < njet_overflow:
         jet_tuple = (njet, njet + 1)
@@ -421,7 +454,10 @@ def get_fit_str(
     print("String of fit function:", fit_str)
 
     # Plot Fit and String fucntion with data/MC ratio as cross check
-    plot_fit_func(fit_function, fit_str, param_fit, rate_factor, ratio_values, njet, era, outputs["fit_function"])
+    if njet <= njet_overflow:
+        plot_fit_func(fit_function, fit_str, param_fit, rate_factor_for_fit, ratio_values, njet, era, outputs["fit_function"])
+    ratio_values, ratio_err, _ = get_bin_wise_stats(h, "ptll_for_dy_corr", (njet, njet+1))
+    plot_fit_func(fit_function, fit_str, param_fit, rate_factor, ratio_values, njet, era, outputs["fit_function"], mode="bin")
 
     return fit_str
 
@@ -459,11 +495,11 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
     }
 
     ptll_var = "ptll_for_dy_corr"
-    rate_factor_lst = get_rate_factor(h, ptll_var)
+    rate_factor_lst = get_rate_factors(h, ptll_var)
     for njet in np.arange(1, 11):
         rate_factor = rate_factor_lst[njet]
-        if njet > 7:  # NOTE: DOn't use rate_factor for njet > 7, due to neg weights / no DY in those bins
-            rate_factor = rate_factor_lst[7]
+        if njet >= task.rate_factor_overflow:  # NOTE: DOn't use rate_factor for njet > 7, due to neg weights / no DY in those bins
+            _, _, rate_factor = get_bin_wise_stats(h, ptll_var, (task.rate_factor_overflow, 11))
         print(f"Rate factor for njet={njet}: {rate_factor}")
         fit_str = get_fit_str(njet, task.njet_overflow, rate_factor, h, fit_function9, era, outputs)
 
@@ -486,6 +522,12 @@ class DYCorrBase(
     njet_overflow = luigi.IntParameter(
         default=2,
         description="Overflow bin for the n_jet variable in the fits",
+        significant=True,
+    )
+
+    rate_factor_overflow = luigi.IntParameter(
+        default=7,
+        description="Overflow bin for rate factor in the fits",
         significant=True,
     )
 
@@ -590,9 +632,10 @@ class ComputeDYWeights(DYCorrBase):
 
     def store_parts(self):
         parts = super().store_parts()
-
-        parts.insert_before("version", "category", str(self.categories[0]))
-        parts.insert_before("version", "njetflow", str(self.njet_overflow))
+        
+        # add both overflows to parts
+        overflows = str(self.njet_overflow) + str(self.rate_factor_overflow)
+        parts.insert_before("version", "njetflow", str(overflows))
         return parts
 
     def output(self):

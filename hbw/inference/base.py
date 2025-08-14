@@ -40,6 +40,7 @@ class HBWInferenceModelBase(InferenceModel):
     # list of all processes/channels/systematics to include in the datacards
     processes: list = []
     config_categories: list = []
+    config_variables: list = []
     systematics: list = []
 
     # dictionary to allow skipping specfic datasets for a process
@@ -56,6 +57,7 @@ class HBWInferenceModelBase(InferenceModel):
     version = 1
 
     bjet_cats = {"1b", "2b", "boosted"}
+    multi_variables: bool = False
 
     #
     # helper functions and properties
@@ -134,7 +136,6 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_processes()
         self.remove_inference_processes()
         self.add_inference_parameters()
-        # self.print_model()
         #
         # post-processing
         #
@@ -239,21 +240,48 @@ class HBWInferenceModelBase(InferenceModel):
 
             cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
 
-            var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
-            if len(var_names) > 1:
-                raise ValueError(
-                    f"Multiple variables found for category {config_category}: {var_names}. "
-                    "Please ensure that all config categories use the same variable.",
-                )
+            if self.multi_variables:
+                if len(self.config_insts) > 1:
+                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts][0]
+                    var_names = [var_names]
+                else:
+                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts]
+
+                if len(var_sets) > 1:
+                    raise ValueError(
+                        f"Multiple variables found for category {config_category}: {var_names}. "
+                        "Please ensure that all config categories use the same variable.",
+                    )
+            else:
+                var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
+                if len(var_names) > 1:
+                    raise ValueError(
+                        f"Multiple variables found for category {config_category}: {var_names}. "
+                        "Please ensure that all config categories use the same variable.",
+                    )
+
             var_name = var_names.pop()
-            if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
-                missing_var_configs = [
-                    config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
-                ]
-                raise ValueError(
-                    f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
-                    f"for {config_category}. Please ensure that {var_name} is part of all configs.",
-                )
+            if self.multi_variables:
+                for var in var_name:
+                    if not all(has_var := [config_inst.has_variable(var) for config_inst in self.config_insts]):
+                        missing_var_configs = [
+                            config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                        ]
+                        raise ValueError(
+                            f"Variable {var} not found in configs {', '.join(missing_var_configs)} "
+                            f"for {config_category}. Please ensure that {var} is part of all configs.",
+                        )
+            else:
+                if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
+                    missing_var_configs = [
+                        config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                    ]
+                    raise ValueError(
+                        f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
+                        f"for {config_category}. Please ensure that {var_name} is part of all configs.",
+                    )
 
             cat_names = {self.cat_name(cat_inst) for cat_inst in cat_insts}
             if len(cat_names) > 1:
@@ -280,15 +308,13 @@ class HBWInferenceModelBase(InferenceModel):
             )
             # TODO: check that data datasets are requested as expected
             if self.skip_data:
-                cat_kwargs["data_from_processes"] = [
-                    proc for proc in self.inf_processes
-                    if not proc.startswith("hh_")
-                ]
+                cat_kwargs["data_from_processes"] = self.inf_processes
 
             # add the category to the inference model
             self.add_category(cat_name, **cat_kwargs)
             # do some customization of the inference category
             self.customize_category(self.get_category(cat_name), cat_insts[0])
+
 
     def add_dummy_variation(self, proc, datasets):
         if self.dummy_ggf_variation and "_kl1_kt1" in proc:
@@ -547,8 +573,3 @@ class HBWInferenceModelBase(InferenceModel):
                 **param_kwargs,
             )
 
-            # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
-            # if is_theory:
-            #     self.add_parameter_to_group(shape_uncertainty, "theory")
-            # else:
-            #     self.add_parameter_to_group(shape_uncertainty, "experiment")

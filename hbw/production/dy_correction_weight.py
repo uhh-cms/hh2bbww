@@ -153,7 +153,7 @@ def dy_correction_weight_skip(self: Producer) -> bool:
     )
 
 
-njet_weight_test = dy_correction_weight.derive("njet_weight_test", cls_dict={
-    "produced_column": "njet_weight_test",
+dy_weight_test = dy_correction_weight.derive("dy_weight_test", cls_dict={
+    "produced_column": "dy_weight_test",
     "uses_column": "{Jet,Muon,Electron}.{pt,eta,phi,mass}",
 })

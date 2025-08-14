@@ -306,9 +306,36 @@ backgrounds = [
 processes_dict = {
     "test": ["tt", *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
+    "hww2l2nu": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
     "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
 }
+
+mli_inputs = [
+    "mli_maxdr_jj",
+    "mli_mbbllMET",
+    "mli_mbb",
+    "mli_mll",
+    "mli_b1_pt",
+    "mli_bb_pt",
+    "mli_mllMET",
+    "mli_lep_pt",
+    "mli_mixed_channel",
+    "mli_dr_bb_ll",
+    "mli_lep2_pt",
+    "mli_b2_pt",
+    "mli_met_pt",
+    "mli_b_score_sum",
+    "mli_ll_pt",
+    "mli_min_dr_llbb",
+    "mli_ht",
+    "mli_j1_pt",
+    "mli_dr_ll",
+    "mli_dr_bb",
+    "mli_mindr_lb",
+    "mli_n_jet",
+    "mli_j1_eta",
+]
 
 
 def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
@@ -436,4 +463,29 @@ test_pdf = dl.derive("test_pdf", cls_dict={
 test_jec = dl.derive("test_jec", cls_dict={
     "processes": processes_dict["test"],
     "systematics": systematics.rate + ["jec_Total"],
+})
+
+only_sig= dl_jerc1_boosted_data.derive("only_sig", cls_dict={
+    "processes": processes_dict["hww2l2nu"],
+    "ml_model_name": [],
+    "multi_variables": True,
+    "config_categories": config_categories.no_nn_cats,
+    "config_variable": lambda self, config_cat_inst: mli_inputs,
+})
+
+test = dl_jerc1_boosted_data.derive("test", cls_dict={
+    "processes":  processes_dict["hww2l2nu"],
+    "ml_model_name": [],
+    "multi_variables": True,
+    "config_categories": config_categories.no_nn_cats,
+    "config_variable": lambda self, config_cat_inst: mli_inputs,
+    "systematics": [],
+})
+
+dl_mli_inputs= dl_jerc1_boosted_data.derive("dl_mli_inputs", cls_dict={
+    "processes": processes_dict["hww2l2nu"],
+    "ml_model_name": [],
+    "multi_variables": True,
+    "config_categories": config_categories.no_nn_cats,
+    "config_variable": lambda self, config_cat_inst: mli_inputs,
 })
