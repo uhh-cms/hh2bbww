@@ -647,6 +647,8 @@ class PlotShiftedInferencePlots(
     @law.decorator.localize
     @law.decorator.safe_output
     def run(self):
+        import matplotlib
+        matplotlib.use("Agg")  # use non-interactive backend for plotting
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
 
@@ -705,13 +707,27 @@ class PlotShiftedInferencePlots(
 
                         shift_source = config_shift_name.replace("_down", "")
                         plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
-                        print(f"Preparing plot {plot_name}")
+                        logger.info(f"Preparing plot {plot_name}")
 
                         shift_insts = {
                             "nominal": config_inst.get_shift("nominal").copy_shallow(),
-                            "down": config_inst.get_shift(f"{shift_source}_down").copy_shallow(),
-                            "up": config_inst.get_shift(f"{shift_source}_up").copy_shallow(),
                         }
+                        while "up" not in shift_insts.keys():
+                            for cfg_inst in self.config_insts:
+                                try:
+                                    # use shifts and config inst where corresponding shift is defined
+                                    shift_insts["up"] = cfg_inst.get_shift(f"{shift_source}_up").copy_shallow()
+                                    shift_insts["down"] = cfg_inst.get_shift(f"{shift_source}_down").copy_shallow()
+                                    config_inst = cfg_inst
+                                    break
+                                except ValueError:
+                                    # if the shift if not found in this config, continue
+                                    continue
+                            if "up" not in shift_insts.keys():
+                                raise ValueError(
+                                    f"Shift {shift_source} not found in any of the configs {self.config_insts}",
+                                )
+
                         # convert to hist.Histogram
                         h_down = h_down.to_hist()
 
@@ -878,6 +894,13 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         #     print(cmd)
         # print("\n\n")
 
+        # fetch card combination
+        cmd = (
+            f"law run CombineDatacards --version {identifier} --datacards {datacards} "
+        )
+        full_cmd += cmd + "\n\n"
+        print(base_cmd + cmd, "\n\n")
+
         # creating upper limits for kl=1
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
@@ -926,14 +949,15 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--order-by-impact --mc-stats --parameters-per-page 50"
+            "--order-by-impact --parameters-per-page 50 "
+            # "--mc-stats"
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
         if not self.unblind and not self.inference_model_inst.skip_data:
             pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
             # NOTE: the custom args do not work in combination with job submission
-            cmd += " --unblinded"
-        cmd += f" --PullsAndImpacts-{{{pulls_and_imacts_params}}}"
+            cmd += "--unblinded "
+        cmd += f"--PullsAndImpacts-{{{pulls_and_imacts_params}}} "
 
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -968,6 +992,7 @@ run_and_fetch_cmd() {{
         echo "[DRY-RUN] ${{*:2}}"
         echo "[DRY-RUN] ${{*:2}} --fetch-output 0,a"
     else
+        echo "[RUNNING] ${{*:2}}"
         eval "${{@:2}}"
         eval "${{@:2}} --fetch-output 0,a"
     fi
