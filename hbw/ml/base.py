@@ -32,6 +32,10 @@ pickle = maybe_import("pickle")
 logger = law.logger.get_logger(__name__)
 
 
+# patch, allowing user to fall back to old versions
+use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
+
+
 class ClassPropertyDescriptor:
     def __init__(self, fget):
         self.fget = fget
@@ -243,6 +247,12 @@ class MLClassifierBase(MLModel):
         Create a hash of the parameters to store as part of the output path.
         The repr is cached to ensure that it does not change during the lifetime of the object.
         """
+        if use_old_version:
+            return {
+                "ggfv1": "a07e93e269",
+                "vbfv1": "8031129333",
+                "multiclassv1": "bd236d50b5",
+            }[self.cls_name]
         if not self.parameters:
             return ""
         parameters_repr = law.util.create_hash(sorted(self.parameters.items()))
@@ -394,6 +404,8 @@ class MLClassifierBase(MLModel):
     def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
         # NOTE: there is still an issue that this can only remove (not add) Producers, so the
         # ml_inputs_producer also needs to be added in all task calls that use the evaluation of this model
+        if use_old_version:
+            return ["event_weights", analysis_inst.x.ml_inputs_producer]
         return [analysis_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:

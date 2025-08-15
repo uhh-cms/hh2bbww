@@ -114,7 +114,7 @@ def seeds_user_base_setup(
 
 
 @seeds_user_base.calibrator(
-    version=4,
+    version=law.config.get_expanded("analysis", "ele_version", 4),
     uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
     produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -139,7 +139,7 @@ def ele_init(self: Calibrator) -> None:
 
 
 @seeds_user_base.calibrator(
-    version=4,
+    version=law.config.get_expanded("analysis", "fatjet_version", 4),
     uses={msoftdrop, deterministic_seeds_calibrator.PRODUCES},
     produces={msoftdrop, "FatJet.pt"},  # never leave this empty, otherwise the calibrator will not run
 )
@@ -221,7 +221,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=False,
-    version=4,
+    version=law.config.get_expanded("analysis", "jet_version", 4),
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # keep a copy of non-propagated MET to replace infinite values

@@ -12,12 +12,19 @@ from hbw.inference.base import HBWInferenceModelBase
 
 logger = law.logger.get_logger(__name__)
 
+
+
+# patch, allowing user to fall back to old versions
+use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
+
 #
 # Defaults for all the Inference Model parameters
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
 ml_model_name = ["multiclassv2", "ggfv2", "vbfv2"]
+if use_old_version:
+    ml_model_name = ["multiclassv1", "ggfv1", "vbfv1"]
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
@@ -356,6 +363,10 @@ dl_kl1_dnn = dl.derive("dl_kl1_dnn", cls_dict={
 })
 dl_boosted = dl.derive("dl_boosted", cls_dict={
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_boosted_skip_dy10 = dl.derive("dl_boosted_skip_dy10", cls_dict={
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_datasets": {"dy_hf": "dy_m10to50_amcatnlo", "dy_lf": "dy_m10to50_amcatnlo"},
 })
 dl_boosted1 = dl.derive("dl_boosted1", cls_dict={
     "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background,
