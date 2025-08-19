@@ -189,6 +189,31 @@ def patch_csp_versioning():
         "patched TaskArrayFunction.__str__ to include the CSP version attribute",
     )
 
+    from columnflow.tasks.framework.mixins import InferenceModelClassMixin
+    from columnflow.inference import InferenceModel
+
+    def InferenceModel_str(self: InferenceModel):
+        version_str = f"V{self.version}" if getattr(self, "version", None) is not None else ""
+        return f"{self.cls_name}{version_str}"
+
+    @property
+    def inference_model_repr(self: law.Task):
+        """ Custom representation for InferenceModel """
+        inference_model_cls = InferenceModel.get_cls(self.inference_model)
+
+        version_str = (
+            f"V{inference_model_cls.version}"
+            if getattr(inference_model_cls, "version", None) is not None else ""
+        )
+        return f"{inference_model_cls.cls_name}{version_str}"
+        # return str(inference_model_cls)
+
+    InferenceModel.__str__ = InferenceModel_str
+    InferenceModelClassMixin.inference_model_repr = inference_model_repr
+    logger.info(
+        "patched InferenceModelClassMixin.inference_model_repr to include the InferenceModel version attribute",
+    )
+
 
 @memoize
 def patch_default_version():
