@@ -56,7 +56,10 @@ inference_procnames = {
 
 # mapping: which processes are used for which QCDScale (rate) uncertainty
 processes_per_QCDScale = {
-    "ttbar": ["tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz", "tttt"],
+    "ttbar": [
+        "tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz",
+        # "tttt",
+    ],
     "V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
     "VV": ["vv", "ww", "zz", "wz", "qqZZ"],
     "VVV": ["vvv"],
@@ -73,7 +76,10 @@ processes_per_QCDScale = {
 
 # mapping, which processes are used for which pdf (rate) uncertainty
 processes_per_pdf_rate = {
-    "gg": ["tt", "ttz", "ggZZ", "tttt"],
+    "gg": [
+        "tt", "ttz", "ggZZ",
+        # "tttt",
+    ],
     "qqbar": [
         "ww", "zz", "wz", "st_schannel", "st_tchannel", "dy", "dy_lf", "dy_hf",
         "w_lnu", "vvv", "qqZZ", "ttw",
@@ -99,6 +105,7 @@ processes_per_rate_unconstrained = {
     "dy_hf": ["dy_hf"],
 }
 
+
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
 processes_per_shape = {
@@ -106,6 +113,8 @@ processes_per_shape = {
     "jer": ["all"],
     "jec_Total_{bjet_cat}": ["all"],
     "jer_{bjet_cat}": ["all"],
+    "jec_Total_{campaign}": ["all"],
+    "jer_{campaign}": ["all"],
     "btag_hf_{bjet_cat}": ["all"],
     "btag_lf_{bjet_cat}": ["all"],
     "btag_hfstats1_{year}_{bjet_cat}": ["all"],
@@ -114,6 +123,14 @@ processes_per_shape = {
     "btag_lfstats2_{year}_{bjet_cat}": ["all"],
     "btag_cferr1_{bjet_cat}": ["all"],
     "btag_cferr2_{bjet_cat}": ["all"],
+    "btag_hf_{campaign}": ["all"],
+    "btag_lf_{campaign}": ["all"],
+    "btag_hfstats1_{year}_{campaign}": ["all"],
+    "btag_hfstats2_{year}_{campaign}": ["all"],
+    "btag_lfstats1_{year}_{campaign}": ["all"],
+    "btag_lfstats2_{year}_{campaign}": ["all"],
+    "btag_cferr1_{campaign}": ["all"],
+    "btag_cferr2_{campaign}": ["all"],
     "btag_hf": ["all"],
     "btag_lf": ["all"],
     "btag_hfstats1_{year}": ["all"],
@@ -124,14 +141,27 @@ processes_per_shape = {
     "btag_cferr2": ["all"],
     "mu_id_sf": ["all"],
     "mu_iso_sf": ["all"],
-    # "mu_trig_sf": ["all"],
     "e_sf": ["all"],
     "e_reco_sf": ["all"],
-    # "e_trig_sf": ["all"],
     "trigger_sf": ["all"],
+    "mu_id_sf_{campaign}": ["all"],
+    "mu_iso_sf_{campaign}": ["all"],
+    "e_sf_{campaign}": ["all"],
+    "e_reco_sf_{campaign}": ["all"],
+    "trigger_sf_{campaign}": ["all"],
     "minbias_xs": ["all"],
-    "isr": ["all"],
-    "fsr": ["all"],
+    # "isr": ["all"],
+    # "fsr": ["all"],
+    "isr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
+    # "fsr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
+    "fsr_tt": ["tt"],
+    "fsr_st": ["st_schannel", "st_twchannel"],
+    "fsr_dy": ["dy", "dy_lf", "dy_hf"],
+    "fsr_w": ["w_lnu"],
+    "fsr_vv": ["vv", "ww", "zz", "wz"],
+    "fsr_ttV": ["ttw", "ttz"],
+    "fsr_h": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
+    # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     "top_pt": ["tt"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
@@ -183,3 +213,5 @@ for shape in processes_per_shape.keys():
         source_per_shape[shape] = "pdf"
     elif "murf_envelope" in shape:
         source_per_shape[shape] = "murf_envelope"
+    elif "fsr_" in shape:
+        source_per_shape[shape] = "fsr"
