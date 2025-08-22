@@ -267,6 +267,12 @@ weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
+    "dataset_normalization_weight": [],
+    "dy_correction_weight": [],
+    "trigger_weight": ["trigger_sf"],
+    **default_correction_weights,
+}})
 
 with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
@@ -333,9 +339,9 @@ ge2looseb = with_dy_corr.derive("ge2looseb", cls_dict={
     "categorizer_cls": catid_ge2b_loose,
 })
 
-base.derive("unstitched", cls_dict={"weight_columns": {
-    **default_correction_weights, "normalization_weight": [],
-}})
+# base.derive("unstitched", cls_dict={"weight_columns": {
+#     **default_correction_weights, "normalization_weight": [],
+# }})
 
 base.derive("stitched_only", cls_dict={"weight_columns": {
     "stitched_normalization_weight": [],
