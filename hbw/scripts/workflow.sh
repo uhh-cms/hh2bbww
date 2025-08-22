@@ -27,20 +27,21 @@
 default_configs="c22postv14"
 all_configs="c22prev14,c22postv14,c23prev14,c23postv14"
 default_shifts="nominal"
-dnn_multiclass="multiclassv1"
-dnn_ggf="ggfv1"
-dnn_vbf="vbfv1"
+dnn_multiclass="multiclassv2"
+dnn_ggf="ggfv2"
+dnn_vbf="vbfv2"
 all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
 inference_model="dl"
 ml_inputs="ml_inputs"
 ml_scores="mlscore.max_score,logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary"
 dry_run="${dry_run:-false}"  # override with: dry_run=true ./workflow.sh ...
-
+global_checksum=""
 # === Helper to run or echo ===
 run_cmd() {
     if [[ "$dry_run" == "true" ]]; then
         echo "[DRY-RUN] $*"
     else
+        echo "[RUNNING] $*"
         eval "$@"
     fi
 }
@@ -52,12 +53,19 @@ run_and_fetch_cmd() {
         echo "[DRY-RUN] ${*:2}"
         echo "[DRY-RUN] ${*:2} --fetch-output 0,a"
     else
+        echo "[RUNNING] ${*:2}"
         eval "${@:2}"
         eval "${@:2} --fetch-output 0,a"
     fi
 }
 
 checksum() {
+    # If global checksum is already set, return it
+    if [[ -n "$global_checksum" ]]; then
+        echo "$global_checksum"
+        return
+    fi
+
 	# helper to include custom checksum based on time when task was called
 	TEXT="time"
 	TIMESTAMP=$(date +"%s")
@@ -123,24 +131,48 @@ run_plot_nominal() {
     done
 }
 
-run_produce_columns() {
-    local configs="${1:-$default_configs}"
-    local shifts="${2:-$default_shifts}"
-    local producers="${3:-event_weights,dl_ml_inputs,pre_ml_cats}"
+# run_produce_columns() {
+#     local configs="${1:-$default_configs}"
+#     local shifts="${2:-$default_shifts}"
+#     local producers="${3:-event_weights,dl_ml_inputs,pre_ml_cats}"
+
+#     for config in ${configs//,/ }; do
+#         for shift in ${shifts//,/ }; do
+#             echo "→ ProduceColumns: config=$config, shift=$shift"
+#             # NOTE: this Wrapper does not work for some reason because it does not understand the
+#             # --datasets "*" argument and therefore runs on nothing
+#             run_cmd law run cf.ProduceColumnsWrapper \
+#                 --producers "$producers" \
+#                 --workers 8 \
+#                 --datasets \"*\" \
+#                 --configs "$config" \
+#                 --shifts "$shift" \
+#                 --cf.ProduceColumns-{retries=1,workflow=htcondor,no-poll}
+#         done
+#     done
+# }
+
+
+prepare_dy_corr() {
+    local configs="${1:-$all_configs}"
+    local checksum=$(checksum)
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+    echo "→ ExportDYWeights: config=$configs"
+    # start by running ExportDYWeights with all configs combined to better parallelize the jobs
+    run_cmd law run hbw.ExportDYWeights \
+        --configs "$configs" \
+        --retries 1 \
+        --workflow htcondor \
+        --cf.CreateHistograms-pilot \
+        --cf.BundleRepo-custom-checksum $checksum \
+        --workers 123
 
     for config in ${configs//,/ }; do
-        for shift in ${shifts//,/ }; do
-            echo "→ ProduceColumns: config=$config, shift=$shift"
-            # NOTE: this Wrapper does not work for some reason because it does not understand the
-            # --datasets "*" argument and therefore runs on nothing
-            run_cmd law run cf.ProduceColumnsWrapper \
-                --producers "$producers" \
-                --workers 8 \
-                --datasets \"*\" \
-                --configs "$config" \
-                --shifts "$shift" \
-                --cf.ProduceColumns-{retries=1,workflow=htcondor,no-poll}
-        done
+        echo "→ ExportDYWeights: config=$config"
+        # produce the DY weights for each config separately at the end
+        run_cmd law run hbw.ExportDYWeights \
+            --configs "$config"
     done
 }
 
@@ -157,38 +189,24 @@ run_ml_training() {
     done
 }
 
-prepare_dy_corr() {
-    local configs="${1:-$all_configs}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+# prepare_dy_corr_weights() {
+#     local configs="${1:-$all_configs}"
+#     local shifts="${2:-$default_shifts}"
+#     local producer="dy_correction_weight"
+#     local checksum=$(checksum)
+#     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
-    run_cmd claw run hbw.ExportDYWeights \
-        --configs "$configs" \
-        --retries 1 \
-        --workflow htcondor \
-        --cf.CreateHistograms-pilot \
-        --cf.BundleRepo-custom-checksum $checksum \
-        --workers 123
-}
-
-prepare_dy_corr_weights() {
-    local configs="${1:-$all_configs}"
-    local shifts="${2:-$default_shifts}"
-    local producer="dy_correction_weight"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
-
-    echo "→ ProduceColumnsWrapper: producer=$producer configs=$configs, shifts=$shifts"
-    run_cmd law run cf.ProduceColumnsWrapper \
-        --configs "$configs" \
-        --shifts "$shifts" \
-        --datasets \"dy_*\" \
-        --producers "$producer" \
-        --cf.ProduceColumns-{retries=1,workflow=htcondor} \
-        --cf.CreateHistograms-pilot \
-        --cf.BundleRepo-custom-checksum $checksum \
-        --workers 123
-}
+#     echo "→ ProduceColumnsWrapper: producer=$producer configs=$configs, shifts=$shifts"
+#     run_cmd law run cf.ProduceColumnsWrapper \
+#         --configs "$configs" \
+#         --shifts "$shifts" \
+#         --datasets \"dy_*\" \
+#         --producers "$producer" \
+#         --cf.ProduceColumns-{retries=1,workflow=htcondor} \
+#         --cf.CreateHistograms-pilot \
+#         --cf.BundleRepo-custom-checksum $checksum \
+#         --workers 123
+# }
 
 prepare_mlcolumns() {
     local configs="${1:-$default_configs}"
@@ -196,10 +214,25 @@ prepare_mlcolumns() {
     local models="${3:-$all_models}"
     local variables="${4:-$ml_scores}"
     local checksum=$(checksum)
+    local run_ml="false"
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+
+    if [[ "$run_ml" == "true" ]]; then
+        # check that ML trainings are finished
+        for model in ${models//,/ }; do
+            echo "→ check MLTraining: model=$model"
+            run_cmd law run cf.MLTraining \
+                --ml-model "$model" \
+                --workflow htcondor \
+                --retries 1 \
+                --cf.PrepareMLEvents-pilot
+        done
+    fi
 
     # workaround: trigger CreateHistograms with MLModels to MLEvaluations
     # should only be triggered after the DY weights have been produced
+    # should only be triggered after the DNN training is done
     valid_shifts="nominal,jec_Total_up,jec_Total_down,jer_up,jer_down"
     for config in ${configs//,/ }; do
         for shift in ${shifts//,/ }; do
@@ -335,7 +368,8 @@ run_and_fetch_mlplots() {
         run_and_fetch_cmd mlplots/$mlmodel law run hbw.PlotMLResultsSingleFold \
             --ml-model $mlmodel \
             --cf.MLTraining-{retries=1,workflow=htcondor} \
-            --hbw.MLEvaluationSingleFold-{retries=1,workflow=htcondor}
+            --hbw.MLEvaluationSingleFold-{retries=1,workflow=htcondor} \
+            --workers 3
     done
 }
 
@@ -422,16 +456,13 @@ run_and_fetch_mcsyst_plots() {
     run_and_fetch_cmd with_syst_unc/combined claw run cf.PlotShiftedVariables1D --configs $configs --ml-models $all_models --shift-sources all --variables ml_inputs --processes ddl4 --categories "$categories" --workers 6 --cf.MergeHistograms-pilot
 }
 
-
-
 run_and_fetch_all_yield_tables() {
-    # for config in ${all_configs//,/ }; do
-    #     echo "→ YieldTables: configs=$config"
-    #     run_and_fetch_yield_tables "$config"
-    # done
+    for config in ${all_configs//,/ }; do
+        echo "→ YieldTables: configs=$config"
+        run_and_fetch_yield_tables "$config"
+    done
     echo "→ YieldTables: configs=$all_configs"
     run_and_fetch_yield_tables "$all_configs"
-
 }
 run_and_fetch_yield_tables() {
     configs="${1:-$all_configs}"
@@ -460,19 +491,26 @@ calls() {
 # TODO: this is still super messy (comment in & out whatever is currently requested),
 # we might want to implement a proper dispatcher at some point
 run_all() {
+    # Set global checksum once for this entire workflow run
+    global_checksum=$(checksum)
+    # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_selection_stats "$all_configs" "nominal"
-
-    # run_produce_columns "$all_configs" "nominal"
-    # run_produce_columns "$all_configs" "$jerc_shifts"
-    # prepare_dy_corr_weights "$all_configs" "nominal"
-    # prepare_dy_corr_weights "$all_configs" "$jerc_shifts"
+    # prepare_dy_corr "$all_configs"
+    # run_ml_training
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
+    # prepare_mlcolumns "c23postv14" "$nominal" "multiclassv1,ggfv1,vbfv1" "$ml_inputs"
+    # prepare_mlcolumns "c22postv14" "$nominal" "multiclassv1,ggfv1,vbfv1" "$ml_inputs"
+
+    # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down"
+    # run_merge_reduced_events "$all_configs" "jer_up,jer_down"
+
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
 
     # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_htcondor "$config" "nominal"
-    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups"
+    #     # run_merge_histograms_local "$config" "nominal"
+    #     # run_merge_histograms_htcondor "$config" "$shape_shift_groups"
     #     run_merge_histograms_local "$config" "$jerc_shifts"
     # done
 
