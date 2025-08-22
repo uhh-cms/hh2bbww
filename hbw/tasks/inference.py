@@ -160,7 +160,7 @@ def get_rebin_values(
                 # recalculate events per bin
                 last_bin_index = rebin_hist.axes[0].index(this_edge)
                 _sum = rebin_hist.values()[:last_bin_index].sum()
-                events_per_bin = _sum / (N_bins_final - bin_count + 1)
+                events_per_bin = _sum / (N_bins_final - bin_count)
                 logger.info(f"============ Continuing with {round(events_per_bin, 3)} events per bin")
 
                 # check if this bin should be blinded
@@ -704,6 +704,8 @@ class PlotShiftedInferencePlots(
                             config_shift_name = "murf_envelope_down"
                         elif "pdf" in config_shift_name:
                             config_shift_name = "pdf_down"
+                        elif "fsr" in config_shift_name:
+                            config_shift_name = "fsr_down"
 
                         shift_source = config_shift_name.replace("_down", "")
                         plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
@@ -712,21 +714,27 @@ class PlotShiftedInferencePlots(
                         shift_insts = {
                             "nominal": config_inst.get_shift("nominal").copy_shallow(),
                         }
-                        while "up" not in shift_insts.keys():
-                            for cfg_inst in self.config_insts:
-                                try:
-                                    # use shifts and config inst where corresponding shift is defined
-                                    shift_insts["up"] = cfg_inst.get_shift(f"{shift_source}_up").copy_shallow()
-                                    shift_insts["down"] = cfg_inst.get_shift(f"{shift_source}_down").copy_shallow()
-                                    config_inst = cfg_inst
-                                    break
-                                except ValueError:
-                                    # if the shift if not found in this config, continue
-                                    continue
-                            if "up" not in shift_insts.keys():
-                                raise ValueError(
-                                    f"Shift {shift_source} not found in any of the configs {self.config_insts}",
-                                )
+
+                        for cfg_inst in self.config_insts:
+                            shift_label_postfix = ""
+                            # TODO: add cpn_tag to shift label if part of shift_source
+                            if cfg_inst.x.cpn_tag in shift_source:
+                                shift_label_postfix = f" ({cfg_inst.x.cpn_tag})"
+                            shift_source = shift_source.replace(f"_{cfg_inst.x.cpn_tag}", "")
+                            if cfg_inst.has_shift(f"{shift_source}_up"):
+                                # use shifts and config inst where corresponding shift is defined
+                                shift_insts["up"] = cfg_inst.get_shift(f"{shift_source}_up").copy_shallow()
+                                shift_insts["down"] = cfg_inst.get_shift(f"{shift_source}_down").copy_shallow()
+
+                                # add postfix to labels
+                                shift_insts["up"].label += shift_label_postfix
+                                shift_insts["down"].label += shift_label_postfix
+                                config_inst = cfg_inst
+                                break
+                        if "up" not in shift_insts.keys():
+                            raise ValueError(
+                                f"Shift {shift_source} not found in any of the configs {self.config_insts}",
+                            )
 
                         # convert to hist.Histogram
                         h_down = h_down.to_hist()
@@ -761,7 +769,9 @@ class PlotShiftedInferencePlots(
                             # close the figure to avoid memory issues
                             plt.close(fig)
 
-            logger.info(f"Finished creating plots for shifted inference model {cat_name}.")
+            logger.info(
+                f"Finished creating plots for shifted inference model {cat_name}."
+                f" Plots are stored in \n{output['plots'].abspath}",)
 
 
 class PrepareInferenceTaskCalls(HBWInferenceModelBase):
@@ -801,7 +811,10 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         output = self.output()
 
         # string that represents the version of datacards
-        identifier_list = [*self.configs, self.selector, self.inference_model, self.version]
+        configs_str = "_".join(self.configs)
+        configs_str.replace("c22prev14_c22postv14", "2022")
+        configs_str.replace("c23prev14_c23postv14", "2023")
+        identifier_list = [configs_str, self.selector, str(self.inference_model), self.version]
         identifier = "__".join(identifier_list)
 
         # get the datacard names from the inputs
@@ -810,7 +823,6 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         if len(cards_path) != 1:
             raise Exception("Expected only one datacard path")
         cards_path = cards_path.pop()
-        # pruned_cards_path = f"{cards_path}/pruned"
         decorrelated_cards_path = f"{cards_path}/decorrelated"
 
         card_fns = [collection[key]["card"].basename for key in collection.keys()]
@@ -898,8 +910,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         cmd = (
             f"law run CombineDatacards --version {identifier} --datacards {datacards} "
         )
-        full_cmd += cmd + "\n\n"
-        print(base_cmd + cmd, "\n\n")
+        # full_cmd += cmd + "\n\n"
+        # print(base_cmd + cmd, "\n\n")
 
         # creating upper limits for kl=1
         cmd = (

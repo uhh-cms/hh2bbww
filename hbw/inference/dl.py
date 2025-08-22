@@ -156,18 +156,30 @@ systematics = DotDict({
         "murf_envelope_st",
         "murf_envelope_dy",
         # "murf_envelope_w_lnu",
-        # "murf_envelope_ttv",
-        # "murf_envelope_vv",
-        # "murf_envelope_h",
+        "murf_envelope_ttv",  # TODO: ttW has no murf/pdf weights
+        "murf_envelope_vv",
+        "murf_envelope_h",
+        "murf_envelope_hh_ggf_hbb_hww",
+        "murf_envelope_hh_ggf_hbb_hzz",
+        "murf_envelope_hh_ggf_hbb_htt",
+        # "murf_envelope_hh_vbf_hbb_hww",
+        # "murf_envelope_hh_vbf_hbb_hzz",
+        # "murf_envelope_hh_vbf_hbb_htt",
     ],
     "pdf_shape": [
         "pdf_shape_tt",
         "pdf_shape_st",
         "pdf_shape_dy",
         # "pdf_shape_w_lnu",
-        # "pdf_shape_ttv",
-        # "pdf_shape_vv",
-        # "pdf_shape_h",
+        "pdf_shape_ttv",  # TODO: ttW has no murf/pdf weights
+        "pdf_shape_vv",
+        "pdf_shape_h",
+        "pdf_shape_hh_ggf_hbb_hww",
+        "pdf_shape_hh_ggf_hbb_hzz",
+        "pdf_shape_hh_ggf_hbb_htt",
+        # "pdf_shape_hh_vbf_hbb_hww",
+        # "pdf_shape_hh_vbf_hbb_hzz",
+        # "pdf_shape_hh_vbf_hbb_htt",
     ],
     "btag": [
         "btag_hf",
@@ -242,11 +254,13 @@ systematics = DotDict({
     ],
 })
 systematics["rate"] = [
+    *systematics.lumi,
     *systematics.QCDScale,
     *systematics.pdf,
     *systematics.rate_unconstrained,
 ]
 systematics["rate1"] = [
+    *systematics.lumi,
     *systematics.QCDScale,
     *systematics.pdf,
     *systematics.rate_unconstrained1,

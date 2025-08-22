@@ -11,7 +11,7 @@ import order as od
 
 from collections import defaultdict
 
-from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation
+from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation, ParameterTransformations
 from columnflow.util import maybe_import, DotDict
 from columnflow.config_util import get_datasets_from_process
 
@@ -53,7 +53,7 @@ class HBWInferenceModelBase(InferenceModel):
     dummy_ggf_variation: bool = False
     dummy_vbf_variation: bool = False
 
-    version: int = 1
+    version: int = 4
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -139,6 +139,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_processes()
         self.remove_inference_processes()
         self.add_inference_parameters()
+        self.ratify_shape_parameters()
         # self.print_model()
         #
         # post-processing
@@ -535,6 +536,7 @@ class HBWInferenceModelBase(InferenceModel):
             param_kwargs = {
                 "type": ParameterType.shape,
                 "process": [self.inf_proc(proc) for proc in shape_processes],
+                "transformations": [ParameterTransformation.envelope_if_one_sided],
             }
             shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
             config_insts = self.config_insts
@@ -569,3 +571,29 @@ class HBWInferenceModelBase(InferenceModel):
             #     self.add_parameter_to_group(shape_uncertainty, "theory")
             # else:
             #     self.add_parameter_to_group(shape_uncertainty, "experiment")
+
+    def ratify_shape_parameters(self: InferenceModel):
+        transformations_dict = {
+            "dy_hf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "dy_lf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "ttw": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "ttz": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "vv": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+        }
+        for process, parameter_dict in transformations_dict.items():
+            for parameter, transformations in parameter_dict.items():
+                # get the parameters for the process
+                params_dict = self.get_parameters(
+                    parameter=parameter,
+                    process=process,
+                    only_names=True,
+                )
+                for category, proc_dict in params_dict.items():
+                    if process not in proc_dict:
+                        continue
+                    params = proc_dict[process]
+                    for param in params:
+                        param = self.get_parameter(parameter=param, process=process, category=category)
+                        if param.type == ParameterType.shape:
+                            param.transformations = ParameterTransformations(law.util.make_tuple(transformations))
+                            # param.transformations = transformations
