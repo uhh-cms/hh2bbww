@@ -42,6 +42,10 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 logger = law.logger.get_logger(__name__)
 
 
+# configure Producers
+stitched_normalization_weights.normalize_weights_per_dataset = True
+
+
 @producer(
     uses={
         pu_weight,
@@ -222,6 +226,11 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
     # very simple Producer that creates normalization weight without any stitching
     # (can only be used when there is a one-to-one mapping between datasets and processes)
     events = self[dataset_normalization_weight](events, **kwargs)
+
+    # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
+    # because we assign sub-processes that have no valid cross section registered in the CMSDB
+    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+        events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
     return events
 
 
@@ -232,7 +241,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
-    elif "dy_" in self.dataset_inst.name:
+    elif "dy_m50" in self.dataset_inst.name:
         self.norm_weights_producer = stitched_normalization_weights
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         self.norm_weights_producer = stitched_normalization_weights
