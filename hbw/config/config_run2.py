@@ -675,6 +675,8 @@ def add_config(
                 f"{col}_weight": f"{col}_weight_" + "{direction}",
             },
         )
+    cfg.add_shift(name="dummy_up", id=999207, type="shape")
+    cfg.add_shift(name="dummy_down", id=999208, type="shape")
     # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_up", id=999209, type="shape")
     # cfg.add_shift(name=f"dummy_{cfg.x.cpn_tag}_down", id=999210, type="shape")
     # add_shift_aliases(

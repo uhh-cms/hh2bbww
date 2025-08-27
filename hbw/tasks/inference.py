@@ -644,7 +644,7 @@ class PlotShiftedInferencePlots(
         return False
 
     @law.decorator.log
-    @law.decorator.localize
+    # @law.decorator.localize
     @law.decorator.safe_output
     def run(self):
         import matplotlib
@@ -689,8 +689,10 @@ class PlotShiftedInferencePlots(
                     h_nom = f_in[get_hist_name(cat_name, proc_name)].to_hist()
                     h_nom = self.prepare_cf_hist(h_nom, variable_inst, shift_bin="nominal")
                     # TODO: when no syst_names, make nominal plot only
+                    if not syst_names:
+                        syst_names = [None]
                     for syst_name in sorted(syst_names):
-                        if not syst_name.endswith("Down"):
+                        if syst_name and not syst_name.endswith("Down"):
                             continue
 
                         hist_name = get_hist_name(cat_name, proc_name, syst_name)
@@ -699,7 +701,10 @@ class PlotShiftedInferencePlots(
                             continue
 
                         # mapping of shift names to config shift names
-                        config_shift_name = syst_name.replace("Down", "_down")
+                        if syst_name is None:
+                            config_shift_name = "dummy_down"
+                        else:
+                            config_shift_name = syst_name.replace("Down", "_down")
                         if "murf_envelope" in config_shift_name:
                             config_shift_name = "murf_envelope_down"
                         elif "pdf" in config_shift_name:
@@ -771,7 +776,8 @@ class PlotShiftedInferencePlots(
 
             logger.info(
                 f"Finished creating plots for shifted inference model {cat_name}."
-                f" Plots are stored in \n{output['plots'].abspath}",)
+                f" Plots are stored in \n{output['plots'].path}",
+            )
 
 
 class PrepareInferenceTaskCalls(HBWInferenceModelBase):
