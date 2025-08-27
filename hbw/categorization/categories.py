@@ -392,6 +392,17 @@ def mask_fn_met70(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     return events, mask
 
 
+@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"), "Muon.pt"}, met_req=70)
+def mask_fn_dyvr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt < self.met_req
+        mask = mask & (ak.sum(events.Muon["pt"] > 0, axis=-1) == 2)
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] < self.met_req
+        mask = mask & (ak.sum(events.Muon["pt"] > 0, axis=-1) == 2)
+    return events, mask
+
+
 @categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met_req=40)
 def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     if self.dataset_inst.has_tag("is_dy"):

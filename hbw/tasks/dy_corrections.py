@@ -30,6 +30,7 @@ from hbw.tasks.base import HBWTask
 
 hist = maybe_import("hist")
 np = maybe_import("numpy")
+jacobi = maybe_import("jacobi")
 special = maybe_import("scipy.special")
 plt = maybe_import("matplotlib.pyplot")
 
@@ -271,7 +272,7 @@ def get_fit9_args(*params, return_str=False):
         lower_bounds = []
         upper_bounds = []
         fit_args = {
-            "c1": [-0.8, -1.6, 1.0],
+            "c1": [-0.8, -1.0, 1.0],  # TODO samll value shold be not so small maybe
             "n1": [0.5, 0.01, 1.],
             "mu1": [0.1, 0.001, 7.],
             "sigma1": [1.5, 0.1, 30.],
@@ -293,6 +294,63 @@ def get_fit9_args(*params, return_str=False):
 
 
 fit_function9.get_fit_args = get_fit9_args
+
+
+def fit_function1(x, c1, n1, mu1, sigma1,
+                c2, n2, mu2, sigma2,
+                a, b, r1, r2, s1, s2):
+    gauss1 = c1 + n1 * (1 / sigma1) * np.exp(-0.5 * ((x - mu1) / sigma1) ** 2)
+    w1 = erf_window(x, r1, s1, -1)
+
+    gauss2 = c2 + n2 * (1 / sigma2) * np.exp(-0.5 * ((x - mu2) / sigma2) ** 2)
+    w2 = erf_window(x, r1, s1, 1) * erf_window(x, r2, s2, -1)
+
+    pol = a + x * b
+    w3 = erf_window(x, r2, s2, 1)
+
+    return w1 * (-1) * gauss1 + w2 * (-1) * gauss2 + w3 * pol
+
+
+def get_fit1_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c1, n1, mu1, sigma1, c2, n2, mu2, sigma2, a, b, r1, r2, s1, s2 = params
+        x = "x"
+        gauss1 = f"(({c1})+(({n1})*(1/{sigma1})*exp(-0.5*(({x}-{mu1})/{sigma1})^2)))"
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*(({x}-{mu2})/{sigma2})^2)))"
+        pol = f"({a}+{x}*b)"
+        w1 = f"(0.5*(1-erf(({x}-{r1})/(sqrt(2)*{s1}))))"
+        w2 = f"(0.5*(1+erf(({x}-{r1})/(sqrt(2)*{s1}))))*(0.5*(1-erf(({x}-{r2})/(sqrt(2)*{s2}))))"
+        w3 = f"(0.5*(1+erf(({x}-{r2})/(sqrt(2)*{s2}))))"
+        return f"({w1}*(-1)*{gauss1} + {w2}*(-1)*{gauss2} + {w3}*{pol})"
+    else:
+        start_values = []
+        lower_bounds = []
+        upper_bounds = []
+        fit_args = {
+            "c1": [-0.8, -1.6, 1.0],
+            "n1": [0.5, 0.01, 1.],
+            "mu1": [0.1, 0.001, 7.],
+            "sigma1": [1.5, 0.1, 30.],
+            "c2": [-0.8, -2, 0.0],
+            "n2": [10, 0.1, 30],
+            "mu2": [40, 10, 90],
+            "sigma2": [40, 10, 80],
+            "a": [0.8, 0.6, 3],
+            "b": [1.0, 0.8, 1.2],
+            "r1": [10, 2, 30],
+            "r2": [80, 30, 150],
+            "s1": [10, 1, 10],
+            "s2": [5, 1, 50],
+        }
+        for param in fit_args:
+            start_values.append(fit_args[param][0])
+            lower_bounds.append(fit_args[param][1])
+            upper_bounds.append(fit_args[param][2])
+        return start_values, lower_bounds, upper_bounds
+
+
+fit_function1.get_fit_args = get_fit1_args
 
 
 # Define a safe division function to avoid division by zero
@@ -333,7 +391,10 @@ def get_bin_wise_stats(h, ptll_var, jet_tuple):
 
     return ratio_values, ratio_err, njet_rate
 
-# Helper fucntion to get the rate factor for each n_jet bin individually
+# Helper function to get the rate factor for each n_jet bin individually
+# Needed for rate_overflow_calculation
+
+
 def get_rate_factors(h, ptll_var):
 
     nominator = h["data"][{ptll_var: sum}].values() - h["MC_subtract"][{ptll_var: sum}].values()
@@ -368,14 +429,13 @@ def get_fit_str(
             fit_str = fit_str.replace("^2", "**2")
             str_function = eval(fit_str, {"x": x, "exp": np.exp, "sqrt": np.sqrt, "erf": special.erf})
             return str_function
-        y_max = np.percentile(ratio_values + ratio_err, 90)*1.1
-        y_min = np.percentile(ratio_values - ratio_err, 10)*0.9
+        # NOTE: can be used to have a more robust plot for very fluctuaing data / large error bands
+        # y_max = np.percentile(ratio_values + ratio_err, 90) * 1.1
+        # y_min = np.percentile(ratio_values - ratio_err, 10) * 0.9
         s = np.linspace(0, 400, 1000)
-        y = [(rate_factor* fit_func(v, *param_fit)) for v in s]
-        z = [str_function(v, fit_string) for v in s]
+        y = [(rate_factor * fit_func(v, *param_fit)) for v in s]
         fig, ax = plt.subplots()
         ax.plot(s, y, color="grey", label="Fit function")
-        # ax.plot(s, z, color="black", linestyle="--", label="String function")
         ax.errorbar(
             bin_centers,
             ratio_values,
@@ -390,13 +450,298 @@ def get_fit_str(
         ax.set_xscale("log")
         ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
-        ax.set_ylim(y_min, y_max)
+        if mode != "bin":
+            ax.set_ylim(0.4, 1.5)
         ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
         ax.grid(True)
         outputs.child(f"Fit_function_{era}_njet_{mode}_{njet}.pdf", type="f").dump(fig, formatter="mpl")
 
+    # --------------------------------- Helper function for systematic uncertainty derivation ------------------------
+    # Derive sstematic uncertainty by findiny % variation of parameters that covers all data points (quiet brute force)
+    def envelope_covers_data(x, y, params, X):
+        # y_nominal = fit_function(x, params)
+        lower, upper = [], []
 
-    # NOTE: this can now be modified and made more convenient with the binwise function
+        for j, p in enumerate(params):
+            varied_up = params.copy()
+            varied_down = params.copy()
+            varied_up[j] = p * (1 + X)
+            varied_down[j] = p * (1 - X)
+
+            y_up = fit_function(x, varied_up)
+            y_down = fit_function(x, varied_down)
+
+            lower.append(np.minimum(y_up, y_down))
+            upper.append(np.maximum(y_up, y_down))
+
+        # combine across all parameter variations
+        band_lower = np.min(lower, axis=0)
+        band_upper = np.max(upper, axis=0)
+
+        return np.all((y >= band_lower) & (y <= band_upper))
+
+    # Derive systematic uncertainty according to
+    # https://scikit-hep.org/iminuit/notebooks/error_bands.html#With-error-propagation
+    def error_propagation(ratio_values, bin_centers, ratio_err, model, popt, pcov, outputs, era, njet, mode=""):
+        # from jacobi import propagate
+        # NOTE: using own implementation because jacobi cannot be imported somehow
+        import numpy as np
+        from numpy.linalg import multi_dot
+
+        def propagate(func, p, pcov, eps=1e-8):
+            """
+            Propagate parameter covariance to output covariance.
+
+            func : function(p) -> array
+            p    : parameter values (1D array)
+            pcov : covariance matrix of parameters
+            """
+            p = np.asarray(p)
+            y0 = func(p)
+            y0 = np.atleast_1d(y0)
+
+            # numerical Jacobian
+            J = np.zeros((len(y0), len(p)))
+            for j in range(len(p)):
+                dp = np.zeros_like(p)
+                dp[j] = eps
+                y1 = func(p + dp)
+                y2 = func(p - dp)
+                J[:, j] = (y1 - y2) / (2 * eps)
+
+            ycov = multi_dot([J, pcov, J.T])
+            return y0, ycov
+
+        # your x-values for predictions
+        x_pred = np.linspace(0, 500, 1000)
+
+        # define function of parameters only
+        f = lambda p: model(x_pred, *p)
+
+        # propagate uncertainties
+        y_pred, ycov = propagate(f, popt, pcov)
+        yerr = np.sqrt(np.diag(ycov))
+        print(f"yerr: {yerr}")
+        fig, ax = plt.subplots()
+        ax.plot(x_pred, y_pred, color="grey", label="Fit function")
+        ax.errorbar(
+            bin_centers,
+            ratio_values,
+            yerr=ratio_err,
+            fmt=".",
+            color="black",
+            linestyle="none",
+            ecolor="black",
+            elinewidth=0.5,
+        )
+        ax.fill_between(x_pred, y_pred - 2 * yerr, y_pred + 2 * yerr, alpha=0.1, label="2σ error band")
+        ax.fill_between(x_pred, y_pred - yerr, y_pred + yerr, alpha=0.3, label="1σ error band")
+        ax.legend(loc="upper right")
+        ax.set_xscale("log")
+        ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
+        ax.set_ylabel("Ratio")
+        ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
+        ax.grid(True)
+        outputs.child(f"errorpropagation_{era}_njet_{mode}_{njet}.pdf", type="f").dump(fig, formatter="mpl")
+
+    # Derive systematic unc following bootstrping method:
+    # https://scikit-hep.org/iminuit/notebooks/error_bands.html#With-the-bootstrap
+    def get_unc_bootstraping(
+        fit_func, popt, pcov, rate_factor, ratio_values, ratio_err, bin_centers,
+        njet, rate_factor_for_fit, outputs, era, nsamples=200,
+    ):
+        """
+        Estimate uncertainty on the fitted model using bootstrap sampling from
+        the parameter covariance matrix.
+
+        Produces both percentile-based and std-based error bands.
+        """
+
+        # grid for evaluation
+        s = np.linspace(0, 400, 1000)
+
+        # sample parameter sets from covariance
+        y_samples = np.random.multivariate_normal(popt, pcov, size=nsamples)
+
+        # evaluate model for each toy parameter set
+        y_vals = [rate_factor * fit_func(s, *params) for params in y_samples]
+        y_vals = np.array(y_vals)
+
+        # summary statistics
+        y_mean = np.mean(y_vals, axis=0)
+
+        # --- 1) Percentile-based bands ---
+        y_down, y_nom, y_up = np.quantile(y_vals, [0.16, 0.50, 0.84], axis=0)
+        y_down95, y_nom95, y_up95 = np.quantile(y_vals, [0.025, 0.50, 0.975], axis=0)
+
+        # --- 2) Std-based band (assumes Gaussian errors) ---
+        y_std = np.std(y_vals, axis=0)
+
+        # central fit function at best-fit parameters
+        y_fit = rate_factor * fit_func(s, *popt)
+
+        # plot
+        fig, ax = plt.subplots()
+
+        # draw toy curves lightly
+        for y in y_vals:
+            ax.plot(s, y, color="purple", lw=0.1, alpha=0.05)
+
+        # central fit
+        ax.plot(s, y_fit, label="Best-fit function", color="black", linestyle="--", lw=1.5)
+
+        # bands
+        ax.fill_between(s, y_down, y_up, color="C1", alpha=0.3, label="68% band (percentile)")
+        ax.fill_between(s, y_down95, y_up95, color="C1", alpha=0.15, label="95% band (percentile)")
+        ax.fill_between(s, y_mean - y_std, y_mean + y_std, color="grey", alpha=0.3, label="±1σ (std)")
+
+        # data points
+        ax.errorbar(
+            bin_centers,
+            ratio_values,
+            yerr=ratio_err,
+            fmt=".",
+            color="black",
+            linestyle="none",
+            ecolor="black",
+            elinewidth=0.5,
+            label="Data",
+        )
+
+        ax.legend()
+        ax.set_ylim(0.4, 1.5)
+        ax.set_xlabel("ptll")
+        ax.set_xscale("log")
+        ax.set_ylabel("Data/MC Ratio")
+        ax.set_title(f"Correction Function and Systematics in njet {njet}")
+
+        outputs.child(f"Bootstrap_syst_unc_{era}_njet_{njet}.pdf", type="f").dump(fig, formatter="mpl")
+
+        return {
+            "s": s,
+            "y_fit": y_fit,
+            "y_mean": y_mean,
+            "y_std": y_std,
+            "y_nom": y_nom,
+            "y_up": y_up,
+            "y_down": y_down,
+            "y_nom95": y_nom95,
+            "y_up95": y_up95,
+            "y_down95": y_down95,
+        }
+
+    # Derive fit envelope as additional systematic uncertainty
+    def plot_fit_envelope(ys, njet, era, outputs, n_points=500,
+                        show_individual=True, fill_color="lightblue", mode=""):
+        """
+        Plot the envelope (min-max) of multiple fit functions.
+
+        Parameters
+        ----------
+        functions : list of callables
+            Each function should take a numpy array of x values and return y values.
+        x_range : tuple (xmin, xmax)
+            Range over which to plot.
+        n_points : int
+            Number of points to sample in the range.
+        show_individual : bool
+            If True, plot the individual fits too.
+        fill_color : str
+            Color for the envelope shading.
+        """
+        x = np.linspace(0, 400, 1000)
+
+        # Envelope boundaries
+        y_min = np.min(ys, axis=0)
+        y_max = np.max(ys, axis=0)
+
+        # fig = plt.figure(figsize=(8, 5))
+        fig, ax = plt.subplots()
+        if show_individual:
+            for i, y in enumerate(ys):
+                ax.plot(x, y, alpha=0.5, label=f"Fit {i+1}")
+
+        # Plot the envelope
+        ax.fill_between(x, y_min, y_max, color=fill_color, alpha=0.4,
+                        label="Envelope")
+
+        ax.errorbar(
+            bin_centers,
+            ratio_values,
+            yerr=ratio_err,
+            fmt=".",
+            color="black",
+            linestyle="none",
+            ecolor="black",
+            elinewidth=0.5,
+        )
+
+        ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
+        ax.set_ylabel("Ratio")
+        ax.set_title(f"Fit Envelope for NLO {era}, N(jets) =  {njet}")
+        ax.legend(loc="best")
+        ax.set_xscale("log")
+        ax.grid(True)
+        outputs.child(f"Fit_envelope_{era}_njet_{mode}_{njet}.pdf", type="f").dump(fig, formatter="mpl")
+
+    # Compute envelope and return format that can be saved in correction lib .json file
+    def compute_envelope_regions_up_down(functions, x=None):
+        """
+        Compute regions where each function dominates in the envelope, for both up and down variations.
+        Returns edges and formula strings for up and down.
+
+        Parameters
+        ----------
+        functions : list of callables
+            Each callable should return y-values for given x.
+        convert_to_formula : callable
+            A function that takes (fit_function, x) and returns a TFormula string.
+        x : np.ndarray, optional
+            x-values to evaluate functions.
+        """
+        if x is None:
+            x = np.linspace(0, 400, 1000)
+
+        ys = np.array([f(x) for f in functions])  # shape (n_funcs, n_points)
+
+        # Envelope
+        dominant_up_idx = np.argmax(ys, axis=0)
+        dominant_down_idx = np.argmin(ys, axis=0)
+
+        def get_regions(dominant_idx):
+            edges = [x[0]]
+            regions = []
+            current = dominant_idx[0]
+            for xi, idx in zip(x[1:], dominant_idx[1:]):
+                if idx != current:
+                    edges.append(xi)
+                    regions.append(current)
+                    current = idx
+            edges.append(x[-1])
+            regions.append(dominant_idx[-1])
+            return edges, regions
+
+        edges_up, regions_up = get_regions(dominant_up_idx)
+        edges_down, regions_down = get_regions(dominant_down_idx)
+
+        # Convert regions to formula strings
+        formulas_up = []
+        for idx in regions_up:
+            fit_func_str = functions[idx].get_fit_args(*param_fit, return_str=True)
+            fit_str_up = f"{rate_factor}*{fit_func_str}"
+            formulas_up.append(fit_str_up)
+
+        formulas_down = []
+        for idx in regions_down:
+            fit_func_str = functions[idx].get_fit_args(*param_fit, return_str=True)
+            fit_str_down = f"{rate_factor}*{fit_func_str}"
+            formulas_down.append(fit_str_down)
+
+        return (edges_up, formulas_up), (edges_down, formulas_down)
+
+    # --------------------------------- End of helper functions ---------------------------------
+
+    # NOTE: this could be modified and made more convenient with the binwise function
     # Define binning
     if njet < njet_overflow:
         jet_tuple = (njet, njet + 1)
@@ -436,7 +781,7 @@ def get_fit_str(
     starting_values, lower_bounds, upper_bounds = fit_function.get_fit_args()
 
     # Fit
-    param_fit, _ = optimize.curve_fit(
+    param_fit, param_cov = optimize.curve_fit(
         fit_function,
         bin_centers,
         ratio_values / rate_factor_for_fit,
@@ -453,13 +798,56 @@ def get_fit_str(
     fit_str = f"{rate_factor}*{fit_func_str}"
     print("String of fit function:", fit_str)
 
-    # Plot Fit and String fucntion with data/MC ratio as cross check
+    # Plot Fit and String function with data/MC ratio as cross check
     if njet <= njet_overflow:
-        plot_fit_func(fit_function, fit_str, param_fit, rate_factor_for_fit, ratio_values, njet, era, outputs["fit_function"])
-    ratio_values, ratio_err, _ = get_bin_wise_stats(h, "ptll_for_dy_corr", (njet, njet+1))
-    plot_fit_func(fit_function, fit_str, param_fit, rate_factor, ratio_values, njet, era, outputs["fit_function"], mode="bin")
+        plot_fit_func(
+            fit_function,
+            fit_str,
+            param_fit,
+            rate_factor_for_fit,
+            ratio_values,
+            njet,
+            era,
+            outputs["fit_function"],
+        )
+        error_propagation(
+            ratio_values,
+            bin_centers,
+            ratio_err,
+            fit_function,
+            param_fit,
+            param_cov,
+            outputs["fit_function"],
+            era,
+            njet,
+        )
+        get_unc_bootstraping(
+            fit_function,
+            param_fit,
+            param_cov,
+            rate_factor,
+            ratio_values,
+            ratio_err,
+            bin_centers,
+            njet,
+            rate_factor_for_fit,
+            outputs["fit_function"], era, nsamples=500,
+        )
 
-    return fit_str
+    ratio_values, ratio_err, _ = get_bin_wise_stats(h, "ptll_for_dy_corr_V2", (njet, njet + 1))
+    plot_fit_func(
+        fit_function,
+        fit_str,
+        param_fit,
+        rate_factor,
+        ratio_values,
+        njet,
+        era,
+        outputs["fit_function"],
+        mode="bin",
+    )
+
+    return fit_str, param_cov, bin_centers
 
 
 def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
@@ -494,15 +882,16 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
         },
     }
 
-    ptll_var = "ptll_for_dy_corr"
+    ptll_var = "ptll_for_dy_corr_V2"
     rate_factor_lst = get_rate_factors(h, ptll_var)
     for njet in np.arange(1, 11):
         rate_factor = rate_factor_lst[njet]
-        if njet >= task.rate_factor_overflow:  # NOTE: DOn't use rate_factor for njet > 7, due to neg weights / no DY in those bins
-            _, _, rate_factor = get_bin_wise_stats(h, ptll_var, (task.rate_factor_overflow, 11))
+        if njet >= task.rate_factor_overflow:
+            rate_factor = rate_factor_lst[task.rate_factor_overflow]
         print(f"Rate factor for njet={njet}: {rate_factor}")
-        fit_str = get_fit_str(njet, task.njet_overflow, rate_factor, h, fit_function9, era, outputs)
-
+        fit_str, param_cov, ptll_bins = get_fit_str(
+            njet, task.njet_overflow, rate_factor, h, fit_function9, era, outputs,
+        )
         fit_dict[era]["nominal"][(njet, njet + 1)] = [(0.0, inf, fit_str)]
 
     return fit_dict
@@ -526,7 +915,7 @@ class DYCorrBase(
     )
 
     rate_factor_overflow = luigi.IntParameter(
-        default=7,
+        default=5,
         description="Overflow bin for rate factor in the fits",
         significant=True,
     )
@@ -547,7 +936,7 @@ class DYCorrBase(
         add_default_to_description=True,
     )
     variables = HistogramsUserSingleShiftBase.variables.copy(
-        default=("n_jet-ptll_for_dy_corr",),
+        default=("n_jet-ptll_for_dy_corr_V2",),
         description="Variables to use for the DY corrections",
         add_default_to_description=True,
     )
@@ -619,9 +1008,8 @@ class ComputeDYWeights(DYCorrBase):
         if len(self.variables) != 1:
             raise ValueError(f"{self.task_family} requires exactly one variable, got {self.variables}")
         self.variable = self.variables[0]
-        # for now, variable must be "n_jet-ptll_for_dy_corr"
-        if self.variable != "n_jet-ptll_for_dy_corr":
-            raise ValueError(f"variable must be 'n_jet-ptll_ptll_for_dy_corr', got {self.variable}")
+        if self.variable != "n_jet-ptll_for_dy_corr_V2":
+            raise ValueError(f"variable must be n_jet-ptll_ptll_for_dy_corr_V2, got {self.variable}")
 
         # Only one processes is allowed to correct for
         # NOTE: might have to change due to MultiConfig
@@ -632,8 +1020,9 @@ class ComputeDYWeights(DYCorrBase):
 
     def store_parts(self):
         parts = super().store_parts()
-        
+
         # add both overflows to parts
+        parts.insert_before("version", "category", str(self.categories[0]))
         overflows = str(self.njet_overflow) + str(self.rate_factor_overflow)
         parts.insert_before("version", "njetflow", str(overflows))
         return parts
@@ -766,6 +1155,14 @@ class ExportDYWeights(DYCorrBase):
             for config in self.configs
         }
         return reqs
+
+    def store_parts(self):
+        parts = super().store_parts()
+
+        # add both overflows to parts
+        overflows = str(self.njet_overflow) + str(self.rate_factor_overflow)
+        parts.insert_before("version", "njetflow", str(overflows))
+        return parts
 
     def output(self):
         return self.target("dy_correction_weight.json.gz")

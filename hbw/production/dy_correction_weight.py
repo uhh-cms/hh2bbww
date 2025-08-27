@@ -37,6 +37,8 @@ logger = law.logger.get_logger(__name__)
     produced_column="dy_correction_weight",
     uses_column=None,
     version=0,
+    n_jet=2,
+    derivation_region="with_trigger_weight",
 )
 def dy_correction_weight(
     self: Producer,
@@ -50,24 +52,31 @@ def dy_correction_weight(
     events = self[prepare_objects](events, **kwargs)
     njet = ak.num(events.Jet.pt, axis=1)
 
-    njets = ak.where(njet > 7, 7, njet)
-
-    var_map = {
-        "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
-        # "era": self.dy_corr_era,
-        "njets": njets,
-        "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
-        "syst": "nominal",
+    dy_correction_weight = {
+        "nominal": {},
+        "up": {},
+        "down": {},
     }
-    corrector = self.correction_set["dy_correction_weight"]
 
-    inputs = [var_map[inp.name] for inp in corrector.inputs]
+    njets = ak.where(njet > 7, 7, njet)
+    # NOTE: this is only preparation for systs unc for up and down are to be read out from .json file
+    for syst in ["nominal"]:
+        var_map = {
+            "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+            "njets": njets,
+            "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+            "syst": syst,
+        }
+        corrector = self.correction_set["dy_correction_weight"]
 
-    dy_correction_weight = corrector.evaluate(*inputs)
-    weight_up = 0.5 * (dy_correction_weight - 1.0) + 1.0
-    weight_down = 1.5 * (dy_correction_weight - 1.0) + 1.0
+        inputs = [var_map[inp.name] for inp in corrector.inputs]
 
-    events = set_ak_column(events, self.produced_column, dy_correction_weight)
+        dy_correction_weight[syst] = corrector.evaluate(*inputs)
+
+    weight_up = 0.5 * (dy_correction_weight["nominal"] - 1.0) + 1.0
+    weight_down = 1.5 * (dy_correction_weight["nominal"] - 1.0) + 1.0
+
+    events = set_ak_column(events, self.produced_column, dy_correction_weight["nominal"])
     events = set_ak_column(events, f"{self.produced_column}_up", weight_up)
     events = set_ak_column(events, f"{self.produced_column}_down", weight_down)
     return events
@@ -97,19 +106,6 @@ def dy_correction_weight_init(self: Producer) -> None:
     if not self.dataset_inst.has_tag("is_dy"):
         return
     self.corrected_process = "dy"
-    if "22post" in self.config_inst.name:
-        self.dy_corr_era = "2022EE"
-        self.dy_corr_configs = ("c22postv14")
-    elif "22pre" in self.config_inst.name:
-        self.dy_corr_era = "2022"
-        self.dy_corr_configs = ("c22prev14")
-    elif "23pre" in self.config_inst.name:
-        self.dy_corr_era = "2023"
-        self.dy_corr_configs = ("c23prev14")
-    elif "23post" in self.config_inst.name:
-        self.dy_corr_era = "2023BPix"
-        self.dy_corr_configs = ("c23postv14")
-    # self._dy_corr_era = "2022_2022EE_2023_2023BPix"
     self.produces.add(self.produced_column)
     self.produces.add(f"{self.produced_column}_up")
     self.produces.add(f"{self.produced_column}_down")
@@ -123,7 +119,6 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
         configs=(task.config,),
-        # configs=self.dy_corr_configs,
         shift="nominal",
         processes=((
             "vv", "w_lnu", "st",
@@ -131,11 +126,12 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
             "tt", "ttv", "h", "data",
         ),),
         # Use Hist producer without dy corrections and cut for MET < 70 GeV to deplete ttbar contributions
-        hist_producer="met70",
+        hist_producer=self.derivation_region,
         # Use 2µ category when calculating weight with gen level ptll because of linear behaviour
         categories=("dycr__2mu",),
-        variables=("n_jet-ptll_for_dy_corr",),
-        njet_overflow=2,
+        variables=("n_jet-ptll_for_dy_corr_V2",),
+        njet_overflow=self.n_jet,
+        rate_factor_overflow=5,
     )
 
 

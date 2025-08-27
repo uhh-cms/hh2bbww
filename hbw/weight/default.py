@@ -294,7 +294,7 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
     "version": 0,
     "weight_columns": {
         **default_correction_weights,
-        "dy_correction_weight": [],
+        "dy_correction_weight": ["dy_correction"],
         "trigger_weight": ["trigger_sf"],
         "stitched_normalization_weight": [],
     },
@@ -437,6 +437,10 @@ from hbw.categorization.categories import mask_fn_highpt
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 
+from hbw.categorization.categories import mask_fn_met70, mask_fn_dyvr
+
+with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
+with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
 
 # additional hist producers for scale factors
 from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
