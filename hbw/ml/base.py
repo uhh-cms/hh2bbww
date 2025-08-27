@@ -479,14 +479,20 @@ class MLClassifierBase(MLModel):
 
         outp = {
             "mlmodel": target,
+            "mlmodel_file": target.child("mlmodel.keras", type="f", optional=True),
             "plots": target.child("plots", type="d", optional=True),
-            "checkpoint": target.child("checkpoint", type="d", optional=True),
+            # "checkpoint": target.child("checkpoint", type="d", optional=True),
+            "checkpoint": target.child("checkpoint.model.keras", type="f", optional=True),
         }
 
-        # define all files that need to be present
+        # # define all files that need to be present
+        # outp["required_files"] = [
+        #     target.child(fname, type="f") for fname in
+        #     ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
+        # ]
         outp["required_files"] = [
             target.child(fname, type="f") for fname in
-            ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
+            ("mlmodel.keras", "parameters.yaml", "input_features.pkl")
         ]
         return outp
 
@@ -506,13 +512,14 @@ class MLClassifierBase(MLModel):
         models["parameters"] = yaml.load(f_in, Loader=yaml.Loader)
 
         # custom loss needed due to output layer changes for negative weights
-        from hbw.ml.tf_util import cumulated_crossentropy
-
+        # from hbw.ml.tf_util import cumulated_crossentropy
         models["model"] = tf.keras.models.load_model(
-            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["mlmodel_file"].abspath,
+            # custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
         models["best_model"] = tf.keras.models.load_model(
-            target["checkpoint"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["checkpoint"].abspath,
+            # custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
 
         return models
@@ -595,7 +602,7 @@ class MLClassifierBase(MLModel):
         log_memory("training")
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
-        model.save(output["mlmodel"].path)
+        model.save(output["mlmodel_file"].abspath)
 
         return
 
@@ -732,7 +739,7 @@ class ExampleDNN(MLClassifierBase):
         """
         Minimal implementation of a ML model
         """
-        import tesorflow.keras as keras
+        import tensorflow.keras as keras
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
