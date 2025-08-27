@@ -40,6 +40,11 @@ def stitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.stitched_normalization_weight
 
 
+@cf_default.hist_producer(uses={"dataset_normalization_weight"}, mc_only=True)
+def unstitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
+    return events, events.dataset_normalization_weight
+
+
 @cf_default.hist_producer(mc_only=True)
 def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, ak.Array(np.ones(len(events), dtype=np.float32))

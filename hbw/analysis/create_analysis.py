@@ -297,7 +297,7 @@ def create_hbw_analysis(
         from columnflow.histogramming import HistProducer
         from columnflow.tasks.framework.mixins import ArrayFunctionClassMixin
         hist_producer_cls = HistProducer.get_cls(task.hist_producer)
-        if hist_producer_cls.nondy_hist_producer and not task.dataset.startswith("dy"):
+        if getattr(hist_producer_cls, "nondy_hist_producer", None) and not task.dataset.startswith("dy"):
             hist_producer_repr = ArrayFunctionClassMixin.array_function_cls_repr(
                 task,
                 task.hist_producer,
