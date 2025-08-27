@@ -16,7 +16,8 @@ from scinum import Number
 
 from columnflow.tasks.framework.base import ConfigTask, Requirements
 from columnflow.tasks.framework.mixins import (
-    SelectorMixin, CalibratorsMixin, ProducersMixin, MLModelsMixin,
+    ProducersMixin,
+    MLModelsMixin,
     CalibratorClassesMixin,
     SelectorClassMixin,
     ProducerClassesMixin,
@@ -76,11 +77,16 @@ def create_table_from_csv(csv_file_path, transpose=False, with_header=True):
 class SelectionSummary(
     HBWTask,
     DatasetsProcessesMixin,
-    SelectorMixin,
-    CalibratorsMixin,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    # SelectorMixin,
+    # CalibratorsMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    resolution_task_cls = MergeSelectionStats
+    single_config = True
+
     reqs = Requirements(
         RemoteWorkflow.reqs,
         MergeSelectionStats=MergeSelectionStats,
@@ -151,7 +157,7 @@ class SelectionSummary(
 
         empty_datasets = []
 
-        keys_of_interest = self.keys_of_interest or ["selection_eff", "expected_yield", "num_events_selected"]
+        keys_of_interest = self.keys_of_interest or ["selection_eff", "expected_yield", "num_events_selected", "xsec"]
         header_map = {
             "xsec": "CrossSection [pb]",
             "empty": "Empty?",
