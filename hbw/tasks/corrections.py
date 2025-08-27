@@ -90,11 +90,11 @@ class GetBtagNormalizationSF(
     # njet_overflow = 7
     # nhf_overflow = 4
     njet_overflow = luigi.IntParameter(
-        default=None,
+        default=0,
         description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
     )
     nhf_overflow = luigi.IntParameter(
-        default=None,
+        default=0,
         description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
     )
 
@@ -146,9 +146,9 @@ class GetBtagNormalizationSF(
         parts.insert_before("version", "params", "__".join(significant_params))
 
         overflow_repr = ""
-        if self.njet_overflow is not None:
+        if self.njet_overflow > 0:
             overflow_repr += f"njet{self.njet_overflow}"
-        if self.nhf_overflow is not None:
+        if self.nhf_overflow > 0:
             overflow_repr += f"_nhf{self.nhf_overflow}"
         if overflow_repr:
             parts.insert_before("version", "overflow", overflow_repr)
@@ -158,8 +158,8 @@ class GetBtagNormalizationSF(
     def output(self):
         return {
             "btag_renormalization_sf": self.target("btag_renormalization_sf.json"),
-            "btag_renormalization_sf_plot": self.target("btag_renormalization_sf_plot.pdf"),
-            "plots": self.target("plots", dir=True),
+            "btag_renormalization_sf_plot": self.target("btag_renormalization_sf_plot.pdf", optional=True),
+            "plots": self.target("plots", dir=True, optional=True),
         }
 
     def reduce_hist(self, hist, mode: list[str]):
@@ -183,9 +183,9 @@ class GetBtagNormalizationSF(
     def apply_overflow_bin(self, hist):
         # from columnflow.plotting.plot_util import use_flow_bins
         ax_names = [ax.name for ax in hist.axes]
-        if self.njet_overflow and "njet" in ax_names:
+        if self.njet_overflow > 0 and "njet" in ax_names:
             hist = hist[{"njet": slice(0, self.njet_overflow + 1)}]
-        if self.nhf_overflow and "nhf" in ax_names:
+        if self.nhf_overflow > 0 and "nhf" in ax_names:
             hist = hist[{"nhf": slice(0, self.nhf_overflow + 1)}]
         return hist
 
@@ -318,10 +318,14 @@ class GetBtagNormalizationSF(
             formatter="json",
         )
 
+    skip_variations = True
+
     def plot_ht_njet_hft_btag_weight(self, sfhist):
         """
         Plot the btag weight SFs for the ht_njet_nhf mode.
         """
+        if self.skip_variations and sfhist.name != "ht_njet_nhf_btag_weight":
+            return
         logger.info(f"Plotting btag weight SFs for sfhist {sfhist.name}")
         output = self.output()["plots"]
         import matplotlib as mpl
