@@ -57,6 +57,7 @@ class HBWInferenceModelBase(InferenceModel):
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
+    multi_variables: bool = False
 
     #
     # helper functions and properties
@@ -249,21 +250,48 @@ class HBWInferenceModelBase(InferenceModel):
 
             cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
 
-            var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
-            if len(var_names) > 1:
-                raise ValueError(
-                    f"Multiple variables found for category {config_category}: {var_names}. "
-                    "Please ensure that all config categories use the same variable.",
-                )
+            if self.multi_variables:
+                if len(self.config_insts) > 1:
+                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts][0]
+                    var_names = [var_names]
+                else:
+                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts]
+
+                if len(var_sets) > 1:
+                    raise ValueError(
+                        f"Multiple variables found for category {config_category}: {var_names}. "
+                        "Please ensure that all config categories use the same variable.",
+                    )
+            else:
+                var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
+                if len(var_names) > 1:
+                    raise ValueError(
+                        f"Multiple variables found for category {config_category}: {var_names}. "
+                        "Please ensure that all config categories use the same variable.",
+                    )
+
             var_name = var_names.pop()
-            if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
-                missing_var_configs = [
-                    config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
-                ]
-                raise ValueError(
-                    f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
-                    f"for {config_category}. Please ensure that {var_name} is part of all configs.",
-                )
+            if self.multi_variables:
+                for var in var_name:
+                    if not all(has_var := [config_inst.has_variable(var) for config_inst in self.config_insts]):
+                        missing_var_configs = [
+                            config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                        ]
+                        raise ValueError(
+                            f"Variable {var} not found in configs {', '.join(missing_var_configs)} "
+                            f"for {config_category}. Please ensure that {var} is part of all configs.",
+                        )
+            else:
+                if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
+                    missing_var_configs = [
+                        config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                    ]
+                    raise ValueError(
+                        f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
+                        f"for {config_category}. Please ensure that {var_name} is part of all configs.",
+                    )
 
             cat_names = {self.cat_name(cat_inst) for cat_inst in cat_insts}
             if len(cat_names) > 1:
