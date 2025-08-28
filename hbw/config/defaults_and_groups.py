@@ -128,6 +128,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
     config_inst.x.default_general_settings = ("data_mc_plots_blind_conservative",)
+    # config_inst.x.default_general_settings = ("data_mc_plots",)
     config_inst.x.default_custom_style_config = "default"
 
     #
@@ -543,6 +544,14 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "wip",
             "yscale": "log",
             "blinding_threshold": 0.008,
+        },
+        "more_magnitudes": {
+            # "custom_style_config": "default",  # NOTE: does not work in combination with group
+            "whitespace_fraction": 0.2,
+            "cms_label": "wip",
+            "yscale": "log",
+            "blinding_threshold": 0.008,
+            "magnitudes": 8,
         },
         "data_mc_plots_blind_conservative": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
