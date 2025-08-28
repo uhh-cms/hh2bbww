@@ -311,31 +311,8 @@ processes_dict = {
     "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
 }
 
-mli_inputs = [
-    "mli_maxdr_jj",
-    "mli_mbbllMET",
-    "mli_mbb",
-    "mli_mll",
-    "mli_b1_pt",
-    "mli_bb_pt",
-    "mli_mllMET",
-    "mli_lep_pt",
-    "mli_mixed_channel",
-    "mli_dr_bb_ll",
-    "mli_lep2_pt",
-    "mli_b2_pt",
-    "mli_met_pt",
-    "mli_b_score_sum",
-    "mli_ll_pt",
-    "mli_min_dr_llbb",
-    "mli_ht",
-    "mli_j1_pt",
-    "mli_dr_ll",
-    "mli_dr_bb",
-    "mli_mindr_lb",
-    "mli_n_jet",
-    "mli_j1_eta",
-]
+from hbw.ml.derived.dl import input_features
+mli_inputs = input_features.v2
 
 
 def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
