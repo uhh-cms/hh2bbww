@@ -195,7 +195,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
         unit="GeV",
         x_title=r"$p_{T}^{\ell\ell}$",
-        aux={"overflow": True},
     )
 
     for obj in ["lep2"]:
