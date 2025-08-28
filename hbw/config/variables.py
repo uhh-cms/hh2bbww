@@ -289,11 +289,34 @@ def add_variables(config: od.Config) -> None:
         list(np.logspace(1.47712, 2, 15))[1:] +
         list(np.logspace(2, 2.69897, 4))[1:]
     )
+    log_binning_V2 = (
+        list(np.logspace(0., 0.60206, 3)) +
+        list(np.logspace(0.60206, 1.47712, 11))[1:] +
+        list(np.logspace(1.47712, 2, 20))[1:] +
+        list(np.logspace(2, 2.69897, 6))[1:]
+    )
+
     config.add_variable(
         # NOTE: only works when running `prepare_objects` in HistProducer
         name="ptll_for_dy_corr",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         binning=log_binning,
+        log_x=True,
+        unit="GeV",
+        x_title=r"$p_{T}^{ll} (binned for DY weights)$",
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
+            "rebin": 2,
+            "x_max": 400,
+        },
+    )
+
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in HistProducer
+        name="ptll_for_dy_corr_V2",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=log_binning_V2,
         log_x=True,
         unit="GeV",
         x_title=r"$p_{T}^{ll} (binned for DY weights)$",
