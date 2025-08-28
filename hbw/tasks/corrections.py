@@ -90,11 +90,11 @@ class GetBtagNormalizationSF(
     # njet_overflow = 7
     # nhf_overflow = 4
     njet_overflow = luigi.IntParameter(
-        default=0,
+        default=6,
         description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
     )
     nhf_overflow = luigi.IntParameter(
-        default=0,
+        default=4,
         description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
     )
 
