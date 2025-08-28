@@ -599,7 +599,6 @@ def add_config(
     cfg.add_shift(name="dy_correction_down", id=14, type="shape")
     add_shift_aliases(cfg, "dy_correction", {"dy_correction_weight": "dy_correction_weight_{direction}"})
 
-
     # electron scale factor uncertainties
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")

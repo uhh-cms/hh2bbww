@@ -315,7 +315,6 @@ class HBWInferenceModelBase(InferenceModel):
             # do some customization of the inference category
             self.customize_category(self.get_category(cat_name), cat_insts[0])
 
-
     def add_dummy_variation(self, proc, datasets):
         if self.dummy_ggf_variation and "_kl1_kt1" in proc:
             for missing_kl_variations in ("_kl0_kt1", "_kl2p45_kt1", "_kl5_kt1"):
@@ -572,4 +571,3 @@ class HBWInferenceModelBase(InferenceModel):
                 shape_uncertainty,
                 **param_kwargs,
             )
-

@@ -464,25 +464,22 @@ test_jec = dl.derive("test_jec", cls_dict={
     "processes": processes_dict["test"],
     "systematics": systematics.rate + ["jec_Total"],
 })
-
-only_sig= dl_jerc1_boosted_data.derive("only_sig", cls_dict={
+only_sig = dl_jerc1_boosted_data.derive("only_sig", cls_dict={
     "processes": processes_dict["hww2l2nu"],
     "ml_model_name": [],
     "multi_variables": True,
     "config_categories": config_categories.no_nn_cats,
     "config_variable": lambda self, config_cat_inst: mli_inputs,
 })
-
 test = dl_jerc1_boosted_data.derive("test", cls_dict={
-    "processes":  processes_dict["hww2l2nu"],
+    "processes": processes_dict["hww2l2nu"],
     "ml_model_name": [],
     "multi_variables": True,
     "config_categories": config_categories.no_nn_cats,
     "config_variable": lambda self, config_cat_inst: mli_inputs,
     "systematics": [],
 })
-
-dl_mli_inputs= dl_jerc1_boosted_data.derive("dl_mli_inputs", cls_dict={
+dl_mli_inputs = dl_jerc1_boosted_data.derive("dl_mli_inputs", cls_dict={
     "processes": processes_dict["hww2l2nu"],
     "ml_model_name": [],
     "multi_variables": True,
