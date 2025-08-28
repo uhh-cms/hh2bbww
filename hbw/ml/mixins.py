@@ -41,6 +41,11 @@ class DenseModelMixin(object):
     _default__dropout: float = 0.50
     _default__learningrate: float = 0.00050
 
+    # TODO: these parameters are currently not part of the MLModel repr
+    loss: str = "categorical_crossentropy"
+    focal_loss_alpha: float = 0.25
+    focal_loss_gamma: float = 2.0
+
     def cast_ml_param_values(self):
         """
         Cast the values of the parameters to the correct types
@@ -51,6 +56,10 @@ class DenseModelMixin(object):
         self.dropout = float(self.dropout)
         self.learningrate = float(self.learningrate)
 
+        self.loss = str(self.loss)
+        self.focal_loss_alpha = float(self.focal_loss_alpha)
+        self.focal_loss_gamma = float(self.focal_loss_gamma)
+
     def prepare_ml_model(
         self,
         task: law.Task,
@@ -59,6 +68,7 @@ class DenseModelMixin(object):
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization
         from hbw.ml.tf_util import cumulated_crossentropy
+        # from keras.losses import CategoricalFocalCrossentropy
 
         n_inputs = len(set(self.input_features))
         # n_outputs = len(self.processes)
@@ -71,9 +81,9 @@ class DenseModelMixin(object):
         model.add(BatchNormalization(input_shape=(n_inputs,)))
 
         activation_settings = DotDict({
-            "elu": ("ELU", "he_uniform", "Dropout"),
-            "relu": ("ReLU", "he_uniform", "Dropout"),
-            "prelu": ("PReLU", "he_normal", "Dropout"),
+            "elu": ("elu", "he_uniform", "Dropout"),
+            "relu": ("relu", "he_uniform", "Dropout"),
+            # "prelu": ("PReLU", "he_normal", "Dropout"),
             "selu": ("selu", "lecun_normal", "AlphaDropout"),
             "tanh": ("tanh", "glorot_normal", "Dropout"),
             "softmax": ("softmax", "glorot_normal", "Dropout"),
@@ -107,6 +117,12 @@ class DenseModelMixin(object):
             "metrics": ["categorical_accuracy"],
             "weighted_metrics": ["categorical_accuracy"],
         }
+        if self.loss == "focal_loss":
+            from keras.losses import CategoricalFocalCrossentropy
+            model_compile_kwargs["loss"] = CategoricalFocalCrossentropy(
+                alpha=self.focal_loss_alpha,
+                gamma=self.focal_loss_gamma,
+            )
         model.compile(**model_compile_kwargs)
 
         return model
@@ -164,14 +180,14 @@ class CallbacksBase(object):
 
         if "backup" in self.callbacks:
             backup_kwargs = dict(
-                backup_dir=backup_output.path,
+                backup_dir=backup_output.abspath,
             )
             backup_kwargs.update(self.backup_kwargs)
             callbacks.append(keras.callbacks.BackupAndRestore(**backup_kwargs))
 
         if "checkpoint" in self.callbacks:
             checkpoint_kwargs = dict(
-                filepath=output["checkpoint"].path,
+                filepath=output["checkpoint"].abspath,
                 save_weights_only=False,
                 monitor="val_loss",
                 mode="auto",

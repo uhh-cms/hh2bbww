@@ -114,30 +114,35 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_dphi_bb_nu",
         expression="mli_dphi_bb_nu",
         binning=(40, 0, 3.2),
+        aux={"overflow": True},
         x_title=r"$\Delta\Phi(bb,\nu)$",
     )
     config.add_variable(
         name="mli_mll",
         expression="mli_mll",
         binning=(40, 0, 160),
+        aux={"overflow": True},
         x_title=r"$m_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_dr_ll",
         expression="mli_dr_ll",
         binning=(40, 0, 8),
+        aux={"overflow": True},
         x_title=r"$\Delta R(\ell,\ell)$",
     )
     config.add_variable(
         name="mli_min_dr_llbb",
         expression="mli_min_dr_llbb",
         binning=(40, 0, 8),
+        aux={"overflow": True},
         x_title=r"$min_{b,l} \Delta R(b,\ell)$",
     )
     config.add_variable(
         name="mli_dr_ll_bb",
         expression="mli_dr_ll_bb",
         binning=(40, 0, 8),
+        aux={"overflow": True},
         x_title=r"$\Delta R(bb,\ell\ell)$",
     )
     config.add_variable(
@@ -151,41 +156,45 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_dr_bb_llMET",
         expression="mli_dr_bb_llMET",
         binning=(40, 0, 8),
+        aux={"overflow": True},
         x_title=r"$\Delta R(bb,\ell\ell MET)$",
     )
     config.add_variable(
         name="mli_dphi_bb_llMET",
         expression="mli_dphi_bb_llMET",
         binning=(40, 0, 8),
+        aux={"overflow": True},
         x_title=r"$\Delta \phi(bb,\ell\ell MET)$",
     )
     config.add_variable(
         name="mli_mbbllMET",
         expression="mli_mbbllMET",
         binning=(40, 0, 1200),
-        unit="GeV",
         aux={"overflow": True},
+        unit="GeV",
         x_title=r"$m_{\ell\ell MET}$",
     )
     config.add_variable(
         name="mli_dphi_ll",
         expression="mli_dphi_ll",
         binning=(64, 0, 3.2),
+        aux={"overflow": True},
         x_title=r"$\Delta \phi_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_deta_ll",
         expression="mli_deta_ll",
         binning=(40, 0, 6),
+        aux={"overflow": True},
         x_title=r"$\Delta \eta_{\ell\ell}$",
     )
     config.add_variable(
         name="mli_ll_pt",
         expression="mli_ll_pt",
         binning=(40, 0, 200),
+        aux={"overflow": True},
         unit="GeV",
         x_title=r"$p_{T}^{\ell\ell}$",
-        aux={"overflow": True},
     )
 
     for obj in ["lep2"]:
@@ -194,6 +203,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=default_var_binning[var],
+                aux={"overflow": True},
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
             )
@@ -202,6 +212,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_lep_tag",
         expression="mli_lep_tag",
         binning=(2, -.5, 1.5),
+        aux={"overflow": True},
         x_title="lepton 1 muon tag",
     )
 
@@ -209,6 +220,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_lep2_tag",
         expression="mli_lep2_tag",
         binning=(2, -0.5, 1.5),
+        aux={"overflow": True},
         x_title="lepton 2 muon tag",
     )
 
@@ -216,5 +228,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_mixed_channel",
         expression="mli_mixed_channel",
         binning=(2, -0.5, 1.5),
+        aux={"overflow": True},
         x_title="Mixed channel tag",
     )

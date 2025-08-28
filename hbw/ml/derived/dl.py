@@ -594,6 +594,44 @@ multiclassv2 = multiclassv1.derive("multiclassv2", cls_dict={"input_features": i
 ggfv2 = ggfv1.derive("ggfv2", cls_dict={"input_features": input_features["v2"]})
 vbfv2 = vbfv1.derive("vbfv2", cls_dict={"input_features": input_features["v2"]})
 
+
+# sanity check
+ggfv2_sanity = ggfv2.derive("ggfv2_sanity", cls_dict={
+})
+
+# testing focal loss
+ggfv2_fl_test = ggfv2.derive("ggfv2_fl_test", cls_dict={
+    "loss": "focal_loss",
+    "focal_loss_alpha": 1.0,
+    "focal_loss_gamma": 1.0,
+    "epochs": 3,
+})
+# testing focal loss
+ggfv2_fl_base = ggfv2.derive("ggfv2_fl_base", cls_dict={
+    "loss": "focal_loss",
+    "focal_loss_alpha": 1.0,
+    "focal_loss_gamma": 1.0,
+})
+
+# testing focal loss
+for gamma in [1, 2, 3, 4, 5]:
+    multiclassv2.derive(f"multiclassv2_fl_g{gamma}", cls_dict={
+        "loss": "focal_loss",
+        "focal_loss_gamma": float(gamma),
+    })
+    for alpha in [0.25, 0.5, 0.75, 1.0]:
+        alpha_str = str(alpha).replace(".", "p")
+        ggfv2.derive(f"ggfv2_fl_g{gamma}_a{alpha_str}", cls_dict={
+            "loss": "focal_loss",
+            "focal_loss_alpha": float(alpha),
+            "focal_loss_gamma": float(gamma),
+        })
+        vbfv2.derive(f"vbfv2_fl_g{gamma}_a{alpha_str}", cls_dict={
+            "loss": "focal_loss",
+            "focal_loss_alpha": float(alpha),
+            "focal_loss_gamma": float(gamma),
+        })
+
 #
 # adding bbtautau
 #

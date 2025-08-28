@@ -83,8 +83,28 @@ def patch_live_task_id():
 def patch_pilots():
     from columnflow.tasks.histograms import MergeShiftedHistograms
     from columnflow.tasks.framework.remote import RemoteWorkflow
+    from columnflow.tasks.framework.inference import SerializeInferenceModelBase
 
-    def workflow_requires(self):
+    def SerializeInferenceModelBase_workflow_requires(self):
+        # cannot call super() here; hopefully we only need the workflow_requires from RemoteWorkflow
+        reqs = RemoteWorkflow.workflow_requires(self)
+        if not self.pilot:
+            reqs["merged_hists"] = hist_reqs = {}
+            for cat_obj in self.branch_map.values():
+                cat_reqs = self._requires_cat_obj(cat_obj, merge_variables=True)
+                for config_name, proc_reqs in cat_reqs.items():
+                    hist_reqs.setdefault(config_name, {})
+                    for proc_name, dataset_reqs in proc_reqs.items():
+                        hist_reqs[config_name].setdefault(proc_name, {})
+                        for dataset_name, task in dataset_reqs.items():
+                            hist_reqs[config_name][proc_name].setdefault(dataset_name, set()).add(task)
+            return reqs
+
+        return reqs
+
+    SerializeInferenceModelBase.workflow_requires = SerializeInferenceModelBase_workflow_requires
+
+    def MergeShiftedHistograms_workflow_requires(self):
         # cannot call super() here; hopefully we only need the workflow_requires from RemoteWorkflow
         reqs = RemoteWorkflow.workflow_requires(self)
 
@@ -99,7 +119,7 @@ def patch_pilots():
 
         return reqs
 
-    MergeShiftedHistograms.workflow_requires = workflow_requires
+    MergeShiftedHistograms.workflow_requires = MergeShiftedHistograms_workflow_requires
     logger.info(
         f"patched {MergeShiftedHistograms.task_family} to only require nominal histograms in pilot mode",
     )
@@ -187,6 +207,31 @@ def patch_csp_versioning():
     TaskArrayFunction.__str__ = TaskArrayFunction_str
     logger.info(
         "patched TaskArrayFunction.__str__ to include the CSP version attribute",
+    )
+
+    from columnflow.tasks.framework.mixins import InferenceModelClassMixin
+    from columnflow.inference import InferenceModel
+
+    def InferenceModel_str(self: InferenceModel):
+        version_str = f"V{self.version}" if getattr(self, "version", None) is not None else ""
+        return f"{self.cls_name}{version_str}"
+
+    @property
+    def inference_model_repr(self: law.Task):
+        """ Custom representation for InferenceModel """
+        inference_model_cls = InferenceModel.get_cls(self.inference_model)
+
+        version_str = (
+            f"V{inference_model_cls.version}"
+            if getattr(inference_model_cls, "version", None) is not None else ""
+        )
+        return f"{inference_model_cls.cls_name}{version_str}"
+        # return str(inference_model_cls)
+
+    InferenceModel.__str__ = InferenceModel_str
+    InferenceModelClassMixin.inference_model_repr = inference_model_repr
+    logger.info(
+        "patched InferenceModelClassMixin.inference_model_repr to include the InferenceModel version attribute",
     )
 
 

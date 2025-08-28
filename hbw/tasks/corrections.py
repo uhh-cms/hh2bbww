@@ -87,6 +87,17 @@ class GetBtagNormalizationSF(
         add_default_to_description=True,
     )
 
+    # njet_overflow = 7
+    # nhf_overflow = 4
+    njet_overflow = luigi.IntParameter(
+        default=6,
+        description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
+    )
+    nhf_overflow = luigi.IntParameter(
+        default=4,
+        description="Maximum number of jets to consider for the scale factors. If None, no overflow bin is applied.",
+    )
+
     def create_branch_map(self):
         # single branch without payload
         return {0: None}
@@ -134,11 +145,21 @@ class GetBtagNormalizationSF(
         significant_params = (self.rescale_mode, self.base_key)
         parts.insert_before("version", "params", "__".join(significant_params))
 
+        overflow_repr = ""
+        if self.njet_overflow > 0:
+            overflow_repr += f"njet{self.njet_overflow}"
+        if self.nhf_overflow > 0:
+            overflow_repr += f"_nhf{self.nhf_overflow}"
+        if overflow_repr:
+            parts.insert_before("version", "overflow", overflow_repr)
+
         return parts
 
     def output(self):
         return {
             "btag_renormalization_sf": self.target("btag_renormalization_sf.json"),
+            "btag_renormalization_sf_plot": self.target("btag_renormalization_sf_plot.pdf", optional=True),
+            "plots": self.target("plots", dir=True, optional=True),
         }
 
     def reduce_hist(self, hist, mode: list[str]):
@@ -157,6 +178,15 @@ class GetBtagNormalizationSF(
             if ax.name not in mode:
                 hist = hist[{ax.name: sum}]
 
+        return hist
+
+    def apply_overflow_bin(self, hist):
+        # from columnflow.plotting.plot_util import use_flow_bins
+        ax_names = [ax.name for ax in hist.axes]
+        if self.njet_overflow > 0 and "njet" in ax_names:
+            hist = hist[{"njet": slice(0, self.njet_overflow + 1)}]
+        if self.nhf_overflow > 0 and "nhf" in ax_names:
+            hist = hist[{"nhf": slice(0, self.nhf_overflow + 1)}]
         return hist
 
     def run(self):
@@ -221,7 +251,8 @@ class GetBtagNormalizationSF(
         ):
             mode_str = "_".join(mode)
             numerator = merged_hists[f"{self.base_key}_per_process_ht_njet_nhf"]
-            numerator = self.reduce_hist(numerator, mode).values()
+            numerator = self.reduce_hist(numerator, mode)
+            numerator = self.apply_overflow_bin(numerator).values()
 
             for key in merged_hists.keys():
                 if (
@@ -236,6 +267,7 @@ class GetBtagNormalizationSF(
                 # create the scale factor histogram
                 h = merged_hists[key]
                 h = self.reduce_hist(h, mode)
+                h = self.apply_overflow_bin(h)
                 denominator = h.values()
 
                 # get axes for the output histogram
@@ -244,6 +276,7 @@ class GetBtagNormalizationSF(
                     if isinstance(ax, hist.axis.Variable):
                         out_axes.append(ax)
                     elif isinstance(ax, hist.axis.Integer):
+                        # convert from Integer to Variable to allow clamping
                         out_axes.append(hist.axis.Variable(ax.edges, name=ax.name, label=ax.label))
                     else:
                         raise ValueError(f"Unsupported axis type {type(ax)}")
@@ -254,13 +287,14 @@ class GetBtagNormalizationSF(
                 sfhist.name = f"{mode_str}_{weight_name}"
                 sfhist.label = "out"
 
+                if mode_str == "ht_njet_nhf":
+                    self.plot_ht_njet_hft_btag_weight(sfhist)
+
                 # import correctionlib.convert
                 btag_renormalization = correctionlib.convert.from_histogram(sfhist)
                 btag_renormalization.description = f"{weight_name} per {mode_str} re-normalization"
 
                 # set overflow bins behavior (default is to raise an error when out of bounds)
-                # NOTE: claming seems to not work for int axes. Hopefully the number of jets considered to
-                # create these SFs is always large enough to not hit the overflow bin.
                 if any(isinstance(ax, hist.axis.Variable) for ax in out_axes):
                     btag_renormalization.data.flow = "clamp"
 
@@ -283,3 +317,61 @@ class GetBtagNormalizationSF(
             cset_json,
             formatter="json",
         )
+
+    skip_variations = True
+
+    def plot_ht_njet_hft_btag_weight(self, sfhist):
+        """
+        Plot the btag weight SFs for the ht_njet_nhf mode.
+        """
+        if self.skip_variations and sfhist.name != "ht_njet_nhf_btag_weight":
+            return
+        logger.info(f"Plotting btag weight SFs for sfhist {sfhist.name}")
+        output = self.output()["plots"]
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+        mpl.use("Agg")  # Use a non-interactive backend
+
+        nhf_edges = sfhist.axes["nhf"].edges
+        njet_edges = sfhist.axes["njet"].edges
+        ht_edges = sfhist.axes["ht"].edges
+
+        # # create one grid of figures with one figure per njet and nhf bin
+        fig, axs = plt.subplots(
+            len(njet_edges) - 1, len(nhf_edges) - 1,
+            figsize=(len(nhf_edges) * 3, len(njet_edges) * 3),
+            constrained_layout=True,
+            gridspec_kw={
+                "left": 0.05, "right": 0.95,
+                "bottom": 0.05, "top": 0.95,
+                "hspace": 0.30, "wspace": 0.30,
+            },
+            sharex=True,
+            # sharey=True,
+        )
+
+        # create one 1D plot per nhf and njet bin
+        for nhf_idx, nhf_edge in enumerate(nhf_edges[:-1]):
+            for njet_idx, njet_edge in enumerate(njet_edges[:-1]):
+                logger.info(f"Plotting SF for NHF: {nhf_edge}, NJet: {njet_edge}")
+                # fig, ax = plt.subplots(figsize=(10, 6))
+                ax = axs[njet_idx, nhf_idx]
+                sfbin = sfhist[{"nhf": nhf_idx, "njet": njet_idx}]
+                sfbin.plot1d(
+                    ax=ax,
+                    # histtype="fill",
+                    histtype="step",
+                    yerr=False,
+                )
+                ax.set_title(f"NHF: {nhf_edge}, NJet: {njet_edge}")
+                ax.set_xlabel("HT (GeV)")
+                ax.set_ylabel("SF")
+                ax.set(xlim=(ht_edges[0], ht_edges[-1]))
+                # output.child(f"btag_sf_ht_njet_nhf_{nhf_idx}_{njet_idx}.pdf", type="f").dump(fig, formatter="mpl")
+                # plt.close(fig)
+
+        # # save the plot
+        plt.tight_layout()
+        output.child(f"{sfhist.name}_plot.pdf", type="f").dump(fig, formatter="mpl")
+        if sfhist.name == "ht_njet_nhf_btag_weight":
+            self.output()["btag_renormalization_sf_plot"].dump(fig, formatter="mpl")

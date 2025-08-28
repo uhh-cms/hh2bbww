@@ -11,7 +11,7 @@ import order as od
 
 from collections import defaultdict
 
-from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation
+from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation, ParameterTransformations
 from columnflow.util import maybe_import, DotDict
 from columnflow.config_util import get_datasets_from_process
 
@@ -53,14 +53,19 @@ class HBWInferenceModelBase(InferenceModel):
     dummy_ggf_variation: bool = False
     dummy_vbf_variation: bool = False
 
-    version = 1
+    version: int = 4
 
-    bjet_cats = {"1b", "2b", "boosted"}
+    bjet_cats: set = {"1b", "2b", "boosted"}
+    campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
     multi_variables: bool = False
 
     #
     # helper functions and properties
     #
+
+    # def __str__(self):
+    #     version_str = f"V{self.version}" if self.version is not None else ""
+    #     return f"{self.cls_name}{version_str}"
 
     @classmethod
     def used_datasets(cls, config_inst):
@@ -135,6 +140,8 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_processes()
         self.remove_inference_processes()
         self.add_inference_parameters()
+        self.ratify_shape_parameters()
+        # self.print_model()
         #
         # post-processing
         #
@@ -154,11 +161,13 @@ class HBWInferenceModelBase(InferenceModel):
         """ Function to format the systematics and prepare the processes_per_* dictionaries
         """
         years = {config_inst.campaign.x.year for config_inst in self.config_insts}
+        campaigns = {config_inst.x.cpn_tag for config_inst in self.config_insts}
 
         systematics_formatted = sorted({
-            syst.format(year=year, bjet_cat=bjet_cat)
+            syst.format(year=year, campaign=campaign, bjet_cat=bjet_cat)
             for syst in self.systematics
             for year in years
+            for campaign in campaigns if str(year) in campaign
             for bjet_cat in self.bjet_cats
         })
 
@@ -186,10 +195,11 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_rate_unconstrained = {
             unc_formatted: available_procs
             for year in years
+            for campaign in campaigns if str(year) in campaign
             for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_rate_unconstrained.items()
             if (
-                (unc_formatted := "rate_" + unc.format(year=year, bjet_cat=bjet_cat))
+                (unc_formatted := "rate_" + unc.format(year=year, campaign=campaign, bjet_cat=bjet_cat))
                 in systematics_formatted and
                 any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
             )
@@ -197,10 +207,11 @@ class HBWInferenceModelBase(InferenceModel):
         self.processes_per_shape = {
             unc_formatted: available_procs
             for year in years
+            for campaign in campaigns if str(year) in campaign
             for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_shape.items()
             if (
-                (unc_formatted := unc.format(year=year, bjet_cat=bjet_cat))
+                (unc_formatted := unc.format(year=year, campaign=campaign, bjet_cat=bjet_cat))
                 in systematics_formatted and
                 any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
             )
@@ -553,19 +564,28 @@ class HBWInferenceModelBase(InferenceModel):
             param_kwargs = {
                 "type": ParameterType.shape,
                 "process": [self.inf_proc(proc) for proc in shape_processes],
+                "transformations": [ParameterTransformation.envelope_if_one_sided],
             }
             shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
+            config_insts = self.config_insts
             for bjet_cat in self.bjet_cats:
                 if shape_uncertainty.endswith(bjet_cat):
                     param_kwargs["category"] = f"*_{bjet_cat}_*"
                     param_kwargs["category_match_mode"] = "all"
                     shift_source = shift_source.replace(f"_{bjet_cat}", "")
+            for cpn_tag in self.campaign_tags:
+                if shape_uncertainty.endswith(cpn_tag):
+                    shift_source = shift_source.replace(f"_{cpn_tag}", "")
+                    config_insts = [
+                        config_inst for config_inst in self.config_insts
+                        if config_inst.x.cpn_tag == cpn_tag
+                    ]
 
             param_kwargs["config_data"] = {
                 config_inst.name: self.parameter_config_spec(
                     shift_source=shift_source,
                 )
-                for config_inst in self.config_insts
+                for config_inst in config_insts
                 if config_inst.has_shift(f"{shift_source}_up")
             }
 
@@ -573,3 +593,35 @@ class HBWInferenceModelBase(InferenceModel):
                 shape_uncertainty,
                 **param_kwargs,
             )
+
+            # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
+            # if is_theory:
+            #     self.add_parameter_to_group(shape_uncertainty, "theory")
+            # else:
+            #     self.add_parameter_to_group(shape_uncertainty, "experiment")
+
+    def ratify_shape_parameters(self: InferenceModel):
+        transformations_dict = {
+            "dy_hf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "dy_lf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "ttw": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "ttz": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "vv": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+        }
+        for process, parameter_dict in transformations_dict.items():
+            for parameter, transformations in parameter_dict.items():
+                # get the parameters for the process
+                params_dict = self.get_parameters(
+                    parameter=parameter,
+                    process=process,
+                    only_names=True,
+                )
+                for category, proc_dict in params_dict.items():
+                    if process not in proc_dict:
+                        continue
+                    params = proc_dict[process]
+                    for param in params:
+                        param = self.get_parameter(parameter=param, process=process, category=category)
+                        if param.type == ParameterType.shape:
+                            param.transformations = ParameterTransformations(law.util.make_tuple(transformations))
+                            # param.transformations = transformations

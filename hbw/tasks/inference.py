@@ -160,7 +160,7 @@ def get_rebin_values(
                 # recalculate events per bin
                 last_bin_index = rebin_hist.axes[0].index(this_edge)
                 _sum = rebin_hist.values()[:last_bin_index].sum()
-                events_per_bin = _sum / (N_bins_final - bin_count + 1)
+                events_per_bin = _sum / (N_bins_final - bin_count)
                 logger.info(f"============ Continuing with {round(events_per_bin, 3)} events per bin")
 
                 # check if this bin should be blinded
@@ -644,9 +644,11 @@ class PlotShiftedInferencePlots(
         return False
 
     @law.decorator.log
-    @law.decorator.localize
+    # @law.decorator.localize
     @law.decorator.safe_output
     def run(self):
+        import matplotlib
+        matplotlib.use("Agg")  # use non-interactive backend for plotting
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
 
@@ -687,8 +689,10 @@ class PlotShiftedInferencePlots(
                     h_nom = f_in[get_hist_name(cat_name, proc_name)].to_hist()
                     h_nom = self.prepare_cf_hist(h_nom, variable_inst, shift_bin="nominal")
                     # TODO: when no syst_names, make nominal plot only
+                    if not syst_names:
+                        syst_names = [None]
                     for syst_name in sorted(syst_names):
-                        if not syst_name.endswith("Down"):
+                        if syst_name and not syst_name.endswith("Down"):
                             continue
 
                         hist_name = get_hist_name(cat_name, proc_name, syst_name)
@@ -697,21 +701,46 @@ class PlotShiftedInferencePlots(
                             continue
 
                         # mapping of shift names to config shift names
-                        config_shift_name = syst_name.replace("Down", "_down")
+                        if syst_name is None:
+                            config_shift_name = "dummy_down"
+                        else:
+                            config_shift_name = syst_name.replace("Down", "_down")
                         if "murf_envelope" in config_shift_name:
                             config_shift_name = "murf_envelope_down"
                         elif "pdf" in config_shift_name:
                             config_shift_name = "pdf_down"
+                        elif "fsr" in config_shift_name:
+                            config_shift_name = "fsr_down"
 
                         shift_source = config_shift_name.replace("_down", "")
                         plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
-                        print(f"Preparing plot {plot_name}")
+                        logger.info(f"Preparing plot {plot_name}")
 
                         shift_insts = {
                             "nominal": config_inst.get_shift("nominal").copy_shallow(),
-                            "down": config_inst.get_shift(f"{shift_source}_down").copy_shallow(),
-                            "up": config_inst.get_shift(f"{shift_source}_up").copy_shallow(),
                         }
+
+                        for cfg_inst in self.config_insts:
+                            shift_label_postfix = ""
+                            # TODO: add cpn_tag to shift label if part of shift_source
+                            if cfg_inst.x.cpn_tag in shift_source:
+                                shift_label_postfix = f" ({cfg_inst.x.cpn_tag})"
+                            shift_source = shift_source.replace(f"_{cfg_inst.x.cpn_tag}", "")
+                            if cfg_inst.has_shift(f"{shift_source}_up"):
+                                # use shifts and config inst where corresponding shift is defined
+                                shift_insts["up"] = cfg_inst.get_shift(f"{shift_source}_up").copy_shallow()
+                                shift_insts["down"] = cfg_inst.get_shift(f"{shift_source}_down").copy_shallow()
+
+                                # add postfix to labels
+                                shift_insts["up"].label += shift_label_postfix
+                                shift_insts["down"].label += shift_label_postfix
+                                config_inst = cfg_inst
+                                break
+                        if "up" not in shift_insts.keys():
+                            raise ValueError(
+                                f"Shift {shift_source} not found in any of the configs {self.config_insts}",
+                            )
+
                         # convert to hist.Histogram
                         h_down = h_down.to_hist()
 
@@ -745,7 +774,10 @@ class PlotShiftedInferencePlots(
                             # close the figure to avoid memory issues
                             plt.close(fig)
 
-            logger.info(f"Finished creating plots for shifted inference model {cat_name}.")
+            logger.info(
+                f"Finished creating plots for shifted inference model {cat_name}."
+                f" Plots are stored in \n{output['plots'].path}",
+            )
 
 
 class PrepareInferenceTaskCalls(HBWInferenceModelBase):
@@ -785,7 +817,10 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         output = self.output()
 
         # string that represents the version of datacards
-        identifier_list = [*self.configs, self.selector, self.inference_model, self.version]
+        configs_str = "_".join(self.configs)
+        configs_str.replace("c22prev14_c22postv14", "2022")
+        configs_str.replace("c23prev14_c23postv14", "2023")
+        identifier_list = [configs_str, self.selector, str(self.inference_model), self.version]
         identifier = "__".join(identifier_list)
 
         # get the datacard names from the inputs
@@ -794,7 +829,6 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         if len(cards_path) != 1:
             raise Exception("Expected only one datacard path")
         cards_path = cards_path.pop()
-        # pruned_cards_path = f"{cards_path}/pruned"
         decorrelated_cards_path = f"{cards_path}/decorrelated"
 
         card_fns = [collection[key]["card"].basename for key in collection.keys()]
@@ -878,6 +912,13 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         #     print(cmd)
         # print("\n\n")
 
+        # fetch card combination
+        cmd = (
+            f"law run CombineDatacards --version {identifier} --datacards {datacards} "
+        )
+        # full_cmd += cmd + "\n\n"
+        # print(base_cmd + cmd, "\n\n")
+
         # creating upper limits for kl=1
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
@@ -926,14 +967,15 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--order-by-impact --mc-stats --parameters-per-page 50"
+            "--order-by-impact --parameters-per-page 50 "
+            # "--mc-stats"
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
         if not self.unblind and not self.inference_model_inst.skip_data:
             pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
             # NOTE: the custom args do not work in combination with job submission
-            cmd += " --unblinded"
-        cmd += f" --PullsAndImpacts-{{{pulls_and_imacts_params}}}"
+            cmd += "--unblinded "
+        cmd += f"--PullsAndImpacts-{{{pulls_and_imacts_params}}} "
 
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -968,6 +1010,7 @@ run_and_fetch_cmd() {{
         echo "[DRY-RUN] ${{*:2}}"
         echo "[DRY-RUN] ${{*:2}} --fetch-output 0,a"
     else
+        echo "[RUNNING] ${{*:2}}"
         eval "${{@:2}}"
         eval "${{@:2}} --fetch-output 0,a"
     fi

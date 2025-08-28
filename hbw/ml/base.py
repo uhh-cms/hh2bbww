@@ -32,6 +32,10 @@ pickle = maybe_import("pickle")
 logger = law.logger.get_logger(__name__)
 
 
+# patch, allowing user to fall back to old versions
+use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
+
+
 class ClassPropertyDescriptor:
     def __init__(self, fget):
         self.fget = fget
@@ -243,6 +247,12 @@ class MLClassifierBase(MLModel):
         Create a hash of the parameters to store as part of the output path.
         The repr is cached to ensure that it does not change during the lifetime of the object.
         """
+        if use_old_version:
+            return {
+                "ggfv1": "a07e93e269",
+                "vbfv1": "8031129333",
+                "multiclassv1": "bd236d50b5",
+            }[self.cls_name]
         if not self.parameters:
             return ""
         parameters_repr = law.util.create_hash(sorted(self.parameters.items()))
@@ -394,6 +404,8 @@ class MLClassifierBase(MLModel):
     def evaluation_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
         # NOTE: there is still an issue that this can only remove (not add) Producers, so the
         # ml_inputs_producer also needs to be added in all task calls that use the evaluation of this model
+        if use_old_version:
+            return ["event_weights", analysis_inst.x.ml_inputs_producer]
         return [analysis_inst.x.ml_inputs_producer]
 
     def requires(self, task: law.Task) -> dict[str, Any]:
@@ -467,14 +479,20 @@ class MLClassifierBase(MLModel):
 
         outp = {
             "mlmodel": target,
+            "mlmodel_file": target.child("mlmodel.keras", type="f", optional=True),
             "plots": target.child("plots", type="d", optional=True),
-            "checkpoint": target.child("checkpoint", type="d", optional=True),
+            # "checkpoint": target.child("checkpoint", type="d", optional=True),
+            "checkpoint": target.child("checkpoint.model.keras", type="f", optional=True),
         }
 
-        # define all files that need to be present
+        # # define all files that need to be present
+        # outp["required_files"] = [
+        #     target.child(fname, type="f") for fname in
+        #     ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
+        # ]
         outp["required_files"] = [
             target.child(fname, type="f") for fname in
-            ("saved_model.pb", "keras_metadata.pb", "fingerprint.pb", "parameters.yaml", "input_features.pkl")
+            ("mlmodel.keras", "parameters.yaml", "input_features.pkl")
         ]
         return outp
 
@@ -494,13 +512,14 @@ class MLClassifierBase(MLModel):
         models["parameters"] = yaml.load(f_in, Loader=yaml.Loader)
 
         # custom loss needed due to output layer changes for negative weights
-        from hbw.ml.tf_util import cumulated_crossentropy
-
+        # from hbw.ml.tf_util import cumulated_crossentropy
         models["model"] = tf.keras.models.load_model(
-            target["mlmodel"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["mlmodel_file"].abspath,
+            # custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
         models["best_model"] = tf.keras.models.load_model(
-            target["checkpoint"].path, custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
+            target["checkpoint"].abspath,
+            # custom_objects={cumulated_crossentropy.__name__: cumulated_crossentropy},
         )
 
         return models
@@ -583,7 +602,7 @@ class MLClassifierBase(MLModel):
         log_memory("training")
         # save the model and history; TODO: use formatter
         # output.dump(model, formatter="tf_keras_model")
-        model.save(output["mlmodel"].path)
+        model.save(output["mlmodel_file"].abspath)
 
         return
 
@@ -720,7 +739,7 @@ class ExampleDNN(MLClassifierBase):
         """
         Minimal implementation of a ML model
         """
-        import tesorflow.keras as keras
+        import tensorflow.keras as keras
 
         from keras.models import Sequential
         from keras.layers import Dense, BatchNormalization

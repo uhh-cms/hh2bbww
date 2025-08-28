@@ -21,6 +21,10 @@ from columnflow.config_util import get_root_processes_from_campaign
 logger = law.logger.get_logger(__name__)
 
 
+# patch, allowing user to fall back to old versions
+use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
+
+
 def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: list[str]] | list[str]:
     # define data streams based on the run
     # NOTE: the order of the streams is important for data trigger filtering (removing double counting)
@@ -438,6 +442,9 @@ def configure_hbw_datasets(
 ):
     # allow usage of UHH campaign
     enable_uhh_campaign_usage(config)
+
+    if use_old_version:
+        config.get_dataset("w_lnu_amcatnlo").x.version = 1
 
     for dataset in config.datasets:
         if add_dataset_extensions:

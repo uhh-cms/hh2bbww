@@ -16,6 +16,7 @@ from functools import wraps, reduce
 import tracemalloc
 
 import law
+import order as od
 
 from columnflow.types import Any
 from columnflow.columnar_util import ArrayFunction, deferred_column, get_ak_routes
@@ -26,6 +27,22 @@ ak = maybe_import("awkward")
 psutil = maybe_import("psutil")
 
 _logger = law.logger.get_logger(__name__)
+
+
+def nevents_expected(
+    config_inst: od.Config,
+    processes: list = ["hh_ggf_hbb_hww2l2nu_kl1_kt1", "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1"],
+    lumis: dict = {
+        # 13: 36310 + 41480 + 59830,
+        13.6: 7980.4 + 26671.7 + 17794 + 9451,
+    },
+):
+    nevents = 0
+    for com, lumi in lumis.items():
+        for process in law.util.make_list(processes):
+            xs = config_inst.get_process(process).xsecs[com].nominal
+            nevents += xs * lumi
+    return nevents
 
 
 def ak_any(masks: list[ak.Array], **kwargs) -> ak.Array:

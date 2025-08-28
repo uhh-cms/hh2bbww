@@ -12,12 +12,18 @@ from hbw.inference.base import HBWInferenceModelBase
 
 logger = law.logger.get_logger(__name__)
 
+
+# patch, allowing user to fall back to old versions
+use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
+
 #
 # Defaults for all the Inference Model parameters
 #
 
 # used to set default requirements for cf.CreateDatacards based on the config
 ml_model_name = ["multiclassv2", "ggfv2", "vbfv2"]
+if use_old_version:
+    ml_model_name = ["multiclassv1", "ggfv1", "vbfv1"]
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
@@ -150,18 +156,30 @@ systematics = DotDict({
         "murf_envelope_st",
         "murf_envelope_dy",
         # "murf_envelope_w_lnu",
-        # "murf_envelope_ttv",
-        # "murf_envelope_vv",
-        # "murf_envelope_h",
+        "murf_envelope_ttv",  # TODO: ttW has no murf/pdf weights
+        "murf_envelope_vv",
+        "murf_envelope_h",
+        "murf_envelope_hh_ggf_hbb_hww",
+        "murf_envelope_hh_ggf_hbb_hzz",
+        "murf_envelope_hh_ggf_hbb_htt",
+        # "murf_envelope_hh_vbf_hbb_hww",
+        # "murf_envelope_hh_vbf_hbb_hzz",
+        # "murf_envelope_hh_vbf_hbb_htt",
     ],
     "pdf_shape": [
         "pdf_shape_tt",
         "pdf_shape_st",
         "pdf_shape_dy",
         # "pdf_shape_w_lnu",
-        # "pdf_shape_ttv",
-        # "pdf_shape_vv",
-        # "pdf_shape_h",
+        "pdf_shape_ttv",  # TODO: ttW has no murf/pdf weights
+        "pdf_shape_vv",
+        "pdf_shape_h",
+        "pdf_shape_hh_ggf_hbb_hww",
+        "pdf_shape_hh_ggf_hbb_hzz",
+        "pdf_shape_hh_ggf_hbb_htt",
+        # "pdf_shape_hh_vbf_hbb_hww",
+        # "pdf_shape_hh_vbf_hbb_hzz",
+        # "pdf_shape_hh_vbf_hbb_htt",
     ],
     "btag": [
         "btag_hf",
@@ -183,6 +201,16 @@ systematics = DotDict({
         "btag_cferr1_{bjet_cat}",
         "btag_cferr2_{bjet_cat}",
     ],
+    "btag_cpn_uncorr": [
+        "btag_hf_{campaign}",
+        "btag_lf_{campaign}",
+        "btag_hfstats1_{year}_{campaign}",
+        "btag_hfstats2_{year}_{campaign}",
+        "btag_lfstats1_{year}_{campaign}",
+        "btag_lfstats2_{year}_{campaign}",
+        "btag_cferr1_{campaign}",
+        "btag_cferr2_{campaign}",
+    ],
     "experiment": [
         "mu_id_sf",
         "mu_iso_sf",
@@ -190,10 +218,26 @@ systematics = DotDict({
         "e_reco_sf",
         "trigger_sf",
         "minbias_xs",
+        # "dy_corr",  # TODO: still missing
+    ],
+    "experiment_cpn_uncorr": [
+        "mu_id_sf_{campaign}",
+        "mu_iso_sf_{campaign}",
+        "e_sf_{campaign}",
+        "e_reco_sf_{campaign}",
+        "trigger_sf_{campaign}",
+        "minbias_xs",  # do not decorrelate PU between campaigns
+        # "dy_corr",  # TODO: still missing
     ],
     "other": [
         "isr",
-        "fsr",
+        "fsr_tt",
+        "fsr_st",
+        "fsr_dy",
+        # "fsr_w",
+        "fsr_vv",
+        "fsr_ttV",
+        "fsr_h",  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
         "top_pt",
     ],
     "jerc_only": [
@@ -204,13 +248,19 @@ systematics = DotDict({
         "jer_{bjet_cat}",
         "jec_Total_{bjet_cat}",
     ],
+    "jerc_only_cpn_uncorr": [
+        "jer_{campaign}",
+        "jec_Total_{campaign}",
+    ],
 })
 systematics["rate"] = [
+    *systematics.lumi,
     *systematics.QCDScale,
     *systematics.pdf,
     *systematics.rate_unconstrained,
 ]
 systematics["rate1"] = [
+    *systematics.lumi,
     *systematics.QCDScale,
     *systematics.pdf,
     *systematics.rate_unconstrained1,
@@ -220,6 +270,13 @@ systematics["shape_only"] = [
     *systematics.pdf_shape,
     *systematics.btag,
     *systematics.experiment,
+    *systematics.other,
+]
+systematics["shape_only_cpn_uncorr"] = [
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_cpn_uncorr,
+    *systematics.experiment_cpn_uncorr,
     *systematics.other,
 ]
 systematics["shape"] = [
@@ -236,6 +293,16 @@ systematics["jerc1"] = [
     *systematics.rate1,
     *systematics.shape_only,
     *systematics.jerc_only,
+]
+systematics["jerc2"] = [
+    *systematics.rate1,
+    *systematics.shape_only,
+    *systematics.jerc_only_cpn_uncorr,
+]
+systematics["jerc3"] = [
+    *systematics.rate1,
+    *systematics.shape_only_cpn_uncorr,
+    *systematics.jerc_only_cpn_uncorr,
 ]
 systematics["rate_bjet_uncorr"] = [
     *systematics.QCDScale,
@@ -283,16 +350,15 @@ hhprocs_vbf = lambda hhdecay: [
 hhprocs = lambda hhdecay: [*hhprocs_ggf(hhdecay), *hhprocs_vbf(hhdecay)]
 
 backgrounds = [
-    # TODO: merge st_schannel, st_tchannel
     "st_tchannel",
     "st_twchannel",
-    "st_schannel",  # TODO: bogus norm?
+    "st_schannel",
     "tt",
     "ttw",
     "ttz",
     "dy_hf",
     "dy_lf",
-    "w_lnu",  # TODO: bogus norm?
+    "w_lnu",
     "vv",
     "vvv",
     "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
@@ -361,6 +427,10 @@ dl_kl1_dnn = dl.derive("dl_kl1_dnn", cls_dict={
 dl_boosted = dl.derive("dl_boosted", cls_dict={
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
+dl_boosted_skip_dy10 = dl.derive("dl_boosted_skip_dy10", cls_dict={
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_datasets": {"dy_hf": "dy_m10to50_amcatnlo", "dy_lf": "dy_m10to50_amcatnlo"},
+})
 dl_boosted1 = dl.derive("dl_boosted1", cls_dict={
     "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background,
 })
@@ -388,8 +458,21 @@ dl_jerc1_boosted = dl.derive("dl_jerc1_boosted", cls_dict={
     "systematics": systematics.jerc1,
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
+dl_jerc2_boosted = dl.derive("dl_jerc2_boosted", cls_dict={
+    "systematics": systematics.jerc2,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
+dl_jerc3_boosted = dl.derive("dl_jerc3_boosted", cls_dict={
+    "systematics": systematics.jerc3,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+})
 dl_jerc1_boosted_data = dl.derive("dl_jerc1_boosted_data", cls_dict={
     "systematics": systematics.jerc1,
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
+    "skip_data": False,
+})
+dl_jerc3_boosted_data = dl.derive("dl_jerc3_boosted_data", cls_dict={
+    "systematics": systematics.jerc3,
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
     "skip_data": False,
 })
