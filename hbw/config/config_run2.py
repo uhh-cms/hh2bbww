@@ -813,11 +813,15 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
 
     # trigger_sf from Balduin
-    trigger_sf_path = f"{json_mirror}/data/trig_sf_v1"
+    trigger_sf_path = f"{json_mirror}/data/trig_sf_v3"
+    # trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))  # noqa: E501
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers

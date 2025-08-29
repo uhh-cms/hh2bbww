@@ -37,25 +37,25 @@ from hbw.categorization.categories import catid_2e, catid_2mu, catid_emu
 trigger_sf_config = {
     "trigger_sf_ee": {
         "corr_keys": {
-            "nominal": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids",
-            "up": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids_up",
-            "down": "sf_ee_mli_lep_pt-mli_lep2_pt-trig_ids_down",
+            "nominal": "sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_ids",
+            "up": "sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_ids_up",
+            "down": "sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_ids_down",
         },
         "category": catid_2e,
     },
     "trigger_sf_mm": {
         "corr_keys": {
-            "nominal": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids",
-            "up": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids_up",
-            "down": "sf_mm_mli_lep_pt-mli_lep2_pt-trig_ids_down",
+            "nominal": "sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_ids",
+            "up": "sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_ids_up",
+            "down": "sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_ids_down",
         },
         "category": catid_2mu,
     },
     "trigger_sf_mixed": {
         "corr_keys": {
-            "nominal": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids",
-            "up": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids_up",
-            "down": "sf_mixed_mli_lep_pt-mli_lep2_pt-trig_ids_down",
+            "nominal": "sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_ids",
+            "up": "sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_ids_up",
+            "down": "sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_ids_down",
         },
         "category": catid_emu,
     },
@@ -86,6 +86,8 @@ def dl_trigger_weights(
     variable_map = {
         "mli_lep_pt": events.Lepton[:, 0].pt,
         "mli_lep2_pt": events.Lepton[:, 1].pt,
+        "trg_lepton0_pt": events.Lepton[:, 0].pt,
+        "trg_lepton1_pt": events.Lepton[:, 1].pt,
     }
 
     full_mask = ak.zeros_like(events.event, dtype=bool)
@@ -142,10 +144,13 @@ def dl_trigger_weights_setup(
 
     # create the corrector
     import correctionlib
+    import json
     self.correction_sets = {}
     for key, sf_config in self.trigger_sf_config.items():
         target = bundle_files[key]
-        correction_set = correctionlib.CorrectionSet.from_string(target.load(formatter="json"))
+        correction_set = correctionlib.CorrectionSet.from_string(
+            json.loads(target.load(formatter="gzip")),
+        )
         self.correction_sets[key] = correction_set
 
 
