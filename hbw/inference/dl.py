@@ -339,7 +339,7 @@ hhprocs_vbf = lambda hhdecay: [
     f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
     f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
     f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
-    f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
+    # f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",  # needs to update the cross section (is kv=+2.12 in reality)
     f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
     f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
     f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
@@ -368,12 +368,28 @@ backgrounds = [
     # TODO: add bbh
     # "qcd",  # probably not needed
 ]
+backgrounds_skip_dy = [
+    "st_tchannel",
+    "st_twchannel",
+    "st_schannel",
+    "tt",
+    "ttw",
+    "ttz",
+    "w_lnu",
+    "vv",
+    "vvv",
+    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
+    "thq", "thw", "ttvh",
+    "tttt",
+    "ttvv",
+]
 
 processes_dict = {
     "test": ["tt", *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
     "hww2l2nu": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
+    "hwwzztt_skip_dy": [*backgrounds_skip_dy, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
     "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
 }
 
@@ -430,6 +446,10 @@ dl_boosted = dl.derive("dl_boosted", cls_dict={
 dl_boosted_skip_dy10 = dl.derive("dl_boosted_skip_dy10", cls_dict={
     "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
     "skip_datasets": {"dy_hf": "dy_m10to50_amcatnlo", "dy_lf": "dy_m10to50_amcatnlo"},
+})
+dl_boosted_skip_dy = dl.derive("dl_boosted_skip_dy", cls_dict={
+    "processes": processes_dict["hwwzztt_skip_dy"],
+    "config_categories": config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background,
 })
 dl_boosted1 = dl.derive("dl_boosted1", cls_dict={
     "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background,
