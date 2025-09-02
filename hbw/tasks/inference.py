@@ -519,8 +519,10 @@ class PrepareInferenceTaskCalls(
         base_cmd = f"export CARDS_PATH={cards_path}" + "\n"
         full_cmd = base_cmd
 
+        ecm = self.config_insts[0].campaign.ecm
+
         lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
-        lumi = f"'{lumi:.1f} fb^{{-1}}'"
+        lumi = f"'{lumi:.1f} fb^{{-1}} ({ecm} TeV)'"
 
         print("\n\n")
         # creating upper limits for kl=1

@@ -282,22 +282,48 @@ base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
 }})
 
 
-from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling
+from hbw.categorization.categories import mask_fn_highpt, mask_fn_gen_barrel, mask_fn_forward_handling, mask_fn_test_category_ids, mask_fn_qcd_binaryv2  # noqa: E501
 
 
 no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 base.derive("gen_barrel", cls_dict={"categorizer_cls": mask_fn_gen_barrel})
 base.derive("forward_handling", cls_dict={"categorizer_cls": mask_fn_forward_handling})
+default_hist_producer.derive("test_category_ids", cls_dict={"categorizer_cls": mask_fn_test_category_ids})
+default_hist_producer.derive("qcd_binaryv2", cls_dict={"categorizer_cls": mask_fn_qcd_binaryv2})
 
 
 # additional hist producers for scale factors
 from trigger.trigger_cats import (
     mask_fn_dl_orth_with_l1_seeds, mask_fn_dl_orth, mask_fn_lep_pt_orth,
     mask_fn_lep_pt, mask_fn_mll_lep, mask_fn_mll_lep_orth, mask_fn_dl_orth2_with_l1_seeds,
+    mask_fn_dl_orth2_l1_and_lep, mask_fn_dl_orth2_l1_and_sel, mask_fn_dl_selection,
+    mask_fn_old_ele_trigger, mask_fn_lep_100,
 )
-
+dl_orth2_l1_and_sel = default_hist_producer.derive("dl_orth2_l1_and_sel", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth2_l1_and_sel,
+})
+dl_selection = default_hist_producer.derive("dl_selection", cls_dict={
+    "categorizer_cls": mask_fn_dl_selection,
+})
+dl_sel_and_trgsf = default_hist_producer.derive("dl_sel_and_trgsf", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "categorizer_cls": mask_fn_dl_selection,
+})
+dl_orth2_l1_and_lep = default_hist_producer.derive("dl_orth2_l1_and_lep", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth2_l1_and_lep,
+})
 dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+})
+dl_old_ele_trigger = default_hist_producer.derive("dl_old_ele_trigger", cls_dict={
+    "categorizer_cls": mask_fn_old_ele_trigger,
+})
+dl_lep_100 = default_hist_producer.derive("dl_lep_100", cls_dict={
+    "categorizer_cls": mask_fn_lep_100,
 })
 dl_orth = default_hist_producer.derive("dl_orth", cls_dict={
     "categorizer_cls": mask_fn_dl_orth,

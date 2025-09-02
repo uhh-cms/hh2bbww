@@ -81,6 +81,7 @@ def add_abcd_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_sr",
+        label="1 Lepton",
     )
     config.add_category(
         name="fake",
@@ -348,6 +349,7 @@ def add_categories_ml(config, ml_model_inst):
             selection=f"catid_ml_{proc}",
             # label=f"{cat_label} category",
             aux={"ml_proc": proc},
+            label=f"{node_config['label'] if 'label' in node_config.keys() else proc} node"
         ))
 
     #

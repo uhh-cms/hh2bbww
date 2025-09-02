@@ -229,7 +229,7 @@ def common_ml_inputs_init(self: Producer) -> None:
     uses={common_ml_inputs, "Lightjet.btagPNetQvG", "{Electron,Muon}.pfRelIso03_all"},
     produces={common_ml_inputs},
     # produced columns set in the init function
-    version=2,
+    version=2
 )
 def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

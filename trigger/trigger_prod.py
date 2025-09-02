@@ -431,9 +431,9 @@ def trigger_prod_dls(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # initialize the trigger ids column filled with the labels
     trig_ids = ak.Array([["allEvents"]] * len(events))
     # add individual triggers
-    for trigger in self.config_inst.x.triggers:
-        trig_passed = ak.any(events.trigger_ids == trigger.id, axis=1)
-        trig_ids = ak.concatenate([trig_ids, ak.where(trig_passed, [[trigger.hlt_field]], [[]])], axis=1)
+    # for trigger in self.config_inst.x.triggers:
+    #     trig_passed = ak.any(events.trigger_ids == trigger.id, axis=1)
+    #     trig_ids = ak.concatenate([trig_ids, ak.where(trig_passed, [[trigger.hlt_field]], [[]])], axis=1)
 
     # add sequential combinations of triggers
     for channel in ["ee", "mm", "mixed"]:

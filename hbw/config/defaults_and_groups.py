@@ -466,13 +466,13 @@ def set_config_defaults_and_groups(config_inst):
         "default": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 16,
+                "fontsize": 18,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 16,
+                "fontsize": 18,
             },
         },
         "legend_single_col": {

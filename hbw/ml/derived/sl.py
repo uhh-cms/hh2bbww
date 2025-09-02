@@ -407,6 +407,150 @@ sl_22post_dy_w_split = DenseClassifierSL.derive("sl_22post_dy_w_split", cls_dict
     },
 })
 
+# multiclassifiers differentiating between one signal, bkg and qcd
+sl_22post_3node_ggf = DenseClassifierSL.derive("sl_22post_3node_ggf", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "input_features": new_input_features,
+    "processes": [
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_m4to10",
+        "dy_m10to50",
+        "dy_m50toinf",
+        "qcd",
+    ],
+    "train_nodes": {
+        "sig_binary_ggf": {
+            "ml_id": 0,
+            "label": r"$HH_{GGF}$",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
+            ),
+        },
+        "bkg_binary_ggf": {
+            "ml_id": 1,
+            "label": "Bkg\n(tt+st+dy+w)",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": (
+                "tt",
+                "st",
+                "w_lnu",
+                "dy_m4to10",
+                "dy_m10to50",
+                "dy_m50toinf",
+            ),
+        },
+        "qcd": {
+            "ml_id": 2,
+            "label": "QCD",
+            "color": "#00a99d",  # teal
+        },
+    },
+    "class_factors": {
+        "sig_binary_ggf": 1,
+        "bkg_binary_ggf": 1,
+        "qcd": 1,
+    },
+    "sub_process_class_factors": {
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "w_lnu": 1,
+        "dy_m4to10": 0.1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "qcd": 1,
+    },
+})
+sl_22post_3node_vbf = DenseClassifierSL.derive("sl_22post_3node_vbf", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "input_features": new_input_features,
+    "processes": [
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39",
+        "tt",
+        "st",
+        "w_lnu",
+        "dy_m4to10",
+        "dy_m10to50",
+        "dy_m50toinf",
+        "qcd",
+    ],
+    "train_nodes": {
+        "sig_binary_vbf": {
+            "ml_id": 0,
+            "label": r"$HH_{VBF}$",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39",
+            ),
+        },
+        "bkg_binary_vbf": {
+            "ml_id": 1,
+            "label": "Bkg\n(tt+st+dy+w)",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": (
+                "tt",
+                "st",
+                "w_lnu",
+                "dy_m4to10",
+                "dy_m10to50",
+                "dy_m50toinf",
+            ),
+        },
+        "qcd": {
+            "ml_id": 2,
+            "label": "QCD",
+            "color": "#00a99d",  # teal
+        },
+    },
+    "class_factors": {
+        "sig_binary_vbf": 1,
+        "bkg_binary_vbf": 1,
+        "qcd": 1,
+    },
+    "sub_process_class_factors": {
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": 1,
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39": 1,
+        "tt": 1,
+        "st": 1,
+        "w_lnu": 1,
+        "dy_m4to10": 0.1,
+        "dy_m10to50": 1,
+        "dy_m50toinf": 1,
+        "qcd": 1,
+    },
+})
+
 #
 # Binary classifiers
 #
@@ -694,6 +838,93 @@ sl_22post_binary_vbf_qcd = DenseClassifierSL.derive("sl_22post_binary_vbf_qcd", 
         "dy_m4to10": 0.1,
         "dy_m10to50": 1,
         "dy_m50toinf": 1,
+        "qcd": 1,
+    },
+})
+
+
+# binary classifiers only trained on qcd for background
+sl_22post_binary_ggf_qcd_only = DenseClassifierSL.derive("sl_22post_binary_ggf_qcd_only", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "input_features": new_input_features,
+    "processes": [
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
+        "qcd",
+    ],
+    "train_nodes": {
+        "sig_binary_ggf_qcd": {
+            "ml_id": 0,
+            "label": r"$HH_{GGF}$",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_ggf_hbb_hvvqqlnu_kl0_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl1_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1",
+                "hh_ggf_hbb_hvvqqlnu_kl5_kt1",
+            ),
+        },
+        "qcd": {
+            "ml_id": 1,
+        },
+    },
+    "class_factors": {
+        "sig_binary_ggf_qcd": 1,
+        "qcd": 1,
+    },
+    "sub_process_class_factors": {
+        "hh_ggf_hbb_hvvqqlnu_kl0_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl1_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": 1,
+        "hh_ggf_hbb_hvvqqlnu_kl5_kt1": 1,
+        "qcd": 1,
+    },
+})
+sl_22post_binary_vbf_qcd_only = DenseClassifierSL.derive("sl_22post_binary_vbf_qcd_only", cls_dict={
+    "training_configs": lambda self, requested_configs: ["c22post"],
+    "input_features": new_input_features,
+    "processes": [
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39",
+        "qcd",
+    ],
+    "train_nodes": {
+        "sig_binary_vbf_qcd": {
+            "ml_id": 0,
+            "label": r"$HH_{VBF}$",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1",
+                "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39",
+            ),
+        },
+        "qcd": {
+            "ml_id": 1,
+        },
+    },
+    "class_factors": {
+        "sig_binary_vbf_qcd": 1,
+        "qcd": 1,
+    },
+    "sub_process_class_factors": {
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1": 1,
+        "hh_vbf_hbb_hvvqqlnu_kv1_k2v0_kl1": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_hbb_hvvqqlnu_kvm1p83_k2v3p57_klm3p39": 1,
         "qcd": 1,
     },
 })

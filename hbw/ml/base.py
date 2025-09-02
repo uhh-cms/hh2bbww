@@ -228,6 +228,15 @@ class MLClassifierBase(MLModel):
         """
         if not self.parameters:
             return ""
+        use_old_version = False
+        if use_old_version:
+
+            return {
+                "sl_22post_v0": "200012864e",
+                "sl_22post_binary_ggf_v0": "8ed5e84015",
+                "sl_22post_binary_vbf_v0": "a69ad742bb",
+
+            }[self.cls_name]
         parameters_repr = law.util.create_hash(sorted(self.parameters.items()))
         if hasattr(self, "_parameters_repr") and self._parameters_repr != parameters_repr:
             raise Exception(
@@ -307,12 +316,16 @@ class MLClassifierBase(MLModel):
                             },
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
+                    if "ggf" in proc:
+                        prod = "GGF"
+                    else:
+                        prod = "VBF"
                     config_inst.add_variable(
                         name=f"logit_mlscore.{proc}",
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
                         binning=(1000, -2., 10.),
-                        x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        x_title=fr"Binary $\text{{DNN}}_{{\text{{{prod}}}}}$ output score",  # f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})", # noqa:E501
                         aux={
                             "inputs": {f"mlscore.{proc}"},
                             "rebin": 25,

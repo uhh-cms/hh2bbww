@@ -210,6 +210,7 @@ def set_sl_config_defaults_and_groups(config_inst):
         "sl1": ["hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "qcd", "tt"],  # noqa: E501
         "sl2": ["hh_ggf_hbb_hwwqqlnu_kl1_kt1", "hh_vbf_hbb_hwwqqlnu_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "sl3": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "sl_bkg": ["h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -425,13 +426,13 @@ def set_sl_config_defaults_and_groups(config_inst):
         "default": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 16,
+                "fontsize": 18,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 16,
+                "fontsize": 18,
             },
         },
         "legend_single_col": {
@@ -470,7 +471,7 @@ def set_sl_config_defaults_and_groups(config_inst):
         "vbfSR_sl_resolved": 5,
         "vbfSR_sl_boosted": 3,
         "SR_sig_sl": 10,
-        "SR_bkg_sl": 3,
+        "SR_bkg_sl": 1,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name

@@ -114,6 +114,9 @@ def calc_efficiency_errors(num, den, c):
     error_low[efficiency == 0] = 0
     error_high[efficiency == 0] = 0
 
+    # remove larger error for efficiencies larger 1
+    error_low[efficiency > 1] = 0
+
     # stacking errors
     errors = np.concatenate(
         (error_low.reshape(error_low.shape[0], 1), error_high.reshape(error_high.shape[0], 1)),
@@ -190,13 +193,61 @@ def plot_efficiencies(
 
     # switch trigger and processes when plotting efficiency of one trigger for multiple processes
     proc_as_label = False
+    label_dict = {
+        "mixed": r"$e^\pm\mu^\pm$ trigger",  # "mixed + ele&jet",
+        "emu_dilep": "Dilepton triggers",
+        "ee_dilep": "Dilepton triggers",
+        "mm_dilep": "Dilepton triggers",
+        "emu_single": "Single lepton triggers",
+        "ee_single": "Single lepton triggers",
+        "mm_single": "Single lepton triggers",
+        "single": "Single lepton triggers",
+        "electron+jet": "Electron + Jet trigger",
+        "emu_dilep+emu_single": "OR single lepton triggers",
+        "ee_dilep+ee_single": "OR single lepton triggers",
+        "mm_dilep+mm_single": "OR single lepton triggers",
+        "emu_dilep+emu_single+emu_electronjet": "OR electron + jet trigger",
+        "ee_dilep+ee_single+ee_electronjet": "OR electron + jet trigger",
+        "mm_dilep+mm_single+mm_electronjet": "OR electron + jet trigger",
+        "alt_mix": "mixed + ele115",
+        "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
+        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
+        "ee": r"$e^+e^-$ trigger",
+        "mm": r"$\mu^+\mu^-$ trigger",
+        "ee_old": r"$e^+e^-$ trigger",
+        "emu_old": r"$e^\pm\mu^\pm$ trigger ",
+        "MC background": "MC background",
+        "Data JetHT/MET": r"$\varepsilon^{\text{meas.}}_{\text{Data}}$",
+        "sf_bkg_eff": r"$\varepsilon^{\text{true}}_{\text{MC}}$(Background)",
+        "HH": r"$\varepsilon^{\text{true}}_{\text{MC}}$(Signal)",
+        "default": r"$\varepsilon^{\text{true}}$",
+        "dl_orth2_with_l1_seeds": r"$\varepsilon^{\text{meas.}}$",
+        "dl_selection": r"$\varepsilon^{\text{true}}_{\text{MC}}$",
+        "dl_orth2_l1_and_sel": r"$\varepsilon^{\text{meas.}}_{\text{MC}}$",
+        "e30_e28": "OR Ele28",
+        "e30_e28_e15": "OR Ele15",
+        "e30_e28_e15_quadjet": "OR QuadPFJet",
+        "Ele30_WPTight_Gsf": "Ele30",
+        "IsoMu24": "IsoMu24",
+        "m24_m50": "OR Mu50",
+        "m24_m50_m15": "OR Mu15",
+        "m24_m50_m15_quadjet": "OR QuadPFJet",
+        "Ele28_eta2p1_WPTight_Gsf_HT150": "Ele28",
+        "Ele15_IsoVVVL_PFHT450": "Ele15",
+        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
+        "Mu50": "Mu50",
+        "Mu15_IsoVVVL_PFHT450": "Mu15",
+    }
 
     hists = remove_residual_axis(hists, "shift")
     if len(hists.keys()) > 1:
         if "bin_sel" in kwargs:
             mask_bins = kwargs["bin_sel"][:-1] if kwargs["bin_sel"][-1] == "" else kwargs["bin_sel"]
             if len(mask_bins) == 1:
-                legend_title = f"{mask_bins[0]}"
+                if mask_bins[0] in label_dict.keys():
+                    legend_title = label_dict[mask_bins[0]]
+                else:
+                    legend_title = f"{mask_bins[0]}"
                 proc_as_label = True
 
     # save efficiencies for ratio calculation
@@ -252,32 +303,16 @@ def plot_efficiencies(
                     continue
 
                 if proc_as_label:
-                    label = f"{proc_label}"
+                    if proc_label in label_dict.keys() or "HH" in proc_label:
+                        if "HH" in proc_label:
+                            label = f"{label_dict['HH']}"
+                        elif "MC" in proc_label:
+                            label = f"{label_dict['sf_bkg_eff']}"
+                        else:
+                            label = f"{label_dict[proc_label]}"
+                    else:
+                        label = f"{proc_label}"
                 else:
-                    label_dict = {
-                        "mixed": r"$e^\pm\mu^\pm$ trigger",  # "mixed + ele&jet",
-                        "emu_dilep": "Dilepton triggers",
-                        "ee_dilep": "Dilepton triggers",
-                        "mm_dilep": "Dilepton triggers1",
-                        "emu_single": "Single lepton triggers",
-                        "ee_single": "Single lepton triggers",
-                        "mm_single": "Single lepton triggers",
-                        "single": "Single lepton triggers",
-                        "electron+jet": "Electron + Jet trigger",
-                        "emu_dilep+emu_single": "OR single lepton triggers",
-                        "ee_dilep+ee_single": "OR single lepton triggers",
-                        "mm_dilep+mm_single": "OR single lepton triggers",
-                        "emu_dilep+emu_single+emu_electronjet": "OR Electron + Jet trigger",
-                        "ee_dilep+ee_single+ee_electronjet": "OR Electron + Jet trigger",
-                        "mm_dilep+mm_single+mm_electronjet": "OR Electron + Jet trigger",
-                        "alt_mix": "mixed + ele115",
-                        "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
-                        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
-                        "ee": r"$e^+e^-$ trigger",
-                        "mm": r"$\mu^+\mu^-$ trigger",
-                        "ee_old": r"$e^+e^-$ trigger (old)",
-                        "emu_old": r"$e^\pm\mu^\pm$ trigger (old)",
-                    }
                     if i in label_dict.keys():
                         label = label_dict[i]
                     else:
@@ -299,7 +334,15 @@ def plot_efficiencies(
                                            nan=0, posinf=1, neginf=0
                                            )
                 efficiency_sum = np.sum(myhist[:, hist.loc(i)].values()) / np.sum(norm_hist.values())
-                label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                if kwargs.get("show_int_effies", False):
+                    # if "old" in i:
+                    #     label = "without non-isolated" + "\n" + "trigger paths"
+                    # else:
+                    #     label = "with isolated" + "\n" + "trigger paths"
+                    # label += "\n" + fr"($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                    label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                    # if "old" in i:
+                    #     label += "\n" + "w/o non-isolated trigger paths"
                 # calculate uncertainties
                 if kwargs.get("skip_errorbars", False):
                     eff_err = None
@@ -351,7 +394,7 @@ def plot_efficiencies(
                     if proc_label not in default_style_config["legend_cfg"]["title"]:
                         default_style_config["legend_cfg"]["title"] += " & " + proc_label
                 else:
-                    default_style_config["legend_cfg"]["title"] = proc_label
+                    default_style_config["legend_cfg"]["title"] = proc_label  # + "\n" + f"{label_dict[i]}"
 
     # plot-function specific changes
     default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
@@ -390,4 +433,10 @@ def plot_efficiencies(
     #     va="center",
     #     fontsize=20,
     # )
+
+    # fig, axs = plot_all(plot_config, style_config, **kwargs)
+    # leg = axs[0].legend()
+    # for t in leg.get_texts():
+    #     t.set_verticalalignment("center_baseline")
+
     return plot_all(plot_config, style_config, **kwargs)

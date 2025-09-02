@@ -214,6 +214,9 @@ sl_syst = sl.derive("sl_syst", cls_dict={
     "systematics": systematics,
     "processes": processes_dict["hwwzztt"],
 })
+sl_full = sl_syst.derive("sl_full", cls_dict={
+    "mc_stats": True,
+})
 
 sl_rate_v0 = sl.derive("sl_rate_v0", cls_dict={
     "ml_model_name": ["sl_22post_v0", "sl_22post_binary_ggf_v0", "sl_22post_binary_vbf_v0"],
@@ -227,6 +230,10 @@ sl_syst_v0 = sl.derive("sl_syst_v0", cls_dict={
     "config_variable": config_variable_binary_ggf_and_vbf,
     "systematics": systematics,
     "processes": processes_dict["hwwzztt"],
+})
+
+sl_full_v0 = sl_syst_v0.derive("sl_full_v0", cls_dict={
+    "mc_stats": True,
 })
 
 sl_rate_old = sl.derive("sl_rate_old", cls_dict={
@@ -275,5 +282,18 @@ sl_rate_dy_w_split = sl_rate.derive("sl_rate_dy_w_split", cls_dict={
         "sr__2b__ml_w_lnu",
         "sr__1b__ml_dy",
         "sr__2b__ml_dy",
+    ],
+})
+sl_rate_second_multi = sl_rate.derive("sl_rate_second_multi", cls_dict={
+    "ml_model_name": ["sl_22post_new", "sl_22post_3node_ggf", "sl_22post_3node_vbf"],
+})
+sl_rate_single_bkg_bin = sl_rate_new.derive("sl_rate_single_bkg_bin")
+sl_rate_second_binary = sl_rate_new.derive("sl_rate_second_binary", cls_dict={
+    "ml_model_name": [
+        "sl_22post_new",
+        "sl_22post_binary_ggf_new",
+        "sl_22post_binary_vbf_new",
+        "sl_22post_binary_ggf_qcd_only",
+        "sl_22post_binary_vbf_qcd_only",
     ],
 })

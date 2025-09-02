@@ -149,7 +149,7 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
         if config_inst.has_process(proc_name):
             logger.debug(f"update process {proc_name}")
             if sub_processes:
-                raise NotImplementedError("Cannot re-assign sub-processes to already existing Process {proc_name}")
+                raise NotImplementedError(f"Cannot re-assign sub-processes to already existing Process {proc_name}")
             proc_inst = config_inst.get_process(proc_name)
             apply_proc_settings(proc_inst, process_settings)
             set_proc_attr(proc_inst, "sub_process_class_factor", sub_process_class_factors.get(proc_name, 1))

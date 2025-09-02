@@ -96,7 +96,7 @@ def cats_ml_init(self: Producer) -> None:
             name="mlscore.max_score",
             expression="mlscore.max_score",
             binning=(1000, 0., 1.),
-            x_title="DNN max output score",
+            x_title="Multiclass DNN output score",
             aux={
                 "rebin": 25,
             },

@@ -148,8 +148,8 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
             "inputs": {"PV.npvs"},
         },
         binning=(81, 0, 81),
-        x_title="Number of primary vertices",
-        discrete_x=True,
+        x_title=r"$\text{N}_{\text{PV}}$",
+        # discrete_x=True,
     )
     # change lepton pt binning
     cfg.add_variable(
@@ -173,6 +173,37 @@ def configure_for_scale_factors(cfg: od.Config) -> None:
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_lepton0_pt",
+        expression=lambda events: events.Lepton[:, 0].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=[0., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Leading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_lepton1_pt",
+        expression=lambda events: events.Lepton[:, 1].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=[0., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=[0., 30.] + [i for i in range(31, 41)] + [50., 81.],
+        x_title=r"$\text{N}_{\text{PV}}$",
     )
     # add trigger ids as variables
     cfg.add_variable(

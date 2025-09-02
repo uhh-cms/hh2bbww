@@ -297,7 +297,8 @@ ml_processes = [
     "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd", "dy_w_lnu",
     "dy_m50toinf", "tt_dl", "st_tchannel_t",
     "bkg_binary", "sig_ggf_binary", "sig_vbf_binary", "sig_binary_ggf", "sig_binary_vbf",
-    "sig_ggf", "sig_vbf", "bkg_binary_ggf", "bkg_binary_vbf",
+    "sig_ggf", "sig_vbf", "bkg_binary_ggf", "bkg_binary_vbf", "bkg",
+    "sig_binary_ggf_qcd", "sig_binary_vbf_qcd",
 ]
 for proc in ml_processes:
     @categorizer(
@@ -350,3 +351,41 @@ def mask_fn_forward_handling(self: Categorizer, events: ak.Array, **kwargs) -> t
     mask = mask | ((abs(events.InclJet.eta) <= 2.6)) & (abs(events.InclJet.pt) >= 30)
 
     return events, mask
+
+
+@categorizer(uses={"mlscore.*"})
+def mask_fn_test_category_ids(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events based on category IDs
+    """
+    from hbw.util import debugger
+    debugger()
+    mask = True
+    return events, mask
+
+
+@categorizer(uses={"mlscore.*"})
+def mask_fn_qcd_binaryv2(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorizer that selects events based on QCD binary classification
+    """
+    multi_procs = ["sig_ggf", "sig_vbf", "tt", "st", "dy_w_lnu"]
+    # start with true mask
+    ggf_mask = np.ones(len(events), dtype=bool)
+    vbf_mask = np.ones(len(events), dtype=bool)
+    for proc in multi_procs:
+        # check if proc is in the events.mlscore columns
+        if proc not in events.mlscore.fields:
+            raise ValueError(f"Process {proc} not found in events.mlscore columns.")
+
+        # set all signal events to False
+        mask_ggf = events.mlscore.sig_ggf < events.mlscore[proc]
+        mask_vbf = events.mlscore.sig_vbf < events.mlscore[proc]
+        ggf_mask = ggf_mask & mask_ggf
+        vbf_mask = vbf_mask & mask_vbf
+
+    # only set those signal events to true that are classified as signal by the qcd binary classifier
+    ggf_binary_mask = (events.mlscore.sig_binary_ggf_qcd >= 0.5) | ggf_mask
+    vbf_binary_mask = (events.mlscore.sig_binary_vbf_qcd >= 0.5) | vbf_mask
+
+    return events, (ggf_binary_mask & vbf_binary_mask)

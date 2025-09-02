@@ -5,6 +5,7 @@ Some utils for trigger studies and efficiency calculations
 """
 
 from __future__ import annotations
+from collections import OrderedDict
 
 import law
 
@@ -85,7 +86,8 @@ def calc_efficiency_errors(num, den):
         error_low[error_low < 0] = 0
     if np.any(error_high < 0):
         logger.warning("Some upper uncertainties are negative, setting them to zero")
-        error_high[error_high < 0] = 0
+        below_zero_mask = error_high < 0
+        error_high[below_zero_mask] = 0
 
     # remove large errors if the efficiency is zero
     error_low[efficiency == 0] = 0
@@ -115,16 +117,20 @@ def calc_sf_uncertainty(efficiencies: dict, errors: dict, alpha: np.ndarray):
             # here the transponse is undone again
             sym_errors[key] = np.maximum(value.T[..., 0, :], value.T[..., 1, :])
 
+    effi_keys = list(efficiencies.keys())
+    sym_keys = list(sym_errors.keys())
     # combine errors
     uncertainty = np.sqrt(
-        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2 # + (1 - alpha) ** 2  # noqa
+        (sym_errors[sym_keys[0]] / efficiencies[effi_keys[1]]) ** 2 +
+        (efficiencies[effi_keys[0]] * sym_errors[sym_keys[1]] / efficiencies[effi_keys[1]] ** 2) ** 2 +
+        (1 - alpha) ** 2
     )
 
     return np.nan_to_num(uncertainty, nan=0, posinf=1, neginf=0)
 
 
 def calculate_efficiencies(
-        h: hist.Hist,
+        h_dict: OrderedDict[str, hist.Hist],
         trigger: str,
 ) -> dict:
     """
@@ -133,24 +139,24 @@ def calculate_efficiencies(
     efficiencies = {}
     efficiency_unc = {}
     # loop over processes
-    for proc in range(h.axes[0].size):
+    for proc, h in h_dict.items():
 
-        efficiency = np.nan_to_num(h[proc, ..., hist.loc(trigger)].values() / h[proc, ..., 0].values(),
+        efficiency = np.nan_to_num(h[..., hist.loc(trigger)].values() / h[..., 0].values(),
                                    nan=0, posinf=1, neginf=0
                                    )
 
         if np.any(efficiency > 1):
             logger.warning(
-                "Some efficiencies for are greater than 1, errorbars are capped at zero",
+                "Some efficiencies are greater than 1, errorbars are capped at zero",
             )
         elif np.any(efficiency < 0):
             logger.warning(
-                "Some efficiencies for are less than 0, errorbars are capped at zero",
+                "Some efficiencies are less than 0, errorbars are capped at zero",
             )
 
         efficiencies[proc] = efficiency
 
-        efficiency_unc[proc] = calc_efficiency_errors(h[proc, ..., hist.loc(trigger)], h[proc, ..., 0])
+        efficiency_unc[proc] = calc_efficiency_errors(h[..., hist.loc(trigger)], h[..., 0])
 
     return efficiencies, efficiency_unc
 

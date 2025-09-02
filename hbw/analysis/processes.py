@@ -16,7 +16,7 @@ from cmsdb.util import add_decay_process
 
 def modify_cmsdb_processes():
     from cmsdb.processes import (
-        qcd_mu, qcd_em, qcd_bctoe,
+        qcd_mu, qcd_em, qcd_bctoe, data,
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
     )
@@ -63,9 +63,11 @@ def modify_cmsdb_processes():
         [h, ttv, vv, dy, st, tt],
         name="sf_bkg",
         id=99890207,
-        label="sf_bkg",
+        label="MC background",
         color=color_palette["green"],
     )
+
+    data.remove_process("data_jethtmet")
 
     decay_map = {
         "lf": {
