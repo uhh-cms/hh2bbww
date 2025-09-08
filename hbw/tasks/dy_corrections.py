@@ -951,7 +951,7 @@ class DYCorrBase(
         add_default_to_description=True,
     )
     hist_producer = HistogramsUserSingleShiftBase.hist_producer.copy(
-        default="met70",
+        default="with_trigger_weight",
         description="Histogram producer to use for the DY corrections",
         add_default_to_description=True,
     )
