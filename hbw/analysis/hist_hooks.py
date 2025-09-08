@@ -6,6 +6,8 @@ Histogram hooks.
 
 from __future__ import annotations
 
+from functools import partial
+
 import law
 import order as od
 
@@ -16,6 +18,21 @@ np = maybe_import("numpy")
 hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
+
+
+def cumsum(
+    task,
+    hists: hist.Histogram,
+    reverse: bool = False,
+):
+    for config_inst, proc_hists in hists.items():
+        for proc_inst, proc_hist in proc_hists.items():
+            if reverse:
+                proc_hist.values()[...] = np.cumsum(proc_hist.values()[..., ::-1], axis=-1)[..., ::-1]
+            else:
+                proc_hist.values()[...] = np.cumsum(proc_hist.values(), axis=-1)
+
+    return hists
 
 
 def rebin(task, hists: hist.Histogram):
@@ -51,6 +68,30 @@ def rebin(task, hists: hist.Histogram):
     return h_rebinned
 
 
+def blind_bins_above_score(task, hists: hist.Histogram, default_cut=0.8):
+    var_name = task.branch_data.variable
+    if "logit" in var_name:
+        # identify logit transformed scores and convert cut accordingly
+        score_cut = np.log(default_cut / (1 - default_cut))
+    elif "mlscore.sig_" in var_name:
+        # only apply blinding for signal scores
+        score_cut = default_cut
+    else:
+        # do nothing
+        return hists
+
+    for config_inst, proc_hists in hists.items():
+        for proc_inst, proc_hist in proc_hists.items():
+            if proc_inst.is_data:
+                # blind data above score cut
+                axis = proc_hist.axes[var_name]
+                bin_indices = np.where(axis.edges[1:] > score_cut)[0]
+                proc_hist.values()[..., bin_indices] = -1
+                proc_hist.variances()[..., bin_indices] = 0
+
+    return hists
+
+
 def blind_bins(task, hists: hist.Histogram, blinding_threshold=0.08):
     from columnflow.plotting.plot_util import blind_sensitive_bins
 
@@ -69,12 +110,15 @@ def blind_bins(task, hists: hist.Histogram, blinding_threshold=0.08):
     return out_hists
 
 
-def add_hist_hooks(config: od.Config) -> None:
+def add_hist_hooks(analysis_inst: od.Analysis) -> None:
     """
-    Add histogram hooks to a configuration.
+    Add histogram hooks to an analysis.
     """
-    # add hist hooks to config
-    config.x.hist_hooks = {
+    # add hist hooks to analysis instance
+    analysis_inst.x.hist_hooks = {
+        "cumsum": cumsum,
+        "cumsum_reverse": partial(cumsum, reverse=True),
         "rebin": rebin,
         # "blind": blind_bins,
+        "blind_bins_above_score": blind_bins_above_score,
     }
