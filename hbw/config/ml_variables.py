@@ -7,7 +7,7 @@ Definition of ML input variables.
 import order as od
 
 # from columnflow.columnar_util import EMPTY_FLOAT
-from hbw.config.styling import default_var_binning, default_var_unit
+from hbw.config.styling import default_var_binning, default_var_unit, default_var_title_format
 from hbw.util import call_once_on_config
 
 
@@ -79,7 +79,7 @@ def add_common_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dr_bb",
         expression="mli_dr_bb",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"$\Delta R(b,b)$",
         aux={"overflow": True},
     )
@@ -100,7 +100,7 @@ def add_common_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mbb",
         expression="mli_mbb",
-        binning=(40, 0, 1200),
+        binning=(40, 0, 800),
         unit="GeV",
         x_title=r"$m_{bb}$",
         aux={"overflow": True},
@@ -108,7 +108,7 @@ def add_common_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mindr_lb",
         expression="mli_mindr_lb",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"min $\Delta R(\ell0,b)$",
         aux={"overflow": True},
     )
@@ -122,14 +122,14 @@ def add_common_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_mindr_jj",
         expression="mli_mindr_jj",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"min $\Delta R(j,j)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_maxdr_jj",
         expression="mli_maxdr_jj",
-        binning=(40, 0, 12),
+        binning=(40, 0, 6),
         x_title=r"max $\Delta R(j,j)$",
         aux={"overflow": True},
     )
@@ -204,28 +204,33 @@ def add_common_ml_variables(config: od.Config) -> None:
                 continue
             if var == "phi" and obj != "met":
                 continue
+            binning = default_var_binning[var]
+            if obj == "lep" and var == "pt":
+                binning = (40, 0, 240)
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
+                binning=binning,
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),
                 aux={"overflow": True},
             )
 
     for obj in ["fj"]:
+        obj_label = {"fj": "FatJet"}[obj]
         for var in ["pt", "eta", "phi", "mass", "msoftdrop", "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD"]:
+            var_label = default_var_title_format.get(var, var)
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=default_var_binning[var],
                 unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
+                x_title="{obj} {var} (Hbb-score leading)".format(obj=obj_label, var=var_label),
                 aux={"overflow": True},
             )
 
-        b1_pt = config.get_variable("mli_b1_pt")
-        b1_pt.x_title = r"$p_{T}^{b1}$"
+    b1_pt = config.get_variable("mli_b1_pt")
+    b1_pt.x_title = r"$p_{T}^{b1}$"
 
 
 @call_once_on_config()
@@ -303,7 +308,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dr_bb_jjlnu",
         expression="mli_dr_bb_jjlnu",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"$\Delta R(bb,jj\ell\nu)$",
         aux={"overflow": True},
     )
@@ -317,7 +322,7 @@ def add_sl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dr_bb_jjl",
         expression="mli_dr_bb_jjl",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"$\Delta R(bb,jj\ell)$",
         aux={"overflow": True},
     )
@@ -338,14 +343,14 @@ def add_sl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dr_bb_l",
         expression="mli_dr_bb_l",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"$\Delta R(bb,\ell)$",
         aux={"overflow": True},
     )
     config.add_variable(
         name="mli_dr_jj_l",
         expression="mli_dr_jj_l",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         x_title=r"$\Delta R(jj,\ell)$",
         aux={"overflow": True},
     )

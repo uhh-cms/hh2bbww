@@ -127,42 +127,42 @@ def add_dl_ml_variables(config: od.Config) -> None:
     config.add_variable(
         name="mli_dr_ll",
         expression="mli_dr_ll",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         aux={"overflow": True},
         x_title=r"$\Delta R(\ell,\ell)$",
     )
     config.add_variable(
         name="mli_min_dr_llbb",
         expression="mli_min_dr_llbb",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         aux={"overflow": True},
         x_title=r"$min_{b,l} \Delta R(b,\ell)$",
     )
     config.add_variable(
         name="mli_dr_ll_bb",
         expression="mli_dr_ll_bb",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         aux={"overflow": True},
         x_title=r"$\Delta R(bb,\ell\ell)$",
     )
     config.add_variable(
         name="mli_mllMET",
         expression="mli_mllMET",
-        binning=(60, 0, 1200),
+        binning=(40, 0, 600),
         aux={"overflow": True},
         x_title=r"$m_{\ell\ell MET}$",
     )
     config.add_variable(
         name="mli_dr_bb_llMET",
         expression="mli_dr_bb_llMET",
-        binning=(40, 0, 8),
+        binning=(40, 0, 6),
         aux={"overflow": True},
         x_title=r"$\Delta R(bb,\ell\ell MET)$",
     )
     config.add_variable(
         name="mli_dphi_bb_llMET",
         expression="mli_dphi_bb_llMET",
-        binning=(40, 0, 8),
+        binning=(64, 0, 3.2),
         aux={"overflow": True},
         x_title=r"$\Delta \phi(bb,\ell\ell MET)$",
     )
@@ -172,7 +172,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 1200),
         aux={"overflow": True},
         unit="GeV",
-        x_title=r"$m_{\ell\ell MET}$",
+        x_title=r"$m_{bb \ell\ell MET}$",
     )
     config.add_variable(
         name="mli_dphi_ll",
@@ -199,10 +199,14 @@ def add_dl_ml_variables(config: od.Config) -> None:
 
     for obj in ["lep2"]:
         for var in ["pt", "eta"]:
+            binning = default_var_binning[var]
+            if obj == "lep2" and var == "pt":
+                # TODO: change to 160? 120? idk.
+                binning = (40, 0, 240)
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
-                binning=default_var_binning[var],
+                binning=binning,
                 aux={"overflow": True},
                 unit=default_var_unit.get(var, "1"),
                 x_title="{obj} {var}".format(obj=obj, var=var),

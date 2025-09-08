@@ -932,13 +932,14 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$ (endcap)",
         )
+        pt_bins = (40, 0., 240.) if i == 0 else (40, 0., 160.)
         config.add_variable(
             name=f"lepton{i}_pt",
             expression=lambda events, i=i: events.Lepton[:, i].pt,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(40, 0., 400.),
+            binning=pt_bins,
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$",
@@ -949,7 +950,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(40, -3.2, 3.2),
+            binning=(50, -2.5, 2.5),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $\\eta$",
@@ -960,7 +961,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(50, -2.5, 2.5),
+            binning=(50, -3.2, 3.2),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $\\phi$",
@@ -1057,7 +1058,7 @@ def add_variables(config: od.Config) -> None:
         )
 
     # MET
-
+    # TODO: MET variable with MetCorr applied
     config.add_variable(
         name="met_pt",
         expression=f"{met_name}.pt",
