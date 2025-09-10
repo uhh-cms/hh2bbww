@@ -120,15 +120,16 @@ def set_config_defaults_and_groups(config_inst):
     #     "default": default_producers(None, config_inst, {}),
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
-    config_inst.x.default_hist_producer = "with_dy_corr"
+    # config_inst.x.default_hist_producer = "with_dy_corr"
+    config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "dl"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
     config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
-    config_inst.x.default_general_settings = ("data_mc_plots_blind_conservative",)
-    # config_inst.x.default_general_settings = ("data_mc_plots",)
+    # config_inst.x.default_general_settings = ("data_mc_plots_blind_conservative",)
+    config_inst.x.default_general_settings = ("data_mc_plots",)
     config_inst.x.default_custom_style_config = "default"
 
     #
@@ -379,7 +380,7 @@ def set_config_defaults_and_groups(config_inst):
         # "vbfSR_2b_dl_resolved": bracket_expansion(["sr__resolved__2b__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
-        "BR_dl": bracket_expansion(["sr__{1b,2b}__ml_{tt,st,dy,dy_m10toinf,h}"]),
+        "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
 
@@ -395,6 +396,10 @@ def set_config_defaults_and_groups(config_inst):
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs_v1": ml_inputs.v1,
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "basic_kin": bracket_expansion([
+            "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
+            # "met_{pt,phi}",  # TODO: apply MetCorr to these variables
+        ]),
         "dl": bracket_expansion([
             "n_{jet,jet_pt30,bjet,btag,electron,muon,fatjet,hbbjet,vetotau}",
             "lepton{0,1}_{pt,eta,phi,pfreliso,minipfreliso}",  # ,mvatth}",
@@ -440,6 +445,7 @@ def set_config_defaults_and_groups(config_inst):
             "isr_up",
             "fsr_up",
             "top_pt_up",
+            "dy_correction_up",
             # # experimental unc.
             # "lumi_13p6TeV_2022_up",
             # b-tagging
@@ -494,6 +500,7 @@ def set_config_defaults_and_groups(config_inst):
             "e_reco_sf_up",
             "trigger_sf_up",
             "minbias_xs_up",
+            "dy_correction_up",
         ],
         "jerc_up": [
             "jer_up",
@@ -536,7 +543,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simwip",
             "yscale": "log",
             "hide_signal_errors": True,
-            "blinding_threshold": 0.008,
+            # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
@@ -544,6 +551,12 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "wip",
             "yscale": "log",
             "blinding_threshold": 0.008,
+        },
+        "data_mc_plots_not_blinded": {
+            # "custom_style_config": "default",  # NOTE: does not work in combination with group
+            "whitespace_fraction": 0.4,
+            "cms_label": "wip",
+            "yscale": "log",
         },
         "more_magnitudes": {
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
@@ -595,9 +608,31 @@ def set_config_defaults_and_groups(config_inst):
     }
 
     config_inst.x.variable_settings_groups = {
+        "none": {},
         "test": {
             "mli_mbb": {"rebin": 2, "label": "test"},
             "mli_mjj": {"rebin": 2},
+        },
+        "boosted_rebin": {
+            var: {"rebin": 4}
+            for var in ml_inputs.v2
+            if not var.startswith("mli_n_") and not var == "mli_mixed_channel"
+        },
+        "rebin_ml_scores100": {
+            var: {"rebin": 100}
+            for var in [
+                "rebinlogit_mlscore.sig_ggf_binary",
+                "rebinlogit_mlscore.sig_vbf_binary",
+                "mlscore.sig_ggf_binary",
+                "mlscore.sig_vbf_binary",
+                "mlscore.sig_ggf",
+                "mlscore.sig_vbf",
+                "mlscore.tt",
+                "mlscore.st",
+                "mlscore.dy_m10toinf",
+                "mlscore.dy",
+                "mlscore.h",
+            ]
         },
     }
 
@@ -608,6 +643,24 @@ def set_config_defaults_and_groups(config_inst):
                 "ncols": 2,
                 "fontsize": 16,
                 "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.05, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 16,
+            },
+        },
+        "default_rax75": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 16,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            # "ax_cfg": {
+            #     "ylim": (-10, 10),
+            # },
+            "rax_cfg": {
+                "ylim": (0.25, 1.75),
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),
