@@ -258,7 +258,7 @@ class DumpAnalysisSummary(
     HBWTask,
     ConfigTask,
 ):
-    is_single_config = False
+    single_config = True
     keys_of_interest = law.CSVParameter(
         default=tuple(),
         description="Keys of interest to be printed in the summary",
@@ -416,6 +416,8 @@ class DatasetSummary(
     HBWTask,
     ConfigTask,
 ):
+    single_config = True
+
     def output(self):
         output = {
             "dataset_summary": self.target("dataset_summary.yaml"),

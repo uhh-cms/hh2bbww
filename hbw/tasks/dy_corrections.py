@@ -659,7 +659,7 @@ def get_fit_str(
         fig, ax = plt.subplots()
         if show_individual:
             for i, y in enumerate(ys):
-                ax.plot(x, y, alpha=0.5, label=f"Fit {i+1}")
+                ax.plot(x, y, alpha=0.5, label=f"Fit {i + 1}")
 
         # Plot the envelope
         ax.fill_between(x, y_min, y_max, color=fill_color, alpha=0.4,
