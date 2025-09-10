@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import Callable
 from collections import defaultdict
 
-import luigi
 import law
 import order as od
 
@@ -291,9 +290,22 @@ class HBWInferenceModelBase(
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
-    unblind = luigi.BoolParameter(
-        default=False,
-    )
+    # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
+    fully_unblind = False
+
+    @property
+    def real_data(self):
+        # when skip_data is used, "data_obs" is fake data, so we can "unblind"
+        return not self.inference_model.skip_data
+
+    @property
+    def partially_unblinded(self):
+        return self.real_data and not self.inference_model.unblind
+
+
+    @property
+    def fully_unblinded(self):
+        return self.fully_unblind and self.real_data and self.inference_model.unblinded
 
 
 class ModifyDatacardsFlatRebin(
@@ -450,7 +462,7 @@ class ModifyDatacardsFlatRebin(
         datacard = inp_datacard.load(formatter="text")
         datacard = datacard.replace(inp_shapes.basename, outputs["shapes"].basename)
 
-        if not self.unblind and not self.inference_model_inst.skip_data:
+        if self.partially_unblinded:
             datacard = self.update_rates_and_obs_str(datacard)
 
         with uproot.open(inp_shapes.fn) as f_in:
@@ -494,7 +506,7 @@ class ModifyDatacardsFlatRebin(
             signal_hist = sum(signal_hists[1:], signal_hists[0])
 
             logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_inf_proc_names}")
-            if "data_obs" in proc_names and self.inference_model_inst.skip_data is False:
+            if "data_obs" in proc_names and self.partially_unblinded:
                 if "sig_vbf" in cat_name:
                     # for the VBF categories, we use a blinding threshold
                     blinding_threshold = 0.004
@@ -818,8 +830,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
 
         # string that represents the version of datacards
         configs_str = "_".join(self.configs)
-        configs_str.replace("c22prev14_c22postv14", "2022")
-        configs_str.replace("c23prev14_c23postv14", "2023")
+        configs_str = configs_str.replace("c22prev14_c22postv14", "2022")
+        configs_str = configs_str.replace("c23prev14_c23postv14", "2023")
         identifier_list = [configs_str, self.selector, str(self.inference_model), self.version]
         identifier = "__".join(identifier_list)
 
@@ -950,7 +962,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating C2V scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,11 --UpperLimits-workflow htcondor"
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor"
         )
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
@@ -967,14 +979,16 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
-            "--order-by-impact --parameters-per-page 50 "
+            "--order-by-impact --parameters-per-page 80 "
             # "--mc-stats"
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
-        if not self.unblind and not self.inference_model_inst.skip_data:
-            pulls_and_imacts_params += ",custom-args='--rMax 200 --rMin -200'"
-            # NOTE: the custom args do not work in combination with job submission
+        custom_args = "--robustFit 1"
+        if self.partially_unblinded:
+            custom_args += " --rMin -350 --rMax 350"
+        if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded "
+        pulls_and_imacts_params += f",custom-args='{custom_args}'"
         cmd += f"--PullsAndImpacts-{{{pulls_and_imacts_params}}} "
 
         print(base_cmd + cmd, "\n\n")
@@ -986,6 +1000,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
             # f"--output-name {output_file}"
         )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded "
         print(base_cmd + cmd, "\n\n")
         full_cmd += cmd + "\n\n"
         output["FitDiagnostics"].dump(cmd, formatter="text")
@@ -1011,8 +1027,8 @@ run_and_fetch_cmd() {{
         echo "[DRY-RUN] ${{*:2}} --fetch-output 0,a"
     else
         echo "[RUNNING] ${{*:2}}"
-        eval "${{@:2}}"
-        eval "${{@:2}} --fetch-output 0,a"
+        "${{@:2}}"
+        "${{@:2}} --fetch-output 0,a"
     fi
 }}
 

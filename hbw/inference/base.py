@@ -48,6 +48,7 @@ class HBWInferenceModelBase(InferenceModel):
     # customization of channels
     mc_stats: bool = True
     skip_data: bool = True
+    unblind: bool = False
 
     # dummy variations when some datasets are missing
     dummy_ggf_variation: bool = False
@@ -508,7 +509,14 @@ class HBWInferenceModelBase(InferenceModel):
                         f"{syst_name} for process {proc}.")
                     continue
                 process_inst = config_inst.get_process(proc)
-                if "scale" not in process_inst.xsecs[ecm]:
+
+                scale_key = None
+                if "scale" in process_inst.xsecs[ecm]:
+                    scale_key = "scale"
+                elif "th" in process_inst.xsecs[ecm]:
+                    scale_key = "th"
+                else:
+                    logger.warning(f"No scale uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
                 self.add_parameter(
                     syst_name,
@@ -516,7 +524,7 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),
-                        process_inst.xsecs[ecm].get(names=("scale"), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(names=(scale_key,), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")

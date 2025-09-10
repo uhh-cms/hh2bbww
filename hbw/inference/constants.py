@@ -72,6 +72,7 @@ inference_procnames = {
 }
 
 # mapping: which processes are used for which QCDScale (rate) uncertainty
+# TODO: some uncertainties (e.g. ttz) might still be missing in cmsdb for 13.6 TeV
 processes_per_QCDScale = {
     "ttbar": [
         "tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz",
@@ -95,7 +96,7 @@ processes_per_QCDScale = {
 processes_per_pdf_rate = {
     "gg": [
         "tt", "ttz", "ggZZ",
-        # "tttt",
+        "tttt",
     ],
     "qqbar": [
         "vv", "ww", "zz", "wz", "st_schannel", "st_tchannel", "dy", "dy_lf", "dy_hf",
@@ -120,6 +121,7 @@ processes_per_rate_unconstrained = {
     "dy": ["dy", "dy_lf", "dy_hf"],
     "dy_lf": ["dy_lf"],
     "dy_hf": ["dy_hf"],
+    "st": ["st_schannel", "st_tchannel", "st_twchannel"],
 }
 
 
@@ -181,6 +183,7 @@ processes_per_shape = {
     "fsr_h": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
     # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     "top_pt": ["tt"],
+    "dy_correction": ["dy", "dy_lf", "dy_hf"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
     "pdf_shape_tt": ["tt"],
