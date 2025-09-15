@@ -297,8 +297,8 @@ class DumpAnalysisSummary(
     def build_table(self):
         root_processes = {
             # "data": "skip",
-            "hh_ggf": "\HHggF",
-            "hh_vbf": "\HHVBF",
+            "hh_ggf": r"\HHggF",
+            "hh_vbf": r"\HHVBF",
             "tt": r"\ttbar",
             "st": r"\singlet",
             "dy": r"\DY",
