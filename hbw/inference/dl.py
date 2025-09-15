@@ -99,6 +99,11 @@ config_categories = DotDict({
         "sr__1b",
         "sr__2b",
     ],
+    "no_nn_cats_with_boosted": [
+        "sr__resolved__1b",
+        "sr__resolved__2b",
+        "sr__boosted",
+    ],
     "bjet_incl": [
         "sr__ml_sig_ggf",
         "sr__ml_sig_vbf",
@@ -109,18 +114,18 @@ config_categories = DotDict({
     ],
 })
 config_categories.default_boosted = (
-    config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_split
+    config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved
 )
 
 
 systematics = DotDict({
     "lumi": [
-        "lumi_13TeV_2016",
-        "lumi_13TeV_2017",
-        "lumi_13TeV_1718",
+        # "lumi_13TeV_2016",
+        # "lumi_13TeV_2017",
+        # "lumi_13TeV_1718",
+        # "lumi_13TeV_correlated",
         "lumi_13p6TeV_2022",
         "lumi_13p6TeV_2023",
-        "lumi_13TeV_correlated",
     ],
     "QCDScale": [
         "QCDScale_ttbar",
@@ -131,11 +136,11 @@ systematics = DotDict({
         "QCDScale_qqH",
         "QCDScale_VH",
         "QCDScale_ttH",
-        "QCDScale_bbH",
-        "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
+        # "QCDScale_bbH",
+        # "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
         "QCDScale_hh_vbf",
-        "QCDScale_VHH",
-        "QCDScale_ttHH",
+        # "QCDScale_VHH",
+        # "QCDScale_ttHH",
     ],
     "pdf": [
         "pdf_gg",
@@ -143,13 +148,13 @@ systematics = DotDict({
         "pdf_qg",
         "pdf_Higgs_gg",
         "pdf_Higgs_qqbar",
-        "pdf_Higgs_qg",  # none so far
+        # "pdf_Higgs_qg",  # none so far
         "pdf_Higgs_ttH",
-        "pdf_Higgs_bbH",  # removed
+        # "pdf_Higgs_bbH",  # removed
         "pdf_Higgs_hh_ggf",
         "pdf_Higgs_hh_vbf",
-        "pdf_VHH",
-        "pdf_ttHH",
+        # "pdf_VHH",
+        # "pdf_ttHH",
     ],
     "rate_unconstrained": [
         "rate_ttbar",
@@ -486,6 +491,21 @@ default_data = dl.derive("default_data", cls_dict={
     "config_categories": config_categories.default_boosted,
     "skip_data": False,
 })
+mli_n_jet = default_data.derive("mli_n_jet", cls_dict={
+    "processes": processes_dict["hww"],
+    # "ml_model_name": [],
+    "multi_variables": False,
+    "config_categories": config_categories.no_nn_cats_with_boosted,
+    "config_variable": lambda self, config_cat_inst: "mli_n_jet",
+})
+mli = default_data.derive("mli", cls_dict={
+    "processes": processes_dict["hww"],
+    # "ml_model_name": [],
+    "multi_variables": True,
+    "config_categories": config_categories.no_nn_cats_with_boosted,
+    "config_variable": lambda self, config_cat_inst: mli_inputs,
+})
+
 
 #
 # other inference models for testing and systematics studies

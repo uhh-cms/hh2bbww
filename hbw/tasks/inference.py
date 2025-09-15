@@ -296,16 +296,15 @@ class HBWInferenceModelBase(
     @property
     def real_data(self):
         # when skip_data is used, "data_obs" is fake data, so we can "unblind"
-        return not self.inference_model.skip_data
+        return not self.inference_model_inst.skip_data
 
     @property
     def partially_unblinded(self):
-        return self.real_data and not self.inference_model.unblind
-
+        return self.real_data and not self.inference_model_inst.unblind
 
     @property
     def fully_unblinded(self):
-        return self.fully_unblind and self.real_data and self.inference_model.unblinded
+        return self.fully_unblind and self.real_data and self.inference_model_inst.unblinded
 
 
 class ModifyDatacardsFlatRebin(
@@ -938,25 +937,29 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"--datacard-names {multi_datacard_names} "
             f"--UpperLimits-workflow htcondor --workers 10 "
         )
-        full_cmd += cmd + "\n\n"
-        print(base_cmd + cmd, "\n\n")
+
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            full_cmd += cmd + "\n\n"
         output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
 
-        # creating upper limits for kl=1
-        cmd = (
-            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
-            f"--multi-datacards {datacards} "
-            f"--datacard-names {identifier}"
-        )
-        print(base_cmd + cmd, "\n\n")
+        # # creating upper limits for kl=1
+        # cmd = (
+        #     f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
+        #     f"--multi-datacards {datacards} "
+        #     f"--datacard-names {identifier}"
+        # )
+        # if not self.partially_unblinded:
+        #     print(base_cmd + cmd, "\n\n")
 
         # creating kl scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor"
         )
-        print(base_cmd + cmd, "\n\n")
-        full_cmd += cmd + "\n\n"
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            full_cmd += cmd + "\n\n"
         output["PlotUpperLimits_kl"].dump(cmd, formatter="text")
 
         # creating C2V scan
@@ -964,8 +967,9 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor"
         )
-        print(base_cmd + cmd, "\n\n")
-        full_cmd += cmd + "\n\n"
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            full_cmd += cmd + "\n\n"
         output["PlotUpperLimits_c2v"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
@@ -973,14 +977,14 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
             f"--skip-b-only"
         )
-        print(base_cmd + cmd, "\n\n")
+        # print(base_cmd + cmd, "\n\n")
         output["FitDiagnostics"].dump(cmd, formatter="text")
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
             "--order-by-impact --parameters-per-page 80 "
-            # "--mc-stats"
+            "--mc-stats "
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
         custom_args = "--robustFit 1"
@@ -1028,7 +1032,7 @@ run_and_fetch_cmd() {{
     else
         echo "[RUNNING] ${{*:2}}"
         "${{@:2}}"
-        "${{@:2}} --fetch-output 0,a"
+        "${{@:2}}" --fetch-output 0,a
     fi
 }}
 

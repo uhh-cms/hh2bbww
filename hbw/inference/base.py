@@ -235,6 +235,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     processes_per_syst.pop(syst)
         if not_considered := set(systematics_formatted) - all_systs:
+            # NOTE: lumi is labelled as missing, but is actually considered
             logger.warning(
                 f"The following systematics were not considered in the inference model: "
                 f"{', '.join(not_considered)}. Please check your configuration.",
@@ -462,7 +463,6 @@ class HBWInferenceModelBase(InferenceModel):
         # -> use the first config instance to get the campaign
         # NOTE: this might get tricky when including Run-2 (different ecm)
         config_inst = self.config_insts[0]
-        ecm = config_inst.campaign.ecm
 
         proc_handled_by_unconstrained_rate = set()
         for syst_name, procs in self.processes_per_rate_unconstrained.items():
@@ -504,16 +504,22 @@ class HBWInferenceModelBase(InferenceModel):
                 if proc not in self.processes:
                     continue
                 elif proc in proc_handled_by_unconstrained_rate:
-                    logger.warning(
+                    logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
                 process_inst = config_inst.get_process(proc)
 
                 scale_key = None
+                ecm = config_inst.campaign.ecm
                 if "scale" in process_inst.xsecs[ecm]:
                     scale_key = "scale"
+                elif "scale" in process_inst.xsecs[13]:
+                    scale_key = "scale"
+                    ecm = 13
+                    logger.info(f"Using 13 TeV scale uncertainty for process {proc}, systematic {syst_name}.")
                 elif "th" in process_inst.xsecs[ecm]:
+                    logger.info(f"Using 'th' key for process {proc}, systematic {syst_name}.")
                     scale_key = "th"
                 else:
                     logger.warning(f"No scale uncertainty found for process {proc}. Skipping {syst_name}.")
@@ -539,12 +545,20 @@ class HBWInferenceModelBase(InferenceModel):
                 if proc not in self.processes:
                     continue
                 elif proc in proc_handled_by_unconstrained_rate:
-                    logger.warning(
+                    logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
                 process_inst = config_inst.get_process(proc)
-                if "pdf" not in process_inst.xsecs[ecm]:
+                ecm = config_inst.campaign.ecm
+                if "pdf" in process_inst.xsecs[ecm]:
+                    pdf_key = "pdf"
+                elif "pdf" in process_inst.xsecs[13]:
+                    pdf_key = "pdf"
+                    ecm = 13
+                    logger.info(f"Using 13 TeV pdf uncertainty for process {proc}, systematic {syst_name}.")
+                else:
+                    logger.warning(f"No pdf uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
 
                 self.add_parameter(
@@ -553,7 +567,7 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),
-                        process_inst.xsecs[ecm].get(names=("pdf"), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(names=(pdf_key), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
