@@ -344,7 +344,7 @@ class CreateMultipleDatacards(
         # Build category string
         config_cats = self.inference_model_inst.config_categories
         apply_card = ",".join(
-            [f"cat_{cat}=$APPLY_FIT_CARDS/datacard__{cat}.txt" for cat in config_cats],
+            [f"{cat}=$APPLY_FIT_CARDS/datacard__{cat}.txt" for cat in config_cats],
         )
         script += apply_card + " \\\n"
 
@@ -483,11 +483,12 @@ class CreateMultipleDatacards(
                         if not self.inference_model_inst.require_shapes_for_parameter(param_obj):
                             continue
                         # store the varied hists
-                        shift_source = param_obj.config_data[config_inst.name].shift_source
-                        for d in ["up", "down"]:
-                            shift_hists[(param_obj.name, d)] = h_proc[{
-                                "shift": hist.loc(config_inst.get_shift(f"{shift_source}_{d}").name),
-                            }]
+                        if config_inst.name in param_obj.config_data.keys():
+                            shift_source = param_obj.config_data[config_inst.name].shift_source
+                            for d in ["up", "down"]:
+                                shift_hists[(param_obj.name, d)] = h_proc[{
+                                    "shift": hist.loc(config_inst.get_shift(f"{shift_source}_{d}").name),
+                                }]
 
             writer = DatacardWriter(self.inference_model_inst, datacard_hists)
             with outputs["card"].localize("w") as tmp_card, outputs["shapes"].localize("w") as tmp_shapes:

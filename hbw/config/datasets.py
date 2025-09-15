@@ -97,8 +97,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "data_jethtmet": config.x.if_era(cfg_tag="is_for_sf", values=data_jethtmet_datasets),
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
-            "st_schannel_tbar_lep_4f_amcatnlo",
             "st_schannel_t_lep_4f_amcatnlo",
+            "st_schannel_tbar_lep_4f_amcatnlo",
             "st_tchannel_t_4f_powheg",
             "st_tchannel_tbar_4f_powheg",
             *config.x.if_era(run=2, values=[
@@ -135,8 +135,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
             *config.x.if_era(run=3, values=[
                 # NLO samples
-                "dy_m50toinf_amcatnlo",
                 "dy_m10to50_amcatnlo",
+                "dy_m50toinf_amcatnlo",
                 # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
                 "dy_m50toinf_0j_amcatnlo",
                 "dy_m50toinf_1j_amcatnlo",

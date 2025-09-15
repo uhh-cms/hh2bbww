@@ -273,9 +273,113 @@ class DumpAnalysisSummary(
 
     def output(self):
         output = {
+            "latex_table": self.target("latex_table.tex"),
             "dataset_summary": self.target(f"dataset_summary_{self.keys_repr}.txt"),
         }
         return output
+
+    def format_das_key(self, das_key):
+        das_key_split = das_key.split("/")
+        if len(das_key_split) != 4:
+            raise Exception(f"Unexpected DAS key format: {das_key}")
+
+        # generalize campaign name to [campaign]
+        das_key_split[2] = "[campaign]" + "-" + das_key_split[2].split("-")[-1]
+        das_keys_formatted = "/".join(das_key_split)
+
+        # escape underscores for LaTeX
+        das_keys_formatted = das_keys_formatted.replace("_", "\\_")
+
+        # wrap in \texttt{}
+        das_keys_formatted = "\\texttt{" + das_keys_formatted + "}"
+        return das_keys_formatted
+
+    def build_table(self):
+        root_processes = {
+            # "data": "skip",
+            "hh_ggf": "\HHggF",
+            "hh_vbf": "\HHVBF",
+            "tt": r"\ttbar",
+            "st": r"\singlet",
+            "dy": r"\DY",
+            "w_lnu": r"\Wjets",
+            "vv": r"\diboson",
+            "vvv": r"\triboson",
+            "ttv": r"\ttV",
+            "ttvv": r"\ttVV",
+            "tttt": r"\tttt",
+            "h_ggf": r"\ggF",
+            "h_vbf": r"\VBF",
+            "zh": r"\ZH",
+            "zh_gg": r"\ggZH",
+            "wh": r"\WH",
+            "tth": r"\ttH",
+            "ttvh": r"\ttVH",
+            "thq": r"\tHq",
+            "thw": r"\tHW",
+        }
+        table_dict = defaultdict(list)
+        for dataset in self.config_inst.datasets:
+            if dataset.is_data or dataset.has_tag("is_hh"):
+                continue
+            process = dataset.processes.get_first()
+            xsec = process.xsecs.get(13.6, None)
+            try:
+                das_keys = dataset.get_info("nominal").keys[0]
+                dataset_summary = {
+                    "name": dataset.name,
+                    "das_keys": dataset.get_info("nominal").keys[0],
+                    "xsec": round_sig(xsec.nominal, 4) if xsec else "0",
+                }
+                dataset_summary["das_key_formatted"] = self.format_das_key(das_keys)
+            except Exception as e:
+                from hbw.util import debugger
+                debugger("Failed to get dataset summary", e)
+            parent = parent_key = None
+            while not parent:
+                for proc_name, key in root_processes.items():
+                    if process.has_parent_process(proc_name) or process.name == proc_name:
+                        parent = proc_name
+                        parent_key = key
+                        table_dict[parent_key].append(dataset_summary)
+                        break
+                if not parent:
+                    raise Exception(f"Could not find parent process for {process.name}")
+
+        # Generate the LaTeX table
+        latex_table = self.generate_latex_table(table_dict)
+
+        # Write to file or return
+        output_file = self.output()["latex_table"]
+        output_file.dump(latex_table, formatter="text")
+
+        return table_dict
+
+    def generate_latex_table(self, table_dict):
+        lines = []
+        lines.append(r"\begin{tabular}{llr}")
+        lines.append(r"  Process & Sample & XS $\times$ BR [pb] \\")
+        lines.append(r"  \hline")
+        lines.append("")
+
+        for i, (process_key, datasets) in enumerate(table_dict.items()):
+            for j, dataset in enumerate(datasets):
+                if j == 0:
+                    # First row: include process name
+                    process_name = process_key
+                else:
+                    # Subsequent rows: empty process column
+                    process_name = ""
+
+                lines.append(f"  {process_name} & {dataset['das_key_formatted']} & {dataset['xsec']} \\\\")
+
+            # Add spacing between groups
+            if i < len(table_dict) - 1:
+                lines.append(r"[\cmsTabSkip]")
+            lines.append("")
+
+        lines.append(r"\end{tabular}")
+        return "\n".join(lines)
 
     def write_dataset_summary(self, outp):
         import csv
@@ -316,6 +420,7 @@ class DumpAnalysisSummary(
 
     def run(self):
         output = self.output()
+        self.build_table()
         self.write_dataset_summary(output["dataset_summary"])
 
 
