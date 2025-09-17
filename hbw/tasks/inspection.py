@@ -294,6 +294,66 @@ class DumpAnalysisSummary(
         das_keys_formatted = "\\texttt{" + das_keys_formatted + "}"
         return das_keys_formatted
 
+    def build_xs_table(self):
+        processes_dict = {
+            "tt": r"\ttbar",
+            "st_tchannel": r"\sttchannel",
+            "st_schannel": r"\stschannel",
+            "st_twchannel": r"\tW",
+            "dy_m50toinf": r"\DYmfifty",
+            "w_lnu": r"\Wjets",
+            "ww": r"\WW",
+            "wz": r"\WZ",
+            "zz": r"\ZZ",
+            "vvv": r"\triboson",
+            "ttw": r"\ttW",
+            "ttz": r"\ttZ",
+            "ttvv": r"\ttVV",
+            "tttt": r"\tttt",
+            "h_ggf": r"\Hggf",
+            "h_vbf": r"\Hvbf",
+            "zh": r"\ZH",
+            "zh_gg": r"\ggZH",
+            "wh": r"\WH",
+            "tth": r"\ttH",
+            "ttvh": r"\ttVH",
+            "thq": r"\tHq",
+            "thw": r"\tHW",
+        }
+        unc_keys = ("scale", "pdf", "mtop", "alpha_s", "th")
+        for process, latex_name in processes_dict.items():
+            proc_inst = self.config_inst.get_process(process)
+            if not proc_inst:
+                raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
+            ecm = self.config_inst.campaign.ecm
+            if process == "ttz":
+                ecm = 13  # ttZ xs unc missing in 13.6
+            xs = proc_inst.xsecs.get(ecm, {})
+            processes_dict[process] = {
+                "latex_name": latex_name,
+                "xsec": xs,
+            }
+            for unc_key in unc_keys:
+                if unc_key in xs:
+                    unc_down, unc_up = xs.get(names=unc_key, direction=("down", "up"), factor=True)
+                    # rounded_unc_down = round_sig(100 - unc_down * 100, 2)
+                    # rounded_unc_up = round_sig(unc_up * 100 - 100, 2)
+                    rounded_unc_down = round(100 - unc_down * 100, 1)
+                    rounded_unc_up = round(unc_up * 100 - 100, 1)
+                    if rounded_unc_down == rounded_unc_up:
+                        unc_repr = f"$\\pm{rounded_unc_up}\\%$"
+                    else:
+                        unc_repr = f"$+{rounded_unc_up}\\%$ / $-{rounded_unc_down}\\%$"
+                    processes_dict[process][f"{unc_key}"] = unc_repr
+
+        for unc_key in unc_keys:
+            print(f"\n### {unc_key} uncertainties ###")
+            for process, info in processes_dict.items():
+                if unc_key in info:
+                    latex_name = info["latex_name"]
+                    unc_repr = info[unc_key]
+                    print(f"{latex_name} & {unc_repr}~\cite{{TODO}} \\\\")
+
     def build_table(self):
         root_processes = {
             # "data": "skip",
@@ -421,6 +481,7 @@ class DumpAnalysisSummary(
     def run(self):
         output = self.output()
         self.build_table()
+        self.build_xs_table()
         self.write_dataset_summary(output["dataset_summary"])
 
 
