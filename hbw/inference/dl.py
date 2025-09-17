@@ -127,20 +127,20 @@ systematics = DotDict({
         "lumi_13p6TeV_2022",
         "lumi_13p6TeV_2023",
     ],
-    "QCDScale": [
-        "QCDScale_ttbar",
-        "QCDScale_V",
-        "QCDScale_VV",
-        "QCDScale_VVV",
-        "QCDScale_ggH",
-        "QCDScale_qqH",
-        "QCDScale_VH",
-        "QCDScale_ttH",
-        # "QCDScale_bbH",
-        # "QCDScale_hh_ggf",  # should be included in inference model (THU_HH)
-        "QCDScale_hh_vbf",
-        # "QCDScale_VHH",
-        # "QCDScale_ttHH",
+    "QCDscale": [
+        "QCDscale_ttbar",
+        "QCDscale_V",
+        "QCDscale_VV",
+        "QCDscale_VVV",
+        "QCDscale_ggH",
+        "QCDscale_qqH",
+        "QCDscale_VH",
+        "QCDscale_ttH",
+        # "QCDscale_bbH",
+        # "QCDscale_hh_ggf",  # should be included in inference model (THU_HH)
+        "QCDscale_hh_vbf",
+        # "QCDscale_VHH",
+        # "QCDscale_ttHH",
     ],
     "pdf": [
         "pdf_gg",
@@ -166,8 +166,14 @@ systematics = DotDict({
         "rate_dy_hf",
     ],
     "rate_unconstrained2": [
-        "rate_ttbar",
+        "rate_ttbar"
         "rate_st",
+        "rate_dy_lf",
+        "rate_dy_hf",
+    ],
+    "rate_unconstrained3": [
+        "rate_ttbar",
+        "rate_ttbar_boosted",
         "rate_dy_lf",
         "rate_dy_hf",
     ],
@@ -175,15 +181,21 @@ systematics = DotDict({
         "rate_ttbar_{bjet_cat}",
         "rate_dy_{bjet_cat}",
     ],
+    "hbb_efficiency": [
+        "eff_hbb_signal_ggf",
+        "eff_hbb_signal_vbf",
+        "eff_hbb_bkg_ggf",
+        "eff_hbb_bkg_vbf",
+    ],
     "murf_envelope": [
         # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "murf_envelope_tt",
+        "murf_envelope_ttbar",
         "murf_envelope_st",
         "murf_envelope_dy",
-        # "murf_envelope_w_lnu",
-        "murf_envelope_ttv",  # TODO: ttW has no murf/pdf weights
-        "murf_envelope_vv",
-        "murf_envelope_h",
+        # "murf_envelope_w",
+        "murf_envelope_ttV",  # TODO: ttW has no murf/pdf weights
+        "murf_envelope_VV",
+        "murf_envelope_H",
         "murf_envelope_hh_ggf_hbb_hww",
         "murf_envelope_hh_ggf_hbb_hzz",
         "murf_envelope_hh_ggf_hbb_htt",
@@ -192,13 +204,13 @@ systematics = DotDict({
         # "murf_envelope_hh_vbf_hbb_htt",
     ],
     "pdf_shape": [
-        "pdf_shape_tt",
+        "pdf_shape_ttbar",
         "pdf_shape_st",
         "pdf_shape_dy",
-        # "pdf_shape_w_lnu",
-        "pdf_shape_ttv",  # TODO: ttW has no murf/pdf weights
-        "pdf_shape_vv",
-        "pdf_shape_h",
+        # "pdf_shape_w",
+        "pdf_shape_ttV",  # TODO: ttW has no murf/pdf weights
+        "pdf_shape_VV",
+        "pdf_shape_H",
         "pdf_shape_hh_ggf_hbb_hww",
         "pdf_shape_hh_ggf_hbb_hzz",
         "pdf_shape_hh_ggf_hbb_htt",
@@ -256,13 +268,14 @@ systematics = DotDict({
     ],
     "other": [
         "isr",
-        "fsr_tt",
+        "fsr_ttbar",
         "fsr_st",
-        "fsr_dy",
+        "fsr_V",
+        # "fsr_dy",
         # "fsr_w",
-        "fsr_vv",
+        "fsr_VV",
         "fsr_ttV",
-        "fsr_h",  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
+        "fsr_H",  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
         "top_pt",
     ],
     "jerc_only": [
@@ -278,21 +291,28 @@ systematics = DotDict({
         "jec_Total_{campaign}",
     ],
 })
+systematics["rate_default"] = [
+    *systematics.lumi,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.hbb_efficiency,
+    *systematics.rate_unconstrained3,
+]
 systematics["rate"] = [
     *systematics.lumi,
-    *systematics.QCDScale,
+    *systematics.QCDscale,
     *systematics.pdf,
     *systematics.rate_unconstrained,
 ]
 systematics["rate1"] = [
     *systematics.lumi,
-    *systematics.QCDScale,
+    *systematics.QCDscale,
     *systematics.pdf,
     *systematics.rate_unconstrained1,
 ]
 systematics["rate2"] = [
     *systematics.lumi,
-    *systematics.QCDScale,
+    *systematics.QCDscale,
     *systematics.pdf,
     *systematics.rate_unconstrained2,
 ]
@@ -315,6 +335,13 @@ systematics["shape"] = [
     *systematics.shape_only,
 ]
 # default set of all systematics
+systematics["default"] = [
+    *systematics.rate_default,
+    *systematics.shape_only_cpn_uncorr,
+    *systematics.jerc_only_cpn_uncorr,
+]
+
+# different variations of systematic combinations (testing)
 systematics["jerc"] = [
     *systematics.rate,
     *systematics.shape_only,
@@ -341,7 +368,7 @@ systematics["jerc4"] = [
     *systematics.jerc_only_cpn_uncorr,
 ]
 systematics["rate_bjet_uncorr"] = [
-    *systematics.QCDScale,
+    *systematics.QCDscale,
     *systematics.pdf,
     *systematics.rate_unconstrained_bjet_uncorr,
 ]
@@ -473,21 +500,21 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 #
 
 rate_only = dl.derive("rate_only", cls_dict={
-    "systematics": systematics.rate1,
+    "systematics": systematics.rate_default,
     "config_categories": config_categories.default_boosted,
 })
 default = dl.derive("default", cls_dict={
-    "systematics": systematics.jerc3,
+    "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
 })
 default_unblind = dl.derive("default_unblind", cls_dict={
-    "systematics": systematics.jerc3,
+    "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
     "unblind": True,
     "skip_data": False,
 })
 default_data = dl.derive("default_data", cls_dict={
-    "systematics": systematics.jerc3,
+    "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
     "skip_data": False,
 })

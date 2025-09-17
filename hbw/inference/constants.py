@@ -4,12 +4,6 @@
 Collection of configurations that stay constant for the analysis
 """
 
-# TODO
-# - decorrelate lepton SFs, trigger SFs per campaign
-# - decorrelate jer/jer per campaign
-# - decorrelate btag hfstats/lfstats per campaign?
-# - add signal murf/pdf shape uncertainties
-
 
 # TODO: mapping to naming that is accepted by inference
 # collection of all signal processes
@@ -52,12 +46,14 @@ signals = {*signals_hh_ggf, *signals_hh_vbf}
 # NOTE: when possible, we use the names from the config (only map to inference names if necessary)
 inference_procnames = {
     # main backgrounds ( optional name conventions)
-    # "tt": "TT",
+    "tt": "ttbar",
     # "st_tchannel": "ST",  # TODO: add st_schannel to ST
     # "st_twchannel": "TW",
-    # "w_lnu": "W",
-    # "dy": "DY",
-    # "vv": "VV",
+    "w_lnu": "W",
+    "dy": "DY",
+    "vv": "VV",
+    "ttv": "ttV",
+    "vvv": "VVV",
     # single higgs (required name conventions)
     "h_ggf": "ggH",
     "h_vbf": "qqH",
@@ -71,12 +67,12 @@ inference_procnames = {
     "thw": "tHW",
 }
 
-# mapping: which processes are used for which QCDScale (rate) uncertainty
+# mapping: which processes are used for which QCDscale (rate) uncertainty
 # TODO: some uncertainties (e.g. ttz) might still be missing in cmsdb for 13.6 TeV
-processes_per_QCDScale = {
+processes_per_QCDscale = {
     "ttbar": [
         "tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz",
-        # "tttt",
+        "tttt",
     ],
     "V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
     "VV": ["vv", "ww", "zz", "wz", "qqZZ"],
@@ -118,12 +114,23 @@ processes_per_rate_unconstrained = {
     "ttbar_{bjet_cat}": ["tt"],
     "dy_{bjet_cat}": ["dy", "dy_lf", "dy_hf"],
     "ttbar": ["tt"],
+    "ttbar_boosted": ["tt"],
     "dy": ["dy", "dy_lf", "dy_hf"],
     "dy_lf": ["dy_lf"],
     "dy_hf": ["dy_hf"],
     "st": ["st_schannel", "st_tchannel", "st_twchannel"],
 }
 
+is_signal = lambda process: process.startswith("hh_")
+is_bkg = lambda process: not is_signal(process)
+is_boosted_ggf = lambda category: "boosted" in category and "sig_vbf" in category
+is_boosted_vbf = lambda category: "boosted" in category and "sig_ggf" in category
+hbb_efficiency_params = {
+    "eff_hbb_signal_ggf": (is_signal, is_boosted_ggf),
+    "eff_hbb_signal_vbf": (is_signal, is_boosted_vbf),
+    "eff_hbb_bkg_ggf": (is_bkg, is_boosted_ggf),
+    "eff_hbb_bkg_vbf": (is_bkg, is_boosted_vbf),
+}
 
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
@@ -174,28 +181,29 @@ processes_per_shape = {
     # NOTE: "!" did not work to exclude processes
     "isr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
     # "fsr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
-    "fsr_tt": ["tt"],
+    "fsr_ttbar": ["tt"],
     "fsr_st": ["st_schannel", "st_twchannel"],
-    "fsr_dy": ["dy", "dy_lf", "dy_hf"],
-    "fsr_w": ["w_lnu"],
-    "fsr_vv": ["vv", "ww", "zz", "wz"],
+    # "fsr_dy": ["dy", "dy_lf", "dy_hf"],
+    # "fsr_w": ["w_lnu"],
+    "fsr_V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
+    "fsr_VV": ["vv", "ww", "zz", "wz"],
     "fsr_ttV": ["ttw", "ttz"],
-    "fsr_h": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
+    "fsr_H": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
     # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     "top_pt": ["tt"],
     "dy_correction": ["dy", "dy_lf", "dy_hf"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
-    "pdf_shape_tt": ["tt"],
+    "pdf_shape_ttbar": ["tt"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
     "pdf_shape_dy": ["dy", "dy_lf", "dy_hf"],
     "pdf_shape_w": ["w_lnu"],
-    "pdf_shape_vv": ["vv", "ww", "zz", "wz"],
+    "pdf_shape_VV": ["vv", "ww", "zz", "wz"],
     "pdf_shape_ttV": [
         # "ttw",  # NOTE: ttW has no murf/pdf weights
         "ttz",
     ],
-    "pdf_shape_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
+    "pdf_shape_H": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     # NOTE: do I need a separate systematic per parameter variation?
     "pdf_shape_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "pdf_shape_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
@@ -203,16 +211,16 @@ processes_per_shape = {
     # "pdf_shape_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "pdf_shape_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "pdf_shape_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
-    "murf_envelope_tt": ["tt"],
+    "murf_envelope_ttbar": ["tt"],
     "murf_envelope_st": ["st_schannel", "st_tchannel", "st_twchannel"],
     "murf_envelope_dy": ["dy", "dy_lf", "dy_hf"],
     "murf_envelope_w": ["w_lnu"],
-    "murf_envelope_vv": ["vv", "ww", "zz", "wz"],
-    "murf_envelope_ttv": [
+    "murf_envelope_VV": ["vv", "ww", "zz", "wz"],
+    "murf_envelope_ttV": [
         # "ttw",  # NOTE: ttW has no murf/pdf weights
         "ttz",
     ],
-    "murf_envelope_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
+    "murf_envelope_H": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     # NOTE: do I need a separate systematic per parameter variation?
     "murf_envelope_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "murf_envelope_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
@@ -240,3 +248,45 @@ for shape in processes_per_shape.keys():
         source_per_shape[shape] = "murf_envelope"
     elif "fsr_" in shape:
         source_per_shape[shape] = "fsr"
+
+
+# naming convention for different campaigns
+campaign_format = {
+    "2022preEE": "2022",
+    "2022postEE": "2022EE",
+    "2023preBPix": "2023",
+    "2023postBPix": "2023BPix",
+}
+
+# naming scheme for different systematics
+custom_uncertainty_format = lambda s: f"CMS_HIG25018_{s}"
+rename_systematics = {
+    "minbias_xs": "CMS_pileup",
+    # "ele_ss": "CMS_res_e_13p6TeV",
+    "isr": "ps_isr",
+    "top_pt": "top_pt_reweighting",
+}
+for campaign, campaign_fmt in campaign_format.items():
+    year = campaign_fmt[:4]
+    rename_systematics.update({
+        f"e_sf_{campaign}": f"CMS_eff_e_id_{campaign_fmt}",
+        f"e_reco_sf_{campaign}": f"CMS_eff_e_reco_{campaign_fmt}",
+        f"mu_id_sf_{campaign}": f"CMS_eff_m_id_{campaign_fmt}",
+        f"mu_iso_sf_{campaign}": f"CMS_eff_m_iso_{campaign_fmt}",
+        # f"trigger_sf_{campaign}": f"CMS_eff_trigger_{campaign_fmt}",
+        f"btag_hf_{campaign}": f"CMS_btag_fullShape_hf_{campaign_fmt}",
+        f"btag_lf_{campaign}": f"CMS_btag_fullShape_lf_{campaign_fmt}",
+        f"btag_hfstats1_{year}_{campaign}": f"CMS_btag_fullShape_hfstats1_{campaign_fmt}",
+        f"btag_hfstats2_{year}_{campaign}": f"CMS_btag_fullShape_hfstats2_{campaign_fmt}",
+        f"btag_lfstats1_{year}_{campaign}": f"CMS_btag_fullShape_lfstats1_{campaign_fmt}",
+        f"btag_lfstats2_{year}_{campaign}": f"CMS_btag_fullShape_lfstats2_{campaign_fmt}",
+        f"btag_cferr1_{campaign}": f"CMS_btag_fullShape_cferr1_{campaign_fmt}",
+        f"btag_cferr2_{campaign}": f"CMS_btag_fullShape_cferr2_{campaign_fmt}",
+        f"jec_Total_{campaign}": f"CMS_scale_j_{campaign_fmt}",
+        f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
+        # analysis-specific
+        f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+    })
+
+for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:
+    rename_systematics[f"fsr_{process}"] = f"ps_fsr_{process}"

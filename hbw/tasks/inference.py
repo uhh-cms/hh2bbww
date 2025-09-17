@@ -955,7 +955,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating kl scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor"
+            f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor "
+            f"--frozen-parameters THU_HH"
         )
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
@@ -965,7 +966,8 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # creating C2V scan
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor"
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
+            f"--frozen-parameters THU_HH"
         )
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
