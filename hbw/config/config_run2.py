@@ -30,6 +30,7 @@ from columnflow.production.cms.dy import DrellYanConfig
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
+
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 from columnflow.production.cms.jet import JetIdConfig
 
@@ -289,28 +290,25 @@ def add_config(
     if cfg.x.run == 2:
         cfg.x.met_phi_correction_set = "{variable}_metphicorr_pfmet_{data_source}"
     else:
+        from columnflow.calibration.cms.met import METPhiConfig
         cfg.x.met_phi_correction_set = "met_xy_corrections"
-        cfg.x.met_phi_correction = {
+        cfg.x.met_phi_correction = METPhiConfig(**{
             "met_name": "PuppiMET",
-            "correction_set": "met_xy_corrections",
+            "met_type": "PuppiMET",
             "keep_uncorrected": True,
-            "variable_config": {
-                "pt": (
-                    "pt",
-                    "pt_stat_yup",
-                    "pt_stat_ydn",
-                    "pt_stat_xup",
-                    "pt_stat_xdn",
-                ),
-                "phi": (
-                    "phi",
-                    "phi_stat_yup",
-                    "phi_stat_ydn",
-                    "phi_stat_xup",
-                    "phi_stat_xdn",
-                ),
+            # "correction_set": "met_xy_corrections",
+            # mappings of method variation to column (pt/phi) postfixes
+            "pt_phi_variations": {
+                "stat_xdn": "metphi_statx_down",
+                "stat_xup": "metphi_statx_up",
+                "stat_ydn": "metphi_staty_down",
+                "stat_yup": "metphi_staty_up",
             },
-        }
+            "variations": {
+                "pu_dn": "minbias_xs_down",
+                "pu_up": "minbias_xs_up",
+            },
+        })
 
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
@@ -613,6 +611,13 @@ def add_config(
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
     add_shift_aliases(cfg, "e_reco_sf", {"electron_reco_weight": "electron_reco_weight_{direction}"})
     # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
+
+    cfg.add_shift(name="e_scale_up", id=46, type="shape")
+    cfg.add_shift(name="e_scale_down", id=47, type="shape")
+    cfg.add_shift(name="e_res_up", id=48, type="shape")
+    cfg.add_shift(name="e_res_down", id=49, type="shape")
+    add_shift_aliases(cfg, "e_scale", {"Electron.pt": "Electron.pt_scale_{direction}"})
+    add_shift_aliases(cfg, "e_res", {"Electron.pt": "Electron.pt_res_{direction}"})
 
     # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
     # cfg.add_shift(name="mu_sf_down", id=51, type="shape")
