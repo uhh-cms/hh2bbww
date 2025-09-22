@@ -276,6 +276,13 @@ def add_nlep_variables(config: od.Config) -> None:
 
 @lepton_definition.init
 def lepton_definition_init(self: Selector) -> None:
+    # Add shift dependencies
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag("eleSS")
+    }
+
     # store used muon and electron id and isolation in the config
     self.config_inst.x.muon_id = self.muon_id
     self.config_inst.x.muon_iso = self.muon_iso

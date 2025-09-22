@@ -91,7 +91,12 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
         variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
 
-    if len(task.variables) == 1 and task.variables[0].startswith("weight_unweighted"):
+    # special case: if only "weight_unweighted" is requested, we do not want to apply any weight at all
+    if (
+        hasattr(task, "variables") and
+        len(task.variables) == 1 and
+        task.variables[0].startswith("weight_unweighted")
+    ):
         events = set_ak_column(events, "weight", weight, value_type=np.float32)
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
@@ -310,12 +315,24 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
         "stitched_normalization_weight": [],
     },
 })
+with_dy_corr_no_trig_sf = default_hist_producer.derive("with_dy_corr_no_trig_sf", cls_dict={
+    "nondy_hist_producer": None,
+    "version": 0,
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "stitched_normalization_weight": [],
+    },
+})
 
 #
 # HistProducers with masks via categorization
 #
 
-from hbw.categorization.categories import mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70, mask_fn_met_geq40
+from hbw.categorization.categories import (
+    mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70,
+    mask_fn_met_geq40,
+)
 
 met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,

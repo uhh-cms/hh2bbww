@@ -146,6 +146,12 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     events = combine_collections(events, ["Jet", "ForwardJet"], "InclJet", sort_by="pt")
 
     if has_ak_column(events, "FatJet.particleNetWithMass_HbbvsQCD"):
+        if not has_ak_column(events, "FatJet.pt"):
+            raise ValueError("FatJet.pt not found, cannot apply baseline FatJet pT cut.")
+
+        # apply FatJet pT cut
+        events = set_ak_column(events, "FatJet", events["FatJet"][events["FatJet"].pt > 200])
+
         # NOTE: this sometimes produces errors due to NaN values in the column
         events = combine_collections(events, ["FatJet"], "FatBjet", sort_by="particleNetWithMass_HbbvsQCD")
 

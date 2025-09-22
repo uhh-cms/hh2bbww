@@ -594,6 +594,11 @@ multiclassv2 = multiclassv1.derive("multiclassv2", cls_dict={"input_features": i
 ggfv2 = ggfv1.derive("ggfv2", cls_dict={"input_features": input_features["v2"]})
 vbfv2 = vbfv1.derive("vbfv2", cls_dict={"input_features": input_features["v2"]})
 
+# new version after updating weights + tensorflow 2.16 (no changes to input features)
+multiclassv3 = multiclassv1.derive("multiclassv3", cls_dict={"input_features": input_features["v2"]})
+ggfv3 = ggfv1.derive("ggfv3", cls_dict={"input_features": input_features["v2"]})
+vbfv3 = vbfv1.derive("vbfv3", cls_dict={"input_features": input_features["v2"]})
+
 
 # sanity check
 ggfv2_sanity = ggfv2.derive("ggfv2_sanity", cls_dict={

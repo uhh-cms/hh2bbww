@@ -79,7 +79,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
         f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
         f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
-        f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
+        f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
     ] if config.x.run == 3 else [
         f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
         f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
@@ -96,8 +97,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "data_jethtmet": config.x.if_era(cfg_tag="is_for_sf", values=data_jethtmet_datasets),
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
-            "st_schannel_tbar_lep_4f_amcatnlo",
             "st_schannel_t_lep_4f_amcatnlo",
+            "st_schannel_tbar_lep_4f_amcatnlo",
             "st_tchannel_t_4f_powheg",
             "st_tchannel_tbar_4f_powheg",
             *config.x.if_era(run=2, values=[
@@ -134,8 +135,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             ]),
             *config.x.if_era(run=3, values=[
                 # NLO samples
-                "dy_m50toinf_amcatnlo",
                 "dy_m10to50_amcatnlo",
+                "dy_m50toinf_amcatnlo",
                 # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
                 "dy_m50toinf_0j_amcatnlo",
                 "dy_m50toinf_1j_amcatnlo",
@@ -319,9 +320,6 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
 
     })
-    # HOTFIX: broken dataset in custom NanoAODv14 production
-    if config.x.cpn_tag == "2023preBPix":
-        dataset_names["hh_vbf"].remove("hh_vbf_hbb_htt_kvm1p83_k2v3p57_klm3p39_madgraph")
     if as_list:
         return list(itertools.chain(*dataset_names.values()))
 
@@ -455,6 +453,9 @@ def configure_hbw_datasets(
             for info in dataset.info.values():
                 if info.n_files > limit_dataset_files:
                     info.n_files = limit_dataset_files
+
+        if dataset.name.startswith("hh_vbf_hbb_htt"):
+            dataset.x.version = 1
 
         # add aux info to datasets
         if dataset.name.startswith(("st", "tt")):

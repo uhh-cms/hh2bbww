@@ -20,10 +20,14 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
+# version 3: adding FatJet.pt > 200 for boosted category (Hbb score > 0.95)
+# version 4: adding FatJet.pt > 200 and changing Hbb Score to > 0.90 for boosted category
+# version 5: adding FatJet.pt > 200 and changing Hbb Score to > 0.92 for boosted category
+
 @producer(
     # uses in init, produces should not be empty
     produces={"category_ids"},
-    version=2,
+    version=5,
 )
 def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -48,7 +52,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     # uses in init, produces should not be empty
     produces={"category_ids", "mlscore.max_score"},
     ml_model_name=None,
-    version=2,
+    version=5,
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

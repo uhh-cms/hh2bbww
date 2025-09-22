@@ -87,12 +87,6 @@ catid_gen_0lep = catid_n_gen_particles.derive("catid_gen_0lep", cls_dict={"gp_di
 catid_gen_1e = catid_n_gen_particles.derive("catid_gen_1e", cls_dict={"gp_dict": {11: 1, 13: 0, 15: 0}})
 catid_gen_1mu = catid_n_gen_particles.derive("catid_gen_1mu", cls_dict={"gp_dict": {11: 0, 13: 1, 15: 0}})
 catid_gen_1tau = catid_n_gen_particles.derive("catid_gen_1tau", cls_dict={"gp_dict": {11: 0, 13: 0, 15: 1}})
-# catid_gen_2e = catid_n_gen_particles.derive("catid_gen_2e", cls_dict={"gp_dict": {11: 2, 13: 0, 15: 0}})
-# catid_gen_2mu = catid_n_gen_particles.derive("catid_gen_2mu", cls_dict={"gp_dict": {11: 0, 13: 2, 15: 0}})
-# catid_gen_2tau = catid_n_gen_particles.derive("catid_gen_2tau", cls_dict={"gp_dict": {11: 0, 13: 0, 15: 2}})
-# catid_gen_emu = catid_n_gen_particles.derive("catid_gen_emu", cls_dict={"gp_dict": {11: 1, 13: 1, 15: 0}})
-# catid_gen_etau = catid_n_gen_particles.derive("catid_gen_etau", cls_dict={"gp_dict": {11: 1, 13: 0, 15: 1}})
-# catid_gen_mutau = catid_n_gen_particles.derive("catid_gen_mutau", cls_dict={"gp_dict": {11: 0, 13: 1, 15: 1}})
 catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
     "catid_geq_2_gen_leptons", cls_dict={"gp_dict": {(11, 13, 15): 2}, "_operator": "ge"},
 )
@@ -238,25 +232,27 @@ def catid_fatjet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.particleNetWithMass_HbbvsQCD"})
+@categorizer(uses={"Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD}"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
     fulfilling medium WP of PNetHbb
     """
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score, axis=-1) >= 1)
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.particleNetWithMass_HbbvsQCD"})
+@categorizer(uses={"Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD}"})
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the resolved category: presence of no AK8 jet candidate
     for the H->bb decay
     """
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
-    mask = (ak.sum(events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score, axis=-1) == 0)
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) == 0)
     return events, mask
 
 
@@ -403,7 +399,12 @@ def mask_fn_dyvr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 
-@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met_req=40)
+@categorizer(
+    uses={
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+    },
+    met_req=40,
+)
 def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     if self.dataset_inst.has_tag("is_dy"):
         mask = events.RecoilCorrMET.pt >= self.met_req

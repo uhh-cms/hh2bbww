@@ -4,6 +4,7 @@
 Collection of helper functions for creating inference models
 """
 
+from functools import cached_property
 import re
 
 import law
@@ -48,12 +49,13 @@ class HBWInferenceModelBase(InferenceModel):
     # customization of channels
     mc_stats: bool = True
     skip_data: bool = True
+    unblind: bool = False
 
     # dummy variations when some datasets are missing
     dummy_ggf_variation: bool = False
     dummy_vbf_variation: bool = False
 
-    version: int = 4
+    version: int = 5
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -109,6 +111,16 @@ class HBWInferenceModelBase(InferenceModel):
         # NOTE: the name of the inference category cannot start with a Number
         # -> use config category with single letter added at the start?
         return f"{config_cat_inst.name}"
+
+    @cached_property
+    def cat_insts(self: InferenceModel):
+        # NOTE: here we assume that all config_insts have the same categories
+        config_inst = self.config_insts[0]
+        return [config_inst.get_category(config_category) for config_category in self.config_categories]
+
+    @cached_property
+    def cat_names(self: InferenceModel):
+        return [self.cat_name(cat_inst) for cat_inst in self.cat_insts]
 
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """
@@ -173,11 +185,11 @@ class HBWInferenceModelBase(InferenceModel):
 
         available_procs = set(self.processes)
 
-        self.processes_per_QCDScale = {
+        self.processes_per_QCDscale = {
             unc_formatted: available_procs
-            for unc, procs in const.processes_per_QCDScale.items()
+            for unc, procs in const.processes_per_QCDscale.items()
             if (
-                (unc_formatted := f"QCDScale_{unc}")
+                (unc_formatted := f"QCDscale_{unc}")
                 in self.systematics and
                 any(available_procs := [proc for proc in procs if proc in self.processes])
             )
@@ -191,7 +203,6 @@ class HBWInferenceModelBase(InferenceModel):
                 any(available_procs := [proc for proc in procs if proc in self.processes])
             )
         }
-
         self.processes_per_rate_unconstrained = {
             unc_formatted: available_procs
             for year in years
@@ -216,11 +227,13 @@ class HBWInferenceModelBase(InferenceModel):
                 any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
             )
         }
+
         # check that all systematics are considered and warn if not
         all_systs = set()
         for processes_per_syst in (
-            self.processes_per_QCDScale,
+            self.processes_per_QCDscale,
             self.processes_per_pdf_rate,
+            # self.processes_per_hbb_rate,
             self.processes_per_rate_unconstrained,
             self.processes_per_shape,
         ):
@@ -234,6 +247,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     processes_per_syst.pop(syst)
         if not_considered := set(systematics_formatted) - all_systs:
+            # NOTE: lumi is labelled as missing, but is actually considered
             logger.warning(
                 f"The following systematics were not considered in the inference model: "
                 f"{', '.join(not_considered)}. Please check your configuration.",
@@ -438,6 +452,37 @@ class HBWInferenceModelBase(InferenceModel):
         # TODO: check that all requested systematics are in final MLModel?
 
     def add_rate_parameters(self: InferenceModel):
+        self.add_hbb_efficiency_parameters()
+        self.add_lumi_rate_parameters()
+        self.add_xsec_rate_parameters()
+
+    def add_hbb_efficiency_parameters(self: InferenceModel):
+        for param, (proc_criterium, category_criterium) in const.hbb_efficiency_params.items():
+            if param not in self.systematics:
+                continue
+
+            categories = [cat_name for cat_name in self.cat_names if category_criterium(cat_name)]
+            processes = [self.inf_proc(proc) for proc in self.processes if proc_criterium(proc)]
+            if not categories or not processes:
+                logger.warning(
+                    f"No categories or processes found for Hbb efficiency parameter {param}. "
+                    "Skipping addition of this parameter.",
+                )
+                continue
+            logger.debug(
+                f"Adding Hbb efficiency parameter {param} for categories {categories} and processes {processes}.",
+            )
+            param_kwargs = {
+                "type": ParameterType.rate_gauss,
+                "category": categories,
+                "process": processes,
+                "effect": (0.9, 1.1),
+                "transformations": [ParameterTransformation.symmetrize],
+            }
+            param_name = const.custom_uncertainty_format(param)
+            self.add_parameter(param_name, **param_kwargs)
+
+    def add_lumi_rate_parameters(self: InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
@@ -457,11 +502,11 @@ class HBWInferenceModelBase(InferenceModel):
                 transformations=[ParameterTransformation.symmetrize],
             )
 
+    def add_xsec_rate_parameters(self: InferenceModel):
         # assuming campaign independent rate uncertainties
         # -> use the first config instance to get the campaign
         # NOTE: this might get tricky when including Run-2 (different ecm)
         config_inst = self.config_insts[0]
-        ecm = config_inst.campaign.ecm
 
         proc_handled_by_unconstrained_rate = set()
         for syst_name, procs in self.processes_per_rate_unconstrained.items():
@@ -494,8 +539,8 @@ class HBWInferenceModelBase(InferenceModel):
         # TODO: some scale/pdf uncertainties should be rounded to 3 digits, others to 4 digits
         # NOTE: it might be easier to just take the recommended uncertainty values from HH conventions at
         #       https://gitlab.cern.ch/hh/naming-conventions instead of taking the values from CMSDB
-        for syst_name, procs in self.processes_per_QCDScale.items():
-            # syst_name = f"QCDScale_{k}"
+        for syst_name, procs in self.processes_per_QCDscale.items():
+            # syst_name = f"QCDscale_{k}"
             # if syst_name not in self.systematics:
             #     continue
 
@@ -503,12 +548,25 @@ class HBWInferenceModelBase(InferenceModel):
                 if proc not in self.processes:
                     continue
                 elif proc in proc_handled_by_unconstrained_rate:
-                    logger.warning(
+                    logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
                 process_inst = config_inst.get_process(proc)
-                if "scale" not in process_inst.xsecs[ecm]:
+
+                scale_key = None
+                ecm = config_inst.campaign.ecm
+                if "scale" in process_inst.xsecs[ecm]:
+                    scale_key = "scale"
+                elif "scale" in process_inst.xsecs[13]:
+                    scale_key = "scale"
+                    ecm = 13
+                    logger.info(f"Using 13 TeV scale uncertainty for process {proc}, systematic {syst_name}.")
+                elif "th" in process_inst.xsecs[ecm]:
+                    logger.info(f"Using 'th' key for process {proc}, systematic {syst_name}.")
+                    scale_key = "th"
+                else:
+                    logger.warning(f"No scale uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
                 self.add_parameter(
                     syst_name,
@@ -516,7 +574,7 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),
-                        process_inst.xsecs[ecm].get(names=("scale"), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(names=(scale_key,), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
@@ -531,12 +589,20 @@ class HBWInferenceModelBase(InferenceModel):
                 if proc not in self.processes:
                     continue
                 elif proc in proc_handled_by_unconstrained_rate:
-                    logger.warning(
+                    logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
                         f"{syst_name} for process {proc}.")
                     continue
                 process_inst = config_inst.get_process(proc)
-                if "pdf" not in process_inst.xsecs[ecm]:
+                ecm = config_inst.campaign.ecm
+                if "pdf" in process_inst.xsecs[ecm]:
+                    pdf_key = "pdf"
+                elif "pdf" in process_inst.xsecs[13]:
+                    pdf_key = "pdf"
+                    ecm = 13
+                    logger.info(f"Using 13 TeV pdf uncertainty for process {proc}, systematic {syst_name}.")
+                else:
+                    logger.warning(f"No pdf uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
 
                 self.add_parameter(
@@ -545,7 +611,7 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 3),
-                        process_inst.xsecs[ecm].get(names=("pdf"), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(names=(pdf_key), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
@@ -555,6 +621,10 @@ class HBWInferenceModelBase(InferenceModel):
         Function that adds all rate parameters to the inference model
         """
         for shape_uncertainty, shape_processes in self.processes_per_shape.items():
+            combine_uncertainty_name = const.rename_systematics.get(
+                shape_uncertainty,
+                const.custom_uncertainty_format(shape_uncertainty),
+            )
 
             # If "all" is included, takes all processes except for the ones specified (starting with !)
             if "all" in shape_processes:
@@ -588,9 +658,8 @@ class HBWInferenceModelBase(InferenceModel):
                 for config_inst in config_insts
                 if config_inst.has_shift(f"{shift_source}_up")
             }
-
             self.add_parameter(
-                shape_uncertainty,
+                combine_uncertainty_name,
                 **param_kwargs,
             )
 

@@ -365,10 +365,11 @@ def add_categories_ml(config, ml_model_inst):
     # create combination of categories
     #
 
+    sr = config.get_category("sr")
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
         # NOTE: when building DNN categories, we do not need the control regions
-        "main": [config.get_category("sr")],
+        "main": [sr],
         # "main": [config.get_category(cat) for cat in config.x.main_categories],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
@@ -404,6 +405,21 @@ def add_categories_ml(config, ml_model_inst):
         id=2349237509,
         label="dycr (2mu)",
     )
+
+    # add boosted ml bkg category by hand, combining all boosted ml signal categories
+    sr__boosted__ml_bkg = config.add_category(  # noqa: F841
+        name="sr__boosted__ml_bkg",
+        selection="catid_never",  # dummy Categorizer, never selected
+        id=201000,
+        label="\n".join([sr.label, "boosted", "ml_bkg"]),
+        aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
+    )
+    for proc, node_config in ml_model_inst.train_nodes.items():
+        # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
+        if "sig" in proc or "hh" in proc:
+            continue
+        bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
+        sr__boosted__ml_bkg.add_category(bkg_cat)
 
     # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
     # # to be discussed and included in future versions.

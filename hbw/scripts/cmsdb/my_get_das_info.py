@@ -74,8 +74,11 @@ def convert_data(data: dict, placeholder="PLACEHOLDER") -> str:
     except Exception:
         name = f"data_{placeholder}"
 
+    name = name.strip("0")
+    name = name.strip("1")
+
     return f"""cpn.add_dataset(
-    name="{name}_{era}",
+    name="{name}_{era.lower()}",
     id={data['dataset_id']},
     processes=[procs.{name}],
     keys=[
@@ -256,6 +259,7 @@ name_identifier = {
     "/EGamma": lambda part: "data_egamma_{era}",
     "/MuonEG": lambda part: "data_muoneg_{era}",
     "/Muon": lambda part: "data_mu_{era}",
+    "/JetMET": lambda part: "data_jethtmet_{era}",
     # TTbar
     "/TTtoLNu2Q": lambda part: "tt_sl",
     "/TTto2L2Nu": lambda part: "tt_dl",

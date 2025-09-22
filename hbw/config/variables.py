@@ -760,18 +760,18 @@ def add_variables(config: od.Config) -> None:
         aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
         discrete_x=True,
     )
-    hbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_hbb_vs_qcd.medium
-    config.add_variable(
-        name="n_fatjet_hbb_medium",
-        expression=lambda events: (
-            ak.sum(events.FatBjet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score_medium, axis=1)
-        ),
-        null_value=EMPTY_FLOAT,
-        binning=(5, -0.5, 4.5),
-        x_title="Number of FatJets (ParticleNet HbbVsQCD medium WP)",
-        aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
-        discrete_x=True,
-    )
+    # hbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_hbb_vs_qcd.medium
+    # config.add_variable(
+    #     name="n_fatjet_hbb_medium",
+    #     expression=lambda events: (
+    #         ak.sum(events.FatBjet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score_medium, axis=1)
+    #     ),
+    #     null_value=EMPTY_FLOAT,
+    #     binning=(5, -0.5, 4.5),
+    #     x_title="Number of FatJets (ParticleNet HbbVsQCD medium WP)",
+    #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
+    #     discrete_x=True,
+    # )
 
     # FatJets (2 pt-leading fatjets)
     for obj in ("FatJet", "FatBjet"):
@@ -836,19 +836,27 @@ def add_variables(config: od.Config) -> None:
                 aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set()},  # noqa: E501
             )
             config.add_variable(
+                name=f"{obj}{i}_pnet_hbb".lower(),
+                expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(100, 0, 1),
+                x_title=rf"{obj} %i PNet Hbb score" % i,
+                aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set()},  # noqa: E501
+            )
+            config.add_variable(
                 name=f"{obj}{i}_particleNet_XbbVsQCD_pass_fail".lower(),
                 expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=[0, 0.95, 1.00],
-                x_title=rf"{obj} %i particleNet_XbbVsQCD" % i,
+                x_title=rf"{obj} %i PNet Xbb score" % i,
                 aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set()},  # noqa: E501
             )
             config.add_variable(
-                name=f"{obj}{i}_particleNetWithMass_HbbvsQCD_pass_fail".lower(),
+                name=f"{obj}{i}_pnet_hbb_pass_fail".lower(),
                 expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
                 null_value=EMPTY_FLOAT,
-                binning=[0, 0.95, 1.00],
-                x_title=rf"{obj} %i particleNetWithMass_HbbvsQCD" % i,
+                binning=[0, 0.92, 1.00],
+                x_title=rf"{obj} %i PNet Hbb score" % i,
                 aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set()},  # noqa: E501
             )
             # config.add_variable(
@@ -932,13 +940,14 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$ (endcap)",
         )
+        pt_bins = (40, 0., 240.) if i == 0 else (40, 0., 160.)
         config.add_variable(
             name=f"lepton{i}_pt",
             expression=lambda events, i=i: events.Lepton[:, i].pt,
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(40, 0., 400.),
+            binning=pt_bins,
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $p_{{T}}$",
@@ -949,7 +958,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(40, -3.2, 3.2),
+            binning=(50, -2.5, 2.5),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $\\eta$",
@@ -960,7 +969,7 @@ def add_variables(config: od.Config) -> None:
             aux=dict(
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
-            binning=(50, -2.5, 2.5),
+            binning=(50, -3.2, 3.2),
             unit="GeV",
             null_value=EMPTY_FLOAT,
             x_title=f"Lepton {i} $\\phi$",
@@ -1057,7 +1066,7 @@ def add_variables(config: od.Config) -> None:
         )
 
     # MET
-
+    # TODO: MET variable with MetCorr applied
     config.add_variable(
         name="met_pt",
         expression=f"{met_name}.pt",

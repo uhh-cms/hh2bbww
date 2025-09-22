@@ -22,11 +22,15 @@ hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
 
+
 cms_label_kwargs = {
     "data": False,
-    "llabel": "Private work (CMS simulation)",
-    "exp": "",
+    # "llabel": "Private work (CMS simulation)",
+    "llabel": "Simulation work in progress",
+    # "exp": "",
 }
+if "CMS" in cms_label_kwargs["llabel"]:
+    cms_label_kwargs["exp"] = ""
 
 
 def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
@@ -175,8 +179,9 @@ def plot_confusion(
     """
     Simple function to create and store a confusion matrix plot
     """
-    # use CMS plotting style
+    # use CMS plotting style but with non-quadratic figsize to avoid stretching the colorbar
     plt.style.use(mplhep.style.CMS)
+    plt.rcParams["figure.figsize"] = (11.6, 10)
 
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -210,10 +215,17 @@ def plot_confusion(
 
     # Create a plot of the confusion matrix
     fig, ax = plt.subplots()
-    ConfusionMatrixDisplay(confusion, display_labels=labels).plot(ax=ax)
+    disp = ConfusionMatrixDisplay(confusion, display_labels=labels)
+    disp.plot(ax=ax)
+    ax.set_yticklabels(
+        ax.get_yticklabels(),
+        rotation=90,
+        va="center",
+    )
 
-    ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=20, pad=+40)
-    mplhep.cms.label(ax=ax, fontsize=20, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+    # Add title and CMS label
+    ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=24, pad=+24 * 2)
+    mplhep.cms.label(ax=ax, fontsize=24, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     plt.tight_layout()
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
@@ -412,7 +424,7 @@ def plot_output_nodes(
         h = (
             hist.Hist.new
             .StrCat(list(data.keys()), name="type")
-            .IntCat([], name="process", growth=True)
+            .IntCat([], name="process", growth=True, label="")
             .Reg(20, 0, 1, name=var_title)
             .Weight()
         )
@@ -429,9 +441,9 @@ def plot_output_nodes(
                 }
                 h.fill(**fill_kwargs)
 
+        label = [proc_inst.label for proc_inst in process_insts]
         plot_kwargs = {
             "ax": ax,
-            "label": [proc_inst.label for proc_inst in process_insts],
             "color": [proc_inst.color for proc_inst in process_insts],
         }
 
@@ -459,10 +471,7 @@ def plot_output_nodes(
                 scale_factors[key] = base_factor / scale_factors[key]
 
         # plot "first" dataset
-        (h[{"type": keys[0]}] / scale_factors[keys[0]]).plot1d(**plot_kwargs, linestyle=labels[keys[0]][1])
-
-        # legend
-        ax.legend(loc="best", ncols=2)
+        (h[{"type": keys[0]}] / scale_factors[keys[0]]).plot1d(**plot_kwargs, label=label, linestyle=labels[keys[0]][1])
 
         # axis styling
         ax_kwargs = {
@@ -482,9 +491,14 @@ def plot_output_nodes(
 
         # plot validation scores, scaled to train dataset
         for key in keys[1:]:
-            (h[{"type": key}] / scale_factors[key]).plot1d(**plot_kwargs, linestyle=labels[key][1])
+            (h[{"type": key}] / scale_factors[key]).plot1d(
+                **plot_kwargs,
+                linestyle=labels[key][1],
+                label="_nolegend_",
+            )
 
-        # ax.set_xlabel("")
+        # legend
+        ax.legend(loc="best", ncols=2, title="")
 
         mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -521,7 +535,7 @@ def plot_input_features(
         h = (
             hist.Hist.new
             .StrCat(["train", "validation"], name="type")
-            .IntCat([], name="process", growth=True)
+            .IntCat([], name="process", growth=True, label="")
             .Var(variable_inst.bin_edges, name=feature_name, label=variable_inst.get_full_x_title())
             .Weight()
         )
@@ -537,9 +551,9 @@ def plot_input_features(
                 }
                 h.fill(**fill_kwargs)
 
+        label = [proc_inst.label for proc_inst in process_insts]
         plot_kwargs = {
             "ax": ax,
-            "label": [proc_inst.label for proc_inst in process_insts],
             "color": [proc_inst.color for proc_inst in process_insts],
         }
 
@@ -560,10 +574,7 @@ def plot_input_features(
             scale_val = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
 
         # plot training scores
-        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs)
-
-        # legend
-        ax.legend(loc="best")
+        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs, label=label)
 
         # axis styling
         ax_kwargs = {
@@ -581,7 +592,14 @@ def plot_input_features(
         ax.set(**ax_kwargs)
 
         # plot validation scores, scaled to train dataset
-        (h[{"type": "validation"}] / scale_val).plot1d(**plot_kwargs, linestyle="dotted")
+        (h[{"type": "validation"}] / scale_val).plot1d(
+            **plot_kwargs,
+            linestyle="dotted",
+            label="_nolegend_",
+        )
+
+        # legend
+        ax.legend(loc="best", title="")
 
         mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         try:

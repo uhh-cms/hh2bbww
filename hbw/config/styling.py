@@ -216,7 +216,7 @@ def stylize_processes(config: od.Config) -> None:
 default_var_binning = {
     # General object fields
     "pt": (40, 0, 400),
-    "eta": (40, -5., 5.),
+    "eta": (40, -2.5, 2.5),
     "eta_full": (40, -5.0, 5.0),
     "phi": (32, -3.2, 3.2),
     "mass": (40, 0, 400),
@@ -277,6 +277,9 @@ default_var_title_format = {
     "phi": r"$\phi$",
     "dxy": r"$d_{xy}$",
     "dz": r"d_{z}",
+    "msoftdrop": r"$m_{SD}$",
+    "particleNet_XbbVsQCD": "PNet XbbvsQCD",
+    "particleNetWithMass_HbbvsQCD": "PNet HbbvsQCD",
 }
 
 name = "cf_{obj}{i}_{var}"

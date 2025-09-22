@@ -30,6 +30,7 @@ from columnflow.production.cms.dy import DrellYanConfig
 from columnflow.production.cms.electron import ElectronSFConfig
 from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
+
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 from columnflow.production.cms.jet import JetIdConfig
 
@@ -289,28 +290,25 @@ def add_config(
     if cfg.x.run == 2:
         cfg.x.met_phi_correction_set = "{variable}_metphicorr_pfmet_{data_source}"
     else:
+        from columnflow.calibration.cms.met import METPhiConfig
         cfg.x.met_phi_correction_set = "met_xy_corrections"
-        cfg.x.met_phi_correction = {
+        cfg.x.met_phi_correction = METPhiConfig(**{
             "met_name": "PuppiMET",
-            "correction_set": "met_xy_corrections",
+            "met_type": "PuppiMET",
             "keep_uncorrected": True,
-            "variable_config": {
-                "pt": (
-                    "pt",
-                    "pt_stat_yup",
-                    "pt_stat_ydn",
-                    "pt_stat_xup",
-                    "pt_stat_xdn",
-                ),
-                "phi": (
-                    "phi",
-                    "phi_stat_yup",
-                    "phi_stat_ydn",
-                    "phi_stat_xup",
-                    "phi_stat_xdn",
-                ),
+            # "correction_set": "met_xy_corrections",
+            # mappings of method variation to column (pt/phi) postfixes
+            "pt_phi_variations": {
+                "stat_xdn": "metphi_statx_down",
+                "stat_xup": "metphi_statx_up",
+                "stat_ydn": "metphi_staty_down",
+                "stat_yup": "metphi_staty_up",
             },
-        }
+            "variations": {
+                "pu_dn": "minbias_xs_down",
+                "pu_up": "minbias_xs_up",
+            },
+        })
 
     # JEC uncertainty sources propagated to btag scale factors
     # (names derived from contents in BTV correctionlib file)
@@ -385,12 +383,12 @@ def add_config(
             "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
             "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
         },
-        "particlenet_hbb_vs_qcd": {
-            # Values copied from Xbb tagger, might need to be adjusted/studied later
-            "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        },
+        # "particlenet_hbb_vs_qcd": {
+        #     # Values copied from Xbb tagger, might need to be adjusted/studied later
+        #     "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        #     "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        #     "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
+        # },
     })
 
     # b-tag configuration. Potentially overwritten by the jet Selector.
@@ -418,7 +416,8 @@ def add_config(
     )
     if cfg.x.btag_wp_score == 0.0:
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
-    cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
+    # cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
+    cfg.x.hbb_btag_wp_score = 0.92
     if cfg.x.hbb_btag_wp_score == 0.0:
         raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
     cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
@@ -612,6 +611,13 @@ def add_config(
     add_shift_aliases(cfg, "e_sf", {"electron_weight": "electron_weight_{direction}"})
     add_shift_aliases(cfg, "e_reco_sf", {"electron_reco_weight": "electron_reco_weight_{direction}"})
     # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
+
+    cfg.add_shift(name="e_scale_up", id=46, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_scale_down", id=47, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_res_up", id=48, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_res_down", id=49, type="shape", tags={"eleSS"})
+    add_shift_aliases(cfg, "e_scale", {"Electron.pt": "Electron.pt_scale_{direction}"})
+    add_shift_aliases(cfg, "e_res", {"Electron.pt": "Electron.pt_res_{direction}"})
 
     # cfg.add_shift(name="mu_sf_up", id=50, type="shape")
     # cfg.add_shift(name="mu_sf_down", id=51, type="shape")
@@ -813,11 +819,15 @@ def add_config(
     add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
 
     # trigger_sf from Balduin
-    trigger_sf_path = f"{json_mirror}/data/trig_sf_v1"
+    trigger_sf_path = f"{json_mirror}/data/trig_sf_v3"
+    # trigger_sf_path = "/afs/desy.de/user/l/letzerba/public/trigger"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
+    # add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    # add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_mli_lep_pt-mli_lep2_pt-trig_idsv1.json", "v3"))
+    # add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_mli_lep_pt-mli_lep2_pt-trig_idsv2.json", "v3"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV3.json.gz", "v4"))  # noqa: E501
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers

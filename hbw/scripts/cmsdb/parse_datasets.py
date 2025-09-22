@@ -52,16 +52,17 @@ output_dir = f"datasets/{campaign}"
 # mapping from MC campaign to data campaign... not perfect, but whatever
 data_campaign = (
     "Run2022*-22Sep2023_*" if "Run3Summer22" in campaign else
-    "Run2023*-22Sep2023_v4-v1*" if "Run3Summer23" in campaign else
+    "Run2023*-22Sep2023_v*-v1*" if "Run3Summer23" in campaign else
     "Run2024*"
 )
 
 # Define the mapping of output file names to dataset identifiersbuil
 dataset_mapping = {
     "data": [
-        f"/Muon*/{data_campaign}/NANOAOD",
-        f"/EGamma*/{data_campaign}/NANOAOD",
-        f"/MuonEG/{data_campaign}/NANOAOD",
+        f"/JetMET*/{data_campaign}/NANOAOD",
+        # f"/Muon*/{data_campaign}/NANOAOD",
+        # f"/EGamma*/{data_campaign}/NANOAOD",
+        # f"/MuonEG/{data_campaign}/NANOAOD",
     ],
     "hbw_minis": [
         # f"/GluGlutoHHto2B2V*/{campaign}*/MINIAODSIM",

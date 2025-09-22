@@ -26,10 +26,11 @@
 # Default values
 default_configs="c22postv14"
 all_configs="c22prev14,c22postv14,c23prev14,c23postv14"
+configs_sep="c22prev14 c22postv14 c23prev14 c23postv14"
 default_shifts="nominal"
-dnn_multiclass="multiclassv2"
-dnn_ggf="ggfv2"
-dnn_vbf="vbfv2"
+dnn_multiclass="multiclassv3"
+dnn_ggf="ggfv3"
+dnn_vbf="vbfv3"
 all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
 inference_model="dl"
 ml_inputs="ml_inputs"
@@ -38,24 +39,27 @@ dry_run="${dry_run:-false}"  # override with: dry_run=true ./workflow.sh ...
 global_checksum=""
 # === Helper to run or echo ===
 run_cmd() {
-    if [[ "$dry_run" == "true" ]]; then
-        echo "[DRY-RUN] $*"
-    else
+    if [[ "$dry_run" == "false" ]]; then
         echo "[RUNNING] $*"
-        eval "$@"
+        # NOTE: eval is needed to properly handle the quoting of arguments, but can mess up other things
+        "$@"
+    else
+        echo "[DRY-RUN] $*"
     fi
 }
 
 run_and_fetch_cmd() {
     local folder="$1"
     mkdir -p $CF_DATA/fetched_plots/$folder && cd $CF_DATA/fetched_plots/$folder
-    if [[ "$dry_run" == "true" ]]; then
+    if [[ "$dry_run" == "false" ]]; then
+        echo "[RUNNING] ${*:2}"
+        "${@:2}"
+        echo "[FETCHING] ${*:2} --fetch-output 0,a"
+        # NOTE: it seems like the fetching only works with claw ???
+        "${@:2} --fetch-output 0,a"
+    else
         echo "[DRY-RUN] ${*:2}"
         echo "[DRY-RUN] ${*:2} --fetch-output 0,a"
-    else
-        echo "[RUNNING] ${*:2}"
-        eval "${@:2}"
-        eval "${@:2} --fetch-output 0,a"
     fi
 }
 
@@ -73,6 +77,16 @@ checksum() {
 }
 
 # === Task functions ===
+recreate_campaign_summary() {
+    local configs="${1:-$all_configs}"
+
+    for config in ${configs//,/ }; do
+        echo "→ BuildCampaignSummary: config=$config"
+        run_cmd law run hbw.BuildCampaignSummary \
+            --config "$config" \
+            --remove-output 0,a,y
+    done
+}
 
 run_merge_reduced_events() {
     local configs="${1:-$default_configs}"
@@ -81,7 +95,7 @@ run_merge_reduced_events() {
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     run_cmd law run cf.MergeReducedEventsWrapper \
-        --datasets \"*\" \
+        --datasets "*" \
         --configs "$configs" \
         --shifts "$shifts" \
         --cf.MergeReducedEvents-{retries=1,workflow=htcondor} \
@@ -98,7 +112,7 @@ run_merge_selection_stats() {
     for config in ${configs//,/ }; do
         for shift in ${shifts//,/ }; do
             run_cmd claw run cf.MergeSelectionStatsWrapper \
-                --datasets \"*\" \
+                --datasets "*" \
                 --configs "$config" \
                 --shifts "$shift" \
                 --cf.SelectEvents-{retries=1,workflow=htcondor,pilot} \
@@ -144,7 +158,7 @@ run_plot_nominal() {
 #             run_cmd law run cf.ProduceColumnsWrapper \
 #                 --producers "$producers" \
 #                 --workers 8 \
-#                 --datasets \"*\" \
+#                 --datasets "*" \
 #                 --configs "$config" \
 #                 --shifts "$shift" \
 #                 --cf.ProduceColumns-{retries=1,workflow=htcondor,no-poll}
@@ -189,6 +203,15 @@ run_ml_training() {
     done
 }
 
+fetch_ml_metrics() {
+    for model in "$dnn_multiclass" "$dnn_ggf" "$dnn_vbf"; do
+        echo "→ Fetch ML metrics: model=$model"
+        run_and_fetch_cmd ml_metrics/$model claw run cf.MLTraining \
+            --ml-model "$model" \
+            --workers 0
+    done
+}
+
 # prepare_dy_corr_weights() {
 #     local configs="${1:-$all_configs}"
 #     local shifts="${2:-$default_shifts}"
@@ -217,7 +240,6 @@ prepare_mlcolumns() {
     local run_ml="false"
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
-
     if [[ "$run_ml" == "true" ]]; then
         # check that ML trainings are finished
         for model in ${models//,/ }; do
@@ -245,7 +267,7 @@ prepare_mlcolumns() {
             run_cmd law run cf.CreateHistogramsWrapper \
                 --configs "$config" \
                 --shifts "$shift" \
-                --datasets \"*\" \
+                --datasets "*" \
                 --cf.CreateHistograms-ml-models "$models" \
                 --cf.CreateHistograms-variables "$variables" \
                 --cf.CreateHistograms-{retries=1,workflow=htcondor,pilot,no-poll,htcondor-memory=3GB} \
@@ -273,7 +295,7 @@ run_ml_evaluation() {
                     --shifts "$shift" \
                     --configs "$config" \
                     --cf.MLEvaluation-ml-model "$model" \
-                    --datasets \"*\" \
+                    --datasets "*" \
                     --workers 8 \
                     --cf.BundleRepo-custom-checksum $checksum \
                     --cf.MLEvaluation-{retries=1,workflow=htcondor,pilot,no-poll}
@@ -293,7 +315,7 @@ run_merge_histograms_local() {
             echo "→ MergeHistograms: config=$config, shift=$shift, models=$models, variables=$variables"
             run_cmd claw run cf.MergeHistogramsWrapper \
                 --configs "$config" \
-                --datasets \"*\" \
+                --datasets "*" \
                 --shifts $shift \
                 --cf.MergeHistograms-variables "$variables" \
                 --cf.MergeHistograms-ml-models "$models" \
@@ -309,21 +331,34 @@ run_merge_histograms_htcondor() {
     local models="${3:-$all_models}"
     local variables="${4:-$ml_scores}"
     local checksum=$(checksum)
+    local ensure_nominal=true
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
+
     for config in ${configs//,/ }; do
+        # run nominal first to ensure it is done before the syst. shifts
+        if [[ "$ensure_nominal" != "false" ]]; then
+            run_merge_histograms_local "$config" "nominal" "$models" "$variables"
+        fi
+        pids=()
         for shift in ${shifts//,/ }; do
             echo "→ MergeHistograms: config=$config, shift=$shift, models=$models, variables=$variables"
-            run_cmd claw run cf.MergeHistogramsWrapper \
+            (run_cmd claw run cf.MergeHistogramsWrapper \
                 --configs "$config" \
                 --shifts $shift \
-                --datasets \"*\" \
+                --datasets "*" \
                 --cf.MergeHistograms-variables "$variables" \
                 --cf.MergeHistograms-ml-models "$models" \
                 --cf.MergeHistograms-{workflow=htcondor,pilot,no-poll} \
                 --cf.BundleRepo-custom-checksum $checksum \
-                --workers 6
+                --workers 6) &
+                pids+=($!)
         done
+        # Wait for all to finish
+        for pid in "${pids[@]}"; do
+        wait "$pid"
+        done
+        echo "Processes for config $config completed."
     done
 }
 
@@ -374,86 +409,172 @@ run_and_fetch_mlplots() {
 }
 
 run_and_fetch_mlscore_plots() {
-    configs="${1:-"$all_configs"}"
-    variables="${2:-"\"mlscore.*,rebinlogit_mlscore.sig*binary\""}"
-    categories="${3:-"sr,sr__resolved__1b,sr__resolved__2b,sr__boosted"}"
-    unstacked="${4:-false}"
+    local configs="${1:-"$all_configs"}"
+    local variables="${2:-"\"mlscore.*,rebinlogit_mlscore.sig*binary\""}"
+    local category_groups="${3:-"sr,sr__resolved__1b,sr__resolved__2b sr__boosted"}"
 
-    folder_name=${configs//,/_}
+    local folder_name=${configs//,/_}
 
-    if [[ "$unstacked" != "true" ]]; then
-        process_groups_stack="ddl4"
-        for processes in $process_groups_stack; do
-            # NOTE: we could also use cf.PlotShiftedVariables1D here to include syst. unc.
-            echo "→ PlotMLScores: configs=$configs, processes=$processes, variables=$variables, categories=$categories"
-            run_and_fetch_cmd ml_scores/$folder_name claw run cf.PlotVariables1D \
-                --configs $configs \
-                --variables $variables \
-                --categories $categories \
-                --ml-models $all_models \
-                --processes $processes \
-                --workers 6 \
-                --cf.MergeHistograms-pilot
-        done
-    else
-        process_groups_unstack="bkgminor bkgmajor hbv_ggf_dl hbv_vbf_dl"
-        for processes in $process_groups_unstack; do
-            echo "→ PlotMLScores: configs=$configs, processes=$processes, variables=$variables, categories=$categories"
-            run_and_fetch_cmd ml_scores/$folder_name claw run cf.PlotVariables1D \
-                --configs $configs \
-                --variables $variables \
-                --categories $categories \
-                --ml-models $all_models \
-                --processes $processes \
-                --process-settings unstack_all \
-                --general-settings unstacked \
-                --workers 6 \
-                --cf.MergeHistograms-pilot
-        done
-    fi
+    # NOTE: we could also use cf.PlotShiftedVariables1D here to include syst. unc.
+    for categories in $category_groups; do
+        # when category is boosted, use different settings
+        if [[ $categories == *"boosted"* ]]; then
+            local variable_settings="rebin_ml_scores100"
+            local custom_style_config="default_rax75"
+        else
+            local variable_settings="none"
+            local custom_style_config="default"
+        fi
+        echo "→ PlotMLScores: configs=$configs, categories=$categories, variables=$variables"
+        run_and_fetch_cmd ml_scores/$folder_name claw run cf.PlotVariables1D \
+            --configs $configs \
+            --variables $variables \
+            --categories $categories \
+            --ml-models $all_models \
+            --processes ddl4 \
+            --hist-hooks blind_bins_above_score \
+            --general-settings data_mc_plots_blind_conservative \
+            --variable-settings $variable_settings \
+            --custom-style-config $custom_style_config \
+            --workers 6 \
+            --cf.MergeHistograms-pilot
+    done
+}
+
+run_and_fetch_mlscore_plots_unstacked() {
+    local configs="${1:-"$all_configs"}"
+    local variables="${2:-"\"mlscore.*,rebinlogit_mlscore.sig*binary\""}"
+    local category_groups="${3:-"sr,sr__resolved__1b,sr__resolved__2b sr__boosted"}"
+    local process_groups_unstack="bkgminor bkgmajor hbv_ggf_dl hbv_vbf_dl"
+
+    for processes in $process_groups_unstack; do
+        echo "→ PlotMLScores: configs=$configs, processes=$processes, variables=$variables, categories=$category_groups"
+        run_and_fetch_cmd ml_scores/$folder_name claw run cf.PlotVariables1D \
+            --configs $configs \
+            --variables $variables \
+            --categories $category_groups \
+            --ml-models $all_models \
+            --processes $processes \
+            --process-settings unstack_all \
+            --general-settings unstacked \
+            --workers 6 \
+            --cf.MergeHistograms-pilot
+    done
 }
 
 run_and_fetch_all_mlscore_plots() {
     # TODO: DNN plots after categorization and rebinning
     for config in ${all_configs//,/ }; do
-        # run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b,sr__boosted" true
-        run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b,sr__boosted"
+        # run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
+        run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
         run_and_fetch_mlscore_plots "$config" "mlscore.max_score" "$inf_categories_bkg"
         run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
         run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
     done
 
-    # run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b,sr__boosted" true
-    run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b,sr__boosted"
+    # run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
+    run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
     run_and_fetch_mlscore_plots "$all_configs" "mlscore.max_score" "$inf_categories_bkg"
     run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
     run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
 }
 
+
+run_and_fetch_mcstat_plots() {
+    local configs="${1:-$all_configs}"
+    local categories="${2:-"incl,dycr,ttcr,sr,sr__resolved__1b,sr__resolved__2b"}"
+    local variables="${3:-$ml_inputs}"
+
+    local folder_name=${configs//,/_}
+    echo "→ PlotVariables: config=$configs, categories=$categories, variables=$variables"
+    run_and_fetch_cmd no_syst_unc/$folder_name claw run cf.PlotVariables1D \
+        --configs "$configs" \
+        --ml-models $all_models \
+        --variables $variables \
+        --processes ddl4 \
+        --categories "$categories" \
+        --general-settings data_mc_plots_not_blinded \
+        --workers 6 \
+        --cf.CreateHistograms-pilot
+        # --cf.MergeHistograms-pilot
+}
+
 run_and_fetch_mcsyst_plots() {
-    configs="${1:-$all_configs}"
-    categories="${2:-"incl,dycr,ttcr,sr,sr__resolved__1b,sr__resolved__2b,sr__boosted"}"
-    # categories="${2:-"ttcr,dycr,incl"}"
-    # TODO {} resolving does not work with the run cmds
-    # NOTE: fetching seems to result in a different file name each time, so this is kind of bad
-    # ---> fixed by sorting shift_sources, variables, categories in c/f mixins
-    # NOTE: fetching a different set of categories also changes the file name per plot (one hash per set of parameters)
-    # so we either need to use the same set of categories when fetching of we need to fix the file name generation
-    # see fetch_task_output in law/tasks/interative.py and live_task_id in law/tasks/base.py
-    # there is also a patch in hbw/columnflow_patches.py that should fix this, but I am not sure if it breaks anything else
+    local configs="${1:-$all_configs}"
+    local categories="${2:-"incl,dycr,ttcr,sr,sr__resolved__1b,sr__resolved__2b"}"
+    local variables="${3:-$ml_inputs}"
+
+    local folder_name=${configs//,/_}
+    echo "→ PlotShiftedVariables: config=$configs"
+    run_and_fetch_cmd with_syst_unc/$folder_name claw run cf.PlotShiftedVariables1D \
+        --configs "$configs" \
+        --shift-sources all \
+        --ml-models $all_models \
+        --variables $variables \
+        --processes ddl4 \
+        --categories "$categories" \
+        --general-settings data_mc_plots_not_blinded \
+        --workers 6 \
+        --cf.MergeHistograms-pilot
+}
+
+run_and_fetch_mcsyst_plots_boosted() {
+    # separate command due to some tweaked plotting params in boosted categoriy
+    local configs="${1:-$all_configs}"
+    local categories="${2:-"sr__boosted"}"
+    local variables="${3:-$ml_inputs}"
+
+    local folder_name=${configs//,/_}
+    echo "→ PlotShiftedVariables: config=$configs"
+    run_and_fetch_cmd with_syst_unc/$folder_name claw run cf.PlotShiftedVariables1D \
+        --configs "$configs" \
+        --shift-sources all \
+        --ml-models $all_models \
+        --variables $variables \
+        --processes ddl4 \
+        --categories "$categories" \
+        --general-settings data_mc_plots_not_blinded \
+        --variable-settings boosted_rebin \
+        --custom-style-config default_rax75 \
+        --workers 6 \
+        --cf.MergeHistograms-pilot
+}
+
+run_and_fetch_all_mcsyst_plots() {
+    local configs="${1:-$all_configs}"
+    # local categories="${2:-"incl,dycr,ttcr,sr,sr__resolved__1b,sr__resolved__2b"}"
+    local categories="${2:-"sr,sr__resolved__1b,sr__resolved__2b"}"
+    local variables="${3:-$ml_inputs}"
+    local boosted_categories="sr__boosted"
+
+    # split categories in boosted and non-boosted
     for config in ${configs//,/ }; do
-        echo "→ PlotShiftedVariables: config=$config"
-        run_and_fetch_cmd with_syst_unc/$config claw run cf.PlotShiftedVariables1D \
-            --configs "$config" \
-            --shift-sources all \
-            --ml-models $all_models \
-            --variables ml_inputs \
-            --processes ddl4 \
-            --categories "$categories" \
-            --workers 6 \
-            --cf.MergeHistograms-pilot
+        run_and_fetch_mcsyst_plots "$config" "$categories" "$variables"
+        run_and_fetch_mcsyst_plots_boosted "$config" "$boosted_categories" "$variables"
     done
-    run_and_fetch_cmd with_syst_unc/combined claw run cf.PlotShiftedVariables1D --configs $configs --ml-models $all_models --shift-sources all --variables ml_inputs --processes ddl4 --categories "$categories" --workers 6 --cf.MergeHistograms-pilot
+    run_and_fetch_mcsyst_plots "$all_configs" "$categories" "$variables"
+    run_and_fetch_mcsyst_plots_boosted "$all_configs" "$boosted_categories" "$variables"
+}
+
+run_and_fetch_kinematics() {
+    # kinematic features in different lepton channels
+    for config in ${all_configs//,/ }; do
+        run_and_fetch_mcstat_plots "$config" "sr,sr__2e,sr__2mu,sr__emu" "basic_kin"
+    done
+    run_and_fetch_mcstat_plots "$all_configs" "sr,sr__2e,sr__2mu,sr__emu" "basic_kin"
+
+    # miscellaneous observables
+    run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
+    run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
+    run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb_pass_fail"
+}
+
+run_and_fetch_btag_norm_sf() {
+    local configs="${1:-$all_configs}"
+    for config in ${configs//,/ }; do
+        echo "→ BtagNormSF: config=$config"
+        run_and_fetch_cmd btag_norm_sf/$config law run hbw.GetBtagNormalizationSF --config $config
+    done
 }
 
 run_and_fetch_all_yield_tables() {
@@ -464,20 +585,22 @@ run_and_fetch_all_yield_tables() {
     echo "→ YieldTables: configs=$all_configs"
     run_and_fetch_yield_tables "$all_configs"
 }
+
 run_and_fetch_yield_tables() {
-    configs="${1:-$all_configs}"
+    # NOTE: in order to create consistent yield tables, we need to make categories order consistent
+    local configs="${1:-$all_configs}"
     # Replace commas with underscores for folder name
-    folder_name=${configs//,/_}
+    local folder_name=${configs//,/_}
 
     # vr categories with data and ratio
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $vr_categories --processes table1 --ratio data,background --table-format latex_raw
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $lep_categories --processes table1 --ratio data,background --table-format latex_raw
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $jet_categories --processes table1 --ratio data,background --table-format latex_raw
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $jet_categories_boosted_split --processes table1 --ratio data,background --table-format latex_raw
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $vr_categories --processes table1 --ratio data,background --table-format latex_raw
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $lep_categories --processes table1 --ratio data,background --table-format latex_raw
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $jet_categories --processes table1 --ratio data,background --table-format latex_raw
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $jet_categories_boosted_split --processes table1 --ratio data,background --table-format latex_raw
 
-    # inference categories without data
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $inf_categories_sig --processes table4 --table-format latex_raw
-    run_and_fetch_cmd tables/$folder_name law run hbw.CustomCreateYieldTable --configs $configs --categories $inf_categories_bkg --processes table4 --table-format latex_raw
+    # inference categories now also with data and ratio
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $inf_categories_sig --processes table1 --table-format latex_raw
+    run_and_fetch_cmd tables/$folder_name claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs $configs --categories $inf_categories_bkg --processes table1 --table-format latex_raw
     # claw run hbw.CustomCreateYieldTable --config $config --categories $inf_categories --processes table4 --table-format latex_raw
 }
 calls() {
@@ -485,6 +608,31 @@ calls() {
     claw run hbw.PrepareInferenceTaskCalls --inference-model dl_jerc_bjet_uncorr1 --configs "c22prev14,c22postv14,c23prev14,c23postv14" --remove-output 0,a,y --workers 6
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,dy_lf_m10to50,dy_lf_m50toinf,dy_hf_m10to50,dy_hf_m50toinf,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y --categories "sr__{1b,2b}__ml_{sig_ggf,sig_vbf}"
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y
+    claw run cf.PlotVariables1D --processes ddl4 --variables mli_fj_particleNetWithMass_HbbvsQCD --categories incl,sr,dycr,ttcr --hist-hooks cumsum_reverse --remove-output 0,a,y --general-settings data_mc_plots_not_blinded --plot-suffix test1 --local-scheduler --configs $all_configs --shape-norm --plot-function columnflow.plotting.plot_functions_1d.plot_stack_test
+}
+
+run_and_fetch_efficiency_plots() {
+    local config_groups="${1:-$all_configs}"
+    local categories="${2:-"incl,sr,dycr,ttcr"}"
+    local variables="${3:-"fatbjet0_particlenetwithmass_hbbvsqcd"}"
+
+    for configs in $config_groups; do
+        local folder_name=${configs//,/_}
+        echo "→ PlotVariables: config=$configs, categories=$categories, variables=$variables"
+        run_and_fetch_cmd hbb_efficiency_pt200/$folder_name claw run cf.PlotVariables1D \
+            --configs "$configs" \
+            --ml-models $all_models \
+            --variables $variables \
+            --processes ddl4 \
+            --categories "$categories" \
+            --general-settings data_mc_plots_not_blinded \
+            --plot-function columnflow.plotting.plot_functions_1d.plot_variable_efficiency \
+            --remove-output 0,a,y \
+            --plot-suffix efficiency \
+            --hist-producer met_geq40_fj200_with_dy_corr \
+            --workers 6 \
+            --cf.CreateHistograms-pilot
+    done
 }
 
 # === Dispatcher ===
@@ -494,42 +642,49 @@ run_all() {
     # Set global checksum once for this entire workflow run
     global_checksum=$(checksum)
     # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+    # recreate_campaign_summary
 
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_selection_stats "$all_configs" "nominal"
     # prepare_dy_corr "$all_configs"
     # run_ml_training
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
-    # prepare_mlcolumns "c23postv14" "$nominal" "multiclassv1,ggfv1,vbfv1" "$ml_inputs"
-    # prepare_mlcolumns "c22postv14" "$nominal" "multiclassv1,ggfv1,vbfv1" "$ml_inputs"
 
     # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down"
     # run_merge_reduced_events "$all_configs" "jer_up,jer_down"
 
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
 
+    # run_merge_histograms_local "$all_configs" "nominal"
     # for config in ${all_configs//,/ }; do
     #     # run_merge_histograms_local "$config" "nominal"
-    #     # run_merge_histograms_htcondor "$config" "$shape_shift_groups"
+    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups"
     #     run_merge_histograms_local "$config" "$jerc_shifts"
     # done
 
-    # run_and_fetch_all_yield_tables
-    # run_and_fetch_all_mlscore_plots
-    # run_and_fetch_mcsyst_plots
+    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
+    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
 
     # for config in ${all_configs//,/ }; do
     #     run_merge_histograms_local "$config" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
-    #     run_merge_histograms_local "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
+    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
     #     run_merge_histograms_local "$config" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
     # done
 
-    # run_and_fetch_cmd yield_tables/c22postv14 claw run hbw.CustomCreateYieldTable --config c22postv14 --processes background,hh_sm,tt,dy,st,w_lnu,vv,ttv,h,other --ratio data,background --categories "sr__\{1b,2b\}__ml_\{sig_ggf,sig_vbf\}" --remove-output 0,a,y
-
-    # run_and_fetch_mcsyst_plots
-    # run_and_fetch_mlplots
-
     # run_create_datacards "$all_configs" "dl_jerc" "$all_models"
+
+    # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+    # run_and_fetch_mlplots
+    # run_and_fetch_all_mcsyst_plots
+    # run_and_fetch_all_yield_tables
+    # run_and_fetch_all_mlscore_plots
+    # run_and_fetch_btag_norm_sf
+    # run_and_fetch_kinematics
+    # fetch_ml_metrics
+
+    # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
+    # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
+
 }
 
 # === Example usage ===
