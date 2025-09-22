@@ -352,7 +352,7 @@ class DumpAnalysisSummary(
                 if unc_key in info:
                     latex_name = info["latex_name"]
                     unc_repr = info[unc_key]
-                    print(f"{latex_name} & {unc_repr}~\cite{{TODO}} \\\\")
+                    print(rf"{latex_name} & {unc_repr}~\cite{{TODO}} \\")
 
     def build_table(self):
         root_processes = {
