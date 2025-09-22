@@ -612,10 +612,10 @@ def add_config(
     add_shift_aliases(cfg, "e_reco_sf", {"electron_reco_weight": "electron_reco_weight_{direction}"})
     # add_shift_aliases(cfg, "e_trig_sf", {"electron_trigger_weight": "electron_trigger_weight_{direction}"})
 
-    cfg.add_shift(name="e_scale_up", id=46, type="shape")
-    cfg.add_shift(name="e_scale_down", id=47, type="shape")
-    cfg.add_shift(name="e_res_up", id=48, type="shape")
-    cfg.add_shift(name="e_res_down", id=49, type="shape")
+    cfg.add_shift(name="e_scale_up", id=46, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_scale_down", id=47, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_res_up", id=48, type="shape", tags={"eleSS"})
+    cfg.add_shift(name="e_res_down", id=49, type="shape", tags={"eleSS"})
     add_shift_aliases(cfg, "e_scale", {"Electron.pt": "Electron.pt_scale_{direction}"})
     add_shift_aliases(cfg, "e_res", {"Electron.pt": "Electron.pt_res_{direction}"})
 
