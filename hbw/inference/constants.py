@@ -290,3 +290,5 @@ for campaign, campaign_fmt in campaign_format.items():
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:
     rename_systematics[f"fsr_{process}"] = f"ps_fsr_{process}"
+
+rename_systematics_inverted = {v: k for k, v in rename_systematics.items()}

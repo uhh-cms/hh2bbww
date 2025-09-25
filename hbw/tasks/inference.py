@@ -24,6 +24,7 @@ from columnflow.tasks.cms.inference import CreateDatacards
 from columnflow.util import dev_sandbox, maybe_import
 from hbw.tasks.base import HBWTask
 from hbw.hist_util import apply_rebinning_edges
+import hbw.inference.constants as const
 
 array = maybe_import("array")
 uproot = maybe_import("uproot")
@@ -654,6 +655,27 @@ class PlotShiftedInferencePlots(
             return True
         return False
 
+    def get_config_shift_name(self, syst_name, analysis_tag="CMS_HIG25018_"):
+        """
+        Mapping of shift names to config shift names
+        """
+        if syst_name is None:
+            config_shift_name = "dummy_down"
+            return config_shift_name
+
+        shift_source = syst_name.replace("Up", "").replace("Down", "")
+
+        if "murf_envelope" in shift_source:
+            shift_source = "murf_envelope"
+        elif "pdf" in shift_source:
+            shift_source = "pdf"
+        elif "fsr" in shift_source:
+            shift_source = "fsr"
+
+        config_shift_source = const.rename_systematics_inverted.get(shift_source, shift_source)
+        config_shift_source = config_shift_source.replace(analysis_tag, "")
+        return f"{config_shift_source}_down"
+
     @law.decorator.log
     # @law.decorator.localize
     @law.decorator.safe_output
@@ -711,17 +733,7 @@ class PlotShiftedInferencePlots(
                         if not h_down:
                             continue
 
-                        # mapping of shift names to config shift names
-                        if syst_name is None:
-                            config_shift_name = "dummy_down"
-                        else:
-                            config_shift_name = syst_name.replace("Down", "_down")
-                        if "murf_envelope" in config_shift_name:
-                            config_shift_name = "murf_envelope_down"
-                        elif "pdf" in config_shift_name:
-                            config_shift_name = "pdf_down"
-                        elif "fsr" in config_shift_name:
-                            config_shift_name = "fsr_down"
+                        config_shift_name = self.get_config_shift_name(syst_name)
 
                         shift_source = config_shift_name.replace("_down", "")
                         plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
