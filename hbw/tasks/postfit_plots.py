@@ -255,9 +255,16 @@ class PlotPostfitShapes(
         return {"plots": self.target(f"plots_{self.fit_type}", dir=True)}
 
     # map processes in root shape to corresponding process instance used for plotting
-    def prepare_hist_map(self, hist_processes: set, process_insts: list) -> defaultdict(list):
+    def prepare_processes_map(self, hist_processes: set, process_insts: list) -> defaultdict(list):
+        """
+        Helper function to map processes from the datacards to the processes that were
+        requested for plotting.
+        :param hist_processes: set of process names that are present in the root file
+        :param process_insts: list of process instances that are requested for plotting
+        :return: dict mapping process instances to list of process names in the root file
+        """
 
-        hist_map = defaultdict(list)
+        processes_map = defaultdict(list)
 
         for proc_key in hist_processes:
             proc_inst = None
@@ -299,15 +306,97 @@ class PlotPostfitShapes(
                             f" but {plot_proc[0].name} was chosen",
                         )
                 elif len(plot_proc) == 0:
-                    logger.warning(f"{proc_key} in root file, but won't be plotted.")
+                    logger.info(f"{proc_key} in root file, but won't be plotted.")
                     continue
                 plot_proc = plot_proc[0]
-                hist_map[plot_proc].append(proc_key)
+                processes_map[plot_proc].append(proc_key)
 
-        return hist_map
+        return processes_map
 
     def get_shift_insts(self):
         return [self.config_inst.get_shift(self.shift)]
+
+    from hbw.util import timeit_multiple
+
+    def sort_categories(self, categories_set):
+        """
+        Sort processes based on:
+        1. Primary: existence of substrings ggf, vbf, tt, st, dy, h
+        2. Secondary: existence of substrings 1b, 2b, boosted
+        """
+        primary_order = ["sig_ggf", "sig_vbf", "tt", "st", "dy", "h"]
+        secondary_order = ["1b", "2b", "boosted"]
+
+        def sort_key(item):
+            # Primary sort: find first matching substring from primary_order
+            primary_idx = len(primary_order)  # default to end if no match
+            for i, substring in enumerate(primary_order):
+                if substring in item.lower():
+                    primary_idx = i
+                    break
+
+            # Secondary sort: find first matching substring from secondary_order
+            secondary_idx = len(secondary_order)  # default to end if no match
+            for i, substring in enumerate(secondary_order):
+                if substring in item.lower():
+                    secondary_idx = i
+                    break
+
+            # Return tuple for multi-level sorting
+            return (primary_idx, secondary_idx, item)  # item as tiebreaker for alphabetical
+
+        return sorted(list(categories_set), key=sort_key)
+
+    @timeit_multiple
+    def create_merged_hist(self, all_hists) -> None:
+        """
+        Helper function to merge all categories per process into a single hist object
+        """
+        import boost_histogram
+        import numpy as np
+        dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[('value', '<f8'), ('variance', '<f8')])
+
+        # TODO: at the moment we only consider processes that are present in all cards
+        # all_processes = set.intersection(*[set(hists.keys()) for hists in all_hists.values()])
+        all_processes = set.union(*[set(hists.keys()) for hists in all_hists.values()])
+
+        bins_dict = {}
+        categories_sorted = self.sort_categories(all_hists.keys())
+        for category in categories_sorted:
+            hist_dict = all_hists[category]
+            axis = list(hist_dict.values())[0].axes[0]
+            bins_dict[category] = {
+                "count": len(axis),
+                "edges": axis.edges,
+            }
+
+        # initialize histogram
+        n_bins = sum([b["count"] for b in bins_dict.values()])
+        h_out = {
+            process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            for process in all_processes
+        }
+        view_dict = {process: dummy_view.copy() for process in all_processes}
+        for category in categories_sorted:
+            n_bins_cat = bins_dict[category]["count"]
+            hist_dict = all_hists[category]
+            for process in all_processes:
+                if process in hist_dict.keys():
+                    view_dict[process] = np.concatenate(
+                        (view_dict[process], hist_dict[process].view(flow=False)),
+                    )
+                else:
+                    empty_view = np.array([(0, 0)] * n_bins_cat, dtype=[('value', '<f8'), ('variance', '<f8')])
+                    view_dict[process] = np.concatenate(
+                        (view_dict[process], empty_view),
+                    )
+
+        for process, h in h_out.items():
+            h_out[process][...] = view_dict[process]
+
+        all_hists["merged"] = h_out
+
+        return bins_dict
 
     @view_output_plots
     def run(self):
@@ -325,9 +414,12 @@ class PlotPostfitShapes(
         process_insts = list(map(self.config_inst.get_process, self.processes))
         # map processes in root shape to corresponding process instance used for plotting
         hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
-        hist_map = self.prepare_hist_map(hist_processes, process_insts)
-        # Plot Pre/Postfit plot for each channel
+        processes_map = self.prepare_processes_map(hist_processes, process_insts)
 
+        # make a combined histogram of all categories
+        bins_dict = self.create_merged_hist(all_hists)
+
+        # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
@@ -337,11 +429,10 @@ class PlotPostfitShapes(
                 has_category = self.inference_model_inst.has_category(channel)
                 if not has_category:
                     logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
-                    continue
 
             # Create Histograms
             hists = defaultdict(OrderedDict)
-            for proc, sub_procs in hist_map.items():
+            for proc, sub_procs in processes_map.items():
                 plot_proc = proc.copy()  # NOTE: copy produced, so actual process is not modified by process settings
 
                 if not any(sub_proc in h_in.keys() for sub_proc in sub_procs):
@@ -359,7 +450,7 @@ class PlotPostfitShapes(
                 variable_inst = self.config_inst.get_variable(config_data.variable)
             else:
                 # default to dummy Category and Variable
-                config_category = od.Category(channel, id=1)
+                config_category = od.Category(channel, id=1, label=self.fit_type)
                 variable_inst = od.Variable("dummy")
 
             # sort histograms
@@ -370,7 +461,7 @@ class PlotPostfitShapes(
 
             # call the plot function
             h = hists.copy()  # NOTE: copy produced, so actual process is not modified by process settings
-            fig, _ = self.call_plot_func(
+            fig, axs = self.call_plot_func(
                 self.plot_function,
                 hists=h,
                 config_inst=self.config_inst,
@@ -379,5 +470,28 @@ class PlotPostfitShapes(
                 shift_insts=self.get_shift_insts(),
                 **self.get_plot_parameters(),
             )
+
+            # some adjustments for the merged plot
+            if channel == "cat_merged":
+                bins_count = 0
+                for cat_name, bins_info in bins_dict.items():
+                    if "sig" not in cat_name:
+                        continue
+                    # cat_inst = self.config_inst.get_category(cat_name, default=None)
+                    # if cat_inst:
+                    #     label = cat_inst.label
+                    bins_count += bins_info["count"]
+
+                    axs[1].axvline(bins_count, color="grey", linewidth=2.5)
+                    axs[0].axvline(bins_count, color="grey", ymax=0.65, linewidth=2.5)
+
+                    # # place label in the middle of the category
+                    # x_pos = bins_count - 0.5 * bins_info["count"]
+                    # axs[0].text(
+                    #     x_pos, 0.5 * axs[0].get_ylim()[1],
+                    #     label,
+                    #     # horizontalalignment="center",
+                    #     fontsize=16,
+                    # )
 
             outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")
