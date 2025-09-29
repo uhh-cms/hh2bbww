@@ -55,12 +55,17 @@ def patch_live_task_id():
         """
         # create a temporary dictionary of param_kwargs that is patched for the duration of the
         # call to create the string representation of the parameters
-        param_kwargs = {
-            attr: getattr(self, attr)
-            for attr in self.param_kwargs
-            # NOTE: this is the only change compared to the original code
-            if attr not in remove_from_live_task_id
-        }
+        param_kwargs = {attr: getattr(self, attr) for attr in self.param_kwargs}
+
+        # PATCH: when fetch_output is used, remove parameters that should not be part of the live_task_id
+        if param_kwargs.get("fetch_output", None):
+            logger.info(f"fetch_output is set, following params removed from live_task_id: {remove_from_live_task_id}")
+            param_kwargs = {
+                attr: getattr(self, attr)
+                for attr in param_kwargs
+                if attr not in remove_from_live_task_id
+            }
+
         # only_public was introduced in luigi 2.8.0, so check if that arg exists
         str_params_kwargs = {"only_significant": True}
         if "only_public" in getfullargspec(self.to_str_params).args:
@@ -282,5 +287,5 @@ def patch_all():
     patch_csp_versioning()
     patch_default_version()
     patch_pilots()
-    # NOTE: this patch is useful to make fetch-output consistent, but I am not yet sure if it breaks things
-    # patch_live_task_id()
+    # NOTE: this patch is useful to make fetch-output consistent, but breaks things when submitting jobs
+    patch_live_task_id()
