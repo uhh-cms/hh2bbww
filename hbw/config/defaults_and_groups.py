@@ -540,6 +540,7 @@ def set_config_defaults_and_groups(config_inst):
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
         "postfit": {
+            "remove_negative": True,
             "whitespace_fraction": 0.4,
             "cms_label": "simwip",
             "yscale": "log",
@@ -548,6 +549,7 @@ def set_config_defaults_and_groups(config_inst):
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
+            "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
             "cms_label": "wip",
@@ -555,12 +557,14 @@ def set_config_defaults_and_groups(config_inst):
             "blinding_threshold": 0.008,
         },
         "data_mc_plots_not_blinded": {
+            "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
             "cms_label": "wip",
             "yscale": "log",
         },
         "more_magnitudes": {
+            "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.2,
             "cms_label": "wip",
@@ -569,6 +573,7 @@ def set_config_defaults_and_groups(config_inst):
             "magnitudes": 8,
         },
         "data_mc_plots_blind_conservative": {
+            "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
             "cms_label": "wip",
@@ -576,6 +581,7 @@ def set_config_defaults_and_groups(config_inst):
             "blinding_threshold": 0.004,
         },
         "unstacked": {
+            "remove_negative": True,
             "whitespace_fraction": 0.4,
             "cms_label": "simwip",
             "yscale": "log",
@@ -625,6 +631,7 @@ def set_config_defaults_and_groups(config_inst):
             for var in [
                 "rebinlogit_mlscore.sig_ggf_binary",
                 "rebinlogit_mlscore.sig_vbf_binary",
+                "mlscore.max_score",
                 "mlscore.sig_ggf_binary",
                 "mlscore.sig_vbf_binary",
                 "mlscore.sig_ggf",
