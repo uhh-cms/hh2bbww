@@ -881,7 +881,7 @@ class PrepareInferenceTaskCalls(
                 logger.warning_once(
                     f"update_configs_{params['configs']}_from_groups_{params['config_groups']}",
                     f"Overwriting 'configs' parameter with values {configs} because "
-                    f"'config_groups' parameter with values {params['config_groups']} will be used."
+                    f"'config_groups' parameter with values {params['config_groups']} will be used.",
                 )
                 params["configs"] = configs
         return super().modify_param_values(params)
@@ -970,7 +970,7 @@ class PrepareInferenceTaskCalls(
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
         datacards_per_year = ":".join([",".join(
-            [card for card in datacards.split(",") if year in card]
+            [card for card in datacards.split(",") if year in card],
         ) for year in self.config_groups_str])
 
         # # name of the output root file that contains the Pre+Postfit shapes

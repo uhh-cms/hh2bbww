@@ -354,7 +354,7 @@ class PlotPostfitShapes(
         """
         import boost_histogram
         import numpy as np
-        dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[('value', '<f8'), ('variance', '<f8')])
+        dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[("value", "<f8"), ("variance", "<f8")])
 
         # TODO: at the moment we only consider processes that are present in all cards
         # all_processes = set.intersection(*[set(hists.keys()) for hists in all_hists.values()])
@@ -386,7 +386,7 @@ class PlotPostfitShapes(
                         (view_dict[process], hist_dict[process].view(flow=False)),
                     )
                 else:
-                    empty_view = np.array([(0, 0)] * n_bins_cat, dtype=[('value', '<f8'), ('variance', '<f8')])
+                    empty_view = np.array([(0, 0)] * n_bins_cat, dtype=[("value", "<f8"), ("variance", "<f8")])
                     view_dict[process] = np.concatenate(
                         (view_dict[process], empty_view),
                     )
