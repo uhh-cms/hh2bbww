@@ -6,6 +6,8 @@ Tasks related to the creation and modification of datacards for inference purpos
 
 from __future__ import annotations
 
+from columnflow.types import Any
+
 from typing import Callable
 from collections import defaultdict
 
@@ -21,7 +23,7 @@ from columnflow.tasks.framework.mixins import (
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.tasks.cms.inference import CreateDatacards
-from columnflow.util import dev_sandbox, maybe_import
+from columnflow.util import dev_sandbox, maybe_import, DotDict
 from hbw.tasks.base import HBWTask
 from hbw.hist_util import apply_rebinning_edges
 import hbw.inference.constants as const
@@ -237,10 +239,6 @@ def print_hist(hist, max_bins: int = 20):
         logger.info(f"{i} \t {hist.GetBinLowEdge(i)} \t {hist.GetBinContent(i)}")
 
 
-from hbw.util import timeit_multiple
-
-
-@timeit_multiple
 def resolve_category_groups(param: dict[str, any], config_inst: od.Config):
     """
     Resolve the category groups for the given parameter *param* and the *config_inst*.
@@ -259,7 +257,6 @@ def resolve_category_groups(param: dict[str, any], config_inst: od.Config):
     return outp_param
 
 
-@timeit_multiple
 def resolve_category_groups_new(param: dict[str, any], config_inst: od.Config):
     # NOTE: this is only kept for timing comparisons of the `find_config_objects` function
     outp_param = {}
@@ -283,16 +280,47 @@ class HBWInferenceModelBase(
     ProducerClassesMixin,
     MLModelsMixin,
     HistProducerClassMixin,
-    InferenceModelMixin,
     HistHookMixin,
+    InferenceModelMixin,
 ):
     resolution_task_cls = MergeHistograms
     single_config = False
+
+    # TODO: requesting different groups introduces weird behaviour: model is initialized with all flattened configs
+    # but we would like to have one inference model per config group --> use InferenceModelClassMixin
+    config_groups = law.MultiCSVParameter(
+        default=(("c22prev14", "c22postv14"), ("c23prev14", "c23postv14")),
+        description="List of config groups to use for this task.",
+        significant=False,
+    )
 
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
     fully_unblind = False
+
+    @classmethod
+    def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
+        if params["config_groups"]:
+            configs = tuple(config for config_group in params["config_groups"] for config in config_group)
+            if configs != params["configs"]:
+                logger.warning_once(
+                    f"update_configs_{params['configs']}_from_groups_{params['config_groups']}",
+                    f"Overwriting 'configs' parameter with values {configs} because "
+                    f"'config_groups' parameter with values {params['config_groups']} will be used."
+                )
+                params["configs"] = configs
+        return super().modify_param_values(params)
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     if self.config_groups:
+    #         logger.info(
+    #             f"Using config groups {self.config_groups} for inference task {self.name}."
+    #             f"'configs' parameter with values {self.configs} will not be used.",
+    #         )
+    #         # NOTE: I think this breaks things because these configs might not be properly initialized
+    #         self.configs = tuple(config for config_group in self.config_groups for config in config_group)
 
     @property
     def real_data(self):
@@ -306,6 +334,12 @@ class HBWInferenceModelBase(
     @property
     def fully_unblinded(self):
         return self.fully_unblind and self.real_data and self.inference_model_inst.unblinded
+
+    def configs_str(self, configs):
+        configs_str = "_".join(configs)
+        configs_str = configs_str.replace("c22prev14_c22postv14", "2022")
+        configs_str = configs_str.replace("c23prev14_c23postv14", "2023")
+        return configs_str
 
 
 class ModifyDatacardsFlatRebin(
@@ -351,7 +385,7 @@ class ModifyDatacardsFlatRebin(
     def get_n_bins(self, DEFAULT_N_BINS=8):
         """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
         # NOTE: we assume single config here...
-        config_category = self.branch_data.config_data[self.config_insts[0].name].category
+        config_category = self.branch_data.inf_cat.config_data[self.config_insts[0].name].category
         n_bins = self.bins_per_category.get(config_category, None)
         if not n_bins:
             logger.warning(f"No number of bins setup for category {config_category}; will default to {DEFAULT_N_BINS}.")
@@ -364,8 +398,8 @@ class ModifyDatacardsFlatRebin(
         Defaults to all processes of the current category.
         """
         config_inst = self.config_insts[0]
-        config_category = self.branch_data.config_data[self.config_insts[0].name].category
-        processes = self.branch_data.processes.copy()
+        config_category = self.branch_data.inf_cat.config_data[self.config_insts[0].name].category
+        processes = self.branch_data.inf_cat.processes.copy()
 
         get_config_process = lambda proc: proc.config_data[self.config_insts[0].name].process
         rebin_process_condition = config_inst.x.inference_category_rebin_processes.get(config_category, None)
@@ -394,14 +428,14 @@ class ModifyDatacardsFlatRebin(
 
     def get_background_processes(self):
         background_processes = [
-            proc for proc in self.branch_data.processes.copy()
+            proc for proc in self.branch_data.inf_cat.processes.copy()
             if proc.name != "data_obs" and not proc.is_signal
         ]
         return background_processes
 
     def get_signal_processes(self):
         signal_processes = [
-            proc for proc in self.branch_data.processes.copy()
+            proc for proc in self.branch_data.inf_cat.processes.copy()
             if proc.is_signal and (
                 proc.name.startswith("ggHH_kl_1_kt_1") or proc.name.startswith("qqHH_CV_1_C2V_1_kl_1")
             )
@@ -409,24 +443,40 @@ class ModifyDatacardsFlatRebin(
         return signal_processes
 
     def create_branch_map(self):
-        return list(self.inference_model_inst.categories)
+        # TODO: add config insts ot branch data
+        return [
+            DotDict({
+                "inf_cat": inf_cat,
+                "configs": config_group,
+                "req_branch": i,
+            })
+            for config_group in self.config_groups
+            for i, inf_cat in enumerate(self.inference_model_inst.categories)
+        ]
 
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
-        reqs["datacards"] = self.reqs.CreateDatacards.req(self)
+        reqs["datacards"] = {}
+        for config_group in self.config_groups:
+            reqs["datacards"][config_group] = self.reqs.CreateDatacards.req(self, configs=config_group)
 
         return reqs
 
     def requires(self):
         reqs = {
-            "datacards": self.reqs.CreateDatacards.req(self),
+            "datacards": self.reqs.CreateDatacards.req_different_branching(
+                self,
+                branch=self.branch_data.req_branch,
+                configs=self.branch_data.configs,
+            ),
         }
         return reqs
 
     def output(self):
-        cat_obj = self.branch_data.config_data[self.config_insts[0].name]
-        basename = lambda name, ext: f"{name}__cat_{cat_obj.category}__var_{cat_obj.variable}.{ext}"
+        configs_repr = self.configs_str(self.branch_data.configs)
+        cat_obj = self.branch_data.inf_cat.config_data[self.config_insts[0].name]
+        basename = lambda name, ext: f"{name}__cfg_{configs_repr}__cat_{cat_obj.category}__var_{cat_obj.variable}.{ext}"
         n_bins = self.get_n_bins()
         return {
             "card": self.target(basename(f"datacard_rebin_{n_bins}", "txt")),
@@ -473,10 +523,10 @@ class ModifyDatacardsFlatRebin(
                 raise Exception("Expected 1 category per file")
 
             cat_name = list(cat_names)[0]
-            if cat_name != self.branch_data.name:
+            if cat_name != self.branch_data.inf_cat.name:
                 raise Exception(
                     f"Category name in the histograms {cat_name} does not agree with the "
-                    f"datacard category name {self.branch_data.name}",
+                    f"datacard category name {self.branch_data.inf_cat.name}",
                 )
 
             # get all nominal histograms
@@ -611,6 +661,7 @@ class PlotShiftedInferencePlots(
     )
 
     def create_branch_map(self):
+        # TODO: branch data should be split into config group + category
         return list(self.inference_model_inst.categories)
 
     def workflow_requires(self):
@@ -826,6 +877,7 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         return reqs
 
     def output(self):
+        # TODO: should add configs_str to output path
         return {
             "Run": self.target("Run.sh"),
             "PlotUpperLimitsAtPoint": self.target("PlotUpperLimitsAtPoint.txt"),
@@ -838,11 +890,9 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
     def run(self):
         inputs = self.input()
         output = self.output()
-
         # string that represents the version of datacards
-        configs_str = "_".join(self.configs)
-        configs_str = configs_str.replace("c22prev14_c22postv14", "2022")
-        configs_str = configs_str.replace("c23prev14_c23postv14", "2023")
+        config_groups_str = [self.configs_str(configs) for configs in self.config_groups]
+        configs_str = "__".join(config_groups_str)
         identifier_list = [configs_str, self.selector, str(self.inference_model), self.version]
         identifier = "__".join(identifier_list)
 
@@ -859,9 +909,13 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
         # get the category names from the inference models
         categories = self.inference_model_inst.categories
         cat_names = [c.name for c in categories]
+        cat_names = [f"{cat_name}__{year}" for year in config_groups_str for cat_name in cat_names]
 
         # combine category names with card fn to a single string
         datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+        datacards_per_year = ":".join([",".join(
+            [card for card in datacards.split(",") if year in card]
+        ) for year in config_groups_str])
 
         # # name of the output root file that contains the Pre+Postfit shapes
         # output_file = ""
@@ -947,13 +1001,28 @@ class PrepareInferenceTaskCalls(HBWInferenceModelBase):
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
             f"--multi-datacards {multi_datacards} "
             f"--datacard-names {multi_datacard_names} "
-            f"--UpperLimits-workflow htcondor --workers 10 "
+            # f"--UpperLimits-workflow htcondor "
+            f"--workers 10 "
         )
-
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             full_cmd += cmd + "\n\n"
         output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
+
+        # datacards per config group
+        if len(self.config_groups) > 1:
+            cmd = (
+                f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
+                f"--multi-datacards {datacards_per_year}:{datacards} "
+                f"--datacard-names {','.join(config_groups_str)},combined "
+                # f"--UpperLimits-workflow htcondor "
+                f"--workers 10 "
+            )
+
+            if not self.partially_unblinded:
+                print(base_cmd + cmd, "\n\n")
+                full_cmd += cmd + "\n\n"
+            output["PlotUpperLimitsAtPoint"].dump(cmd, formatter="text")
 
         # # creating upper limits for kl=1
         # cmd = (
