@@ -55,7 +55,7 @@ class HBWInferenceModelBase(InferenceModel):
     dummy_ggf_variation: bool = False
     dummy_vbf_variation: bool = False
 
-    version: int = 5
+    version: int = 6
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -670,12 +670,13 @@ class HBWInferenceModelBase(InferenceModel):
             #     self.add_parameter_to_group(shape_uncertainty, "experiment")
 
     def ratify_shape_parameters(self: InferenceModel):
+        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided)
         transformations_dict = {
-            "dy_hf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
-            "dy_lf": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
-            "ttw": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
-            "ttz": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
-            "vv": {None: (ParameterTransformation.ratify, ParameterTransformation.envelope_if_one_sided)},
+            "dy_hf": {None: rate_two_sided},
+            "dy_lf": {None: rate_two_sided},
+            "ttw": {None: rate_two_sided},
+            "ttz": {None: rate_two_sided},
+            "vv": {None: rate_two_sided},
         }
         for process, parameter_dict in transformations_dict.items():
             for parameter, transformations in parameter_dict.items():
@@ -693,4 +694,5 @@ class HBWInferenceModelBase(InferenceModel):
                         param = self.get_parameter(parameter=param, process=process, category=category)
                         if param.type == ParameterType.shape:
                             param.transformations = ParameterTransformations(law.util.make_tuple(transformations))
-                            # param.transformations = transformations
+                            if param.transformations.any_from_shape:
+                                param.type = ParameterType.rate_gauss

@@ -338,6 +338,10 @@ met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,
 })
 
+met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,

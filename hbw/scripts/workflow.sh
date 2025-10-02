@@ -35,6 +35,28 @@ all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
 inference_model="dl"
 ml_inputs="ml_inputs"
 ml_scores="mlscore.max_score,logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary"
+all_ml_scores="mlscore.*,rebinlogit_mlscore.sig*binary"
+
+shape_shift_groups="btag_up,btag_down,theory_up,theory_down,experimental_up,experimental_down"
+jerc_shifts="jec_Total_up,jec_Total_down,jer_up,jer_down"
+all_shift_sources="all"
+
+vr_categories="incl,sr,dycr,ttcr"
+lep_categories="sr__2e,sr__2mu,sr__emu"
+jet_categories="sr__resolved__1b,sr__resolved__2b,sr__boosted__1b,sr__boosted__2b"
+jet_categories_boosted_split="sr__resolved__1b,sr__resolved__2b,sr__boosted__1b,sr__boosted__2b"
+preml_categories="incl,dycr,ttcr,sr,sr__2e,sr__2mu,sr__emu,sr__resolved__1b,sr__resolved__2b,sr__boosted"
+inf_categories_sig_ggf="sr__resolved__1b__ml_sig_ggf,sr__resolved__2b__ml_sig_ggf,sr__boosted__ml_sig_ggf"
+inf_categories_sig_vbf="sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_vbf"
+inf_categories_sig="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf"
+inf_categories_sig_resolved="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf"
+inf_categories_sig_boosted="sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf"
+inf_categories_bkg="sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
+inf_categories="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf,sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
+
+
+
+
 dry_run="${dry_run:-false}"  # override with: dry_run=true ./workflow.sh ...
 global_checksum=""
 # === Helper to run or echo ===
@@ -349,7 +371,7 @@ run_merge_histograms_htcondor() {
                 --datasets "*" \
                 --cf.MergeHistograms-variables "$variables" \
                 --cf.MergeHistograms-ml-models "$models" \
-                --cf.MergeHistograms-{workflow=htcondor,pilot,no-poll} \
+                --cf.MergeHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
                 --cf.BundleRepo-custom-checksum $checksum \
                 --workers 6) &
                 pids+=($!)
@@ -358,6 +380,35 @@ run_merge_histograms_htcondor() {
         for pid in "${pids[@]}"; do
         wait "$pid"
         done
+        echo "Processes for config $config completed."
+    done
+}
+
+run_merge_shifted_histograms_htcondor() {
+    local configs="${1:-$default_configs}"
+    local shifts="${2:-$all_shift_sources}"
+    local models="${3:-$all_models}"
+    local variables="${4:-$ml_scores}"
+    local checksum=$(checksum)
+    local ensure_nominal=false
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+
+    for config in ${configs//,/ }; do
+        # run nominal first to ensure it is done before the syst. shifts
+        if [[ "$ensure_nominal" != "false" ]]; then
+            run_merge_histograms_local "$config" "nominal" "$models" "$variables"
+        fi
+        echo "→ MergeShiftedHistograms: config=$config, shifts=$shifts, models=$models, variables=$variables"
+        run_cmd claw run cf.MergeShiftedHistogramsWrapper \
+            --configs "$config" \
+            --cf.MergeShiftedHistograms-shift-sources $shifts \
+            --datasets "*" \
+            --cf.MergeShiftedHistograms-variables "$variables" \
+            --cf.MergeShiftedHistograms-ml-models "$models" \
+            --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
+            --cf.BundleRepo-custom-checksum $checksum \
+            --workers 6
         echo "Processes for config $config completed."
     done
 }
@@ -381,21 +432,6 @@ run_create_datacards() {
             --cf.MLEvaluation-workflow htcondor
     done
 }
-
-shape_shift_groups="btag_up,btag_down,theory_up,theory_down,experimental_up,experimental_down"
-jerc_shifts="jec_Total_up,jec_Total_down,jer_up,jer_down"
-
-vr_categories="incl,sr,dycr,ttcr"
-lep_categories="sr__2e,sr__2mu,sr__emu"
-jet_categories="sr__resolved__1b,sr__resolved__2b,sr__boosted__1b,sr__boosted__2b"
-jet_categories_boosted_split="sr__resolved__1b,sr__resolved__2b,sr__boosted__1b,sr__boosted__2b"
-preml_categories="incl,dycr,ttcr,sr,sr__2e,sr__2mu,sr__emu,sr__resolved__1b,sr__resolved__2b,sr__boosted"
-inf_categories_sig_ggf="sr__resolved__1b__ml_sig_ggf,sr__resolved__2b__ml_sig_ggf,sr__boosted__ml_sig_ggf"
-inf_categories_sig_vbf="sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_vbf"
-inf_categories_sig="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf"
-inf_categories_bkg="sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
-inf_categories="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf,sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
-
 
 run_and_fetch_mlplots() {
     for mlmodel in ${all_models//,/ }; do
@@ -426,8 +462,9 @@ run_and_fetch_mlscore_plots() {
             local custom_style_config="default"
         fi
         echo "→ PlotMLScores: configs=$configs, categories=$categories, variables=$variables"
-        run_and_fetch_cmd ml_scores/$folder_name claw run cf.PlotVariables1D \
+        run_and_fetch_cmd ml_scores_syst/$folder_name claw run cf.PlotShiftedVariables1D \
             --configs $configs \
+            --shift-sources all \
             --variables $variables \
             --categories $categories \
             --ml-models $all_models \
@@ -467,16 +504,16 @@ run_and_fetch_all_mlscore_plots() {
     for config in ${all_configs//,/ }; do
         # run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
         run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
-        run_and_fetch_mlscore_plots "$config" "mlscore.max_score" "$inf_categories_bkg"
-        run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
-        run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
+        # run_and_fetch_mlscore_plots "$config" "mlscore.max_score" "$inf_categories_bkg"
+        # run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
+        # run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
     done
 
     # run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
     run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
-    run_and_fetch_mlscore_plots "$all_configs" "mlscore.max_score" "$inf_categories_bkg"
-    run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
-    run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
+    # run_and_fetch_mlscore_plots "$all_configs" "mlscore.max_score" "$inf_categories_bkg"
+    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
+    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
 }
 
 
@@ -605,6 +642,7 @@ run_and_fetch_yield_tables() {
 }
 calls() {
     # just a summary of calls that I often use
+    law run hbw.PlotShiftedInferencePlots --inference-model default_unblind --configs $all_configs --processes ddl4 --custom-style-config legend_single_col --general-settings unstacked
     claw run hbw.PrepareInferenceTaskCalls --inference-model dl_jerc_bjet_uncorr1 --configs "c22prev14,c22postv14,c23prev14,c23postv14" --remove-output 0,a,y --workers 6
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,dy_lf_m10to50,dy_lf_m50toinf,dy_hf_m10to50,dy_hf_m50toinf,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y --categories "sr__{1b,2b}__ml_{sig_ggf,sig_vbf}"
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y
@@ -666,10 +704,14 @@ run_all() {
     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
 
     # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_local "$config" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
     #     run_merge_histograms_htcondor "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
     #     run_merge_histograms_local "$config" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
     # done
+    # for config in ${all_configs//,/ }; do
+    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$all_ml_scores"
+    #     run_merge_histograms_local "$config" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$all_ml_scores"
+    # done
+
 
     # run_create_datacards "$all_configs" "dl_jerc" "$all_models"
 

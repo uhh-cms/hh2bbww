@@ -55,12 +55,17 @@ def patch_live_task_id():
         """
         # create a temporary dictionary of param_kwargs that is patched for the duration of the
         # call to create the string representation of the parameters
-        param_kwargs = {
-            attr: getattr(self, attr)
-            for attr in self.param_kwargs
-            # NOTE: this is the only change compared to the original code
-            if attr not in remove_from_live_task_id
-        }
+        param_kwargs = {attr: getattr(self, attr) for attr in self.param_kwargs}
+
+        # PATCH: when fetch_output is used, remove parameters that should not be part of the live_task_id
+        if param_kwargs.get("fetch_output", None):
+            logger.info(f"fetch_output is set, following params removed from live_task_id: {remove_from_live_task_id}")
+            param_kwargs = {
+                attr: getattr(self, attr)
+                for attr in param_kwargs
+                if attr not in remove_from_live_task_id
+            }
+
         # only_public was introduced in luigi 2.8.0, so check if that arg exists
         str_params_kwargs = {"only_significant": True}
         if "only_public" in getfullargspec(self.to_str_params).args:
@@ -89,16 +94,7 @@ def patch_pilots():
         # cannot call super() here; hopefully we only need the workflow_requires from RemoteWorkflow
         reqs = RemoteWorkflow.workflow_requires(self)
         if not self.pilot:
-            reqs["merged_hists"] = hist_reqs = {}
-            for cat_obj in self.branch_map.values():
-                cat_reqs = self._requires_cat_obj(cat_obj, merge_variables=True)
-                for config_name, proc_reqs in cat_reqs.items():
-                    hist_reqs.setdefault(config_name, {})
-                    for proc_name, dataset_reqs in proc_reqs.items():
-                        hist_reqs[config_name].setdefault(proc_name, {})
-                        for dataset_name, task in dataset_reqs.items():
-                            hist_reqs[config_name][proc_name].setdefault(dataset_name, set()).add(task)
-            return reqs
+            return self._hist_requirements()
 
         return reqs
 
@@ -271,6 +267,41 @@ def patch_materialization_strategy():
 
 
 @memoize
+def patch_modify_process_hist():
+    from columnflow.tasks.framework.inference import SerializeInferenceModelBase
+
+    def modify_process_hist(self, config_inst, process_inst, variable, h):
+        import hist
+        # determine leaf categories to gather
+        categories = [
+            c.config_data[config_inst.name].category
+            for c in self.inference_model_inst.categories
+            if c.config_data[config_inst.name].variable == variable
+        ]
+        # get all leaf categories
+
+        def flatten_nested_list(nested_list):
+            return [item for sublist in nested_list for item in sublist]
+
+        category_insts = list(map(config_inst.get_category, categories))
+        leaf_category_insts = set(flatten_nested_list([
+            category_inst.get_leaf_categories() or [category_inst]
+            for category_inst in category_insts
+        ]))
+        # select relevant categories
+        h = h[{
+            "category": [
+                hist.loc(c.name)
+                for c in leaf_category_insts
+                if c.name in h.axes["category"]
+            ],
+        }]
+        return h
+
+    SerializeInferenceModelBase.modify_process_hist = modify_process_hist
+
+
+@memoize
 def patch_all():
     # change the "retries" parameter default
     from columnflow.tasks.framework.remote import RemoteWorkflow
@@ -281,6 +312,8 @@ def patch_all():
     # patch_column_alias_strategy()
     patch_csp_versioning()
     patch_default_version()
-    patch_pilots()
-    # NOTE: this patch is useful to make fetch-output consistent, but I am not yet sure if it breaks things
-    # patch_live_task_id()
+    # patch_pilots()
+    # NOTE: this patch is useful to make fetch-output consistent, but breaks things when submitting jobs
+    patch_live_task_id()
+
+    patch_modify_process_hist()

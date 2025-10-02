@@ -24,6 +24,7 @@ def cumsum(
     task,
     hists: hist.Histogram,
     reverse: bool = False,
+    **kwargs,
 ):
     for config_inst, proc_hists in hists.items():
         for proc_inst, proc_hist in proc_hists.items():
@@ -35,7 +36,7 @@ def cumsum(
     return hists
 
 
-def rebin(task, hists: hist.Histogram):
+def rebin(task, hists: hist.Histogram, **kwargs):
     """
     Rebin histograms with edges that are pre-defined for a certain variable and category.
     Lots of hard-coded stuff at the moment.
@@ -68,7 +69,7 @@ def rebin(task, hists: hist.Histogram):
     return h_rebinned
 
 
-def blind_bins_above_score(task, hists: hist.Histogram, default_cut=0.8):
+def blind_bins_above_score(task, hists: hist.Histogram, default_cut=0.8, **kwargs):
     var_name = task.branch_data.variable
     if "logit" in var_name:
         # identify logit transformed scores and convert cut accordingly
@@ -92,7 +93,7 @@ def blind_bins_above_score(task, hists: hist.Histogram, default_cut=0.8):
     return hists
 
 
-def blind_bins(task, hists: hist.Histogram, blinding_threshold=0.08):
+def blind_bins(task, hists: hist.Histogram, blinding_threshold=0.08, **kwargs):
     from columnflow.plotting.plot_util import blind_sensitive_bins
 
     out_hists = {}
