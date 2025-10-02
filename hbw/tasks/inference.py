@@ -852,6 +852,8 @@ class PrepareInferenceTaskCalls(
         significant=False,
     )
 
+    cards_version = ""
+
     @classmethod
     def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
         # params["known_shifts"] = shifts
@@ -911,11 +913,14 @@ class PrepareInferenceTaskCalls(
 
     @property
     def config_groups_str(self):
-        return "__".join([self.configs_str(configs) for configs in self.config_groups])
+        return [self.configs_str(configs) for configs in self.config_groups]
 
     def store_parts(self):
         parts = super().store_parts()
-        parts.insert_before("version", "config_group", self.config_groups_str)
+        cards_repr = "__".join(self.config_groups_str)
+        if self.cards_version:
+            cards_repr += f"__{self.cards_version}"
+        parts.insert_before("version", "config_group", cards_repr)
         return parts
 
     def output(self):
@@ -941,11 +946,11 @@ class PrepareInferenceTaskCalls(
             for target in value.collection.targets.values():
                 target["card"].copy_to(output["datacards"])
                 target["shapes"].copy_to(output["datacards"])
+                target["inspection"].copy_to(output["datacards"])
                 card_fns.append(target["card"].basename)
 
         # string that represents the version of datacards
-        configs_str = "__".join(self.config_groups_str)
-        identifier_list = [configs_str, self.selector, str(self.inference_model), self.version]
+        identifier_list = [*self.config_groups_str, self.selector, str(self.inference_model), self.version]
         identifier = "__".join(identifier_list)
 
         # TODO: copy datacards to this output
