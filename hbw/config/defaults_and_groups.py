@@ -585,7 +585,7 @@ def set_config_defaults_and_groups(config_inst):
             "whitespace_fraction": 0.4,
             "cms_label": "simwip",
             "yscale": "log",
-            "shape_norm": True,
+            # "shape_norm": True,
         },
     }
     config_inst.x.process_settings_groups = {

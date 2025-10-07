@@ -655,7 +655,7 @@ class MLClassifierBase(MLModel):
             logger.warning(f"Dataset {task.dataset} is empty. No columns are produced.")
             return events
 
-        events = self.patch_events(events)
+        # events = self.patch_events(events)
 
         # check that the input features are the same for all models
         for model in models:

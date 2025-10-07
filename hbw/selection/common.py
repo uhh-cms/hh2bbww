@@ -242,7 +242,6 @@ def post_selection(
 
     # build categories
     events = self[category_ids](events, results=results, **kwargs)
-
     events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
     events = self[hbw_increment_stats](events, results, stats, **kwargs)
     events = self[hbw_selection_hists](events, results, hists, **kwargs)

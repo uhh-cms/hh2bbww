@@ -294,7 +294,7 @@ def dl1(
         "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet",
         "Trigger", "TriggerAndLep", "data_double_counting",
         "TripleLooseLeptonVeto", "TripleTightLeptonVeto",
-        "VetoTau",
+        # "VetoTau",
     )
     for step in keep_steps:
         events = set_ak_bool(events, f"steps.{step}", results.steps[step])

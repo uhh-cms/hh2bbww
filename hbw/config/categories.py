@@ -201,18 +201,18 @@ def add_njet_categories(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_jet_categories(config: od.Config) -> None:
-    cat_resolved = config.add_category(  # noqa: F841
-        name="resolved",
-        id=100,
-        selection="catid_resolved",
-        label="resolved",
-    )
-    cat_boosted = config.add_category(  # noqa: F841
-        name="boosted",
-        id=200,
-        selection="catid_boosted",
-        label="boosted",
-    )
+    # cat_resolved = config.add_category(  # noqa: F841
+    #     name="resolved",
+    #     id=100,
+    #     selection="catid_resolved",
+    #     label="resolved",
+    # )
+    # cat_boosted = config.add_category(  # noqa: F841
+    #     name="boosted",
+    #     id=200,
+    #     selection="catid_boosted",
+    #     label="boosted",
+    # )
 
     cat_1b = config.add_category(  # noqa: F841
         name="1b",
@@ -299,7 +299,7 @@ def add_categories_production(config: od.Config) -> None:
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category("resolved"), config.get_category("boosted")],
         "b": [config.get_category("1b"), config.get_category("2b")],
     })
     t0 = time()
@@ -374,7 +374,7 @@ def add_categories_ml(config, ml_model_inst):
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category("resolved"), config.get_category("boosted")],
         "b": [config.get_category("1b"), config.get_category("2b")],
         "dnn": ml_categories,
     })
@@ -406,20 +406,20 @@ def add_categories_ml(config, ml_model_inst):
         label="dycr (2mu)",
     )
 
-    # add boosted ml bkg category by hand, combining all boosted ml signal categories
-    sr__boosted__ml_bkg = config.add_category(  # noqa: F841
-        name="sr__boosted__ml_bkg",
-        selection="catid_never",  # dummy Categorizer, never selected
-        id=201000,
-        label="\n".join([sr.label, "boosted", "ml_bkg"]),
-        aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
-    )
-    for proc, node_config in ml_model_inst.train_nodes.items():
-        # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
-        if "sig" in proc or "hh" in proc:
-            continue
-        bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
-        sr__boosted__ml_bkg.add_category(bkg_cat)
+    # # add boosted ml bkg category by hand, combining all boosted ml signal categories
+    # sr__boosted__ml_bkg = config.add_category(  # noqa: F841
+    #     name="sr__boosted__ml_bkg",
+    #     selection="catid_never",  # dummy Categorizer, never selected
+    #     id=201000,
+    #     label="\n".join([sr.label, "boosted", "ml_bkg"]),
+    #     aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
+    # )
+    # for proc, node_config in ml_model_inst.train_nodes.items():
+    #     # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
+    #     if "sig" in proc or "hh" in proc:
+    #         continue
+    #     bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
+    #     sr__boosted__ml_bkg.add_category(bkg_cat)
 
     # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
     # # to be discussed and included in future versions.

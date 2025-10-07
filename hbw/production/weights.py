@@ -23,8 +23,8 @@ from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from hbw.production.btag import HBWTMP_btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from columnflow.production.cms.top_pt_weight import top_pt_weight
-from hbw.production.top_pt_theory import top_pt_theory_weight
+# from columnflow.production.cms.top_pt_weight import top_pt_weight
+# from hbw.production.top_pt_theory import top_pt_theory_weight
 from columnflow.production.cms.dy import dy_weights
 from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
@@ -229,7 +229,12 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
 
     # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
-    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    use_dataset_normalization_datasets = {
+        "dy_m10to50_amcatnlo",
+        "tt_powheg_herwig_ul18",
+        "tt_powheg_pythia_ul16",
+    }
+    if self.dataset_inst.name in use_dataset_normalization_datasets:
         events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
     return events
 
@@ -258,8 +263,8 @@ def combined_normalization_weights_init(self: Producer) -> None:
     uses={
         combined_normalization_weights,
         IF_DY(dy_weights),
-        top_pt_weight,
-        top_pt_theory_weight,
+        # top_pt_weight,
+        # top_pt_theory_weight,
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
@@ -267,7 +272,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
     produces={
         combined_normalization_weights,
         IF_DY(dy_weights),
-        top_pt_theory_weight,
+        # top_pt_theory_weight,
         vjets_weight,
         IF_DY(dy_weights),
         normalized_pu_weights,
@@ -283,10 +288,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute normalization weights
     events = self[combined_normalization_weights](events, **kwargs)
 
-    # compute gen top pt weights
-    if self.dataset_inst.has_tag("is_ttbar"):
-        events = self[top_pt_weight](events, **kwargs)
-        events = self[top_pt_theory_weight](events, **kwargs)
+    # # compute gen top pt weights
+    # if self.dataset_inst.has_tag("is_ttbar"):
+    #     events = self[top_pt_weight](events, **kwargs)
+    #     events = self[top_pt_theory_weight](events, **kwargs)
 
     if self.dataset_inst.has_tag("is_dy"):
         events = self[dy_weights](events, **kwargs)

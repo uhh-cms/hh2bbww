@@ -612,6 +612,16 @@ def call_func_safe(func, *args, **kwargs) -> Any:
 
 
 @deferred_column
+def IF_NANO_V9(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v9.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version == 9 else None
+
+
+@deferred_column
 def IF_NANO_V12(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
     Helper to check if the campaign of this particular dataset is nano v12.

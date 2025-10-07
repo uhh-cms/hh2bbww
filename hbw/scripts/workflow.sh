@@ -406,7 +406,7 @@ run_merge_shifted_histograms_htcondor() {
             --datasets "*" \
             --cf.MergeShiftedHistograms-variables "$variables" \
             --cf.MergeShiftedHistograms-ml-models "$models" \
-            --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
+            --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
             --cf.BundleRepo-custom-checksum $checksum \
             --workers 6
         echo "Processes for config $config completed."
@@ -552,7 +552,8 @@ run_and_fetch_mcsyst_plots() {
         --categories "$categories" \
         --general-settings data_mc_plots_not_blinded \
         --workers 6 \
-        --cf.MergeHistograms-pilot
+        --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
+        --cf.BundleRepo-custom-checksum $checksum
 }
 
 run_and_fetch_mcsyst_plots_boosted() {

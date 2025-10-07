@@ -79,6 +79,8 @@ def electron_ee_veto(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @electron_ee_veto.skip
 def electron_ee_veto_skip_func(self: Producer):
+    if "UL" in self.dataset_inst.x.campaign:
+        return True
     # skip for all exept for the 2022 post-EE campaign
     if self.config_inst.campaign.has_tag("postEE"):
         return False

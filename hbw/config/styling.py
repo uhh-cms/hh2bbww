@@ -58,6 +58,7 @@ color_palette = cms_color_palette_2
 default_process_colors = {
     "data": color_palette["black"],
     "tt": color_palette["red"],
+    "tt_dl": color_palette["red"],
     "qcd": color_palette["blue"],
     "qcd_mu": color_palette["blue"],
     "qcd_ele": color_palette["blue"],

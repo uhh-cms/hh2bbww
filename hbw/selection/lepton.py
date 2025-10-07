@@ -38,7 +38,7 @@ logger = law.logger.get_logger(__name__)
         "{Electron,Muon,Tau}.{pt,eta,phi,mass}",
         "Electron.{dxy,dz,cutBased}",
         "Muon.{dxy,dz,looseId,pfIsoId}",
-        "Tau.{dz,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet,decayMode}",
+        # "Tau.{dz,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet,decayMode}",
         jet_selection, electron_ee_veto,
     },
     produces={
@@ -134,24 +134,23 @@ def lepton_definition(
         self.muon_iso_req(muon)
     )
 
-    # tau veto mask (only needed in SL?)
-    # TODO: update criteria
-    tau_mask_veto = (
-        (abs(events.Tau.eta) < 2.3) &
-        # (abs(events.Tau.dz) < 0.2) &
-        (events.Tau.pt > 15.0) &
-        (events.Tau.idDeepTau2018v2p5VSe >= 2) &  # VVLoose
-        (events.Tau.idDeepTau2018v2p5VSmu >= 1) &  # VLoose
-        (events.Tau.idDeepTau2018v2p5VSjet >= 5) &  # medium
-        (
-            (events.Tau.decayMode == 0) |
-            (events.Tau.decayMode == 1) |
-            (events.Tau.decayMode == 2) |
-            (events.Tau.decayMode == 10) |
-            (events.Tau.decayMode == 11)
-        )
-    )
-    steps["VetoTau"] = ak.sum(tau_mask_veto, axis=1) == 0
+    # # tau veto mask (only needed in SL?)
+    # tau_mask_veto = (
+    #     (abs(events.Tau.eta) < 2.3) &
+    #     # (abs(events.Tau.dz) < 0.2) &
+    #     (events.Tau.pt > 15.0) &
+    #     (events.Tau.idDeepTau2018v2p5VSe >= 2) &  # VVLoose
+    #     (events.Tau.idDeepTau2018v2p5VSmu >= 1) &  # VLoose
+    #     (events.Tau.idDeepTau2018v2p5VSjet >= 5) &  # medium
+    #     (
+    #         (events.Tau.decayMode == 0) |
+    #         (events.Tau.decayMode == 1) |
+    #         (events.Tau.decayMode == 2) |
+    #         (events.Tau.decayMode == 10) |
+    #         (events.Tau.decayMode == 11)
+    #     )
+    # )
+    # steps["VetoTau"] = ak.sum(tau_mask_veto, axis=1) == 0
 
     # lepton invariant mass cuts
     loose_leptons = ak.concatenate([
@@ -174,7 +173,7 @@ def lepton_definition(
     events = set_ak_column(events, "cutflow.n_fakeable_muon", ak.sum(mu_mask_fakeable, axis=1))
     events = set_ak_column(events, "cutflow.n_tight_electron", ak.sum(e_mask_tight, axis=1))
     events = set_ak_column(events, "cutflow.n_tight_muon", ak.sum(mu_mask_tight, axis=1))
-    events = set_ak_column(events, "cutflow.n_veto_tau", ak.sum(tau_mask_veto, axis=1))
+    # events = set_ak_column(events, "cutflow.n_veto_tau", ak.sum(tau_mask_veto, axis=1))
 
     # store info whether lepton is tight or not
     events = set_ak_column(events, "Muon.is_tight", mu_mask_tight)
@@ -194,7 +193,7 @@ def lepton_definition(
                 "FakeableMuon": masked_sorted_indices(mu_mask_fakeable, muon.pt),
                 "TightMuon": masked_sorted_indices(mu_mask_tight, muon.pt),
             },
-            "Tau": {"VetoTau": masked_sorted_indices(tau_mask_veto, events.Tau.pt)},
+            # "Tau": {"VetoTau": masked_sorted_indices(tau_mask_veto, events.Tau.pt)},
         },
         aux={
             "mu_mask_fakeable": mu_mask_fakeable,

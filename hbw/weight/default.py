@@ -264,7 +264,7 @@ default_correction_weights = {
     "normalized_pdf_weight": ["pdf"],
     "normalized_isr_weight": ["isr"],
     "normalized_fsr_weight": ["fsr"],
-    "top_pt_theory_weight": ["top_pt"],
+    # "top_pt_theory_weight": ["top_pt"],
 }
 
 default_weight_columns = {

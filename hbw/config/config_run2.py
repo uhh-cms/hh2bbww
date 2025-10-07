@@ -568,7 +568,13 @@ def add_config(
     ################################################################################################
 
     # register shifts
-    cfg.add_shift(name="nominal", id=0)
+    nominal = cfg.add_shift(name="nominal", id=0)
+    # NOTE: do not run on Run-3 samples with this config!
+    column_aliases = nominal.x("column_aliases", {})
+    column_aliases["Jet.btagPNetB"] = "Jet.btagDeepB"
+    column_aliases["FatJet.particleNetWithMass_HbbvsQCD"] = "FatJet.particleNet_HbbvsQCD"
+    column_aliases["FatJet.particleNet_XbbVsQCD"] = "FatJet.particleNetMD_Xbb"
+    nominal.x.column_aliases = column_aliases
     cfg.add_shift(name="tune_up", id=1, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="tune_down", id=2, type="shape", tags={"disjoint_from_nominal"})
     cfg.add_shift(name="hdamp_up", id=3, type="shape", tags={"disjoint_from_nominal"})

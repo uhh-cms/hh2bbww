@@ -66,7 +66,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     uses={
         # "*", "*.*",
         prepare_objects, vbf_candidates,
-        "FatJet.{msoftdrop,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}",
+        # "FatJet.{msoftdrop,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}",
         "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
         "{Electron,Muon}.{pdgId}",
         MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
@@ -107,7 +107,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # object padding
     events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
     events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
-    events = set_ak_column(events, "FatBjet", ak.pad_none(events.FatBjet, 1))
+    # events = set_ak_column(events, "FatBjet", ak.pad_none(events.FatBjet, 1))
 
     # setup correct btagging columns
     btag_wp_score = self.config_inst.x.btag_wp_score
@@ -117,12 +117,12 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "Bjet.b_score", events.Bjet[btag_column])
     events = set_ak_column_f32(events, "Lightjet.b_score", events.Lightjet[btag_column])
 
-    # H->bb FatJet
-    for var in [
-        "pt", "eta", "phi", "mass", "msoftdrop",
-        "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
-    ]:
-        events = set_ak_column_f32(events, f"mli_fj_{var}", events.FatBjet[:, 0][var])
+    # # H->bb FatJet
+    # for var in [
+    #     "pt", "eta", "phi", "mass", "msoftdrop",
+    #     "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
+    # ]:
+    #     events = set_ak_column_f32(events, f"mli_fj_{var}", events.FatBjet[:, 0][var])
 
     # low-level features
     for var in ["pt", "eta", "b_score"]:
@@ -208,13 +208,13 @@ def common_ml_inputs_init(self: Producer) -> None:
         f"mli_{obj}_{var}"
         for obj in ["b1", "b2", "j1", "j2"]
         for var in ["b_score", "pt", "eta"]
-    ) | set(
-        f"mli_{obj}_{var}"
-        for obj in ["fj"]
-        for var in [
-            "pt", "eta", "phi", "mass", "msoftdrop",
-            "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
-        ]
+        # ) | set(
+        #     f"mli_{obj}_{var}"
+        #     for obj in ["fj"]
+        #     for var in [
+        #         "pt", "eta", "phi", "mass", "msoftdrop",
+        #         "particleNet_XbbVsQCD", "particleNetWithMass_HbbvsQCD",
+        #     ]
     )
     self.produces |= self.ml_input_columns
 

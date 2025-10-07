@@ -153,6 +153,14 @@ def jet_selection(
 
 @jet_selection.init
 def jet_selection_init(self: Selector) -> None:
+    # if (
+    #     "UL" not in self.dataset_inst.x.campaign and
+    #     "Jet.btagPNetB" in self.config_inst.get_shift("nominal").x.column_aliases
+    # ):
+    #     raise Exception(
+    #         "column alias 'Jet.btagPNetB' found in config, but not running on UL samples! This branch is probably "
+    #         "intended only for UL sample studies where no Jet.btagPNetB is available!"
+    #     )
     # configuration of defaults
     self.jet_pt = self.config_inst.x("jet_pt", 25)
 

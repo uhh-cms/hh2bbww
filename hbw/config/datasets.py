@@ -378,6 +378,7 @@ def add_synchronization_dataset(config: od.Config):
 def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # if config.x.cpn_tag == "2022postEE":
     #     add_synchronization_dataset(config)
+    add_hh_herwig_datasets(campaign, config)
 
     # if campaign.x.year == 2017:
     #     # load custom produced datasets into campaign (2017 only!)
@@ -493,6 +494,7 @@ def configure_hbw_datasets(
         if dataset.name in (
             "h_ggf_htt_powheg",
             "h_vbf_htt_powheg",
+            "tt_powheg_herwig_ul18",
         ):
             dataset.add_tag("no_ps_weights")
         if (
@@ -523,6 +525,115 @@ def configure_hbw_datasets(
         if dataset.is_data:
             if config.x.cpn_tag == "2022preEE":
                 dataset.x.jec_era = "RunCD"
+
+
+def add_hh_herwig_datasets(campaign: od.Campaign, config: od.Config) -> None:
+    from order import DatasetInfo, Process
+    import cmsdb.constants as const
+    from cmsdb.util import multiply_xsecs
+    # from hbw.config.styling import color_palette
+
+    # copy-pasted processes, separated from main ttbar to allow plotting comparison
+    tt_herwig = Process(
+        name="tt_herwig",
+        id=6951000,
+        label=r"$t\bar{t}$ + Jets (Herwig)",
+        # color=(205, 0, 9),
+        xsecs={
+            13: Number(833.9, {
+                "scale": (20.5, 30.0),
+                "pdf": 21.0,
+                "mtop": (23.2, 22.5),
+            }),
+            13.6: Number(923.6, {
+                "scale": (22.6, 33.4),
+                "pdf": 22.8,
+                "mtop": (25.4, 24.6),
+            }),
+        },
+    )
+
+    tt_herwig_sl = tt_herwig.add_process(  # noqa: F841
+        name="tt_herwig_sl",
+        id=6951100,
+        label=f"{tt_herwig.label}, SL",
+        # color=(205, 0, 9),
+        xsecs=multiply_xsecs(tt_herwig, const.br_ww.sl),
+    )
+
+    tt_herwig_dl = tt_herwig.add_process(  # noqa: F841
+        name="tt_herwig_dl",
+        id=6951200,
+        label=f"{tt_herwig.label}, DL",
+        tags={"is_signal"},
+        # color=(235, 230, 10),
+        xsecs=multiply_xsecs(tt_herwig, const.br_ww.dl),
+    )
+
+    tt_herwig_fh = tt_herwig.add_process(  # noqa: F841
+        name="tt_herwig_fh",
+        id=6951300,
+        label=f"{tt_herwig.label}, FH",
+        # color=(255, 153, 0),
+        xsecs=multiply_xsecs(tt_herwig, const.br_ww.fh),
+    )
+    config.add_process(tt_herwig)
+
+    config.add_dataset(
+        name="tt_dl_powheg_ul18",
+        id=14234474,
+        processes=[cmsdb_procs.tt_dl],
+        aux={"campaign": "UL18v9"},
+        info=dict(
+            nominal=DatasetInfo(
+                keys=[
+                    "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM",  # noqa: E501
+                ],
+                aux={
+                    "broken_files": [],
+                },
+                n_files=155,  # 155-0
+                n_events=145020000,
+            ),
+        ),
+    )
+    config.add_dataset(
+        name="tt_powheg_herwig_ul18",
+        id=14281492,
+        processes=[tt_herwig],
+        aux={"campaign": "UL18v9"},
+        info=dict(
+            nominal=DatasetInfo(
+                keys=[
+                    "/TT_TuneCH3_13TeV-powheg-herwig7/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM",  # noqa: E501
+                ],
+                aux={
+                    "broken_files": [],
+                },
+                n_files=258,  # 258-0
+                n_events=240454686,
+            ),
+        ),
+    )
+
+    config.add_dataset(
+        name="tt_powheg_herwig_ul16",
+        id=14321886,
+        processes=[tt_herwig],
+        # aux={"campaign": "UL16"},
+        info=dict(
+            nominal=DatasetInfo(
+                keys=[
+                    "/TT_TuneCH3_13TeV-powheg-herwig7/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM",  # noqa: E501
+                ],
+                aux={
+                    "broken_files": [],
+                },
+                n_files=104,  # 104-0
+                n_events=75785304,
+            ),
+        ),
+    )
 
 
 def get_custom_hh_2017_datasets(

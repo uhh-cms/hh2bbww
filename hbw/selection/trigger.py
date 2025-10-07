@@ -106,7 +106,11 @@ def trigger_selection(
         fired_and_all_legs_match = fired & all_legs_match
 
         # check if an unprescaled L1 seed has fired as well
-        l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in trigger.x.L1_seeds])
+        l1_seeds = trigger.x.L1_seeds
+        if "UL" in self.dataset_inst.x.campaign and "Mu7_EG20er2p5" in l1_seeds:
+            # Mu7_EG20er2p5 is not available in UL16/17 nanoAODv9
+            l1_seeds.remove("Mu7_EG20er2p5")
+        l1_seeds_fired = ak_any([events.L1[l1_seed] for l1_seed in l1_seeds])
 
         fired_and_l1_fired = fired & l1_seeds_fired
 
@@ -169,21 +173,20 @@ def trigger_selection_init(self: Selector) -> None:
         for trigger in self.config_inst.x.triggers
         # if trigger.applies_to_dataset(self.dataset_inst)
     }
-    # add L1 seed columns
-    for trigger in self.config_inst.x.triggers:
-        self.uses |= {
-            f"L1.{l1_seed}"
-            for l1_seed in trigger.x.L1_seeds
-        }
 
     # add L1 seed columns
+    seeds = set()
     for trigger in self.config_inst.x.triggers:
-        if not trigger.x("L1_seeds", None):
-            logger.warning(f"Trigger '{trigger.name}' does not have L1 seeds defined")
-        self.uses |= {
+        seeds |= {
             f"L1.{l1_seed}"
             for l1_seed in trigger.x.L1_seeds
         }
+        if not trigger.x("L1_seeds", None):
+            logger.warning(f"Trigger '{trigger.name}' does not have L1 seeds defined")
+
+    if "UL" in self.dataset_inst.x.campaign:
+        seeds.remove("L1.Mu7_EG20er2p5")
+    self.uses |= seeds
 
     # testing: add HLT columns to keep columns
     self.config_inst.x.keep_columns["cf.ReduceEvents"] |= {

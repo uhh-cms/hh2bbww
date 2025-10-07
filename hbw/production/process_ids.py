@@ -71,6 +71,9 @@ def hbw_process_ids_init(self: Producer) -> None:
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         # stitching of DY NLO samples
         self.process_producer = w_lnu_nlo_process_producer
+    # elif self.dataset_inst.processes.get_first().name == "tt":
+    elif "ul18" in self.dataset_inst.name:
+        self.process_producer = tt_incl_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
     else:
@@ -87,16 +90,19 @@ def hbw_process_ids_init(self: Producer) -> None:
 
 
 @producer(
-    uses={"GenPart.pdgId", "GenPart.statusFlags", "GenPart.genPartIdxMother"},
+    uses={"GenPart.pdgId", "GenPart.statusFlags", "GenPart.genPartIdxMother", "GenPart.status"},
     mc_only=True,
 )
 def n_gen_particles(
     self: Producer,
     events: ak.Array,
     flags: list[str] = ["isHardProcess"],
+    require_parent: list[int] = [],
+    veto_parent: list[int] = [],
+    status_flag=None,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
-    """ Categorizer to select events with a certain number of prompt gen particles """
+    """ Producer to select events with a certain number of prompt gen particles """
     if self.dataset_inst.is_data:
         return events
 
@@ -113,6 +119,16 @@ def n_gen_particles(
             else:
                 gp = gp[gp.hasFlags(flag)]
             gp = gp[~ak.is_none(gp, axis=1)]
+
+    # for trying to select only stable particles in Herwig (because "isHardProcess" not working there)
+    if status_flag is not None:
+        gp = gp[gp.status == status_flag]
+    for veto_id in require_parent:
+        gp = gp[abs(gp.distinctParent.pdgId) == veto_id]
+        gp = gp[~ak.is_none(gp, axis=1)]
+    for veto_id in veto_parent:
+        gp = gp[abs(gp.distinctParent.pdgId) != veto_id]
+        gp = gp[~ak.is_none(gp, axis=1)]
 
     gp_id = abs(gp.pdgId)
 
@@ -134,6 +150,48 @@ def n_gen_particles(
 
 @n_gen_particles.init
 def n_gen_particles_init(self: Producer) -> None:
+    self.pdgIds = tuple(pdgId_map.keys())
+    self.produces.update({f"n_gen.{particle}" for particle in pdgId_map.values()})
+    self.produces.update({"n_gen.clep", "n_gen.neutrino", "n_gen.quark", "n_gen.hadronic"})
+
+
+@producer(
+    uses={"LHEPart.pdgId", "LHEPart.status"},
+    mc_only=True,
+)
+def n_gen_particles_from_lhe(
+    self: Producer,
+    events: ak.Array,
+    status: int = 1,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    """ Producer to select events with a certain number of prompt gen particles from LHE """
+    if self.dataset_inst.is_data:
+        return events
+
+    lhe = events.LHEPart
+    if status is not None:
+        lhe = lhe[lhe.status == status]
+    lhe_id = abs(lhe.pdgId)
+
+    for pdgId in self.pdgIds:
+        events = set_ak_column(events, f"n_gen.{pdgId_map[pdgId]}", ak.sum(lhe_id == pdgId, axis=1))
+
+    events = set_ak_column(events, "n_gen.clep", events.n_gen.electron + events.n_gen.muon + events.n_gen.tau)
+    events = set_ak_column(events, "n_gen.neutrino", (
+        events.n_gen.e_neutrino + events.n_gen.mu_neutrino + events.n_gen.tau_neutrino
+    ))
+    events = set_ak_column(events, "n_gen.quark", (
+        events.n_gen.down + events.n_gen.up + events.n_gen.strange +
+        events.n_gen.charm + events.n_gen.bottom + events.n_gen.top
+    ))
+    events = set_ak_column(events, "n_gen.hadronic", events.n_gen.quark + events.n_gen.gluon)
+
+    return events
+
+
+@n_gen_particles_from_lhe.init
+def n_gen_particles_from_lhe_init(self: Producer) -> None:
     self.pdgIds = tuple(pdgId_map.keys())
     self.produces.update({f"n_gen.{particle}" for particle in pdgId_map.values()})
     self.produces.update({"n_gen.clep", "n_gen.neutrino", "n_gen.quark", "n_gen.hadronic"})
@@ -171,6 +229,33 @@ def get_process_id_from_masks(
         raise ValueError(f"Events from dataset {dataset_inst.name} have not been assigned any process")
 
     return process_id
+
+
+@producer(
+    uses={n_gen_particles_from_lhe},
+    produces={n_gen_particles_from_lhe, "process_id"},
+)
+def tt_incl_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer, trying to select the tt dileptonic, semileptonic and fully hadronic decays
+    in Herwig samples, but did not manage to find proper selection criteria.
+    """
+    events = self[n_gen_particles_from_lhe](
+        events,
+        status=None,
+        **kwargs,
+    )
+    n_clep = events.n_gen.clep
+    base_proc_name = "tt_herwig" if "herwig" in self.dataset_inst.name else "tt"
+    process_masks = {
+        f"{base_proc_name}_dl": (n_clep == 2),
+        f"{base_proc_name}_sl": (n_clep == 1),
+        f"{base_proc_name}_fh": (n_clep == 0),
+    }
+    process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)
+    events = set_ak_column(events, "process_id", process_id, value_type=np.int32)
+
+    return events
 
 
 @producer(
@@ -223,7 +308,6 @@ def w_lnu_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak
         f"{base_proc_name}_2j": n_partons == 2,
         f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
     }
-
     process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)
     events = set_ak_column(events, "process_id", process_id, value_type=np.int32)
 
