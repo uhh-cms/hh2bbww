@@ -36,35 +36,74 @@ def cumsum(
     return hists
 
 
-def rebin(task, hists: hist.Histogram, **kwargs):
+def rebin(task, hists: hist.Histogram, variable_name, category_name, **kwargs):
     """
     Rebin histograms with edges that are pre-defined for a certain variable and category.
     Lots of hard-coded stuff at the moment.
     """
+    # from hbw.util import debugger; debugger()
     # get variable inst assuming we created a 1D histogram
-    variable_inst = task.config_inst.get_variable(task.branch_data.variable)
+    variable_inst = task.config_inst.get_variable(variable_name)
+    category_inst = task.config_inst.get_category(category_name)
 
-    # edges for 2b channel
+    # edges for 2b channe
+    # edges = {
+    #     "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
+    #     "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
+    #     "mlscore.tt": [0.0, 0.533, 0.669, 1.0],
+    #     "mlscore.h": [0.0, 0.494, 0.651, 1.0],
+    # }
+
+    if "1b" in category_inst.name:
+        cat_identifier = "1b"
+    elif "2b" in category_inst.name:
+        cat_identifier = "2b"
+    elif "boosted" in category_inst.name:
+        cat_identifier = "boosted"
+    else:
+        # fallback to 2b edges
+        cat_identifier = "2b"
+        # raise Exception(f"Cannot identify category {category_inst.name} for rebinning.")
+
     edges = {
-        "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
-        "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
-        "mlscore.tt": [0.0, 0.533, 0.669, 1.0],
-        "mlscore.h": [0.0, 0.494, 0.651, 1.0],
+        "logit_mlscore.sig_vbf_binary": {
+            "1b": [-2.0, 1.0, 1.408, 1.7680000000000002, 2.128, 2.5120000000000005, 2.9320000000000004, 3.412, 4.024, 4.924, 10.0],
+            "2b": [-2.0, 1.576, 2.2720000000000002, 2.9320000000000004, 3.5920000000000005, 4.276, 5.032, 6.3759999999999994, 10.0],
+            "boosted": [-2.0, 4.792, 6.795999999999999, 10.0],
+        },
+        "logit_mlscore.sig_ggf_binary": {
+            "1b": [-2.0, 0.8799999999999999, 1.2760000000000002, 1.612, 1.936, 2.26, 2.596, 3.0040000000000004, 3.484, 4.24, 10.0],
+            "2b":[-2.0, 1.1560000000000001, 1.8040000000000003, 2.428, 3.0520000000000005, 3.676, 4.312, 4.948, 5.632000000000001, 6.508000000000001, 10.0],
+            "boosted": [-2.0, 5.128, 7.311999999999999, 10.0],
+        },
+        "rebin1logit_mlscore.sig_vbf_binary": {
+            "1b": [-8.0, -2.0, 1.0, 1.408, 1.7680000000000002, 2.128, 2.5120000000000005, 2.9320000000000004, 3.412, 4.024, 4.924, 10.0],
+            "2b": [-8.0, -2.0, 1.576, 2.2720000000000002, 2.9320000000000004, 3.5920000000000005, 4.276, 5.032, 6.3759999999999994, 10.0],
+            "boosted": [-8.0, -2.0, 4.792, 6.795999999999999, 10.0],
+        },
+        "rebin1logit_mlscore.sig_ggf_binary": {
+            "1b": [-8.0, -2.0, 0.8799999999999999, 1.2760000000000002, 1.612, 1.936, 2.26, 2.596, 3.0040000000000004, 3.484, 4.24, 10.0],
+            "2b":[-8.0, -2.0, 1.1560000000000001, 1.8040000000000003, 2.428, 3.0520000000000005, 3.676, 4.312, 4.948, 5.632000000000001, 6.508000000000001, 10.0],
+            "boosted": [-8.0, -2.0, 5.128, 7.311999999999999, 10.0],
+        },
     }
 
     h_rebinned = DotDict()
 
-    edges = edges[variable_inst.name]
-    for proc, h in hists.items():
-        old_axis = h.axes[variable_inst.name]
+    edges = edges[variable_inst.name][cat_identifier]
 
-        h_rebin = apply_rebinning_edges(h.copy(), old_axis.name, edges)
+    for config_inst, proc_hists in hists.items():
+        h_rebinned[config_inst] = DotDict()
+        for proc, h in proc_hists.items():
+            old_axis = h.axes[variable_inst.name]
 
-        if not np.isclose(h.sum().value, h_rebin.sum().value):
-            raise Exception(f"Rebinning changed histogram value: {h.sum().value} -> {h_rebin.sum().value}")
-        if not np.isclose(h.sum().variance, h_rebin.sum().variance):
-            raise Exception(f"Rebinning changed histogram variance: {h.sum().variance} -> {h_rebin.sum().variance}")
-        h_rebinned[proc] = h_rebin
+            h_rebin = apply_rebinning_edges(h.copy(), old_axis.name, edges)
+
+            if not np.isclose(h.sum().value, h_rebin.sum().value):
+                raise Exception(f"Rebinning changed histogram value: {h.sum().value} -> {h_rebin.sum().value}")
+            if not np.isclose(h.sum().variance, h_rebin.sum().variance):
+                raise Exception(f"Rebinning changed histogram variance: {h.sum().variance} -> {h_rebin.sum().variance}")
+            h_rebinned[config_inst][proc] = h_rebin
 
     return h_rebinned
 

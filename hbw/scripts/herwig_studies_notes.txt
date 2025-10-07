@@ -1,0 +1,6 @@
+
+# making plots with categorizated+rebinned dnn scores
+claw run cf.PlotShiftedVariables1D --datasets tt_powheg_herwig_ul18,tt_dl_powheg_ul18  --variables "logit_mlscore.sig*binary" --workers 4 --process-settings tt_herwig_dl,unstack --processes tt_dl,tt_herwig_dl --categories "sr__{1b,2b}__ml_sig_{ggf,vbf}" --remove-output 0,a,y --plot-function hbw.plotting.plot_ratio.plot_ratio --shape-norm --plot-suffix norm --shift-sources isr,fsr,murf_envelope --hist-hooks rebin --cms-label simwip
+
+# without dnn categorization, but including an additional "background bin"
+claw run cf.PlotShiftedVariables1D --datasets tt_powheg_herwig_ul18,tt_dl_powheg_ul18  --variables "rebin1logit_mlscore.sig*binary" --workers 12 --process-settings tt_herwig_dl,unstack --processes tt_dl,tt_herwig_dl --categories sr,sr__1b,sr__2b --remove-output 0,a,y --plot-function hbw.plotting.plot_ratio.plot_ratio --shape-norm --plot-suffix norm --shift-sources isr,fsr,murf_envelope --hist-hooks rebin --cms-label simwip

@@ -397,6 +397,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs_v1": ml_inputs.v1,
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "ml_outputs": ["mlscore.*,rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
             "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
             # "met_{pt,phi}",  # TODO: apply MetCorr to these variables

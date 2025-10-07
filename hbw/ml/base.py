@@ -353,6 +353,22 @@ class MLClassifierBase(MLModel):
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
                     config_inst.add_variable(
+                        name=f"rebin1logit_mlscore.{proc}",
+                        expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
+                        null_value=-1,
+                        binning=(1500, -8., 10.),
+                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
+                        x_title=f"logit(DNN output score {proc})",
+                        aux={
+                            "inputs": {f"mlscore.{proc}"},
+                            # "rebin": 25,
+                            "rebin_config": {
+                                "processes": [proc],
+                                "n_bins": 4,
+                            },
+                        },  # automatically rebin to 40 bins for plotting tasks
+                    )
+                    config_inst.add_variable(
                         name=f"logit_mlscore.{proc}",
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
@@ -361,7 +377,7 @@ class MLClassifierBase(MLModel):
                         x_title=f"logit(DNN output score {proc})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
-                            "rebin": 25,
+                            # "rebin": 25,
                             "rebin_config": {
                                 "processes": [proc],
                                 "n_bins": 4,
