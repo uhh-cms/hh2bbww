@@ -208,8 +208,8 @@ def set_sl_config_defaults_and_groups(config_inst):
         "default": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "sl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "sl1": ["hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "qcd", "tt"],  # noqa: E501
-        "sl2": ["hh_ggf_hbb_hwwqqlnu_kl1_kt1", "hh_vbf_hbb_hwwqqlnu_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
-        "sl3": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
+        "sl2": ["hh_ggf_hbb_hwwqqlnu_kl1_kt1", "hh_vbf_hbb_hwwqqlnu_kv1_k2v1_kl1", "h", "ttv", "vv", "dy", "st", "w_lnu", "qcd", "tt"],  # noqa: E501
+        "sl3": ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1", "h", "ttv", "vv", "dy", "st", "w_lnu", "qcd", "tt"],  # noqa: E501
         "sl_bkg": ["h", "ttv", "vv", "w_lnu", "dy", "st", "qcd", "tt"],  # noqa: E501
         "dl": ["hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "h", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl1": [default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],

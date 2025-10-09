@@ -17,6 +17,7 @@ from scinum import Number
 from columnflow.tasks.framework.base import Requirements
 from columnflow.tasks.yields import _CreateYieldTable
 from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.tasks.framework.mixins import MLModelsMixin
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.util import dev_sandbox, try_int
 
@@ -28,7 +29,7 @@ logger = law.logger.get_logger(__name__)
 class CustomCreateYieldTable(
     HBWTask,
     _CreateYieldTable,
-    # MLModelsMixin,
+    MLModelsMixin,
     law.LocalWorkflow,
     RemoteWorkflow,
 ):

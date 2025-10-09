@@ -235,7 +235,6 @@ class MLClassifierBase(MLModel):
                 "sl_22post_v0": "200012864e",
                 "sl_22post_binary_ggf_v0": "8ed5e84015",
                 "sl_22post_binary_vbf_v0": "a69ad742bb",
-
             }[self.cls_name]
         parameters_repr = law.util.create_hash(sorted(self.parameters.items()))
         if hasattr(self, "_parameters_repr") and self._parameters_repr != parameters_repr:
