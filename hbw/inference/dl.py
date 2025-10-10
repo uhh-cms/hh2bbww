@@ -507,6 +507,10 @@ default = dl.derive("default", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
 })
+no_boosted = dl.derive("no_boosted", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.sr + config_categories.background,
+})
 default_unblind = dl.derive("default_unblind", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
