@@ -11,6 +11,7 @@ from columnflow.types import Any
 from typing import Callable
 from collections import defaultdict
 
+import luigi
 import law
 import order as od
 
@@ -852,7 +853,11 @@ class PrepareInferenceTaskCalls(
         significant=False,
     )
 
-    cards_version = ""
+    cards_version = luigi.Parameter(
+        default="",
+        description="Optional version string to append to the datacard output path.",
+        significant=True,
+    )
 
     @classmethod
     def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
@@ -950,7 +955,9 @@ class PrepareInferenceTaskCalls(
                 card_fns.append(target["card"].basename)
 
         # string that represents the version of datacards
-        identifier_list = [*self.config_groups_str, self.selector, str(self.inference_model), self.version]
+        identifier_list = [*self.config_groups_str, str(self.inference_model)]
+        if self.cards_version:
+            identifier_list.append(self.cards_version)
         identifier = "__".join(identifier_list)
 
         # TODO: copy datacards to this output
