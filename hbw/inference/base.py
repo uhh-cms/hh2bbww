@@ -666,18 +666,22 @@ class HBWInferenceModelBase(InferenceModel):
                 if config_inst.has_shift(f"{shift_source}_up")
             }
 
-            self.add_parameter(
-                combine_uncertainty_name,
-                category=shape_cats,
-                type=ParameterType.shape,
-                **param_kwargs,
-            )
-            self.add_parameter(
-                combine_uncertainty_name,
-                category=single_bin_cats,
-                type=ParameterType.rate_gauss,
-                transformations=(ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided),  # noqa: E501
-            )
+            if shape_cats:
+                self.add_parameter(
+                    combine_uncertainty_name,
+                    category=shape_cats,
+                    type=ParameterType.shape,
+                    **param_kwargs,
+                )
+            if single_bin_cats:
+                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided)  # noqa: E501
+                self.add_parameter(
+                    combine_uncertainty_name,
+                    category=single_bin_cats,
+                    type=ParameterType.rate_gauss,
+                    transformations=transformations,
+                    **param_kwargs,
+                )
 
             # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
             # if is_theory:

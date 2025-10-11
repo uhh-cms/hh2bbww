@@ -507,6 +507,11 @@ default = dl.derive("default", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
 })
+test_bkgs = dl.derive("test_bkgs", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.background,
+})
+
 no_boosted = dl.derive("no_boosted", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.sr + config_categories.background,
