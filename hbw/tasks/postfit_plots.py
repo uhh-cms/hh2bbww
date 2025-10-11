@@ -26,16 +26,11 @@ from hbw.tasks.base import HBWTask
 
 from columnflow.util import dev_sandbox, DotDict, maybe_import
 
-# from hbw.inference.base import inf_proc
-
-uproot = maybe_import("uproot")
-hist = maybe_import("hist")
-
-
 logger = law.logger.get_logger(__name__)
 
 
 def load_hists_uproot(fit_diagnostics_path, fit_type):
+    import uproot
     """ Helper to load histograms from a fit_diagnostics file """
     with uproot.open(fit_diagnostics_path) as tfile:
         if any("shapes_fit_s" in _k for _k in tfile.keys()):
@@ -107,10 +102,10 @@ def get_hists_from_multidimfit(tfile):
     return hists
 
 
-# imports regarding plot function
-mpl = maybe_import("matplotlib")
-plt = maybe_import("matplotlib.pyplot")
-mplhep = maybe_import("mplhep")
+from columnflow.types import TYPE_CHECKING
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
 
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
@@ -354,6 +349,7 @@ class PlotPostfitShapes(
         """
         import boost_histogram
         import numpy as np
+        import hist
         dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[("value", "<f8"), ("variance", "<f8")])
 
         # TODO: at the moment we only consider processes that are present in all cards

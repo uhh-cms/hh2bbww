@@ -15,7 +15,6 @@ from columnflow.columnar_util import set_ak_column
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-hist = maybe_import("hist")
 
 
 @producer(

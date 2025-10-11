@@ -30,7 +30,7 @@ from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_DY
+from hbw.util import has_tag
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")

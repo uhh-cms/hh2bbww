@@ -13,12 +13,15 @@ from hbw.util import round_sig, timeit
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, DotDict
 from columnflow.plotting.plot_util import get_position
+from columnflow.types import TYPE_CHECKING
 
 
 np = maybe_import("numpy")
 plt = maybe_import("matplotlib.pyplot")
 mplhep = maybe_import("mplhep")
-hist = maybe_import("hist")
+
+if TYPE_CHECKING:
+    hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
 
@@ -411,6 +414,7 @@ def plot_output_nodes(
     Function that creates a plot for each ML output node,
     displaying all processes per plot.
     """
+    import hist
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
 
@@ -517,6 +521,7 @@ def plot_input_features(
     """
     Function that creates a plot for each ML input feature, displaying all processes per plot.
     """
+    import hist
 
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)

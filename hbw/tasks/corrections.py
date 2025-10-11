@@ -20,7 +20,6 @@ from columnflow.util import maybe_import, dev_sandbox
 from hbw.tasks.base import HBWTask
 
 ak = maybe_import("awkward")
-hist = maybe_import("hist")
 np = maybe_import("numpy")
 
 
@@ -162,36 +161,37 @@ class GetBtagNormalizationSF(
             "plots": self.target("plots", dir=True, optional=True),
         }
 
-    def reduce_hist(self, hist, mode: list[str]):
+    def reduce_hist(self, h, mode: list[str]):
         """
         Helper function that reduces the histogram to the requested axes based on the mode.
         """
-        hist = hist[{"process": sum, "steps": self.reweighting_step}]
+        h = h[{"process": sum, "steps": self.reweighting_step}]
 
         # check validity of mode
-        ax_names = [ax.name for ax in hist.axes]
+        ax_names = [ax.name for ax in h.axes]
         if not all(ax in ax_names for ax in mode):
             raise ValueError(f"Invalid mode {mode} for axes {ax_names}")
 
         # remove axes not in mode
-        for ax in hist.axes:
+        for ax in h.axes:
             if ax.name not in mode:
-                hist = hist[{ax.name: sum}]
+                h = h[{ax.name: sum}]
 
-        return hist
+        return h
 
-    def apply_overflow_bin(self, hist):
+    def apply_overflow_bin(self, h):
         # from columnflow.plotting.plot_util import use_flow_bins
-        ax_names = [ax.name for ax in hist.axes]
+        ax_names = [ax.name for ax in h.axes]
         if self.njet_overflow > 0 and "njet" in ax_names:
-            hist = hist[{"njet": slice(0, self.njet_overflow + 1)}]
+            h = h[{"njet": slice(0, self.njet_overflow + 1)}]
         if self.nhf_overflow > 0 and "nhf" in ax_names:
-            hist = hist[{"nhf": slice(0, self.nhf_overflow + 1)}]
-        return hist
+            h = h[{"nhf": slice(0, self.nhf_overflow + 1)}]
+        return h
 
     def run(self):
         import correctionlib
         import correctionlib.convert
+        import hist
         outputs = self.output()
         inputs = self.input()
 

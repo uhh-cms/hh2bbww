@@ -31,11 +31,11 @@ from hbw.tasks.base import HBWTask
 
 logger = law.logger.get_logger(__name__)
 
+from columnflow.types import TYPE_CHECKING
 
-# imports for plot function
-
-hist = maybe_import("hist")
-plt = maybe_import("matplotlib.pyplot")
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
 
 
 from columnflow.plotting.plot_all import plot_all

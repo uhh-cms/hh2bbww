@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections import defaultdict, OrderedDict
 
 import law
+import order as od
 
 from columnflow.util import maybe_import
 from columnflow.plotting.plot_all import plot_all
@@ -23,12 +24,12 @@ from columnflow.plotting.plot_util import (
 
 from hbw.util import round_sig
 
-hist = maybe_import("hist")
+from columnflow.types import TYPE_CHECKING
+
 np = maybe_import("numpy")
-mpl = maybe_import("matplotlib")
-plt = maybe_import("matplotlib.pyplot")
-mplhep = maybe_import("mplhep")
-od = maybe_import("order")
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
 

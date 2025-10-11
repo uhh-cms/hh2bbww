@@ -16,7 +16,6 @@ from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-hist = maybe_import("hist")
 
 
 from hbw.util import timeit_multiple

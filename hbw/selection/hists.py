@@ -19,7 +19,6 @@ from columnflow.hist_util import create_hist_from_variables
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-hist = maybe_import("hist")
 
 
 @selector(

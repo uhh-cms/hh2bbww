@@ -856,10 +856,10 @@ class PrepareInferenceTaskCalls(
 
     requested_keys = [
         "export", "prepare_cards",
-        "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
+        # "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
         "PullsAndImpacts",
-        "PostFitShapes",
-        "PreFitShapes",
+        # "PostFitShapes",
+        # "PreFitShapes",
     ]
 
     cards_version = luigi.Parameter(
