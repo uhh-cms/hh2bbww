@@ -208,9 +208,10 @@ def patch_csp_versioning():
     from columnflow.tasks.framework.mixins import InferenceModelClassMixin
     from columnflow.inference import InferenceModel
 
-    def InferenceModel_str(self: InferenceModel):
-        version_str = f"V{self.version}" if getattr(self, "version", None) is not None else ""
-        return f"{self.cls_name}{version_str}"
+    @classmethod
+    def InferenceModel_str(cls: InferenceModel):
+        version_str = f"V{cls.version}" if getattr(cls, "version", None) is not None else ""
+        return f"{cls.cls_name}{version_str}"
 
     @property
     def inference_model_repr(self: law.Task):
