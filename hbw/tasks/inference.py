@@ -306,7 +306,7 @@ class HBWInferenceModelBase(
 
     @property
     def fully_unblinded(self):
-        return self.fully_unblind and self.real_data and self.inference_model_cls.unblinded
+        return self.fully_unblind and self.real_data and self.inference_model_cls.unblind
 
     def configs_str(self, configs):
         configs_str = "_".join(configs)
@@ -465,11 +465,10 @@ class ModifyDatacardsFlatRebin(
             if number != "":
                 # replace with -1 and keep the same length
                 rates_post = rates_post.replace(number, f"-1{' ' * (len(number) - 2)}", 1)
-
         datacard = datacard.replace(rates, rates_post)
 
-        n_obs = datacard.split("\nobservation")[1].split("\n")[0]
-        datacard = datacard.replace(n_obs, f"{' ' * (len(n_obs) - 2)}-1")  # replace with -1 and keep the same length
+        n_obs = "\nobservation" + datacard.split("\nobservation")[1].split("\n")[0]
+        datacard = datacard.replace(n_obs, f"\nobservation{' ' * (len(n_obs) - 2)}-1")  # replace with -1 and keep the same length
         return datacard
 
     def run(self):
@@ -845,22 +844,22 @@ class PrepareInferenceTaskCalls(
     )
 
     # output_collection_cls = law.NestedSiblingFileCollection
-
-    # TODO: requesting different groups introduces weird behaviour: model is initialized with all flattened configs
-    # but we would like to have one inference model per config group --> use InferenceModelClassMixin
     config_groups = law.MultiCSVParameter(
-        default=(("c22prev14", "c22postv14"), ("c23prev14", "c23postv14")),
+        # default=(("c22prev14", "c22postv14"), ("c23prev14", "c23postv14")),
+        default=(("c22prev14", "c22postv14", "c23prev14", "c23postv14"),),
         description="List of config groups to use for this task.",
         significant=False,
     )
 
     requested_keys = [
-        "export", "prepare_cards",
-        # "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
+        "prepare_cards",
+        "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
         "PullsAndImpacts",
-        # "PostFitShapes",
-        # "PreFitShapes",
+        "PostFitShapes",
+        "PreFitShapes",
     ]
+    # systematics that are frozen for kl and c2v scans
+    frozen_for_scans = ",".join(["THU_HH", "pdf_Higgs_hh_vbf", "pdf_Higgs_hh_ggf", "QCDscale_hh_vbf"])
 
     cards_version = luigi.Parameter(
         default="",
@@ -1051,8 +1050,9 @@ class PrepareInferenceTaskCalls(
             cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
             export_and_prepare_cards_cmd += cmd + "\n"
             prepare_cards.append(cmd)
+        # cmd_dict["prepare_cards"] = "\n".joiyn(prepare_cards)
         cmd_dict["prepare_cards"] = " & ".join(prepare_cards)
-
+        cmd_dict["prepare_cards"] += " & wait"
         print("\n\n")
         print(export_and_prepare_cards_cmd)
 
@@ -1078,6 +1078,8 @@ class PrepareInferenceTaskCalls(
             # f"--UpperLimits-workflow htcondor "
             f"--workers 10 "
         )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["LimitsPerCategory"] = cmd
@@ -1091,6 +1093,8 @@ class PrepareInferenceTaskCalls(
                 # f"--UpperLimits-workflow htcondor "
                 f"--workers 10 "
             )
+            if self.partially_unblinded or self.fully_unblinded:
+                cmd += "--unblinded True "
 
             if not self.partially_unblinded:
                 print(base_cmd + cmd, "\n\n")
@@ -1109,8 +1113,10 @@ class PrepareInferenceTaskCalls(
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor "
-            f"--frozen-parameters THU_HH"
+            f"--frozen-parameters {self.frozen_for_scans} "
         )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["Limits_kl"] = cmd
@@ -1119,8 +1125,10 @@ class PrepareInferenceTaskCalls(
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
-            f"--frozen-parameters THU_HH"
+            f"--frozen-parameters {self.frozen_for_scans} "
         )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["Limits_c2v"] = cmd
@@ -1136,29 +1144,34 @@ class PrepareInferenceTaskCalls(
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
             "--order-by-impact --parameters-per-page 80 "
-            # "--mc-stats "
+            "--mc-stats "
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
         custom_args = "--robustFit 1"
         if self.partially_unblinded:
             custom_args += " --rMin -350 --rMax 350"
         if self.partially_unblinded or self.fully_unblinded:
-            cmd += "--unblinded "
+            cmd += "--unblinded True "
+        retry_pulls_and_impacts_params = pulls_and_imacts_params + f",custom-args='{custom_args} --X-rtd MINIMIZER_no_analytic'"  # noqa: E501
         pulls_and_imacts_params += f",custom-args='{custom_args}'"
+
         cmd += f"--PullsAndImpacts-{{{pulls_and_imacts_params}}} "
 
         print(base_cmd + cmd, "\n\n")
         cmd_dict["PullsAndImpacts"] = cmd
+        cmd_dict["PullsAndImpacts_retry"] = cmd.replace(pulls_and_imacts_params, retry_pulls_and_impacts_params)
 
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
             f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
+            f" --FitParameters-custom-args='{custom_args}' "
             # f"--output-name {output_file}"
         )
+
         if self.partially_unblinded or self.fully_unblinded:
-            cmd += "--unblinded "
+            cmd += "--unblinded True "
         print(base_cmd + cmd, "\n\n")
-        cmd_dict["PostfitShapes"] = cmd
+        cmd_dict["PostFitShapes"] = cmd
         cmd += "--prefit"
         cmd_dict["PreFitShapes"] = cmd
 
@@ -1167,22 +1180,30 @@ class PrepareInferenceTaskCalls(
             cmd for key, cmd in cmd_dict.items()
             if not self.requested_keys or key in self.requested_keys
         ])
-        run_script = self.create_run_script(identifier, full_cmd)
+        run_script = self.create_run_script(
+            identifier=identifier,
+            export_cmd=cmd_dict["export"],
+            full_cmd=full_cmd,
+            retry_impacts=cmd_dict["PullsAndImpacts_retry"])
         output["Run"].dump(run_script, formatter="text")
 
         print("# combined task calls")
         print(f"bash {output['Run'].abspath}")
 
-    def create_run_script(self, identifier, full_cmd):
-        full_cmd_with_fetch = full_cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
+    def create_run_script(self, identifier, export_cmd, full_cmd, retry_impacts):
+        fetch_func = lambda cmd: cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
         run_script = f"""#!/bin/bash
+# AUTO-GENERATED FILE! DO NOT EDIT!
+
+dry_run=${{dry_run:-false}}
+retry_impacts=${{retry_impacts:-false}}
 
 mkdir -p $DHI_DATA/fetched_plots/{identifier} && cd $DHI_DATA/fetched_plots/{identifier}
 
 run_and_fetch_cmd() {{
     local folder="$1"
     cd "$DHI_DATA/fetched_plots/$folder" || exit 1
-    if [[ "$dry_run" == "true" ]]; then
+    if [[ "$dry_run" != "false" ]]; then
         echo "[DRY-RUN] ${{*:2}}"
         echo "[DRY-RUN] ${{*:2}} --fetch-output 0,a"
     else
@@ -1192,6 +1213,13 @@ run_and_fetch_cmd() {{
     fi
 }}
 
-{full_cmd_with_fetch}
+{export_cmd}
+
+if [[ "$retry_impacts" != "false" ]]; then
+    {fetch_func(retry_impacts)}
+    exit 0
+fi
+
+{fetch_func(full_cmd)}
 """
         return run_script
