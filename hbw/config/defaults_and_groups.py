@@ -683,7 +683,6 @@ def set_config_defaults_and_groups(config_inst):
             handles.insert(2, data_handle)
             labels.insert(2, data_label)
 
-
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
         "dpostfit_merged": {

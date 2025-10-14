@@ -556,14 +556,4 @@ class PlotPostfitShapes(
                     axs[1].axvline(bins_count, **kwargs)
                     bins_count += bins_info["count"]
 
-
-                    # # place label in the middle of the category
-                    # x_pos = bins_count - 0.5 * bins_info["count"]
-                    # axs[0].text(
-                    #     x_pos, 0.5 * axs[0].get_ylim()[1],
-                    #     label,
-                    #     # horizontalalignment="center",
-                    #     fontsize=16,
-                    # )
-
             outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")

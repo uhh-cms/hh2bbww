@@ -468,7 +468,8 @@ class ModifyDatacardsFlatRebin(
         datacard = datacard.replace(rates, rates_post)
 
         n_obs = "\nobservation" + datacard.split("\nobservation")[1].split("\n")[0]
-        datacard = datacard.replace(n_obs, f"\nobservation{' ' * (len(n_obs) - 2)}-1")  # replace with -1 and keep the same length
+        # replace with -1 and keep the same length
+        datacard = datacard.replace(n_obs, f"\nobservation{' ' * (len(n_obs) - 2)}-1")
         return datacard
 
     def run(self):
