@@ -19,7 +19,11 @@ from columnflow.tasks.framework.mixins import (
 from columnflow.tasks.histograms import MergeHistograms, MergeShiftedHistograms
 from columnflow.util import dev_sandbox, maybe_import
 
-hist = maybe_import("hist")
+from columnflow.types import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
 
 
 class HistogramsUserBase(

@@ -403,9 +403,8 @@ hhprocs_vbf = lambda hhdecay: [
     f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
     f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
     f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96",
-    # f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",  # needs to update the cross section (is kv=+2.12 in reality)
     f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
-    # f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",  # missing bbtt sample
+    f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",  # missing bbtt sample
     f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
     f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
     f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
@@ -506,6 +505,15 @@ rate_only = dl.derive("rate_only", cls_dict={
 default = dl.derive("default", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
+})
+test_bkgs = dl.derive("test_bkgs", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.background,
+})
+
+no_boosted = dl.derive("no_boosted", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.sr + config_categories.background,
 })
 default_unblind = dl.derive("default_unblind", cls_dict={
     "systematics": systematics.default,

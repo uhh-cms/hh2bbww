@@ -25,17 +25,13 @@ from columnflow.tasks.framework.decorators import view_output_plots
 from hbw.tasks.base import HBWTask
 
 from columnflow.util import dev_sandbox, DotDict, maybe_import
-
-# from hbw.inference.base import inf_proc
-
-uproot = maybe_import("uproot")
-hist = maybe_import("hist")
-
+from columnflow.plotting.plot_util import get_position
 
 logger = law.logger.get_logger(__name__)
 
 
 def load_hists_uproot(fit_diagnostics_path, fit_type):
+    import uproot
     """ Helper to load histograms from a fit_diagnostics file """
     with uproot.open(fit_diagnostics_path) as tfile:
         if any("shapes_fit_s" in _k for _k in tfile.keys()):
@@ -107,10 +103,10 @@ def get_hists_from_multidimfit(tfile):
     return hists
 
 
-# imports regarding plot function
-mpl = maybe_import("matplotlib")
-plt = maybe_import("matplotlib.pyplot")
-mplhep = maybe_import("mplhep")
+from columnflow.types import TYPE_CHECKING
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
 
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_util import (
@@ -354,6 +350,7 @@ class PlotPostfitShapes(
         """
         import boost_histogram
         import numpy as np
+        import hist
         dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[("value", "<f8"), ("variance", "<f8")])
 
         # TODO: at the moment we only consider processes that are present in all cards
@@ -377,6 +374,8 @@ class PlotPostfitShapes(
             for process in all_processes
         }
         view_dict = {process: dummy_view.copy() for process in all_processes}
+
+        # merge histograms over categories per process
         for category in categories_sorted:
             n_bins_cat = bins_dict[category]["count"]
             hist_dict = all_hists[category]
@@ -396,6 +395,15 @@ class PlotPostfitShapes(
 
         all_hists["merged"] = h_out
 
+        # extend bins_dict with some additional info for plotting
+        ml_proc_bins = defaultdict(int)
+        for cat_name, bins_info in bins_dict.items():
+            ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("_m10toinf", "")
+            bins_dict[cat_name]["ml_proc"] = ml_proc
+            ml_proc_bins[ml_proc] += bins_info["count"]
+        for cat_name, bins_info in bins_dict.items():
+            bins_info["ml_proc_count"] = ml_proc_bins[bins_info["ml_proc"]]
+
         return bins_dict
 
     @view_output_plots
@@ -406,6 +414,8 @@ class PlotPostfitShapes(
         )
 
         outp = self.output()
+
+        plot_parameters = self.get_plot_parameters()
 
         # Load all required histograms corresponding to the fit_type from the root input file
         all_hists = load_hists_uproot(self.fit_diagnostics_file, self.fit_type)
@@ -421,6 +431,9 @@ class PlotPostfitShapes(
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
+            # if not "merged" in channel:
+            #     continue
+            channel = channel.replace("__2022_2023", "")
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
             # Some inference models have differnet naming schemes for categories (starting with cat)
@@ -447,6 +460,8 @@ class PlotPostfitShapes(
                 inference_category = self.inference_model_inst.get_category(channel)
                 config_data = inference_category.config_data.get(self.config_inst.name)
                 config_category = self.config_inst.get_category(config_data.category)
+
+                config_category.label = self.fit_type + "\n" + config_category.label
                 variable_inst = self.config_inst.get_variable(config_data.variable)
             else:
                 # default to dummy Category and Variable
@@ -468,30 +483,77 @@ class PlotPostfitShapes(
                 category_inst=config_category,
                 variable_insts=variable_inst,
                 shift_insts=self.get_shift_insts(),
-                **self.get_plot_parameters(),
+                **plot_parameters,
             )
 
             # some adjustments for the merged plot
             if channel == "cat_merged":
+                line_pos = 0.71  # 0.56 previously
                 bins_count = 0
+                axs[0].axhline(
+                    get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
+                    color="grey", linewidth=2.5,
+                )
                 for cat_name, bins_info in bins_dict.items():
-                    if "sig" not in cat_name:
-                        continue
+                    # if "sig" not in cat_name:
+                    #     continue
                     # cat_inst = self.config_inst.get_category(cat_name, default=None)
                     # if cat_inst:
                     #     label = cat_inst.label
+
+                    bjet_cat = None
+                    if "1b" in cat_name:
+                        bjet_cat = "1b"
+                    elif "2b" in cat_name:
+                        bjet_cat = "2b"
+                    elif "boosted" in cat_name:
+                        # bjet_cat = "B"
+                        bjet_cat = "Boost"
+
+                    # if "HH" in bins_info["ml_proc"]:
+                    axs[0].annotate(
+                        text=bjet_cat,
+                        xy=(
+                            bins_count + 0.5 * bins_info["count"],
+                            get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
+                        ),
+                        xycoords="data",
+                        fontsize=16,
+                        horizontalalignment="center",
+                        verticalalignment="top",
+                        color="black",
+                    )
+
+                    if bjet_cat == "1b":
+                        axs[0].annotate(
+                            text=bins_info["ml_proc"],
+                            xy=(
+                                bins_count + 0.5 * (bins_info["ml_proc_count"]),  # TODO: position better
+                                get_position(*axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
+                                # 0.55 * axs[1].get_ylim()[1],
+                            ),
+                            xycoords="data",
+                            fontsize=24,
+                            horizontalalignment="center",
+                            verticalalignment="top",
+                            color="black",
+                        )
+
+                        ymax = line_pos + 0.04
+                        kwargs = {
+                            "color": "grey",
+                            "linewidth": 2.5,
+                        }
+                    else:
+                        ymax = line_pos
+                        kwargs = {
+                            "color": "grey",
+                            "linewidth": 2.5,
+                            "linestyle": "--",
+                        }
+
+                    axs[0].axvline(bins_count, ymax=ymax, **kwargs)
+                    axs[1].axvline(bins_count, **kwargs)
                     bins_count += bins_info["count"]
-
-                    axs[1].axvline(bins_count, color="grey", linewidth=2.5)
-                    axs[0].axvline(bins_count, color="grey", ymax=0.65, linewidth=2.5)
-
-                    # # place label in the middle of the category
-                    # x_pos = bins_count - 0.5 * bins_info["count"]
-                    # axs[0].text(
-                    #     x_pos, 0.5 * axs[0].get_ylim()[1],
-                    #     label,
-                    #     # horizontalalignment="center",
-                    #     fontsize=16,
-                    # )
 
             outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")

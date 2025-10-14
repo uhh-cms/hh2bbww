@@ -726,14 +726,20 @@ def add_config(
             id=5000 + 2 * idx,
             type="shape",
             tags={"jec"},
-            aux={"jec_source": jec_source},
+            aux={
+                "jec_source": jec_source,
+                "version": 1,
+            },
         )
         cfg.add_shift(
             name=f"jec_{jec_source}_down",
             id=5001 + 2 * idx,
             type="shape",
             tags={"jec"},
-            aux={"jec_source": jec_source},
+            aux={
+                "jec_source": jec_source,
+                "version": 1,
+            },
         )
         add_shift_aliases(
             cfg,
@@ -741,6 +747,8 @@ def add_config(
             {
                 "Jet.pt": "Jet.pt_{name}",
                 "Jet.mass": "Jet.mass_{name}",
+                "PuppiMET.pt": "PuppiMET.pt_{name}",
+                "PuppiMET.phi": "PuppiMET.phi_{name}",
                 "FatJet.pt": "FatJet.pt_{name}",
                 "FatJet.mass": "FatJet.mass_{name}",
             },
@@ -764,11 +772,19 @@ def add_config(
                 },
             )
 
-    cfg.add_shift(name="jer_up", id=6000, type="shape", tags={"jer"})
-    cfg.add_shift(name="jer_down", id=6001, type="shape", tags={"jer"})
+    cfg.add_shift(
+        name="jer_up", id=6000, type="shape", tags={"jer"},
+        aux={"version": 1},
+    )
+    cfg.add_shift(
+        name="jer_down", id=6001, type="shape", tags={"jer"},
+        aux={"version": 1},
+    )
     add_shift_aliases(cfg, "jer", {
         "Jet.pt": "Jet.pt_{name}",
         "Jet.mass": "Jet.mass_{name}",
+        "PuppiMET.pt": "PuppiMET.pt_{name}",
+        "PuppiMET.phi": "PuppiMET.phi_{name}",
         "FatJet.pt": "FatJet.pt_{name}",
         "FatJet.mass": "FatJet.mass_{name}",
     })

@@ -25,13 +25,12 @@ from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weig
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.top_pt_weight import top_pt_weight
 from hbw.production.top_pt_theory import top_pt_theory_weight
-from columnflow.production.cms.dy import dy_weights
 from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_DY
+from hbw.util import has_tag
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -257,23 +256,19 @@ def combined_normalization_weights_init(self: Producer) -> None:
 @producer(
     uses={
         combined_normalization_weights,
-        IF_DY(dy_weights),
         top_pt_weight,
         top_pt_theory_weight,
         vjets_weight,
-        IF_DY(dy_weights),
         normalized_pu_weights,
     },
     produces={
         combined_normalization_weights,
-        IF_DY(dy_weights),
         top_pt_theory_weight,
         vjets_weight,
-        IF_DY(dy_weights),
         normalized_pu_weights,
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 3),
+    version=law.config.get_expanded("analysis", "event_weights_version", 4),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -288,15 +283,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[top_pt_weight](events, **kwargs)
         events = self[top_pt_theory_weight](events, **kwargs)
 
-    if self.dataset_inst.has_tag("is_dy"):
-        events = self[dy_weights](events, **kwargs)
-
     # compute gen vjet pt weights
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[vjets_weight](events, **kwargs)
-
-    if self.dataset_inst.has_tag("is_dy"):
-        events = self[dy_weights](events, **kwargs)
 
     if not has_tag("skip_HBWTMP_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights

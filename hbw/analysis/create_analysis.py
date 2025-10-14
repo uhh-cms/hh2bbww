@@ -312,6 +312,35 @@ def create_hbw_analysis(
             )
         return store_parts
 
+    def update_shift_name(task, shift_name):
+        """
+        Add the dataset version to the store_parts.
+        This is used to distinguish between different versions of the same dataset.
+        """
+        if (
+            (config_inst := getattr(task, "config_insts", None)[0]) and
+            (shift_inst := config_inst.get_shift(shift_name)) and
+            shift_inst.has_aux("version")
+        ):
+            if shift_name != shift_inst.name:
+                raise ValueError(
+                    f"shift {shift_name} does not match shift_inst {shift_inst.name}",
+                )
+            if (shift_version := shift_inst.get_aux("version")) is not None:
+                # use the version from the shift_inst
+                shift_name = f"{shift_name}V{shift_version}"
+        return shift_name
+
+    def shift_version(task, store_parts):
+        """
+        Add the shift version to the store_parts.
+        This is used to distinguish between different versions of the same shift.
+
+        NOTE: we might want to do the same for shift_source in the future.
+        """
+        store_parts["shift"] = update_shift_name(task, store_parts["shift"])
+        return store_parts
+
     def dataset_version(task, store_parts):
         """
         Add the dataset version to the store_parts.
@@ -342,6 +371,8 @@ def create_hbw_analysis(
             reuse_hist_producer(task, store_parts)
         if "dataset" in store_parts:
             store_parts = dataset_version(task, store_parts)
+        if "shift" in store_parts:
+            store_parts = shift_version(task, store_parts)
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

@@ -25,14 +25,13 @@ from columnflow.tasks.framework.mixins import (
     DatasetsProcessesMixin,
 )
 from columnflow.tasks.framework.remote import RemoteWorkflow
+from columnflow.types import TYPE_CHECKING
 
 from hbw.tasks.base import HBWTask
 
-hist = maybe_import("hist")
 np = maybe_import("numpy")
-jacobi = maybe_import("jacobi")
-special = maybe_import("scipy.special")
-plt = maybe_import("matplotlib.pyplot")
+if TYPE_CHECKING:
+    hist = maybe_import("hist")
 
 
 # use scipy erf function definition
@@ -42,6 +41,7 @@ def window(x, r, s):
     r: regime boundary between two fit functions
     s: sign of erf function (+1 to active second fit function, -1 to active first fit function)
     """
+    from scipy import special
 
     sci_erf = 0.5 * (special.erf(s * 0.1 * (x - r)) + 1)
 
@@ -237,6 +237,7 @@ def erf_window(x, x0, s, sign=1):
     sign=1 => turn-on window
     sign=-1 => turn-off window
     """
+    from scipy import special
     return 0.5 * (1 + sign * special.erf((x - x0) / (np.sqrt(2) * s)))
 
 
@@ -362,8 +363,9 @@ def safe_div(num, den):
     )
 
 
-# Helper fucntion to get the rate factor for each n_jet bin individually
+# Helper function to get the rate factor for each n_jet bin individually
 def get_bin_wise_stats(h, ptll_var, jet_tuple):
+    import hist
 
     data_h = h["data"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
     dy_h = h["MC_corr_process"][hist.loc(jet_tuple[0]):hist.loc(jet_tuple[1]), ...]
@@ -414,7 +416,9 @@ def get_fit_str(
         fit_function,
         era: str,
         outputs) -> dict:
-    from scipy import optimize
+    from scipy import optimize, special
+    import hist
+    import matplotlib.pyplot as plt
 
     # Check if number of jets are valid
     total_n_jet = np.arange(1, 12)
@@ -425,7 +429,6 @@ def get_fit_str(
     def plot_fit_func(fit_func, fit_string, param_fit, rate_factor, ratio_values, njet, era, outputs, mode=""):
         #  plot the fit function and the string function (as sanity)
         def str_function(x, fit_str):
-            from scipy import special
             fit_str = fit_str.replace("^2", "**2")
             str_function = eval(fit_str, {"x": x, "exp": np.exp, "sqrt": np.sqrt, "erf": special.erf})
             return str_function
@@ -556,7 +559,6 @@ def get_fit_str(
 
         Produces both percentile-based and std-based error bands.
         """
-
         # grid for evaluation
         s = np.linspace(0, 400, 1000)
 

@@ -13,9 +13,11 @@ import order as od
 
 from columnflow.util import maybe_import, DotDict
 from hbw.hist_util import apply_rebinning_edges
+from columnflow.types import TYPE_CHECKING
 
 np = maybe_import("numpy")
-hist = maybe_import("hist")
+if TYPE_CHECKING:
+    hist = maybe_import("hist")
 
 logger = law.logger.get_logger(__name__)
 

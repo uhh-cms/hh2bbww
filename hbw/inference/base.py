@@ -55,7 +55,10 @@ class HBWInferenceModelBase(InferenceModel):
     dummy_ggf_variation: bool = False
     dummy_vbf_variation: bool = False
 
-    version: int = 6
+    # 7: remove all trafos
+    # 8: add shape->rate trafos back for dy,ttv,vv
+    # 9: add shape->rate trafos for bkg categories
+    version: int = 10
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -610,7 +613,7 @@ class HBWInferenceModelBase(InferenceModel):
                     process=self.inf_proc(proc),
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
-                        lambda f: round(f, 3),
+                        lambda f: round(f, 4),
                         process_inst.xsecs[ecm].get(names=(pdf_key), direction=("down", "up"), factor=True),
                     )),
                 )
@@ -620,6 +623,11 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
+        single_bin_cats = [cat_name for cat_name in self.cat_names if any(
+            bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
+        )]
+        shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+
         for shape_uncertainty, shape_processes in self.processes_per_shape.items():
             combine_uncertainty_name = const.rename_systematics.get(
                 shape_uncertainty,
@@ -632,17 +640,16 @@ class HBWInferenceModelBase(InferenceModel):
                 shape_processes = set(self.processes) - _remove_processes
 
             param_kwargs = {
-                "type": ParameterType.shape,
                 "process": [self.inf_proc(proc) for proc in shape_processes],
-                "transformations": [ParameterTransformation.envelope_if_one_sided],
+                # "transformations": [ParameterTransformation.envelope_if_one_sided],
             }
             shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
             config_insts = self.config_insts
-            for bjet_cat in self.bjet_cats:
-                if shape_uncertainty.endswith(bjet_cat):
-                    param_kwargs["category"] = f"*_{bjet_cat}_*"
-                    param_kwargs["category_match_mode"] = "all"
-                    shift_source = shift_source.replace(f"_{bjet_cat}", "")
+            # for bjet_cat in self.bjet_cats:
+            #     if shape_uncertainty.endswith(bjet_cat):
+            #         param_kwargs["category"] = f"*_{bjet_cat}_*"
+            #         param_kwargs["category_match_mode"] = "all"
+            #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
             for cpn_tag in self.campaign_tags:
                 if shape_uncertainty.endswith(cpn_tag):
                     shift_source = shift_source.replace(f"_{cpn_tag}", "")
@@ -658,10 +665,23 @@ class HBWInferenceModelBase(InferenceModel):
                 for config_inst in config_insts
                 if config_inst.has_shift(f"{shift_source}_up")
             }
-            self.add_parameter(
-                combine_uncertainty_name,
-                **param_kwargs,
-            )
+
+            if shape_cats:
+                self.add_parameter(
+                    combine_uncertainty_name,
+                    category=shape_cats,
+                    type=ParameterType.shape,
+                    **param_kwargs,
+                )
+            if single_bin_cats:
+                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided)  # noqa: E501
+                self.add_parameter(
+                    combine_uncertainty_name,
+                    category=single_bin_cats,
+                    type=ParameterType.rate_gauss,
+                    transformations=transformations,
+                    **param_kwargs,
+                )
 
             # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
             # if is_theory:

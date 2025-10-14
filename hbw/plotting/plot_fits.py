@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from collections import OrderedDict
 
+import order as od
+
 from columnflow.util import maybe_import
 from columnflow.plotting.plot_util import (
     remove_residual_axis,
@@ -15,12 +17,13 @@ from columnflow.plotting.plot_util import (
     apply_process_settings,
 )
 
-hist = maybe_import("hist")
+from columnflow.types import TYPE_CHECKING
+
 np = maybe_import("numpy")
-mpl = maybe_import("matplotlib")
-plt = maybe_import("matplotlib.pyplot")
-mplhep = maybe_import("mplhep")
-od = maybe_import("order")
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
+    hist = maybe_import("hist")
+
 
 #
 # fit functions
@@ -75,6 +78,8 @@ def plot_fit(
             --general-settings fit_func=scalable_norm
     """
     # imports
+    import matplotlib.pyplot as plt
+    import mplhep
     from scipy.optimize import curve_fit
     import scinum
     import inspect

@@ -118,6 +118,8 @@ default_labels = {
     "st_twchannel_tbar_sl": r"tW ($\bar{t}$, sl)",
     "st_twchannel_t_dl": "tW (t, dl)",
     "st_twchannel_tbar_dl": r"tW ($\bar{t}$, dl)",
+    "w_lnu": r"$W \rightarrow \ell\nu$",
+    "ttv": r"$t\bar{t}V$",
     # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"hh_{vbf} (dl)",
 }
 

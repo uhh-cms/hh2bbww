@@ -19,8 +19,10 @@ from hbw.tasks.base import HBWTask
 from columnflow.util import DotDict, maybe_import
 from columnflow.tasks.framework.remote import RemoteWorkflow
 
-hist = maybe_import("hist")
+from columnflow.types import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    plt = maybe_import("matplotlib.pyplot")
 
 class CreateMultipleDatacards(
     HBWTask,
@@ -48,6 +50,7 @@ class CreateMultipleDatacards(
         :param proc_obj: process object from an InferenceModel
         :return: List of dataset names corresponding to the process *proc_obj*.
         """
+        import hist
         # the config instance should be specified in the config data of the proc_obj
         if not (config_data := proc_obj.config_data.get(config_inst.name)):
             return []
@@ -236,6 +239,8 @@ class CreateMultipleDatacards(
         config_inst: od.Config,
         variable,
     ) -> dict[od.Process, hist.Hist]:
+        import hist
+
         # loop over all configs required by the datacard category and gather histograms
         config_data = cat_obj.config_data.get(config_inst.name)
 
@@ -401,7 +406,6 @@ class CreateMultipleDatacards(
     @law.decorator.log
     @law.decorator.safe_output
     def run(self):
-
         import hist
         from columnflow.inference.cms.datacard import DatacardHists, ShiftHists, DatacardWriter
 

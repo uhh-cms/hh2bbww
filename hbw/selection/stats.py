@@ -6,7 +6,8 @@ Stat-related methods.
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
-from columnflow.production.cms.btag import btag_weights
+# from columnflow.production.cms.btag import btag_weights
+from hbw.production.btag import HBWTMP_btag_weights
 from hbw.production.weights import event_weights_to_normalize
 from columnflow.columnar_util import optional_column as optional
 
@@ -114,7 +115,7 @@ def hbw_increment_stats(
         weight_columns = set(self[event_weights_to_normalize].produced_columns)
         if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
             # btag_weights are not produced and therefore need some manual care
-            weight_columns |= set(self[btag_weights].produced_columns)
+            weight_columns |= set(self[HBWTMP_btag_weights].produced_columns)
 
         weight_columns = sorted([col.string_nano_column for col in weight_columns])
 
@@ -163,7 +164,7 @@ def hbw_increment_stats_init(self: Selector) -> None:
         return
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {btag_weights}
+        self.uses |= {HBWTMP_btag_weights}
 
     if self.dataset_inst.is_mc:
         self.uses |= {"mc_weight"}

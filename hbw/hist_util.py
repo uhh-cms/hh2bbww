@@ -10,10 +10,11 @@ import law
 
 from columnflow.util import maybe_import
 
-array = maybe_import("array")
-uproot = maybe_import("uproot")
+from columnflow.types import TYPE_CHECKING
+
 np = maybe_import("numpy")
-hist = maybe_import("hist")
+if TYPE_CHECKING:
+    hist = maybe_import("hist")
 
 
 logger = law.logger.get_logger(__name__)
@@ -28,6 +29,8 @@ def apply_rebinning_edges(h: hist.Histogram, axis_name: str, edges: list):
     :param edges: list of floats representing the new bin edges. Must be a subset of the original edges.
     :return: rebinned histogram
     """
+    import hist
+
     if isinstance(edges, int):
         return h[{axis_name: hist.rebin(edges)}]
 
