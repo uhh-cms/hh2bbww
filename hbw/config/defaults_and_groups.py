@@ -281,7 +281,6 @@ def set_config_defaults_and_groups(config_inst):
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
     for group in ("dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
-        # thanks to double counting removal, we can (and should) now use all datasets in each channel
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -397,6 +396,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs_v1": ml_inputs.v1,
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
             "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
             # "met_{pt,phi}",  # TODO: apply MetCorr to these variables
@@ -539,9 +539,29 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
+        "dpostfit_merged": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.35,
+            "cms_label": "wip",
+            "yscale": "log",
+            "hide_signal_errors": True,
+            "lumi": "61.9",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "magnitudes": 5.5,
+            # "blinding_threshold": 0.008,
+        },
+        "postfit_merged": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.35,
+            "cms_label": "simwip",
+            "yscale": "log",
+            "hide_signal_errors": True,
+            "lumi": "61.9",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "magnitudes": 5.5,
+            # "blinding_threshold": 0.008,
+        },
         "postfit": {
             "remove_negative": True,
-            "whitespace_fraction": 0.4,
+            "whitespace_fraction": 0.40,
             "cms_label": "simwip",
             "yscale": "log",
             "hide_signal_errors": True,
@@ -644,9 +664,72 @@ def set_config_defaults_and_groups(config_inst):
             ]
         },
     }
+    def reorder_data_first(ax, handles, labels, n_cols):
+        """Reorder legend entries to put 'data' first"""
+        # Find the index of the data entry
+        data_idx = None
+        for i, label in enumerate(labels):
+            if "data" in label.lower():
+                data_idx = i
+                break
+
+        if data_idx is not None and data_idx != 0:
+            # Move data to first position
+            data_handle = handles.pop(data_idx)
+            data_label = labels.pop(data_idx)
+            handles.pop(0)  # remove empty entry added via cf_entries_per_column
+            labels.pop(0)
+            # insert data at the bottom of column 1 (index 2)
+            handles.insert(2, data_handle)
+            labels.insert(2, data_label)
+
 
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
+        "dpostfit_merged": {
+            "gridspec_cfg": {
+                "left": 0.08,
+                "right": 0.98,
+                "top": 0.95,
+                "bottom": 0.05,
+            },
+            "subplots_cfg": {
+                "figsize": (15, 10),
+            },
+            "legend_cfg": {
+                "ncols": 5,
+                "cf_entries_per_column": [0, 3, 3, 3, 4],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
+                "cf_update_handles_labels": reorder_data_first,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 24,
+            },
+        },
+        "postfit_merged": {
+            "gridspec_cfg": {
+                "left": 0.08,
+                "right": 0.98,
+                "top": 0.95,
+                "bottom": 0.05,
+            },
+            "subplots_cfg": {
+                "figsize": (15, 10),
+            },
+            "legend_cfg": {
+                "ncols": 4,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 24,
+            },
+        },
         "default": {
             "legend_cfg": {
                 "ncols": 2,
