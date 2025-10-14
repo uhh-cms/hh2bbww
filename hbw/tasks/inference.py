@@ -204,7 +204,7 @@ def check_empty_bins(h, fill_empty: float = 1e-5, required_entries: int = 3) -> 
     Checks for empty bins, negative bin content, or bins with less than *required_entires* entries.
     When set to a value >= 0, empty or negative bin contents and errors are replaced with *fill_empty*.
     """
-    print(f"============ Checking hogram {h.GetName()} with {h.GetNbinsX()} bins")
+    print(f"============ Checking histogram {h.GetName()} with {h.GetNbinsX()} bins")
     import math
     max_error = lambda value: math.inf
     if required_entries > 0:
