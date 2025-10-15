@@ -545,7 +545,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "wip",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "61.9",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -555,7 +555,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simwip",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "61.9",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -565,7 +565,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": "simwip",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "61.9",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
