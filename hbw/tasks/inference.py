@@ -1193,7 +1193,7 @@ class PrepareInferenceTaskCalls(
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
             f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
-            f" --FitParameters-custom-args='{custom_args}' "
+            # f" --FitParameters-custom-args='{custom_args}' "
             # f"--output-name {output_file}"
         )
 
