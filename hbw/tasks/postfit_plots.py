@@ -237,6 +237,11 @@ class PlotPostfitShapes(
         description="Whether to do prefit or postfit plots; defaults to False",
     )
 
+    merged_only = luigi.BoolParameter(
+        default=True,
+        description="Whether to only plot the merged category; defaults to True",
+    )
+
     @property
     def fit_type(self) -> str:
         if self.prefit:
@@ -431,8 +436,8 @@ class PlotPostfitShapes(
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
-            # if not "merged" in channel:
-            #     continue
+            if self.merged_only and "merged" not in channel:
+                continue
             channel = channel.replace("__2022_2023", "")
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
@@ -488,18 +493,13 @@ class PlotPostfitShapes(
 
             # some adjustments for the merged plot
             if channel == "cat_merged":
-                line_pos = 0.71  # 0.56 previously
+                line_pos = 0.71
                 bins_count = 0
                 axs[0].axhline(
                     get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
                     color="grey", linewidth=2.5,
                 )
                 for cat_name, bins_info in bins_dict.items():
-                    # if "sig" not in cat_name:
-                    #     continue
-                    # cat_inst = self.config_inst.get_category(cat_name, default=None)
-                    # if cat_inst:
-                    #     label = cat_inst.label
 
                     bjet_cat = None
                     if "1b" in cat_name:
@@ -507,10 +507,8 @@ class PlotPostfitShapes(
                     elif "2b" in cat_name:
                         bjet_cat = "2b"
                     elif "boosted" in cat_name:
-                        # bjet_cat = "B"
                         bjet_cat = "Boost"
 
-                    # if "HH" in bins_info["ml_proc"]:
                     axs[0].annotate(
                         text=bjet_cat,
                         xy=(
@@ -530,7 +528,6 @@ class PlotPostfitShapes(
                             xy=(
                                 bins_count + 0.5 * (bins_info["ml_proc_count"]),  # TODO: position better
                                 get_position(*axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
-                                # 0.55 * axs[1].get_ylim()[1],
                             ),
                             xycoords="data",
                             fontsize=24,
