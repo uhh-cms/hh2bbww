@@ -172,23 +172,26 @@ def add_config(
             "lumi_13TeV_1718": 0.002j,
             "lumi_13TeV_correlated": 0.02j,
         })
-    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmVRun3Analysis
+    # https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun3Analysis?rev=182 (after update)
     # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=26
     elif year == 2022:
         if campaign.has_tag("preEE"):
-            cfg.x.luminosity = Number(7980.4, {
+            cfg.x.luminosity = Number(5010.4 + 2970.0, {
                 "lumi_13p6TeV_2022": 0.013j,
             })
         elif campaign.has_tag("postEE"):
-            cfg.x.luminosity = Number(26671.7, {
+            cfg.x.luminosity = Number(5807.0 + 17781.9 + 3082.8, {
                 "lumi_13p6TeV_2022": 0.013j,
             })
     elif year == 2023:
+        # minor differences in lumi in 2023... to be updated in future iterations
         if campaign.has_tag("preBPix"):
+            # cfg.x.luminosity = Number(18063, {
             cfg.x.luminosity = Number(17794, {
                 "lumi_13p6TeV_2023": 0.014j,
             })
         elif campaign.has_tag("postBPix"):
+            # cfg.x.luminosity = Number(9693, {
             cfg.x.luminosity = Number(9451, {
                 "lumi_13p6TeV_2023": 0.014j,
             })

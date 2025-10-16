@@ -854,7 +854,9 @@ class PrepareInferenceTaskCalls(
 
     requested_keys = [
         "prepare_cards",
+        "Pointlimits",
         "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
+        "MultiLimits_c2v",
         "PullsAndImpacts",
         "PostFitShapes",
         "PreFitShapes",
@@ -867,6 +869,13 @@ class PrepareInferenceTaskCalls(
         description="Optional version string to append to the datacard output path.",
         significant=True,
     )
+
+    # # TODO: add param to not delete existing cards each time :)
+    # recreate_run_script = luigi.BoolParameter(
+    #     default=False,
+    #     description="Whether to recreate only the Run.sh script.",
+    #     significant=False,
+    # )
 
     @classmethod
     def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
@@ -953,10 +962,10 @@ class PrepareInferenceTaskCalls(
             if not key.startswith("rebinned_datacards__"):
                 continue
             for target in value.collection.targets.values():
+                card_fns.append(target["card"].basename)
                 target["card"].copy_to(output["datacards"])
                 target["shapes"].copy_to(output["datacards"])
                 target["inspection"].copy_to(output["datacards"])
-                card_fns.append(target["card"].basename)
 
         # string that represents the version of datacards
         identifier_list = [*self.config_groups_str, self.inference_model_cls.__str__()]
@@ -1018,6 +1027,12 @@ class PrepareInferenceTaskCalls(
         multi_sig_card_names = ",".join([
             cat_name for cat_name in cat_names if is_signal_region(cat_name)
         ])
+        # cards_vbf = ",".join([
+        #     f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "ggf" not in cat_name  # noqa: E501
+        # ])
+        # cards_ggf = ",".join([
+        #     f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "vbf" not in cat_name  # noqa: E501
+        # ])
         cards_1b = ",".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name
         ])
@@ -1085,6 +1100,20 @@ class PrepareInferenceTaskCalls(
             print(base_cmd + cmd, "\n\n")
             cmd_dict["LimitsPerCategory"] = cmd
 
+        # creating upper limits for kl=1 with clean signal regions only
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
+            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+            f"--datacard-names 1b,2b,Boosted,Combined "
+            # f"--UpperLimits-workflow htcondor "
+            f"--workers 10 "
+        )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            cmd_dict["Pointlimits"] = cmd
+
         # datacards per config group
         if len(self.config_groups) > 1:
             cmd = (
@@ -1134,6 +1163,20 @@ class PrepareInferenceTaskCalls(
             print(base_cmd + cmd, "\n\n")
             cmd_dict["Limits_c2v"] = cmd
 
+        cmd = (
+            f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
+            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+            f"--datacard-names 1b,2b,Boosted,Combined "
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
+            f"--workers 4 "
+            f"--frozen-parameters {self.frozen_for_scans} "
+        )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            cmd_dict["MultiLimits_c2v"] = cmd
+
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
@@ -1165,7 +1208,7 @@ class PrepareInferenceTaskCalls(
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
             f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
-            f" --FitParameters-custom-args='{custom_args}' "
+            # f" --FitParameters-custom-args='{custom_args}' "
             # f"--output-name {output_file}"
         )
 

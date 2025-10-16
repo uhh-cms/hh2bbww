@@ -647,6 +647,21 @@ calls() {
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,dy_lf_m10to50,dy_lf_m50toinf,dy_hf_m10to50,dy_hf_m50toinf,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y --categories "sr__{1b,2b}__ml_{sig_ggf,sig_vbf}"
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y
     claw run cf.PlotVariables1D --processes ddl4 --variables mli_fj_particleNetWithMass_HbbvsQCD --categories incl,sr,dycr,ttcr --hist-hooks cumsum_reverse --remove-output 0,a,y --general-settings data_mc_plots_not_blinded --plot-suffix test1 --local-scheduler --configs $all_configs --shape-norm --plot-function columnflow.plotting.plot_functions_1d.plot_stack_test
+
+    # pre+postfit plots from preapproval talk (I think)
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_3070def61a/m125.0/poi_r/2022_2023__default_dataV10/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_3070def61a/m125.0/poi_r/2022_2023__default_dataV10/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_deb355aef6/m125.0/poi_r/2022_2023__default_unblindV10/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --prefit --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_deb355aef6/m125.0/poi_r/2022_2023__default_unblindV10/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --remove-output 0,a,y
+
+    # pre+postfit plots after preapproval talk after lumi fix for ANv9
+
+    # asimov
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV11 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_4433477a7b/m125.0/poi_r/2022_2023__default_unblindV11/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --prefit --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV11FIX --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_4433477a7b/m125.0/poi_r/2022_2023__default_unblindV11FIX/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --remove-output 0,a,y
+    # partially unblinded
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV11 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_8395ac5cf9/m125.0/poi_r/2022_2023__default_dataV11/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV11FIX --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_8395ac5cf9/m125.0/poi_r/2022_2023__default_dataV11FIX/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --remove-output 0,a,y
 }
 
 run_and_fetch_efficiency_plots() {
@@ -688,17 +703,22 @@ run_all() {
     # run_ml_training
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
 
-    # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down"
-    # run_merge_reduced_events "$all_configs" "jer_up,jer_down"
+    # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
+    # run_merge_selection_stats "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
 
-    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
+    # prepare_mlcolumns "$all_configs" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
+    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
 
-    # run_merge_histograms_local "$all_configs" "nominal"
     # for config in ${all_configs//,/ }; do
-    #     # run_merge_histograms_local "$config" "nominal"
-    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups"
+    #     run_merge_histograms_local "$config" "nominal"
+    #     run_merge_shifted_histograms_htcondor "$config" "$shape_shift_groups"
+    #     # run_merge_histograms_htcondor "$config" "$shape_shift_groups"
+    # done
+    # for config in ${all_configs//,/ }; do
     #     run_merge_histograms_local "$config" "$jerc_shifts"
     # done
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all"
+    # law run cf.CreateDatacards --inference-model default_unblind --configs $all_configs
 
     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
