@@ -856,6 +856,7 @@ class PrepareInferenceTaskCalls(
         "prepare_cards",
         "Pointlimits",
         "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
+        "MultiLimits_c2v",
         "PullsAndImpacts",
         "PostFitShapes",
         "PreFitShapes",
@@ -1161,6 +1162,20 @@ class PrepareInferenceTaskCalls(
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["Limits_c2v"] = cmd
+
+        cmd = (
+            f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
+            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+            f"--datacard-names 1b,2b,Boosted,Combined "
+            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
+            f"--workers 4 "
+            f"--frozen-parameters {self.frozen_for_scans} "
+        )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            cmd_dict["MultiLimits_c2v"] = cmd
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
