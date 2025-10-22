@@ -51,14 +51,10 @@ class HBWInferenceModelBase(InferenceModel):
     skip_data: bool = True
     unblind: bool = False
 
-    # dummy variations when some datasets are missing
-    dummy_ggf_variation: bool = False
-    dummy_vbf_variation: bool = False
-
     # 7: remove all trafos
     # 8: add shape->rate trafos back for dy,ttv,vv
     # 9: add shape->rate trafos for bkg categories
-    version: int = 10
+    version: int = 11
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -345,32 +341,6 @@ class HBWInferenceModelBase(InferenceModel):
             # do some customization of the inference category
             self.customize_category(self.get_category(cat_name), cat_insts[0])
 
-    def add_dummy_variation(self, proc, datasets):
-        if self.dummy_ggf_variation and "_kl1_kt1" in proc:
-            for missing_kl_variations in ("_kl0_kt1", "_kl2p45_kt1", "_kl5_kt1"):
-                missing_proc = proc.replace("_kl1_kt1", missing_kl_variations)
-                if missing_proc not in self.processes:
-                    self.add_process(
-                        self.inf_proc(missing_proc),
-                        config_process=self.inf_proc(proc),
-                        is_signal=("hh_" in proc.lower()),
-                        config_mc_datasets=datasets,
-                    )
-
-        if self.dummy_vbf_variation and "_kv1_k2v1_kl1" in proc:
-            for missing_vbf_variations in (
-                "_kv1_k2v1_kl0", "_kv1_k2v1_kl2", "_kv1_k2v2_kl1", "_kv1_k2v0_kl1",
-                "_kv1p5_k2v1_kl1", "_kv0p5_k2v1_kl1",
-            ):
-                missing_proc = proc.replace("_kv1_k2v1_kl1", missing_vbf_variations)
-                if missing_proc not in self.processes:
-                    self.add_process(
-                        self.inf_proc(missing_proc),
-                        config_process=proc,
-                        is_signal=("hh_" in proc.lower()),
-                        config_mc_datasets=datasets,
-                    )
-
     def add_inference_processes(self: InferenceModel):
         """
         Function that adds processes with their corresponding datasets to all categories
@@ -428,9 +398,6 @@ class HBWInferenceModelBase(InferenceModel):
                 is_signal=("hh_" in proc.lower()),
                 # is_dynamic=??,
             )
-
-            # add dummy variations if requested
-            self.add_dummy_variation(proc, datasets)
 
     def remove_inference_processes(self: InferenceModel):
         for proc, remove_kwargs in const.remove_processes.items():
