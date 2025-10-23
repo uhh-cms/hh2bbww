@@ -486,7 +486,7 @@ with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
 
 # additional hist producers for scale factors
-from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
+from hbw.trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
 
 dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,

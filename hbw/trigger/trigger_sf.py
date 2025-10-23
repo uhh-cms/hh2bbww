@@ -21,7 +21,7 @@ from columnflow.tasks.histograms import MergeHistograms
 from columnflow.plotting.plot_util import use_flow_bins
 
 from hbw.config.hist_hooks import rebin_hist
-from trigger.trigger_util import (
+from hbw.trigger.trigger_util import (
     calculate_efficiencies,
     calc_sf_uncertainty,
     optimise_binning1d,
