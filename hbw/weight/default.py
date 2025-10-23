@@ -273,6 +273,12 @@ default_weight_columns = {
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
+unstitched_weight_columns = {
+    "dataset_normalization_weight": [],
+    "dy_correction_weight": [],
+    "trigger_weight": ["trigger_sf"],
+    **default_correction_weights,
+}
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
@@ -343,6 +349,11 @@ met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
     "categorizer_cls": mask_fn_met_geq40,
 })
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
+met_geq40_with_dy_corr_unstitched = with_dy_corr.derive("met_geq40_with_dy_corr_unstitched", cls_dict={
+    "weight_columns": unstitched_weight_columns,
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })
