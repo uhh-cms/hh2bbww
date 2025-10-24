@@ -24,8 +24,8 @@ from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.plotting.plot_util import apply_variable_settings
 
-from hbw.config.hist_hooks import rebin_hist
-from trigger.trigger_util import (
+from hbw.hist_util import apply_rebinning_edges
+from hbw.trigger.trigger_util import (
     calculate_efficiencies,
     calc_sf_uncertainty,
     optimise_binning1d,
@@ -360,7 +360,7 @@ class CalculateTriggerScaleFactors(
         #                     logger.warning(f"Variable {var} not found in histogram, skipping rebinning")
         #             if self.premade_edges:
         #                 for var in h_in.axes.name[1:3]:
-        #                     h_in = rebin_hist(h_in, var, pre_edges[self.trigger][var])
+        #                     h_in = apply_rebinning_edges(h_in, var, pre_edges[self.trigger][var])
         #             if variable in hists[hist_producer].keys():
         #                 hists[hist_producer][variable] += h_in
         #             else:
@@ -462,7 +462,7 @@ class CalculateTriggerScaleFactors(
                                 )
                                 continue
                         if var.name[-10:] in pre_edges[self.trigger].keys():
-                            hists[key][proc] = rebin_hist(
+                            hists[key][proc] = apply_rebinning_edges(
                                 hists[key][proc],
                                 var.name,
                                 pre_edges[self.trigger][var.name[-10:]],

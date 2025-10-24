@@ -16,6 +16,9 @@ from hbw.util import call_once_on_config
 def configure_for_scale_factors(cfg: od.Config) -> None:
     """
     TODO: Document changes this function does to the config.
+
+    NOTE (Mathis): this function should not be required anymore for DL SFs,
+    I moved these config changes to the Reducer "triggersf" in hbw/reduction/default.py.
     """
 
     ####################################################################################################################

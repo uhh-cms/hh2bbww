@@ -11,7 +11,7 @@ import law
 
 from columnflow.util import maybe_import
 
-from hbw.config.hist_hooks import rebin_hist
+from hbw.hist_util import apply_rebinning_edges
 
 logger = law.logger.get_logger(__name__)
 
@@ -192,7 +192,7 @@ def optimise_binning1d(
         # apply edges
         for hist_producer in calculator.hist_producers:
             hist = hists[hist_producer][variables]
-            hist = rebin_hist(hist, variable, edges)
+            hist = apply_rebinning_edges(hist, variable, edges)
             hists[hist_producer][variables] = hist
         bins_optimised = True
     else:
@@ -202,7 +202,7 @@ def optimise_binning1d(
         # apply edges
         for hist_producer in calculator.hist_producers:
             hist = hists[hist_producer][variables]
-            hist = rebin_hist(hist, variable, edges)
+            hist = apply_rebinning_edges(hist, variable, edges)
             hists[hist_producer][variables] = hist
 
         # calculate scale factors and uncertainties
@@ -290,7 +290,7 @@ def optimise_binning2d(
     # apply edges
     for hist_producer in calculator.hist_producers:
         hist = hists[hist_producer][variables]
-        hist = rebin_hist(hist, variable[0], edges1)
+        hist = apply_rebinning_edges(hist, variable[0], edges1)
         hists[hist_producer][variables] = hist
 
     logger.info("Optimising second axis")
