@@ -25,7 +25,7 @@ from columnflow.plotting.plot_util import (
     remove_residual_axis,
     apply_variable_settings,
     apply_process_settings,
-    apply_density_to_hists,
+    apply_density,
     get_position,
     reduce_with,
 )
@@ -66,11 +66,11 @@ def plot_efficiencies2d(
     # remove shift axis from histograms
     remove_residual_axis(hists, "shift")
 
-    hists = apply_variable_settings(hists, variable_insts, variable_settings)
+    hists = apply_variable_settings(hists, variable_insts, variable_settings)[0]
 
-    hists = apply_process_settings(hists, process_settings)
+    hists = apply_process_settings(hists, process_settings)[0]
 
-    hists = apply_density_to_hists(hists, density)
+    hists = apply_density(hists, density)
 
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
