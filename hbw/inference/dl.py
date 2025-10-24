@@ -156,6 +156,13 @@ systematics = DotDict({
         # "pdf_VHH",
         # "pdf_ttHH",
     ],
+    "br": [
+        "br_hbb",
+        "br_hww",
+        "br_hzz",
+        "br_htt",
+        "br_hgg",
+    ],
     "rate_unconstrained": [
         "rate_ttbar",
         "rate_dy",
