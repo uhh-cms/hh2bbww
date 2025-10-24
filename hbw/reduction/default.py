@@ -4,6 +4,7 @@
 Exemplary reduction methods that can run on-top of columnflow's default reduction.
 """
 
+from hbw.config import trigger
 import law
 
 from columnflow.reduction import Reducer, reducer
@@ -92,3 +93,91 @@ def default_init(self: Reducer) -> None:
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag(("jec", "jer"))
     }
+
+
+triggersf = default.derive("triggersf")
+
+
+@triggersf.init
+def triggersf_init(self: Reducer) -> None:
+    cfg = self.config_inst
+
+    # prevent multiple initializations
+    flag = f"reducer_init_done_{self.cls_name}"
+    if cfg.has_tag(flag):
+        return
+    cfg.add_tag(flag)
+
+    # add config entries needed already during the reduction
+    cfg.x.dl_orthogonal_trigger = "PFMETNoMu120_PFMHTNoMu120_IDTight"
+    cfg.x.hlt_L1_seeds = {
+        "PFMETNoMu120_PFMHTNoMu120_IDTight": [
+            "ETMHF90",
+            "ETMHF100",
+            "ETMHF110",
+            "ETMHF120",
+            "ETMHF130",
+            "ETMHF140",
+            "ETMHF150",
+            "ETM150",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+        ],
+    }
+
+    # set default hist producer
+    self.config_inst.x.default_hist_producer = "default"
+
+    # add combined process with ttbar and drell-yan
+    cfg.add_process(cfg.x.procs.n.tt_dy)
+
+    # Change variables
+    # need npvs as floats in the scale factor calculation
+    cfg.variables.remove("npvs")
+    cfg.add_variable(
+        name="npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=(81, 0, 81),
+        x_title="Number of primary vertices",
+        discrete_x=True,
+    )
+    # change lepton pt binning
+    for i in [0, 1]:
+        cfg.variables.get(f"lepton{i}_pt").binning = (240, 0., 240.)
+    # add trigger ids as variables
+    cfg.add_variable(
+        name="trigger_ids",  # these are the trigger IDs saved during the selection
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )
+    # trigger ids für scale factors
+    cfg.add_variable(
+        name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
+    )
+
+
+@triggersf.post_init
+def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception("Selector steps are not supported in triggersf reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("all_but_trigger",)
+
+    triggersf_required_columns = {
+        f"HLT.{self.config_inst.x.dl_orthogonal_trigger}",
+        *{
+            f"L1.{seed}"
+            for seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger]
+        },
+    }
+    self.uses.update(triggersf_required_columns)
+    self.produces.update(triggersf_required_columns)
