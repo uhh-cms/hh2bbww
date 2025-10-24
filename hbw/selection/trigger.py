@@ -279,7 +279,7 @@ def data_double_counting(
 
     process_inst = self.dataset_inst.processes.get_first()
 
-    if process_inst.name == "data_jethtmet":
+    if process_inst.name == "data_jethtmet" or process_inst.name == "data_met":
         # return always true for data_jethtmet
         return events, SelectionResult(steps={"data_double_counting": np.ones(len(events), dtype=np.bool_)})
 
