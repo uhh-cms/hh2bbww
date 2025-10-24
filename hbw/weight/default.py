@@ -295,12 +295,7 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
-no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    # "vjets_weight": [],  # TODO: corrections/shift missing
-    # "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
+
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     # "vjets_weight": [],  # TODO: corrections/shift missing
@@ -487,7 +482,10 @@ with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls"
 
 # additional hist producers for scale factors
 from hbw.trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
-
-dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
+no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "stitched_normalization_weight": [],
+}})
+dl_orth_with_l1_seeds = no_trig_sf.derive("dl_orth_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
 })
