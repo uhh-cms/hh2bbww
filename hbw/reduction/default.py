@@ -143,7 +143,7 @@ def triggersf_init(self: Reducer) -> None:
     self.config_inst.x.default_hist_producer = "default"
 
     # add combined process with ttbar and drell-yan
-    cfg.add_process(cfg.x.procs.n.tt_dy)
+    cfg.add_process(cfg.x.procs.n.sf_bkg_reduced)
 
     # Change variables
     cfg.add_variable(
@@ -224,7 +224,6 @@ def triggersf_init(self: Reducer) -> None:
     )
 
 
-
 @triggersf.post_init
 def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
     if task.selector_steps:
@@ -242,6 +241,14 @@ def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
             f"L1.{seed}"
             for seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger]
         },
+        f"HLT.{self.config_inst.x.dl_orthogonal_trigger2}",
+        *{
+            f"L1.{seed}"
+            for seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger2]
+        },
     }
     self.uses.update(triggersf_required_columns)
     self.produces.update(triggersf_required_columns)
+
+
+triggersffix = triggersf.derive("triggersffix")

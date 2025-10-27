@@ -481,11 +481,14 @@ with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
 
 # additional hist producers for scale factors
-from hbw.trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
+from hbw.trigger.trigger_cats import mask_fn_dl_orth2_with_l1_seeds
 no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
     **default_correction_weights,
     "stitched_normalization_weight": [],
 }})
-dl_orth_with_l1_seeds = no_trig_sf.derive("dl_orth_with_l1_seeds", cls_dict={
-    "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+dl_orth2_with_l1_seeds = no_trig_sf.derive("dl_orth2_with_l1_seeds", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth2_with_l1_seeds,
 })
+# dl_orth_with_l1_seeds = no_trig_sf.derive("dl_orth_with_l1_seeds", cls_dict={
+#     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+# })
