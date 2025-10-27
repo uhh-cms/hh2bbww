@@ -155,6 +155,7 @@ class CustomCreateYieldTable(
         return self.variables[0]
 
     def prepare_yields(self):
+        inputs = self.input()
         import hist
         variable = self.variables[0]
         yields = {}
@@ -180,9 +181,9 @@ class CustomCreateYieldTable(
             for dataset in self.datasets[i]:
                 # sum over all histograms of the same variable and config
                 if hist_per_config is None:
-                    hist_per_config = self.load_histogram(config_inst, dataset, variable)
+                    hist_per_config = self.load_histogram(inputs, config_inst, dataset, variable)
                 else:
-                    hist_per_config += self.load_histogram(config_inst, dataset, variable)
+                    hist_per_config += self.load_histogram(inputs, config_inst, dataset, variable)
 
             # slice histogram per config according to the sub_processes and categories
             hist_per_config = self.slice_histogram(

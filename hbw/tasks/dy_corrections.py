@@ -1070,6 +1070,7 @@ class ComputeDYWeights(DYCorrBase):
         }
 
     def run(self):
+        inputs = self.input()
         shifts = ["nominal", self.shift]
         hists = defaultdict(dict)
 
@@ -1081,11 +1082,11 @@ class ComputeDYWeights(DYCorrBase):
                     # sum over all histograms of the same variable and config
                     if hist_per_config is None:
                         hist_per_config = self.load_histogram(
-                            config=config_inst, dataset=dataset, variable=variable,
+                            inputs=inputs, config=config_inst, dataset=dataset, variable=variable,
                         )
                     else:
                         h = self.load_histogram(
-                            config=config_inst, dataset=dataset, variable=variable,
+                            inputs=inputs, config=config_inst, dataset=dataset, variable=variable,
                         )
                         hist_per_config += h
 
