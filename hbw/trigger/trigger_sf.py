@@ -159,6 +159,8 @@ class CalculateTriggerScaleFactors(
         """
         Calculate the trigger scale factors and their uncertainties.
         Also returns the efficiencies and their uncertainties used in the calculation.
+
+        NOTE: envelope seems to be inverted in usage!
         """
         efficiencies = {
             self.hist_producers[0]: {},
@@ -340,33 +342,7 @@ class CalculateTriggerScaleFactors(
         edgesmix = {"lepton0_pt": mixedges1, "lepton1_pt": mixedges2}
         pre_edges = {"ee": edgesee, "mm": edgesmu, "mixed": edgesmix}
 
-        # old version of histogram loading, not able to use multiple sub processes
-        # for hist_producer in self.hist_producers:
-        #     for dataset in self.datasets:
-        #         for variable in self.variables:
-        #             h_in = self.load_histogram(hist_producer, dataset, variable)
-        #             h_in = self.slice_histogram(h_in, self.processes, self.categories, self.shift)
-        #             h_in = h_in[{"category": sum}]
-        #             h_in = h_in[{"shift": sum}]
-        #             for var in self.variable_settings:
-        #                 if var in h_in.axes.name:
-        #                     # use over and underflow bins unless specified otherwise
-        #                     if self.variable_settings[var].get("use_flow_bins", True):
-        #                         h_in = use_flow_bins(h_in, var)
-        #                     # rebin if specified
-        #                     if "rebin" in self.variable_settings[var]:
-        #                         h_in = h_in[{var: hist.rebin(int(self.variable_settings[var]["rebin"]))}]
-        #                 else:
-        #                     logger.warning(f"Variable {var} not found in histogram, skipping rebinning")
-        #             if self.premade_edges:
-        #                 for var in h_in.axes.name[1:3]:
-        #                     h_in = apply_rebinning_edges(h_in, var, pre_edges[self.trigger][var])
-        #             if variable in hists[hist_producer].keys():
-        #                 hists[hist_producer][variable] += h_in
-        #             else:
-        #                 hists[hist_producer][variable] = h_in
-
-        # Load the histograms, new version able to handle multiple sub processes
+        # Load the histograms
         # get the shifts to extract and plot
         plot_shifts = law.util.make_list(self.config_inst.get_shift(self.shift))
 
@@ -461,6 +437,7 @@ class CalculateTriggerScaleFactors(
                                     "from the variable settings or set 'premade_edges' to False."
                                 )
                                 continue
+                        # magic number to get the variable name "leptonX_pt" from "PREFIX_leptonX_pt"
                         if var.name[-10:] in pre_edges[self.trigger].keys():
                             hists[key][proc] = apply_rebinning_edges(
                                 hists[key][proc],
@@ -498,6 +475,7 @@ class CalculateTriggerScaleFactors(
         if self.bins_optimised:
 
             if self.envelope_var != "":
+                raise Exception("triggerSF with envelope_var - not currently wanted")
                 scale_factors, uncertainties, efficiencies, efficiency_unc, sf_env_unc, unc_with_sf_env, alpha_factors, sf_envelope, sf_uncs = self.calc_sf_and_unc(hists, envelope=False)  # noqa: E501
             else:
                 scale_factors, uncertainties, efficiencies, efficiency_unc = self.calc_sf_and_unc(hists, envelope=True)  # noqa
@@ -522,7 +500,7 @@ class CalculateTriggerScaleFactors(
             sfhist_up.label = "out"
 
             upwards_scale_factors = correctionlib.convert.from_histogram(sfhist_up)
-            upwards_scale_factors.description = f"{self.trigger} scale factors, binned in {self.variables[0]}, upwards variation" # noqa
+            upwards_scale_factors.description = f"{self.trigger} scale factors, binned in {self.variables[0]}, upwards variation"  # noqa: E501
 
             # set overflow bins behavior (default is to raise an error when out of bounds)
             upwards_scale_factors.data.flow = "clamp"
@@ -534,7 +512,7 @@ class CalculateTriggerScaleFactors(
             sfhist_down.label = "out"
 
             downwards_scale_factors = correctionlib.convert.from_histogram(sfhist_down)
-            downwards_scale_factors.description = f"{self.trigger} scale factors, binned in {self.variables[0]}, downwards variation" # noqa
+            downwards_scale_factors.description = f"{self.trigger} scale factors, binned in {self.variables[0]}, downwards variation"  # noqa: E501
 
             # set overflow bins behavior (default is to raise an error when out of bounds)
             downwards_scale_factors.data.flow = "clamp"
@@ -564,11 +542,13 @@ class CalculateTriggerScaleFactors(
                     # fig, ax = plt.subplots()
 
                 if len(sfhist.axes.size) == 2:
+                    logger.info("2d plotting")
+                    # raise Exception("2d plotting - I do not want this ATM")
                     plot2d = True
                     if plot2d:
                         if self.plot_uncertainties:
                             uncertainties[uncertainties == 0.0] = None
-                            sfhist_unc = hist.Hist(*hists[self.hist_producers[0]][self.processes[0]][..., 0].axes, data=uncertainties)  # noqa:E501
+                            sfhist_unc = hist.Hist(*hists[self.hist_producers[0]][self.processes[0]][..., 0].axes, data=uncertainties)  # noqa: E501
                             sfhist_unc.plot2d(ax=ax, cmap="viridis")
                             # for i in range(len(sfhist_unc.axes[0].centers)):
                             #     for j in range(len(sfhist_unc.axes[1].centers)):
@@ -579,12 +559,16 @@ class CalculateTriggerScaleFactors(
                             #         else:
                             #             color = "black"
                             #         if unc > 0:
-                            #             if sfhist_unc.axes[0].centers[i] < 400 and sfhist_unc.axes[1].centers[j] < 400:
+                            #             if sfhist_unc.axes[0].centers[i] < 400 and sfhist_unc.axes[1].centers[j] < 400:  # noqa: E501
                             #                 ax.text(sfhist_unc.axes[0].centers[i], sfhist_unc.axes[1].centers[j],
                             #                         f'{value:.2f}',  # \n$\\pm${unc:.2f}',
                             #                         ha='center', va='center', color=color, fontsize=14)
                         else:
-                            sfhist.plot2d(ax=ax, cmap="viridis")
+                            sfhist.values()[uncertainties == 0.0] = None
+                            artists = sfhist.plot2d(ax=ax, cmap="viridis")
+                            # cbar = ax.figure.colorbar(artists[0], ax=ax)
+                            artists[0].set_clim(0.85, 1.15)
+                            # cbar.set_clim(0.85, 1.15)
                         # Annotate each bin with its relative uncertainty
                             # for i in range(len(sfhist.axes[0].centers)):
                             #     for j in range(len(sfhist.axes[1].centers)):
@@ -624,6 +608,10 @@ class CalculateTriggerScaleFactors(
                         ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
                         ax.set_xlabel(r"Leading lepton $p_T$ [GeV]")
                         ax.set_ylabel(r"Subleading lepton $p_T$ [GeV]")
+
+                        label = self.config_inst.get_category(self.categories[0]).label
+                        ax.annotate(label, xy=(0.05, 0.95), xycoords="axes fraction",
+                                    fontsize=20)
                     else:
                         fig, axs = plt.subplots(4, 1, gridspec_kw=dict(hspace=0), sharex=True)
                         for key in [4, 3, 2, 1]:
@@ -631,7 +619,7 @@ class CalculateTriggerScaleFactors(
                                 x=sfhist[:, key].axes.centers[0], y=sfhist[:, key].values(),
                                 yerr=uncertainties[:, key],
                                 fmt="o",
-                                label=f"{sfhist[0,:].axes.edges[0][key]}<lep2 $p_T$<{sfhist[0,:].axes.edges[0][key+1]}")
+                                label=f"{sfhist[0, :].axes.edges[0][key]}<lep2 $p_T$<{sfhist[0, :].axes.edges[0][key + 1]}")  # noqa: E501
 
                             axs[key - 1].set_ylim(0.70, 1.13)
                             axs[key - 1].legend(loc="lower right")
@@ -641,9 +629,12 @@ class CalculateTriggerScaleFactors(
                         axs[-1].set_xlabel(r"Leading lepton $p_T$ / GeV")
                         ax = axs[0]
                 else:
+                    logger.info("1d plotting")
+                    # 1d plotting
                     label_dict = {
-                        "data_jethtmet": r"$\varepsilon_{\text{Data}}^{\text{meas.}}$",
-                        "sf_bkg": r"$\varepsilon_{\text{MC}}^{\text{meas.}}$"
+                        "data_met": r"$\varepsilon_{\text{Data}}^{\text{meas.}}$",
+                        "sf_bkg": r"$\varepsilon_{\text{MC}}^{\text{meas.}}$",
+                        "sf_bkg_reduced": r"$\varepsilon_{\text{MC}}^{\text{meas.}}$",
                     }
                     # trig_label = r"$e\mu$ trigger" if self.trigger == "mixed" else f"{self.trigger} trigger"
                     proc_label1 = label_dict[self.processes[1]]
@@ -653,6 +644,7 @@ class CalculateTriggerScaleFactors(
                     # proc_label0 = proc_label0[:-4] if "DL" in proc_label0 else proc_label0
                     # proc_label1 = proc_label1[:-4] if "DL" in proc_label1 else proc_label1
                     if self.envelope_var != "":
+                        raise Exception("1d triggerSF with envelope_var - not currently wanted")
                         ax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), xerr=2.4, fmt=",", label="nominal", lw=2, color="gray") # noqa
                         ax.errorbar(
                             x=sfhist.axes[0].centers, y=sf_envelope["up"], yerr=sf_uncs["up"], fmt="o", color="darkorange",  # noqa
@@ -699,6 +691,7 @@ class CalculateTriggerScaleFactors(
                         # ax.set_xlim(0, 200)
                         # ax.set_xlabel(r"Leading lepton $p_T$ / GeV")
                     else:
+                        logger.info("1d triggerSF without envelope_var")
                         ax.errorbar(
                             x=sfhist.axes[0].centers, y=efficiencies[self.processes[0]],
                             yerr=efficiency_unc[self.processes[0]],
@@ -707,31 +700,19 @@ class CalculateTriggerScaleFactors(
                             x=sfhist.axes[0].centers, y=efficiencies[self.processes[1]],
                             yerr=efficiency_unc[self.processes[1]],
                             fmt="o", label=f"{proc_label1}")
-                    # rax.errorbar(x=sfhist.axes[0].centers, y=scale_factors, yerr=unc_with_sf_env, fmt="o",
-                    #              color="tab:orange")
-                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), xerr=4.5, fmt=",", color="tab:grey")
-                    # comb_unc = np.sqrt(uncertainties**2 + sf_env_unc**2 + (1-alpha_factors)**2)
-                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=comb_unc, fmt=",",
-                    #              label="total uncertainty", elinewidth=4)
-                    # ##rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=uncertainties, fmt="o", label="nominal") # noqa
-                    # unc_mask = ak.where((uncertainties / sfhist.values()) > 0.05, True, False)
-                    # rax.errorbar(
-                    #     x=sfhist.axes[0].centers[unc_mask], y=sfhist.values()[unc_mask],
-                    #     yerr=uncertainties[unc_mask], fmt="o",
-                    #     label=f"rel. unc = {uncertainties[unc_mask][:2] / sfhist.values()[unc_mask][:2]}", color="red"
-                    # ) # noqa
-                    # rax.errorbar(x=sfhist.axes[0].centers-2, y=sfhist.values(), yerr=uncertainties, fmt=",",
-                    #              label="statistical", elinewidth=4)
-                    # rax.errorbar(x=sfhist.axes[0].centers, y=sfhist.values(), yerr=np.sqrt((1-alpha_factors)**2),
-                    #              fmt=",", label=r"$\alpha$", elinewidth=4)
-                    # rax.errorbar(x=sfhist.axes[0].centers+2, y=sfhist.values(), yerr=sf_env_unc, fmt=",",
-                    #              label="npv envelope", elinewidth=4)
+                        rax.errorbar(
+                            x=sfhist.axes[0].centers, y=sfhist.values(),
+                            yerr=uncertainties, fmt="o",
+                            label=f"rel. unc = {uncertainties[:2] / sfhist.values()[:2]}",
+                            # color="red",
+                        )
                         rax.axhline(y=1.0, linestyle="dashed", color="gray")
                         rax_kwargs = {
                             "ylim": (0.82, 1.18),  # leading lep
                             # "ylim": (0.92, 1.08),  # subleading, others
                             "xlim": (0, 200),
-                            "ylabel": "Scale factors",
+                            # "ylabel": "Scale factors",
+                            "ylabel": "Data / MC",
                             "xlabel": f"{variable_insts[0].x_title} [GeV]",
                             "yscale": "linear",
                         }
@@ -746,10 +727,10 @@ class CalculateTriggerScaleFactors(
 
                 cms_label_kwargs = {
                     "ax": ax,
-                    "llabel": "Private work (CMS data/simulation)",
+                    "llabel": "Work in progress",
                     "fontsize": 22,
                     "data": False,
-                    "exp": "",
+                    # "exp": "",
                     "com": self.config_inst.campaign.ecm,
                     "lumi": round(0.001 * self.config_inst.x.luminosity.get("nominal"), 2)
                 }
@@ -758,6 +739,7 @@ class CalculateTriggerScaleFactors(
 
         # optimising the binning for 2d histograms results in a non uniform binning, a different workflow is needed
         elif len(self.variables[0].split("-")[:-1]) == 2:
+            raise Exception("2d rebinning - I do not want this (use --premade-edges --bins-optimised)")
 
             # optimise second axis, return accondingly optimised edges of first axis
             histslices, edges2 = optimise_binning2d(
@@ -794,7 +776,7 @@ class CalculateTriggerScaleFactors(
                     axs[key].errorbar(
                         x=h[self.hist_producers[0]][self.variables[0]].axes[1].centers, y=sliced_scale_factors[key],
                         yerr=sliced_uncertainties[key],
-                        fmt="o", label=f"{x_edges[key]}<lep2pt<{x_edges[key+1]}")
+                        fmt="o", label=f"{x_edges[key]}<lep2pt<{x_edges[key + 1]}")
 
                     axs[key].set_ylim(0.87, 1.13)
                     axs[key].legend()
@@ -832,10 +814,10 @@ class CalculateTriggerScaleFactors(
 
             cms_label_kwargs = {
                 "ax": ax,
-                "llabel": "Private work (CMS data/simulation)",
+                "llabel": "Work in progress",
                 "fontsize": 22,
                 "data": False,
-                "exp": "",
+                # "exp": "",
                 "com": self.config_inst.campaign.ecm,
                 "lumi": round(0.001 * self.config_inst.x.luminosity.get("nominal"), 2)
             }
@@ -851,3 +833,4 @@ class CalculateTriggerScaleFactors(
             fig,
             formatter="mpl",
         )
+        self.publish_message(f"Trigger scale factors and plot saved to folder {outputs['trigger_sf_plot'].abspath}")
