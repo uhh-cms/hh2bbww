@@ -688,6 +688,90 @@ run_and_fetch_efficiency_plots() {
     done
 }
 
+run_triggersf_production() {
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local datasets="${3:-"tt_dl_powheg,data_met*"}"
+    local processes="${4:-"tt_dl,data_met"}"
+    local checksum=$(checksum)
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+    local reducer="triggersf"
+    local producers="event_weights,pre_ml_cats,trigger_prod_dls"
+    local hist_producers="no_trig_sf,dl_orth2_with_l1_seeds"
+
+    local do_reduction="false"
+    local produce_histograms="false"
+    local produce_scale_factors="true"
+
+    if [[ "$do_reduction" == "true" ]]; then
+        echo "→ TriggerSF MergeReducedEvents: configs=$configs, datasets=$datasets"
+        run_cmd law run cf.MergeReducedEventsWrapper --configs $configs --datasets $datasets \
+            --cf.MergeReducedEvents-reducer $reducer \
+            --cf.ReduceEvents-{workflow=htcondor,pilot} \
+            --workers 123 --cf.BundleRepo-custom-checksum "$checksum"
+    fi
+
+    if [[ "$produce_histograms" == "true" ]]; then
+        for hist_producer in ${hist_producers//,/ }; do
+            echo "→ TriggerSF CreateHistograms: configs=$configs, datasets=$datasets"
+                run_cmd law run cf.CreateHistogramsWrapper \
+                    --configs "$configs" \
+                    --datasets "$datasets" \
+                    --shifts nominal \
+                    --cf.CreateHistograms-reducer "$reducer" \
+                    --cf.CreateHistograms-producer "$producers" \
+                    --cf.CreateHistograms-variables "$variables" \
+                    --cf.CreateHistograms-hist-producer "$hist_producer" \
+                    --cf.CreateHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+                    --cf.BundleRepo-custom-checksum "$checksum" \
+                    --workers 20
+        done
+    fi
+
+    if [[ "$produce_scale_factors" == "true" ]]; then
+        for config in ${configs//,/ }; do
+            (
+                for category in "2e" "2mu" "emu"; do
+                    trigger=""
+                    if [[ "$category" == "emu" ]]; then
+                        trigger="mixed"
+                    fi
+                    if [[ "$category" == "2mu" ]]; then
+                        trigger="mm"
+                    fi
+                    if [[ "$category" == "2e" ]]; then
+                        trigger="ee"
+                    fi
+                    # map category to trigger, 2e
+                    echo "→ TriggerSF PlotVariables: config=$config, category=$category"
+                    run_and_fetch_cmd triggersf/${config} claw run cf.CalculateTriggerScaleFactors \
+                        --config "$config" \
+                        --reducer "$reducer" \
+                        --producers "$producers" \
+                        --hist-producers "$hist_producers" \
+                        --variables "$variables" \
+                        --categories "$category" \
+                        --trigger "$trigger" \
+                        --processes "$processes" \
+                        --suffix "V4" \
+                        --bins-optimised --premade-edges \
+                        --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar} \
+                        --cf.BundleRepo-custom-checksum "$checksum" \
+                        --workers 1 --remove-output 0,a,y
+                done
+            ) &
+            pids+=($!)
+        done
+
+        # Wait for all config processes to finish
+        for pid in "${pids[@]}"; do
+            wait "$pid"
+        done
+        echo "All trigger SF calculations completed."
+    fi
+}
+
 # === Dispatcher ===
 # TODO: this is still super messy (comment in & out whatever is currently requested),
 # we might want to implement a proper dispatcher at some point
@@ -747,6 +831,9 @@ run_all() {
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
 
+    # run_triggersf_production "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
+    # run_triggersf_production "$all_configs" "trg_lepton0_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
+    # run_triggersf_production "c23postv14" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
 }
 
 # === Example usage ===
