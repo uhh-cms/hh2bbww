@@ -448,6 +448,7 @@ class CalculateTriggerScaleFactors(
                             logger.warning(
                                 f"Variable {var.name} not found in pre_edges, skipping rebinning."
                             )
+
         # ####################################################
 
         old_axes = hists[self.hist_producers[0]][self.processes[0]][..., 0].axes
@@ -695,14 +696,17 @@ class CalculateTriggerScaleFactors(
                         ax.errorbar(
                             x=sfhist.axes[0].centers, y=efficiencies[self.processes[0]],
                             yerr=efficiency_unc[self.processes[0]],
+                            xerr=sfhist.axes[0].widths / 2,
                             fmt="o", label=f"{proc_label0}")
                         ax.errorbar(
                             x=sfhist.axes[0].centers, y=efficiencies[self.processes[1]],
                             yerr=efficiency_unc[self.processes[1]],
+                            xerr=sfhist.axes[0].widths / 2,
                             fmt="o", label=f"{proc_label1}")
                         rax.errorbar(
                             x=sfhist.axes[0].centers, y=sfhist.values(),
                             yerr=uncertainties, fmt="o",
+                            xerr=sfhist.axes[0].widths / 2,
                             label=f"rel. unc = {uncertainties[:2] / sfhist.values()[:2]}",
                             # color="red",
                         )
@@ -710,12 +714,22 @@ class CalculateTriggerScaleFactors(
                         rax_kwargs = {
                             "ylim": (0.82, 1.18),  # leading lep
                             # "ylim": (0.92, 1.08),  # subleading, others
-                            "xlim": (0, 200),
+                            "xlim": (25, 400),
+                            "xscale": "log",
                             # "ylabel": "Scale factors",
                             "ylabel": "Data / MC",
                             "xlabel": f"{variable_insts[0].x_title} [GeV]",
                             "yscale": "linear",
                         }
+                        if "eta" in self.variables[0]:
+                            rax_kwargs["xscale"] = "linear"
+                            rax_kwargs["xlim"] = (-2.5, 2.5)
+                        else:
+                            # Set custom tick locations for log scale
+                            rax.set_xticks([25, 50, 100, 200, 400])
+                            rax.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
+                            rax.get_xaxis().set_minor_formatter(mpl.ticker.NullFormatter())
+
                         rax.set(**rax_kwargs)
                         ax.set_ylabel("Efficiency")
                         ax.set_ylim(0.68, 1.18)

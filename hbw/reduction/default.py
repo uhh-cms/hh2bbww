@@ -156,6 +156,14 @@ def triggersf_init(self: Reducer) -> None:
         x_title=r"$\text{N}_{\text{PV}}$",
         # discrete_x=True,
     )
+    cfg.add_variable(
+        name="trg_n_jet",
+        expression=lambda events: ak.num(events.Jet["pt"], axis=1),
+        aux={"inputs": {"Jet.pt"}},
+        binning=(9, -0.5, 8.5),
+        x_title="Number of jets",
+        discrete_x=False,
+    )
     # change lepton pt binning
     cfg.add_variable(
         name="trg_lepton0_pt",
