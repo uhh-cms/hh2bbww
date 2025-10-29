@@ -688,11 +688,50 @@ run_and_fetch_efficiency_plots() {
     done
 }
 
-run_triggersf_production() {
+run_and_fetch_triggersf() {
+    # TODO: the fetching seems to be rather inconsistent, changing hash every time?
+    local checksum=$(checksum)
     local configs="${1:-$all_configs}"
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
-    local datasets="${3:-"tt_dl_powheg,data_met*"}"
-    local processes="${4:-"tt_dl,data_met"}"
+    local processes="${3:-"data_met,sf_bkg_reduced"}"
+
+    local folder_name=triggersf/${configs//,/_}
+    run_and_fetch_cmd $folder_name claw run hbw.TriggerSFBase \
+        --configs $configs \
+        --variables "$variables" \
+        --processes "$processes" \
+        --suffix "V4" \
+        --cf.ReduceEvents-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+        --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
+        --cf.MergeHistograms-{workflow=local,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
+        --cf.BundleRepo-custom-checksum "$checksum" \
+        --workers 6
+}
+
+run_and_fetch_all_triggersf() {
+    local checksum=$(checksum)
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local processes="${3:-"data_met,sf_bkg_reduced"}"
+    for config in ${all_configs//,/ }; do
+        run_and_fetch_triggersf "$config" "$variables" "$processes" &
+        pids+=($!)
+    done
+    # Wait for all config processes to finish
+    for pid in "${pids[@]}"; do
+        wait "$pid"
+    done
+    echo "All trigger SF fetches per config completed."
+    run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
+}
+
+run_triggersf_production() {
+    # Trigger SF production workflow using task defined by Balduin
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local datasets="${3:-"tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
+    local processes="${4:-"data_met,sf_bkg_reduced"}"
     local checksum=$(checksum)
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
@@ -732,7 +771,9 @@ run_triggersf_production() {
     if [[ "$produce_scale_factors" == "true" ]]; then
         for config in ${configs//,/ }; do
             (
-                for category in "2e" "2mu" "emu"; do
+                run_and_fetch_triggersf "$config" "$variables" "$processes"
+
+                for category in emu 2mu 2e; do
                     trigger=""
                     if [[ "$category" == "emu" ]]; then
                         trigger="mixed"
@@ -758,7 +799,7 @@ run_triggersf_production() {
                         --bins-optimised --premade-edges \
                         --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar} \
                         --cf.BundleRepo-custom-checksum "$checksum" \
-                        --workers 1 --remove-output 0,a,y
+                        --workers 6 --remove-output 0,a,y
                 done
             ) &
             pids+=($!)
@@ -769,6 +810,7 @@ run_triggersf_production() {
             wait "$pid"
         done
         echo "All trigger SF calculations completed."
+        run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
     fi
 }
 
@@ -778,7 +820,7 @@ run_triggersf_production() {
 run_all() {
     # Set global checksum once for this entire workflow run
     global_checksum=$(checksum)
-    # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
     # run_merge_reduced_events "$all_configs" "nominal"
@@ -831,9 +873,13 @@ run_all() {
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
 
-    # run_triggersf_production "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+
     # run_triggersf_production "$all_configs" "trg_lepton0_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
-    # run_triggersf_production "c23postv14" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
 }
 
 # === Example usage ===
