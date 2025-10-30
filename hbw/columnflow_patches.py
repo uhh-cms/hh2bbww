@@ -298,34 +298,6 @@ def patch_modify_process_hist():
             ],
         }]
 
-        if "data" in process_inst.name:
-            # do not rescale data
-            return h
-        lumi = config_inst.x.luminosity.nominal
-        # rescale lumi
-        old_lumis = {
-            "c23prev14": 17794,
-            "c23postv14": 9451,
-        }
-        new_lumis = {
-            "c23prev14": 18063,
-            "c23postv14": 9693,
-        }
-        if config_inst.name not in old_lumis.keys():
-            # do not rescale
-            return h
-        if (old_lumi := old_lumis[config_inst.name]) != lumi:
-            raise Exception(
-                "expected old lumi to match config lumi. Will not rescale. Please fix config or remove lumi rescaling.",
-            )
-        new_lumi = new_lumis[config_inst.name]
-        scale = new_lumi / old_lumi
-        logger.warning_once(
-            f"scale_lumi_{config_inst.name}",
-            "rescaling histograms from %.1f/fb to %.1f/fb (x%.3f)", old_lumi, new_lumi, scale,
-        )
-        h = h * scale
-
         return h
 
     SerializeInferenceModelBase.modify_process_hist = modify_process_hist
