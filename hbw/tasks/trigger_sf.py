@@ -202,8 +202,9 @@ class ComputeTriggerSF(
 
     def store_parts(self) -> law.util.InsertableDict:
         parts = super().store_parts()
-        parts.insert_before("version", "datasets", f"datasets_{self.datasets_repr}")
-        parts.insert_before("version", "weights", f"weights_{self.hist_producers_repr}")
+        parts.pop("hist_producer")
+        parts.insert_before("version", "hist_producers", f"hist__{self.hist_producers_repr}")
+        parts.insert_before("version", "datasets", f"datasets__{self.datasets_repr}")
         return parts
 
     def create_branch_map(self):
