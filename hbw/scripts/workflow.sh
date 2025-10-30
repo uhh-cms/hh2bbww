@@ -696,7 +696,7 @@ run_and_fetch_triggersf() {
     local processes="${3:-"data_met,sf_bkg_reduced"}"
 
     local folder_name=triggersf/${configs//,/_}
-    run_and_fetch_cmd $folder_name claw run hbw.TriggerSFBase \
+    run_and_fetch_cmd $folder_name claw run hbw.ComputeTriggerSF \
         --configs $configs \
         --variables "$variables" \
         --processes "$processes" \

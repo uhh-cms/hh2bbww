@@ -53,7 +53,7 @@ if TYPE_CHECKING:
     hist = maybe_import("hist")
 
 
-class TriggerSFBase(
+class ComputeTriggerSF(
     HBWTask,
     HistogramsUserSingleShiftBase,
     DatasetsProcessesMixin,
