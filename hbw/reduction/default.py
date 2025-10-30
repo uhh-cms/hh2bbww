@@ -12,7 +12,7 @@ from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT
 
 from hbw.util import IF_TOP, IF_VJETS, IF_DY
-from columnflow.production.cms.top_pt_weight import gen_parton_top
+from hbw.production.top_pt_theory import gen_parton_top
 from hbw.production.gen_v import gen_v_boson
 from hbw.production.jets import njet_for_recoil
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met

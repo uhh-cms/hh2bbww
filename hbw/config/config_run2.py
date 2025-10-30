@@ -33,6 +33,8 @@ from columnflow.production.cms.btag import BTagSFConfig
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 from columnflow.production.cms.jet import JetIdConfig
 
+from columnflow.cms_util import CATInfo, CATSnapshot, CMSDatasetInfo
+
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
@@ -50,6 +52,7 @@ def add_config(
     # gather campaign data
     year = campaign.x.year
     year2 = year % 100
+    vnano = campaign.x.version
 
     corr_postfix = ""
     if campaign.x.year == 2016:
@@ -239,8 +242,8 @@ def add_config(
         2016: "V7",
         2017: "V5",
         2018: "V5",
-        2022: "V2",
-        2023: "V2" if jerc_postfix == "" else "V3",
+        2022: "V3",
+        2023: "V3",
     }[year]
 
     cfg.x.jec = DotDict.wrap({
@@ -488,22 +491,11 @@ def add_config(
     ################################################################################################
 
     # electron calibrations
-    cfg.x.eec = EGammaCorrectionConfig(
-        correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
-        value_type="scale",
-        uncertainty_type="escale",
-        compound=True,
-    )
-    # cfg.x.eec = EGammaCorrectionConfig(
-    #     correction_set=f"EGMScale_ElePTsplit_{cfg.x.cpn_tag}",
-    #     value_type="total_correction",
-    #     uncertainty_type="escale",
-    #     compound=False,
-    # )
-    cfg.x.eer = EGammaCorrectionConfig(
-        correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
-        value_type="smear",
-        uncertainty_type="esmear",
+    cfg.x.ess = EGammaCorrectionConfig(
+        scale_correction_set="Scale",
+        scale_compound=True,
+        smear_syst_correction_set="SmearAndSyst",
+        systs=["scale_down", "scale_up", "smear_down", "smear_up"],
     )
 
     if cfg.x.run == 2:
@@ -802,23 +794,74 @@ def add_config(
             value = DotDict.wrap(value)
         cfg.x.external_files[name] = value
 
-    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-a1ba637b"
-    # json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-68d5e602"
-    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
+    # prepare run/era/nano meta data info to determine files in the CAT metadata structure
+    # see https://cms-analysis-corrections.docs.cern.ch
     if cfg.x.run == 2:
-        corr_tag = f"{cfg.x.cpn_tag}_UL"
+        cat_info = CATInfo(
+            run=2,
+            era=f"{year}{cfg.x.full_postfix}",
+            vnano=9,
+            # TODO: pin to specific dates once dealing with run 2 again
+            snapshot=CATSnapshot(btv="latest", egm="latest", jme="latest", lum="latest", muo="latest", tau="latest"),
+        )
     elif cfg.x.run == 3:
-        corr_tag = f"{year}_Summer{year2}{jerc_postfix}"
+        cat_info = {
+            (2022, "", 14): CATInfo(
+                run=3,
+                vnano=12,
+                era="22CDSep23-Summer22",
+                pog_directories={"dc": "Collisions22"},
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-09-23", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+            ),
+            (2022, "EE", 14): CATInfo(
+                run=3,
+                vnano=12,
+                era="22EFGSep23-Summer22EE",
+                pog_directories={"dc": "Collisions22"},
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+            ),
+            (2023, "", 14): CATInfo(
+                run=3,
+                vnano=12,
+                era="23CSep23-Summer23",
+                pog_directories={"dc": "Collisions23"},
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+            ),
+            (2023, "BPix", 14): CATInfo(
+                run=3,
+                vnano=12,
+                era="23DSep23-Summer23BPix",
+                pog_directories={"dc": "Collisions23"},
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+            ),
+            (2024, "", 15): CATInfo(
+                run=3,
+                vnano=15,
+                era="24CDEReprocessingFGHIPrompt-Summer24",
+                pog_directories={"dc": "Collisions24"},
+                # TODO: tau and lum not yet available
+                snapshot=CATSnapshot(btv="2025-08-19", dc="2025-07-25", egm="2025-10-22", jme="2025-07-17", muo="2025-10-17"),  # noqa: E501
+            ),
+        }[(year, campaign.x.postfix, vnano)]
+    else:
+        assert False
+    cfg.x.cat_info = cat_info
 
-    # pileup weight correction
-    add_external("pu_sf", (f"{json_mirror}/POG/LUM/{corr_tag}/puWeights.json.gz", "v1"))
+    if cfg.x.run == 2:
+        raise NotImplementedError("External files for Run 2 not yet implemented/checked")
+    # pileup weight corrections
+    if year != 2024:  # TODO: not yet available, see https://cms-analysis-corrections.docs.cern.ch
+        add_external("pu_sf", (cat_info.get_file("lum", "puWeights.json.gz"), "v1"))
     # jet energy correction
-    add_external("jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/jet_jerc.json.gz", "v1"))
-    add_external("fat_jet_jerc", (f"{json_mirror}/POG/JME/{corr_tag}/fatJet_jerc.json.gz", "v1"))
+    add_external("jet_jerc", (cat_info.get_file("jme", "jet_jerc.json.gz"), "v1"))
+    add_external("fat_jet_jerc", (cat_info.get_file("jme", "fatJet_jerc.json.gz"), "v1"))
     # jet veto map
-    add_external("jet_veto_map", (f"{json_mirror}/POG/JME/{corr_tag}/jetvetomaps.json.gz", "v1"))
-    # jet id fix
-    add_external("jet_id", (f"{json_mirror}/POG/JME/{corr_tag}/jetid.json.gz", "v1"))
+    add_external("jet_veto_map", (cat_info.get_file("jme", "jetvetomaps.json.gz"), "v1"))
+    # btag scale factor
+    add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
+
+    # updated jet id
+    add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))
     cfg.x.jet_id = JetIdConfig(corrections={
         "AK4PUPPI_Tight": 2,
         "AK4PUPPI_TightLeptonVeto": 3,
@@ -827,39 +870,33 @@ def add_config(
         "AK8PUPPI_Tight": 2,
         "AK8PUPPI_TightLeptonVeto": 3,
     })
-    # electron scale factors
-    add_external("electron_sf", (f"{json_mirror}/POG/EGM/{corr_tag}/electron.json.gz", "v1"))
-    add_external("electron_ss", (f"{json_mirror}/POG/EGM/{corr_tag}/electronSS_EtDependent.json.gz", "v1"))
+
     # muon scale factors
-    add_external("muon_sf", (f"{json_mirror}/POG/MUO/{corr_tag}/muon_Z.json.gz", "v1"))
+    add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v1"))
+    # met phi correction
+    if year != 2024:  # TODO: 2024: not yet available
+        add_external("met_phi_corr", (cat_info.get_file("jme", f"met_xyCorrections_{year}_{year}{campaign.x.postfix}.json.gz"), "v1"))  # noqa: E501
+    # electron scale factors
+    add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
+    # electron energy correction and smearing
+    add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v1"))
 
     # custom Trigger SF (produced in 2022+2023 combined)
+    json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
     trigger_sf_path = f"{json_mirror}/data/trig_sf_v4"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v5"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v5"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v5"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))  # noqa: E501
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers
     add_triggers(cfg)
 
-    # btag scale factor
-    add_external("btag_sf_corr", (f"{json_mirror}/POG/BTV/{corr_tag}/btagging.json.gz", "v2"))
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
     # ROOT files (eej.root and aj.root) taken from here:
     # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
     add_external("vjets_reweighting", (f"{json_mirror}/data/json/vjets_pt.json.gz", "v1"))
-    if cfg.x.run == 2:
-        # met phi corrector (still unused and missing in Run3)
-        add_external("met_phi_corr", (f"{json_mirror}/POG/JME/{corr_tag}/met.json.gz", "v1"))
-    else:
-        # Run3 met phi corrector (used in Run3)
-        met_corr_tag = f"{year}_{year}{jerc_postfix}"
-        add_external(
-            "met_phi_corr",
-            (f"{json_mirror}/POG/JME/{corr_tag}/met_xyCorrections_{met_corr_tag}.json.gz", "v1"),
-        )
 
     recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
     add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
@@ -879,9 +916,9 @@ def add_config(
         unc_correction="Recoil_correction_Uncertainty",
     )
 
-    # Louvain Transformer Model
-    add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
-    add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
+    # # Louvain Transformer Model
+    # add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
+    # add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
 
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:

@@ -10,7 +10,7 @@ from columnflow.calibration import Calibrator, calibrator
 from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer, jer_horn_handling
 from columnflow.production.cms.jet import msoftdrop
-from columnflow.calibration.cms.egamma import electrons
+from columnflow.calibration.cms.egamma import electron_scale_smear
 from columnflow.production.cms.seeds import (
     deterministic_object_seeds, deterministic_jet_seeds, deterministic_electron_seeds,
     deterministic_event_seeds,
@@ -32,7 +32,7 @@ logger = law.logger.get_logger(__name__)
 
 
 # customized electron calibrator (also needs deterministic event seeds)
-electrons.deterministic_seed_index = 0
+electron_scale_smear.deterministic_seed_index = 0
 
 # custom fatjet seeds
 deterministic_fatjet_seeds = deterministic_object_seeds.derive(
@@ -114,7 +114,7 @@ def seeds_user_base_setup(
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "ele_version", 4),
+    version=law.config.get_expanded("analysis", "ele_version", 5),
     uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
     produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -132,14 +132,14 @@ def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 
 @ele.init
 def ele_init(self: Calibrator) -> None:
-    self.electron_calib_cls = electrons
+    self.electron_calib_cls = electron_scale_smear
 
     self.uses |= {self.electron_calib_cls}
     self.produces |= {self.electron_calib_cls}
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "fatjet_version", 4),
+    version=law.config.get_expanded("analysis", "fatjet_version", 5),
     uses={msoftdrop, deterministic_seeds_calibrator.PRODUCES},
     produces={msoftdrop, "FatJet.pt"},  # never leave this empty, otherwise the calibrator will not run
 )
@@ -221,7 +221,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=False,
-    version=law.config.get_expanded("analysis", "jet_version", 4),
+    version=law.config.get_expanded("analysis", "jet_version", 5),
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # keep a copy of non-propagated MET to replace infinite values
