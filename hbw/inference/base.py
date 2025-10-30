@@ -608,7 +608,7 @@ class HBWInferenceModelBase(InferenceModel):
                 continue
             inf_processes = [inf_proc for inf_proc in self.inf_processes if key in inf_proc]
             logger.info(
-                f"Adding Higgs BR rate parameter {param_name} for processes: {inf_processes}"
+                f"Adding Higgs BR rate parameter {param_name} for processes: {inf_processes}",
             )
             for inf_proc in inf_processes:
                 self.add_parameter(

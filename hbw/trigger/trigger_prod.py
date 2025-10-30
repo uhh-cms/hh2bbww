@@ -46,50 +46,50 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     combinations22 = {
         "ele30ele28": [
             "Ele30_WPTight_Gsf",
-            "Ele28_eta2p1_WPTight_Gsf_HT150"
+            "Ele28_eta2p1_WPTight_Gsf_HT150",
         ],
         "ele30_quadjet": [
             "Ele30_WPTight_Gsf",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         ],
         "ele30e28e15": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
-            "Ele15_IsoVVVL_PFHT450"
+            "Ele15_IsoVVVL_PFHT450",
         ],
         "ele30e28e15_quadjet": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         ],
         "ele30e15_quadjet": [
             "Ele30_WPTight_Gsf",
             "Ele15_IsoVVVL_PFHT450",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         ],
         "ele30e28e15e50_quadjet": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         ],
         "mu24m50": [
             "IsoMu24",
-            "Mu50"
+            "Mu50",
         ],
         "mu24m50_quadjet": [
             "IsoMu24",
             "Mu50",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
         ],
         "mu24m50m15_quadjet": [
             "IsoMu24",
             "Mu50",
             "Mu15_IsoVVVL_PFHT450",
-            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
-        ]
+            "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65",
+        ],
     }
     combinations23 = {
         "e30e28": [
@@ -105,49 +105,49 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
-            "Ele50_CaloIdVT_GsfTrkIdT_PFJet165"
+            "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
         ],
         "e30e28e15e50_quad340": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "e30e28e15e50_quad280": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "exEle30": [
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
             "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "exEle28": [
             "Ele30_WPTight_Gsf",
             "Ele15_IsoVVVL_PFHT450",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
             "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "exEle15": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
             "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "exEle50": [
             "Ele30_WPTight_Gsf",
             "Ele28_eta2p1_WPTight_Gsf_HT150",
             "Ele15_IsoVVVL_PFHT450",
             "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "exeQuad280": [
             "Ele30_WPTight_Gsf",
@@ -165,36 +165,36 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         ],
         "m24m50": [
             "IsoMu24",
-            "Mu50"
+            "Mu50",
         ],
         "m24m50_quad340": [
             "IsoMu24",
             "Mu50",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "m24m50_quad280": [
             "IsoMu24",
             "Mu50",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "m24m50m15_quad280": [
             "IsoMu24",
             "Mu50",
             "Mu15_IsoVVVL_PFHT450",
-            "PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+            "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
         ],
         "m24m50m15_quad340": [
             "IsoMu24",
             "Mu50",
             "Mu15_IsoVVVL_PFHT450",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "m24m50m15_quad280_340": [
             "IsoMu24",
             "Mu50",
             "Mu15_IsoVVVL_PFHT450",
             "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "m24m50m15_quad280_340_Mu3MET": [
             "IsoMu24",
@@ -202,25 +202,25 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
             "Mu15_IsoVVVL_PFHT450",
             "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
-            "Mu3er1p5_PFJet100er2p5_PFMETNoMu100_PFMHTNoMu100_IDTight"
+            "Mu3er1p5_PFJet100er2p5_PFMETNoMu100_PFMHTNoMu100_IDTight",
         ],
         "exIsoMu24": [
             "Mu50",
             "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
             "Mu15_IsoVVVL_PFHT450",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "exMu50": [
             "IsoMu24",
             "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
             "Mu15_IsoVVVL_PFHT450",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "exMu15": [
             "IsoMu24",
             "Mu50",
             "PFHT280_QuadPFJet30_PNet2BTagMean0p55",
-            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70"
+            "PFHT340_QuadPFJet70_50_40_40_PNet2BTagMean0p70",
         ],
         "exQuad280": [
             "IsoMu24",
@@ -237,7 +237,7 @@ def trigger_prod_sl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     }
     combinations = {
         2022: combinations22,
-        2023: combinations23
+        2023: combinations23,
     }
 
     for key in combinations[year].keys():
@@ -353,7 +353,7 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     trigger_sequence = {
         "ee": ee_trigger_sequence,
         "mm": mm_trigger_sequence,
-        "mixed": mixed_trigger_sequence
+        "mixed": mixed_trigger_sequence,
     }
 
     # initialize the trigger ids column filled with the labels
@@ -425,7 +425,7 @@ def trigger_prod_dls(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     trigger_sequence = {
         "ee": ee_trigger_sequence,
         "mm": mm_trigger_sequence,
-        "mixed": mixed_trigger_sequence
+        "mixed": mixed_trigger_sequence,
     }
 
     # initialize the trigger ids column filled with the labels
@@ -508,7 +508,7 @@ def trigger_prod_db(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     trigger_sequence = {
         "ee": ee_trigger_sequence,
         "mm": mm_trigger_sequence,
-        "mixed": mixed_trigger_sequence
+        "mixed": mixed_trigger_sequence,
     }
 
     for channel in self.channel:

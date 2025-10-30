@@ -141,7 +141,7 @@ def calc_ratio_uncertainty(efficiencies: dict, errors: dict):
 
     # combine errors
     uncertainty = np.sqrt(
-        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2
+        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2,
     )
 
     return np.nan_to_num(uncertainty, nan=0, posinf=1, neginf=0)
@@ -268,7 +268,7 @@ def plot_efficiencies(
             if "unroll" in kwargs:
                 myhist = myhist[:, int(subslice), :]
 
-            if not hasattr(proc_inst, 'label'):
+            if not hasattr(proc_inst, "label"):
                 proc_label = proc_inst
             else:
                 proc_label = proc_inst.label
@@ -325,14 +325,17 @@ def plot_efficiencies(
                 # this scaling here is not really necessary as it cancels out
                 if count_key >= -10:
                     # label += ", scaled"
-                    num_scale = np.nan_to_num(myhist[:, hist.loc(i)].values() / myhist[:, hist.loc(i)].variances(), nan=1)  # noqa
+                    num_scale = np.nan_to_num(
+                        myhist[:, hist.loc(i)].values() / myhist[:, hist.loc(i)].variances(), nan=1,
+                    )
                     den_scale = num_scale  # np.nan_to_num(norm_hist.values() / norm_hist.variances(), nan=1)
                 else:
                     num_scale = 1
                     den_scale = 1
-                efficiency = np.nan_to_num((myhist[:, hist.loc(i)].values()*num_scale) / (norm_hist.values()*den_scale),  # noqa
-                                           nan=0, posinf=1, neginf=0
-                                           )
+                efficiency = np.nan_to_num(
+                    (myhist[:, hist.loc(i)].values() * num_scale) / (norm_hist.values() * den_scale),
+                    nan=0, posinf=1, neginf=0,
+                )
                 efficiency_sum = np.sum(myhist[:, hist.loc(i)].values()) / np.sum(norm_hist.values())
                 if kwargs.get("show_int_effies", False):
                     # if "old" in i:

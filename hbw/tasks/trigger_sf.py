@@ -401,7 +401,7 @@ class TriggerSFBase(
         for hist_producer in self.hist_producers:
             # calculate efficiencies. process, shift, variable, bin
             efficiencies[hist_producer], efficiency_unc[hist_producer] = calculate_efficiencies(
-                hists[hist_producer], self.trigger
+                hists[hist_producer], self.trigger,
             )
 
         # calculate scale factors, second weight producer is used
@@ -427,7 +427,7 @@ class TriggerSFBase(
         efficiency_unc = efficiency_unc[self.hist_producers[1]]
         # calculate scale factor uncertainties, only statistical uncertainties are considered right now
         uncertainties = calc_sf_uncertainty(
-            efficiencies, efficiency_unc, alpha_factors
+            efficiencies, efficiency_unc, alpha_factors,
         )
 
         if not envelope:
@@ -486,7 +486,8 @@ class TriggerSFBase(
 
         elif len(variable_insts[:-1]) > 2 and not self.bins_optimised:
             logger.warning(
-                "Binning optimisation not implemented for histograms with more than 2 dimensions, using default binning"
+                "Binning optimisation not implemented for histograms "
+                "with more than 2 dimensions, using default binning",
             )
             self.bins_optimised = True
 
@@ -513,7 +514,7 @@ class TriggerSFBase(
 
             # add uncertainties
             sfhist_up = hist.Hist(
-                *hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=scale_factors + uncertainties
+                *hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=scale_factors + uncertainties,
             )
             sfhist_up.name = f"sf_{self.trigger}_{self.variables[0]}_up"
             sfhist_up.label = "out"
@@ -525,7 +526,7 @@ class TriggerSFBase(
             upwards_scale_factors.data.flow = "clamp"
 
             sfhist_down = hist.Hist(
-                *hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=scale_factors - uncertainties
+                *hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=scale_factors - uncertainties,
             )
             sfhist_down.name = f"sf_{self.trigger}_{self.variables[0]}_down"
             sfhist_down.label = "out"
@@ -629,23 +630,23 @@ class TriggerSFBase(
                             x=sfhist.axes[0].centers, y=sf_envelope["up"], yerr=sf_uncs["up"], fmt="o", color="darkorange",  # noqa
                             label=f"{self.config_inst.get_variable(self.envelope_var).x_title}"
                             fr"$\geq${self.half_point_label}",
-                            markersize=5
+                            markersize=5,
                         )
                         ax.errorbar(
                             x=sfhist.axes[0].centers, y=sf_envelope["down"], yerr=sf_uncs["down"], fmt="o", color="steelblue",  # noqa
                             label=f"{self.config_inst.get_variable(self.envelope_var).x_title}<{self.half_point_label}",
-                            markersize=5
+                            markersize=5,
                         )
                         rax.errorbar(
                             x=sfhist.axes[0].centers, y=sf_envelope["up"] / sfhist.values(), yerr=sf_uncs["up"] / sfhist.values(), fmt="o", color="darkorange",  # noqa
                             label=f"{self.config_inst.get_variable(self.envelope_var).x_title}"
                             fr"$\geq${self.half_point_label}",
-                            markersize=5
+                            markersize=5,
                         )
                         rax.errorbar(
                             x=sfhist.axes[0].centers, y=sf_envelope["down"] / sfhist.values(), yerr=sf_uncs["down"] / sfhist.values(), fmt="o", color="steelblue",  # noqa
                             label=f"{self.config_inst.get_variable(self.envelope_var).x_title}<{self.half_point_label}",
-                            markersize=5
+                            markersize=5,
                         )
                         # handles, labels = rax.get_legend_handles_labels()
                         # rax.legend(handles[::-1], labels[::-1], loc="upper left", handletextpad=-0.2, ncol=2)
@@ -665,7 +666,7 @@ class TriggerSFBase(
                         ax.set_ylim(0.82, 1.18)
                         handles, labels = ax.get_legend_handles_labels()
                         ax.legend(
-                            handles[::-1], labels[::-1], loc="upper right", handletextpad=-0.2, ncol=2, fontsize=24
+                            handles[::-1], labels[::-1], loc="upper right", handletextpad=-0.2, ncol=2, fontsize=24,
                         )
                         # ax.set_xlim(0, 200)
                         # ax.set_xlabel(r"Leading lepton $p_T$ / GeV")
@@ -742,7 +743,7 @@ class TriggerSFBase(
                 calculator=self,
                 hists=hists,
                 target_uncertainty1=0.02,
-                target_uncertainty2=0.04
+                target_uncertainty2=0.04,
             )
 
             sliced_scale_factors = {}
@@ -799,7 +800,7 @@ class TriggerSFBase(
                 sfhist.label = "out"
                 plt.style.use(mplhep.style.CMS)
                 fig, ax = plt.subplots()
-                sfhist.plot2d(ax=ax,)
+                sfhist.plot2d(ax=ax)
                 ax.plot([0, 150], [0, 150], linestyle="dashed", color="gray")
                 ax.set_xlim(0, 150)
                 ax.set_xticks([50, 100, 150])
