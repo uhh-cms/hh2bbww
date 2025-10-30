@@ -88,16 +88,18 @@ class ComputeTriggerSF(
         brace_expand=True,
     )
 
-    # these have been parameters in Balduin's setup
+    # these have been parameters in Balduin's setup, but might not be needed in the future
     envelope_var = ""
-    bins_optimised = True
+    bins_optimised = luigi.BoolParameter(
+        default=True,
+        description="Optimise the binning to get relative uncertainties below 5%",
+    )
     premade_edges = True
     # TODO: just make uncertainty + SF plot in one go instead
     plot_uncertainties = luigi.BoolParameter(
         default=False,
         description="Plot the uncertainties, instead of the scale factors",
     )
-    # plot_uncertainties = True
 
     # set default parameters specific to this task
     processes = DatasetsProcessesMixin.processes_multi.copy(

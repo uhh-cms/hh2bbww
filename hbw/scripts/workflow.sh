@@ -727,7 +727,7 @@ run_and_fetch_all_triggersf() {
 }
 
 run_triggersf_production() {
-    # Trigger SF production workflow using task defined by Balduin
+    # Full Trigger SF production workflow
     local configs="${1:-$all_configs}"
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
     local datasets="${3:-"tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
@@ -735,12 +735,14 @@ run_triggersf_production() {
     local checksum=$(checksum)
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
+    # defaults that are encoded in the ComputeTriggerSF task
     local reducer="triggersf"
     local producers="event_weights,pre_ml_cats,trigger_prod_dls"
     local hist_producers="no_trig_sf,dl_orth2_with_l1_seeds"
 
-    local do_reduction="false"
-    local produce_histograms="false"
+    # handles to turn on/off parts of the workflow
+    local do_reduction="true"
+    local produce_histograms="true"
     local produce_scale_factors="true"
 
     if [[ "$do_reduction" == "true" ]]; then
@@ -769,48 +771,7 @@ run_triggersf_production() {
     fi
 
     if [[ "$produce_scale_factors" == "true" ]]; then
-        for config in ${configs//,/ }; do
-            (
-                run_and_fetch_triggersf "$config" "$variables" "$processes"
-
-                for category in emu 2mu 2e; do
-                    trigger=""
-                    if [[ "$category" == "emu" ]]; then
-                        trigger="mixed"
-                    fi
-                    if [[ "$category" == "2mu" ]]; then
-                        trigger="mm"
-                    fi
-                    if [[ "$category" == "2e" ]]; then
-                        trigger="ee"
-                    fi
-                    # map category to trigger, 2e
-                    echo "→ TriggerSF PlotVariables: config=$config, category=$category"
-                    run_and_fetch_cmd triggersf/${config} claw run cf.CalculateTriggerScaleFactors \
-                        --config "$config" \
-                        --reducer "$reducer" \
-                        --producers "$producers" \
-                        --hist-producers "$hist_producers" \
-                        --variables "$variables" \
-                        --categories "$category" \
-                        --trigger "$trigger" \
-                        --processes "$processes" \
-                        --suffix "V4" \
-                        --bins-optimised --premade-edges \
-                        --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar} \
-                        --cf.BundleRepo-custom-checksum "$checksum" \
-                        --workers 6 --remove-output 0,a,y
-                done
-            ) &
-            pids+=($!)
-        done
-
-        # Wait for all config processes to finish
-        for pid in "${pids[@]}"; do
-            wait "$pid"
-        done
-        echo "All trigger SF calculations completed."
-        run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
+        run_and_fetch_all_triggersf "$configs" "$variables" "$processes"
     fi
 }
 
