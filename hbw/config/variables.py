@@ -297,6 +297,27 @@ def add_variables(config: od.Config) -> None:
     )
 
     config.add_variable(
+        name="electron_eta_sc",
+        expression=lambda events: ak.pad_none(events.Electron, 1)[:, 0]["eta"] + ak.pad_none(events.Electron, 1)[:, 0]["deltaEtaSC"],  # noqa: E501
+        binning=(100, -2.5, 2.5),
+        unit="",
+        x_title=r"$\eta_{sc}^{e}$",
+        aux={
+            "inputs": {"Electron.{eta,deltaEtaSC}"},
+        },
+    )
+    config.add_variable(
+        name="electron_eta_sc_zoom",
+        expression=lambda events: abs(ak.pad_none(events.Electron, 1)[:, 0]["eta"] + ak.pad_none(events.Electron, 1)[:, 0]["deltaEtaSC"]),  # noqa: E501
+        binning=(100, 1.4, 1.6),
+        unit="",
+        x_title=r"$\eta_{sc}^{e}$",
+        aux={
+            "inputs": {"Electron.{eta,deltaEtaSC}"},
+        },
+    )
+
+    config.add_variable(
         # NOTE: only works when running `prepare_objects` in HistProducer
         name="ptll_for_dy_corr",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,

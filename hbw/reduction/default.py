@@ -9,6 +9,7 @@ import law
 from columnflow.reduction import Reducer, reducer
 from columnflow.reduction.default import cf_default
 from columnflow.util import maybe_import
+from columnflow.columnar_util import EMPTY_FLOAT
 
 from hbw.util import IF_TOP, IF_VJETS, IF_DY
 from columnflow.production.cms.top_pt_weight import gen_parton_top
@@ -92,3 +93,170 @@ def default_init(self: Reducer) -> None:
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag(("jec", "jer"))
     }
+
+
+triggersf = default.derive("triggersf")
+
+
+@triggersf.init
+def triggersf_init(self: Reducer) -> None:
+    cfg = self.config_inst
+
+    # prevent multiple initializations
+    flag = f"reducer_init_done_{self.cls_name}"
+    if cfg.has_tag(flag):
+        return
+    cfg.add_tag(flag)
+
+    # add config entries needed already during the reduction
+    # TODO: At some point this should probably time dependent as well
+    cfg.x.dl_orthogonal_trigger = "PFMETNoMu120_PFMHTNoMu120_IDTight"
+    cfg.x.dl_orthogonal_trigger2 = "PFMET120_PFMHT120_IDTight"
+    cfg.x.hlt_L1_seeds = {
+        "PFMETNoMu120_PFMHTNoMu120_IDTight": [
+            "ETMHF90",
+            "ETMHF100",
+            "ETMHF110",
+            "ETMHF120",
+            "ETMHF130",
+            "ETMHF140",
+            "ETMHF150",
+            "ETM150",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+        ],
+        "PFMET120_PFMHT120_IDTight": [
+            "ETMHF90",
+            "ETMHF100",
+            "ETMHF110",
+            "ETMHF120",
+            "ETMHF130",
+            "ETMHF140",
+            "ETMHF150",
+            "ETM150",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p1",
+            "ETMHF90_SingleJet60er2p5_dPhi_Min2p6",
+        ],
+    }
+
+    # set default hist producer
+    self.config_inst.x.default_hist_producer = "default"
+
+    # add combined process with ttbar and drell-yan
+    cfg.add_process(cfg.x.procs.n.sf_bkg_reduced)
+
+    # Change variables
+    cfg.add_variable(
+        name="trg_npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=(81, 0, 81),
+        x_title=r"$\text{N}_{\text{PV}}$",
+        # discrete_x=True,
+    )
+    cfg.add_variable(
+        name="trg_n_jet",
+        expression=lambda events: ak.num(events.Jet["pt"], axis=1),
+        aux={"inputs": {"Jet.pt"}},
+        binning=(9, -0.5, 8.5),
+        x_title="Number of jets",
+        discrete_x=False,
+    )
+    # change lepton pt binning
+    cfg.add_variable(
+        name="trg_lepton0_pt",
+        expression=lambda events: events.Lepton[:, 0].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Leading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="trg_lepton1_pt",
+        expression=lambda events: events.Lepton[:, 1].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_lepton0_pt",
+        expression=lambda events: events.Lepton[:, 0].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=[0., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Leading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_lepton1_pt",
+        expression=lambda events: events.Lepton[:, 1].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=[0., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
+        unit="GeV",
+        null_value=EMPTY_FLOAT,
+        x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    cfg.add_variable(
+        name="sf_npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=[0., 30.] + [i for i in range(31, 41)] + [50., 81.],
+        x_title=r"$\text{N}_{\text{PV}}$",
+    )
+    # add trigger ids as variables
+    cfg.add_variable(
+        name="trigger_ids",  # these are the trigger IDs saved during the selection
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )
+    # trigger ids für scale factors
+    cfg.add_variable(
+        name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
+    )
+
+
+@triggersf.post_init
+def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception("Selector steps are not supported in triggersf reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("all_but_trigger",)
+
+    triggersf_required_columns = {
+        f"HLT.{self.config_inst.x.dl_orthogonal_trigger}",
+        *{
+            f"L1.{seed}"
+            for seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger]
+        },
+        f"HLT.{self.config_inst.x.dl_orthogonal_trigger2}",
+        *{
+            f"L1.{seed}"
+            for seed in self.config_inst.x.hlt_L1_seeds[self.config_inst.x.dl_orthogonal_trigger2]
+        },
+    }
+    self.uses.update(triggersf_required_columns)
+    self.produces.update(triggersf_required_columns)
+
+
+triggersffix = triggersf.derive("triggersffix")

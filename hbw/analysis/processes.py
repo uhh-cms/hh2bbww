@@ -22,6 +22,8 @@ def modify_cmsdb_processes():
         ttvv, tttt, vvv,
         h_ggf, h_vbf, vh,
         tth, thq, thw,
+        st_twchannel_t_dl, st_twchannel_tbar_dl,
+        tt_dl,
     )
 
     decay_map = {
@@ -131,4 +133,20 @@ def modify_cmsdb_processes():
         id=99890206,
         label="tt + DY",
         color=color_palette["red"],
+    )
+
+    sf_bkg = create_parent_process(  # noqa: F841
+        [h, ttv, vv, dy, st, tt],
+        name="sf_bkg",
+        id=99890207,
+        label="MC background",
+        color=color_palette["green"],
+    )
+
+    sf_bkg_reduced = create_parent_process(  # noqa: F841
+        [dy_m50toinf, st_twchannel_t_dl, st_twchannel_tbar_dl, tt_dl],
+        name="sf_bkg_reduced",
+        id=99890208,
+        label="MC background",
+        color=color_palette["green"],
     )

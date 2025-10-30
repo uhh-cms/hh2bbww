@@ -54,11 +54,13 @@ class HBWInferenceModelBase(InferenceModel):
     # 7: remove all trafos
     # 8: add shape->rate trafos back for dy,ttv,vv
     # 9: add shape->rate trafos for bkg categories
-    version: int = 11
+    version: int = 12
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
     multi_variables: bool = False
+
+    scale_signal = None
 
     #
     # helper functions and properties
@@ -386,17 +388,23 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                 used_datasets[config] |= set(_datasets)
 
-            self.add_process(
-                name=self.inf_proc(proc),
-                config_data={
+            kwargs = {
+                "config_data": {
                     config_inst.name: self.process_config_spec(
                         process=proc,
                         mc_datasets=datasets[config_inst.name],
                     )
                     for config_inst in self.config_insts
                 },
-                is_signal=("hh_" in proc.lower()),
-                # is_dynamic=??,
+                "is_signal": ("hh_" in proc.lower()),
+            }
+            if self.scale_signal and kwargs["is_signal"]:
+                logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")
+                kwargs["scale"] = self.scale_signal
+
+            self.add_process(
+                name=self.inf_proc(proc),
+                **kwargs,
             )
 
     def remove_inference_processes(self: InferenceModel):
@@ -425,6 +433,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_hbb_efficiency_parameters()
         self.add_lumi_rate_parameters()
         self.add_xsec_rate_parameters()
+        self.add_higgs_br_rate_parameters()
 
     def add_hbb_efficiency_parameters(self: InferenceModel):
         for param, (proc_criterium, category_criterium) in const.hbb_efficiency_params.items():
@@ -585,6 +594,30 @@ class HBWInferenceModelBase(InferenceModel):
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
+
+    def add_higgs_br_rate_parameters(self: InferenceModel):
+        """
+        Function to add Higgs branching ratio rate parameters to the inference model.
+
+        TODO: if we'd consider processes with same Higgs decay (e.g. HH4b), we would need to
+        update the effect accordingly (e.g. square the effect for BR_hbb)
+        """
+        for key, effect in const.higgs_br_uncertainties.items():
+            param_name = f"BR_{key}"
+            if param_name not in self.systematics:
+                continue
+            inf_processes = [inf_proc for inf_proc in self.inf_processes if key in inf_proc]
+            logger.info(
+                f"Adding Higgs BR rate parameter {param_name} for processes: {inf_processes}",
+            )
+            for inf_proc in inf_processes:
+                self.add_parameter(
+                    param_name,
+                    process=inf_proc,
+                    type=ParameterType.rate_gauss,
+                    effect=effect,
+                    transformations=[ParameterTransformation.symmetrize],
+                )
 
     def add_shape_parameters(self: InferenceModel):
         """

@@ -123,7 +123,7 @@ def set_config_defaults_and_groups(config_inst):
     # config_inst.x.default_hist_producer = "with_dy_corr"
     config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
-    config_inst.x.default_inference_model = "dl"
+    config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
     config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
 

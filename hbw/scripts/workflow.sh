@@ -688,13 +688,100 @@ run_and_fetch_efficiency_plots() {
     done
 }
 
+run_and_fetch_triggersf() {
+    # TODO: the fetching seems to be rather inconsistent, changing hash every time?
+    local checksum=$(checksum)
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local processes="${3:-"data_met,sf_bkg_reduced"}"
+
+    local folder_name=triggersf/${configs//,/_}
+    run_and_fetch_cmd $folder_name claw run hbw.ComputeTriggerSF \
+        --configs $configs \
+        --variables "$variables" \
+        --processes "$processes" \
+        --suffix "V4" \
+        --cf.ReduceEvents-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+        --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
+        --cf.MergeHistograms-{workflow=local,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
+        --cf.BundleRepo-custom-checksum "$checksum" \
+        --workers 6
+}
+
+run_and_fetch_all_triggersf() {
+    local checksum=$(checksum)
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local processes="${3:-"data_met,sf_bkg_reduced"}"
+    for config in ${all_configs//,/ }; do
+        run_and_fetch_triggersf "$config" "$variables" "$processes" &
+        pids+=($!)
+    done
+    # Wait for all config processes to finish
+    for pid in "${pids[@]}"; do
+        wait "$pid"
+    done
+    echo "All trigger SF fetches per config completed."
+    run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
+}
+
+run_triggersf_production() {
+    # Full Trigger SF production workflow
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local datasets="${3:-"tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
+    local processes="${4:-"data_met,sf_bkg_reduced"}"
+    local checksum=$(checksum)
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+    # defaults that are encoded in the ComputeTriggerSF task
+    local reducer="triggersf"
+    local producers="event_weights,pre_ml_cats,trigger_prod_dls"
+    local hist_producers="no_trig_sf,dl_orth2_with_l1_seeds"
+
+    # handles to turn on/off parts of the workflow
+    local do_reduction="true"
+    local produce_histograms="true"
+    local produce_scale_factors="true"
+
+    if [[ "$do_reduction" == "true" ]]; then
+        echo "→ TriggerSF MergeReducedEvents: configs=$configs, datasets=$datasets"
+        run_cmd law run cf.MergeReducedEventsWrapper --configs $configs --datasets $datasets \
+            --cf.MergeReducedEvents-reducer $reducer \
+            --cf.ReduceEvents-{workflow=htcondor,pilot} \
+            --workers 123 --cf.BundleRepo-custom-checksum "$checksum"
+    fi
+
+    if [[ "$produce_histograms" == "true" ]]; then
+        for hist_producer in ${hist_producers//,/ }; do
+            echo "→ TriggerSF CreateHistograms: configs=$configs, datasets=$datasets"
+                run_cmd law run cf.CreateHistogramsWrapper \
+                    --configs "$configs" \
+                    --datasets "$datasets" \
+                    --shifts nominal \
+                    --cf.CreateHistograms-reducer "$reducer" \
+                    --cf.CreateHistograms-producer "$producers" \
+                    --cf.CreateHistograms-variables "$variables" \
+                    --cf.CreateHistograms-hist-producer "$hist_producer" \
+                    --cf.CreateHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+                    --cf.BundleRepo-custom-checksum "$checksum" \
+                    --workers 20
+        done
+    fi
+
+    if [[ "$produce_scale_factors" == "true" ]]; then
+        run_and_fetch_all_triggersf "$configs" "$variables" "$processes"
+    fi
+}
+
 # === Dispatcher ===
 # TODO: this is still super messy (comment in & out whatever is currently requested),
 # we might want to implement a proper dispatcher at some point
 run_all() {
     # Set global checksum once for this entire workflow run
     global_checksum=$(checksum)
-    # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
     # run_merge_reduced_events "$all_configs" "nominal"
@@ -747,6 +834,13 @@ run_all() {
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
 
+    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+
+    # run_triggersf_production "$all_configs" "trg_lepton0_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
 }
 
 # === Example usage ===

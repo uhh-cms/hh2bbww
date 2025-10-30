@@ -273,6 +273,12 @@ default_weight_columns = {
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
+unstitched_weight_columns = {
+    "dataset_normalization_weight": [],
+    "dy_correction_weight": [],
+    "trigger_weight": ["trigger_sf"],
+    **default_correction_weights,
+}
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
@@ -289,12 +295,7 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "vjets_weight": [],  # TODO: corrections/shift missing
     "stitched_normalization_weight": [],
 }})
-no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    # "vjets_weight": [],  # TODO: corrections/shift missing
-    # "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
+
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
     **default_correction_weights,
     # "vjets_weight": [],  # TODO: corrections/shift missing
@@ -343,6 +344,11 @@ met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
     "categorizer_cls": mask_fn_met_geq40,
 })
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
+met_geq40_with_dy_corr_unstitched = with_dy_corr.derive("met_geq40_with_dy_corr_unstitched", cls_dict={
+    "weight_columns": unstitched_weight_columns,
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })
@@ -475,8 +481,14 @@ with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
 
 # additional hist producers for scale factors
-from trigger.trigger_cats import mask_fn_dl_orth_with_l1_seeds
-
-dl_orth_with_l1_seeds = default_hist_producer.derive("dl_orth_with_l1_seeds", cls_dict={
-    "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+from hbw.trigger.trigger_cats import mask_fn_dl_orth2_with_l1_seeds
+no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
+    **default_correction_weights,
+    "stitched_normalization_weight": [],
+}})
+dl_orth2_with_l1_seeds = no_trig_sf.derive("dl_orth2_with_l1_seeds", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth2_with_l1_seeds,
 })
+# dl_orth_with_l1_seeds = no_trig_sf.derive("dl_orth_with_l1_seeds", cls_dict={
+#     "categorizer_cls": mask_fn_dl_orth_with_l1_seeds,
+# })

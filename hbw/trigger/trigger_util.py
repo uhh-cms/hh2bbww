@@ -5,12 +5,13 @@ Some utils for trigger studies and efficiency calculations
 """
 
 from __future__ import annotations
+from collections import OrderedDict
 
 import law
 
 from columnflow.util import maybe_import
 
-from hbw.config.hist_hooks import rebin_hist
+from hbw.hist_util import apply_rebinning_edges
 
 logger = law.logger.get_logger(__name__)
 
@@ -37,8 +38,8 @@ def safe_div(num, den, default=1.0):
         np.where(
             (num >= 0) & (den > 0),
             num / den,
-            1.0
-        )
+            1.0,
+        ),
     )
 
 
@@ -85,7 +86,8 @@ def calc_efficiency_errors(num, den):
         error_low[error_low < 0] = 0
     if np.any(error_high < 0):
         logger.warning("Some upper uncertainties are negative, setting them to zero")
-        error_high[error_high < 0] = 0
+        below_zero_mask = error_high < 0
+        error_high[below_zero_mask] = 0
 
     # remove large errors if the efficiency is zero
     error_low[efficiency == 0] = 0
@@ -115,16 +117,20 @@ def calc_sf_uncertainty(efficiencies: dict, errors: dict, alpha: np.ndarray):
             # here the transponse is undone again
             sym_errors[key] = np.maximum(value.T[..., 0, :], value.T[..., 1, :])
 
+    effi_keys = list(efficiencies.keys())
+    sym_keys = list(sym_errors.keys())
     # combine errors
     uncertainty = np.sqrt(
-        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2 # + (1 - alpha) ** 2  # noqa
+        (sym_errors[sym_keys[0]] / efficiencies[effi_keys[1]]) ** 2 +
+        (efficiencies[effi_keys[0]] * sym_errors[sym_keys[1]] / efficiencies[effi_keys[1]] ** 2) ** 2 +
+        (1 - alpha) ** 2,
     )
 
     return np.nan_to_num(uncertainty, nan=0, posinf=1, neginf=0)
 
 
 def calculate_efficiencies(
-        h: hist.Hist,
+        h_dict: OrderedDict[str, hist.Hist],
         trigger: str,
 ) -> dict:
     """
@@ -133,24 +139,24 @@ def calculate_efficiencies(
     efficiencies = {}
     efficiency_unc = {}
     # loop over processes
-    for proc in range(h.axes[0].size):
+    for proc, h in h_dict.items():
 
-        efficiency = np.nan_to_num(h[proc, ..., hist.loc(trigger)].values() / h[proc, ..., 0].values(),
-                                   nan=0, posinf=1, neginf=0
-                                   )
+        efficiency = np.nan_to_num(
+            h[..., hist.loc(trigger)].values() / h[..., 0].values(), nan=0, posinf=1, neginf=0,
+        )
 
         if np.any(efficiency > 1):
             logger.warning(
-                "Some efficiencies for are greater than 1, errorbars are capped at zero",
+                "Some efficiencies are greater than 1, errorbars are capped at zero",
             )
         elif np.any(efficiency < 0):
             logger.warning(
-                "Some efficiencies for are less than 0, errorbars are capped at zero",
+                "Some efficiencies are less than 0, errorbars are capped at zero",
             )
 
         efficiencies[proc] = efficiency
 
-        efficiency_unc[proc] = calc_efficiency_errors(h[proc, ..., hist.loc(trigger)], h[proc, ..., 0])
+        efficiency_unc[proc] = calc_efficiency_errors(h[..., hist.loc(trigger)], h[..., 0])
 
     return efficiencies, efficiency_unc
 
@@ -186,7 +192,7 @@ def optimise_binning1d(
         # apply edges
         for hist_producer in calculator.hist_producers:
             hist = hists[hist_producer][variables]
-            hist = rebin_hist(hist, variable, edges)
+            hist = apply_rebinning_edges(hist, variable, edges)
             hists[hist_producer][variables] = hist
         bins_optimised = True
     else:
@@ -196,14 +202,14 @@ def optimise_binning1d(
         # apply edges
         for hist_producer in calculator.hist_producers:
             hist = hists[hist_producer][variables]
-            hist = rebin_hist(hist, variable, edges)
+            hist = apply_rebinning_edges(hist, variable, edges)
             hists[hist_producer][variables] = hist
 
         # calculate scale factors and uncertainties
         for hist_producer in calculator.hist_producers:
             # calculate efficiencies. process, shift, variable, bin
             efficiencies[hist_producer], efficiency_unc[hist_producer] = calculate_efficiencies(
-                hists[hist_producer][calculator.variables[0]][:, ..., :], calculator.trigger
+                hists[hist_producer][calculator.variables[0]][:, ..., :], calculator.trigger,
             )
 
         # calculate scale factors, second weight producer is used
@@ -226,7 +232,7 @@ def optimise_binning1d(
         efficiency_unc = efficiency_unc[calculator.hist_producers[1]]
         # calculate scale factor uncertainties, only statistical uncertainties are considered right now
         uncertainties = calc_sf_uncertainty(
-            efficiencies, efficiency_unc, alpha_factors
+            efficiencies, efficiency_unc, alpha_factors,
         )
 
         # check for uncertainties larger than 5%
@@ -278,13 +284,13 @@ def optimise_binning2d(
     logger.info("Optimising first axis")
 
     hists1, edges1 = optimise_binning1d(
-        calculator, hists1, target_uncertainty1, variable=variable[0]
+        calculator, hists1, target_uncertainty1, variable=variable[0],
     )
 
     # apply edges
     for hist_producer in calculator.hist_producers:
         hist = hists[hist_producer][variables]
-        hist = rebin_hist(hist, variable[0], edges1)
+        hist = apply_rebinning_edges(hist, variable[0], edges1)
         hists[hist_producer][variables] = hist
 
     logger.info("Optimising second axis")
@@ -302,7 +308,7 @@ def optimise_binning2d(
             hists2[hist_producer][variables] = hist2
 
         histslices[subslice], edges2[subslice] = optimise_binning1d(
-            calculator, hists2, target_uncertainty2, variable=variable[1]
+            calculator, hists2, target_uncertainty2, variable=variable[1],
         )
 
     return histslices, edges2

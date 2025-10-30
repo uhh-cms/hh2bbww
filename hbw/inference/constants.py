@@ -67,6 +67,15 @@ inference_procnames = {
     "thw": "tHW",
 }
 
+# Higgs BR uncertainties
+higgs_br_uncertainties = {
+    "hbb": (0.9874, 1.0124),
+    "htt": (0.9837, 1.0165),
+    "hgg": (0.9791, 1.0205),
+    "hww": (0.9848, 1.0153),
+    "hzz": (0.9848, 1.0153),
+}
+
 # mapping: which processes are used for which QCDscale (rate) uncertainty
 # TODO: some uncertainties (e.g. ttz) might still be missing in cmsdb for 13.6 TeV
 processes_per_QCDscale = {

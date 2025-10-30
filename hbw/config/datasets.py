@@ -50,17 +50,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         for stream in config.x.data_streams
     ]
 
-    # Add additional datasets needed for orthogonal efficiency measurements.
-    data_jethtmet_eras = {
-        "2022preEE": "cd",
-        "2022postEE": "efg",
-        "2023preBPix": "",
-        "2023postBPix": "",  # TODO: add 2023 jetmet datasets in cmsdb
-    }[config.x.cpn_tag]
-
-    data_jethtmet_datasets = [
-        f"data_jethtmet_{era}"
-        for era in data_jethtmet_eras
+    data_met_datasets = [
+        f"data_met_{era}"
+        for era in data_eras
     ]
 
     ggf_samples = lambda hhdecay: [
@@ -94,7 +86,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     dataset_names = DotDict.wrap({
         # **data_datasets,
         "data": data_datasets,
-        "data_jethtmet": config.x.if_era(cfg_tag="is_for_sf", values=data_jethtmet_datasets),
+        "data_met": config.x.if_era(cfg_tag="is_for_sf", values=data_met_datasets),
         "tt": ["tt_sl_powheg", "tt_dl_powheg", "tt_fh_powheg"],
         "st": [
             "st_schannel_t_lep_4f_amcatnlo",

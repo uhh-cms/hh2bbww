@@ -156,6 +156,13 @@ systematics = DotDict({
         # "pdf_VHH",
         # "pdf_ttHH",
     ],
+    "BR": [
+        "BR_hbb",
+        "BR_hww",
+        "BR_hzz",
+        "BR_htt",
+        "BR_hgg",
+    ],
     "rate_unconstrained": [
         "rate_ttbar",
         "rate_dy",
@@ -295,6 +302,7 @@ systematics["rate_default"] = [
     *systematics.lumi,
     *systematics.QCDscale,
     *systematics.pdf,
+    *systematics.BR,
     *systematics.hbb_efficiency,
     *systematics.rate_unconstrained3,
 ]

@@ -321,7 +321,7 @@ def patch_modify_process_hist():
         new_lumi = new_lumis[config_inst.name]
         scale = new_lumi / old_lumi
         logger.warning_once(
-            f"scale_lumi_{config_inst.name}"
+            f"scale_lumi_{config_inst.name}",
             "rescaling histograms from %.1f/fb to %.1f/fb (x%.3f)", old_lumi, new_lumi, scale,
         )
         h = h * scale

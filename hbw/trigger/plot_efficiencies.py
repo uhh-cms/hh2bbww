@@ -114,6 +114,9 @@ def calc_efficiency_errors(num, den, c):
     error_low[efficiency == 0] = 0
     error_high[efficiency == 0] = 0
 
+    # remove larger error for efficiencies larger 1
+    error_low[efficiency > 1] = 0
+
     # stacking errors
     errors = np.concatenate(
         (error_low.reshape(error_low.shape[0], 1), error_high.reshape(error_high.shape[0], 1)),
@@ -138,7 +141,7 @@ def calc_ratio_uncertainty(efficiencies: dict, errors: dict):
 
     # combine errors
     uncertainty = np.sqrt(
-        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2
+        (sym_errors[0] / efficiencies[1]) ** 2 + (efficiencies[0] * sym_errors[1] / efficiencies[1] ** 2) ** 2,
     )
 
     return np.nan_to_num(uncertainty, nan=0, posinf=1, neginf=0)
@@ -190,13 +193,61 @@ def plot_efficiencies(
 
     # switch trigger and processes when plotting efficiency of one trigger for multiple processes
     proc_as_label = False
+    label_dict = {
+        "mixed": r"$e^\pm\mu^\pm$ trigger",  # "mixed + ele&jet",
+        "emu_dilep": "Dilepton triggers",
+        "ee_dilep": "Dilepton triggers",
+        "mm_dilep": "Dilepton triggers",
+        "emu_single": "Single lepton triggers",
+        "ee_single": "Single lepton triggers",
+        "mm_single": "Single lepton triggers",
+        "single": "Single lepton triggers",
+        "electron+jet": "Electron + Jet trigger",
+        "emu_dilep+emu_single": "OR single lepton triggers",
+        "ee_dilep+ee_single": "OR single lepton triggers",
+        "mm_dilep+mm_single": "OR single lepton triggers",
+        "emu_dilep+emu_single+emu_electronjet": "OR electron + jet trigger",
+        "ee_dilep+ee_single+ee_electronjet": "OR electron + jet trigger",
+        "mm_dilep+mm_single+mm_electronjet": "OR electron + jet trigger",
+        "alt_mix": "mixed + ele115",
+        "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
+        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
+        "ee": r"$e^+e^-$ trigger",
+        "mm": r"$\mu^+\mu^-$ trigger",
+        "ee_old": r"$e^+e^-$ trigger",
+        "emu_old": r"$e^\pm\mu^\pm$ trigger ",
+        "MC background": "MC background",
+        "Data JetHT/MET": r"$\varepsilon^{\text{meas.}}_{\text{Data}}$",
+        "sf_bkg_eff": r"$\varepsilon^{\text{true}}_{\text{MC}}$(Background)",
+        "HH": r"$\varepsilon^{\text{true}}_{\text{MC}}$(Signal)",
+        "default": r"$\varepsilon^{\text{true}}$",
+        "dl_orth2_with_l1_seeds": r"$\varepsilon^{\text{meas.}}$",
+        "dl_selection": r"$\varepsilon^{\text{true}}_{\text{MC}}$",
+        "dl_orth2_l1_and_sel": r"$\varepsilon^{\text{meas.}}_{\text{MC}}$",
+        "e30_e28": "OR Ele28",
+        "e30_e28_e15": "OR Ele15",
+        "e30_e28_e15_quadjet": "OR QuadPFJet",
+        "Ele30_WPTight_Gsf": "Ele30",
+        "IsoMu24": "IsoMu24",
+        "m24_m50": "OR Mu50",
+        "m24_m50_m15": "OR Mu15",
+        "m24_m50_m15_quadjet": "OR QuadPFJet",
+        "Ele28_eta2p1_WPTight_Gsf_HT150": "Ele28",
+        "Ele15_IsoVVVL_PFHT450": "Ele15",
+        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
+        "Mu50": "Mu50",
+        "Mu15_IsoVVVL_PFHT450": "Mu15",
+    }
 
     hists = remove_residual_axis(hists, "shift")
     if len(hists.keys()) > 1:
         if "bin_sel" in kwargs:
-            mask_bins = kwargs["bin_sel"]
+            mask_bins = kwargs["bin_sel"][:-1] if kwargs["bin_sel"][-1] == "" else kwargs["bin_sel"]
             if len(mask_bins) == 1:
-                legend_title = f"{mask_bins[0]}"
+                if mask_bins[0] in label_dict.keys():
+                    legend_title = label_dict[mask_bins[0]]
+                else:
+                    legend_title = f"{mask_bins[0]}"
                 proc_as_label = True
 
     # save efficiencies for ratio calculation
@@ -217,7 +268,7 @@ def plot_efficiencies(
             if "unroll" in kwargs:
                 myhist = myhist[:, int(subslice), :]
 
-            if not hasattr(proc_inst, 'label'):
+            if not hasattr(proc_inst, "label"):
                 proc_label = proc_inst
             else:
                 proc_label = proc_inst.label
@@ -234,7 +285,7 @@ def plot_efficiencies(
                     "method": "draw_hist_twin",
                     "hist": myhist[:, 0],
                     "kwargs": {
-                        "norm": 1,
+                        "norm": sum(myhist[:, 0].values()) if shape_norm else 1,
                         "label": None,
                         "color": "grey",
                         "histtype": "fill",
@@ -252,28 +303,16 @@ def plot_efficiencies(
                     continue
 
                 if proc_as_label:
-                    label = f"{proc_label}"
+                    if proc_label in label_dict.keys() or "HH" in proc_label:
+                        if "HH" in proc_label:
+                            label = f"{label_dict['HH']}"
+                        elif "MC" in proc_label:
+                            label = f"{label_dict['sf_bkg_eff']}"
+                        else:
+                            label = f"{label_dict[proc_label]}"
+                    else:
+                        label = f"{proc_label}"
                 else:
-                    label_dict = {
-                        "mixed": r"$e\mu$ trigger",  # "mixed + ele&jet",
-                        "emu_dilep": "Dilepton triggers",
-                        "ee_dilep": "Dilepton triggers",
-                        "mm_dilep": "Dilepton triggers1",
-                        "emu_single": "Single lepton triggers",
-                        "ee_single": "Single lepton triggers",
-                        "mm_single": "Single lepton triggers",
-                        "single": "Single lepton triggers",
-                        "electron+jet": "Electron + Jet trigger",
-                        "emu_dilep+emu_single": "OR single lepton triggers",
-                        "ee_dilep+ee_single": "OR single lepton triggers",
-                        "mm_dilep+mm_single": "OR single lepton triggers",
-                        "emu_dilep+emu_single+emu_electronjet": "OR Electron + Jet trigger",
-                        "ee_dilep+ee_single+ee_electronjet": "OR Electron + Jet trigger",
-                        "mm_dilep+mm_single+mm_electronjet": "OR Electron + Jet trigger",
-                        "alt_mix": "mixed + ele115",
-                        "dilep+single+electronjet+alt_mix": "mixed + ele115 + ele&jet",
-                        "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
-                    }
                     if i in label_dict.keys():
                         label = label_dict[i]
                     else:
@@ -286,16 +325,27 @@ def plot_efficiencies(
                 # this scaling here is not really necessary as it cancels out
                 if count_key >= -10:
                     # label += ", scaled"
-                    num_scale = np.nan_to_num(myhist[:, hist.loc(i)].values() / myhist[:, hist.loc(i)].variances(), nan=1)  # noqa
+                    num_scale = np.nan_to_num(
+                        myhist[:, hist.loc(i)].values() / myhist[:, hist.loc(i)].variances(), nan=1,
+                    )
                     den_scale = num_scale  # np.nan_to_num(norm_hist.values() / norm_hist.variances(), nan=1)
                 else:
                     num_scale = 1
                     den_scale = 1
-                efficiency = np.nan_to_num((myhist[:, hist.loc(i)].values()*num_scale) / (norm_hist.values()*den_scale),  # noqa
-                                           nan=0, posinf=1, neginf=0
-                                           )
+                efficiency = np.nan_to_num(
+                    (myhist[:, hist.loc(i)].values() * num_scale) / (norm_hist.values() * den_scale),
+                    nan=0, posinf=1, neginf=0,
+                )
                 efficiency_sum = np.sum(myhist[:, hist.loc(i)].values()) / np.sum(norm_hist.values())
-                label += f" ({efficiency_sum:.3f})"
+                if kwargs.get("show_int_effies", False):
+                    # if "old" in i:
+                    #     label = "without non-isolated" + "\n" + "trigger paths"
+                    # else:
+                    #     label = "with isolated" + "\n" + "trigger paths"
+                    # label += "\n" + fr"($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                    label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                    # if "old" in i:
+                    #     label += "\n" + "w/o non-isolated trigger paths"
                 # calculate uncertainties
                 if kwargs.get("skip_errorbars", False):
                     eff_err = None
@@ -303,11 +353,14 @@ def plot_efficiencies(
                     eff_err = calc_efficiency_errors(myhist[:, hist.loc(i)], norm_hist, count_key)
 
                 plot_config[f"hist_{proc_label}_{label}"] = {
-                    "method": "draw_custom_errorbars",
+                    "method": "draw_errorbars",
                     "hist": myhist[:, hist.loc(i)],
                     "kwargs": {
                         "y": efficiency,
                         "yerr": eff_err,
+                        "xerr": myhist.axes[0].widths / 2,
+                        "color": f"C{count_key}",
+                        "marker": "o",
                         "label": r"$e\mu$ trigger" if label == "mixed" else f"{label}",
                     },
                 }
@@ -324,6 +377,7 @@ def plot_efficiencies(
                             "y": np.nan_to_num(efficiencies[0] / efficiencies[1], nan=1, posinf=1, neginf=1),
                             "yerr": calc_ratio_uncertainty(efficiencies, errors),
                             "label": f"{label}",
+                            "color": f"C{count_key-2}",
                             # "annotate": f"alpha={efficiency_sums[0]/efficiency_sums[1]:.2f}",
                         }
                     # else:
@@ -332,6 +386,8 @@ def plot_efficiencies(
                     #        "yerr": None,
                     #        "label": f"{label}",
                     #    }
+                else:
+                    count_key += 1
 
             # set legend title to process name
             if proc_as_label:
@@ -341,7 +397,7 @@ def plot_efficiencies(
                     if proc_label not in default_style_config["legend_cfg"]["title"]:
                         default_style_config["legend_cfg"]["title"] += " & " + proc_label
                 else:
-                    default_style_config["legend_cfg"]["title"] = proc_label
+                    default_style_config["legend_cfg"]["title"] = proc_label  # + "\n" + f"{label_dict[i]}"
 
     # plot-function specific changes
     default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
@@ -351,7 +407,8 @@ def plot_efficiencies(
     if "xlim" in kwargs:
         style_config["ax_cfg"]["xlim"] = kwargs["xlim"]
 
-    style_config["cms_label_cfg"]["fontsize"] = 21
+    style_config["cms_label_cfg"]["fontsize"] = 23
+    style_config["annotate_cfg"]["fontsize"] = 22
     style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 1.5))
     style_config["ax_cfg"]["yscale"] = kwargs.get("yscale", "linear")
     style_config["rax_cfg"]["ylabel"] = "Ratio"
@@ -359,16 +416,15 @@ def plot_efficiencies(
 
     style_config["legend_cfg"]["title_fontsize"] = 23
     if len_label > 30:
-        style_config["legend_cfg"]["fontsize"] = 12
-    elif len_label > 20:
-        style_config["legend_cfg"]["fontsize"] = 15
+        style_config["legend_cfg"]["fontsize"] = 22
     else:
-        style_config["legend_cfg"]["fontsize"] = 23
+        style_config["legend_cfg"]["fontsize"] = 22
     style_config["legend_cfg"]["ncols"] = 1
     style_config["legend_cfg"]["reverse"] = False
 
-    grid_spec = {"left": 0.1, "right": 0.9, "top": 0.95, "bottom": 0.1}
-    style_config["gridspec_cfg"] = grid_spec
+    if not kwargs.get("skip_background", False):
+        grid_spec = {"left": 0.11, "right": 0.88, "top": 0.95, "bottom": 0.1}
+        style_config["gridspec_cfg"] = grid_spec
 
     # fig, axs = plot_all(plot_config, style_config, **kwargs)
 
@@ -380,4 +436,10 @@ def plot_efficiencies(
     #     va="center",
     #     fontsize=20,
     # )
+
+    # fig, axs = plot_all(plot_config, style_config, **kwargs)
+    # leg = axs[0].legend()
+    # for t in leg.get_texts():
+    #     t.set_verticalalignment("center_baseline")
+
     return plot_all(plot_config, style_config, **kwargs)
