@@ -60,6 +60,8 @@ class HBWInferenceModelBase(InferenceModel):
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
     multi_variables: bool = False
 
+    scale_signal = None
+
     #
     # helper functions and properties
     #
@@ -386,17 +388,23 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                 used_datasets[config] |= set(_datasets)
 
-            self.add_process(
-                name=self.inf_proc(proc),
-                config_data={
+            kwargs = {
+                "config_data": {
                     config_inst.name: self.process_config_spec(
                         process=proc,
                         mc_datasets=datasets[config_inst.name],
                     )
                     for config_inst in self.config_insts
                 },
-                is_signal=("hh_" in proc.lower()),
-                # is_dynamic=??,
+                "is_signal": ("hh_" in proc.lower()),
+            }
+            if self.scale_signal and kwargs["is_signal"]:
+                logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")
+                kwargs["scale"] = self.scale_signal
+
+            self.add_process(
+                name=self.inf_proc(proc),
+                **kwargs,
             )
 
     def remove_inference_processes(self: InferenceModel):
