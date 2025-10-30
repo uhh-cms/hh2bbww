@@ -94,7 +94,11 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         print(jet_collection, dst_basename)
         events = self[vbf_candidates](events, jet_collection=jet_collection, **kwargs)
         vbfpair = ak.pad_none(events.VBFPair, 1)[:, 0]
-        events = set_ak_column_f32(events, f"{dst_basename}_tag", ak.num(events.VBFPair))
+        zeros = ak.zeros_like(events.VBFPair.mass)
+        ones = ak.ones_like(events.VBFPair.mass)
+        vbf_tags = ak.where(events.VBFPair.mass > 500, ones, zeros)
+        # events = set_ak_column_f32(events, f"{dst_basename}_tag", ak.num(events.VBFPair))
+        events = set_ak_column_f32(events, f"{dst_basename}_tag", ak.num(vbf_tags))
         for col in ("pt", "eta", "phi", "mass", "deta"):
             events = set_ak_column_f32(events, f"{dst_basename}_{col}", vbfpair[col])
 

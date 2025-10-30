@@ -402,6 +402,35 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
+    "v3": [
+        # new input features:
+        # "mli_dr_ll_bb",  # used instead of mli_dr_bb_llMET
+        # v1 sorted from GGF SHAP
+        "mli_mbbllMET",
+        "mli_b1_pt",
+        "mli_mbb",
+        "mli_mll",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        "mli_maxdr_jj",
+        "mli_mixed_channel",
+        "mli_dr_bb",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_dr_ll",
+        "mli_met_pt",
+        "mli_min_dr_llbb",
+        "mli_b_score_sum",
+        "mli_ll_pt",
+        "mli_ht",
+        "mli_mindr_lb",  # removed: correlated with mli_min_dr_llbb
+        "mli_dr_bb_llMET",  # using mli_dr_ll_bb instead
+        "mli_j1_eta",
+        "mli_n_jet",
+        "mli_j1_pt",
+        "mli_full_vbf_mass",
+    ],
     "fatjet": [
         "mli_fj_particleNetWithMass_HbbvsQCD",
         # "mli_fj_particleNet_XbbvsQCD",
@@ -413,6 +442,7 @@ input_features = DotDict({
     ],
 })
 input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
+input_features["v9"] = input_features["v2"] + ["mli_full_vbf_tag"]
 
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
@@ -598,6 +628,11 @@ vbfv2 = vbfv1.derive("vbfv2", cls_dict={"input_features": input_features["v2"]})
 multiclassv3 = multiclassv1.derive("multiclassv3", cls_dict={"input_features": input_features["v2"]})
 ggfv3 = ggfv1.derive("ggfv3", cls_dict={"input_features": input_features["v2"]})
 vbfv3 = vbfv1.derive("vbfv3", cls_dict={"input_features": input_features["v2"]})
+
+multiclassv7 = multiclassv1.derive("multiclassv7", cls_dict={"input_features": input_features["v2"]})
+ggfv7 = ggfv1.derive("ggfv7", cls_dict={"input_features": input_features["v2"]})
+vbfv6 = vbfv1.derive("vbfv6", cls_dict={"input_features": input_features["v3"]})
+vbfv9 = vbfv1.derive("vbfv9", cls_dict={"input_features": input_features["v9"]})
 
 
 # sanity check

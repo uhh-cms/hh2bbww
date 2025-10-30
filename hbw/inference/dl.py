@@ -521,6 +521,57 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+default_unblind_v8 = dl.derive("default_unblind_v8", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv6"],
+    "config_categories": config_categories.default_boosted,
+    "unblind": False,
+    "skip_data": False,
+})
+default_unblind_v9 = dl.derive("default_unblind_v9", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv9"],
+    "config_categories": config_categories.default_boosted,
+    "unblind": False,
+    "skip_data": False,
+})
+default_fully_unblind_v8 = dl.derive("default_fully_unblind_v8", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv6"],
+    "config_categories": config_categories.default_boosted,
+    "unblind": True,
+    "skip_data": False,
+})
+default_fully_unblind_v9 = dl.derive("default_fully_unblind_v9", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv9"],
+    "config_categories": config_categories.default_boosted,
+    "unblind": True,
+    "skip_data": False,
+})
+default_asimov_v8 = dl.derive("default_asimov_v8", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv6"],
+    "config_categories": config_categories.default_boosted,
+    "skip_data": True,
+})
+default_asimov_v9 = dl.derive("default_asimov_v9", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["multiclassv7", "ggfv7", "vbfv9"],
+    "config_categories": config_categories.default_boosted,
+    "skip_data": True,
+})
+ht_incljet = default_asimov_v8.derive("ht_incljet", cls_dict={
+    "multi_variables": False,
+    # "config_categories": config_categories.no_nn_cats_with_boosted,
+    "config_variable": lambda self, config_cat_inst: "ht_incljet",
+})
+ht_incljetv4 = default_asimov_v8.derive("ht_incljetv4", cls_dict={
+    "multi_variables": False,
+    "config_categories": config_categories.no_nn_cats_with_boosted,
+    "config_variable": lambda self, config_cat_inst: "ht_incljet",
+    "skip_data": False,
+})
 default_data = dl.derive("default_data", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,

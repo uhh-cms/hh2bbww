@@ -376,6 +376,17 @@ def add_variables(config: od.Config) -> None:
     )
 
     config.add_variable(
+        name="ht_incljet",
+        expression=lambda events: ak.sum(events.InclJet["pt"], axis=1),
+        aux={
+            "inputs": {"{ForwardJet,Jet}.{eta,pt,phi,mass}"},
+            "overflow": True,
+        },
+        binning=(40, 0., 1200.),
+        x_title="HT (inclusive jets)",
+    )
+
+    config.add_variable(
         name="n_forwardjet",
         expression=lambda events: ak.num(events.ForwardJet["pt"], axis=1),
         aux={"inputs": {"{ForwardJet,Jet}.{eta,pt,phi,mass}"}},

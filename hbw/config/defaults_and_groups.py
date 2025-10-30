@@ -708,6 +708,29 @@ def set_config_defaults_and_groups(config_inst):
                 "fontsize": 24,
             },
         },
+        "dpostfit_merged_ht": {
+            "gridspec_cfg": {
+                "left": 0.08,
+                "right": 0.98,
+                "top": 0.95,
+                "bottom": 0.05,
+            },
+            "subplots_cfg": {
+                "figsize": (35, 10),
+            },
+            "legend_cfg": {
+                "ncols": 5,
+                "cf_entries_per_column": [0, 3, 3, 3, 4],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
+                "cf_update_handles_labels": reorder_data_first,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 24,
+            },
+        },
         "postfit_merged": {
             "gridspec_cfg": {
                 "left": 0.08,

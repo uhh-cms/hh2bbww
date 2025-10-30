@@ -91,8 +91,8 @@ def vbf_candidates(
     self: Producer,
     events: ak.Array,
     jet_collection: ak.Array | str = "VBFCandidateJet",
-    deta_cut: float | None = None,
-    invmass_cut: float | None = 500,
+    deta_cut: float | None = 3.0,
+    invmass_cut: float | None = None,
     **kwargs,
 ) -> ak.Array:
     if isinstance(jet_collection, str):
