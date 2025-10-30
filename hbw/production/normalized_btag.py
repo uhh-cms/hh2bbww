@@ -9,7 +9,7 @@ from __future__ import annotations
 import law
 
 from columnflow.production import Producer, producer
-from hbw.production.btag import HBWTMP_btag_weights
+from columnflow.production.cms.btag import btag_weights
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
@@ -19,7 +19,7 @@ ak = maybe_import("awkward")
 
 @producer(
     uses={
-        HBWTMP_btag_weights.PRODUCES, "process_id", "Jet.{pt,eta,phi}", "njet", "ht", "nhf",
+        btag_weights.PRODUCES, "process_id", "Jet.{pt,eta,phi}", "njet", "ht", "nhf",
     },
     # produced columns are defined in the init function below
     mc_only=True,
@@ -46,7 +46,7 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             raise NotImplementedError(
                 f"Normalization mode {mode} not implemented (see hbw.tasks.corrections.GetBtagNormalizationSF)",
             )
-        for weight_route in self[HBWTMP_btag_weights].produced_columns:
+        for weight_route in self[btag_weights].produced_columns:
             weight_name = weight_route.string_column
             if not weight_name.startswith("btag_weight"):
                 continue
@@ -67,10 +67,10 @@ def normalized_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
 
 @normalized_btag_weights.post_init
 def normalized_btag_weights_post_init(self: Producer, task: law.Task) -> None:
-    # NOTE: self[HBWTMP_btag_weights].produced_columns is empty during the `init`, therefore changed to `post_init`
+    # NOTE: self[btag_weights].produced_columns is empty during the `init`, therefore changed to `post_init`
     # this means that running this Producer directly on command line would not be triggered due to empty produces
     # during task initialization
-    for weight_route in self[HBWTMP_btag_weights].produced_columns:
+    for weight_route in self[btag_weights].produced_columns:
         weight_name = weight_route.string_column
         if not weight_name.startswith("btag_weight"):
             continue

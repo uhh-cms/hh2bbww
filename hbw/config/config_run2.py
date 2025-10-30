@@ -645,8 +645,8 @@ def add_config(
 
     # b-tagging scale factor uncertainties
     cfg.x.btag_uncs = [
-        "hf", "lf", f"hfstats1_{year}", f"hfstats2_{year}",
-        f"lfstats1_{year}", f"lfstats2_{year}", "cferr1", "cferr2",
+        "hf", "lf", "hfstats1", "hfstats2",
+        "lfstats1", "lfstats2", "cferr1", "cferr2",
     ]
     for i, unc in enumerate(cfg.x.btag_uncs):
         cfg.add_shift(name=f"btag_{unc}_up", id=100 + 2 * i, type="shape")
