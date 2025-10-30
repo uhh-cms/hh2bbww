@@ -142,8 +142,10 @@ def ele_init(self: Calibrator) -> None:
     version=law.config.get_expanded("analysis", "fatjet_version", 5),
     uses={msoftdrop, deterministic_seeds_calibrator.PRODUCES},
     produces={msoftdrop, "FatJet.pt"},  # never leave this empty, otherwise the calibrator will not run
+    jec_sources=["Total"],  # taken from config
+    jec_variations_only=False,
 )
-def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
+def ak8(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     """
     FatJet calibrator, combining JEC and JER.
     Uses as JER uncertainty either only "Total" for MC or no uncertainty for data.
@@ -162,8 +164,8 @@ def fatjet(self: Calibrator, events: ak.Array, task, **kwargs) -> ak.Array:
     return events
 
 
-@fatjet.init
-def fatjet_init(self: Calibrator) -> None:
+@ak8.init
+def ak8_init(self: Calibrator) -> None:
     # derive calibrators to add settings once
     flag = f"custom_fatjet_calibs_registered_{self.cls_name}"
     if not self.config_inst.x(flag, False):
@@ -177,6 +179,7 @@ def fatjet_init(self: Calibrator) -> None:
         }
         fatjet_jer_cls_dict = fatjet_jec_cls_dict.copy()
         fatjet_jer_cls_dict["deterministic_seed_index"] = 0
+        fatjet_jer_cls_dict["jec_uncertainty_sources"] = self.jec_sources
 
         self.config_inst.x.fatjet_jec_data_cls = jec.derive("fatjet_jec_data", cls_dict={
             **fatjet_jec_cls_dict,
@@ -188,7 +191,7 @@ def fatjet_init(self: Calibrator) -> None:
             **fatjet_jec_cls_dict,
             "mc_only": True,
             "nominal_only": True,
-            "uncertainty_sources": ["Total"],
+            "uncertainty_sources": self.jec_sources,
         })
         self.config_inst.x.fatjet_jer_cls = jer.derive("deterministic_fatjet_jer", cls_dict=fatjet_jer_cls_dict)
 
@@ -206,13 +209,23 @@ def fatjet_init(self: Calibrator) -> None:
     self.fatjet_jer_cls = self.config_inst.x.fatjet_jer_cls
 
     self.uses |= {self.fatjet_jec_cls, self.fatjet_jer_cls}
-    self.produces |= {self.fatjet_jec_cls, self.fatjet_jer_cls}
+    if self.jec_variations_only:
+        # TODO: we only want to keep columns related to JEC variations here (not sure how to implement)
+        # self.produces |= {"*_jec_*_{up,down}"}
+        raise NotImplementedError("TODO: only store JEC variations (remove nominal + JER variations)")
+    else:
+        self.produces |= {self.fatjet_jec_cls, self.fatjet_jer_cls}
 
 
-fatjet_test = fatjet.derive("fatjet_test")
+ak8uncs = ak8.derive("ak8uncs", cls_dict=dict(
+    jec_sources=None,  # taken from config
+    jec_variations_only=True,
+))
+ak8_test = ak8.derive("ak8_test")
 
 
 @seeds_user_base.calibrator(
+    version=law.config.get_expanded("analysis", "jet_version", 5),
     uses={deterministic_seeds_calibrator.PRODUCES, MET_COLUMN("{pt,phi}")},
     # We produce event seeds here again to be able to keep them after ReduceEvents (required for NN training).
     produces={deterministic_event_seeds.PRODUCES},
@@ -221,7 +234,7 @@ fatjet_test = fatjet.derive("fatjet_test")
     bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=False,
-    version=law.config.get_expanded("analysis", "jet_version", 5),
+    jec_variations_only=False,
 )
 def jet_base(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # keep a copy of non-propagated MET to replace infinite values
@@ -317,7 +330,12 @@ def jet_base_init(self: Calibrator) -> None:
         self.calibrators.append(met_phi_cls)
 
     self.uses |= set(self.calibrators)
-    self.produces |= set(self.calibrators)
+    if self.jec_variations_only:
+        # TODO: we only want to keep columns related to JEC variations here (not sure how to implement)
+        # self.produces |= {"*_jec_*_{up,down}"}
+        raise NotImplementedError("TODO: only store JEC variations (remove nominal + JER variations)")
+    else:
+        self.produces |= set(self.calibrators)
 
 
 jec_only = jet_base.derive("jec_only", cls_dict=dict(bjet_regression=False, skip_jer=True))
@@ -332,10 +350,15 @@ ak4 = jet_base.derive("ak4", cls_dict=dict(
     jer_horn_handling=True,
 ))
 
+ak4uncs = ak4.derive("ak4uncs", cls_dict=dict(
+    jec_sources=None,  # taken from config
+    jec_variations_only=True,
+))
+
 
 @calibrator(
-    uses={deterministic_seeds_calibrator, ak4, fatjet, ele},
-    produces={deterministic_seeds_calibrator, ak4, fatjet, ele},
+    uses={deterministic_seeds_calibrator, ak4, ak8, ele},
+    produces={deterministic_seeds_calibrator, ak4, ak8, ele},
     version=0,
     skip_req_seeds=True,
 )
@@ -351,8 +374,8 @@ def combined(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # apply the jet calibrator
     events = self[ak4](events, **kwargs)
 
-    # apply the fatjet calibrator
-    events = self[fatjet](events, **kwargs)
+    # apply the ak8 calibrator
+    events = self[ak8](events, **kwargs)
 
     # apply the electron calibrator
     events = self[ele](events, **kwargs)
@@ -363,5 +386,5 @@ def combined(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
 @combined.pre_init
 def combined_init(self: Calibrator, **kwargs) -> None:
     self.deps_kwargs[ak4]["skip_req_seeds"] = True
-    self.deps_kwargs[fatjet]["skip_req_seeds"] = True
+    self.deps_kwargs[ak8]["skip_req_seeds"] = True
     self.deps_kwargs[ele]["skip_req_seeds"] = True

@@ -57,3 +57,14 @@ names:
   - CorrelationGroupbJES
   - CorrelationGroupFlavor
   - CorrelationGroupUncorrelated
+  - Regrouped_Absolute
+  - Regrouped_FlavorQCD
+  - Regrouped_BBEC1
+  - Regrouped_EC2
+  - Regrouped_HF
+  - Regrouped_RelativeBal
+  - Regrouped_Absolute_{campaign}
+  - Regrouped_BBEC1_{campaign}
+  - Regrouped_EC2_{campaign}
+  - Regrouped_RelativeSample_{campaign}
+  - Regrouped_HF_{campaign}

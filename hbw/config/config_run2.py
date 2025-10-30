@@ -213,6 +213,7 @@ def add_config(
     jerc_postfix = campaign.x.postfix
     if jerc_postfix not in ("", "APV", "EE", "BPix"):
         raise ValueError(f"Unknown JERC postfix '{jerc_postfix}'")
+    jerc_campaign = f"{year}{jerc_postfix}"
 
     if cfg.x.run == 2:
         jer_campaign = jec_campaign = f"Summer19UL{year2}{jerc_postfix}"
@@ -229,13 +230,25 @@ def add_config(
         fatjet_type = "AK8PFPuppi"
 
     jec_uncertainties = [
+        # TODO: "Regrouped_" sources are not available in the AK8 jsons, but are instead derived only for AK4 jets
         # NOTE: there are many more sources available, but it is likely that we only need Total
-        "Total",
+        # "Total",
         # "CorrelationGroupMPFInSitu",
         # "CorrelationGroupIntercalibration",
         # "CorrelationGroupbJES",
         # "CorrelationGroupFlavor",
         # "CorrelationGroupUncorrelated",
+        "Regrouped_Absolute",
+        "Regrouped_FlavorQCD",
+        "Regrouped_BBEC1",
+        "Regrouped_EC2",
+        "Regrouped_HF",
+        "Regrouped_RelativeBal",
+        f"Regrouped_Absolute_{jerc_campaign}",
+        f"Regrouped_BBEC1_{jerc_campaign}",
+        f"Regrouped_EC2_{jerc_campaign}",
+        f"Regrouped_RelativeSample_{jerc_campaign}",
+        f"Regrouped_HF_{jerc_campaign}",
     ]
 
     jec_ak4_version = jec_ak8_version = {
@@ -708,7 +721,7 @@ def add_config(
     # )
 
     with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
-        all_jec_sources = yaml.load(f, yaml.Loader)["names"]
+        all_jec_sources = [source.format(campaign=jerc_campaign) for source in yaml.load(f, yaml.Loader)["names"]]
 
     for jec_source in cfg.x.jec.Jet["uncertainty_sources"]:
         idx = all_jec_sources.index(jec_source)
