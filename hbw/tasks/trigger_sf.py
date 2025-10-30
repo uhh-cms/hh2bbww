@@ -38,6 +38,8 @@ from columnflow.types import TYPE_CHECKING
 
 from hbw.tasks.base import HBWTask
 
+from columnflow.tasks.framework.parameters import MultiSettingsParameter
+from columnflow.plotting.plot_util import apply_variable_settings
 from hbw.hist_util import apply_rebinning_edges
 from hbw.trigger.trigger_util import (
     calculate_efficiencies,
@@ -75,6 +77,15 @@ class ComputeTriggerSF(
     suffix = luigi.Parameter(
         default="",
         description="Suffix to append to the output file names",
+    )
+    variable_settings = MultiSettingsParameter(
+        default=DotDict(),
+        significant=False,
+        description="parameter for changing different variable settings; format: "
+        "'var1,option1=value1,option3=value3:var2,option2=value2'; options implemented: "
+        "rebin; can also be the key of a mapping defined in 'variable_settings_groups; "
+        "default: value of the 'default_variable_settings' if defined, else empty default",
+        brace_expand=True,
     )
 
     # these have been parameters in Balduin's setup
@@ -274,6 +285,7 @@ class ComputeTriggerSF(
         hists = defaultdict(dict)
         shifts = ["nominal", self.shift]
         variable = self.branch_data.variable
+        variable_insts = [self.config_inst.get_variable(var_name) for var_name in variable.split("-")]
         category = self.branch_data.category
 
         for hist_producer, inputs in self.input().items():
@@ -299,6 +311,9 @@ class ComputeTriggerSF(
                     edges = self.edges(var, category)
                     if edges is None:
                         continue
+                    hist_per_config, _ = apply_variable_settings(
+                        hist_per_config, variable_insts, self.variable_settings,
+                    )
                     hist_per_config = apply_rebinning_edges(
                         h=hist_per_config,
                         axis_name=var,
