@@ -294,6 +294,7 @@ def jet_base_init(self: Calibrator) -> None:
         self.config_inst.x.calib_deterministic_jer_cls = base_jer_cls.derive("deterministic_jer", cls_dict={
             "deterministic_seed_index": 0,
             "met_name": met_name,
+            "jec_uncertainty_sources": self.jec_sources,
         })
         # derive met_phi calibrator (currently only used in run 2)
         self.config_inst.x.calib_met_phi_cls = met_phi.derive("met_phi", cls_dict={

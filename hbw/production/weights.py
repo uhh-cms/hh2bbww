@@ -23,7 +23,7 @@ from columnflow.production.cms.muon import muon_weights, MuonSFConfig
 from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from columnflow.production.cms.top_pt_weight import top_pt_weight
+# from columnflow.production.cms.top_pt_weight import top_pt_weight
 from hbw.production.top_pt_theory import top_pt_theory_weight
 from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
@@ -256,7 +256,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
 @producer(
     uses={
         combined_normalization_weights,
-        top_pt_weight,
+        # top_pt_weight,
         top_pt_theory_weight,
         vjets_weight,
         normalized_pu_weights,
@@ -280,7 +280,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
-        events = self[top_pt_weight](events, **kwargs)
+        # events = self[top_pt_weight](events, **kwargs)
         events = self[top_pt_theory_weight](events, **kwargs)
 
     # compute gen vjet pt weights
