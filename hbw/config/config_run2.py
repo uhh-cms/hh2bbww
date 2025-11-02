@@ -256,7 +256,7 @@ def add_config(
         2017: "V5",
         2018: "V5",
         2022: "V3",
-        2023: "V3",
+        2023: "V2" if cfg.x.cpn_tag == "2023preBPix" else "V3",
     }[year]
 
     cfg.x.jec = DotDict.wrap({
