@@ -717,7 +717,8 @@ class ComputeTriggerSF(
                             "xlabel": f"{variable_insts[0].x_title} [GeV]",
                             "yscale": "linear",
                         }
-                        if "pt" in self.branch_data.variable:
+                        if "_pt" in self.branch_data.variable:
+                            logger.info("Applying log scale for pt variable")
                             rax_kwargs["xlim"] = (25, 400)
                             rax_kwargs["xscale"] = "log"
                             # Set custom tick locations for log scale
@@ -726,6 +727,7 @@ class ComputeTriggerSF(
                             rax.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
                             rax.get_xaxis().set_minor_formatter(mpl.ticker.NullFormatter())
                         else:
+                            logger.info("Applying linear scale for non-pt variable")
                             rax_kwargs["xscale"] = "linear"
                             rax.set(**rax_kwargs)
 
@@ -747,7 +749,7 @@ class ComputeTriggerSF(
                     "lumi": round(0.001 * sum([
                         config_inst.x.luminosity.get("nominal")
                         for config_inst in self.config_insts
-                    ]), 2),
+                    ]), 1),
                 }
                 mplhep.cms.label(**cms_label_kwargs)
                 fig.tight_layout()
@@ -837,7 +839,7 @@ class ComputeTriggerSF(
                 "lumi": round(0.001 * sum([
                     config_inst.x.luminosity.get("nominal")
                     for config_inst in self.config_insts
-                ]), 2),
+                ]), 1),
             }
             mplhep.cms.label(**cms_label_kwargs)
             fig.tight_layout()
