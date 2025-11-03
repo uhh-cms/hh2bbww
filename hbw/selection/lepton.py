@@ -88,7 +88,7 @@ def lepton_definition(
     # TODO: the loose id + iso reqs might depend on the requested (tight) id + iso
     e_mask_loose = (
         (electron.pt >= 7) &
-        ((abs(electron.superclusterEta) < 1.442) | (abs(electron.eta) > 1.5560)) &
+        ((abs(electron.superclusterEta) < 1.442) | (abs(electron.superclusterEta) > 1.5560)) &
         (abs(electron.eta) <= 2.5) &
         (abs(electron.dz) <= 1) &
         (electron.cutBased >= 1)  # veto Id
