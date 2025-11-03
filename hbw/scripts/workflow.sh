@@ -120,7 +120,7 @@ run_merge_reduced_events() {
         --datasets "*" \
         --configs "$configs" \
         --shifts "$shifts" \
-        --cf.MergeReducedEvents-{retries=1,workflow=htcondor} \
+        --cf.ReduceEvents-{retries=2,workflow=htcondor} \
         --cf.ReduceEvents-pilot \
 	    --cf.BundleRepo-custom-checksum $checksum \
         --workers 123
@@ -156,7 +156,7 @@ run_plot_nominal() {
     for config in ${configs//,/ }; do
         for shift in ${shifts//,/ }; do
             echo "→ PlotNominal: config=$config, shift=$shift"
-            run_cmd law run cf.PlotVariables1D \
+            run_cmd claw run cf.PlotVariables1D \
                 --configs "$config" \
                 --shift "nominal" \
                 --workflow htcondor \
@@ -694,13 +694,20 @@ run_and_fetch_triggersf() {
     local configs="${1:-$all_configs}"
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
     local processes="${3:-"data_met,sf_bkg_reduced"}"
+    local uncs="${4:-"False"}"
+
+    local suffix="V5"
+    if [[ "$uncs" != "False" ]]; then
+        suffix="unc_V5"
+    fi
 
     local folder_name=triggersf/${configs//,/_}
     run_and_fetch_cmd $folder_name claw run hbw.ComputeTriggerSF \
         --configs $configs \
         --variables "$variables" \
         --processes "$processes" \
-        --suffix "V4" \
+        --suffix "$suffix" \
+        --plot-uncertainties "$uncs" \
         --cf.ReduceEvents-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
         --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
         --cf.MergeHistograms-{workflow=local,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
@@ -709,10 +716,8 @@ run_and_fetch_triggersf() {
 }
 
 run_and_fetch_all_triggersf() {
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
     local configs="${1:-$all_configs}"
-    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local variables="${2:-"trg_lepton0_pt-trig_ids"}"
     local processes="${3:-"data_met,sf_bkg_reduced"}"
     for config in ${all_configs//,/ }; do
         run_and_fetch_triggersf "$config" "$variables" "$processes" &
@@ -725,12 +730,25 @@ run_and_fetch_all_triggersf() {
     echo "All trigger SF fetches per config completed."
     run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
 }
+run_and_fetch_twodim_triggersf() {
+    # running 2D trigger SF as well as uncertainties (no parallel here due to high memory consumption)
+    local configs="${1:-$all_configs}"
+    local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
+    local processes="${3:-"data_met,sf_bkg_reduced"}"
+    for config in ${all_configs//,/ }; do
+        run_and_fetch_triggersf "$config" "$variables" "$processes"
+        run_and_fetch_triggersf "$config" "$variables" "$processes" "True"
+    done
+    echo "All trigger SF fetches per config completed."
+    run_and_fetch_triggersf "$all_configs" "$variables" "$processes"
+    run_and_fetch_triggersf "$all_configs" "$variables" "$processes" "True"
+}
 
 run_triggersf_production() {
     # Full Trigger SF production workflow
     local configs="${1:-$all_configs}"
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
-    local datasets="${3:-"tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
+    local datasets="${3:-"tt_*_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
     local processes="${4:-"data_met,sf_bkg_reduced"}"
     local checksum=$(checksum)
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
@@ -784,8 +802,15 @@ run_all() {
     run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
+    # run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_twodim_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_selection_stats "$all_configs" "nominal"
+
     # prepare_dy_corr "$all_configs"
     # run_ml_training
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
@@ -793,7 +818,7 @@ run_all() {
     # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
     # run_merge_selection_stats "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
 
-    # prepare_mlcolumns "$all_configs" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
+    prepare_mlcolumns "$all_configs" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
 
     # for config in ${all_configs//,/ }; do
@@ -834,13 +859,14 @@ run_all() {
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
 
-    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+    # run_triggersf_production
+
+    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
     # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
     # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
 
-    # run_triggersf_production "$all_configs" "trg_lepton0_pt-trig_ids" "tt_dl_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*" "data_met,sf_bkg_reduced"
 }
 
 # === Example usage ===
