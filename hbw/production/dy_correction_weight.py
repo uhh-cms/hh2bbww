@@ -129,7 +129,7 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
         hist_producer=self.derivation_region,
         # Use 2µ category when calculating weight with gen level ptll because of linear behaviour
         categories=("dycr__2mu",),
-        variables=("n_jet-ptll_for_dy_corr_V2",),
+        variables=("n_jet-ptll_for_dy_corr_V3",),
         njet_overflow=self.n_jet,
         rate_factor_overflow=5,
     )

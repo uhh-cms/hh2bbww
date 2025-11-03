@@ -836,7 +836,7 @@ def get_fit_str(
             outputs["fit_function"], era, nsamples=500,
         )
 
-    ratio_values, ratio_err, _ = get_bin_wise_stats(h, "ptll_for_dy_corr_V2", (njet, njet + 1))
+    ratio_values, ratio_err, _ = get_bin_wise_stats(h, "ptll_for_dy_corr_V3", (njet, njet + 1))
     plot_fit_func(
         fit_function,
         fit_str,
@@ -884,7 +884,7 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
         },
     }
 
-    ptll_var = "ptll_for_dy_corr_V2"
+    ptll_var = "ptll_for_dy_corr_V3"
     rate_factor_lst = get_rate_factors(h, ptll_var)
     for njet in np.arange(1, 11):
         rate_factor = rate_factor_lst[njet]
@@ -938,7 +938,7 @@ class DYCorrBase(
         add_default_to_description=True,
     )
     variables = HistogramsUserSingleShiftBase.variables.copy(
-        default=("n_jet-ptll_for_dy_corr_V2",),
+        default=("n_jet-ptll_for_dy_corr_V3",),
         description="Variables to use for the DY corrections",
         add_default_to_description=True,
     )
@@ -1010,8 +1010,8 @@ class ComputeDYWeights(DYCorrBase):
         if len(self.variables) != 1:
             raise ValueError(f"{self.task_family} requires exactly one variable, got {self.variables}")
         self.variable = self.variables[0]
-        if self.variable != "n_jet-ptll_for_dy_corr_V2":
-            raise ValueError(f"variable must be n_jet-ptll_ptll_for_dy_corr_V2, got {self.variable}")
+        if self.variable != "n_jet-ptll_for_dy_corr_V3":
+            raise ValueError(f"variable must be n_jet-ptll_ptll_for_dy_corr_V3, got {self.variable}")
 
         # Only one processes is allowed to correct for
         # NOTE: might have to change due to MultiConfig

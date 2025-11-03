@@ -295,6 +295,45 @@ def add_variables(config: od.Config) -> None:
         list(np.logspace(1.47712, 2, 20))[1:] +
         list(np.logspace(2, 2.69897, 6))[1:]
     )
+    log_binning_V2_print = [  # NOTE: there seems to be an issue with inconsistent edges, likely due to rounding issues
+        1.0,
+        2.0000000199681045,
+        4.000000079872419,
+        4.892896171292004,
+        5.985108116249721,
+        7.321128000502691,
+        8.955379611977616,
+        10.954435435238622,
+        13.399728532368949,
+        16.39086978080046,
+        20.04970559830147,
+        24.52528144964188,
+        29.999913327161483,
+        31.96244546260077,
+        34.05336238171024,
+        36.28106275087623,
+        38.65449465982838,
+        41.18319156377564,
+        43.87731057680244,
+        46.747673270339334,
+        49.80580914058512,
+        53.06400191947747,
+        56.53533891523141,
+        60.23376358063329,
+        64.17413152024393,
+        68.37227016147655,
+        72.84504232923301,
+        77.61041397946109,
+        82.68752636370044,
+        88.0967729144837,
+        93.85988116042108,
+        100.0,
+        137.9729658706157,
+        190.3653931113406,
+        262.65277886697334,
+        362.3898289443525,
+        499.999995007974,
+    ]
 
     config.add_variable(
         name="electron_eta_sc",
@@ -338,6 +377,21 @@ def add_variables(config: od.Config) -> None:
         name="ptll_for_dy_corr_V2",
         expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
         binning=log_binning_V2,
+        log_x=True,
+        unit="GeV",
+        x_title=r"$p_{T}^{ll} (binned for DY weights)$",
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}"},
+            "rebin": 2,
+            "x_max": 400,
+        },
+    )
+    config.add_variable(
+        # NOTE: only works when running `prepare_objects` in HistProducer
+        name="ptll_for_dy_corr_V3",
+        expression=lambda events: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
+        binning=log_binning_V2_print,
         log_x=True,
         unit="GeV",
         x_title=r"$p_{T}^{ll} (binned for DY weights)$",
