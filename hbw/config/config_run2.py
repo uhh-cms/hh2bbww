@@ -106,7 +106,7 @@ def add_config(
     cfg.x.if_era = if_era
 
     # add tag if used for scale factor calculation
-    cfg.add_tag("is_for_sf")
+    # cfg.add_tag("is_for_sf")
 
     # add some important tags to the config
     # TODO: generalize and move to campaign
@@ -232,23 +232,23 @@ def add_config(
     jec_uncertainties = [
         # TODO: "Regrouped_" sources are not available in the AK8 jsons, but are instead derived only for AK4 jets
         # NOTE: there are many more sources available, but it is likely that we only need Total
-        # "Total",
+        "Total",
         # "CorrelationGroupMPFInSitu",
         # "CorrelationGroupIntercalibration",
         # "CorrelationGroupbJES",
         # "CorrelationGroupFlavor",
         # "CorrelationGroupUncorrelated",
-        "Regrouped_Absolute",
-        "Regrouped_FlavorQCD",
-        "Regrouped_BBEC1",
-        "Regrouped_EC2",
-        "Regrouped_HF",
-        "Regrouped_RelativeBal",
-        f"Regrouped_Absolute_{jerc_campaign}",
-        f"Regrouped_BBEC1_{jerc_campaign}",
-        f"Regrouped_EC2_{jerc_campaign}",
-        f"Regrouped_RelativeSample_{jerc_campaign}",
-        f"Regrouped_HF_{jerc_campaign}",
+        # "Regrouped_Absolute",
+        # "Regrouped_FlavorQCD",
+        # "Regrouped_BBEC1",
+        # "Regrouped_EC2",
+        # "Regrouped_HF",
+        # "Regrouped_RelativeBal",
+        # f"Regrouped_Absolute_{jerc_campaign}",
+        # f"Regrouped_BBEC1_{jerc_campaign}",
+        # f"Regrouped_EC2_{jerc_campaign}",
+        # f"Regrouped_RelativeSample_{jerc_campaign}",
+        # f"Regrouped_HF_{jerc_campaign}",
     ]
 
     jec_ak4_version = jec_ak8_version = {
@@ -896,11 +896,11 @@ def add_config(
 
     # custom Trigger SF (produced in 2022+2023 combined)
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
-    trigger_sf_path = f"{json_mirror}/data/trig_sf_v4"
+    trigger_sf_path = f"/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v5"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV4.json.gz", "v4"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))  # noqa: E501
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers
