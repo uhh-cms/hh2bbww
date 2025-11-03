@@ -505,9 +505,11 @@ def add_config(
 
     # electron calibrations
     cfg.x.ess = EGammaCorrectionConfig(
-        scale_correction_set="Scale",
+        smear_syst_correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
+        scale_correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
+        # scale_correction_set="Scale",
+        # smear_syst_correction_set="SmearAndSyst",
         scale_compound=True,
-        smear_syst_correction_set="SmearAndSyst",
         systs=["scale_down", "scale_up", "smear_down", "smear_up"],
     )
 
@@ -824,28 +826,33 @@ def add_config(
                 vnano=12,
                 era="22CDSep23-Summer22",
                 pog_directories={"dc": "Collisions22"},
-                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-09-23", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                # snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-09-23", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
             ),
             (2022, "EE", 14): CATInfo(
                 run=3,
                 vnano=12,
                 era="22EFGSep23-Summer22EE",
                 pog_directories={"dc": "Collisions22"},
-                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                # separate for egm and ele_ss (Studies In Progress)
+                # snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
             ),
             (2023, "", 14): CATInfo(
                 run=3,
                 vnano=12,
                 era="23CSep23-Summer23",
                 pog_directories={"dc": "Collisions23"},
-                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                # snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
             ),
             (2023, "BPix", 14): CATInfo(
                 run=3,
                 vnano=12,
                 era="23DSep23-Summer23BPix",
                 pog_directories={"dc": "Collisions23"},
-                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                # snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
             ),
             (2024, "", 15): CATInfo(
                 run=3,
@@ -892,7 +899,7 @@ def add_config(
     # electron scale factors
     add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
     # electron energy correction and smearing
-    add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v1"))
+    add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v2"))
 
     # custom Trigger SF (produced in 2022+2023 combined)
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"

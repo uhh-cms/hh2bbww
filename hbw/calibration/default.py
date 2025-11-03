@@ -114,7 +114,7 @@ def seeds_user_base_setup(
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "ele_version", 5),
+    version=law.config.get_expanded("analysis", "ele_version", 6),
     uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
     produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -128,6 +128,9 @@ def ele(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # apply the electron calibration
     events = self[self.electron_calib_cls](events, **kwargs)
     return events
+
+
+ele_test = ele.derive("ele_test", cls_dict={"version": 1})
 
 
 @ele.init
