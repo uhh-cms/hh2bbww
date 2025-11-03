@@ -402,6 +402,38 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
+    "vbf_full": [
+        "mli_dr_ll_bb",
+        "mli_mbbllMET",
+        "mli_b1_pt",
+        "mli_mbb",
+        "mli_mll",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        # "mli_maxdr_jj",
+        "mli_mixed_channel",
+        "mli_dr_bb",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_dr_ll",
+        "mli_met_pt",
+        "mli_min_dr_llbb",
+        "mli_b_score_sum",
+        "mli_ll_pt",
+        # "mli_ht",
+        # "mli_j1_eta",
+        # "mli_n_jet",
+        # "mli_j1_pt",
+        "mli_full_vbf_mass",
+        "mli_ht_alljets",
+        "mli_n_jet_alljets",
+        "mli_vbfcand1_pt",
+        "mli_vbfcand1_eta",
+        "mli_vbfcand2_pt",
+        "mli_vbfcand2_eta",
+        "mli_maxdr_jj_alljets",  # likely bad modelled
+    ],
     "fatjet": [
         "mli_fj_particleNetWithMass_HbbvsQCD",
         # "mli_fj_particleNet_XbbvsQCD",
@@ -413,6 +445,9 @@ input_features = DotDict({
     ],
 })
 input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
+
+# TODO: vbf feature sets
+input_features["vbf1"] = input_features["v2"] + ["mli_full_vbf_mass"]
 
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,

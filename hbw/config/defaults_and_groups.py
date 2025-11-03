@@ -394,7 +394,6 @@ def set_config_defaults_and_groups(config_inst):
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
-        "ml_inputs_v1": ml_inputs.v1,
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
         "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
@@ -433,6 +432,10 @@ def set_config_defaults_and_groups(config_inst):
             "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
         ],
     }
+
+    # add all groups from ml inputs to variable groups
+    for key, variables in ml_inputs.items():
+        config_inst.x.variable_groups[f"ml_inputs_{key}"] = variables
 
     # shift groups for conveniently looping over certain shifts
     # (used during plotting)
