@@ -827,7 +827,7 @@ def add_config(
                 era="22CDSep23-Summer22",
                 pog_directories={"dc": "Collisions22"},
                 # snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-10-22", jme="2025-09-23", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
-                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-10-07", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-08-20", dc="2025-07-25", egm="2025-04-15", jme="2025-09-23", lum="2024-01-31", muo="2025-08-14"),  # noqa: E501
             ),
             (2022, "EE", 14): CATInfo(
                 run=3,
@@ -903,11 +903,11 @@ def add_config(
 
     # custom Trigger SF (produced in 2022+2023 combined)
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
-    trigger_sf_path = f"/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v5"
+    trigger_sf_path = f"/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV5.json.gz", "v5"))  # noqa: E501
+    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))
+    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))
+    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers
