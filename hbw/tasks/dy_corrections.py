@@ -998,6 +998,9 @@ class ComputeDYWeights(DYCorrBase):
             for config_inst, datasets in zip(self.config_insts, self.datasets)
         }
 
+        if any("data_met" in d for datasets in self.datasets for d in datasets):
+            raise ValueError("data_met dataset should never be used for DY corrections.")
+
         # only one category is allowed right now
         if len(self.categories) != 1:
             raise ValueError(f"{self.task_family} requires exactly one category, got {self.categories}")

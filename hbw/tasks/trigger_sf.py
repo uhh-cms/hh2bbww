@@ -292,7 +292,9 @@ class ComputeTriggerSF(
         category = self.branch_data.category
 
         for hist_producer, inputs in self.input().items():
+            logger.info(f"Loading histograms for producer {hist_producer}...")
             for i, config_inst in enumerate(self.config_insts):
+                logger.info(f" - Loading histograms for config {config_inst.name}...")
                 hist_per_config = None
                 # sub_processes = self.processes[i]
                 for dataset in self.datasets[i]:
