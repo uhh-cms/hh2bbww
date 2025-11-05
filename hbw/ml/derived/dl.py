@@ -447,7 +447,8 @@ input_features = DotDict({
 input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
 
 # TODO: vbf feature sets
-input_features["vbf1"] = input_features["v2"] + ["mli_full_vbf_mass"]
+input_features["vbfmqq"] = input_features["v2"] + ["mli_full_vbf_mass"]
+input_features["vbftag"] = input_features["v2"] + ["mli_full_vbf_tag"]
 
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
@@ -634,6 +635,15 @@ multiclassv3 = multiclassv1.derive("multiclassv3", cls_dict={"input_features": i
 ggfv3 = ggfv1.derive("ggfv3", cls_dict={"input_features": input_features["v2"]})
 vbfv3 = vbfv1.derive("vbfv3", cls_dict={"input_features": input_features["v2"]})
 
+# versions with VBF observables added
+multiclassv3_mqq = multiclassv1.derive("multiclassv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})
+vbfv3_mqq = vbfv1.derive("vbfv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})
+
+multiclassv3_tag = multiclassv1.derive("multiclassv3_tag", cls_dict={"input_features": input_features["vbftag"]})
+vbfv3_tag = vbfv1.derive("vbfv3_tag", cls_dict={"input_features": input_features["vbftag"]})
+
+multiclassv3_full = multiclassv1.derive("multiclassv3_full", cls_dict={"input_features": input_features["vbf_full"]})
+vbfv3_full = vbfv1.derive("vbfv3_full", cls_dict={"input_features": input_features["vbf_full"]})
 
 # sanity check
 ggfv2_sanity = ggfv2.derive("ggfv2_sanity", cls_dict={
