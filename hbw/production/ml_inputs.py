@@ -149,13 +149,13 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # general
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
     events = set_ak_column_f32(events, "mli_lt", ak.sum(events.Lepton.pt, axis=1) + events[met_name].pt)
-    events = set_ak_column_f32(events, "mli_n_jet", ak.num(events.Jet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_n_jet", ak.sum(events.Jet.pt > 0, axis=1))
 
     events = set_ak_column_f32(events, "mli_ht_alljets", ak.sum(events.InclJet.pt, axis=1))
-    events = set_ak_column_f32(events, "mli_n_jet_alljets", ak.num(events.InclJet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_n_jet_alljets", ak.sum(events.InclJet.pt > 0, axis=1))
 
     events = set_ak_column_f32(events, "mli_ht_fwjets", ak.sum(events.ForwardJet.pt, axis=1))
-    events = set_ak_column_f32(events, "mli_n_jet_fwjets", ak.num(events.ForwardJet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_n_jet_fwjets", ak.sum(events.ForwardJet.pt > 0, axis=1))
 
     # bjets in general
     events = set_ak_column_f32(
