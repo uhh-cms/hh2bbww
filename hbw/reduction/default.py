@@ -95,6 +95,7 @@ def default_init(self: Reducer) -> None:
     }
 
 
+test_default = default.derive("test_default")
 triggersf = default.derive("triggersf")
 
 
@@ -259,4 +260,4 @@ def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
     self.produces.update(triggersf_required_columns)
 
 
-triggersffix = triggersf.derive("triggersffix")
+test_triggersf = triggersf.derive("test_triggersf")

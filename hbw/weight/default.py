@@ -347,6 +347,15 @@ met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict=
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })
+met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
 met_geq40_with_dy_corr_unstitched = with_dy_corr.derive("met_geq40_with_dy_corr_unstitched", cls_dict={
     "weight_columns": unstitched_weight_columns,
     "nondy_hist_producer": None,

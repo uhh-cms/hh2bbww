@@ -215,7 +215,9 @@ def add_common_ml_variables(config: od.Config) -> None:
             if var == "phi" and obj != "met":
                 continue
             binning = default_var_binning[var]
-            if obj == "lep" and var == "pt":
+            if "vbfcand" in obj and var == "eta":
+                binning = (48, -4.7, 4.7)
+            elif obj == "lep" and var == "pt":
                 binning = (40, 0, 240)
             config.add_variable(
                 name=f"mli_{obj}_{var}",
