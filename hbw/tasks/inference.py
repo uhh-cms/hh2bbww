@@ -190,56 +190,6 @@ def get_rebin_values(
     return rebin_values
 
 
-def apply_binning(h, rebin_values: list):
-    import array
-    N_bins = len(rebin_values) - 1
-    rebin_values_ptr = array.array("d", rebin_values)
-    # rebin_values_ptr = np.array(rebin_values, dtype="float64")
-    h_out = h.Rebin(N_bins, h.GetName(), rebin_values_ptr)
-    return h_out
-
-
-def check_empty_bins(h, fill_empty: float = 1e-5, required_entries: int = 3) -> int:
-    """
-    Checks for empty bins, negative bin content, or bins with less than *required_entires* entries.
-    When set to a value >= 0, empty or negative bin contents and errors are replaced with *fill_empty*.
-    """
-    print(f"============ Checking histogram {h.GetName()} with {h.GetNbinsX()} bins")
-    import math
-    max_error = lambda value: math.inf
-    if required_entries > 0:
-        # error above sqrt(N)/N means that we have less than N MC events
-        # (assuming each MC event has the same weight)
-        max_error = lambda value: value * math.sqrt(required_entries) / required_entries
-    count = 0
-    for i in range(1, h.GetNbinsX() + 1):
-        value = h.GetBinContent(i)
-        error = h.GetBinError(i)
-        if value <= 0:
-            logger.info(f"==== Found empty or negative bin {i}, (value: {value}, error: {error})")
-            count += 1
-            if fill_empty >= 0:
-                logger.info(f"     Bin {i} value + error will be filled with {fill_empty}")
-                h.SetBinContent(i, fill_empty)
-                h.SetBinError(i, fill_empty)
-
-        if error > max_error(value):
-            logger.warning(
-                f"==== Bin {i} has less than {required_entries} entries (value: {value}, error: {error}); "
-                f"Rebinning procedure might have to be restarted with less bins than {h.GetNbinsX()}",
-            )
-    return count
-
-
-def print_hist(h, max_bins: int = 20):
-    logger.info("Printing bin number, lower edge and bin content")
-    for i in range(0, h.GetNbinsX() + 2):
-        if i > max_bins:
-            return
-
-        logger.info(f"{i} \t {h.GetBinLowEdge(i)} \t {h.GetBinContent(i)}")
-
-
 def resolve_category_groups(param: dict[str, any], config_inst: od.Config):
     """
     Resolve the category groups for the given parameter *param* and the *config_inst*.
@@ -254,21 +204,6 @@ def resolve_category_groups(param: dict[str, any], config_inst: od.Config):
             for resolved_cat in law.util.make_tuple(resolved_cats):
                 if resolved_cat in all_cats:
                     outp_param[resolved_cat] = param[cat_name]
-
-    return outp_param
-
-
-def resolve_category_groups_new(param: dict[str, any], config_inst: od.Config):
-    # NOTE: this is only kept for timing comparisons of the `find_config_objects` function
-    outp_param = {}
-    for cat_name in list(param.keys()):
-        resolved_cats = AnalysisTask.find_config_objects(
-            (cat_name,), config_inst, od.Category,
-            object_groups=config_inst.x.category_groups, deep=True,
-        )
-        if resolved_cats:
-            for resolved_cat in law.util.make_tuple(resolved_cats):
-                outp_param[resolved_cat] = param[cat_name]
 
     return outp_param
 
