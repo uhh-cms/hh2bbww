@@ -245,8 +245,10 @@ def base_post_init(self: HistProducer, task: law.Task):
 
 
 btag_uncs = [
-    "hf", "lf", "hfstats1_{year}", "hfstats2_{year}",
-    "lfstats1_{year}", "lfstats2_{year}", "cferr1", "cferr2",
+    "hf", "lf",
+    "cferr1", "cferr2",
+    "hfstats1", "lfstats1",
+    "hfstats2", "lfstats2",
 ]
 
 

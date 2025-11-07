@@ -8,8 +8,11 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    # return ["with_b_reg", "fatjet"]
-    return ["ak4", "ak8", "ele"]
+    default_calibrators = law.config.get_expanded("analysis", "default_calibrators", ())
+    if isinstance(default_calibrators, str):
+        return default_calibrators.split(",")
+    else:
+        return ["ak4", "ak8", "ele"]
 
 
 def default_selector(container):
@@ -455,14 +458,10 @@ def set_config_defaults_and_groups(config_inst):
             # b-tagging
             "btag_hf_up",
             "btag_lf_up",
-            "btag_hfstats1_2022_up",
-            "btag_hfstats2_2022_up",
-            "btag_lfstats1_2022_up",
-            "btag_lfstats2_2022_up",
-            "btag_hfstats1_2023_up",
-            "btag_hfstats2_2023_up",
-            "btag_lfstats1_2023_up",
-            "btag_lfstats2_2023_up",
+            "btag_hfstats1_up",
+            "btag_hfstats2_up",
+            "btag_lfstats1_up",
+            "btag_lfstats2_up",
             "btag_cferr1_up",
             "btag_cferr2_up",
             # other experimental unc.
@@ -486,14 +485,10 @@ def set_config_defaults_and_groups(config_inst):
         "btag_up": [
             "btag_hf_up",
             "btag_lf_up",
-            "btag_hfstats1_2022_up",
-            "btag_hfstats2_2022_up",
-            "btag_lfstats1_2022_up",
-            "btag_lfstats2_2022_up",
-            "btag_hfstats1_2023_up",
-            "btag_hfstats2_2023_up",
-            "btag_lfstats1_2023_up",
-            "btag_lfstats2_2023_up",
+            "btag_hfstats1_up",
+            "btag_hfstats2_up",
+            "btag_lfstats1_up",
+            "btag_lfstats2_up",
             "btag_cferr1_up",
             "btag_cferr2_up",
         ],
