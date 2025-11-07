@@ -139,7 +139,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         config.add_variable(
             name=f"mli_maxdr_jj{postfix}",
             expression=f"mli_maxdr_jj{postfix}",
-            binning=(40, 0, 6),
+            binning=(40, 0, 8),
             x_title=rf"max $\Delta R(j,j)$ ({object_label})",
             aux={"overflow": True},
         )
