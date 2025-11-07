@@ -33,7 +33,7 @@ from columnflow.production.cms.btag import BTagSFConfig
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
 from columnflow.production.cms.jet import JetIdConfig
 
-from columnflow.cms_util import CATInfo, CATSnapshot, CMSDatasetInfo
+from columnflow.cms_util import CATInfo, CATSnapshot  # , CMSDatasetInfo
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -903,7 +903,7 @@ def add_config(
 
     # custom Trigger SF (produced in 2022+2023 combined)
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
-    trigger_sf_path = f"/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
+    trigger_sf_path = "/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
 
     add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))
     add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))

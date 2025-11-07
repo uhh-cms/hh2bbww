@@ -395,7 +395,6 @@ class MLPreTraining(
                         else:
                             raise e
 
-
         for process in events.keys():
             events[process] = ak.concatenate(events[process])
         return dict(events)
