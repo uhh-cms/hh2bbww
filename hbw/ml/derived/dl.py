@@ -429,9 +429,9 @@ input_features = DotDict({
         "mli_ht_alljets",
         "mli_n_jet_alljets",
         "mli_vbfcand1_pt",
-        "mli_vbfcand1_eta",
+        "mli_vbfcand1_eta",  # likely bad modelled
         "mli_vbfcand2_pt",
-        "mli_vbfcand2_eta",
+        "mli_vbfcand2_eta",  # likely bad modelled
         "mli_maxdr_jj_alljets",  # likely bad modelled
     ],
     "fatjet": [
@@ -444,9 +444,8 @@ input_features = DotDict({
         # "mli_fj_msoftdrop",
     ],
 })
-input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
 
-# TODO: vbf feature sets
+# VBF feature sets
 input_features["vbfmqq"] = input_features["v2"] + ["mli_full_vbf_mass"]
 input_features["vbftag"] = input_features["v2"] + ["mli_full_vbf_tag"]
 
@@ -623,3 +622,17 @@ vbfv3_tag = vbfv1.derive("vbfv3_tag", cls_dict={"input_features": input_features
 
 multiclassv3_full = multiclassv1.derive("multiclassv3_full", cls_dict={"input_features": input_features["vbf_full"]})
 vbfv3_full = vbfv1.derive("vbfv3_full", cls_dict={"input_features": input_features["vbf_full"]})
+
+# MET > 40
+multiclass_met40 = multiclassv1.derive("multiclass_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
+})
+ggf_met40 = ggfv1.derive("ggf_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
+})
+vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
+})
