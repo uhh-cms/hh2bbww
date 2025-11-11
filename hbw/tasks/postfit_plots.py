@@ -39,7 +39,9 @@ def load_hists_uproot(fit_diagnostics_path, fit_type):
                 fit_type = "fit_s"
             hists = get_hists_from_fit_diagnostics(tfile)[f"shapes_{fit_type}"]
         else:
-            hists = get_hists_from_multidimfit(tfile)[f"{fit_type}"]
+            # TODO: add switch for multidimfit vs merged multidimfit
+            hists = get_hists_from_merged_multidimfit(tfile)[f"{fit_type}"]
+            # hists = get_hists_from_multidimfit(tfile)[f"{fit_type}"]
 
     return hists
 
@@ -73,12 +75,45 @@ def get_hists_from_fit_diagnostics(tfile):
     return hists
 
 
-def get_hists_from_multidimfit(tfile):
+def get_hists_from_merged_multidimfit(tfile):
     """ Helper function to load histograms from root file created by MultiDimFit """
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
 
+    variables = set()
+    for key in keys:
+        if len(key) != 3:
+            continue
+        # get the histogram from the tfile
+        h_in = tfile["/".join(key)]
+
+        # unpack key
+        variable, fit_and_channel, process = key
+        variables.add(variable)
+        if len(variables) > 1:
+            raise NotImplementedError("Merging over multiple variables is not implemented yet.")
+        fit = fit_and_channel.split("_")[-1]
+        fit = fit.replace("_", "")
+        channel = fit_and_channel.replace(f"_{fit}", "")
+        process = process.split(";")[0]
+
+        if "Total" in process:
+            continue
+        else:
+            h_in = h_in.to_hist()
+
+        # set the histogram in a deep dictionary
+        hists = law.util.merge_dicts(hists, DotDict.wrap({fit: {channel: {process: h_in}}}), deep=True)
+
+    return hists
+
+
+def get_hists_from_multidimfit(tfile):
+    """ Helper function to load histograms from root file created by MultiDimFit """
+    # prepare output dict
+    hists = DotDict()
+    keys = [key.split("/") for key in tfile.keys()]
     for key in keys:
         if len(key) != 2:
             continue
@@ -554,3 +589,5 @@ class PlotPostfitShapes(
                     bins_count += bins_info["count"]
 
             outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")
+
+        self.publish_message(f"plots written to {outp['plots'].path}")
