@@ -34,8 +34,8 @@ dnn_vbf="vbfv3"
 all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
 inference_model="dl"
 ml_inputs="ml_inputs"
-ml_scores="mlscore.max_score,logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary"
-all_ml_scores="mlscore.*,rebinlogit_mlscore.sig*binary"
+ml_scores="logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary"
+all_ml_scores="mlscore.*,rebinlogit_mlscore.sig*binary,logit_mlscore.sig*binary"
 
 shape_shift_groups="btag_up,btag_down,theory_up,theory_down,experimental_up,experimental_down"
 jerc_shifts="jec_Total_up,jec_Total_down,jer_up,jer_down"
@@ -213,7 +213,8 @@ prepare_dy_corr() {
 }
 
 run_ml_training() {
-    for model in "$dnn_multiclass" "$dnn_ggf" "$dnn_vbf"; do
+    mlmodels="${1-"$dnn_multiclass,$dnn_ggf,$dnn_vbf"}"
+    for model in ${mlmodels//,/ }; do
         echo "→ MLTraining: model=$model"
         run_cmd law run cf.MLTraining \
             --ml-model "$model" \
@@ -413,35 +414,52 @@ run_merge_shifted_histograms_htcondor() {
     done
 }
 
-run_create_datacards() {
-    local configs="${1:-$default_configs}"
-    local inference_model="${2:-$inference_model}"
-    local models="${3:-$all_models}"
+run_datacards() {
+    local inference_model="${1:-$inference_model}"
+    local config_groups="${2:-$all_configs}"
+    local run_local="${3:-false}"
+
+    local workflow="local"
+    local workers=6
+    local no_poll="False"
+    if [[ "$run_local" == "false" ]]; then
+        local workflow="htcondor"
+        # local workers=123
+        local workers=20
+        local no_poll="True"
+    fi
+
     local checksum=$(checksum)
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
-    for config in ${configs//,/ }; do
-        echo "→ CreateDatacards: config=$config"
-        run_cmd claw run cf.CreateDatacards \
-            --configs "$config" \
-            --inference-model "$inference_model" \
-            --ml-models "$models" \
-            --cf.MergeHistograms-{retries=1,workflow=local,pilot} \
-            --workers 6 \
-            --cf.BundleRepo-custom-checksum $checksum \
-            --cf.MLEvaluation-workflow htcondor
-    done
+    echo "→ Datacards: config_groups=$config_groups, inference_model=$inference_model"
+    # NOTE: this fails as long as any of the MergeShiftedHistograms outputs are missing
+    # but the MergeShiftedHistograms jobs of the missing outputs will be submitted
+    run_cmd claw run hbw.PrepareInferenceTaskCalls \
+        --config-groups "$config_groups" \
+        --inference-model "$inference_model" \
+        --cf.MergeShiftedHistograms-{workflow=$workflow,pilot,no-poll=$no_poll,remote-claw-sandbox=venv_columnar} \
+        --cf.BundleRepo-custom-checksum $checksum \
+        --workers $workers
 }
 
 run_and_fetch_mlplots() {
-    for mlmodel in ${all_models//,/ }; do
+    mlmodels="${1:-$all_models}"
+    pids=()
+    for mlmodel in ${mlmodels//,/ }; do
         echo "→ MLPlots: model=$mlmodel"
-        run_and_fetch_cmd mlplots/$mlmodel law run hbw.PlotMLResultsSingleFold \
+        run_and_fetch_cmd mlplots/$mlmodel claw run hbw.PlotMLResultsSingleFold \
             --ml-model $mlmodel \
             --cf.MLTraining-{retries=1,workflow=htcondor} \
             --hbw.MLEvaluationSingleFold-{retries=1,workflow=htcondor} \
-            --workers 3
+            --workers 3 --workflow htcondor &
+            pids+=($!)
     done
+    # Wait for all to finish
+    for pid in ${pids[@]}; do
+        wait "$pid"
+    done
+    echo "All MLPlots processes completed."
 }
 
 run_and_fetch_mlscore_plots() {
@@ -610,7 +628,7 @@ run_and_fetch_btag_norm_sf() {
     local configs="${1:-$all_configs}"
     for config in ${configs//,/ }; do
         echo "→ BtagNormSF: config=$config"
-        run_and_fetch_cmd btag_norm_sf/$config law run hbw.GetBtagNormalizationSF --config $config
+        run_and_fetch_cmd btag_norm_sf/$config claw run hbw.GetBtagNormalizationSF --config $config
     done
 }
 
@@ -682,7 +700,6 @@ run_and_fetch_efficiency_plots() {
             --plot-function columnflow.plotting.plot_functions_1d.plot_variable_efficiency \
             --remove-output 0,a,y \
             --plot-suffix efficiency \
-            --hist-producer met_geq40_fj200_with_dy_corr \
             --workers 6 \
             --cf.CreateHistograms-pilot
     done
@@ -696,9 +713,9 @@ run_and_fetch_triggersf() {
     local processes="${3:-"data_met,sf_bkg_reduced"}"
     local uncs="${4:-"False"}"
 
-    local suffix="V5"
+    local suffix="V6"
     if [[ "$uncs" != "False" ]]; then
-        suffix="unc_V5"
+        suffix="unc_V6"
     fi
 
     local folder_name=triggersf/${configs//,/_}
@@ -767,8 +784,8 @@ run_triggersf_production() {
         echo "→ TriggerSF MergeReducedEvents: configs=$configs, datasets=$datasets"
         run_cmd law run cf.MergeReducedEventsWrapper --configs $configs --datasets $datasets \
             --cf.MergeReducedEvents-reducer $reducer \
-            --cf.ReduceEvents-{workflow=htcondor,pilot} \
-            --workers 123 --cf.BundleRepo-custom-checksum "$checksum"
+            --cf.MergeReducedEvents-{workflow=htcondor,pilot} \
+            --workers 156 --cf.BundleRepo-custom-checksum "$checksum"
     fi
 
     if [[ "$produce_histograms" == "true" ]]; then
@@ -793,6 +810,32 @@ run_triggersf_production() {
     fi
 }
 
+run_and_fetch_all_plots() {
+    run_and_fetch_all_mcsyst_plots
+    run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
+    run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
+    run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
+
+    run_and_fetch_all_mlscore_plots
+    run_and_fetch_all_yield_tables
+    run_and_fetch_btag_norm_sf
+    run_and_fetch_mlplots
+    fetch_ml_metrics
+
+    run_and_fetch_kinematics
+
+    run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
+    run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+}
+
+run_triggersf() {
+    run_and_fetch_twodim_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
+    run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
+    run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
+    run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+}
+
 # === Dispatcher ===
 # TODO: this is still super messy (comment in & out whatever is currently requested),
 # we might want to implement a proper dispatcher at some point
@@ -802,71 +845,43 @@ run_all() {
     run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
-    # run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_twodim_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
-
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_selection_stats "$all_configs" "nominal"
 
     # prepare_dy_corr "$all_configs"
     # run_ml_training
-    # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
+    # run_ml_training "multiclass_met40,ggf_met40,vbf_met40"
+    # run_ml_training "vbfv3_mqq,multiclassv3_mqq,vbfv3_tag,multiclassv3_tag"
+    # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
+
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "$ml_inputs,$all_ml_scores,mli_full_vbf_tag,mli_full_vbf_mass"
+
+    # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"
+    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"
+    # run_ml_training "multiclassv3_vbf_extended"
+    # run_ml_training "vbfv3_vbf_extended"
+
+    # prepare_mlcolumns "$all_configs" "$nominal" "multiclassv3,ggfv3,vbfv3" "$ml_scores"
+    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclassv3,ggfv3,vbfv3" "$ml_scores"
+
+    # prepare_mlcolumns "$all_configs" "$nominal" "multiclassv3,ggfv3,vbfv3_vbf_extended" "$ml_scores"
+    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclassv3,ggfv3,vbfv3_vbf_extended" "$ml_scores"
+    # run_datacards "vbfextended_unblind" $all_configs
 
     # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
     # run_merge_selection_stats "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
 
-    prepare_mlcolumns "$all_configs" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
-    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
+    # prepare_mlcolumns "$all_configs" "nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
+    # prepare_mlcolumns "$all_configs" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
 
-    # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_local "$config" "nominal"
-    #     run_merge_shifted_histograms_htcondor "$config" "$shape_shift_groups"
-    #     # run_merge_histograms_htcondor "$config" "$shape_shift_groups"
-    # done
-    # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_local "$config" "$jerc_shifts"
-    # done
-    # run_merge_shifted_histograms_htcondor "$all_configs" "$all"
-    # law run cf.CreateDatacards --inference-model default_unblind --configs $all_configs
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3_mqq,ggfv3,vbfv3_mqq"
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "ml_inputs,ml_inputs_vbf_extended,mli_full_vbf_tag,mli_full_vbf_mass"
 
-    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
-    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3_tag,ggfv3,vbfv3_tag"
+    # run_datacards "vbfmqq1_unblind" $all_configs
+    # run_datacards "vbftag1_unblind" $all_configs
 
-    # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
-    #     run_merge_histograms_local "$config" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_inputs"
-    # done
-    # for config in ${all_configs//,/ }; do
-    #     run_merge_histograms_htcondor "$config" "$shape_shift_groups" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$all_ml_scores"
-    #     run_merge_histograms_local "$config" "$jerc_shifts" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$all_ml_scores"
-    # done
-
-
-    # run_create_datacards "$all_configs" "dl_jerc" "$all_models"
-
-    # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
-    # run_and_fetch_mlplots
-    # run_and_fetch_all_mcsyst_plots
-    # run_and_fetch_all_yield_tables
-    # run_and_fetch_all_mlscore_plots
-    # run_and_fetch_btag_norm_sf
-    # run_and_fetch_kinematics
-    # fetch_ml_metrics
-
-    # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
-    # run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
-
-    # run_triggersf_production
-
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
-    # run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
-
+    # run_and_fetch_all_plots
 }
 
 # === Example usage ===
