@@ -52,7 +52,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     # uses in init, produces should not be empty
     produces={"category_ids", "mlscore.max_score"},
     ml_model_name=None,
-    version=5,
+    version=law.config.get_expanded("analysis", "cats_ml_version", 5),
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

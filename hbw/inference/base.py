@@ -54,7 +54,8 @@ class HBWInferenceModelBase(InferenceModel):
     # 7: remove all trafos
     # 8: add shape->rate trafos back for dy,ttv,vv
     # 9: add shape->rate trafos for bkg categories
-    version: int = 12
+    # 13: trafors flip_larger --> flip_smaller
+    version: int = 13
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -650,6 +651,13 @@ class HBWInferenceModelBase(InferenceModel):
             #         param_kwargs["category"] = f"*_{bjet_cat}_*"
             #         param_kwargs["category_match_mode"] = "all"
             #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
+            for year in (2022, 2023):
+                if shape_uncertainty.endswith(str(year)):
+                    shift_source = shift_source.replace(f"_{year}", "")
+                    config_insts = [
+                        config_inst for config_inst in config_insts
+                        if config_inst.campaign.x.year == year
+                    ]
             for cpn_tag in self.campaign_tags:
                 if shape_uncertainty.endswith(cpn_tag):
                     shift_source = shift_source.replace(f"_{cpn_tag}", "")
@@ -674,7 +682,7 @@ class HBWInferenceModelBase(InferenceModel):
                     **param_kwargs,
                 )
             if single_bin_cats:
-                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided)  # noqa: E501
+                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
                 self.add_parameter(
                     combine_uncertainty_name,
                     category=single_bin_cats,
@@ -690,7 +698,9 @@ class HBWInferenceModelBase(InferenceModel):
             #     self.add_parameter_to_group(shape_uncertainty, "experiment")
 
     def ratify_shape_parameters(self: InferenceModel):
-        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_larger_if_one_sided)
+        # TODO: might be a good idea to transform all minor processes to lnN
+        # (or not even consider them from the beginning)
+        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)
         transformations_dict = {
             "dy_hf": {None: rate_two_sided},
             "dy_lf": {None: rate_two_sided},

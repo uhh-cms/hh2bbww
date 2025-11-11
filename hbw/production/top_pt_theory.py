@@ -20,6 +20,58 @@ logger = law.logger.get_logger(__name__)
 
 
 @producer(
+    uses={"GenPart.{pdgId,statusFlags}"},
+    # requested GenPartonTop columns, passed to the *uses* and *produces*
+    produced_top_columns={"pt"},
+    mc_only=True,
+    # skip the producer unless the datasets has this specified tag (no skip check performed when none)
+    require_dataset_tag="has_top",
+)
+def gen_parton_top(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Produce parton-level top quarks (before showering and detector simulation).
+    Creates new collection named "GenPartonTop"
+
+    *produced_top_columns* can be adapted to change the columns that will be produced
+    for the GenPartonTop collection.
+
+    The function is skipped when the dataset is data or when it does not have the tag *has_top*.
+
+    :param events: awkward array containing events to process
+    """
+    # find parton-level top quarks
+    abs_id = abs(events.GenPart.pdgId)
+    t = events.GenPart[abs_id == 6]
+    t = t[t.hasFlags("isLastCopy")]
+    t = t[~ak.is_none(t, axis=1)]
+
+    # save the column
+    events = set_ak_column(events, "GenPartonTop", t)
+
+    return events
+
+
+@gen_parton_top.init
+def gen_parton_top_init(self: Producer, **kwargs) -> bool:
+    for col in self.produced_top_columns:
+        self.uses.add(f"GenPart.{col}")
+        self.produces.add(f"GenPartonTop.{col}")
+
+
+@gen_parton_top.skip
+def gen_parton_top_skip(self: Producer, **kwargs) -> bool:
+    """
+    Custom skip function that checks whether the dataset is a MC simulation containing top quarks in the first place
+    using the :py:attr:`require_dataset_tag` attribute.
+    """
+    # never skip if the tag is not set
+    if self.require_dataset_tag is None:
+        return False
+
+    return self.dataset_inst.is_data or not self.dataset_inst.has_tag(self.require_dataset_tag)
+
+
+@producer(
     uses={"GenPartonTop.pt"},
     produces={"top_pt_theory_weight{,_up,_down}"},
     max_top_pt=None,

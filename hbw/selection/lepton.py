@@ -16,6 +16,7 @@ from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.production.cms.electron import electron_sceta
 
 # from columnflow.production.cms.electron import electron_weights
 # from columnflow.production.cms.muon import muon_weights
@@ -39,7 +40,7 @@ logger = law.logger.get_logger(__name__)
         "Electron.{dxy,dz,cutBased}",
         "Muon.{dxy,dz,looseId,pfIsoId}",
         "Tau.{dz,idDeepTau2018v2p5VSe,idDeepTau2018v2p5VSmu,idDeepTau2018v2p5VSjet,decayMode}",
-        jet_selection, electron_ee_veto,
+        electron_sceta, jet_selection, electron_ee_veto,
     },
     produces={
         "Muon.is_tight", "Electron.is_tight",
@@ -78,6 +79,8 @@ def lepton_definition(
         events = self[electron_ee_veto](events, **kwargs)
         ee_veto_mask = events.Electron.ee_leak_veto_mask
 
+    events = self[electron_sceta](events, **kwargs)
+
     electron = events.Electron
     muon = events.Muon
 
@@ -85,6 +88,7 @@ def lepton_definition(
     # TODO: the loose id + iso reqs might depend on the requested (tight) id + iso
     e_mask_loose = (
         (electron.pt >= 7) &
+        ((abs(electron.superclusterEta) < 1.442) | (abs(electron.superclusterEta) > 1.5560)) &
         (abs(electron.eta) <= 2.5) &
         (abs(electron.dz) <= 1) &
         (electron.cutBased >= 1)  # veto Id

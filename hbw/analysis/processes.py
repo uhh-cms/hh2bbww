@@ -16,6 +16,7 @@ from cmsdb.util import add_decay_process
 
 def modify_cmsdb_processes():
     from cmsdb.processes import (
+        data, data_met,
         qcd_mu, qcd_em, qcd_bctoe,
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
@@ -25,6 +26,8 @@ def modify_cmsdb_processes():
         st_twchannel_t_dl, st_twchannel_tbar_dl,
         tt_dl,
     )
+
+    data.remove_process(data_met)
 
     decay_map = {
         "lf": {

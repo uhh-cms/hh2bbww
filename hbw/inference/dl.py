@@ -228,30 +228,40 @@ systematics = DotDict({
     "btag": [
         "btag_hf",
         "btag_lf",
-        "btag_hfstats1_{year}",
-        "btag_hfstats2_{year}",
-        "btag_lfstats1_{year}",
-        "btag_lfstats2_{year}",
+        "btag_hfstats1_{campaign}",
+        "btag_hfstats2_{campaign}",
+        "btag_lfstats1_{campaign}",
+        "btag_lfstats2_{campaign}",
         "btag_cferr1",
         "btag_cferr2",
+    ],
+    "btag_year_uncorr": [
+        "btag_hf_{year}",
+        "btag_lf_{year}",
+        "btag_hfstats1_{campaign}",
+        "btag_hfstats2_{campaign}",
+        "btag_lfstats1_{campaign}",
+        "btag_lfstats2_{campaign}",
+        "btag_cferr1_{year}",
+        "btag_cferr2_{year}",
     ],
     "btag_bjet_uncorr": [
         "btag_hf_{bjet_cat}",
         "btag_lf_{bjet_cat}",
-        "btag_hfstats1_{year}_{bjet_cat}",
-        "btag_hfstats2_{year}_{bjet_cat}",
-        "btag_lfstats1_{year}_{bjet_cat}",
-        "btag_lfstats2_{year}_{bjet_cat}",
+        "btag_hfstats1_{campaign}_{bjet_cat}",
+        "btag_hfstats2_{campaign}_{bjet_cat}",
+        "btag_lfstats1_{campaign}_{bjet_cat}",
+        "btag_lfstats2_{campaign}_{bjet_cat}",
         "btag_cferr1_{bjet_cat}",
         "btag_cferr2_{bjet_cat}",
     ],
     "btag_cpn_uncorr": [
         "btag_hf_{campaign}",
         "btag_lf_{campaign}",
-        "btag_hfstats1_{year}_{campaign}",
-        "btag_hfstats2_{year}_{campaign}",
-        "btag_lfstats1_{year}_{campaign}",
-        "btag_lfstats2_{year}_{campaign}",
+        "btag_hfstats1_{campaign}",
+        "btag_hfstats2_{campaign}",
+        "btag_lfstats1_{campaign}",
+        "btag_lfstats2_{campaign}",
         "btag_cferr1_{campaign}",
         "btag_cferr2_{campaign}",
     ],
@@ -262,7 +272,7 @@ systematics = DotDict({
         "e_reco_sf",
         "trigger_sf",
         "minbias_xs",
-        # "dy_corr",  # TODO: still missing
+        "dy_correction",
     ],
     "experiment_cpn_uncorr": [
         "mu_id_sf_{campaign}",
@@ -296,6 +306,10 @@ systematics = DotDict({
     "jerc_only_cpn_uncorr": [
         "jer_{campaign}",
         "jec_Total_{campaign}",
+    ],
+    "jerc_only_year_uncorr": [
+        "jer_{year}",
+        "jec_Total_{year}",
     ],
 })
 systematics["rate_default"] = [
@@ -347,6 +361,20 @@ systematics["default"] = [
     *systematics.rate_default,
     *systematics.shape_only_cpn_uncorr,
     *systematics.jerc_only_cpn_uncorr,
+]
+systematics["default_year_uncorr"] = [
+    *systematics.rate_default,
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_year_uncorr,
+    *systematics.experiment,
+    *systematics.other,
+    *systematics.jerc_only_year_uncorr,
+]
+systematics["default_cpn_corr"] = [
+    *systematics.rate_default,
+    *systematics.shape_only,
+    *systematics.jerc_only,
 ]
 
 # different variations of systematic combinations (testing)
@@ -481,7 +509,8 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
     elif "ggf" in config_cat_inst.name or "vbf" in config_cat_inst.name:
         return f"logit_mlscore.{config_cat_inst.x.root_cats.get('dnn').replace('ml_', '')}"
     elif config_cat_inst.x.root_cats.get("dnn"):
-        return "mlscore.max_score"
+        # since we merge into 1 bin anyways, we can use either score
+        return "logit_mlscore.sig_ggf_binary"
     else:
         # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
         logger.warning(
@@ -529,10 +558,56 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+met40dnn_unblind = default_unblind.derive("met40dnn_unblind", cls_dict={
+    "ml_model_name": ["multiclass_met40", "ggf_met40", "vbf_met40"],
+})
+vbftag_unblind = default_unblind.derive("vbftag_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3_tag", "ggfv3", "vbfv3_tag"],
+})
+vbftag1_unblind = default_unblind.derive("vbftag1_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+})
+vbftag1_mergeboosted_unblind = default_unblind.derive("vbftag1_mergeboosted_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background_resolved,
+})
+vbfmqq_unblind = default_unblind.derive("vbfmqq_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
+})
+vbfmqq1_unblind = default_unblind.derive("vbfmqq1_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_mqq"],
+})
+vbfextended_unblind = default_unblind.derive("vbfextended_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_vbf_extended"],
+})
 default_data = dl.derive("default_data", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
     "skip_data": False,
+})
+vbftag_data = default_data.derive("vbftag_data", cls_dict={
+    "ml_model_name": ["multiclassv3_tag", "ggfv3", "vbfv3_tag"],
+})
+vbfmqq_data = default_data.derive("vbfmqq_data", cls_dict={
+    "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
+})
+vbfmqq1_data = default_data.derive("vbfmqq1_data", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_mqq"],
+})
+vbftag1_data = default_data.derive("vbftag1_data", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+})
+vbfextended_data = default_data.derive("vbfextended_data", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_vbf_extended"],
+})
+
+vbfmqq_data_cpn_corr = default_data.derive("vbfmqq_data_cpn_corr", cls_dict={
+    "systematics": systematics.default_cpn_corr,
+    "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
+})
+vbfmqq_data_year_uncorr = default_data.derive("vbfmqq_data_year_uncorr", cls_dict={
+    "systematics": systematics.default_year_uncorr,
+    "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
 })
 mli_n_jet = default_data.derive("mli_n_jet", cls_dict={
     "processes": processes_dict["hww"],

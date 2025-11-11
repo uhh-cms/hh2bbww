@@ -245,8 +245,10 @@ def base_post_init(self: HistProducer, task: law.Task):
 
 
 btag_uncs = [
-    "hf", "lf", "hfstats1_{year}", "hfstats2_{year}",
-    "lfstats1_{year}", "lfstats2_{year}", "cferr1", "cferr2",
+    "hf", "lf",
+    "cferr1", "cferr2",
+    "hfstats1", "lfstats1",
+    "hfstats2", "lfstats2",
 ]
 
 
@@ -344,6 +346,15 @@ met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
     "categorizer_cls": mask_fn_met_geq40,
 })
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
+met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })

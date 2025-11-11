@@ -20,10 +20,10 @@ from columnflow.production.normalization import (
 )
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights, MuonSFConfig
-from hbw.production.btag import HBWTMP_btag_weights
+from columnflow.production.cms.btag import btag_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
-from columnflow.production.cms.top_pt_weight import top_pt_weight
+# from columnflow.production.cms.top_pt_weight import top_pt_weight
 from hbw.production.top_pt_theory import top_pt_theory_weight
 from hbw.production.gen_v import vjets_weight
 from hbw.production.normalized_weights import normalized_weight_factory
@@ -65,9 +65,9 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     if self.has_dep(ps_weights):
         events = self[ps_weights](events, **kwargs)
 
-    if self.has_dep(HBWTMP_btag_weights):
+    if self.has_dep(btag_weights):
         # compute btag SF weights (for renormalization tasks)
-        events = self[HBWTMP_btag_weights](
+        events = self[btag_weights](
             events,
             jet_mask=results.aux["jet_mask"],
             negative_b_score_action="ignore",
@@ -101,8 +101,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
     # used Producers need to be set in the init or decorator
-    if not has_tag("skip_HBWTMP_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {HBWTMP_btag_weights}
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {btag_weights}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
@@ -118,10 +118,10 @@ def event_weights_to_normalize_init(self) -> None:
 def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
     for _cls in self.uses:
-        if _cls == HBWTMP_btag_weights and task.shift == "nominal":
-            self.produces |= {HBWTMP_btag_weights}
-        elif _cls == HBWTMP_btag_weights:
-            self.produces |= self.deps[HBWTMP_btag_weights].produced_columns
+        if _cls == btag_weights and task.shift == "nominal":
+            self.produces |= {btag_weights}
+        elif _cls == btag_weights:
+            self.produces |= self.deps[btag_weights].produced_columns
         elif task.shift == "nominal":
             self.produces |= self.deps[_cls].produced_columns
         else:
@@ -256,7 +256,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
 @producer(
     uses={
         combined_normalization_weights,
-        top_pt_weight,
+        # top_pt_weight,
         top_pt_theory_weight,
         vjets_weight,
         normalized_pu_weights,
@@ -268,7 +268,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         normalized_pu_weights,
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 4),
+    version=law.config.get_expanded("analysis", "event_weights_version", 5),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -280,16 +280,16 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
-        events = self[top_pt_weight](events, **kwargs)
+        # events = self[top_pt_weight](events, **kwargs)
         events = self[top_pt_theory_weight](events, **kwargs)
 
     # compute gen vjet pt weights
     if self.dataset_inst.has_tag("is_v_jets"):
         events = self[vjets_weight](events, **kwargs)
 
-    if not has_tag("skip_HBWTMP_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         # compute and normalize btag SF weights
-        events = self[HBWTMP_btag_weights](
+        events = self[btag_weights](
             events,
             negative_b_score_action="ignore",
             negative_b_score_log_mode="debug",
@@ -346,8 +346,8 @@ def event_weights_init(self: Producer) -> None:
         self.uses |= {self.trigger_weights_producer}
         self.produces |= {self.trigger_weights_producer}
 
-    if not has_tag("skip_HBWTMP_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {HBWTMP_btag_weights, normalized_btag_weights}
+    if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
+        self.uses |= {btag_weights, normalized_btag_weights}
         self.produces |= {normalized_btag_weights}
 
     if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):

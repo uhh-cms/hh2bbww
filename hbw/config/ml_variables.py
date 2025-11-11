@@ -17,27 +17,33 @@ def add_common_ml_variables(config: od.Config) -> None:
     Adds common ML input variables to a *config*.
     """
 
-    config.add_variable(
-        name="mli_ht",
-        expression="mli_ht",
-        binning=(40, 0, 1200),
-        unit="GeV",
-        x_title="HT",
-        aux={"overflow": True},
-    )
+    for postfix, object_label in (
+        ("", "central jets"),
+        ("_alljets", "central + forward jets"),
+        ("_fwjets", "forward jets"),
+    ):
+        config.add_variable(
+            name=f"mli_ht{postfix}",
+            expression=f"mli_ht{postfix}",
+            binning=(40, 0, 1200),
+            unit="GeV",
+            x_title=f"HT ({object_label})",
+            aux={"overflow": True},
+        )
+        config.add_variable(
+            name=f"mli_n_jet{postfix}",
+            expression=f"mli_n_jet{postfix}",
+            binning=(11, -0.5, 10.5),
+            x_title=f"Number of {object_label}",
+            aux={"overflow": True},
+        )
+
     config.add_variable(
         name="mli_lt",
         expression="mli_lt",
         binning=(40, 0, 800),
         unit="GeV",
         x_title="LT",
-        aux={"overflow": True},
-    )
-    config.add_variable(
-        name="mli_n_jet",
-        expression="mli_n_jet",
-        binning=(11, -0.5, 10.5),
-        x_title="Number of jets",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -119,20 +125,24 @@ def add_common_ml_variables(config: od.Config) -> None:
         x_title=r"min $\Delta R(\ell,j)$",
         aux={"overflow": True},
     )
-    config.add_variable(
-        name="mli_mindr_jj",
-        expression="mli_mindr_jj",
-        binning=(40, 0, 6),
-        x_title=r"min $\Delta R(j,j)$",
-        aux={"overflow": True},
-    )
-    config.add_variable(
-        name="mli_maxdr_jj",
-        expression="mli_maxdr_jj",
-        binning=(40, 0, 6),
-        x_title=r"max $\Delta R(j,j)$",
-        aux={"overflow": True},
-    )
+    for postfix, object_label in (
+        ("", "central jets"),
+        ("_alljets", "central + forward jets"),
+    ):
+        config.add_variable(
+            name=f"mli_mindr_jj{postfix}",
+            expression=f"mli_mindr_jj{postfix}",
+            binning=(40, 0, 6),
+            x_title=rf"min $\Delta R(j,j)$ ({object_label})",
+            aux={"overflow": True},
+        )
+        config.add_variable(
+            name=f"mli_maxdr_jj{postfix}",
+            expression=f"mli_maxdr_jj{postfix}",
+            binning=(40, 0, 8),
+            x_title=rf"max $\Delta R(j,j)$ ({object_label})",
+            aux={"overflow": True},
+        )
 
     # vbf features for central jets and incljets
     for eta_range, prefix in (
@@ -170,7 +180,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         config.add_variable(
             name=f"mli_{prefix}vbf_mass",
             expression=f"mli_{prefix}vbf_mass",
-            binning=(50, 400, 4000),
+            binning=(40, 0, 4000),
             unit="GeV",
             aux={"overflow": True},
             x_title=rf"VBF pair mass ($|\eta| < {eta_range}|$)",
@@ -198,14 +208,16 @@ def add_common_ml_variables(config: od.Config) -> None:
                 aux={"overflow": True},
             )
 
-    for obj in ["b1", "b2", "j1", "j2", "lep", "met"]:
+    for obj in ["b1", "b2", "j1", "j2", "vbfcand1", "vbfcand2", "lep", "met"]:
         for var in ["pt", "eta", "phi"]:
             if var == "eta" and obj == "met":
                 continue
             if var == "phi" and obj != "met":
                 continue
             binning = default_var_binning[var]
-            if obj == "lep" and var == "pt":
+            if "vbfcand" in obj and var == "eta":
+                binning = (48, -4.7, 4.7)
+            elif obj == "lep" and var == "pt":
                 binning = (40, 0, 240)
             config.add_variable(
                 name=f"mli_{obj}_{var}",

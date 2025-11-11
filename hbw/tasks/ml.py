@@ -379,7 +379,21 @@ class MLPreTraining(
                 input_target = inputs["events"][config_inst.name][dataset].collection[0]["mlevents"][self.fold]
                 # input_target = inputs["events"][config_inst.name][dataset]["mlevents"]
                 process = config_inst.get_dataset(dataset).x.ml_process
-                events[process].append(ak.from_parquet(input_target.path))
+                try:
+                    events[process].append(ak.from_parquet(input_target.path))
+                except IndexError as e:
+                    if e.args[0] == "0 out of bounds":
+                        logger.warning(
+                            f"No events found for process {process} in dataset {dataset} "
+                            f"for config {config_inst.name} and fold {self.fold}. "
+                            "File will be skipped after checking stats that it is indeed empty "
+                            "(if not, exception will be raised).",
+                        )
+                        stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")  # noqa: E501
+                        if stats["num_fold_events"][str(self.fold)] == 0:
+                            continue
+                        else:
+                            raise e
 
         for process in events.keys():
             events[process] = ak.concatenate(events[process])

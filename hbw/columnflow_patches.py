@@ -44,6 +44,8 @@ def patch_live_task_id():
     remove_from_live_task_id = {
         "datasets", "processes", "known_shifts", "shift_sources",
         "variables", "categories",
+        "hist_hooks",
+        "variable_settings", "process_settings", "general_settings", "custom_style_config",
     }
 
     @property
@@ -56,9 +58,10 @@ def patch_live_task_id():
         # create a temporary dictionary of param_kwargs that is patched for the duration of the
         # call to create the string representation of the parameters
         param_kwargs = {attr: getattr(self, attr) for attr in self.param_kwargs}
-
         # PATCH: when fetch_output is used, remove parameters that should not be part of the live_task_id
-        if param_kwargs.get("fetch_output", None):
+        # NOTE: fetch_output is always () for some reason, even if we pass e.g. --fetch-output 0,a
+        patch_task_id = False
+        if param_kwargs.get("fetch_output", None) or patch_task_id:
             logger.info(f"fetch_output is set, following params removed from live_task_id: {remove_from_live_task_id}")
             param_kwargs = {
                 attr: getattr(self, attr)
@@ -297,34 +300,6 @@ def patch_modify_process_hist():
                 if c.name in h.axes["category"]
             ],
         }]
-
-        if "data" in process_inst.name:
-            # do not rescale data
-            return h
-        lumi = config_inst.x.luminosity.nominal
-        # rescale lumi
-        old_lumis = {
-            "c23prev14": 17794,
-            "c23postv14": 9451,
-        }
-        new_lumis = {
-            "c23prev14": 18063,
-            "c23postv14": 9693,
-        }
-        if config_inst.name not in old_lumis.keys():
-            # do not rescale
-            return h
-        if (old_lumi := old_lumis[config_inst.name]) != lumi:
-            raise Exception(
-                "expected old lumi to match config lumi. Will not rescale. Please fix config or remove lumi rescaling.",
-            )
-        new_lumi = new_lumis[config_inst.name]
-        scale = new_lumi / old_lumi
-        logger.warning_once(
-            f"scale_lumi_{config_inst.name}",
-            "rescaling histograms from %.1f/fb to %.1f/fb (x%.3f)", old_lumi, new_lumi, scale,
-        )
-        h = h * scale
 
         return h
 

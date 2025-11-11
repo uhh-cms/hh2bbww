@@ -402,6 +402,35 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
+    "vbf_extended": [
+        "mli_dr_ll_bb",
+        "mli_mbbllMET",
+        "mli_b1_pt",
+        "mli_mbb",
+        "mli_mll",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        # "mli_maxdr_jj",
+        "mli_mixed_channel",
+        "mli_dr_bb",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_dr_ll",
+        "mli_met_pt",
+        "mli_min_dr_llbb",
+        "mli_b_score_sum",
+        "mli_ll_pt",
+        # "mli_ht",
+        "mli_j1_eta",
+        # "mli_n_jet",
+        "mli_j1_pt",
+        # NEW VBF FEATURES
+        "mli_full_vbf_mass",
+        "mli_ht_alljets",
+        "mli_n_jet_alljets",
+        "mli_maxdr_jj_alljets",  # likely bad modelled
+    ],
     "fatjet": [
         "mli_fj_particleNetWithMass_HbbvsQCD",
         # "mli_fj_particleNet_XbbvsQCD",
@@ -412,7 +441,10 @@ input_features = DotDict({
         # "mli_fj_msoftdrop",
     ],
 })
-input_features["fatjet_v1"] = input_features["v1"] + input_features["fatjet"]
+
+# VBF feature sets
+input_features["vbfmqq"] = input_features["v2"] + ["mli_full_vbf_mass"]
+input_features["vbftag"] = input_features["v2"] + ["mli_full_vbf_tag"]
 
 class_factors = {
     "default": DenseClassifierDL._default__class_factors,
@@ -573,312 +605,33 @@ vbfv1 = DenseClassifierDL.derive("vbfv1", cls_dict={
 vbfv1_2b = vbfv1.derive("vbfv1_2b", cls_dict={"preparation_producer_name": "prepml_2b"})
 ggfv1_2b = ggfv1.derive("ggfv1_2b", cls_dict={"preparation_producer_name": "prepml_2b"})
 
-multiclass_fatjetv1 = multiclassv1.derive("multiclass_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
-ggf_fatjetv1 = ggfv1.derive("ggf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
-vbf_fatjetv1 = vbfv1.derive("vbf_fatjetv1", cls_dict={"input_features": input_features.fatjet_v1})
-
-multiclass_test = multiclassv1.derive("multiclass_test")
-
-multiclass_dr50 = multiclassv1.derive("multiclass_dr50", cls_dict={"dropout": 0.50})
-multiclass_dr30 = multiclassv1.derive("multiclass_dr30", cls_dict={"dropout": 0.30})
-ggf_dr50 = ggfv1.derive("ggf_dr50", cls_dict={"dropout": 0.50})
-vbf_dr50 = vbfv1.derive("vbf_dr50", cls_dict={"dropout": 0.50})
-
-# turns out dropout 20 is our default .... ._.
-multiclass_dr20 = multiclassv1.derive("multiclass_dr20", cls_dict={"dropout": 0.20})
-ggf_dr20 = ggfv1.derive("ggf_dr20", cls_dict={"dropout": 0.20})
-vbf_dr20 = vbfv1.derive("vbf_dr20", cls_dict={"dropout": 0.20})
-
-# new input features
-multiclassv2 = multiclassv1.derive("multiclassv2", cls_dict={"input_features": input_features["v2"]})
-ggfv2 = ggfv1.derive("ggfv2", cls_dict={"input_features": input_features["v2"]})
-vbfv2 = vbfv1.derive("vbfv2", cls_dict={"input_features": input_features["v2"]})
-
 # new version after updating weights + tensorflow 2.16 (no changes to input features)
 multiclassv3 = multiclassv1.derive("multiclassv3", cls_dict={"input_features": input_features["v2"]})
 ggfv3 = ggfv1.derive("ggfv3", cls_dict={"input_features": input_features["v2"]})
 vbfv3 = vbfv1.derive("vbfv3", cls_dict={"input_features": input_features["v2"]})
 
+# versions with VBF observables added
+multiclassv3_mqq = multiclassv1.derive("multiclassv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})
+vbfv3_mqq = vbfv1.derive("vbfv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})
 
-# sanity check
-ggfv2_sanity = ggfv2.derive("ggfv2_sanity", cls_dict={
-})
+multiclassv3_tag = multiclassv1.derive("multiclassv3_tag", cls_dict={"input_features": input_features["vbftag"]})
+vbfv3_tag = vbfv1.derive("vbfv3_tag", cls_dict={"input_features": input_features["vbftag"]})
 
-# testing focal loss
-ggfv2_fl_test = ggfv2.derive("ggfv2_fl_test", cls_dict={
-    "loss": "focal_loss",
-    "focal_loss_alpha": 1.0,
-    "focal_loss_gamma": 1.0,
-    "epochs": 3,
+multiclassv3_vbf_extended = multiclassv1.derive("multiclassv3_vbf_extended", cls_dict={
+    "input_features": input_features["vbf_extended"],
 })
-# testing focal loss
-ggfv2_fl_base = ggfv2.derive("ggfv2_fl_base", cls_dict={
-    "loss": "focal_loss",
-    "focal_loss_alpha": 1.0,
-    "focal_loss_gamma": 1.0,
-})
+vbfv3_vbf_extended = vbfv1.derive("vbfv3_vbf_extended", cls_dict={"input_features": input_features["vbf_extended"]})
 
-# testing focal loss
-for gamma in [1, 2, 3, 4, 5]:
-    multiclassv2.derive(f"multiclassv2_fl_g{gamma}", cls_dict={
-        "loss": "focal_loss",
-        "focal_loss_gamma": float(gamma),
-    })
-    for alpha in [0.25, 0.5, 0.75, 1.0]:
-        alpha_str = str(alpha).replace(".", "p")
-        ggfv2.derive(f"ggfv2_fl_g{gamma}_a{alpha_str}", cls_dict={
-            "loss": "focal_loss",
-            "focal_loss_alpha": float(alpha),
-            "focal_loss_gamma": float(gamma),
-        })
-        vbfv2.derive(f"vbfv2_fl_g{gamma}_a{alpha_str}", cls_dict={
-            "loss": "focal_loss",
-            "focal_loss_alpha": float(alpha),
-            "focal_loss_gamma": float(gamma),
-        })
-
-#
-# adding bbtautau
-#
-multiclass_allsig = DenseClassifierDL.derive("multiclass_allsig", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": (
-        *processes.ggf_hh,
-        *processes.vbf_hh,
-        "tt",
-        "st",
-        "dy_m10to50",
-        "dy_m50toinf",
-        "h",
-    ),
-    "train_nodes": {
-        "sig_ggf": {
-            "ml_id": 0,
-            "label": r"HH_{ggF}",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.ggf_hh,
-        },
-        "sig_vbf": {
-            "ml_id": 1,
-            "label": r"HH_{VBF}",
-            "color": "#999999",  # grey
-            "class_factor_mode": "equal",
-            "sub_processes": processes.vbf_hh,
-        },
-        "tt": {"ml_id": 2},
-        "st": {"ml_id": 3},
-        "dy_m10toinf": {
-            "ml_id": 4,
-            "sub_processes": ["dy_m10to50", "dy_m50toinf"],
-            "label": "DY",
-            "color": color_palette["yellow"],
-            "class_factor_mode": "xsec",
-        },
-        "h": {"ml_id": 5},
-    },
+# MET > 40
+multiclass_met40 = multiclassv1.derive("multiclass_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
 })
-ggf_allsig = DenseClassifierDL.derive("ggf_allsig", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": [
-        *processes.ggf_hh,
-        *processes.backgrounds_binary,
-    ],
-    "train_nodes": {
-        "sig_ggf_binary": {
-            "ml_id": 0,
-            "label": r"HH_{ggF}",
-            "color": "#000000",
-            "class_factor_mode": "equal",
-            "sub_processes": processes.ggf_hh,
-        },
-        "bkg_binary_for_ggf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_binary,
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "sig_ggf_binary": 1,
-        "bkg_binary_for_ggf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_ggf_kl0_kt1": 1,
-        "hh_ggf_kl1_kt1": 1,
-        "hh_ggf_kl2p45_kt1": 1,
-        "hh_ggf_kl5_kt1": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_m10to50": 1,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
-    "epochs": 100,
+ggf_met40 = ggfv1.derive("ggf_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
 })
-vbf_allsig = DenseClassifierDL.derive("vbf_allsig", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": [
-        *processes.vbf_hh,
-        *processes.backgrounds_binary,
-    ],
-    "train_nodes": {
-        "sig_vbf_binary": {
-            "ml_id": 0,
-            "label": r"HH_{VBF}",
-            "color": "#000000",
-            "class_factor_mode": "equal",
-            "sub_processes": processes.vbf_hh,
-        },
-        "bkg_binary_for_vbf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_binary,
-        },
-    },
-    "class_factors": {
-        "sig_vbf_binary": 1,
-        "bkg_binary_for_vbf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_vbf_kv1_k2v1_kl1": 1,
-        "hh_vbf_kv1_k2v0_kl1": 1,
-        "hh_vbf_kvm0p962_k2v0p959_klm1p43": 1,
-        "hh_vbf_kvm1p21_k2v1p94_klm0p94": 1,
-        "hh_vbf_kvm1p6_k2v2p72_klm1p36": 1,
-        "hh_vbf_kvm1p83_k2v3p57_klm3p39": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_m10to50": 1,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
-    "epochs": 100,
-})
-
-
-#
-# only kl1
-#
-
-multiclass_kl1 = DenseClassifierDL.derive("multiclass_kl1", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": (
-        "hh_ggf_kl1_kt1",
-        "hh_vbf_kv1_k2v1_kl1",
-        "tt",
-        "st",
-        "dy_m10to50",
-        "dy_m50toinf",
-        "h",
-    ),
-    "train_nodes": {
-        "hh_ggf_kl1_kt1": {"ml_id": 0},
-        "hh_vbf_kv1_k2v1_kl1": {"ml_id": 1},
-        "tt": {"ml_id": 2},
-        "st": {"ml_id": 3},
-        "dy_m10toinf": {
-            "ml_id": 4,
-            "sub_processes": ["dy_m10to50", "dy_m50toinf"],
-            "label": "DY",
-            "color": color_palette["yellow"],
-            "class_factor_mode": "xsec",
-        },
-        "h": {"ml_id": 5},
-    },
-})
-ggf_kl1 = DenseClassifierDL.derive("ggf_kl1", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": [
-        "hh_ggf_kl1_kt1",
-        *processes.backgrounds_binary,
-    ],
-    "train_nodes": {
-        "hh_ggf_kl1_kt1": {"ml_id": 0},
-        "bkg_binary_for_ggf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_binary,
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "hh_ggf_kl1_kt1": 1,
-        "bkg_binary_for_ggf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_ggf_kl0_kt1": 1,
-        "hh_ggf_kl1_kt1": 1,
-        "hh_ggf_kl2p45_kt1": 1,
-        "hh_ggf_kl5_kt1": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_m10to50": 1,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
-    "epochs": 100,
-})
-vbf_kl1 = DenseClassifierDL.derive("vbf_kl1", cls_dict={
-    "training_configs": configs.full,
-    "input_features": input_features["v1"],
-    "processes": [
-        "hh_vbf_kv1_k2v1_kl1",
-        *processes.backgrounds_binary,
-    ],
-    "train_nodes": {
-        "hh_vbf_kv1_k2v1_kl1": {"ml_id": 0},
-        "bkg_binary_for_vbf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_binary,
-        },
-    },
-    "class_factors": {
-        "hh_vbf_kv1_k2v1_kl1": 1,
-        "bkg_binary_for_vbf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_vbf_kv1_k2v1_kl1": 1,
-        "hh_vbf_kv1_k2v0_kl1": 1,
-        "hh_vbf_kvm0p962_k2v0p959_klm1p43": 1,
-        "hh_vbf_kvm1p21_k2v1p94_klm0p94": 1,
-        "hh_vbf_kvm1p6_k2v2p72_klm1p36": 1,
-        "hh_vbf_kvm1p83_k2v3p57_klm3p39": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_m10to50": 1,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
-    "epochs": 100,
+vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_met40",
 })
