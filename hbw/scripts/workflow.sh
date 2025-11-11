@@ -120,7 +120,7 @@ run_merge_reduced_events() {
         --datasets "*" \
         --configs "$configs" \
         --shifts "$shifts" \
-        --cf.ReduceEvents-{retries=2,workflow=htcondor} \
+        --cf.MergeReducedEvents-{retries=2,workflow=htcondor} \
         --cf.ReduceEvents-pilot \
 	    --cf.BundleRepo-custom-checksum $checksum \
         --workers 123
@@ -213,7 +213,7 @@ prepare_dy_corr() {
 }
 
 run_ml_training() {
-    mlmodels="${1-"$dnn_multiclass,$dnn_ggf,$dnn_vbf"}"
+    mlmodels="${1:-"$dnn_multiclass,$dnn_ggf,$dnn_vbf"}"
     for model in ${mlmodels//,/ }; do
         echo "→ MLTraining: model=$model"
         run_cmd law run cf.MLTraining \
