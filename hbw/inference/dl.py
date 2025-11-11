@@ -558,17 +558,27 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+met40dnn_unblind = default_unblind.derive("met40dnn_unblind", cls_dict={
+    "ml_model_name": ["multiclass_met40", "ggf_met40", "vbf_met40"],
+})
 vbftag_unblind = default_unblind.derive("vbftag_unblind", cls_dict={
     "ml_model_name": ["multiclassv3_tag", "ggfv3", "vbfv3_tag"],
 })
 vbftag1_unblind = default_unblind.derive("vbftag1_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
 })
+vbftag1_mergeboosted_unblind = default_unblind.derive("vbftag1_mergeboosted_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.sr_resolved + ["sr__boosted"] + config_categories.background_resolved,
+})
 vbfmqq_unblind = default_unblind.derive("vbfmqq_unblind", cls_dict={
     "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
 })
 vbfmqq1_unblind = default_unblind.derive("vbfmqq1_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_mqq"],
+})
+vbfextended_unblind = default_unblind.derive("vbfextended_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_vbf_extended"],
 })
 default_data = dl.derive("default_data", cls_dict={
     "systematics": systematics.default,
@@ -587,6 +597,10 @@ vbfmqq1_data = default_data.derive("vbfmqq1_data", cls_dict={
 vbftag1_data = default_data.derive("vbftag1_data", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
 })
+vbfextended_data = default_data.derive("vbfextended_data", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_vbf_extended"],
+})
+
 vbfmqq_data_cpn_corr = default_data.derive("vbfmqq_data_cpn_corr", cls_dict={
     "systematics": systematics.default_cpn_corr,
     "ml_model_name": ["multiclassv3_mqq", "ggfv3", "vbfv3_mqq"],
