@@ -645,7 +645,8 @@ def set_config_defaults_and_groups(config_inst):
             if not var.startswith("mli_n_") and not var == "mli_mixed_channel"
         },
         "rebin_ml_scores100": {
-            var: {"rebin": 100}
+            # var: {"rebin": 100}
+            var: {"rebin": 4}
             for var in [
                 "rebinlogit_mlscore.sig_ggf_binary",
                 "rebinlogit_mlscore.sig_vbf_binary",
@@ -739,6 +740,21 @@ def set_config_defaults_and_groups(config_inst):
                 "fontsize": 16,
             },
         },
+        "default_rax60": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 16,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "rax_cfg": {
+                "ylim": (0.40, 1.60),
+            },
+            "annotate_cfg": {
+                "xy": (0.05, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 16,
+            },
+        },
         "default_rax75": {
             "legend_cfg": {
                 "ncols": 2,
@@ -785,41 +801,22 @@ def set_config_defaults_and_groups(config_inst):
     # groups are defined via config.x.category_groups
     config_inst.x.default_bins_per_category = {
         # Single lepton
-        "SR_sl": 10,
-        "vbfSR_sl": 5,
-        "BR_sl": 3,
-        "SR_sl_resolved": 10,
-        "SR_sl_boosted": 5,
-        "vbfSR_sl_resolved": 5,
-        "vbfSR_sl_boosted": 3,
+        # "SR_sl": 10,
+        # "vbfSR_sl": 5,
+        # "BR_sl": 3,
+        # "SR_sl_resolved": 10,
+        # "SR_sl_boosted": 5,
+        # "vbfSR_sl_resolved": 5,
+        # "vbfSR_sl_boosted": 3,
         # Dilepton
-        "SR_dl": 10,
-        "vbfSR_dl": 10,
         "BR_dl": 1,
-        "SR_bjets_incl": 14,
-        "vbfSR_bjets_incl": 14,
-        "BR_bjets_incl": 3,
-        "sr__1b__ml_sig_ggf": 10,
-        "sr__2b__ml_sig_ggf": 6,
-        "sr__1b__ml_sig_vbf": 8,
-        "sr__2b__ml_sig_vbf": 6,
         "sr__resolved__1b__ml_sig_ggf": 10,
         "sr__resolved__2b__ml_sig_ggf": 6,
         "sr__resolved__1b__ml_sig_vbf": 8,
         "sr__resolved__2b__ml_sig_vbf": 6,
-        # "sr__resolved__1b__ml_sig_ggf": 10,
-        # "sr__resolved__2b__ml_sig_ggf": 10,
-        # "sr__resolved__1b__ml_sig_vbf": 10,
-        # "sr__resolved__2b__ml_sig_vbf": 8,
         "sr__boosted__ml_sig_ggf": 3,
         "sr__boosted__ml_sig_vbf": 3,
-        # "SR_dl_resolved": 6,
-        # "SR_dl_boosted": 3,
-        # "vbfSR_dl_resolved": 6,
-        # "vbfSR_dl_boosted": 3,
-        "sr__1b": 20,
-        "sr__2b": 20,
-        "sr__boosted": 5,
+        "sr__boosted": 3,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name

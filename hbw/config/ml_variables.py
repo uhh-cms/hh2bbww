@@ -180,7 +180,7 @@ def add_common_ml_variables(config: od.Config) -> None:
         config.add_variable(
             name=f"mli_{prefix}vbf_mass",
             expression=f"mli_{prefix}vbf_mass",
-            binning=(50, 400, 4000),
+            binning=(40, 0, 4000),
             unit="GeV",
             aux={"overflow": True},
             x_title=rf"VBF pair mass ($|\eta| < {eta_range}|$)",
