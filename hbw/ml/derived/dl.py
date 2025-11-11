@@ -402,7 +402,7 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
-    "vbf_full": [
+    "vbf_extended": [
         "mli_dr_ll_bb",
         "mli_mbbllMET",
         "mli_b1_pt",
@@ -422,16 +422,13 @@ input_features = DotDict({
         "mli_b_score_sum",
         "mli_ll_pt",
         # "mli_ht",
-        # "mli_j1_eta",
+        "mli_j1_eta",
         # "mli_n_jet",
-        # "mli_j1_pt",
+        "mli_j1_pt",
+        # NEW VBF FEATURES
         "mli_full_vbf_mass",
         "mli_ht_alljets",
         "mli_n_jet_alljets",
-        "mli_vbfcand1_pt",
-        "mli_vbfcand1_eta",  # likely bad modelled
-        "mli_vbfcand2_pt",
-        "mli_vbfcand2_eta",  # likely bad modelled
         "mli_maxdr_jj_alljets",  # likely bad modelled
     ],
     "fatjet": [
@@ -620,8 +617,8 @@ vbfv3_mqq = vbfv1.derive("vbfv3_mqq", cls_dict={"input_features": input_features
 multiclassv3_tag = multiclassv1.derive("multiclassv3_tag", cls_dict={"input_features": input_features["vbftag"]})
 vbfv3_tag = vbfv1.derive("vbfv3_tag", cls_dict={"input_features": input_features["vbftag"]})
 
-multiclassv3_full = multiclassv1.derive("multiclassv3_full", cls_dict={"input_features": input_features["vbf_full"]})
-vbfv3_full = vbfv1.derive("vbfv3_full", cls_dict={"input_features": input_features["vbf_full"]})
+multiclassv3_vbf_extended = multiclassv1.derive("multiclassv3_vbf_extended", cls_dict={"input_features": input_features["vbf_extended"]})
+vbfv3_vbf_extended = vbfv1.derive("vbfv3_vbf_extended", cls_dict={"input_features": input_features["vbf_extended"]})
 
 # MET > 40
 multiclass_met40 = multiclassv1.derive("multiclass_met40", cls_dict={
