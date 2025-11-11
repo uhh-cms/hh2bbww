@@ -44,6 +44,8 @@ def patch_live_task_id():
     remove_from_live_task_id = {
         "datasets", "processes", "known_shifts", "shift_sources",
         "variables", "categories",
+        "hist_hooks",
+        "variable_settings", "process_settings", "general_settings", "custom_style_config",
     }
 
     @property
@@ -56,9 +58,10 @@ def patch_live_task_id():
         # create a temporary dictionary of param_kwargs that is patched for the duration of the
         # call to create the string representation of the parameters
         param_kwargs = {attr: getattr(self, attr) for attr in self.param_kwargs}
-
         # PATCH: when fetch_output is used, remove parameters that should not be part of the live_task_id
-        if param_kwargs.get("fetch_output", None):
+        # NOTE: fetch_output is always () for some reason, even if we pass e.g. --fetch-output 0,a
+        patch_task_id = False
+        if param_kwargs.get("fetch_output", None) or patch_task_id:
             logger.info(f"fetch_output is set, following params removed from live_task_id: {remove_from_live_task_id}")
             param_kwargs = {
                 attr: getattr(self, attr)
