@@ -92,6 +92,9 @@ class CustomCreateYieldTable(
         "if 'subtract', (p[0] - p[1] + p[2]) / p[2] is calculated, ",
     )
 
+    # simple flag to indicate that the yield tables are created for the analysis note
+    for_analysis_note: bool = False
+
     # upstream requirements
     reqs = Requirements(
         RemoteWorkflow.reqs,
@@ -115,9 +118,27 @@ class CustomCreateYieldTable(
             for config_inst, datasets in zip(self.config_insts, self.datasets)
         }
 
+
+    # @property
+    # def categories_repr(self) -> str:
+    #     if len(self.categories) == 1:
+    #         return self.build_repr(self.categories[0])
+    #     return self.build_repr(self.categories, prepend_count=True)
+
     @classmethod
     def resolve_param_values(cls, params):
+        # get initial categories
+        initial_categories = params.get("categories", [])
+
         params = super().resolve_param_values(params)
+
+        if cls.for_analysis_note and initial_categories and initial_categories[0] != "DEFAULT":
+            # restore initial categories after being modified by parent class
+            # NOTE: this does not work if the user requests categories via groups or placeholders
+            params["categories"] = initial_categories
+        else:
+            # if using default categories, sort them for consistent order
+            params["categories"] = sorted(params.get("categories", []))
 
         if len(params.get("variables")) != 1:
             raise ValueError("The yields table requires exactly one variable to be specified.")
@@ -331,7 +352,8 @@ class CustomCreateYieldTable(
                     yield_str = f"${yield_str}$"
                 # cat_label = category.name.replace("__", " ")
                 cat_label = category.label.replace("\n", ", ")
-                # cat_label = f"\\labelfunc{{{category.name}}}"
+                if self.for_analysis_note:
+                    cat_label = f"\\labelfunc{{{category.name}}}"
                 yields_str[cat_label].append(yield_str)
 
         return raw_yields, yields_str
