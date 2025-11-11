@@ -15,7 +15,7 @@ import luigi
 import law
 import order as od
 
-from columnflow.tasks.framework.base import Requirements, AnalysisTask, TaskShifts
+from columnflow.tasks.framework.base import Requirements, TaskShifts
 from columnflow.tasks.framework.parameters import SettingsParameter
 from columnflow.tasks.framework.mixins import (
     CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, MLModelsMixin,
@@ -224,6 +224,7 @@ class HBWInferenceModelBase(
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
+    unblind_step1 = True
     fully_unblind = False
 
     @property
@@ -238,6 +239,10 @@ class HBWInferenceModelBase(
     @property
     def partially_unblinded(self):
         return self.real_data and not self.inference_model_cls.unblind
+
+    @property
+    def unblinded_step1(self):
+        return self.unblind_step1 and self.real_data and self.inference_model_cls.unblind
 
     @property
     def fully_unblinded(self):
@@ -787,15 +792,28 @@ class PrepareInferenceTaskCalls(
         significant=False,
     )
 
-    requested_keys = [
-        "prepare_cards",
-        "Pointlimits",
-        "LimitsPerCategory", "LimitsPerCampaign", "Limits_kl", "Limits_c2v",
-        "MultiLimits_c2v",
-        "PullsAndImpacts",
-        "PostFitShapes",
-        "PreFitShapes",
-    ]
+    requested_keys = law.CSVParameter(
+        default=[
+            "prepare_cards",
+            # "LimitsPerCategory",
+            # "qqHH_LimitsPerCategory",
+            "pointlimits",
+            "qqHH_pointlimits",
+            "LimitsPerCampaign",
+            "Limits_kl",
+            "Limits_c2v",
+            # "multilimits_c2v",
+            # "multilimits_kl",
+            # "qqhh_multilimits_c2v",
+            # "ggHH_multilimits_kl",
+            "gof",
+            "PullsAndImpacts",
+            "postfitshapes",
+            "prefitshapes",
+        ],
+        description="List of inference task keys to prepare calls for.",
+        significant=False,
+    )
     # systematics that are frozen for kl and c2v scans
     frozen_for_scans = ",".join(["THU_HH", "pdf_Higgs_hh_vbf", "pdf_Higgs_hh_ggf", "QCDscale_hh_vbf"])
 
@@ -939,7 +957,7 @@ class PrepareInferenceTaskCalls(
         # prepare the base command to set the environment variables
         base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
         export_and_prepare_cards_cmd = base_cmd
-        cmd_dict = {"export": base_cmd}
+        cmd_dict = {}
 
         # prepare strings for campaign name and card names
         if len(self.configs) == 4:
@@ -979,6 +997,16 @@ class PrepareInferenceTaskCalls(
             for cat_name, card_fn in zip(cat_names, card_fns) if "boosted" in cat_name
         ])
 
+        # NOTE: we could replace e.g. {datacards} with $CARDS in the commands below
+        cards_dict = {
+            "CARDS": datacards,
+            "CARDSB": cards_1b,
+            "CARDSBB": cards_2b,
+            "CARDSBoost": cards_boosted,
+        }
+        export_cards_combinations = "\n".join(f"export {key}={value}" for key, value in cards_dict.items())
+        cmd_dict["export"] = "\n".join([base_cmd, export_cards_combinations])
+
         multi_datacards = []
         multi_datacard_names = []
         for cards, this_identifier in [
@@ -1002,7 +1030,8 @@ class PrepareInferenceTaskCalls(
             export_and_prepare_cards_cmd += cmd + "\n"
             prepare_cards.append(cmd)
         # cmd_dict["prepare_cards"] = "\n".joiyn(prepare_cards)
-        cmd_dict["prepare_cards"] = " & ".join(prepare_cards)
+        # prepare first card to avoid runtime issues of folder creation
+        cmd_dict["prepare_cards"] = prepare_cards[0] + "\n" + " & ".join(prepare_cards)
         cmd_dict["prepare_cards"] += " & wait"
         print("\n\n")
         print(export_and_prepare_cards_cmd)
@@ -1034,6 +1063,7 @@ class PrepareInferenceTaskCalls(
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["LimitsPerCategory"] = cmd
+            cmd_dict["qqHH_LimitsPerCategory"] = cmd + "--pois r_qqhh "
 
         # creating upper limits for kl=1 with clean signal regions only
         cmd = (
@@ -1047,7 +1077,8 @@ class PrepareInferenceTaskCalls(
             cmd += "--unblinded True "
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
-            cmd_dict["Pointlimits"] = cmd
+            cmd_dict["pointlimits"] = cmd
+            cmd_dict["qqHH_pointlimits"] = cmd + "--pois r_qqhh "
 
         # datacards per config group
         if len(self.config_groups) > 1:
@@ -1075,9 +1106,11 @@ class PrepareInferenceTaskCalls(
         #     print(base_cmd + cmd, "\n\n")
 
         # creating kl scan
+        scan_kl = "--scan-parameters kl,-20,25,46"
+        scan_c2v = "--scan-parameters C2V,-4,6,21"
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters kl,-20,25,46 --UpperLimits-workflow htcondor "
+            f"--xsec fb --y-log {scan_kl} --UpperLimits-workflow htcondor "
             f"--frozen-parameters {self.frozen_for_scans} "
         )
         if self.partially_unblinded or self.fully_unblinded:
@@ -1085,24 +1118,15 @@ class PrepareInferenceTaskCalls(
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
             cmd_dict["Limits_kl"] = cmd
-
-        # creating C2V scan
-        cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
-            f"--frozen-parameters {self.frozen_for_scans} "
-        )
-        if self.partially_unblinded or self.fully_unblinded:
-            cmd += "--unblinded True "
-        if not self.partially_unblinded:
-            print(base_cmd + cmd, "\n\n")
-            cmd_dict["Limits_c2v"] = cmd
+            cmd_dict["qqhh_Limits_kl"] = cmd + "--pois r_qqhh "
+            cmd_dict["Limits_c2v"] = cmd.replace(scan_kl, scan_c2v)
+            cmd_dict["qqhh_Limits_c2v"] = cmd.replace(scan_kl, scan_c2v) + "--pois r_qqhh "
 
         cmd = (
             f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
             f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
             f"--datacard-names 1b,2b,Boosted,Combined "
-            f"--xsec fb --y-log --scan-parameters C2V,-4,6,21 --UpperLimits-workflow htcondor "
+            f"--xsec fb --y-log {scan_c2v} --UpperLimits-workflow htcondor "
             f"--workers 4 "
             f"--frozen-parameters {self.frozen_for_scans} "
         )
@@ -1110,7 +1134,10 @@ class PrepareInferenceTaskCalls(
             cmd += "--unblinded True "
         if not self.partially_unblinded:
             print(base_cmd + cmd, "\n\n")
-            cmd_dict["MultiLimits_c2v"] = cmd
+            cmd_dict["multilimits_c2v"] = cmd
+            cmd_dict["qqhh_multilimits_c2v"] = cmd + "--pois r_qqhh "
+            cmd_dict["multilimits_kl"] = cmd.replace(scan_c2v, scan_kl)
+            cmd_dict["qqhh_multilimits_kl"] = cmd.replace(scan_c2v, scan_kl) + "--pois r_qqhh "
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
@@ -1119,18 +1146,23 @@ class PrepareInferenceTaskCalls(
         )
         cmd_dict["FitDiagnostics"] = cmd
 
-        # running FitDiagnostics for Pre+Postfit plots
+        # running Pulls and Impacts
+        # impacts_order = "--order-by-impacts"
+        impacts_order = ""
         cmd = (
             f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
-            "--order-by-impact --parameters-per-page 80 "
-            "--mc-stats "
+            f"--parameters-per-page 80 --mc-stats --retry-no-analytic "
+            f"{impacts_order} "
         )
         pulls_and_imacts_params = "workflow=htcondor,retries=1"
         custom_args = "--robustFit 1"
         if self.partially_unblinded:
             custom_args += " --rMin -350 --rMax 350"
         if self.partially_unblinded or self.fully_unblinded:
-            cmd += "--unblinded True "
+            cmd += "--unblinded True --show-best-fit True "
+        elif self.unblinded_step1:
+            cmd += "--unblinded True --show-best-fit False "
+            # cmd += "--unblinded True "  # do this only after all unblinding steps!
         retry_pulls_and_impacts_params = pulls_and_imacts_params + f",custom-args='{custom_args} --X-rtd MINIMIZER_no_analytic'"  # noqa: E501
         pulls_and_imacts_params += f",custom-args='{custom_args}'"
 
@@ -1140,42 +1172,76 @@ class PrepareInferenceTaskCalls(
         cmd_dict["PullsAndImpacts"] = cmd
         cmd_dict["PullsAndImpacts_retry"] = cmd.replace(pulls_and_imacts_params, retry_pulls_and_impacts_params)
 
+        # running GoodnessOfFit
+        freeze_signal = "--freezeParameters r,r_gghh,r_qqhh,kl,kt,CV,C2V --setParameters r=0.0,r_gghh=0.0,r_qqhh=0.0,kl=1.0,kt=1.0,CV=1.0,C2V=1.0"  # noqa: E501
+        if self.partially_unblinded or self.unblind_step1 or self.fully_unblinded:
+            # NOTE: at the moment, I always freeze the signal strength to 0 (snapshot and GOF)
+            snapshot_custom_args = " ".join([custom_args, freeze_signal])
+            gof_custom_args = freeze_signal
+            if self.partially_unblinded:
+                gof_custom_args += " --rMin -350 --rMax 350"
+            cmd = (
+                f"law run PlotMultipleGoodnessOfFits --version {identifier} --campaign {campaign} "
+                f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+                f"--datacard-names 1b,2b,Boosted,Combined "
+                f"--toys 1000 --toys-per-branch 20 --frequentist-toys --use-snapshot "
+            )
+            cmd += f"--Snapshot-{{unblinded,custom-args='{snapshot_custom_args}'}} "
+            cmd += f"--GoodnessOfFit-{{workflow=htcondor,custom-args='{gof_custom_args}'}} "
+            cmd += "--workers 4 "
+
+            cmd_dict["gof"] = cmd
+
+
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
-            f"law run PreAndPostFitShapes --version {identifier} --datacards {datacards} "
-            # f" --FitParameters-custom-args='{custom_args}' "
-            # f"--output-name {output_file}"
+            f"law run MergePreAndPostFitShapes --version {identifier} "
+            f"--datacards {datacards} "
+            f"--apply-fit-datacards {datacards.replace(',', ':')} "
+            "--PreAndPostFitShapes-workflow htcondor --workers 5 "
         )
-
-        if self.partially_unblinded or self.fully_unblinded:
+        if self.partially_unblinded:
+            cmd += f"--FitParameters-custom-args='{freeze_signal}' "
+        if self.partially_unblinded or self.unblind_step1 or self.fully_unblinded:
             cmd += "--unblinded True "
         print(base_cmd + cmd, "\n\n")
-        cmd_dict["PostFitShapes"] = cmd
+        cmd_dict["postfitshapes"] = cmd
         cmd += "--prefit"
-        cmd_dict["PreFitShapes"] = cmd
+        cmd_dict["prefitshapes"] = cmd
 
-        # dump the full command to one output file
-        full_cmd = "\n\n".join([
-            cmd for key, cmd in cmd_dict.items()
-            if not self.requested_keys or key in self.requested_keys
+        # dump all the commands to one output file
+        functions_cmd = "\n\n".join([
+            f"{key}() {{\n    {cmd_dict[key]}\n}}" for key in cmd_dict.keys() if key is not "export"
         ])
+        if missing_keys := (set(self.requested_keys) - set(cmd_dict.keys())):
+            logger.warning(f"Requested keys {missing_keys} are not available in the command dictionary.")
+            self.requested_keys = [key for key in self.requested_keys if key not in missing_keys]
         run_script = self.create_run_script(
             identifier=identifier,
             export_cmd=cmd_dict["export"],
-            full_cmd=full_cmd,
-            retry_impacts=cmd_dict["PullsAndImpacts_retry"])
+            functions_cmd=functions_cmd,
+        )
         output["Run"].dump(run_script, formatter="text")
 
         print("# combined task calls")
         print(f"bash {output['Run'].abspath}")
 
-    def create_run_script(self, identifier, export_cmd, full_cmd, retry_impacts):
-        fetch_func = lambda cmd: cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
+    def create_run_script(self, identifier, export_cmd, functions_cmd):
+        # TODO: I would like to rewrite the script such that each command of the cmd_dict is in one function
+        def fetch_func(cmd, multi_thread: bool = False):
+            cmd = cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
+            if multi_thread:
+                cmd = cmd.replace("\n", " & \n") + " & wait"
+            return cmd
+        newline_with_indent = '\n    '
+
         run_script = f"""#!/bin/bash
 # AUTO-GENERATED FILE! DO NOT EDIT!
 
 dry_run=${{dry_run:-false}}
 retry_impacts=${{retry_impacts:-false}}
+
+{export_cmd}
 
 mkdir -p $DHI_DATA/fetched_plots/{identifier} && cd $DHI_DATA/fetched_plots/{identifier}
 
@@ -1192,13 +1258,15 @@ run_and_fetch_cmd() {{
     fi
 }}
 
-{export_cmd}
+{fetch_func(functions_cmd)}
 
-if [[ "$retry_impacts" != "false" ]]; then
-    {fetch_func(retry_impacts)}
-    exit 0
+run_all() {{
+    {newline_with_indent.join([key for key in self.requested_keys])}
+}}
+
+# Only run if script is executed, not sourced
+if [[ "${{BASH_SOURCE[0]}}" == "${{0}}" ]]; then
+    run_all
 fi
-
-{fetch_func(full_cmd)}
 """
         return run_script
