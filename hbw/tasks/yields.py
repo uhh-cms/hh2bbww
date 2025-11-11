@@ -118,13 +118,6 @@ class CustomCreateYieldTable(
             for config_inst, datasets in zip(self.config_insts, self.datasets)
         }
 
-
-    # @property
-    # def categories_repr(self) -> str:
-    #     if len(self.categories) == 1:
-    #         return self.build_repr(self.categories[0])
-    #     return self.build_repr(self.categories, prepend_count=True)
-
     @classmethod
     def resolve_param_values(cls, params):
         # get initial categories

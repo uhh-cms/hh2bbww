@@ -617,7 +617,9 @@ vbfv3_mqq = vbfv1.derive("vbfv3_mqq", cls_dict={"input_features": input_features
 multiclassv3_tag = multiclassv1.derive("multiclassv3_tag", cls_dict={"input_features": input_features["vbftag"]})
 vbfv3_tag = vbfv1.derive("vbfv3_tag", cls_dict={"input_features": input_features["vbftag"]})
 
-multiclassv3_vbf_extended = multiclassv1.derive("multiclassv3_vbf_extended", cls_dict={"input_features": input_features["vbf_extended"]})
+multiclassv3_vbf_extended = multiclassv1.derive("multiclassv3_vbf_extended", cls_dict={
+    "input_features": input_features["vbf_extended"],
+})
 vbfv3_vbf_extended = vbfv1.derive("vbfv3_vbf_extended", cls_dict={"input_features": input_features["vbf_extended"]})
 
 # MET > 40

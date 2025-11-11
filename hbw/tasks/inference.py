@@ -1192,7 +1192,6 @@ class PrepareInferenceTaskCalls(
 
             cmd_dict["gof"] = cmd
 
-
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
             f"law run MergePreAndPostFitShapes --version {identifier} "
@@ -1211,7 +1210,7 @@ class PrepareInferenceTaskCalls(
 
         # dump all the commands to one output file
         functions_cmd = "\n\n".join([
-            f"{key}() {{\n    {cmd_dict[key]}\n}}" for key in cmd_dict.keys() if key is not "export"
+            f"{key}() {{\n    {cmd_dict[key]}\n}}" for key in cmd_dict.keys() if key != "export"
         ])
         if missing_keys := (set(self.requested_keys) - set(cmd_dict.keys())):
             logger.warning(f"Requested keys {missing_keys} are not available in the command dictionary.")
@@ -1233,7 +1232,7 @@ class PrepareInferenceTaskCalls(
             if multi_thread:
                 cmd = cmd.replace("\n", " & \n") + " & wait"
             return cmd
-        newline_with_indent = '\n    '
+        newline_with_indent = "\n    "
 
         run_script = f"""#!/bin/bash
 # AUTO-GENERATED FILE! DO NOT EDIT!
