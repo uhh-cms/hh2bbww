@@ -132,7 +132,7 @@ def set_config_defaults_and_groups(config_inst):
 
     # general_settings default needs to be tuple (or dict) to be resolved correctly
     # config_inst.x.default_general_settings = ("data_mc_plots_blind_conservative",)
-    config_inst.x.default_general_settings = ("data_mc_plots",)
+    config_inst.x.default_general_settings = ("data_mc_plots_not_blinded",)
     config_inst.x.default_custom_style_config = "default"
 
     #
@@ -641,7 +641,12 @@ def set_config_defaults_and_groups(config_inst):
         },
         "boosted_rebin": {
             var: {"rebin": 4}
-            for var in ml_inputs.v2
+            for var in (ml_inputs.v2 + [
+                "mli_full_vbf_deta",
+                "mli_full_vbf_mass",
+                "mli_ht_alljets",
+                "mli_maxdr_jj_alljets",  # likely bad modelled
+            ])
             if not var.startswith("mli_n_") and not var == "mli_mixed_channel"
         },
         "rebin_ml_scores100": {
@@ -706,6 +711,9 @@ def set_config_defaults_and_groups(config_inst):
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
+            "rax_cfg": {
+                "ylim": (0.30, 1.70),
+            },
         },
         "postfit_merged": {
             "gridspec_cfg": {
@@ -726,6 +734,9 @@ def set_config_defaults_and_groups(config_inst):
                 "xy": (0.03, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 24,
+            },
+            "rax_cfg": {
+                "ylim": (0.30, 1.70),
             },
         },
         "default": {
@@ -814,6 +825,10 @@ def set_config_defaults_and_groups(config_inst):
         "sr__resolved__2b__ml_sig_ggf": 6,
         "sr__resolved__1b__ml_sig_vbf": 8,
         "sr__resolved__2b__ml_sig_vbf": 6,
+        "sr__1b__ml_sig_ggf": 10,
+        "sr__2b__ml_sig_ggf": 6,
+        "sr__1b__ml_sig_vbf": 8,
+        "sr__2b__ml_sig_vbf": 6,
         "sr__boosted__ml_sig_ggf": 3,
         "sr__boosted__ml_sig_vbf": 3,
         "sr__boosted": 3,
