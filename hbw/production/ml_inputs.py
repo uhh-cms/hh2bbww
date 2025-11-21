@@ -6,6 +6,7 @@ Column production methods related to higher-level features.
 
 from __future__ import annotations
 
+from hbw import config
 import law
 import functools
 
@@ -19,7 +20,7 @@ from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
 from hbw.config.dl.variables import add_dl_ml_variables
 from columnflow.production.cms.dy import recoil_corrected_met
 
-from hbw.util import MET_COLUMN, IF_DY
+from hbw.util import MET_COLUMN, IF_DY, call_once_on_config
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -61,6 +62,54 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     if diff := mli_fields - self.config_inst.x.ml_input_columns:
         raise ValueError(f"Extra fields in events: {diff}")
 
+@producer(
+    uses={
+        # "*", "*.*",
+        prepare_objects, vbf_candidates,
+        "{Lightjet,ForwardJet,VBFJet}.{pt,eta,phi,mass}",
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+    },
+    produces={"vbfjet1_pt", "vbfjet2_pt", "vbfjet1_eta", "vbfjet2_eta"},
+)
+def vbf_jets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Simple Producer to extract pt and eta of the two VBF jets.
+    """
+    # add behavior and define new collections (e.g. Lepton)
+    events = self[prepare_objects](events, **kwargs)
+    events = self[vbf_candidates](events, jet_collection="VBFCandidateJet", **kwargs)
+
+    vbfjets = ak.pad_none(events.VBFJet, 2)
+    events = set_ak_column(events, "vbfjet1_pt", vbfjets[:, 0].pt)
+    events = set_ak_column(events, "vbfjet2_pt", vbfjets[:, 1].pt)
+    events = set_ak_column(events, "vbfjet1_eta", vbfjets[:, 0].eta)
+    events = set_ak_column(events, "vbfjet2_eta", vbfjets[:, 1].eta)
+    for col in ["vbfjet1_pt", "vbfjet2_pt", "vbfjet1_eta", "vbfjet2_eta"]:
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
+    return events
+
+
+@vbf_jets.init
+def vbf_jets_init(self: Producer) -> None:
+    @call_once_on_config
+    def add_vbf_variables(config: law.config.Config) -> None:
+        from hbw.config.styling import default_var_unit, default_var_title_format
+        for var in ["pt", "eta"]:
+            config.add_variable(
+                name=f"vbfjet1_{var}",
+                expression=f"vbfjet1_{var}",
+                unit=default_var_unit.get(var, "1"),
+                binning=(40, 0, 400) if var == "pt" else (48, -4.7, 4.7),
+                x_title=f"VBF Jet 1 {default_var_title_format.get(var, var)}",
+            )
+            config.add_variable(
+                name=f"vbfjet2_{var}",
+                expression=f"vbfjet2_{var}",
+                unit=default_var_unit.get(var, "1"),
+                binning=(40, 0, 400) if var == "pt" else (48, -4.7, 4.7),
+                x_title=f"VBF Jet 2 {default_var_title_format.get(var, var)}",
+            )
+    add_vbf_variables(self.config_inst)
 
 @producer(
     uses={
