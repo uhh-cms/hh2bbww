@@ -68,7 +68,7 @@ def add_config(
             raise ValueError("2023 campaign must have the 'postBPix' or 'preBPix' tag")
         corr_postfix = "postBPix" if campaign.has_tag("postBPix") else "preBPix"
 
-    implemented_years = [2017, 2022, 2023]
+    implemented_years = [2017, 2022, 2023, 2024]
     if campaign.x.year not in implemented_years:
         raise NotImplementedError(f"For now, only {', '.join(implemented_years)} years are implemented")
 
@@ -194,6 +194,11 @@ def add_config(
             cfg.x.luminosity = Number(9693, {
                 "lumi_13p6TeV_2023": 0.014j,
             })
+    elif year == 2024:
+        # taken lumi from above, subtracted era B, since not in cmsdb yet
+        cfg.x.luminosity = Number(108950, {
+            "lumi_13p6TeV_2024": 0.015j,  # No uncertainty so far
+        })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
 
@@ -210,6 +215,7 @@ def add_config(
 
     # JEC
     # https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC?rev=201
+    # for 2024: https://cms-jerc.web.cern.ch/Recommendations/#2024
     jerc_postfix = campaign.x.postfix
     if jerc_postfix not in ("", "APV", "EE", "BPix"):
         raise ValueError(f"Unknown JERC postfix '{jerc_postfix}'")
@@ -226,6 +232,9 @@ def add_config(
             era = "Cv1234" if campaign.has_tag("preBPix") else "D"
             jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
             jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
+        elif year == 2024:
+            jer_campaign = f"Summer23BPixPrompt23_RunD"  # ATM using 2023PostBPix JER, since no 2024 available (see recommendations)
+            jec_campaign = f"Summer{year2}Prompt{year2}"
         jet_type = "AK4PFPuppi"
         fatjet_type = "AK8PFPuppi"
 
@@ -257,6 +266,7 @@ def add_config(
         2018: "V5",
         2022: "V3",
         2023: "V2" if cfg.x.cpn_tag == "2023preBPix" else "V3",
+        2024: "V1",
     }[year]
 
     cfg.x.jec = DotDict.wrap({
@@ -288,13 +298,13 @@ def add_config(
     cfg.x.jer = DotDict.wrap({
         "Jet": {
             "campaign": jer_campaign,
-            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],  # 2024 using 2023 JER
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
         },
         "FatJet": {
             "campaign": jer_campaign,
-            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1"}[year],
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],
             # "jet_type": "fatjet_type",
             # JER info only for AK4 jets, stored in AK4 file
             "jet_type": fatjet_type,
@@ -374,37 +384,46 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL16postVFP?rev=8
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
     # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=17
-    cfg.x.btag_working_points = DotDict.wrap({
-        "deepjet": {
-            "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023preBPix": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023preBPix": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023preBPix": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        },
-        "deepcsv": {
-            "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        },
-        "particlenet": {
-            "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023preBPix": 0.0358, "2023postBPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        },
-        # taken from preliminary studies from HH(4b)
-        # source: https://indico.cern.ch/event/1372046/#2-run-3-particlenet-bb-sfs-sfb
-        # different results here (0.8, 0.9, 0.95): https://indico.cern.ch/event/1428223/#21-calibration-of-run-3-partic
-        "particlenet_xbb_vs_qcd": {
-            "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
-            "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        },
-        # "particlenet_hbb_vs_qcd": {
-        #     # Values copied from Xbb tagger, might need to be adjusted/studied later
-        #     "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        #     "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        #     "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
-        # },
-    })
+    if year == 2024:
+        cfg.x.btag_working_points = DotDict.wrap({
+            "upart": {
+                "loose": {"2024": 0.0246}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2024": 0.1272}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2024": 0.4648}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+        })
+    else:
+        cfg.x.btag_working_points = DotDict.wrap({
+            "deepjet": {
+                "loose": {"2016preVFP": 0.0508, "2016postVFP": 0.0480, "2017": 0.0532, "2018": 0.0490, "2022preEE": 0.0583, "2022postEE": 0.0614, "2023preBPix": 0.0479, "2023BPix": 0.048}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2016preVFP": 0.2598, "2016postVFP": 0.2489, "2017": 0.3040, "2018": 0.2783, "2022preEE": 0.3086, "2022postEE": 0.3196, "2023preBPix": 0.2431, "2023BPix": 0.2435}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2016preVFP": 0.6502, "2016postVFP": 0.6377, "2017": 0.7476, "2018": 0.7100, "2022preEE": 0.7183, "2022postEE": 0.73, "2023preBPix": 0.6553, "2023BPix": 0.6563}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+            "deepcsv": {
+                "loose": {"2016preVFP": 0.2027, "2016postVFP": 0.1918, "2017": 0.1355, "2018": 0.1208}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2016preVFP": 0.6001, "2016postVFP": 0.5847, "2017": 0.4506, "2018": 0.4168}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2016preVFP": 0.8819, "2016postVFP": 0.8767, "2017": 0.7738, "2018": 0.7665}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+            "particlenet": {
+                "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023preBPix": 0.0358, "2023postBPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+            # taken from preliminary studies from HH(4b)
+            # source: https://indico.cern.ch/event/1372046/#2-run-3-particlenet-bb-sfs-sfb
+            # different results here (0.8, 0.9, 0.95): https://indico.cern.ch/event/1428223/#21-calibration-of-run-3-partic
+            "particlenet_xbb_vs_qcd": {
+                "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+            # "particlenet_hbb_vs_qcd": {
+            #     # Values copied from Xbb tagger, might need to be adjusted/studied later
+            #     "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            #     "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            #     "tight": {"2022preEE": 0.975, "2022postEE": 0.975, "2023preBPix": 0.975, "2023postBPix": 0.975}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            # },
+        })
 
     # b-tag configuration. Potentially overwritten by the jet Selector.
     if cfg.x.run == 2:
@@ -416,13 +435,43 @@ def add_config(
             # corrector_kwargs=...,
         )
     elif cfg.x.run == 3:
-        cfg.x.b_tagger = "particlenet"
-        cfg.x.btag_sf = BTagSFConfig(
-            correction_set="particleNet_shape",
-            jec_sources=cfg.x.btag_sf_jec_sources,
-            discriminator="btagPNetB",
-            # corrector_kwargs=...,
-        )
+        if year == 2024:
+            cfg.x.b_tagger = "upart"
+            # TODO: not sure which and how the SF are read out and what keys should be used.
+            cfg.x.btag_sf = BTagSFConfig(
+                correction_set="UParTAK4_kinfit",
+                jec_sources=cfg.x.btag_sf_jec_sources,
+                discriminator="btagUParTAK4B",
+                systs={
+                    "fsrdef": "fsrdef",
+                    "hdamp": "hdamp",
+                    "isrdef": "isrdef",
+                    "jer": "jer",
+                    "jes": "jes",
+                    "mass": "mass",
+                    "statistic": "statistic",
+                    "tune": "tune",
+                },
+                corrector_kwargs={"working_point": "M", "flavor": 5},
+            )
+        else:
+            cfg.x.b_tagger = "particlenet"
+            cfg.x.btag_sf = BTagSFConfig(
+                correction_set="particleNet_shape",
+                jec_sources=cfg.x.btag_sf_jec_sources,
+                discriminator="btagPNetB",
+                systs={
+                    "hf": "hf",
+                    "lf": "lf",
+                    "hfstats1": "hfstats1",
+                    "hfstats2": "hfstats2",
+                    "lfstats1": "lfstats1",
+                    "lfstats2": "lfstats2",
+                    "cferr1": "cferr1",
+                    "cferr2": "cferr2",
+                },
+                # corrector_kwargs=...,
+            )
 
     cfg.x.btag_column = cfg.x.btag_sf.discriminator
     cfg.x.btag_wp = "medium"
@@ -435,9 +484,11 @@ def add_config(
     cfg.x.hbb_btag_wp_score = 0.92
     if cfg.x.hbb_btag_wp_score == 0.0:
         raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
-    cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
-    if cfg.x.xbb_btag_wp_score == 0.0:
-        raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
+    # TODO: xbb upart batg WPO and access not sure how this is done etc, i think it is just a differnet column from the uParT tagger
+    if not year == 2024:
+        cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
+        if cfg.x.xbb_btag_wp_score == 0.0:
+            raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
 
     # met configuration
     cfg.x.met_name = {
@@ -504,14 +555,22 @@ def add_config(
     ################################################################################################
 
     # electron calibrations
-    cfg.x.ess = EGammaCorrectionConfig(
-        smear_syst_correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
-        scale_correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
-        # scale_correction_set="Scale",
-        # smear_syst_correction_set="SmearAndSyst",
-        scale_compound=True,
-        systs=["scale_down", "scale_up", "smear_down", "smear_up"],
-    )
+    if year != 2024:
+        cfg.x.ess = EGammaCorrectionConfig(
+            smear_syst_correction_set=f"EGMSmearAndSyst_ElePTsplit_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
+            scale_correction_set=f"EGMScale_Compound_Ele_{cfg.x.cpn_tag}".replace("BPix", "BPIX"),
+            # scale_correction_set="Scale",
+            # smear_syst_correction_set="SmearAndSyst",
+            scale_compound=True,
+            systs=["scale_down", "scale_up", "smear_down", "smear_up"],
+        )
+    else:
+        cfg.x.ess = EGammaCorrectionConfig(
+            scale_correction_set="Scale",
+            smear_syst_correction_set="SmearAndSyst",
+            scale_compound=True,
+            systs=["scale_down", "scale_up", "smear_down", "smear_up"],
+        )
 
     if cfg.x.run == 2:
         # names of electron correction sets and working points
@@ -532,17 +591,20 @@ def add_config(
             "2022preEE": "2022Re-recoBCD",
             "2023postBPix": "2023PromptD",
             "2023preBPix": "2023PromptC",
+            "2024": "2024Prompt",
         }[cfg.x.cpn_tag]
 
         cfg.x.electron_sf_names = ElectronSFConfig(
             correction="Electron-ID-SF",
-            campaign=electron_sf_campaign,
+            # campaign=electron_sf_campaign,
+            campaign="2024",  # TODO: this is very dirty should only be for 2024 2024 otherwise read out of the sf:camapign but it is different for e_sf and e_sf_reco
             working_point="Tight",
         )
 
         cfg.x.electron_reco_sf_names = ElectronSFConfig(
             correction="Electron-ID-SF",
-            campaign=electron_sf_campaign,
+            # campaign=electron_sf_campaign,
+            campaign="2024",
             # working_point=ele_reco_wp_func,
             working_point={
                 "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
@@ -874,11 +936,15 @@ def add_config(
         add_external("pu_sf", (cat_info.get_file("lum", "puWeights.json.gz"), "v1"))
     # jet energy correction
     add_external("jet_jerc", (cat_info.get_file("jme", "jet_jerc.json.gz"), "v1"))
-    add_external("fat_jet_jerc", (cat_info.get_file("jme", "fatJet_jerc.json.gz"), "v1"))
+    if year != 2024:  # NOTE: For now not available for 2024
+        add_external("fat_jet_jerc", (cat_info.get_file("jme", "fatJet_jerc.json.gz"), "v1")) 
     # jet veto map
     add_external("jet_veto_map", (cat_info.get_file("jme", "jetvetomaps.json.gz"), "v1"))
     # btag scale factor
-    add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
+    if year != 2024:
+        add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
+    else:
+        add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
 
     # updated jet id
     add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))
@@ -897,7 +963,10 @@ def add_config(
     if year != 2024:  # TODO: 2024: not yet available
         add_external("met_phi_corr", (cat_info.get_file("jme", f"met_xyCorrections_{year}_{year}{campaign.x.postfix}.json.gz"), "v1"))  # noqa: E501
     # electron scale factors
-    add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
+    if year != 2024:  # NOTE: Taken from Johanna that they are called different for 2024
+        add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
+    else:
+        add_external("electron_sf", (cat_info.get_file("egm", "electronID.json.gz"), "v1"))
     # electron energy correction and smearing
     add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v2"))
 
@@ -966,7 +1035,7 @@ def add_config(
         }
 
     # external files with more complex year dependence
-    if year not in (2017, 2022, 2023):
+    if year not in (2017, 2022, 2023, 2024):
         raise NotImplementedError("TODO: generalize external files to different years than 2017")
 
     if year == 2017:
@@ -988,11 +1057,13 @@ def add_config(
             "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
         })
     elif year == 2024:
+        # No lumi for now using this as provided by Johanna
+        # 2024: ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json", "v1"),
         add_external("lumi", {
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             # TODO: should be updated at the end of 2024 campaign
-            "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_381417_Golden.json", "v1"),  # noqa
-            "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
+            "golden": ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json", "v1"),  # noqa
+            "normtag": ("/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json", "v1"),
         })
     else:
         raise NotImplementedError(f"No lumi and pu files provided for year {year}")
@@ -1028,7 +1099,7 @@ def add_config(
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
         # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
-        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
+        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,btagUParTAK4B,hadronFlavour,qgl}",
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
@@ -1100,9 +1171,10 @@ def add_config(
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
-    p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
-    # if repr(p1) != repr(p2):
-    if p1 != p2:
-        raise Exception(f"Processes are not the same: {repr(p1)} != {repr(p2)}")
+    if cfg.x.run == 3 and not year == 2024:
+        p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
+        # if repr(p1) != repr(p2):
+        if p1 != p2:
+            raise Exception(f"Processes are not the same: {repr(p1)} != {repr(p2)}")
 
     return cfg

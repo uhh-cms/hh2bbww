@@ -69,7 +69,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         "FatJet.{msoftdrop,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}",
         "{Electron,Muon,Jet,Bjet,Lightjet,ForwardJet,VBFJet,FatJet}.{pt,eta,phi,mass}",
         "{Electron,Muon}.{pdgId}",
-        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+        MET_COLUMN("pt"), MET_COLUMN("phi"), # IF_DY("RecoilCorrMET.{pt,phi}"),
     },
     # produced columns set in the init function
 )
@@ -80,8 +80,8 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
     met_name = self.config_inst.x.met_name
-    if self.dataset_inst.has_tag("is_dy"):
-        met_name = "RecoilCorrMET"
+    # if self.dataset_inst.has_tag("is_dy"):
+    #     met_name = "RecoilCorrMET"
 
     # vbf with and without forward region
     # NOTE: we need to clear the cache since we have to run the same Producer twice
@@ -264,8 +264,8 @@ def sl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Producer used for ML Training in the SL analysis.
     """
     met_name = self.config_inst.x.met_name
-    if self.dataset_inst.has_tag("is_dy"):
-        met_name = "RecoilCorrMET"
+    # if self.dataset_inst.has_tag("is_dy"):
+    #     met_name = "RecoilCorrMET"
 
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
@@ -365,8 +365,8 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     Producer used for ML Training in the DL analysis.
     """
     met_name = self.config_inst.x.met_name
-    if self.dataset_inst.has_tag("is_dy"):
-        met_name = "RecoilCorrMET"
+    # if self.dataset_inst.has_tag("is_dy"):
+    #     met_name = "RecoilCorrMET"
 
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
@@ -439,7 +439,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
 
 
 @producer(
-    uses={MET_COLUMN("{pt,phi}"), IF_DY(recoil_corrected_met)},
+    uses={MET_COLUMN("{pt,phi}")},  #  , IF_DY(recoil_corrected_met)},
     produces={"met_pt_corr", "met_phi_corr"},
 )
 def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:

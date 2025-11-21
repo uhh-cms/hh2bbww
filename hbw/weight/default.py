@@ -187,7 +187,7 @@ def base_init(self: HistProducer) -> None:
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
         # remove dependency towards vjets weights
-        self.local_weight_columns.pop("dy_correction_weight", None)
+        # self.local_weight_columns.pop("dy_correction_weight", None)
         self.local_weight_columns.pop("dy_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
@@ -254,12 +254,12 @@ btag_uncs = [
 
 default_correction_weights = {
     # "dummy_weight": ["dummy_{cpn_tag}"],
-    "normalized_pu_weight": ["minbias_xs"],
+    # "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "electron_reco_weight": ["e_reco_sf"],
-    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    # "electron_reco_weight": ["e_reco_sf"],
+    # "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
@@ -271,7 +271,7 @@ default_correction_weights = {
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
-    "dy_correction_weight": [],
+    # "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
@@ -281,8 +281,8 @@ unstitched_weight_columns = {
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
-weight_columns_execpt_btag = default_weight_columns.copy()
-weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
+# weight_columns_execpt_btag = default_weight_columns.copy()
+# weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
@@ -441,50 +441,50 @@ base.derive("stitched_leptonsf_btag_pu_trigger_ttdycorr", cls_dict={"weight_colu
     "top_pt_theory_weight": ["top_pt"],
 }})
 
-no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
-base.derive("btag_not_normalized", cls_dict={"weight_columns": {
-    **weight_columns_execpt_btag,
-    "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
-    **weight_columns_execpt_btag,
-    "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("btag_ht_njet_normalized", cls_dict={"weight_columns": {
-    **weight_columns_execpt_btag,
-    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("btag_ht_njet_nhf_normalized", cls_dict={"weight_columns": {
-    **weight_columns_execpt_btag,
-    "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
-    **weight_columns_execpt_btag,
-    "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
+# no_btag_weight = base.derive("no_btag_weight", cls_dict={"weight_columns": weight_columns_execpt_btag})
+# base.derive("btag_not_normalized", cls_dict={"weight_columns": {
+#     **weight_columns_execpt_btag,
+#     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("btag_njet_normalized", cls_dict={"weight_columns": {
+#     **weight_columns_execpt_btag,
+#     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("btag_ht_njet_normalized", cls_dict={"weight_columns": {
+#     **weight_columns_execpt_btag,
+#     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("btag_ht_njet_nhf_normalized", cls_dict={"weight_columns": {
+#     **weight_columns_execpt_btag,
+#     "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("btag_ht_normalized", cls_dict={"weight_columns": {
+#     **weight_columns_execpt_btag,
+#     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
 
 # weight sets for closure tests
-base.derive("norm_and_btag", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_njet", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_ht_njet", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
+# base.derive("norm_and_btag", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_njet", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_ht_njet", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
 
 
 from hbw.categorization.categories import mask_fn_highpt
 
-no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
+# no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 
 from hbw.categorization.categories import mask_fn_met70, mask_fn_dyvr
 

@@ -84,7 +84,7 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
-        jet_veto_map,
+        # jet_veto_map, moved to post selection
         hbw_met_filters, json_filter, "PV.npvsGood",
         hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
@@ -151,13 +151,13 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
-    # apply jet veto map
-    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
-    results += jet_veto_results
+    # apply jet veto map --> moved to post selection
+    # events, jet_veto_results = self[jet_veto_map](events, **kwargs) 
+    # results += jet_veto_results
 
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        results.steps.jet_veto_map &
+        # results.steps.jet_veto_map & moved to post selection
         results.steps.good_vertex &
         results.steps.met_filter &
         results.steps.json
@@ -222,7 +222,7 @@ def get_weights_and_no_sel_mask(
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
-        hbw_selection_hists,
+        hbw_selection_hists, jet_veto_map,  # NOTE: moved from pre selection
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
@@ -246,6 +246,10 @@ def post_selection(
     events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
     events = self[hbw_increment_stats](events, results, stats, **kwargs)
     events = self[hbw_selection_hists](events, results, hists, **kwargs)
+
+    # NOTE: Moved here from pre selection because no jetid is available but custom produced in CF
+    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
+    results += jet_veto_results
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):

@@ -361,8 +361,10 @@ ak4uncs = ak4.derive("ak4uncs", cls_dict=dict(
 
 
 @calibrator(
-    uses={deterministic_seeds_calibrator, ak4, ak8, ele},
-    produces={deterministic_seeds_calibrator, ak4, ak8, ele},
+    # uses={deterministic_seeds_calibrator, ak4, ak8, ele},  # NOTE:  For now no fatjet calibrations avaiblabe in 2024
+    uses={deterministic_seeds_calibrator, ak4, ele},
+    # produces={deterministic_seeds_calibrator, ak4, ak8, ele},  # NOTE: For now no fatjet calibrations avaiblabe in 2024
+    produces={deterministic_seeds_calibrator, ak4, ele},
     version=0,
     skip_req_seeds=True,
 )
@@ -379,7 +381,8 @@ def combined(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[ak4](events, **kwargs)
 
     # apply the ak8 calibrator
-    events = self[ak8](events, **kwargs)
+    if self.config_inst.campaign.x.year != 2024:  # NOTE: For now no fatjet calibrations avaiblabe in 2024
+        events = self[ak8](events, **kwargs)
 
     # apply the electron calibrator
     events = self[ele](events, **kwargs)

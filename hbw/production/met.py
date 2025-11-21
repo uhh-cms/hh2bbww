@@ -21,11 +21,11 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
 @producer(
     uses={
         met_phi,
-        IF_DY(recoil_corrected_met),
+        # IF_DY(recoil_corrected_met),
     },
     produces={
         met_phi,
-        IF_DY(recoil_corrected_met),
+        # IF_DY(recoil_corrected_met),
         "RecoilCorrMET.{pt,phi}",
     },
     version=0,

@@ -41,6 +41,7 @@ valid_campaigns = {
     "run3_2023_postBPix_nano_v13",
     "run3_2023_postBPix_nano_uhh_v12",
     "run3_2023_postBPix_nano_uhh_v14",
+    "run3_2024_nano_v15",
 }
 
 cpn_module = lambda campaign: f"cmsdb.campaigns.{campaign}"
@@ -95,6 +96,10 @@ campaign_map = {
     },
     "c22postv14": {
         "run3_2022_postEE_nano_uhh_v14": {},
+    },
+    # Nano V15 
+    "c24v15": {
+        "run3_2024_nano_v15": {},
     },
 }
 

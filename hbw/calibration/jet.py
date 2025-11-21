@@ -96,11 +96,13 @@ def bjet_regression_init(self: Calibrator):
     self.b_score_column = {
         "particlenet": "btagPNetB",
         "deepjet": "btagDeepFlavB",
+        # "upart": "btagUParTAK4B",
     }[self.b_tagger]
 
     self.b_reg_column = {
         "particlenet": "PNetRegPtRawCorr",
         "deepjet": "bRegCorr",
+        # "upart": "btagUParTAK4B",
     }[self.b_tagger]
 
     self.btag_wp = self.config_inst.x("btag_wp", "medium")

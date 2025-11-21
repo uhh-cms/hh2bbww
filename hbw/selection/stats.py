@@ -99,8 +99,8 @@ def hbw_increment_stats(
 
     if self.dataset_inst.is_mc:
         weight_map["num_negative_weights"] = (events.mc_weight < 0)
-        weight_map["num_pu_0"] = (events.pu_weight == 0)
-        weight_map["num_pu_100"] = (events.pu_weight >= 100)
+        # weight_map["num_pu_0"] = (events.pu_weight == 0) # NOTE: no pu weight in 2024 atm
+        # weight_map["num_pu_100"] = (events.pu_weight >= 100) # NOTE: no pu weight in 2024 atm
 
         raw_puppi_met = events[self.config_inst.x.raw_met_name]
         weight_map["num_raw_met_isinf"] = (~np.isfinite(raw_puppi_met.pt))

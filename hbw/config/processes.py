@@ -90,6 +90,7 @@ def configure_hbw_processes(config: od.Config):
         "2022postEE": (color_palette["yellow"], 2),
         "2023preBPix": (color_palette["red"], 3),
         "2023postBPix": (color_palette["grey"], 4),
+        "2024": (color_palette["black"], 5),
     }[config.x.cpn_tag]
 
     config.x.procs.n.background.add_process(

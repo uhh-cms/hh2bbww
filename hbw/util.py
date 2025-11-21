@@ -630,6 +630,15 @@ def IF_NANO_V14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any 
     version = int(cpn_name.split("v")[-1])
     return self.get() if version == 14 else None
 
+@deferred_column
+def IF_NANO_V15(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v14.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version == 15 else None
+
 
 @deferred_column
 def IF_NANO_geV13(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
@@ -639,6 +648,36 @@ def IF_NANO_geV13(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> An
     cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
     version = int(cpn_name.split("v")[-1])
     return self.get() if version >= 13 else None
+
+
+@deferred_column
+def IF_NANO_geV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v13 or higher.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version >= 14 else None
+
+
+@deferred_column
+def IF_NANO_leqV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v13 or higher.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version <= 14 else None
+
+
+@deferred_column
+def IF_NOT_2024(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign is 2024 or not
+    """
+    #__import__("IPython").embed()
+    #cpn_year = func.config_inst.campaign.x.year
+    return self.get() if func.config_inst.campaign.x.year != 2024 else None
 
 
 @deferred_column

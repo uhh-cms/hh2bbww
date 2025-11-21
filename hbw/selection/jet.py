@@ -18,7 +18,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.cms.jet import jet_id, fatjet_id
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13, IF_NANO_V14
+from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13, IF_NANO_V14, IF_NANO_geV14
 from hbw.production.jets import jetId_v12, fatjetId_v12
 
 np = maybe_import("numpy")
@@ -31,7 +31,7 @@ logger = law.logger.get_logger(__name__)
     uses={
         IF_NANO_V12(jetId_v12),
         IF_NANO_geV13(jet_id),
-        "Jet.{pt,eta,phi,mass,jetId}", optional("Jet.puId"),
+        "Jet.{pt,eta,phi,mass}", optional("Jet.puId"), optional("Jet.jetid"),
     },
     exposed=True,
 )
@@ -282,11 +282,12 @@ def vbf_jet_selection_init(self: Selector) -> None:
         # so the fatjetId_v12 is not useable and we cannot recalculate the jetId in NanoV12.
         # For consistency, we also do not recalculate the fatjetId in NanoV13.
         # IF_NANO_V12(fatjetId_v12),
-        IF_NANO_V14(fatjet_id),
+        IF_NANO_geV14(fatjet_id),
         jet_selection,
         "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",
-        "Jet.{jetId}",
-        "FatJet.{msoftdrop,jetId,subJetIdx1,subJetIdx2,tau1,tau2}",
+        optional("Jet.{jetId}"),
+        optional("FatJet.{jetId}"),
+        "FatJet.{msoftdrop,subJetIdx1,subJetIdx2,tau1,tau2}",
     },
     exposed=False,
     single_lepton_selector=True,

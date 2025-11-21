@@ -12,7 +12,8 @@ def default_calibrator(container):
     if isinstance(default_calibrators, str):
         return default_calibrators.split(",")
     else:
-        return ["ak4", "ak8", "ele"]
+        # return ["ak4", "ak8", "ele"] NOTE: commented out atm, since there are no fatjet jercs atm for 2024
+        return ["ak4", "ele"]
 
 
 def default_selector(container):
@@ -204,6 +205,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
@@ -283,7 +285,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets

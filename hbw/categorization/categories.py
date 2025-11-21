@@ -401,15 +401,15 @@ def mask_fn_dyvr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
 
 @categorizer(
     uses={
-        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+        MET_COLUMN("pt"), MET_COLUMN("phi"),  # IF_DY("RecoilCorrMET.{pt,phi}"),
     },
     met_req=40,
 )
 def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    if self.dataset_inst.has_tag("is_dy"):
-        mask = events.RecoilCorrMET.pt >= self.met_req
-    else:
-        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+    # if self.dataset_inst.has_tag("is_dy"):
+    #     mask = events.RecoilCorrMET.pt >= self.met_req
+    # else:
+    mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
     return events, mask
 
 

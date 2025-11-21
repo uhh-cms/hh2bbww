@@ -117,14 +117,15 @@ run_merge_reduced_events() {
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     run_cmd law run cf.MergeReducedEventsWrapper \
-        --datasets "*" \
+        --datasets "dy_*m10to50*" \
         --configs "$configs" \
         --shifts "$shifts" \
         --cf.MergeReducedEvents-{retries=2,workflow=htcondor} \
-        --cf.ReduceEvents-pilot \
 	    --cf.BundleRepo-custom-checksum $checksum \
         --workers 123
 }
+
+# --cf.ReduceEvents-pilot \
 
 run_merge_selection_stats() {
     local configs="${1:-$default_configs}"
@@ -408,6 +409,33 @@ run_merge_shifted_histograms_htcondor() {
             --cf.MergeShiftedHistograms-variables "$variables" \
             --cf.MergeShiftedHistograms-ml-models "$models" \
             --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
+            --cf.BundleRepo-custom-checksum $checksum \
+            --workers 6
+        echo "Processes for config $config completed."
+    done
+}
+
+run_merge_histograms_htcondor() {
+    local configs="${1:-$default_configs}"
+    local shifts="${2:-$all_shift_sources}"
+    local variables="${4:-$ml_scores}"
+    local checksum=$(checksum)
+    local ensure_nominal=false
+    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
+
+
+    for config in ${configs//,/ }; do
+        # run nominal first to ensure it is done before the syst. shifts
+        if [[ "$ensure_nominal" != "false" ]]; then
+            run_merge_histograms_local "$config" "nominal" "$models" "$variables"
+        fi
+        echo "→ MergeHistograms: config=$config, variables=$variables"
+        run_cmd claw run cf.MergeHistogramsWrapper \
+            --configs "c24v15" \
+            --datasets "*" \
+            --cf.MergeHistograms-hist-producer met_geq40 \
+            --cf.MergeHistograms-variables "lepton1_pt" \
+            --cf.MergeHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
             --cf.BundleRepo-custom-checksum $checksum \
             --workers 6
         echo "Processes for config $config completed."
@@ -845,6 +873,7 @@ run_all() {
     run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
+    run_merge_reduced_events "c24v15" "nominal"
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_selection_stats "$all_configs" "nominal"
 
@@ -855,6 +884,7 @@ run_all() {
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
 
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "$ml_inputs,$all_ml_scores,mli_full_vbf_tag,mli_full_vbf_mass"
+    # run_merge_histograms_htcondor "c24v15" "lepton1_pt"
 
     # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"

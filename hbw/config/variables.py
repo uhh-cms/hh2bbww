@@ -521,7 +521,7 @@ def add_variables(config: od.Config) -> None:
             x_title="Number of deepjets (tight WP)",
             discrete_x=True,
         )
-    if config.x.run == 3:
+    if config.x.run == 3 and not config.campaign.x.year == 2024:
         particlenet_wps = config.x.btag_working_points.particlenet
         config.add_variable(
             name="n_particlenet_loose",
@@ -825,16 +825,17 @@ def add_variables(config: od.Config) -> None:
                     x_title=obj + r" %i ParticleNet score" % i,
                 )
 
-    xbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_xbb_vs_qcd.medium
-    config.add_variable(
-        name="n_fatjet_xbb_medium",
-        expression=lambda events: ak.sum(events.FatBjet.particleNet_XbbVsQCD > xbb_btag_wp_score_medium, axis=1),
-        null_value=EMPTY_FLOAT,
-        binning=(5, -0.5, 4.5),
-        x_title="Number of FatJets (ParticleNet XbbVsQCD medium WP)",
-        aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
-        discrete_x=True,
-    )
+    if config.x.run == 3 and not config.campaign.x.year == 2024:
+        xbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_xbb_vs_qcd.medium
+        config.add_variable(
+            name="n_fatjet_xbb_medium",
+            expression=lambda events: ak.sum(events.FatBjet.particleNet_XbbVsQCD > xbb_btag_wp_score_medium, axis=1),
+            null_value=EMPTY_FLOAT,
+            binning=(5, -0.5, 4.5),
+            x_title="Number of FatJets (ParticleNet XbbVsQCD medium WP)",
+            aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
+            discrete_x=True,
+        )
     # hbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_hbb_vs_qcd.medium
     # config.add_variable(
     #     name="n_fatjet_hbb_medium",

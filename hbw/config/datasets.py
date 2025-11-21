@@ -34,7 +34,10 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     elif config.campaign.x.run == 3 and nano_version == 14:
         config.x.data_streams = ["mu", "e", "muoneg"]
     elif config.campaign.x.run == 3:
-        config.x.data_streams = ["mu", "egamma", "muoneg"]
+        if config.campaign.x.year == 2024:
+            config.x.data_streams = ["mu", "e", "muoneg"]
+        else:
+            config.x.data_streams = ["mu", "egamma", "muoneg"]
 
     data_eras = {
         "2017": list("cdef"),
@@ -42,6 +45,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2022postEE": list("efg"),
         "2023preBPix": ["c1", "c2", "c3", "c4"],
         "2023postBPix": ["d1", "d2"],
+        "2024": list("cdefghi"),
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -126,14 +130,31 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_ht2500toinf_madgraph",
             ]),
             *config.x.if_era(run=3, values=[
-                # NLO samples
-                "dy_m10to50_amcatnlo",
-                "dy_m50toinf_amcatnlo",
-                # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
-                "dy_m50toinf_0j_amcatnlo",
-                "dy_m50toinf_1j_amcatnlo",
-                "dy_m50toinf_2j_amcatnlo",
+                # NLO samples NOTE: In 2024 e only have them split into pt, therefore I am using those
+                # "dy_m50toinf_1j_pt100to200_amcatnlo",
+                # "dy_m50toinf_1j_pt200to400_amcatnlo",
+                # "dy_m50toinf_1j_pt400to600_amcatnlo",
+                # "dy_m50toinf_1j_pt40to100_amcatnlo",
+                # "dy_m50toinf_1j_pt600toinf_amcatnlo",
+                # "dy_m50toinf_2j_pt100to200_amcatnlo",
+                # "dy_m50toinf_2j_pt200to400_amcatnlo",
+                # "dy_m50toinf_2j_pt400to600_amcatnlo",
+                # "dy_m50toinf_2j_pt40to100_amcatnlo",
+                # "dy_m50toinf_2j_pt600toinf_amcatnlo",
+                "dy_ee_m50toinf_amcatnlo",
+                "dy_mumu_m50toinf_amcatnlo",
+                "dy_tautau_m50toinf_amcatnlo",
+                "dy_ee_m10to50_powheg",
+                "dy_mumu_m10to50_powheg",
+                "dy_tautau_m10to50_powheg",
+                # "dy_m10to50_amcatnlo",
+                # "dy_m50toinf_amcatnlo",
+                # # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
+                # "dy_m50toinf_0j_amcatnlo",
+                # "dy_m50toinf_1j_amcatnlo",
+                # "dy_m50toinf_2j_amcatnlo",
             ]),
+            # TODO: if era change also to 
         ],
         "w_lnu": [
             *config.x.if_era(run=2, values=[  # TODO: update to amcatnlo aswell
@@ -147,24 +168,47 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "w_lnu_ht2500toinf_madgraph",
             ]),
             *config.x.if_era(run=3, values=[
-                "w_lnu_amcatnlo",
-                "w_lnu_0j_amcatnlo",
-                "w_lnu_1j_amcatnlo",
-                "w_lnu_2j_amcatnlo",
+                # "w_lnu_amcatnlo",
+                # "w_lnu_0j_amcatnlo",
+                # "w_lnu_1j_amcatnlo",
+                # "w_lnu_2j_amcatnlo",
+                # "w_lnu_1j_pt100to200_amcatnlo",
+                # "w_lnu_1j_pt200to400_amcatnlo",
+                # "w_lnu_1j_pt400to600_amcatnlo",
+                # "w_lnu_1j_pt40to100_amcatnlo",
+                # "w_lnu_1j_pt600toinf_amcatnlo",
+                # "w_lnu_2j_pt100to200_amcatnlo",
+                # "w_lnu_2j_pt200to400_amcatnlo",
+                # "w_lnu_2j_pt400to600_amcatnlo",
+                # "w_lnu_2j_pt40to100_amcatnlo",
+                # "w_lnu_2j_pt600toinf_amcatnlo",
+                "w_lnu_1j_madgraph",
+                "w_lnu_2j_madgraph",
+                "w_lnu_3j_madgraph",
+                "w_lnu_4j_madgraph",
             ]),
         ],
         "vv": [
             *config.x.if_era(run=3, values=[
-                "ww_2l2nu_powheg",
-                "ww_lnu2q_powheg",
-                "wz_3lnu_powheg",
-                "wz_2l2q_powheg",
-                "wz_lnu2q_powheg",
-                "zz_2l2nu_powheg",
-                "zz_2l2q_powheg",
+                # "ww_2l2nu_powheg",
+                # "ww_lnu2q_powheg",
+                # "wz_3lnu_powheg",
+                # "wz_2l2q_powheg",
+                # "wz_lnu2q_powheg",
+                # "zz_2l2nu_powheg",
+                # "zz_2l2q_powheg",
                 # "ww_pythia",
                 # "wz_pythia",
                 # "zz_pythia",
+                "ww_sl_powheg",
+                "ww_dl_powheg",
+                "ww_fh_powheg",
+                "wz_wlnu_zll_powheg",
+                "wz_wqq_zll_powheg",
+                "wz_wlnu_zqq_powheg",
+                "zz_zll_zll_powheg",
+                "zz_zqq_zll_powheg",
+                "zz_zll_znunu_powheg",
             ]),
         ],
         "vvv": [

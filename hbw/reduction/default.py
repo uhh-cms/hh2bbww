@@ -34,7 +34,7 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        # IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
         gen_hbv_decay,
     },
     produces={
@@ -42,7 +42,7 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        # IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
         gen_hbv_decay,
     },
 )

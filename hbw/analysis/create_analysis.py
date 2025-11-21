@@ -68,7 +68,7 @@ def create_hbw_analysis(
     # config groups for conveniently looping over certain configs
     # (used in wrapper_factory)
     analysis_inst.set_aux("config_groups", {  # NOTE: not resolved by ConfigTask
-        "run3": ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+        "run3": ["c22prev14", "c22postv14", "c23prev14", "c23postv14", "c24v15"],
     })
 
     # used by our MLModel (also set in config_inst, so be careful)
@@ -179,6 +179,11 @@ def create_hbw_analysis(
     add_lazy_config(
         "c23postv14",
         2311,
+    )
+    # 2024
+    add_lazy_config(
+        "c24v15",
+        2400,
     )
 
     # add_lazy_config(
