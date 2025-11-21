@@ -98,7 +98,7 @@ def get_hists_from_merged_multidimfit(tfile):
         channel = fit_and_channel.replace(f"_{fit}", "")
         process = process.split(";")[0]
 
-        if "Total" in process:
+        if "Total" in process and process != "TotalBkg":
             continue
         else:
             h_in = h_in.to_hist()
@@ -168,6 +168,7 @@ def plot_postfit_shapes(
     lumi: float | None = None,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
+    total_bkg: hist.Hist | None = None,
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
@@ -193,6 +194,14 @@ def plot_postfit_shapes(
         shift_insts=shift_insts,
         **kwargs,
     )
+    if total_bkg:
+        if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
+            raise ValueError(
+                "The provided total_bkg histogram (used for variances) "
+                "does not match the sum of the background histograms.",
+            )
+        plot_config["mc_stat_unc"]["hist"] = total_bkg
+        plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
     try:
         plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
         plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
@@ -484,6 +493,7 @@ class PlotPostfitShapes(
                     logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
 
             # Create Histograms
+            total_bkg = h_in.pop("TotalBkg", None)
             hists = defaultdict(OrderedDict)
             for proc, sub_procs in processes_map.items():
                 plot_proc = proc.copy()  # NOTE: copy produced, so actual process is not modified by process settings
@@ -523,6 +533,7 @@ class PlotPostfitShapes(
                 category_inst=config_category,
                 variable_insts=variable_inst,
                 shift_insts=self.get_shift_insts(),
+                total_bkg=total_bkg,
                 **plot_parameters,
             )
 
