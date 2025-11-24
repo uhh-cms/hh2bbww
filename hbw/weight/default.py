@@ -357,7 +357,7 @@ met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
     "categorizer_cls": mask_fn_met_geq40,
 })
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
-    "pre_label": "\n".join(["After DY correction", "$E_{T}^{miss} \geq 40$ GeV"]),
+    "pre_label": "\n".join(["After DY correction", r"$E_{T}^{miss} \geq 40$ GeV"]),
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })

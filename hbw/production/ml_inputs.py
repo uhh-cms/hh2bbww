@@ -6,7 +6,6 @@ Column production methods related to higher-level features.
 
 from __future__ import annotations
 
-from hbw import config
 import law
 import functools
 
@@ -62,6 +61,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     if diff := mli_fields - self.config_inst.x.ml_input_columns:
         raise ValueError(f"Extra fields in events: {diff}")
 
+
 @producer(
     uses={
         # "*", "*.*",
@@ -110,6 +110,7 @@ def vbf_jets_init(self: Producer) -> None:
                 x_title=f"VBF Jet 2 {default_var_title_format.get(var, var)}",
             )
     add_vbf_variables(self.config_inst)
+
 
 @producer(
     uses={

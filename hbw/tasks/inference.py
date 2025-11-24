@@ -1178,7 +1178,6 @@ class PrepareInferenceTaskCalls(
             print(base_cmd + cmd_poi, "\n\n")
             cmd_dict[f"likelihood_{poi.lower()}"] = cmd_poi
 
-
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
             f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
@@ -1214,7 +1213,6 @@ class PrepareInferenceTaskCalls(
         cmd_dict["impacts"] = cmd
         cmd_dict["impacts_retry"] = cmd.replace(pulls_and_impacts_params, retry_pulls_and_impacts_params)
 
-
         # MultiplePullsAndImpacts
         cmd = (
             f"law run PlotMultiplePullsAndImpacts --version {identifier} --campaign {campaign} "
@@ -1228,7 +1226,6 @@ class PrepareInferenceTaskCalls(
         cmd += f"--PullsAndImpacts-{{{pulls_and_impacts_params}}} "
         cmd_dict["multiimpacts"] = cmd
         cmd_dict["multiimpacts_retry"] = cmd.replace(pulls_and_impacts_params, retry_pulls_and_impacts_params)
-
 
         # running GoodnessOfFit
         # freeze_signal = "--freezeParameters r,r_gghh,r_qqhh,kl,kt,CV,C2V --setParameters r=0.0,r_gghh=0.0,r_qqhh=0.0,kl=1.0,kt=1.0,CV=1.0,C2V=1.0"  # noqa: E501
@@ -1249,7 +1246,7 @@ class PrepareInferenceTaskCalls(
                 cmd += f"--GoodnessOfFit-{{workflow=htcondor,custom-args='{gof_custom_args}'}} "
                 cmd += f"--parameter-values {parameter_values} "
             else:
-                cmd += f"--GoodnessOfFit-workflow htcondor "
+                cmd += "--GoodnessOfFit-workflow htcondor "
             cmd += "--workers 4 "
 
             cmd_dict["gof"] = cmd

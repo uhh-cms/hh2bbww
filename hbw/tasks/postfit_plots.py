@@ -198,7 +198,7 @@ def plot_postfit_shapes(
         if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
             raise ValueError(
                 "The provided total_bkg histogram (used for variances) "
-                "does not match the sum of the background histograms.",
+                f"does not match the sum of the background histograms. Difference: {diff}",
             )
         plot_config["mc_stat_unc"]["hist"] = total_bkg
         plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
