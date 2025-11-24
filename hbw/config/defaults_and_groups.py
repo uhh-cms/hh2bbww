@@ -206,6 +206,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -283,7 +284,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -555,6 +556,15 @@ def set_config_defaults_and_groups(config_inst):
             "hide_signal_errors": True,
             "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
+            # "blinding_threshold": 0.008,
+        },
+        "dpostfit": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.40,
+            "cms_label": "wip",
+            "yscale": "log",
+            "hide_signal_errors": True,
+            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "postfit": {
