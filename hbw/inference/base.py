@@ -55,7 +55,8 @@ class HBWInferenceModelBase(InferenceModel):
     # 8: add shape->rate trafos back for dy,ttv,vv
     # 9: add shape->rate trafos for bkg categories
     # 13: trafors flip_larger --> flip_smaller
-    version: int = 13
+    # 14: increase min eff. MC entries from 3 to 12 (rerunning cards just for clearer versioning)
+    version: int = 15
 
     bjet_cats: set = {"1b", "2b", "boosted"}
     campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
@@ -553,7 +554,7 @@ class HBWInferenceModelBase(InferenceModel):
                     process=self.inf_proc(proc),
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
-                        lambda f: round(f, 3),
+                        lambda f: round(f, 4),
                         process_inst.xsecs[ecm].get(names=(scale_key,), direction=("down", "up"), factor=True),
                     )),
                 )
