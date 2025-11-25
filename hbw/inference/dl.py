@@ -551,12 +551,18 @@ test_bkgs = dl.derive("test_bkgs", cls_dict={
 no_boosted = dl.derive("no_boosted", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.sr + config_categories.background,
+    "unblind": True,
+    "skip_data": False,
 })
 default_unblind = dl.derive("default_unblind", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
     "unblind": True,
     "skip_data": False,
+})
+mbbllmet = default_unblind.derive("mbbllmet", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_mbbllMET",
+    "config_categories": ["sr", "sr__resolved__1b", "sr__resolved__2b", "sr__boosted"],
 })
 met40dnn_unblind = default_unblind.derive("met40dnn_unblind", cls_dict={
     "ml_model_name": ["multiclass_met40", "ggf_met40", "vbf_met40"],
@@ -565,6 +571,9 @@ vbftag_unblind = default_unblind.derive("vbftag_unblind", cls_dict={
     "ml_model_name": ["multiclassv3_tag", "ggfv3", "vbfv3_tag"],
 })
 vbftag1_unblind = default_unblind.derive("vbftag1_unblind", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+})
+vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
 })
 vbftag1_mergeboosted_unblind = default_unblind.derive("vbftag1_mergeboosted_unblind", cls_dict={

@@ -4,6 +4,7 @@
 Event weight producer.
 """
 
+from hbw.util import call_once_on_config
 import law
 
 from columnflow.util import maybe_import
@@ -61,6 +62,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     tt_weight=None,
     dy_weight=None,
     nondy_hist_producer=None,
+    pre_label="",
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -136,12 +138,17 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
 
 @base.init
 def base_init(self: HistProducer) -> None:
-    # NOTE: this might be called multiple times, might be quite inefficient
-    # if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
-    #     return
 
     if not getattr(self, "config_inst"):
         return
+
+    @call_once_on_config
+    def update_cat_label(config_inst, pre_label):
+        for cat_inst, _, _ in config_inst.walk_categories():
+            cat_inst.label = "\n".join([pre_label, cat_inst.label])
+
+    if self.pre_label:
+        update_cat_label(self.config_inst, self.pre_label)
 
     if self.categorizer_cls:
         self.uses.add(self.categorizer_cls)
@@ -298,17 +305,21 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "stitched_normalization_weight": [],
 }})
 
-with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    # "vjets_weight": [],  # TODO: corrections/shift missing
-    "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
+with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={
+    "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+})
 
 # NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
 # because the dy_correction_weight is only relevant for DY processes. This is implemented in
 # hbw/analysis/create_analysis.py
 with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
+    "pre_label": "After DY correction",
     "nondy_hist_producer": "with_trigger_weight",
     "version": 0,
     "weight_columns": {
@@ -346,6 +357,7 @@ met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
     "categorizer_cls": mask_fn_met_geq40,
 })
 met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "pre_label": "\n".join(["After DY correction", r"$E_{T}^{miss} \geq 40$ GeV"]),
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })

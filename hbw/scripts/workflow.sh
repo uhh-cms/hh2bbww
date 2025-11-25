@@ -30,7 +30,7 @@ configs_sep="c22prev14 c22postv14 c23prev14 c23postv14"
 default_shifts="nominal"
 dnn_multiclass="multiclassv3"
 dnn_ggf="ggfv3"
-dnn_vbf="vbfv3"
+dnn_vbf="vbfv3_tag"
 all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
 inference_model="dl"
 ml_inputs="ml_inputs"
@@ -113,8 +113,6 @@ recreate_campaign_summary() {
 run_merge_reduced_events() {
     local configs="${1:-$default_configs}"
     local shifts="${2:-$default_shifts}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     run_cmd law run cf.MergeReducedEventsWrapper \
         --datasets "*" \
@@ -122,7 +120,7 @@ run_merge_reduced_events() {
         --shifts "$shifts" \
         --cf.MergeReducedEvents-{retries=2,workflow=htcondor} \
         --cf.ReduceEvents-pilot \
-	    --cf.BundleRepo-custom-checksum $checksum \
+	    --cf.BundleRepo-custom-checksum $(checksum) \
         --workers 123
 }
 
@@ -150,8 +148,6 @@ run_merge_selection_stats() {
 run_plot_nominal() {
     local configs="${1:-$default_configs}"
     local variables="${2:-$ml_inputs}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     for config in ${configs//,/ }; do
         for shift in ${shifts//,/ }; do
@@ -161,7 +157,7 @@ run_plot_nominal() {
                 --shift "nominal" \
                 --workflow htcondor \
                 --variables "$variables" \
-	            --cf.BundleRepo-custom-checksum $checksum \
+	            --cf.BundleRepo-custom-checksum $(checksum) \
                 --workers 6
         done
     done
@@ -191,8 +187,6 @@ run_plot_nominal() {
 
 prepare_dy_corr() {
     local configs="${1:-$all_configs}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     echo "→ ExportDYWeights: config=$configs"
     # start by running ExportDYWeights with all configs combined to better parallelize the jobs
@@ -201,7 +195,7 @@ prepare_dy_corr() {
         --retries 1 \
         --workflow htcondor \
         --cf.CreateHistograms-pilot \
-        --cf.BundleRepo-custom-checksum $checksum \
+        --cf.BundleRepo-custom-checksum $(checksum) \
         --workers 123
 
     for config in ${configs//,/ }; do
@@ -235,33 +229,12 @@ fetch_ml_metrics() {
     done
 }
 
-# prepare_dy_corr_weights() {
-#     local configs="${1:-$all_configs}"
-#     local shifts="${2:-$default_shifts}"
-#     local producer="dy_correction_weight"
-#     local checksum=$(checksum)
-#     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
-
-#     echo "→ ProduceColumnsWrapper: producer=$producer configs=$configs, shifts=$shifts"
-#     run_cmd law run cf.ProduceColumnsWrapper \
-#         --configs "$configs" \
-#         --shifts "$shifts" \
-#         --datasets \"dy_*\" \
-#         --producers "$producer" \
-#         --cf.ProduceColumns-{retries=1,workflow=htcondor} \
-#         --cf.CreateHistograms-pilot \
-#         --cf.BundleRepo-custom-checksum $checksum \
-#         --workers 123
-# }
-
 prepare_mlcolumns() {
     local configs="${1:-$default_configs}"
     local shifts="${2:-$default_shifts}"
     local models="${3:-$all_models}"
     local variables="${4:-$ml_scores}"
-    local checksum=$(checksum)
     local run_ml="false"
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     if [[ "$run_ml" == "true" ]]; then
         # check that ML trainings are finished
@@ -271,6 +244,7 @@ prepare_mlcolumns() {
                 --ml-model "$model" \
                 --workflow htcondor \
                 --retries 1 \
+                --cf.BundleRepo-custom-checksum $(checksum) \
                 --cf.PrepareMLEvents-pilot
         done
     fi
@@ -294,7 +268,7 @@ prepare_mlcolumns() {
                 --cf.CreateHistograms-ml-models "$models" \
                 --cf.CreateHistograms-variables "$variables" \
                 --cf.CreateHistograms-{retries=1,workflow=htcondor,pilot,no-poll,htcondor-memory=3GB} \
-                --cf.BundleRepo-custom-checksum $checksum \
+                --cf.BundleRepo-custom-checksum $(checksum) \
                 --workers 6
         done
     done
@@ -304,8 +278,6 @@ run_ml_evaluation() {
     local configs="${1:-$default_configs}"
     local shifts="${2:-$default_shifts}"
     local models="${3:-$all_models}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     # NOTE: no-poll and pilot: therefore run only if all required Producers have been run prev.
     # the prepare_mlcolumns is probably a better approach (faster resolving for some reason
@@ -320,7 +292,7 @@ run_ml_evaluation() {
                     --cf.MLEvaluation-ml-model "$model" \
                     --datasets "*" \
                     --workers 8 \
-                    --cf.BundleRepo-custom-checksum $checksum \
+                    --cf.BundleRepo-custom-checksum $(checksum) \
                     --cf.MLEvaluation-{retries=1,workflow=htcondor,pilot,no-poll}
             done
         done
@@ -353,10 +325,7 @@ run_merge_histograms_htcondor() {
     local shifts="${2:-$default_shifts}"
     local models="${3:-$all_models}"
     local variables="${4:-$ml_scores}"
-    local checksum=$(checksum)
     local ensure_nominal=true
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
-
 
     for config in ${configs//,/ }; do
         # run nominal first to ensure it is done before the syst. shifts
@@ -373,7 +342,7 @@ run_merge_histograms_htcondor() {
                 --cf.MergeHistograms-variables "$variables" \
                 --cf.MergeHistograms-ml-models "$models" \
                 --cf.MergeHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
-                --cf.BundleRepo-custom-checksum $checksum \
+                --cf.BundleRepo-custom-checksum $(checksum) \
                 --workers 6) &
                 pids+=($!)
         done
@@ -390,10 +359,7 @@ run_merge_shifted_histograms_htcondor() {
     local shifts="${2:-$all_shift_sources}"
     local models="${3:-$all_models}"
     local variables="${4:-$ml_scores}"
-    local checksum=$(checksum)
     local ensure_nominal=false
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
-
 
     for config in ${configs//,/ }; do
         # run nominal first to ensure it is done before the syst. shifts
@@ -408,7 +374,7 @@ run_merge_shifted_histograms_htcondor() {
             --cf.MergeShiftedHistograms-variables "$variables" \
             --cf.MergeShiftedHistograms-ml-models "$models" \
             --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} \
-            --cf.BundleRepo-custom-checksum $checksum \
+            --cf.BundleRepo-custom-checksum $(checksum) \
             --workers 6
         echo "Processes for config $config completed."
     done
@@ -429,9 +395,6 @@ run_datacards() {
         local no_poll="True"
     fi
 
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
-
     echo "→ Datacards: config_groups=$config_groups, inference_model=$inference_model"
     # NOTE: this fails as long as any of the MergeShiftedHistograms outputs are missing
     # but the MergeShiftedHistograms jobs of the missing outputs will be submitted
@@ -439,7 +402,7 @@ run_datacards() {
         --config-groups "$config_groups" \
         --inference-model "$inference_model" \
         --cf.MergeShiftedHistograms-{workflow=$workflow,pilot,no-poll=$no_poll,remote-claw-sandbox=venv_columnar} \
-        --cf.BundleRepo-custom-checksum $checksum \
+        --cf.BundleRepo-custom-checksum $(checksum) \
         --workers $workers
 }
 
@@ -487,12 +450,15 @@ run_and_fetch_mlscore_plots() {
             --categories $categories \
             --ml-models $all_models \
             --processes ddl4 \
-            --hist-hooks blind_bins_above_score \
-            --general-settings data_mc_plots_blind_conservative \
             --variable-settings $variable_settings \
             --custom-style-config $custom_style_config \
-            --workers 6 \
-            --cf.MergeHistograms-pilot
+            --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+            --cf.BundleRepo-custom-checksum $(checksum) \
+            --workers 6 --workflow local
+            # --workers 123 --workflow htcondor
+            # NOTE: params passed for partial blinding, currently not used anymore
+            # --hist-hooks blind_bins_above_score \
+            # --general-settings data_mc_plots_blind_conservative \
     done
 }
 
@@ -518,7 +484,12 @@ run_and_fetch_mlscore_plots_unstacked() {
 }
 
 run_and_fetch_all_mlscore_plots() {
-    # TODO: DNN plots after categorization and rebinning
+    # run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
+    run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
+    # run_and_fetch_mlscore_plots "$all_configs" "mlscore.max_score" "$inf_categories_bkg"
+    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
+    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
+
     for config in ${all_configs//,/ }; do
         # run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
         run_and_fetch_mlscore_plots "$config" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
@@ -527,11 +498,6 @@ run_and_fetch_all_mlscore_plots() {
         # run_and_fetch_mlscore_plots "$config" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
     done
 
-    # run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted" true
-    run_and_fetch_mlscore_plots "$all_configs" "\"mlscore.*,rebinlogit_mlscore.sig*binary\"" "sr,sr__resolved__1b,sr__resolved__2b sr__boosted"
-    # run_and_fetch_mlscore_plots "$all_configs" "mlscore.max_score" "$inf_categories_bkg"
-    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_vbf_binary" "$inf_categories_sig_vbf"
-    # run_and_fetch_mlscore_plots "$all_configs" "logit_mlscore.sig_ggf_binary" "$inf_categories_sig_ggf"
 }
 
 
@@ -569,8 +535,9 @@ run_and_fetch_mcsyst_plots() {
         --processes ddl4 \
         --categories "$categories" \
         --general-settings data_mc_plots_not_blinded \
-        --workers 6 \
-        --cf.MergeHistograms-pilot
+        --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+        --cf.BundleRepo-custom-checksum $(checksum) \
+        --workers 123 --workflow local
 }
 
 run_and_fetch_mcsyst_plots_boosted() {
@@ -591,8 +558,9 @@ run_and_fetch_mcsyst_plots_boosted() {
         --general-settings data_mc_plots_not_blinded \
         --variable-settings boosted_rebin \
         --custom-style-config default_rax75 \
-        --workers 6 \
-        --cf.MergeHistograms-pilot
+        --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
+        --cf.BundleRepo-custom-checksum $(checksum) \
+        --workers 123 --workflow local
 }
 
 run_and_fetch_all_mcsyst_plots() {
@@ -666,20 +634,8 @@ calls() {
     claw run hbw.CustomCreateYieldTable --processes data,background,tt,dy,st,w_lnu,vv,ttv,h,other --ratio data,background,tt,dy --remove-output 0,a,y
     claw run cf.PlotVariables1D --processes ddl4 --variables mli_fj_particleNetWithMass_HbbvsQCD --categories incl,sr,dycr,ttcr --hist-hooks cumsum_reverse --remove-output 0,a,y --general-settings data_mc_plots_not_blinded --plot-suffix test1 --local-scheduler --configs $all_configs --shape-norm --plot-function columnflow.plotting.plot_functions_1d.plot_stack_test
 
-    # pre+postfit plots from preapproval talk (I think)
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_3070def61a/m125.0/poi_r/2022_2023__default_dataV10/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_3070def61a/m125.0/poi_r/2022_2023__default_dataV10/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_deb355aef6/m125.0/poi_r/2022_2023__default_unblindV10/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --prefit --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV10 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_deb355aef6/m125.0/poi_r/2022_2023__default_unblindV10/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --remove-output 0,a,y
-
-    # pre+postfit plots after preapproval talk after lumi fix for ANv9
-
-    # asimov
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV11 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_4433477a7b/m125.0/poi_r/2022_2023__default_unblindV11/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --prefit --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_unblindV11FIX --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_4433477a7b/m125.0/poi_r/2022_2023__default_unblindV11FIX/shapes_default__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes dl4 --inference-model default_unblind --local-scheduler --general-settings postfit_merged --custom-style-config postfit_merged --remove-output 0,a,y
-    # partially unblinded
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV11 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_8395ac5cf9/m125.0/poi_r/2022_2023__default_dataV11/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__prefit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version 2022_2023__default_dataV11FIX --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/PreAndPostFitShapes/hh_model_NNLOFix_13p6tev__model_default/datacards_8395ac5cf9/m125.0/poi_r/2022_2023__default_dataV11FIX/shapes_default__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__postfit.root --processes ddl4 --inference-model default_data --local-scheduler --general-settings dpostfit_merged --custom-style-config dpostfit_merged --remove-output 0,a,y
+    # making plots of the two selected VBF jets
+    law run cf.PlotShiftedVariables1D --processes ddl4 --producers event_weights,pre_ml_cats,dl_ml_inputs,vbf_jets --variables "vbfjet{1,2}_{pt,eta}" --workers 123 --cf.MergeShiftedHistograms-{pilot,remote-claw-sandbox=venv_columnar,workflow=htcondor} --configs $all_configs --categories sr --shift-sources all
 }
 
 run_and_fetch_efficiency_plots() {
@@ -707,7 +663,6 @@ run_and_fetch_efficiency_plots() {
 
 run_and_fetch_triggersf() {
     # TODO: the fetching seems to be rather inconsistent, changing hash every time?
-    local checksum=$(checksum)
     local configs="${1:-$all_configs}"
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
     local processes="${3:-"data_met,sf_bkg_reduced"}"
@@ -728,7 +683,7 @@ run_and_fetch_triggersf() {
         --cf.ReduceEvents-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
         --cf.CreateHistograms-{workflow=local,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
         --cf.MergeHistograms-{workflow=local,remote-claw-sandbox=venv_columnar,htcondor-memory=3GB} \
-        --cf.BundleRepo-custom-checksum "$checksum" \
+        --cf.BundleRepo-custom-checksum "$(checksum)" \
         --workers 6
 }
 
@@ -767,8 +722,6 @@ run_triggersf_production() {
     local variables="${2:-"trg_lepton0_pt-trg_lepton1_pt-trig_ids"}"
     local datasets="${3:-"tt_*_powheg,data_met*,st_twchannel*dl*,dy_m50toinf*"}"
     local processes="${4:-"data_met,sf_bkg_reduced"}"
-    local checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     # defaults that are encoded in the ComputeTriggerSF task
     local reducer="triggersf"
@@ -785,7 +738,7 @@ run_triggersf_production() {
         run_cmd law run cf.MergeReducedEventsWrapper --configs $configs --datasets $datasets \
             --cf.MergeReducedEvents-reducer $reducer \
             --cf.MergeReducedEvents-{workflow=htcondor,pilot} \
-            --workers 156 --cf.BundleRepo-custom-checksum "$checksum"
+            --workers 156 --cf.BundleRepo-custom-checksum $(checksum)
     fi
 
     if [[ "$produce_histograms" == "true" ]]; then
@@ -800,7 +753,7 @@ run_triggersf_production() {
                     --cf.CreateHistograms-variables "$variables" \
                     --cf.CreateHistograms-hist-producer "$hist_producer" \
                     --cf.CreateHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
-                    --cf.BundleRepo-custom-checksum "$checksum" \
+                    --cf.BundleRepo-custom-checksum "$(checksum)" \
                     --workers 20
         done
     fi
@@ -811,21 +764,35 @@ run_triggersf_production() {
 }
 
 run_and_fetch_all_plots() {
-    run_and_fetch_all_mcsyst_plots
-    run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
-    run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
-    run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
+    # run_and_fetch_all_mcsyst_plots
+    # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
+    # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
+    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
+
+    # run_and_fetch_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "sr__boosted" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+    # run_and_fetch_all_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+
+    # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
+    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
 
     run_and_fetch_all_mlscore_plots
-    run_and_fetch_all_yield_tables
-    run_and_fetch_btag_norm_sf
-    run_and_fetch_mlplots
-    fetch_ml_metrics
+    # run_and_fetch_all_yield_tables
+    # run_and_fetch_btag_norm_sf
+    # run_and_fetch_mlplots
+    # fetch_ml_metrics
 
-    run_and_fetch_kinematics
+    # run_and_fetch_kinematics
 
-    run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
-    run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb"
+    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
+    # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+}
+
+run_dycorr_plots() {
+    claw run cf.PlotShiftedVariables1D --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories sr,sr__2mu,sr__2e --hist-producer with_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
+    claw run cf.PlotShiftedVariables1D --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories sr,sr__2mu,sr__2e --hist-producer with_trigger_weight --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
+
 }
 
 run_triggersf() {
@@ -881,7 +848,9 @@ run_all() {
     # run_datacards "vbfmqq1_unblind" $all_configs
     # run_datacards "vbftag1_unblind" $all_configs
 
-    # run_and_fetch_all_plots
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi"
+    run_and_fetch_all_plots
 }
 
 # === Example usage ===
