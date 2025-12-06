@@ -117,7 +117,7 @@ run_merge_reduced_events() {
     run_cmd law run cf.BundleRepo --custom-checksum "$checksum"
 
     run_cmd law run cf.MergeReducedEventsWrapper \
-        --datasets "dy_*m10to50*" \
+        --datasets "dy_*" \
         --configs "$configs" \
         --shifts "$shifts" \
         --cf.MergeReducedEvents-{retries=2,workflow=htcondor} \

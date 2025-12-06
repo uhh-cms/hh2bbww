@@ -279,7 +279,7 @@ def add_config(
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
-            "data_per_era": False if year == 2023 else True,
+            "data_per_era": False if year != 2022 else True,
         },
         "FatJet": {
             "campaign": jec_campaign,
@@ -594,24 +594,43 @@ def add_config(
             "2024": "2024Prompt",
         }[cfg.x.cpn_tag]
 
-        cfg.x.electron_sf_names = ElectronSFConfig(
-            correction="Electron-ID-SF",
-            # campaign=electron_sf_campaign,
-            campaign="2024",  # TODO: this is very dirty should only be for 2024 2024 otherwise read out of the sf:camapign but it is different for e_sf and e_sf_reco
-            working_point="Tight",
-        )
-
-        cfg.x.electron_reco_sf_names = ElectronSFConfig(
-            correction="Electron-ID-SF",
-            # campaign=electron_sf_campaign,
-            campaign="2024",
-            # working_point=ele_reco_wp_func,
-            working_point={
-                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
-                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
-                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
-            },
-        )
+        if year != 2024:
+            cfg.x.electron_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                working_point="Tight",
+            )
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
+        else:
+            cfg.x.electron_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                # campaign=electron_sf_campaign,
+                campaign="2024",
+                working_point="Tight",
+            )
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    # NOTE: ATM no SF available for pt below 20 GeV in 2024
+                    # "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
         # names of muon correction sets and working points
         # (used in the muon producer)
         # TODO: we might need to use different SFs for control regions
@@ -934,6 +953,8 @@ def add_config(
     # pileup weight corrections
     if year != 2024:  # TODO: not yet available, see https://cms-analysis-corrections.docs.cern.ch
         add_external("pu_sf", (cat_info.get_file("lum", "puWeights.json.gz"), "v1"))
+    else:  # 2024
+        add_external("pu_sf", ("/afs/desy.de/user/m/markusla/public/data/preliminary_pu_weights/puWeights.json", "v2"))
     # jet energy correction
     add_external("jet_jerc", (cat_info.get_file("jme", "jet_jerc.json.gz"), "v1"))
     if year != 2024:  # NOTE: For now not available for 2024
@@ -966,6 +987,7 @@ def add_config(
     if year != 2024:  # NOTE: Taken from Johanna that they are called different for 2024
         add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
     else:
+        add_external("electron_reco_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
         add_external("electron_sf", (cat_info.get_file("egm", "electronID.json.gz"), "v1"))
     # electron energy correction and smearing
     add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v2"))

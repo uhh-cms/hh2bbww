@@ -10,7 +10,7 @@ from columnflow.util import maybe_import
 from columnflow.histogramming import HistProducer
 from columnflow.histogramming.default import cf_default
 from columnflow.config_util import get_shifts_from_sources
-from columnflow.columnar_util import Route, set_ak_column
+from columnflow.columnar_util import Route, set_ak_column, optional_column as optional
 from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
@@ -40,8 +40,10 @@ def stitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     return events, events.stitched_normalization_weight
 
 
-@cf_default.hist_producer(uses={"dataset_normalization_weight"}, mc_only=True)
+@cf_default.hist_producer(uses={optional("dataset_normalization_weight")}, mc_only=False)
 def unstitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
+    if self.dataset_inst.is_data:
+        return events, ak.Array(np.ones(len(events), dtype=np.float32))
     return events, events.dataset_normalization_weight
 
 
@@ -69,10 +71,14 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
 
     # apply mask
     if self.categorizer_cls:
+
         events, mask = self[self.categorizer_cls](events, **kwargs)
         events = events[mask]
 
     if self.dataset_inst.is_data:
+        # NOTE: needed when split in era
+        # new_proc_id = list(self.dataset_inst.processes)[0].id
+        # events = set_ak_column(events, "process_id", ak.Array(np.full(len(events), new_proc_id)))
         return events, ak.Array(np.ones(len(events), dtype=np.float32))
 
     # build the full event weight
@@ -187,7 +193,7 @@ def base_init(self: HistProducer) -> None:
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
         # remove dependency towards vjets weights
-        # self.local_weight_columns.pop("dy_correction_weight", None)
+        self.local_weight_columns.pop("dy_correction_weight", None)
         self.local_weight_columns.pop("dy_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
@@ -271,7 +277,7 @@ default_correction_weights = {
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
-    # "dy_correction_weight": [],
+    "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
@@ -287,8 +293,8 @@ unstitched_weight_columns = {
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],
-    "dy_correction_weight": [],
-    "trigger_weight": ["trigger_sf"],
+    # "dy_correction_weight": [],
+    # "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }})
 
@@ -342,6 +348,10 @@ met70 = with_trigger_weight.derive("met70", cls_dict={
 })
 
 met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+})
+met_geq40_unstitched = unstitched.derive("met_geq40_unstitched", cls_dict={
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })

@@ -8,6 +8,9 @@ the changes will not be reflected in the campaign and there will be inconsistenc
 
 # import order as od
 
+import law
+logger = law.logger.get_logger(__name__)
+
 
 from hbw.config.processes import create_parent_process
 from hbw.config.styling import color_palette
@@ -28,6 +31,8 @@ def modify_cmsdb_processes():
     )
 
     data.remove_process(data_met)
+
+    # configure_data_split_in_eras()
 
     decay_map = {
         "lf": {
@@ -153,3 +158,31 @@ def modify_cmsdb_processes():
         label="MC background",
         color=color_palette["green"],
     )
+
+
+def configure_data_split_in_eras():
+    from cmsdb.processes import data
+
+    data_era_map = {
+        "data_2024_c": {"color": "#1f77b4", "label": "Data c 2024", "id": 893685478},
+        "data_2024_d": {"color": "#ff7f0e", "label": "Data d 2024", "id": 893685479},
+        "data_2024_e": {"color": "#2ca02c", "label": "Data e 2024", "id": 893685480},
+        "data_2024_f": {"color": "#d62728", "label": "Data f 2024", "id": 893685481},
+        "data_2024_g": {"color": "#9467bd", "label": "Data g 2024", "id": 893685482},
+        "data_2024_h": {"color": "#8c564b", "label": "Data h 2024", "id": 893685483},
+        "data_2024_i": {"color": "#e377c2", "label": "Data i 2024", "id": 893685484},
+    }
+
+    for name, info in data_era_map.items():
+        data.add_process(
+            name=name,
+            id=info["id"],
+            is_data=False,
+            label=info["label"],
+            color=info["color"],
+            aux={
+                "scale": 1.0,
+                "stack": False,
+            },
+        )
+

@@ -262,14 +262,16 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     if base_proc_name == "dy_m50toinf":
         # separate into njet and hf/lf
         process_masks = {
-            f"{base_proc_name}_0j_hf": (n_partons == 0) & is_hf,
-            f"{base_proc_name}_1j_hf": (n_partons == 1) & is_hf,
-            f"{base_proc_name}_2j_hf": (n_partons == 2) & is_hf,
-            f"{base_proc_name}_3j_hf": (n_partons == 3) & is_hf,  # should not be assigned
-            f"{base_proc_name}_0j_lf": (n_partons == 0) & ~is_hf,
-            f"{base_proc_name}_1j_lf": (n_partons == 1) & ~is_hf,
-            f"{base_proc_name}_2j_lf": (n_partons == 2) & ~is_hf,
-            f"{base_proc_name}_3j_lf": (n_partons == 3) & ~is_hf,  # should not be assigned
+            f"{base_proc_name}_hf": is_hf,
+            f"{base_proc_name}_lf": ~is_hf,
+            # f"{base_proc_name}_0j_hf": (n_partons == 0) & is_hf,
+            # f"{base_proc_name}_1j_hf": (n_partons == 1) & is_hf,
+            # f"{base_proc_name}_2j_hf": (n_partons == 2) & is_hf,
+            # f"{base_proc_name}_3j_hf": (n_partons == 3) & is_hf,  # should not be assigned
+            # f"{base_proc_name}_0j_lf": (n_partons == 0) & ~is_hf,
+            # f"{base_proc_name}_1j_lf": (n_partons == 1) & ~is_hf,
+            # f"{base_proc_name}_2j_lf": (n_partons == 2) & ~is_hf,
+            # f"{base_proc_name}_3j_lf": (n_partons == 3) & ~is_hf,  # should not be assigned
             # f"{base_proc_name}_0j": n_partons == 0,
             # f"{base_proc_name}_1j": n_partons == 1,
             # f"{base_proc_name}_2j": n_partons == 2,

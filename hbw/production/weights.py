@@ -159,6 +159,7 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
 electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
     "weight_name": "electron_reco_weight",
     "get_electron_config": (lambda self: self.config_inst.x.electron_reco_sf_names),
+    "get_electron_file": (lambda self, external_files: external_files.electron_reco_sf),
 })
 
 
@@ -255,13 +256,15 @@ def combined_normalization_weights_init(self: Producer) -> None:
         # top_pt_weight,
         top_pt_theory_weight,
         vjets_weight,
-        IF_NOT_2024(normalized_pu_weights),  # NOTE: commented out due since pu_sf not availabe for 2024
+        # normalized_pu_weights,
+        IF_NOT_2024(normalized_pu_weights),  # NOTE: using preliminary atm for 2024
     },
     produces={
         combined_normalization_weights,
         top_pt_theory_weight,
         vjets_weight,
-        IF_NOT_2024(normalized_pu_weights),  # NOTE: commented out due since pu_sf not availabe for 2024
+        # normalized_pu_weights,
+        IF_NOT_2024(normalized_pu_weights),   # NOTE: using preliminary atm for 2024
     },
     mc_only=True,
     version=law.config.get_expanded("analysis", "event_weights_version", 5),
@@ -303,6 +306,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             SCeta = ak.where(((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
             events = set_ak_column_f32(events, "Electron.superclusterEta", SCeta)
             events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)
+            events = self[electron_reco_weights](events, **kwargs)
         else:
             events = self[electron_weights](events, **kwargs)
             events = self[electron_reco_weights](events, **kwargs)

@@ -273,15 +273,18 @@ def get_fit9_args(*params, return_str=False):
         lower_bounds = []
         upper_bounds = []
         fit_args = {
-            "c1": [-0.8, -1.0, 1.0],  # TODO samll value shold be not so small maybe
+            # "c1": [-0.8, -1.0, 1.0],  # TODO samll value shold be not so small maybe
+            "c1": [0.0, -1.0, 2.0],   # allow upward offset
             "n1": [0.5, 0.01, 1.],
             "mu1": [0.1, 0.001, 7.],
             "sigma1": [1.5, 0.1, 30.],
-            "c2": [-0.8, -2, 0.0],
+            # "c2": [-0.8, -2, 0.0],
+            "c2": [0.0, -2.0, 1.0],
             "n2": [10, 0.1, 30],
             "mu2": [40, 10, 90],
             "sigma2": [40, 10, 80],
-            "a": [0.8, 0.6, 3],
+            # "a": [0.8, 0.6, 3],
+            "a": [0.5, 0.1, 4.0],
             "r1": [10, 2, 30],
             "r2": [80, 30, 150],
             "s1": [10, 1, 10],
