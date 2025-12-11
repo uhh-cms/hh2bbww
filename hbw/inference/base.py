@@ -64,6 +64,10 @@ class HBWInferenceModelBase(InferenceModel):
 
     scale_signal = None
 
+    flow_strategy: str = "move"
+
+    skip_ratify_shapes: bool = False
+
     #
     # helper functions and properties
     #
@@ -330,7 +334,7 @@ class HBWInferenceModelBase(InferenceModel):
                     for config_inst in self.config_insts
                 },
                 mc_stats=self.mc_stats,
-                flow_strategy="move",
+                flow_strategy=self.flow_strategy,
                 empty_bin_value=0.0,  # NOTE: remove this when removing custom rebin task
             )
             # TODO: check that data datasets are requested as expected
@@ -699,6 +703,9 @@ class HBWInferenceModelBase(InferenceModel):
             #     self.add_parameter_to_group(shape_uncertainty, "experiment")
 
     def ratify_shape_parameters(self: InferenceModel):
+        if self.skip_ratify_shapes:
+            logger.warning("Skipping ratification of shape parameters.")
+            return
         # TODO: might be a good idea to transform all minor processes to lnN
         # (or not even consider them from the beginning)
         rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)
