@@ -799,26 +799,31 @@ class PrepareInferenceTaskCalls(
             "prepare_cards",
             # "LimitsPerCategory",
             # "qqHH_LimitsPerCategory",
+            # "LimitsPerCampaign",
             "pointlimits",
             "qqhh_pointlimits",
-            # "LimitsPerCampaign",
+            "impacts",
+            # "likelihood_r",
+            "postfitshapes",
+            "prefitshapes",
+            "likelihood_kl",
+            "likelihood_c2v",
+            "likelihood_kl_c2v",
+            # "likelihood_kl_kt",
             "limits_kl",
             "limits_c2v",
+            "gof",
             # "multilimits_c2v",
             # "multilimits_kl",
             # "qqhh_multilimits_c2v",
             # "qqhh_multilimits_kl",
-            "impacts",
-            "gof",
-            "postfitshapes",
-            "prefitshapes",
-            "likelihood_r",
-            "likelihood_kl",
-            "likelihood_c2v",
-            # "likelihood_kl_c2v",
-            # "likelihood_kl_kt",
         ],
         description="List of inference task keys to prepare calls for.",
+        significant=False,
+    )
+    rerun = luigi.BoolParameter(
+        default=False,
+        description="Whether to rerun the tasks even if their output exists.",
         significant=False,
     )
     # systematics that are frozen for kl and c2v scans
@@ -1129,9 +1134,12 @@ class PrepareInferenceTaskCalls(
 
         # creating kl scan
         scan_kl = "kl,-20,25,46"
-        scan_c2v = "C2V,-4,6,41"
+        # scan_kl = "kl,-15,20,36"
+        # scan_c2v = "C2V,-4,6,41"
+        scan_c2v = "C2V,-2,4,25"
         scan_kt = "kt,-3,3,31"
         scan_r = "r,-30,30,61"
+
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters {scan_kl} --UpperLimits-workflow htcondor "
@@ -1198,7 +1206,7 @@ class PrepareInferenceTaskCalls(
         if self.partially_unblinded:
             custom_args += " --rMin -350 --rMax 350"
         else:
-            custom_args += " --rMin -30 --rMax 30"
+            custom_args += " --rMin -32 --rMax 32"
         if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded True --show-best-fit True "
         elif self.unblinded_step1:
@@ -1267,6 +1275,12 @@ class PrepareInferenceTaskCalls(
         cmd_dict["postfitshapes"] = cmd
         cmd += "--prefit"
         cmd_dict["prefitshapes"] = cmd
+
+        if self.rerun:
+            for key, cmd in cmd_dict.items():
+                if key in ("prepare_cards", "export"):
+                    continue
+                cmd_dict[key] = cmd + " --remove-output 0,a,y"
 
         # dump all the commands to one output file
         functions_cmd = "\n\n".join([

@@ -278,6 +278,7 @@ def set_config_defaults_and_groups(config_inst):
         # "minor_all": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
         "hh_sm": hh_sm,
         "hh_sm1": hh_sm1,
+        "hbbhww_sm": hbbhww_sm,
         "signals": [*hh_sm, *hh_sm1],
     }
     for proc, datasets in config_inst.x.dataset_names.items():
@@ -535,52 +536,54 @@ def set_config_defaults_and_groups(config_inst):
 
     # plotting settings groups
     # (used in plotting)
+    # cms_label = "wip"
+    cms_label = "pre"
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
         "dpostfit_merged": {
             "remove_negative": True,
             "whitespace_fraction": 0.35,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
         "postfit_merged": {
             "remove_negative": True,
             "whitespace_fraction": 0.35,
-            "cms_label": "simwip",
+            "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
         "dpostfit": {
             "remove_negative": True,
             "whitespace_fraction": 0.40,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "postfit": {
             "remove_negative": True,
             "whitespace_fraction": 0.40,
-            "cms_label": "simwip",
+            "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
             "blinding_threshold": 0.008,
         },
@@ -588,14 +591,14 @@ def set_config_defaults_and_groups(config_inst):
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
         },
         "more_magnitudes": {
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.2,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
             "blinding_threshold": 0.008,
             "magnitudes": 8,
@@ -604,14 +607,14 @@ def set_config_defaults_and_groups(config_inst):
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
-            "cms_label": "wip",
+            "cms_label": f"{cms_label}",
             "yscale": "log",
             "blinding_threshold": 0.004,
         },
         "unstacked": {
             "remove_negative": True,
             "whitespace_fraction": 0.4,
-            "cms_label": "simwip",
+            "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "shape_norm": True,
         },
@@ -723,6 +726,8 @@ def set_config_defaults_and_groups(config_inst):
             },
             "rax_cfg": {
                 "ylim": (0.30, 1.70),
+                # "ylabel": "Data / (S+B)",
+                "ylabel": "Data / Bkg.",
             },
         },
         "postfit_merged": {
@@ -747,6 +752,25 @@ def set_config_defaults_and_groups(config_inst):
             },
             "rax_cfg": {
                 "ylim": (0.30, 1.70),
+                # "ylabel": "Data / (S+B)",
+                "ylabel": "Data / Bkg.",
+            },
+        },
+        "dpostfit": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 16,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.05, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 16,
+            },
+            "rax_cfg": {
+                # "ylim": (0.30, 1.70),
+                # "ylabel": "Data / (S+B)",
+                "ylabel": "Data / Bkg.",
             },
         },
         "default": {
@@ -754,6 +778,21 @@ def set_config_defaults_and_groups(config_inst):
                 "ncols": 2,
                 "fontsize": 16,
                 "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.05, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 16,
+            },
+        },
+        "default_rax40": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 16,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "rax_cfg": {
+                "ylim": (0.60, 1.40),
             },
             "annotate_cfg": {
                 "xy": (0.05, 0.95),

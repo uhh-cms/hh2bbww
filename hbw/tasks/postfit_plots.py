@@ -203,7 +203,8 @@ def plot_postfit_shapes(
         plot_config["mc_stat_unc"]["hist"] = total_bkg
         plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
     try:
-        plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
+        # plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
+        plot_config["mc_stat_unc"]["kwargs"]["label"] = "Systematic uncertainty"
         plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
     except KeyError:
         logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
@@ -231,7 +232,7 @@ def plot_postfit_shapes(
         style_config["ax_cfg"]["ylabel"] = r"$\Delta N/N$"
 
     if lumi:
-        style_config["cms_label_cfg"]["lumi"] = lumi
+        style_config["cms_label_cfg"]["lumi"] = f"{lumi:.0f}"
     return plot_all(plot_config, style_config, **kwargs)
 
 
@@ -369,7 +370,7 @@ class PlotPostfitShapes(
         1. Primary: existence of substrings ggf, vbf, tt, st, dy, h
         2. Secondary: existence of substrings 1b, 2b, boosted
         """
-        primary_order = ["sig_ggf", "sig_vbf", "tt", "st", "dy", "h"]
+        primary_order = ["_sig_ggf", "_sig_vbf", "_tt", "_st", "_dy", "_h", "_bkg"]
         secondary_order = ["1b", "2b", "boosted"]
 
         def sort_key(item):
@@ -408,6 +409,7 @@ class PlotPostfitShapes(
 
         bins_dict = {}
         categories_sorted = self.sort_categories(all_hists.keys())
+        logger.info(f"Categories sorted for merging: {categories_sorted}")
         for category in categories_sorted:
             hist_dict = all_hists[category]
             axis = list(hist_dict.values())[0].axes[0]
@@ -447,7 +449,7 @@ class PlotPostfitShapes(
         # extend bins_dict with some additional info for plotting
         ml_proc_bins = defaultdict(int)
         for cat_name, bins_info in bins_dict.items():
-            ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("_m10toinf", "")
+            ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
             bins_dict[cat_name]["ml_proc"] = ml_proc
             ml_proc_bins[ml_proc] += bins_info["count"]
         for cat_name, bins_info in bins_dict.items():
@@ -555,7 +557,7 @@ class PlotPostfitShapes(
                     elif "boosted" in cat_name:
                         bjet_cat = "Boost"
 
-                    axs[0].annotate(
+                    annotate_kwargs = dict(
                         text=bjet_cat,
                         xy=(
                             bins_count + 0.5 * bins_info["count"],
@@ -567,8 +569,34 @@ class PlotPostfitShapes(
                         verticalalignment="top",
                         color="black",
                     )
+                    if bins_info["ml_proc"] == "":
+                        annotate_kwargs["rotation"] = 90
+                        annotate_kwargs["xy"] = (
+                            bins_count + 0.5 * bins_info["count"],
+                            get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
+                        )
+                        annotate_kwargs["text"] = annotate_kwargs["text"] + "ed CR"
+                    axs[0].annotate(**annotate_kwargs)
 
-                    if bjet_cat == "1b":
+                    # axs[0].annotate(
+                    #     text=bjet_cat,
+                    #     xy=(
+                    #         bins_count + 0.5 * bins_info["count"],
+                    #         get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
+                    #     ),
+                    #     xycoords="data",
+                    #     fontsize=16,
+                    #     horizontalalignment="center",
+                    #     verticalalignment="top",
+                    #     color="black",
+                    #     rotation=45,
+                    # )
+
+                    do_full_sep = (
+                        (bjet_cat == "1b") or ("boosted__ml_bkg" in cat_name)
+                    )
+
+                    if do_full_sep:
                         axs[0].annotate(
                             text=bins_info["ml_proc"],
                             xy=(

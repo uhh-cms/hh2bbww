@@ -172,7 +172,8 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 1200),
         aux={"overflow": True},
         unit="GeV",
-        x_title=r"$m_{bb \ell\ell MET}$",
+        # x_title=r"$m_{bb \ell\ell MET}$",
+        x_title=r"$m_{HH}$",
     )
     config.add_variable(
         name="mli_dphi_ll",
