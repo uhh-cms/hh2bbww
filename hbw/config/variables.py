@@ -860,7 +860,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i $p_{{T}}$" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -872,7 +872,20 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i $p_{{T}}$" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pt_for_sf1".lower(),
+                expression=f"{obj}.pt[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=[200, 300, 450, 900],
+                unit="GeV",
+                x_title=rf"{obj} %i $p_{{T}}$" % i,
+                log_x=True,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -883,7 +896,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i $\eta$" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -894,7 +907,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i $\phi$" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -906,7 +919,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i mass" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -918,7 +931,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i softdrop mass" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -929,7 +942,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i particleNet_XbbVsQCD" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -940,7 +953,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i particleNetWithMass_HbbvsQCD" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             config.add_variable(
@@ -951,20 +964,20 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i PNet Hbb score" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
-            config.add_variable(
-                name=f"{obj}{i}_particleNet_XbbVsQCD_pass_fail".lower(),
-                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
-                null_value=EMPTY_FLOAT,
-                binning=[0, 0.95, 1.00],
-                x_title=rf"{obj} %i PNet Xbb score" % i,
-                aux={
-                    "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
-                },
-            )
+            # config.add_variable(
+            #     name=f"{obj}{i}_particleNet_XbbVsQCD_pass_fail".lower(),
+            #     expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+            #     null_value=EMPTY_FLOAT,
+            #     binning=[0, 0.95, 1.00],
+            #     x_title=rf"{obj} %i PNet Xbb score" % i,
+            #     aux={
+            #         "overflow": True,
+            #         "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+            #     },
+            # )
             config.add_variable(
                 name=f"{obj}{i}_pnet_hbb_pass_fail".lower(),
                 expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
@@ -973,7 +986,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"{obj} %i PNet Hbb score" % i,
                 aux={
                     "overflow": True,
-                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"} if obj == "FatBjet" else set(),  # noqa: E501
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
             # config.add_variable(

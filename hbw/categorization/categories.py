@@ -14,6 +14,7 @@ from columnflow.selection import SelectionResult
 from columnflow.columnar_util import has_ak_column, optional_column
 
 from hbw.util import MET_COLUMN, BTAG_COLUMN, IF_DY
+from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -232,24 +233,26 @@ def catid_fatjet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD}"})
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
 def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
     fulfilling medium WP of PNetHbb
     """
+    events = self[prepare_objects](events, **kwargs)
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
     fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
     mask = (ak.sum(fj_mask, axis=-1) >= 1)
     return events, mask
 
 
-@categorizer(uses={"Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD}"})
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the resolved category: presence of no AK8 jet candidate
     for the H->bb decay
     """
+    events = self[prepare_objects](events, **kwargs)
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
     fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
     mask = (ak.sum(fj_mask, axis=-1) == 0)
