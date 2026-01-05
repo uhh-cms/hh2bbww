@@ -124,7 +124,7 @@ def set_config_defaults_and_groups(config_inst):
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     # config_inst.x.default_hist_producer = "with_dy_corr"
-    config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"
+    config_inst.x.default_hist_producer = "met_geq40_incl_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -142,6 +142,13 @@ def set_config_defaults_and_groups(config_inst):
     backgrounds0 = ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"]
     backgrounds1 = ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"]
     hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
+    hbbhww_variations = [
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1"
+    ]
     hh_sm = [
         "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
         "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
@@ -207,6 +214,8 @@ def set_config_defaults_and_groups(config_inst):
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -285,7 +294,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -395,6 +404,12 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.variable_groups = {
         "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
+        "pas": bracket_expansion([
+            "mli_{mbb,mbbllMET,bb_pt,b1_pt}_rebinned3",
+            "mli_{mll,ll_pt,n_jet}",
+            "rebinlogit_mlscore.sig_{ggf,vbf}_binary",
+            "mlscore.sig_{ggf,vbf}_binary",
+        ]),
         "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
@@ -563,7 +578,8 @@ def set_config_defaults_and_groups(config_inst):
         },
         "dpostfit": {
             "remove_negative": True,
-            "whitespace_fraction": 0.40,
+            # "whitespace_fraction": 0.40,
+            "whitespace_fraction": 0.44,
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
@@ -572,7 +588,7 @@ def set_config_defaults_and_groups(config_inst):
         },
         "postfit": {
             "remove_negative": True,
-            "whitespace_fraction": 0.40,
+            "whitespace_fraction": 0.44,
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
@@ -619,6 +635,7 @@ def set_config_defaults_and_groups(config_inst):
             "shape_norm": True,
         },
     }
+
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},
         "unstack_all": {proc.name: {"unstack": True} for proc, _, _ in config_inst.walk_processes()},
@@ -681,7 +698,60 @@ def set_config_defaults_and_groups(config_inst):
             ]
         },
     }
+
+    def reorder_mll(ax, handles, labels, n_cols):
+        empty_handle = ax.plot([], label="", linestyle="None")[0]
+
+        hh_idxs = []
+        data_idx = None
+        new_handles = []
+        new_labels = []
+        for i, label in enumerate(labels):
+            if "HH" in label:
+                hh_idxs.append(i)
+            elif "data" in label.lower():
+                data_idx = i
+            else:
+                new_handles.append(handles[i])
+                new_labels.append(labels[i])
+
+        new_handles.insert(0, handles[data_idx])
+        new_labels.insert(0, labels[data_idx])
+        for idx in hh_idxs[::-1]:
+            new_handles.insert(0, handles[idx])
+            new_labels.insert(0, labels[idx])
+        for i in range(3):
+            new_handles.insert(0, empty_handle)
+            new_labels.insert(0, "")
+
+        handles[:] = new_handles
+        labels[:] = new_labels
+
     def reorder_data_first(ax, handles, labels, n_cols):
+        """Reorder legend entries to put 'data' first"""
+        # Find the index of the data entry
+        data_idx = None
+        empty_label_idx = None
+        for i, label in enumerate(labels):
+            # if empty_label_idx is None and label == "":
+            if label == "":
+                empty_label_idx = i
+            if data_idx is None and "data" in label.lower():
+                data_idx = i
+
+        if data_idx is not None and data_idx != 0:
+            # Move data to first position
+            data_handle = handles.pop(data_idx)
+            data_label = labels.pop(data_idx)
+
+            handles.pop(empty_label_idx)  # remove empty entry added via cf_entries_per_column
+            labels.pop(empty_label_idx)
+
+            # insert data at the top of column 1 (index 0)
+            handles.insert(0, data_handle)
+            labels.insert(0, data_label)
+
+    def reorder_data_pos(ax, handles, labels, n_cols, label_pos=0):
         """Reorder legend entries to put 'data' first"""
         # Find the index of the data entry
         data_idx = None
@@ -696,9 +766,12 @@ def set_config_defaults_and_groups(config_inst):
             data_label = labels.pop(data_idx)
             handles.pop(0)  # remove empty entry added via cf_entries_per_column
             labels.pop(0)
-            # insert data at the bottom of column 1 (index 2)
-            handles.insert(2, data_handle)
-            labels.insert(2, data_label)
+            # # insert data at the bottom of column 1 (index 2)
+            handles.insert(label_pos, data_handle)
+            labels.insert(label_pos, data_label)
+
+            # handles.insert(2, data_handle)
+            # labels.insert(2, data_label)
 
     # groups for custom plot styling
     config_inst.x.custom_style_config_groups = {
@@ -707,7 +780,8 @@ def set_config_defaults_and_groups(config_inst):
                 "left": 0.08,
                 "right": 0.98,
                 "top": 0.95,
-                "bottom": 0.05,
+                # "bottom": 0.05,
+                "bottom": 0.1,
             },
             "subplots_cfg": {
                 "figsize": (15, 10),
@@ -715,7 +789,7 @@ def set_config_defaults_and_groups(config_inst):
             "legend_cfg": {
                 "ncols": 5,
                 "cf_entries_per_column": [0, 3, 3, 3, 4],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
-                "cf_update_handles_labels": reorder_data_first,
+                "cf_update_handles_labels": reorder_data_pos,
                 "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
@@ -724,10 +798,21 @@ def set_config_defaults_and_groups(config_inst):
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
+            "ax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
+                # "ylim": (2e-1, 6e7),
+                "ylim": (2e-1, 1e8),
+            },
             "rax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
                 "ylim": (0.30, 1.70),
-                # "ylabel": "Data / (S+B)",
                 "ylabel": "Data / Bkg.",
+                "xlabel": "Bin number",
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
             },
         },
         "postfit_merged": {
@@ -752,11 +837,90 @@ def set_config_defaults_and_groups(config_inst):
             },
             "rax_cfg": {
                 "ylim": (0.30, 1.70),
-                # "ylabel": "Data / (S+B)",
                 "ylabel": "Data / Bkg.",
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
             },
         },
         "dpostfit": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+                "cf_entries_per_column": [5, 8],
+                "cf_update_handles_labels": reorder_data_first,
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 22,
+            },
+            "ax_cfg": {
+                "xlabel_fontsize": 30,
+                "ylabel_fontsize": 30,
+            },
+            "rax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
+                "ylabel": "Data / Bkg.",
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
+            },
+        },
+        "dpostfit_mll": {
+            "legend_cfg": {
+                "ncols": 3,
+                "fontsize": 18,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+                "cf_update_handles_labels": reorder_mll,
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 22,
+            },
+            "ax_cfg": {
+                "xlabel_fontsize": 30,
+                "ylabel_fontsize": 30,
+            },
+            "rax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
+                "ylabel": "Data / Bkg.",
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
+            },
+        },
+        "dpostfit_nosig": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+                "cf_entries_per_column": [4, 7],
+                "cf_update_handles_labels": reorder_data_first,
+            },
+            "annotate_cfg": {
+                "xy": (0.03, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 22,
+            },
+            "ax_cfg": {
+                "xlabel_fontsize": 30,
+                "ylabel_fontsize": 30,
+            },
+            "rax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
+                "ylabel": "Data / Bkg.",
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
+            },
+        },
+        "dpostfit0": {
             "legend_cfg": {
                 "ncols": 2,
                 "fontsize": 16,
@@ -768,8 +932,6 @@ def set_config_defaults_and_groups(config_inst):
                 "fontsize": 16,
             },
             "rax_cfg": {
-                # "ylim": (0.30, 1.70),
-                # "ylabel": "Data / (S+B)",
                 "ylabel": "Data / Bkg.",
             },
         },
