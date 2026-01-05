@@ -701,6 +701,12 @@ def IF_DL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
     return self.get() if func.config_inst.has_tag("is_dl") else None
     # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
 
+@deferred_column
+def IF_HHH(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_hhh") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
 
 @deferred_column
 def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
