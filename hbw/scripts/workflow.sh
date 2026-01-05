@@ -454,8 +454,7 @@ run_and_fetch_mlscore_plots() {
             --custom-style-config $custom_style_config \
             --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
             --cf.BundleRepo-custom-checksum $(checksum) \
-            --workers 6 --workflow local
-            # --workers 123 --workflow htcondor
+            --workers 123 --workflow htcondor
             # NOTE: params passed for partial blinding, currently not used anymore
             # --hist-hooks blind_bins_above_score \
             # --general-settings data_mc_plots_blind_conservative \
@@ -537,7 +536,7 @@ run_and_fetch_mcsyst_plots() {
         --general-settings data_mc_plots_not_blinded \
         --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
         --cf.BundleRepo-custom-checksum $(checksum) \
-        --workers 123 --workflow local
+        --workers 123 --workflow htcondor
 }
 
 run_and_fetch_mcsyst_plots_boosted() {
@@ -560,7 +559,7 @@ run_and_fetch_mcsyst_plots_boosted() {
         --custom-style-config default_rax75 \
         --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
         --cf.BundleRepo-custom-checksum $(checksum) \
-        --workers 123 --workflow local
+        --workers 123 --workflow htcondor
 }
 
 run_and_fetch_all_mcsyst_plots() {
@@ -571,12 +570,12 @@ run_and_fetch_all_mcsyst_plots() {
     local boosted_categories="sr__boosted"
 
     # split categories in boosted and non-boosted
+    run_and_fetch_mcsyst_plots "$all_configs" "$categories" "$variables"
+    run_and_fetch_mcsyst_plots_boosted "$all_configs" "$boosted_categories" "$variables"
     for config in ${configs//,/ }; do
         run_and_fetch_mcsyst_plots "$config" "$categories" "$variables"
         run_and_fetch_mcsyst_plots_boosted "$config" "$boosted_categories" "$variables"
     done
-    run_and_fetch_mcsyst_plots "$all_configs" "$categories" "$variables"
-    run_and_fetch_mcsyst_plots_boosted "$all_configs" "$boosted_categories" "$variables"
 }
 
 run_and_fetch_kinematics() {
@@ -589,7 +588,7 @@ run_and_fetch_kinematics() {
     # miscellaneous observables
     run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     run_and_fetch_mcstat_plots "$all_configs" "sr" "mli_fj_particleNet_XbbVsQCD,mli_fj_particleNetWithMass_HbbvsQCD"
-    run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb_pass_fail"
+    run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb_pass_fail,fatbjet0_pnet_hbb"
 }
 
 run_and_fetch_btag_norm_sf() {
@@ -804,6 +803,9 @@ run_triggersf_production() {
 }
 
 run_and_fetch_all_plots() {
+
+    # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
+
     # run_and_fetch_gen_plots
     # run_and_fetch_all_mcsyst_plots
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
@@ -827,7 +829,7 @@ run_and_fetch_all_plots() {
 
     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb"
     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
-    run_and_fetch_efficiency_plots "$all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+    # run_and_fetch_efficiency_plots "$all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
     # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
 }
 
@@ -837,8 +839,14 @@ run_dycorr_plots() {
     claw run cf.PlotShiftedVariables1D --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories sr__1b,sr__2b,sr__boosted,sr,sr__2mu,sr__2e --hist-producer with_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
     claw run cf.PlotShiftedVariables1D --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories sr__1b,sr__2b,sr__boosted,sr,sr__2mu,sr__2e --hist-producer with_trigger_weight --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
 
-    claw run cf.PlotShiftedVariables1D --configs $all_configs --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories dycr --hist-producer with_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
-    claw run cf.PlotShiftedVariables1D --configs $all_configs --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories dycr --hist-producer with_trigger_weight --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
+
+    # to trigger all MergeShiftedHistograms at once.
+    claw run cf.PlotShiftedVariables1D --configs $all_configs --processes "ddl4,hh_*" --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories dycr --hist-producer with_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
+    claw run cf.PlotShiftedVariables1D --configs $all_configs --processes "ddl4,hh_*" --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories dycr --hist-producer with_trigger_weight --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all
+
+    claw run cf.PlotShiftedVariables1D --ml-models multiclassv3,ggfv3,vbfv3_tag --configs $all_configs --processes "ddl4" --variables "ml_inputs,mli_full_vbf_tag" --workers 123 --categories sr --hist-producer met_geq40_incl_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} --shift-sources all
+    claw run cf.PlotShiftedVariables1D --ml-models multiclassv3,ggfv3,vbfv3_tag --configs $all_configs --processes "ddl4,hh_*" --variables "mlscore.*,rebinlogit_mlscore.sig*binary,logit_mlscore.sig*binary" --workers 123 --categories sr --hist-producer met_geq40_incl_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} --shift-sources all
+    claw run cf.PlotShiftedVariables1D --ml-models multiclassv3,ggfv3,vbfv3_tag --configs $all_configs --processes "ddl4,hh_*" --variables "pas" --workers 12 --categories sr --hist-producer met_geq40_incl_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar} --shift-sources all
 }
 
 run_triggersf() {
@@ -897,7 +905,7 @@ run_all() {
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi"
 
-    run_and_fetch_all_plots
+    # run_and_fetch_all_plots
 }
 
 # === Example usage ===
