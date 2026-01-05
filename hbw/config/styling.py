@@ -52,6 +52,14 @@ color_palette_1 = {
     "pink": "#f781bf",
     "grey": "#999999",
 }
+colors_pride = {
+    "red": "#E40303",
+    "orange": "#FF8C00",
+    "yellow": "#FFED00",
+    "green": "#008026",
+    "blue": "#004DFF",
+    "purple": "#750787",
+}
 
 color_palette = cms_color_palette_2
 
@@ -81,8 +89,25 @@ default_process_colors = {
     "hh_ggf_hbb_htt": color_palette["grey"],
     "signal_ggf2": color_palette["black"],
     "signal_vbf2": color_palette["grey"],
-    "hh_ggf_hbb_hww2l2nu_kl1_kt1": color_palette["black"],
-    "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": color_palette["grey"],
+    # "hh_ggf_hbb_hww2l2nu_kl1_kt1": color_palette["black"],
+    # "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": color_palette["grey"],
+    # "hh_ggf_hbb_hww_kl1_kt1": cms_color_palette_1["black"],
+    # "hh_vbf_hbb_hww_kv1_k2v1_kl1": cms_color_palette_1["grey"],
+    # "hh_ggf_hbb_hww_kl0_kt1": cms_color_palette_1["blue"],
+    # "hh_ggf_hbb_hww_kl2p45_kt1": cms_color_palette_1["yellow"],
+    # "hh_ggf_hbb_hww_kl5_kt1": cms_color_palette_1["red"],
+    # "hh_ggf_kl1_kt1": cms_color_palette_1["black"],
+    # "hh_vbf_kv1_k2v1_kl1": cms_color_palette_1["grey"],
+    # "hh_ggf_kl1_kt1": cms_color_palette_1["blue"],
+    # "hh_vbf_kv1_k2v1_kl1": cms_color_palette_1["purple"],
+    # "hh_ggf_kl1_kt1": color_palette_1["blue"],
+    # "hh_vbf_kv1_k2v1_kl1": color_palette_1["green"],
+    # "hh_ggf_kl1_kt1": cms_color_palette_1["blue"],
+    # "hh_vbf_kv1_k2v1_kl1": cms_color_palette_1["violet"],
+    "hh_ggf_kl1_kt1": cms_color_palette_1["black"],
+    "hh_vbf_kv1_k2v1_kl1": cms_color_palette_1["blue"],
+    "hh_ggf_hbb_hww_kl1_kt1": cms_color_palette_1["black"],
+    "hh_vbf_hbb_hww_kv1_k2v1_kl1": cms_color_palette_1["blue"],
 }
 
 for decay in ("", "qqlnu", "2l2nu"):
@@ -128,8 +153,8 @@ default_labels = {
     "w_lnu": r"$W$",
     "ttv": r"$t\bar{t}V$",
     # paper request: no couplings in labels for SM signals
-    "hh_ggf_kl1_kt1": r"$HH_{ggF}",
-    "hh_vbf_kv1_k2v1_kl1": r"$HH_{VBF}",
+    "hh_ggf_kl1_kt1": r"$HH_{ggF}$",
+    "hh_vbf_kv1_k2v1_kl1": r"$HH_{VBF}$",
     "hh_ggf_hbb_htt_kl1_kt1": r"$HH_{ggF}\rightarrow bb\tau\tau$",
     "hh_vbf_hbb_htt_kv1_k2v1_kl1": r"$HH_{VBF}\rightarrow bb\tau\tau$",
     "hh_ggf_hbb_hww_kl1_kt1": r"$HH_{ggF}\rightarrow bbWW$",
@@ -154,7 +179,8 @@ ml_labels = {
     "graviton_hh_ggf_bbww_m600": "grav600",
     "graviton_hh_ggf_bbww_m750": "grav750",
     "graviton_hh_ggf_bbww_m1000": "grav1000",
-    "st": "st",
+    "st": "Single $t/\\bar{t}$",
+    # "st": "st",
     "w_lnu": "W",
     "dy": "DY",
     "h": "H",

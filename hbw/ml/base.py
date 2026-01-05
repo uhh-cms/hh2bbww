@@ -319,6 +319,10 @@ class MLClassifierBase(MLModel):
         # setup variables
         # for proc in self.processes:
         for proc, node_config in self.train_nodes.items():
+            x_title = f"DNN output score ${node_config.get('label', proc)}$"
+            if len(self.train_nodes) <= 2:
+                # binary NN
+                x_title = f"${node_config.get('label', proc)}$ binary NN score"
             for config_inst in self.config_insts:
                 if f"mlscore.{proc}" not in config_inst.variables:
                     config_inst.add_variable(
@@ -326,16 +330,14 @@ class MLClassifierBase(MLModel):
                         expression=f"mlscore.{proc}",
                         null_value=-1,
                         binning=(40, 0., 1.),
-                        # x_title=f"DNN output score {config_inst.get_process(proc).x('ml_label', proc)}",
-                        x_title=f"DNN output score {proc}",
+                        x_title=x_title,
                     )
                     config_inst.add_variable(
                         name=f"rebinlogit_mlscore.{proc}",
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
                         binning=(40, -10., 10.),
-                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
-                        x_title=f"logit(DNN output score {proc})",
+                        x_title=f"logit({x_title})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
                         },
@@ -345,8 +347,7 @@ class MLClassifierBase(MLModel):
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,
                         binning=(1000, -2., 10.),
-                        # x_title=f"logit(DNN output score {config_inst.get_process(proc).x('ml_label', proc)})",
-                        x_title=f"logit(DNN output score {proc})",
+                        x_title=f"logit({x_title})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
                             "rebin": 25,

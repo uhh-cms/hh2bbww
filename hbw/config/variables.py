@@ -965,6 +965,7 @@ def add_variables(config: od.Config) -> None:
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                    "rebin": 2,
                 },
             )
             # config.add_variable(
