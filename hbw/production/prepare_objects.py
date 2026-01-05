@@ -113,7 +113,10 @@ def combine_collections(events: ak.Array, src_names: list[str], dst_name: str, s
 
 @producer(
     # collections are only created when needed by someone else
-    uses={attach_coffea_behavior},
+    uses={
+        attach_coffea_behavior,
+        "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}",  # always load FatJets to allow updating categories
+    },
     # no produces since we do not want to permanently produce columns
 )
 def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult = None, **kwargs) -> ak.Array:
