@@ -170,8 +170,6 @@ def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         ))
 
     gp = events.gen_hbw_decay
-    sec1 = attach_behavior(events.gen_hbw_decay.sec1, "PtEtaPhiMLorentzVector")
-    sec2 = attach_behavior(events.gen_hbw_decay.sec2, "PtEtaPhiMLorentzVector")
 
     is_charged_lepton = lambda abs_id: (abs_id == 11) | (abs_id == 13) | (abs_id == 15)
     # is_neutrino = lambda abs_id: (abs_id == 12) | (abs_id == 14) | (abs_id == 16)
@@ -214,6 +212,7 @@ def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Arr
         events = set_ak_column_f32(events, route, ak.fill_none(ak.nan_to_none(route.apply(events)), -10))
 
     return events
+
 
 @gen_hbw_decay_features.init
 def gen_hbw_decay_features_init(self: Producer) -> None:

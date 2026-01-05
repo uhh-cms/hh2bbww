@@ -147,7 +147,7 @@ def set_config_defaults_and_groups(config_inst):
         "hh_ggf_hbb_hww_kl1_kt1",
         "hh_ggf_hbb_hww_kl2p45_kt1",
         "hh_ggf_hbb_hww_kl5_kt1",
-        "hh_vbf_hbb_hww_kv1_k2v1_kl1"
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
     ]
     hh_sm = [
         "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
