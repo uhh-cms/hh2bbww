@@ -91,8 +91,7 @@ def get_hists_from_merged_multidimfit(tfile):
         # unpack key
         variable, fit_and_channel, process = key
         variables.add(variable)
-        if len(variables) > 1:
-            raise NotImplementedError("Merging over multiple variables is not implemented yet.")
+
         fit = fit_and_channel.split("_")[-1]
         fit = fit.replace("_", "")
         channel = fit_and_channel.replace(f"_{fit}", "")
@@ -104,7 +103,11 @@ def get_hists_from_merged_multidimfit(tfile):
             h_in = h_in.to_hist()
 
         # set the histogram in a deep dictionary
-        hists = law.util.merge_dicts(hists, DotDict.wrap({fit: {channel: {process: h_in}}}), deep=True)
+        hists = law.util.merge_dicts(
+            hists,
+            DotDict.wrap({fit: {variable: {channel: {process: h_in}}}}),
+            deep=True,
+        )
 
     return hists
 
@@ -150,6 +153,7 @@ from columnflow.plotting.plot_util import (
     apply_process_settings,
     apply_process_scaling,
     remove_residual_axis,
+    apply_density,
 )
 
 
@@ -175,6 +179,12 @@ def plot_postfit_shapes(
     hists, process_style_config = apply_process_settings(hists, process_settings)
     # process scaling
     hists = apply_process_scaling(hists)
+
+    # density scaling per bin
+    if density:
+        hists = apply_density(hists, density)
+        total_bkg = apply_density({"bkg": total_bkg}, density)["bkg"]
+
     if len(shift_insts) == 1:
         # when there is exactly one shift bin, we can remove the shift axis
         remove_residual_axis(hists, "shift", select_value=shift_insts[0].name)
@@ -192,6 +202,7 @@ def plot_postfit_shapes(
         shape_norm=shape_norm,
         hide_errors=hide_errors,
         shift_insts=shift_insts,
+        density=density,
         **kwargs,
     )
     if total_bkg:
@@ -203,8 +214,7 @@ def plot_postfit_shapes(
         plot_config["mc_stat_unc"]["hist"] = total_bkg
         plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
     try:
-        # plot_config["mc_stat_unc"]["kwargs"]["label"] = "MC stat. + syst. unc."
-        plot_config["mc_stat_unc"]["kwargs"]["label"] = "Systematic uncertainty"
+        plot_config["mc_stat_unc"]["kwargs"]["label"] = "Syst. unc."
         plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
     except KeyError:
         logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
@@ -450,6 +460,12 @@ class PlotPostfitShapes(
         ml_proc_bins = defaultdict(int)
         for cat_name, bins_info in bins_dict.items():
             ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
+            ml_proc = {
+                "HHggf": "gluon-gluon fusion (HH ggF)",
+                "HHvbf": "vector boson fusion (HH VBF)",
+                "tt": r"$t\bar{t}$",
+                "st": "t",
+            }.get(ml_proc, ml_proc)
             bins_dict[cat_name]["ml_proc"] = ml_proc
             ml_proc_bins[ml_proc] += bins_info["count"]
         for cat_name, bins_info in bins_dict.items():
@@ -463,14 +479,16 @@ class PlotPostfitShapes(
             f"Note! It is important that the requested inference_model {self.inference_model} "
             "is identical to the one that has been used to create the datacards",
         )
-
-        outp = self.output()
-
-        plot_parameters = self.get_plot_parameters()
-
         # Load all required histograms corresponding to the fit_type from the root input file
         all_hists = load_hists_uproot(self.fit_diagnostics_file, self.fit_type)
 
+        for variable, _all_hists in all_hists.items():
+            self.build_plots(variable, _all_hists)
+
+    def build_plots(self, variable, all_hists):
+        outp = self.output()
+
+        plot_parameters = self.get_plot_parameters()
         # Get list of all process instances required for plotting
         process_insts = list(map(self.config_inst.get_process, self.processes))
         # map processes in root shape to corresponding process instance used for plotting
@@ -487,12 +505,9 @@ class PlotPostfitShapes(
             channel = channel.replace("__2022_2023", "")
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
-            # Some inference models have differnet naming schemes for categories (starting with cat)
+
             if not has_category:
-                channel = "cat_" + channel
-                has_category = self.inference_model_inst.has_category(channel)
-                if not has_category:
-                    logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
+                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
 
             # Create Histograms
             total_bkg = h_in.pop("TotalBkg", None)
@@ -513,12 +528,19 @@ class PlotPostfitShapes(
                 config_data = inference_category.config_data.get(self.config_inst.name)
                 config_category = self.config_inst.get_category(config_data.category)
 
-                config_category.label = self.fit_type + "\n" + config_category.label
                 variable_inst = self.config_inst.get_variable(config_data.variable)
             else:
                 # default to dummy Category and Variable
-                config_category = od.Category(channel, id=1, label=self.fit_type)
-                variable_inst = od.Variable("dummy")
+                config_category = self.config_inst.get_category(
+                    channel,
+                    default=od.Category(channel, id=1, label=""),
+                )
+                variable_inst = self.config_inst.get_variable(
+                    variable,
+                    default=od.Variable("dummy", aux={"x_min": None, "x_max": None}),
+                )
+            if self.fit_type not in config_category.label.lower():
+                config_category.label = self.fit_type + "\n" + config_category.label
 
             # sort histograms
             hists = {
@@ -540,7 +562,7 @@ class PlotPostfitShapes(
             )
 
             # some adjustments for the merged plot
-            if channel == "cat_merged":
+            if channel == "cat_merged" or channel == "merged":
                 line_pos = 0.71
                 bins_count = 0
                 axs[0].axhline(
@@ -556,6 +578,7 @@ class PlotPostfitShapes(
                         bjet_cat = "2b"
                     elif "boosted" in cat_name:
                         bjet_cat = "Boost"
+                        # bjet_cat = "boosted"
 
                     annotate_kwargs = dict(
                         text=bjet_cat,
@@ -564,7 +587,7 @@ class PlotPostfitShapes(
                             get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         ),
                         xycoords="data",
-                        fontsize=16,
+                        fontsize=22,
                         horizontalalignment="center",
                         verticalalignment="top",
                         color="black",
@@ -576,6 +599,9 @@ class PlotPostfitShapes(
                             get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         )
                         annotate_kwargs["text"] = annotate_kwargs["text"] + "ed CR"
+                        # annotate_kwargs["text"] = annotate_kwargs["text"] + " CR"
+                    elif bins_info["count"] == 1:
+                        annotate_kwargs["rotation"] = 90
                     axs[0].annotate(**annotate_kwargs)
 
                     # axs[0].annotate(
@@ -627,6 +653,9 @@ class PlotPostfitShapes(
                     axs[1].axvline(bins_count, **kwargs)
                     bins_count += bins_info["count"]
 
-            outp["plots"].child(f"{channel}_{self.fit_type}.pdf", type="f").dump(fig, formatter="mpl")
+            outp["plots"].child(f"{variable_inst.name}_{channel}_{self.fit_type}.pdf", type="f").dump(
+                fig,
+                formatter="mpl",
+            )
 
         self.publish_message(f"plots written to {outp['plots'].path}")
