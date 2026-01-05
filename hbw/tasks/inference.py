@@ -1343,3 +1343,96 @@ if [[ "${{BASH_SOURCE[0]}}" == "${{0}}" ]]; then
 fi
 """
         return run_script
+
+
+class MultiDatacards(
+    HBWTask,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ReducerClassMixin,
+    ProducerClassesMixin,
+    MLModelsMixin,
+    HistProducerClassMixin,
+    HistHookMixin,
+):
+    resolution_task_cls = MergeHistograms
+    single_config = False
+
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    inference_models = law.CSVParameter(
+        default=[],
+        description="List of inference model classes to produce datacards for.",
+        significant=False,
+    )
+
+    # upstream requirements
+    reqs = Requirements(
+        # RemoteWorkflow.reqs,
+        CreateDatacards=CreateDatacards,
+    )
+
+    @property
+    def inference_model_clses(self):
+        return [InferenceModel.get_cls(inference_model) for inference_model in self.inference_models]
+
+    @classmethod
+    def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
+        for inference_model in params["inference_models"]:
+            _params = params.copy()
+            _params["inference_model"] = inference_model
+            cls.reqs.CreateDatacards.resolve_instances(_params, shifts)
+        return params
+
+    def requires(self):
+        reqs = {
+            "datacards": [self.reqs.CreateDatacards.req_different_branching(
+                self,
+                branch=0,
+                configs=self.configs,
+                inference_model=inference_model,
+            ) for inference_model in self.inference_models],
+        }
+        return reqs
+
+    def output(self):
+        output = {
+            "calls": self.target("MultiDatacards_Calls.txt"),
+        }
+        return output
+
+    def run(self):
+        inputs = self.input()
+        output = self.output()
+
+        apply_fit_datacards = []
+        variables = []
+        for _input, inference_model_cls in zip(inputs["datacards"], self.inference_model_clses):
+            datacards = []
+            variable = ""
+            for category, target in _input.targets.items():
+                if not variable:
+                    variable = inference_model_cls.config_variable(inference_model_cls, category)
+                elif variable != inference_model_cls.config_variable(inference_model_cls, category):
+                    raise ValueError(
+                        f"Variable {variable} from category {category} does not agree with previous "
+                        f"variable {inference_model_cls.config_variable(inference_model_cls, category)}",
+                    )
+                abspath = target["card"].abspath
+                datacards.append(f"{category}={abspath}")
+            variables.append(variable)
+            apply_fit_datacards.append(",".join(datacards))
+
+        cmd = (
+            "law run MergePreAndPostFitShapes "
+            "--FitParameters-workflow local "
+            "--PreAndPostFitShapes-workflow htcondor --workers 5 --unblinded True --prefit "
+            "--version shapes --datacards $CARDS "
+            f"--apply-fit-datacards {':'.join(apply_fit_datacards)} "
+            f"--fit-datacard-variables {','.join(variables)} "
+        )
+        print("\n\n" + cmd + "\n\n")
+
+        output["calls"].dump(cmd, formatter="text")
+
+        return
