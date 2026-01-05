@@ -108,6 +108,49 @@ def add_dl_ml_variables(config: od.Config) -> None:
     """
     Adds ML input variables to a *config*.
     """
+    config.add_variable(
+        name="mli_mbbllMET_rebinned3",
+        expression="mli_mbbllMET",
+        binning=[
+            100, 200, 230, 260, 290, 320, 350, 380, 410, 440, 470, 500, 530, 560, 590, 620,
+            660, 700, 750, 800, 900, 1000, 1200,
+        ],
+        unit="GeV",
+        x_title=r"$m_{HH}$",
+    )
+    config.add_variable(
+        name="mli_bb_pt_rebinned3",
+        expression="mli_bb_pt",
+        binning=[
+            0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 165, 180, 200,
+            230, 260, 300,
+        ],
+        unit="GeV",
+        x_title=r"$p_{T}^{bb}$",
+    )
+    config.add_variable(
+        name="mli_b1_pt_rebinned3",
+        expression="mli_b1_pt",
+        binning=[
+            0, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145, 155, 165, 180, 200,
+            230, 260, 300,
+        ],
+        unit="GeV",
+        x_title=r"$p_{T}$ of jet with highest b-tagging score",
+        aux={
+            "x_min": 25,
+        },
+    )
+    config.add_variable(
+        name="mli_mbb_rebinned3",
+        expression="mli_mbb",
+        binning=[
+            0, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 370, 400,
+            440, 500, 580, 660, 800,
+        ],
+        unit="GeV",
+        x_title=r"$m_{bb}$",
+    )
 
     # reconstructed variables
     config.add_variable(
@@ -121,7 +164,10 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_mll",
         expression="mli_mll",
         binning=(40, 0, 160),
-        aux={"overflow": True},
+        aux={
+            "overflow": True,
+            "x_min": 20,
+        },
         x_title=r"$m_{\ell\ell}$",
     )
     config.add_variable(
@@ -172,7 +218,8 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 1200),
         aux={"overflow": True},
         unit="GeV",
-        x_title=r"$m_{bb \ell\ell MET}$",
+        # x_title=r"$m_{bb \ell\ell MET}$",
+        x_title=r"$m_{HH}$",
     )
     config.add_variable(
         name="mli_dphi_ll",

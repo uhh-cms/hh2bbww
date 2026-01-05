@@ -25,6 +25,8 @@ def modify_cmsdb_processes():
         tth, thq, thw,
         st_twchannel_t_dl, st_twchannel_tbar_dl,
         tt_dl,
+        hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
+        hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1,
     )
 
     data.remove_process(data_met)
@@ -128,6 +130,14 @@ def modify_cmsdb_processes():
         id=99994,
         label="multiboson",
         color=color_palette["green"],
+    )
+    hh_other = create_parent_process(  # noqa: F841
+        [hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
+         hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1],
+        name="hh_other",
+        id=99993,
+        label="HH (other)",
+        color=color_palette["darkgrey"],
     )
 
     tt_dy = create_parent_process(  # noqa: F841

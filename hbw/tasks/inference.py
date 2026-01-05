@@ -799,26 +799,31 @@ class PrepareInferenceTaskCalls(
             "prepare_cards",
             # "LimitsPerCategory",
             # "qqHH_LimitsPerCategory",
+            # "LimitsPerCampaign",
             "pointlimits",
             "qqhh_pointlimits",
-            # "LimitsPerCampaign",
+            "impacts",
+            # "likelihood_r",
+            "postfitshapes",
+            "prefitshapes",
+            "likelihood_kl",
+            "likelihood_c2v",
+            "likelihood_kl_c2v",
+            # "likelihood_kl_kt",
             "limits_kl",
             "limits_c2v",
+            "gof",
             # "multilimits_c2v",
             # "multilimits_kl",
             # "qqhh_multilimits_c2v",
             # "qqhh_multilimits_kl",
-            "impacts",
-            "gof",
-            "postfitshapes",
-            "prefitshapes",
-            "likelihood_r",
-            "likelihood_kl",
-            "likelihood_c2v",
-            # "likelihood_kl_c2v",
-            # "likelihood_kl_kt",
         ],
         description="List of inference task keys to prepare calls for.",
+        significant=False,
+    )
+    rerun = luigi.BoolParameter(
+        default=False,
+        description="Whether to rerun the tasks even if their output exists.",
         significant=False,
     )
     # systematics that are frozen for kl and c2v scans
@@ -1129,9 +1134,12 @@ class PrepareInferenceTaskCalls(
 
         # creating kl scan
         scan_kl = "kl,-20,25,46"
-        scan_c2v = "C2V,-4,6,41"
+        # scan_kl = "kl,-15,20,36"
+        # scan_c2v = "C2V,-4,6,41"
+        scan_c2v = "C2V,-2,4,25"
         scan_kt = "kt,-3,3,31"
         scan_r = "r,-30,30,61"
+
         cmd = (
             f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
             f"--xsec fb --y-log --scan-parameters {scan_kl} --UpperLimits-workflow htcondor "
@@ -1198,7 +1206,7 @@ class PrepareInferenceTaskCalls(
         if self.partially_unblinded:
             custom_args += " --rMin -350 --rMax 350"
         else:
-            custom_args += " --rMin -30 --rMax 30"
+            custom_args += " --rMin -32 --rMax 32"
         if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded True --show-best-fit True "
         elif self.unblinded_step1:
@@ -1268,6 +1276,12 @@ class PrepareInferenceTaskCalls(
         cmd += "--prefit"
         cmd_dict["prefitshapes"] = cmd
 
+        if self.rerun:
+            for key, cmd in cmd_dict.items():
+                if key in ("prepare_cards", "export"):
+                    continue
+                cmd_dict[key] = cmd + " --remove-output 0,a,y"
+
         # dump all the commands to one output file
         functions_cmd = "\n\n".join([
             f"{key}() {{\n    {cmd_dict[key]}\n}}" for key in cmd_dict.keys() if key != "export"
@@ -1329,3 +1343,96 @@ if [[ "${{BASH_SOURCE[0]}}" == "${{0}}" ]]; then
 fi
 """
         return run_script
+
+
+class MultiDatacards(
+    HBWTask,
+    CalibratorClassesMixin,
+    SelectorClassMixin,
+    ReducerClassMixin,
+    ProducerClassesMixin,
+    MLModelsMixin,
+    HistProducerClassMixin,
+    HistHookMixin,
+):
+    resolution_task_cls = MergeHistograms
+    single_config = False
+
+    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+
+    inference_models = law.CSVParameter(
+        default=[],
+        description="List of inference model classes to produce datacards for.",
+        significant=False,
+    )
+
+    # upstream requirements
+    reqs = Requirements(
+        # RemoteWorkflow.reqs,
+        CreateDatacards=CreateDatacards,
+    )
+
+    @property
+    def inference_model_clses(self):
+        return [InferenceModel.get_cls(inference_model) for inference_model in self.inference_models]
+
+    @classmethod
+    def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
+        for inference_model in params["inference_models"]:
+            _params = params.copy()
+            _params["inference_model"] = inference_model
+            cls.reqs.CreateDatacards.resolve_instances(_params, shifts)
+        return params
+
+    def requires(self):
+        reqs = {
+            "datacards": [self.reqs.CreateDatacards.req_different_branching(
+                self,
+                branch=0,
+                configs=self.configs,
+                inference_model=inference_model,
+            ) for inference_model in self.inference_models],
+        }
+        return reqs
+
+    def output(self):
+        output = {
+            "calls": self.target("MultiDatacards_Calls.txt"),
+        }
+        return output
+
+    def run(self):
+        inputs = self.input()
+        output = self.output()
+
+        apply_fit_datacards = []
+        variables = []
+        for _input, inference_model_cls in zip(inputs["datacards"], self.inference_model_clses):
+            datacards = []
+            variable = ""
+            for category, target in _input.targets.items():
+                if not variable:
+                    variable = inference_model_cls.config_variable(inference_model_cls, category)
+                elif variable != inference_model_cls.config_variable(inference_model_cls, category):
+                    raise ValueError(
+                        f"Variable {variable} from category {category} does not agree with previous "
+                        f"variable {inference_model_cls.config_variable(inference_model_cls, category)}",
+                    )
+                abspath = target["card"].abspath
+                datacards.append(f"{category}={abspath}")
+            variables.append(variable)
+            apply_fit_datacards.append(",".join(datacards))
+
+        cmd = (
+            "law run MergePreAndPostFitShapes "
+            "--FitParameters-workflow local "
+            "--PreAndPostFitShapes-workflow htcondor --workers 5 --unblinded True --prefit "
+            "--version shapes --datacards $CARDS "
+            f"--apply-fit-datacards {':'.join(apply_fit_datacards)} "
+            f"--fit-datacard-variables {','.join(variables)} "
+        )
+        print("\n\n" + cmd + "\n\n")
+
+        output["calls"].dump(cmd, formatter="text")
+
+        return

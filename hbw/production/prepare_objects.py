@@ -113,7 +113,10 @@ def combine_collections(events: ak.Array, src_names: list[str], dst_name: str, s
 
 @producer(
     # collections are only created when needed by someone else
-    uses={attach_coffea_behavior},
+    uses={
+        attach_coffea_behavior,
+        "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}",  # always load FatJets to allow updating categories
+    },
     # no produces since we do not want to permanently produce columns
 )
 def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult = None, **kwargs) -> ak.Array:
@@ -148,12 +151,26 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
     if has_ak_column(events, "FatJet.particleNetWithMass_HbbvsQCD"):
         if not has_ak_column(events, "FatJet.pt"):
             raise ValueError("FatJet.pt not found, cannot apply baseline FatJet pT cut.")
+        if not has_ak_column(events, "FatJet.msoftdrop"):
+            raise ValueError("FatJet.msoftdrop not found, cannot create FatBjet collection.")
 
         # apply FatJet pT cut
-        events = set_ak_column(events, "FatJet", events["FatJet"][events["FatJet"].pt > 200])
+        # fatjet_mask = (events["FatJet"]["pt"] > 300) & (events["FatJet"]["msoftdrop"] > 30)
+        # logger.info("Updating FatJet collection to only include jets with pt > 300 and msoftdrop > 30.")
+
+        # fatjet_mask = (events["FatJet"]["pt"] > 300)
+        # logger.info("Updating FatJet collection to only include jets with pt > 300.")
+
+        fatjet_mask = (events["FatJet"]["pt"] > 200)
+        logger.info("Updating FatJet collection to only include jets with pt > 200.")
+        events = set_ak_column(events, "FatJet", events["FatJet"][fatjet_mask])
 
         # NOTE: this sometimes produces errors due to NaN values in the column
         events = combine_collections(events, ["FatJet"], "FatBjet", sort_by="particleNetWithMass_HbbvsQCD")
+    elif has_ak_column(events, "FatJet"):
+        raise ValueError("FatJet needs particleNetWithMass_HbbvsQCD column to create FatBjet collection.")
+    else:
+        logger.info("No FatJet collection found, skipping FatBjet creation.")
 
     # transform MET into 4-vector
     met_name = self.config_inst.x.met_name

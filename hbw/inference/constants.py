@@ -132,13 +132,16 @@ processes_per_rate_unconstrained = {
 
 is_signal = lambda process: process.startswith("hh_")
 is_bkg = lambda process: not is_signal(process)
-is_boosted_ggf = lambda category: "boosted" in category and "sig_vbf" in category
-is_boosted_vbf = lambda category: "boosted" in category and "sig_ggf" in category
+is_boosted_ggf = lambda category: "boosted" in category and "sig_ggf" in category
+is_boosted_vbf = lambda category: "boosted" in category and "sig_vbf" in category
+is_boosted_bkg = lambda category: "boosted" in category and "bkg" in category
 hbb_efficiency_params = {
     "eff_hbb_signal_ggf": (is_signal, is_boosted_ggf),
     "eff_hbb_signal_vbf": (is_signal, is_boosted_vbf),
+    "eff_hbb_signal_bkg": (is_signal, is_boosted_bkg),
     "eff_hbb_bkg_ggf": (is_bkg, is_boosted_ggf),
     "eff_hbb_bkg_vbf": (is_bkg, is_boosted_vbf),
+    "eff_hbb_bkg_bkg": (is_bkg, is_boosted_bkg),
 }
 
 # mapping for each shape uncertainty, which process is used.

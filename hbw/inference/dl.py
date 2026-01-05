@@ -116,6 +116,13 @@ config_categories = DotDict({
 config_categories.default_boosted = (
     config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved
 )
+config_categories.default_boosted_mergedbkg = (
+    config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background
+)
+config_categories.default_boosted_bkg = (
+    config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved +
+    ["sr__boosted__ml_bkg"]
+)
 
 
 systematics = DotDict({
@@ -193,6 +200,8 @@ systematics = DotDict({
         "eff_hbb_signal_vbf",
         "eff_hbb_bkg_ggf",
         "eff_hbb_bkg_vbf",
+        "eff_hbb_bkg_bkg",
+        "eff_hbb_signal_bkg",
     ],
     "murf_envelope": [
         # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
@@ -539,6 +548,11 @@ rate_only = dl.derive("rate_only", cls_dict={
     "systematics": systematics.rate_default,
     "config_categories": config_categories.default_boosted,
 })
+rate_only_vbftag1 = dl.derive("rate_only_vbftag1", cls_dict={
+    "systematics": systematics.rate_default,
+    "config_categories": config_categories.default_boosted,
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+})
 default = dl.derive("default", cls_dict={
     "systematics": systematics.default,
     "config_categories": config_categories.default_boosted,
@@ -560,10 +574,88 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
-mbbllmet = default_unblind.derive("mbbllmet", cls_dict={
-    "config_variable": lambda self, config_cat_inst: "mli_mbbllMET",
-    "config_categories": ["sr", "sr__resolved__1b", "sr__resolved__2b", "sr__boosted"],
+
+
+mbbllMET = default_unblind.derive("mbbllMET", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_mbbllMET_rebinned3",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
 })
+mbb = default_unblind.derive("mbb", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_mbb_rebinned3",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+b1_pt = default_unblind.derive("b1_pt", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_b1_pt_rebinned3",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+bb_pt = default_unblind.derive("bb_pt", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_bb_pt_rebinned3",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+mlscore_sig_ggf_binary = default_unblind.derive("mlscore_sig_ggf_binary", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mlscore.sig_ggf_binary",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+mlscore_sig_vbf_binary = default_unblind.derive("mlscore_sig_vbf_binary", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mlscore.sig_vbf_binary",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+rebinlogit_mlscore_sig_ggf_binary = default_unblind.derive("rebinlogit_mlscore_sig_ggf_binary", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "rebinlogit_mlscore.sig_ggf_binary",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+rebinlogit_mlscore_sig_vbf_binary = default_unblind.derive("rebinlogit_mlscore_sig_vbf_binary", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "rebinlogit_mlscore.sig_vbf_binary",
+    "config_categories": ["sr"],
+    "flow_strategy": "remove",
+})
+
+mll = default_unblind.derive("mll", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_mll",
+    "config_categories": ["incl"],
+    "flow_strategy": "remove",
+})
+
+
+ll_pt_dycr = default_unblind.derive("ll_pt_dycr", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_ll_pt",
+    "config_categories": ["dycr"],
+    "flow_strategy": "remove",
+    "ml_model_name": [],
+    "skip_ratify_shapes": True,
+})
+ll_pt_dycr_before = default_unblind.derive("ll_pt_dycr_before", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_ll_pt",
+    "config_categories": ["dycr"],
+    "flow_strategy": "remove",
+    "ml_model_name": [],
+    "systematics": list(set(systematics.default) - {"dy_correction"}),
+    "skip_ratify_shapes": True,
+})
+n_jet_dycr = default_unblind.derive("n_jet_dycr", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_n_jet",
+    "config_categories": ["dycr"],
+    "flow_strategy": "remove",
+    "ml_model_name": [],
+    "skip_ratify_shapes": True,
+})
+n_jet_dycr_before = default_unblind.derive("n_jet_dycr_before", cls_dict={
+    "config_variable": lambda self, config_cat_inst: "mli_n_jet",
+    "config_categories": ["dycr"],
+    "flow_strategy": "remove",
+    "ml_model_name": [],
+    "systematics": list(set(systematics.default) - {"dy_correction"}),
+    "skip_ratify_shapes": True,
+})
+
+
 met40dnn_unblind = default_unblind.derive("met40dnn_unblind", cls_dict={
     "ml_model_name": ["multiclass_met40", "ggf_met40", "vbf_met40"],
 })
@@ -572,6 +664,22 @@ vbftag_unblind = default_unblind.derive("vbftag_unblind", cls_dict={
 })
 vbftag1_unblind = default_unblind.derive("vbftag1_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+})
+boosted_mergedbkg = default_unblind.derive("boosted_mergedbkg", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_mergedbkg,
+})
+boosted_bkg = default_unblind.derive("boosted_bkg", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+})
+incl_dycorr_boosted_bkg = default_unblind.derive("incl_dycorr_boosted_bkg", cls_dict={  # using outputs from Lara
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+})
+pas = default_unblind.derive("pas", cls_dict={  # using outputs from Lara
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
 })
 vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],

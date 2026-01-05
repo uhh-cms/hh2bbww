@@ -6,21 +6,27 @@ Producer for generator-level VBF candidates in HH->bbWW decays.
 
 from __future__ import annotations
 
+import law
 
 import functools
 
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
-from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
+from columnflow.columnar_util import has_ak_column, set_ak_column, EMPTY_FLOAT
 from columnflow.columnar_util import attach_behavior
 
 from hbw.config.cutflow_variables import add_gen_variables
+
+from hbw.util import call_once_on_config
 
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+
+
+logger = law.logger.get_logger(__name__)
 
 
 @producer(
@@ -149,17 +155,125 @@ def gen_hbv_decay_init(self: Producer) -> None:
     uses={
         "gen_hbw_decay.*.*",
     },
-    produces={"vbfpair.{dr,deta,mass}"},
+    produces={
+        "vbfpair.{dr,deta,mass}",
+        "gen_hbw.lep0.{pt,eta,phi,mass,pdgId}",
+        "gen_hbw.lep1.{pt,eta,phi,mass,pdgId}",
+        "gen_hbw.dilep.{pt,eta,phi,mass}",
+        "gen_hbw.hh.{pt,eta,phi,mass}",
+    },
 )
 def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    sec1 = attach_behavior(events.gen_hbw_decay.sec1, "PtEtaPhiMLorentzVector")
-    sec2 = attach_behavior(events.gen_hbw_decay.sec2, "PtEtaPhiMLorentzVector")
+    for field in events.gen_hbw_decay.fields:
+        events = set_ak_column(events, f"gen_hbw_decay.{field}", attach_behavior(
+            events.gen_hbw_decay[field], "PtEtaPhiMLorentzVector",
+        ))
 
-    events = set_ak_column(events, "vbfpair.dr", sec1.delta_r(sec2))
-    events = set_ak_column(events, "vbfpair.deta", abs(sec1.eta - sec2.eta))
-    events = set_ak_column(events, "vbfpair.mass", (sec1 + sec2).mass)
+    gp = events.gen_hbw_decay
 
+    is_charged_lepton = lambda abs_id: (abs_id == 11) | (abs_id == 13) | (abs_id == 15)
+    # is_neutrino = lambda abs_id: (abs_id == 12) | (abs_id == 14) | (abs_id == 16)
+
+    l1 = ak.where(
+        is_charged_lepton(abs(gp.v1d1.pdgId)), gp.v1d1, gp.v1d2,
+    )
+    l2 = ak.where(
+        is_charged_lepton(abs(gp.v2d1.pdgId)), gp.v2d1, gp.v2d2,
+    )
+
+    leading_lep = ak.where(
+        l1.pt > l2.pt, l1, l2,
+    )
+    subleading_lep = ak.where(
+        l1.pt <= l2.pt, l1, l2,
+    )
+
+    events = set_ak_column(events, "gen_hbw.hh", gp.h1 + gp.h2)
+
+    events = set_ak_column(events, "gen_hbw.lep0", leading_lep)
+    events = set_ak_column(events, "gen_hbw.lep1", subleading_lep)
+
+    events = set_ak_column(events, "gen_hbw.dilep", leading_lep + subleading_lep)
+
+    events = set_ak_column(events, "vbfpair.dr", gp.sec1.delta_r(gp.sec2))
+    events = set_ak_column(events, "vbfpair.deta", abs(gp.sec1.eta - gp.sec2.eta))
+    events = set_ak_column(events, "vbfpair.mass", (gp.sec1 + gp.sec2).mass)
+
+    # hotfix: pt is not automatically stored as additional field (only accessible via behavior),
+    # but needs to be explicitely set as column to be stored on disc
+    events = set_ak_column_f32(events, "gen_hbw.hh.pt", events.gen_hbw.hh.pt)
+    events = set_ak_column_f32(events, "gen_hbw.dilep.pt", events.gen_hbw.dilep.pt)
+    events = set_ak_column_f32(events, "gen_hbw.hh.mass", events.gen_hbw.hh.mass)
+    events = set_ak_column_f32(events, "gen_hbw.dilep.mass", events.gen_hbw.dilep.mass)
     for route in self.produced_columns:
+        if not has_ak_column(events, route):
+            logger.warning(f"Produced column {route} is missing")
+            continue
         events = set_ak_column_f32(events, route, ak.fill_none(ak.nan_to_none(route.apply(events)), -10))
 
     return events
+
+
+@gen_hbw_decay_features.init
+def gen_hbw_decay_features_init(self: Producer) -> None:
+    @call_once_on_config
+    def add_gen_hbw_decay_variables(config):
+        config.add_variable(
+            name="vbfpair.dr",
+            binning=(40, 0, 10),
+            unit="GeV",
+            x_title=r"$\Delta \, R_{gen}$",
+            aux={"overflow": True},
+        )
+        config.add_variable(
+            name="vbfpair.deta",
+            binning=(40, 0, 10),
+            unit="GeV",
+            x_title=r"$\Delta \, \eta_{gen}$",
+            aux={"overflow": True},
+        )
+        config.add_variable(
+            name="vbfpair.mass",
+            binning=(80, 0, 400),
+            unit="GeV",
+            x_title=r"$m_{jj}^{gen}$",
+            aux={"overflow": True, "rebin": 2},
+        )
+
+        config.add_variable(
+            name="gen_hbw.lep0.pt",
+            binning=(80, 0., 400.),
+            unit="GeV",
+            x_title=r"$p_{T, \, lep0}^{gen}$",
+            aux={"overflow": True, "rebin": 1, "x_max": 200},
+        )
+        config.add_variable(
+            name="gen_hbw.lep1.pt",
+            binning=(80, 0., 400.),
+            unit="GeV",
+            x_title=r"$p_{T, \, lep1}^{gen}$",
+            aux={"overflow": True, "rebin": 1, "x_max": 200},
+        )
+        config.add_variable(
+            name="gen_hbw.dilep.pt",
+            binning=(80, 0., 400.),
+            unit="GeV",
+            x_title=r"$p_{T, \, ll}^{gen}$",
+            aux={"overflow": True, "rebin": 2},
+        )
+        config.add_variable(
+            name="gen_hbw.dilep.mass",
+            binning=(80, 0., 400.),
+            unit="GeV",
+            x_title=r"$m_{ll}^{gen}$",
+            aux={"overflow": True, "rebin": 2},
+        )
+        config.add_variable(
+            name="gen_hbw.hh.mass",
+            binning=(80, 0., 800.),
+            unit="GeV",
+            x_title=r"$m_{hh}^{gen}$",
+            aux={"overflow": True, "rebin": 2},
+        )
+
+    add_gen_hbw_decay_variables(self.config_inst)

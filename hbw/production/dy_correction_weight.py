@@ -36,9 +36,11 @@ logger = law.logger.get_logger(__name__)
     # produced dy weight column
     produced_column="dy_correction_weight",
     uses_column=None,
-    version=2,
+    version=4,
     n_jet=2,
     derivation_region="with_trigger_weight",
+    derivation_configs=None,
+    # derivation_configs=("c22prev14", "c22postv14", "c23prev14", "c23postv14"),
 )
 def dy_correction_weight(
     self: Producer,
@@ -58,11 +60,24 @@ def dy_correction_weight(
         "down": {},
     }
 
+    # translate configs to eras
+    era_map = {
+        "c22prev14": "2022",
+        "c22postv14": "2022EE",
+        "c23prev14": "2023",
+        "c23postv14": "2023BPix",
+    }
+    if self.derivation_configs:
+        era = "_".join([era_map[cfg] for cfg in self.derivation_configs])
+    else:
+        era = era_map[task.config_inst.name]
+
     njets = ak.where(njet > 7, 7, njet)
     # NOTE: this is only preparation for systs unc for up and down are to be read out from .json file
     for syst in ["nominal"]:
         var_map = {
-            "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
+            "era": era,
+            # "era": f"{task.config_inst.campaign.x.year}{task.config_inst.campaign.x.postfix}",
             "njets": njets,
             "ptll": events.gen_dilepton_pt,  # NOTE: reco ptll: (events.Lepton[:, 0] + events.Lepton[:, 1]).pt,
             "syst": syst,
@@ -118,7 +133,9 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
         task,
-        configs=(task.config,),
+        # configs=(task.config,),
+        # configs=("c22prev14", "c22postv14", "c23prev14", "c23postv14"),
+        configs=self.derivation_configs or (task.config,),
         shift="nominal",
         processes=((
             "vv", "w_lnu", "st",
@@ -147,6 +164,11 @@ def dy_correction_weight_skip(self: Producer) -> bool:
     return self.dataset_inst.is_data or not (
         self.dataset_inst.has_tag("is_dy")
     )
+
+
+dy_incl_corr_weight = dy_correction_weight.derive("dy_incl_corr_weight", cls_dict={
+    "derivation_configs": ("c22prev14", "c22postv14", "c23prev14", "c23postv14"),
+})
 
 
 dy_weight_test = dy_correction_weight.derive("dy_weight_test", cls_dict={

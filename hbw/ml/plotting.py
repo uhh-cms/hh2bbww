@@ -29,7 +29,9 @@ logger = law.logger.get_logger(__name__)
 cms_label_kwargs = {
     "data": False,
     # "llabel": "Private work (CMS simulation)",
-    "llabel": "Simulation work in progress",
+    # "llabel": "Simulation work in progress",
+    "llabel": "Simulation preliminary",
+    "lumi": "62",  # NOTE: hard-coded, to be updated if needed
     # "exp": "",
 }
 if "CMS" in cms_label_kwargs["llabel"]:
@@ -178,13 +180,16 @@ def plot_confusion(
         process_insts: tuple[od.Process],
         stats: dict | None = None,
         normalize: str = "columns",
+        with_title: bool = False,
 ) -> None:
     """
     Simple function to create and store a confusion matrix plot
     """
     # use CMS plotting style but with non-quadratic figsize to avoid stretching the colorbar
     plt.style.use(mplhep.style.CMS)
-    plt.rcParams["figure.figsize"] = (11.6, 10)
+    plt.rcParams["figure.figsize"] = (11.8, 10)
+    if with_title:
+        plt.rcParams["figure.figsize"] = (11.6, 10)  # with title
 
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -227,7 +232,8 @@ def plot_confusion(
     )
 
     # Add title and CMS label
-    ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=24, pad=+24 * 2)
+    if with_title:
+        ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=24, pad=+24 * 2)
     mplhep.cms.label(ax=ax, fontsize=24, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     plt.tight_layout()
@@ -292,8 +298,8 @@ def plot_roc_ovr(
         # create the plot
         ax.plot(fpr, tpr)
 
-    ax.set_xlabel("Background selection efficiency (FPR)")
-    ax.set_ylabel("Signal selection efficiency (TPR)")
+    ax.set_xlabel("Background selection efficiency")
+    ax.set_ylabel("Signal selection efficiency")
 
     # legend
     labels = (
@@ -301,8 +307,9 @@ def plot_roc_ovr(
         if process_insts else range(n_classes)
     )
     ax.legend(
-        [f"Signal: {labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
-        title=f"ROC OvR, {input_type} set",
+        [f"{labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
+        # title=f"ROC (process vs rest), {input_type} set",
+        title="ROC (process vs rest)",
         loc="lower right",
     )
     mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
@@ -403,8 +410,6 @@ def plot_roc_ovo(
 def plot_output_nodes(
         model: MLModel,
         data: DotDict[DotDict],
-        # train: DotDict,
-        # validation: DotDict,
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
         shape_norm: bool = True,

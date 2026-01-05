@@ -18,7 +18,8 @@ def add_common_ml_variables(config: od.Config) -> None:
     """
 
     for postfix, object_label in (
-        ("", "central jets"),
+        # ("", "central jets"),
+        ("", "jets"),
         ("_alljets", "central + forward jets"),
         ("_fwjets", "forward jets"),
     ):
@@ -35,7 +36,10 @@ def add_common_ml_variables(config: od.Config) -> None:
             expression=f"mli_n_jet{postfix}",
             binning=(11, -0.5, 10.5),
             x_title=f"Number of {object_label}",
-            aux={"overflow": True},
+            aux={
+                "overflow": True,
+                "x_min": 0.5,
+            },
         )
 
     config.add_variable(
