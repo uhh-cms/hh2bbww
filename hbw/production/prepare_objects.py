@@ -162,7 +162,10 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         # logger.info("Updating FatJet collection to only include jets with pt > 300.")
 
         fatjet_mask = (events["FatJet"]["pt"] > 200)
-        logger.info("Updating FatJet collection to only include jets with pt > 200.")
+        logger.info_once(
+            "update_fatjet_collection",
+            "Updating FatJet collection to only include jets with pt > 200.",
+        )
         events = set_ak_column(events, "FatJet", events["FatJet"][fatjet_mask])
 
         # NOTE: this sometimes produces errors due to NaN values in the column
