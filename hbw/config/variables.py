@@ -1253,3 +1253,41 @@ def add_variables(config: od.Config) -> None:
         binning=(60, -150., 150.),
         x_title=r"U$_{perp}$",
     )
+
+    # variables from Hbb SF production
+    config.add_variable(
+        name="hbb_sf_weight",
+        binning=(50, 0.0, 2.0),
+        unit="",
+        x_title="Hbb FatJet SF weight",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_cc_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged cc jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_bb_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged bb jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_lf_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged lf jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_hbbjets",
+        expression=lambda events: events["hbb_sf_weight_num_cc_hbbjets"] + events["hbb_sf_weight_num_bb_hbbjets"],  # noqa: E501
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged bb/cc jets",
+        aux={"overflow": True},
+    )
