@@ -119,9 +119,10 @@ run_merge_reduced_events() {
         --configs "$configs" \
         --shifts "$shifts" \
         --cf.ReduceEvents-{retries=2,workflow=htcondor} \
+        --cf.MergeReducedEvents-{retries=2,workflow=htcondor} \
         --cf.ReduceEvents-pilot \
 	    --cf.BundleRepo-custom-checksum $(checksum) \
-        --workers 123
+        --workers 123 --local-scheduler
 }
 
 run_merge_selection_stats() {
@@ -685,7 +686,7 @@ run_and_fetch_efficiency_plots() {
     for configs in $config_groups; do
         local folder_name=${configs//,/_}
         echo "→ PlotVariables: config=$configs, categories=$categories, variables=$variables"
-        run_and_fetch_cmd hbb_efficiency_pt300/$folder_name claw run cf.PlotVariables1D \
+        run_and_fetch_cmd hbb_efficiency/$folder_name claw run cf.PlotVariables1D \
             --configs "$configs" \
             --ml-models $all_models \
             --variables $variables \
@@ -804,7 +805,7 @@ run_triggersf_production() {
 
 run_and_fetch_all_plots() {
 
-    # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
+    run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
 
     # run_and_fetch_gen_plots
     # run_and_fetch_all_mcsyst_plots
@@ -863,10 +864,12 @@ run_triggersf() {
 run_all() {
     # Set global checksum once for this entire workflow run
     global_checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum" --local-scheduler
     # recreate_campaign_summary
 
+    # run_merge_reduced_events "c22prev14,c23prev14,c23postv14" "nominal"
     # run_merge_reduced_events "$all_configs" "nominal"
+    # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
     # run_merge_selection_stats "$all_configs" "nominal"
 
     # prepare_dy_corr "$all_configs"
@@ -899,7 +902,7 @@ run_all() {
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "ml_inputs,ml_inputs_vbf_extended,mli_full_vbf_tag,mli_full_vbf_mass"
 
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3_tag,ggfv3,vbfv3_tag"
-    # run_datacards "vbfmqq1_unblind" $all_configs
+    run_datacards "vbfmqq1_unblind" $all_configs
     # run_datacards "vbftag1_unblind" $all_configs
 
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
