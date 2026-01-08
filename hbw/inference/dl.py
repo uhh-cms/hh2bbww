@@ -203,6 +203,18 @@ systematics = DotDict({
         "eff_hbb_bkg_bkg",
         "eff_hbb_signal_bkg",
     ],
+    "hbb_sf": [  # TODO
+        "hbb_sf_{campaign}",
+        # "hbb_sf_ggf_{campaign}",
+        # "hbb_sf_vbf_{campaign}",
+        # "hbb_sf_bkg_{campaign}",
+        # "hbb_sf_signal_ggf",
+        # "hbb_sf_signal_vbf",
+        # "hbb_sf_signal_bkg",
+        # "hbb_sf_bkg_ggf",
+        # "hbb_sf_bkg_vbf",
+        # "hbb_sf_bkg_bkg",
+    ],
     "murf_envelope": [
         # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "murf_envelope_ttbar",
@@ -371,6 +383,19 @@ systematics["default"] = [
     *systematics.shape_only_cpn_uncorr,
     *systematics.jerc_only_cpn_uncorr,
 ]
+systematics["hbbsf_no_jerc"] = [
+    *systematics.rate_default,
+    *systematics.shape_only_cpn_uncorr,
+    # *systematics.jerc_only_cpn_uncorr,
+    *systematics.hbb_sf,
+]
+systematics["hbbsf_full"] = [
+    *systematics.rate_default,
+    *systematics.shape_only_cpn_uncorr,
+    # *systematics.jerc_only_cpn_uncorr,
+    *systematics.hbb_sf,
+]
+
 systematics["default_year_uncorr"] = [
     *systematics.rate_default,
     *systematics.murf_envelope,
@@ -493,7 +518,8 @@ backgrounds_skip_dy = [
 ]
 
 processes_dict = {
-    "test": ["tt", *hhprocs("hbb_hww2l2nu")],
+    "test": ["tt", *hhprocs_ggf("hbb_hww2l2nu")],
+    "test1": ["tt", *hhprocs("hbb_hww2l2nu")],
     "hww": [*backgrounds, *hhprocs("hbb_hww")],
     "hww2l2nu": [*backgrounds, *hhprocs("hbb_hww2l2nu")],
     "hwwzztt": [*backgrounds, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
@@ -677,10 +703,40 @@ incl_dycorr_boosted_bkg = default_unblind.derive("incl_dycorr_boosted_bkg", cls_
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,
 })
+
 pas = default_unblind.derive("pas", cls_dict={  # using outputs from Lara
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,
 })
+
+hbbsf_test = dl.derive("hbbsf_test", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "processes": processes_dict["test"],
+    "systematics": systematics.hbbsf_no_jerc,
+    "unblind": True,
+    "skip_data": False,
+})
+hbbsf_no_jerc = dl.derive("hbbsf_no_jerc", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "processes": processes_dict["hwwzztt"],
+    "systematics": systematics.hbbsf_no_jerc,
+    "unblind": True,
+    "skip_data": False,
+})
+hbbsf_full = dl.derive("hbbsf_full", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "processes": processes_dict["hwwzztt"],
+    "systematics": systematics.hbbsf_full,
+    "unblind": True,
+    "skip_data": False,
+})
+# hbbsf_no_jerc = pas.derive("hbbsf_no_jerc", cls_dict={
+#     "systematics": systematics.hbbsf_no_jerc,
+# })
+
 vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
 })
