@@ -231,6 +231,7 @@ processes_per_shape = {
     "pdf_shape_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "pdf_shape_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
     "pdf_shape_hh_ggf_hbb_htt": sorted(signals_hh_ggf_hhdecay("hbb_htt")),
+    "pdf_shape_hh_ggf": sorted(signals_hh_ggf),
     # "pdf_shape_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "pdf_shape_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "pdf_shape_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
@@ -248,9 +249,15 @@ processes_per_shape = {
     "murf_envelope_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "murf_envelope_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
     "murf_envelope_hh_ggf_hbb_htt": sorted(signals_hh_ggf_hhdecay("hbb_htt")),
+    "murf_envelope_hh_ggf": sorted(signals_hh_ggf),
     # "murf_envelope_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "murf_envelope_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "murf_envelope_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
+    "hbb_sf_signal_ggf_{campaign}": sorted(signals),
+    "hbb_sf_signal_vbf_{campaign}": sorted(signals),
+    "hbb_sf_signal_bkg_{campaign}": sorted(signals),
+    "hbb_sf": ["all"],
+    "hbb_sf_{campaign}": ["all"],
 }
 
 remove_processes = {
@@ -309,6 +316,7 @@ for campaign, campaign_fmt in campaign_format.items():
         f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
         # analysis-specific
         f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+        f"hbb_sf_{campaign}": f"CMS_HIG25018_hbb_sf_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:
