@@ -124,7 +124,8 @@ def set_config_defaults_and_groups(config_inst):
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     # config_inst.x.default_hist_producer = "with_dy_corr"
-    config_inst.x.default_hist_producer = "met_geq40_incl_dy_corr"
+    # config_inst.x.default_hist_producer = "met_geq40_incl_dy_corr"
+    config_inst.x.default_hist_producer = "met_geq40_with_hbbsf_dy"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -551,8 +552,8 @@ def set_config_defaults_and_groups(config_inst):
 
     # plotting settings groups
     # (used in plotting)
-    # cms_label = "wip"
-    cms_label = "pre"
+    cms_label = "wip"
+    # cms_label = "pre"
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
