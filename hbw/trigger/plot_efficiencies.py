@@ -377,7 +377,7 @@ def plot_efficiencies(
                             "y": np.nan_to_num(efficiencies[0] / efficiencies[1], nan=1, posinf=1, neginf=1),
                             "yerr": calc_ratio_uncertainty(efficiencies, errors),
                             "label": f"{label}",
-                            "color": f"C{count_key-2}",
+                            "color": f"C{count_key - 2}",
                             # "annotate": f"alpha={efficiency_sums[0]/efficiency_sums[1]:.2f}",
                         }
                     # else:

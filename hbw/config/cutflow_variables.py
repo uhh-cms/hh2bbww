@@ -103,25 +103,29 @@ def add_gen_variables(config: od.Config) -> None:
     """
     defines gen-level cutflow variables
     """
-    for gp in ["h1", "h2", "b1", "b2", "sec1", "sec2"]:
+    for gp in [
+        "h1", "h2", "b1", "b2", "v1", "v2",
+        "v1d1", "v1d2", "v2d1", "v2d2",
+        "sec1", "sec2",
+    ]:
         config.add_variable(
-            name=f"gen_{gp}_pt",
+            name=f"gen_hbw_{gp}_pt",
             expression=f"gen_hbw_decay.{gp}.pt",
-            binning=(40, 0., 1000.),
+            binning=(80, 0., 400.),
             unit="GeV",
             x_title=r"$p_{T, %s}^{gen}$" % (gp),
-            aux={"overflow": True},
+            aux={"overflow": True, "rebin": 2},
         )
         config.add_variable(
-            name=f"gen_{gp}_mass",
+            name=f"gen_hbw_{gp}_mass",
             expression=f"gen_hbw_decay.{gp}.mass",
-            binning=(40, 0., 1000.),
+            binning=(80, 0., 200.),
             unit="GeV",
             x_title=r"$m_{%s}^{gen}$" % (gp),
-            aux={"overflow": True},
+            aux={"overflow": True, "rebin": 2},
         )
         config.add_variable(
-            name=f"gen_{gp}_eta",
+            name=f"gen_hbw_{gp}_eta",
             expression=f"gen_hbw_decay.{gp}.eta",
             binning=(40, -6., 6.),
             unit="GeV",
@@ -129,7 +133,7 @@ def add_gen_variables(config: od.Config) -> None:
             aux={"overflow": True},
         )
         config.add_variable(
-            name=f"gen_{gp}_eta_barrel",
+            name=f"gen_hbw_{gp}_eta_barrel",
             expression=f"gen_hbw_decay.{gp}.eta",
             binning=(40, -6., 6.),
             selection=(lambda events: events.gen_hbw_decay[gp]["eta"] > 2.4),
@@ -138,67 +142,10 @@ def add_gen_variables(config: od.Config) -> None:
             x_title=r"$\eta_{%s}^{gen}(barrel)$" % (gp),
         )
         config.add_variable(
-            name=f"gen_{gp}_phi",
+            name=f"gen_hbw_{gp}_phi",
             expression=f"gen_hbw_decay.{gp}.phi",
             binning=(40, -4, 4),
             unit="GeV",
             aux={"overflow": True},
-            x_title=r"$\phi_{%s}^{gen}$" % (gp),
-        )
-    config.add_variable(
-        name="vbfpair.dr",
-        binning=(40, 0, 10),
-        unit="GeV",
-        x_title=r"$\Delta \, R_{gen}$",
-        aux={"overflow": True},
-    )
-    config.add_variable(
-        name="vbfpair.deta",
-        binning=(40, 0, 10),
-        unit="GeV",
-        x_title=r"$\Delta \, \eta_{gen}$",
-        aux={"overflow": True},
-    )
-    config.add_variable(
-        name="vbfpair.mass",
-        binning=(40, 0, 4000),
-        unit="GeV",
-        x_title=r"$mass(VBF pair)^{gen}$",
-        aux={"overflow": True},
-    )
-
-
-@call_once_on_config()
-def add_gp_variables(config: od.Config) -> None:
-    """
-    defines gen-level cutflow variables
-    """
-    for gp in ["h1", "h2", "b1", "b2", "wlep", "whad", "l", "nu", "q1", "q2", "sec1", "sec2"]:
-        config.add_variable(
-            name=f"gp_{gp}_pt",
-            expression=f"gp.{gp}_pt",
-            binning=(40, 0., 400.),
-            unit="GeV",
-            x_title=r"$p_{T, %s}^{gen}$" % (gp),
-        )
-        config.add_variable(
-            name=f"gp_{gp}_mass",
-            expression=f"gp.{gp}_mass",
-            binning=(40, 0., 400.),
-            unit="GeV",
-            x_title=r"$m_{%s}^{gen}$" % (gp),
-        )
-        config.add_variable(
-            name=f"gp_{gp}_eta",
-            expression=f"gp.{gp}_eta",
-            binning=(12, -6., 6.),
-            unit="GeV",
-            x_title=r"$\eta_{%s}^{gen}$" % (gp),
-        )
-        config.add_variable(
-            name=f"gp_{gp}_phi",
-            expression=f"gp.{gp}_phi",
-            binning=(8, -4, 4),
-            unit="GeV",
             x_title=r"$\phi_{%s}^{gen}$" % (gp),
         )

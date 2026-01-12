@@ -82,6 +82,7 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
     config.add_process(config.x.procs.n.other)
+    config.add_process(config.x.procs.n.hh_other)
     minor = config.add_process(config.x.procs.n.minor)
     minor.label = "minor"
 

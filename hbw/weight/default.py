@@ -4,6 +4,7 @@
 Event weight producer.
 """
 
+from hbw.util import call_once_on_config
 import law
 
 from columnflow.util import maybe_import
@@ -63,6 +64,9 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     tt_weight=None,
     dy_weight=None,
     nondy_hist_producer=None,
+    dy_correction_weight_producer=None,
+    pre_label="",
+    version=2,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -134,20 +138,30 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
     """
     from columnflow.tasks.production import ProduceColumns
     if "dy_correction_weight" in self.local_weight_columns.keys():
+        if not self.dy_correction_weight_producer:
+            raise Exception(
+                "dy_correction_weight_producer must be set if dy_correction_weight is used "
+                "in weight_columns",
+            )
         reqs["dy_correction_weight_producer"] = ProduceColumns.req(
             task,
-            producer="dy_correction_weight",
+            producer=self.dy_correction_weight_producer,
         )
 
 
 @base.init
 def base_init(self: HistProducer) -> None:
-    # NOTE: this might be called multiple times, might be quite inefficient
-    # if not getattr(self, "config_inst", None) or not getattr(self, "dataset_inst", None):
-    #     return
 
     if not getattr(self, "config_inst"):
         return
+
+    @call_once_on_config
+    def update_cat_label(config_inst, pre_label):
+        for cat_inst, _, _ in config_inst.walk_categories():
+            cat_inst.label = "\n".join([pre_label, cat_inst.label])
+
+    if self.pre_label:
+        update_cat_label(self.config_inst, self.pre_label)
 
     if self.categorizer_cls:
         self.uses.add(self.categorizer_cls)
@@ -304,34 +318,40 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
     "stitched_normalization_weight": [],
 }})
 
-with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={"weight_columns": {
-    **default_correction_weights,
-    # "vjets_weight": [],  # TODO: corrections/shift missing
-    "trigger_weight": ["trigger_sf"],
-    "stitched_normalization_weight": [],
-}})
+with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={
+    "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+})
 
 # NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
 # because the dy_correction_weight is only relevant for DY processes. This is implemented in
 # hbw/analysis/create_analysis.py
 with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
+    "pre_label": "After DY correction",
     "nondy_hist_producer": "with_trigger_weight",
-    "version": 0,
     "weight_columns": {
         **default_correction_weights,
         "dy_correction_weight": ["dy_correction"],
         "trigger_weight": ["trigger_sf"],
         "stitched_normalization_weight": [],
     },
+    "dy_correction_weight_producer": "dy_correction_weight",
 })
-with_dy_corr_no_trig_sf = default_hist_producer.derive("with_dy_corr_no_trig_sf", cls_dict={
-    "nondy_hist_producer": None,
-    "version": 0,
+incl_dy_corr = default_hist_producer.derive("incl_dy_corr", cls_dict={
+    "pre_label": "After DY correction",
+    "nondy_hist_producer": "with_trigger_weight",
     "weight_columns": {
         **default_correction_weights,
         "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
         "stitched_normalization_weight": [],
     },
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
 })
 
 #
@@ -347,18 +367,6 @@ met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,
 })
 
-met_geq40 = default_hist_producer.derive("met_geq40", cls_dict={
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_met_geq40,
-})
-met_geq40_unstitched = unstitched.derive("met_geq40_unstitched", cls_dict={
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_met_geq40,
-})
-met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_met_geq40,
-})
 met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_dict={
     "weight_columns": {
         **default_correction_weights,
@@ -368,10 +376,17 @@ met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_di
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
 })
-met_geq40_with_dy_corr_unstitched = with_dy_corr.derive("met_geq40_with_dy_corr_unstitched", cls_dict={
-    "weight_columns": unstitched_weight_columns,
-    "nondy_hist_producer": None,
+met_geq40_with_dy_corr = with_dy_corr.derive("met_geq40_with_dy_corr", cls_dict={
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": "met_geq40_no_dycorr",
     "categorizer_cls": mask_fn_met_geq40,
+    "dy_correction_weight_producer": "dy_correction_weight",
+})
+met_geq40_incl_dy_corr = with_dy_corr.derive("met_geq40_incl_dy_corr", cls_dict={
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": "met_geq40_no_dycorr",
+    "categorizer_cls": mask_fn_met_geq40,
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
 })
 
 mbb80 = with_dy_corr.derive("mbb80", cls_dict={
