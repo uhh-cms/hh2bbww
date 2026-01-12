@@ -12,8 +12,7 @@ def default_calibrator(container):
     if isinstance(default_calibrators, str):
         return default_calibrators.split(",")
     else:
-        # return ["ak4", "ak8", "ele"] NOTE: commented out atm, since there are no fatjet jercs atm for 2024
-        return ["ak4", "ele"]
+        return ["ak4", "ak8", "ele"]
 
 
 def default_selector(container):
@@ -99,6 +98,7 @@ def default_producers(cls, container, task_params):
 def set_config_defaults_and_groups(config_inst):
     """ Configuration function that sets all the defaults and groups in the config_inst """
     # define the default dataset and process based on the analysis tags
+    # TODO configure here signal
     signal_tag = "qqlnu" if config_inst.has_tag("is_sl") else "2l2nu"
     default_signal_process = "hh_ggf_hbb_hvv_kl1_kt1"
     signal_generator = "powheg"
@@ -206,6 +206,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
+        "dl9": ["data_e", "data_mu", "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
         "dl8": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy_ee_m50toinf", "dy_mumu_m50toinf", "dy_tautau_m50toinf", "st", "tt"],  # noqa: E501
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501

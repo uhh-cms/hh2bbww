@@ -153,3 +153,4 @@ def prepml_init(self):
 prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"})
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
+prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})

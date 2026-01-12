@@ -253,6 +253,9 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
     fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
     mask = (ak.sum(fj_mask, axis=-1) == 0)
+
+    # TODO: This is very dangerous!!! becaus ebaludin need this for HH
+    # mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= 2)
     return events, mask
 
 
@@ -303,9 +306,26 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
-    mask = (n_deepjet >= 2)
+    mask = (n_deepjet == 2)
     return events, mask
 
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet == 3)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet >= 4)
+    return events, mask
 #
 # DNN categorizer
 #
@@ -401,15 +421,15 @@ def mask_fn_dyvr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
 
 @categorizer(
     uses={
-        MET_COLUMN("pt"), MET_COLUMN("phi"),  # IF_DY("RecoilCorrMET.{pt,phi}"),
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
     },
     met_req=40,
 )
 def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    # if self.dataset_inst.has_tag("is_dy"):
-    #     mask = events.RecoilCorrMET.pt >= self.met_req
-    # else:
-    mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt >= self.met_req
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
     return events, mask
 
 

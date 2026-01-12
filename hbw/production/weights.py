@@ -30,7 +30,8 @@ from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag, IF_NOT_2024
+from hbw.util import has_tag  # , IF_NOT_2024
+
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -46,6 +47,9 @@ stitched_normalization_weights.normalize_weights_per_dataset = True
 
 
 @producer(
+    uses={
+        pu_weight,
+    },
     mc_only=True,
 )
 def event_weights_to_normalize(self: Producer, events: ak.Array, results: SelectionResult, **kwargs) -> ak.Array:
@@ -55,8 +59,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
     """
 
     # compute pu weights
-    if self.has_dep(pu_weight):
-        events = self[pu_weight](events, **kwargs)
+    # if self.has_dep(pu_weight):
+    events = self[pu_weight](events, **kwargs)
     if self.has_dep(ps_weights):
         events = self[ps_weights](events, **kwargs)
 
@@ -95,8 +99,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
-    if self.config_inst.campaign.x.year != 2024:
-        self.uses |= {pu_weight}
+    # if self.config_inst.campaign.x.year != 2024:
+    #     self.uses |= {pu_weight}
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {btag_weights}
 
@@ -159,7 +163,6 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
 electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
     "weight_name": "electron_reco_weight",
     "get_electron_config": (lambda self: self.config_inst.x.electron_reco_sf_names),
-    "get_electron_file": (lambda self, external_files: external_files.electron_reco_sf),
 })
 
 
@@ -256,15 +259,15 @@ def combined_normalization_weights_init(self: Producer) -> None:
         # top_pt_weight,
         top_pt_theory_weight,
         vjets_weight,
-        # normalized_pu_weights,
-        IF_NOT_2024(normalized_pu_weights),  # NOTE: using preliminary atm for 2024
+        normalized_pu_weights,
+        # IF_NOT_2024(normalized_pu_weights),  # NOTE: using preliminary atm for 2024
     },
     produces={
         combined_normalization_weights,
         top_pt_theory_weight,
         vjets_weight,
-        # normalized_pu_weights,
-        IF_NOT_2024(normalized_pu_weights),   # NOTE: using preliminary atm for 2024
+        normalized_pu_weights,
+        # IF_NOT_2024(normalized_pu_weights),   # NOTE: using preliminary atm for 2024
     },
     mc_only=True,
     version=law.config.get_expanded("analysis", "event_weights_version", 5),
@@ -294,18 +297,20 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             negative_b_score_log_mode="debug",
             **kwargs,
         )
-        # events = self[normalized_btag_weights](events, **kwargs)
+        events = self[normalized_btag_weights](events, **kwargs)
 
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         if self.config_inst.campaign.x.year == 2024:
-            electron_mask = ((events.Electron["pt"] >= 20.0) & (events.Electron["pt"] < 1000.0))
+            # electron_mask = ((events.Electron["pt"] >= 20.0) & (events.Electron["pt"] < 1000.0))
             SCeta = (abs(events.Electron["eta"] + events.Electron["deltaEtaSC"]))
-            # NOTE: atm we allow some penalty raneg if SCeta is slightly above 2.5 due to numerical precision. also it has to be < 2.5 not <= 2.5
+            # NOTE: atm we allow some penalty range if SCeta is slightly above 2.5
+            # due to numerical precision also it has to be < 2.5 not <= 2.5
             SCeta = ak.where(((SCeta >= 2.5) & (SCeta < 2.505)), 2.49999, SCeta)
             SCeta = ak.where(((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
             events = set_ak_column_f32(events, "Electron.superclusterEta", SCeta)
-            events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)
+            events = self[electron_weights](events, **kwargs)
+            # events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)
             events = self[electron_reco_weights](events, **kwargs)
         else:
             events = self[electron_weights](events, **kwargs)
@@ -319,7 +324,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # normalize event weights using stats
     if self.has_dep(normalized_pu_weights):
-        events = self[normalized_pu_weights](events, **kwargs)  # NOTE: commented out due since pu_sf not availabe for 2024 
+        events = self[normalized_pu_weights](events, **kwargs)
 
     if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[normalized_ps_weights](events, **kwargs)
@@ -357,8 +362,8 @@ def event_weights_init(self: Producer) -> None:
         self.produces |= {self.trigger_weights_producer}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {btag_weights}  # , normalized_btag_weights}
-        # self.produces |= {normalized_btag_weights}
+        self.uses |= {btag_weights, normalized_btag_weights}
+        self.produces |= {normalized_btag_weights}
 
     if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_ps_weights}

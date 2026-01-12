@@ -417,11 +417,11 @@ def convert_smart(data: dict) -> str:
     name = fix_das_name(data["name"])
     name_components = name.split("_")
     proc_name = "UKNOWN"
-    
+
     for identifier, dataset_type in name_identifier.items():
         if identifier in name_components[0]:
             proc_name = dataset_type(name_components[0])
-            break      
+            break
 
     for identifier, func in additional_identifier.items():
         for part in name_components[1:]:

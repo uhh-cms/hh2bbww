@@ -185,4 +185,3 @@ def configure_data_split_in_eras():
                 "stack": False,
             },
         )
-

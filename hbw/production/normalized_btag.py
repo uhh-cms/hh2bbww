@@ -82,6 +82,7 @@ def normalized_btag_weights_post_init(self: Producer, task: law.Task) -> None:
 def normalized_btag_weights_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     from hbw.tasks.corrections import GetBtagNormalizationSF
     reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(task)
+    # reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(task, processes=("tt_dl",))
 
 
 normalized_btag_weights_full = normalized_btag_weights.derive("normalized_btag_weights_full", cls_dict=dict(

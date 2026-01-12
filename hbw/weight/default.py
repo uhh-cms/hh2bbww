@@ -260,7 +260,7 @@ btag_uncs = [
 
 default_correction_weights = {
     # "dummy_weight": ["dummy_{cpn_tag}"],
-    # "normalized_pu_weight": ["minbias_xs"],
+    "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
@@ -492,7 +492,7 @@ base.derive("stitched_leptonsf_btag_pu_trigger_ttdycorr", cls_dict={"weight_colu
 # }})
 
 
-from hbw.categorization.categories import mask_fn_highpt
+# from hbw.categorization.categories import mask_fn_highpt
 
 # no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 

@@ -152,7 +152,7 @@ def pre_selection(
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
     # apply jet veto map --> moved to post selection
-    # events, jet_veto_results = self[jet_veto_map](events, **kwargs) 
+    # events, jet_veto_results = self[jet_veto_map](events, **kwargs)
     # results += jet_veto_results
 
     # combine quality criteria into a single step

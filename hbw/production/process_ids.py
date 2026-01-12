@@ -65,9 +65,9 @@ def hbw_process_ids_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.process_producer = hh_bbvv_process_producer
-    elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
-        # stitching of DY NLO samples
-        self.process_producer = dy_nlo_process_producer
+    # elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
+    #     # stitching of DY NLO samples
+    #     self.process_producer = dy_nlo_process_producer
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         # stitching of DY NLO samples
         self.process_producer = w_lnu_nlo_process_producer
@@ -272,10 +272,10 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             # f"{base_proc_name}_1j_lf": (n_partons == 1) & ~is_hf,
             # f"{base_proc_name}_2j_lf": (n_partons == 2) & ~is_hf,
             # f"{base_proc_name}_3j_lf": (n_partons == 3) & ~is_hf,  # should not be assigned
-            # f"{base_proc_name}_0j": n_partons == 0,
-            # f"{base_proc_name}_1j": n_partons == 1,
-            # f"{base_proc_name}_2j": n_partons == 2,
-            # f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
+            f"{base_proc_name}_0j": n_partons == 0,
+            f"{base_proc_name}_1j": n_partons == 1,
+            f"{base_proc_name}_2j": n_partons == 2,
+            f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
         }
     elif base_proc_name == "dy_m4to10" or base_proc_name == "dy_m10to50":
         # separate into hf/lf

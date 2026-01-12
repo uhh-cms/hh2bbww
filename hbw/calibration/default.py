@@ -114,7 +114,7 @@ def seeds_user_base_setup(
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "ele_version", 6),
+    version=law.config.get_expanded("analysis", "ele_version", 0),
     uses={electron_sceta, deterministic_seeds_calibrator.PRODUCES},
     produces={"Electron.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -142,7 +142,7 @@ def ele_init(self: Calibrator) -> None:
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "fatjet_version", 5),
+    version=law.config.get_expanded("analysis", "fatjet_version", 0),
     uses={msoftdrop, deterministic_seeds_calibrator.PRODUCES},
     produces={msoftdrop, "FatJet.pt"},  # never leave this empty, otherwise the calibrator will not run
     jec_sources=["Total"],  # taken from config
@@ -228,7 +228,7 @@ ak8_test = ak8.derive("ak8_test")
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "jet_version", 5),
+    version=law.config.get_expanded("analysis", "jet_version", 0),
     uses={deterministic_seeds_calibrator.PRODUCES, MET_COLUMN("{pt,phi}")},
     # We produce event seeds here again to be able to keep them after ReduceEvents (required for NN training).
     produces={deterministic_event_seeds.PRODUCES},
@@ -361,10 +361,8 @@ ak4uncs = ak4.derive("ak4uncs", cls_dict=dict(
 
 
 @calibrator(
-    # uses={deterministic_seeds_calibrator, ak4, ak8, ele},  # NOTE:  For now no fatjet calibrations avaiblabe in 2024
-    uses={deterministic_seeds_calibrator, ak4, ele},
-    # produces={deterministic_seeds_calibrator, ak4, ak8, ele},  # NOTE: For now no fatjet calibrations avaiblabe in 2024
-    produces={deterministic_seeds_calibrator, ak4, ele},
+    uses={deterministic_seeds_calibrator, ak4, ak8, ele},
+    produces={deterministic_seeds_calibrator, ak4, ak8, ele},
     version=0,
     skip_req_seeds=True,
 )
@@ -381,8 +379,7 @@ def combined(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     events = self[ak4](events, **kwargs)
 
     # apply the ak8 calibrator
-    if self.config_inst.campaign.x.year != 2024:  # NOTE: For now no fatjet calibrations avaiblabe in 2024
-        events = self[ak8](events, **kwargs)
+    events = self[ak8](events, **kwargs)
 
     # apply the electron calibrator
     events = self[ele](events, **kwargs)

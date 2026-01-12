@@ -197,7 +197,7 @@ def add_config(
     elif year == 2024:
         # taken lumi from above, subtracted era B, since not in cmsdb yet
         cfg.x.luminosity = Number(108950, {
-            "lumi_13p6TeV_2024": 0.015j,  # No uncertainty so far
+            "lumi_13p6TeV_2024": 0.015j,  # No uncertainty so far -> put to 1.5%
         })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
@@ -233,7 +233,9 @@ def add_config(
             jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
             jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
         elif year == 2024:
-            jer_campaign = f"Summer23BPixPrompt23_RunD"  # ATM using 2023PostBPix JER, since no 2024 available (see recommendations)
+            jer_campaign = "Summer23BPixPrompt23_RunD"
+            # ATM using 2023PostBPix JER, since no 2024 available (see recommendations)
+            # jer_campaign = f"Summer{year2}Prompt{year2}"
             jec_campaign = f"Summer{year2}Prompt{year2}"
         jet_type = "AK4PFPuppi"
         fatjet_type = "AK8PFPuppi"
@@ -266,7 +268,7 @@ def add_config(
         2018: "V5",
         2022: "V3",
         2023: "V2" if cfg.x.cpn_tag == "2023preBPix" else "V3",
-        2024: "V1",
+        2024: "V2",
     }[year]
 
     cfg.x.jec = DotDict.wrap({
@@ -289,7 +291,7 @@ def add_config(
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
-            "data_per_era": False if year == 2023 else True,
+            "data_per_era": False if year != 2022 else True,
         },
     })
 
@@ -298,15 +300,13 @@ def add_config(
     cfg.x.jer = DotDict.wrap({
         "Jet": {
             "campaign": jer_campaign,
-            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],  # 2024 using 2023 JER
+            "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],
             "jet_type": jet_type,
             "external_file_key": "jet_jerc",
         },
         "FatJet": {
             "campaign": jer_campaign,
             "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],
-            # "jet_type": "fatjet_type",
-            # JER info only for AK4 jets, stored in AK4 file
             "jet_type": fatjet_type,
             "external_file_key": "jet_jerc",
         },
@@ -411,7 +411,7 @@ def add_config(
             },
             # taken from preliminary studies from HH(4b)
             # source: https://indico.cern.ch/event/1372046/#2-run-3-particlenet-bb-sfs-sfb
-            # different results here (0.8, 0.9, 0.95): https://indico.cern.ch/event/1428223/#21-calibration-of-run-3-partic
+            # different results here (0.8, 0.9, 0.95): https://indico.cern.ch/event/1428223/#21-calibration-of-run-3-partic  # noqa
             "particlenet_xbb_vs_qcd": {
                 "loose": {"2022preEE": 0.92, "2022postEE": 0.92, "2023preBPix": 0.92, "2023postBPix": 0.92}.get(cfg.x.cpn_tag, 0.0),  # noqa
                 "medium": {"2022preEE": 0.95, "2022postEE": 0.95, "2023preBPix": 0.95, "2023postBPix": 0.95}.get(cfg.x.cpn_tag, 0.0),  # noqa
@@ -484,7 +484,7 @@ def add_config(
     cfg.x.hbb_btag_wp_score = 0.92
     if cfg.x.hbb_btag_wp_score == 0.0:
         raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
-    # TODO: xbb upart batg WPO and access not sure how this is done etc, i think it is just a differnet column from the uParT tagger
+    # TODO: xbb upart batg WPO and access not sure how this is done etc.
     if not year == 2024:
         cfg.x.xbb_btag_wp_score = cfg.x.btag_working_points["particlenet_xbb_vs_qcd"]["medium"]
         if cfg.x.xbb_btag_wp_score == 0.0:
@@ -594,43 +594,43 @@ def add_config(
             "2024": "2024Prompt",
         }[cfg.x.cpn_tag]
 
-        if year != 2024:
-            cfg.x.electron_sf_names = ElectronSFConfig(
-                correction="Electron-ID-SF",
-                campaign=electron_sf_campaign,
-                # campaign="2024",
-                working_point="Tight",
-            )
-            cfg.x.electron_reco_sf_names = ElectronSFConfig(
-                correction="Electron-ID-SF",
-                campaign=electron_sf_campaign,
-                # campaign="2024",
-                # working_point=ele_reco_wp_func,
-                working_point={
-                    "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
-                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
-                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
-                },
-            )
-        else:
-            cfg.x.electron_sf_names = ElectronSFConfig(
-                correction="Electron-ID-SF",
-                # campaign=electron_sf_campaign,
-                campaign="2024",
-                working_point="Tight",
-            )
-            cfg.x.electron_reco_sf_names = ElectronSFConfig(
-                correction="Electron-ID-SF",
-                campaign=electron_sf_campaign,
-                # campaign="2024",
-                # working_point=ele_reco_wp_func,
-                working_point={
-                    # NOTE: ATM no SF available for pt below 20 GeV in 2024
-                    # "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
-                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
-                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
-                },
-            )
+        # if year != 2024:
+        cfg.x.electron_sf_names = ElectronSFConfig(
+            correction="Electron-ID-SF",
+            campaign=electron_sf_campaign,
+            # campaign="2024",
+            working_point="Tight",
+        )
+        cfg.x.electron_reco_sf_names = ElectronSFConfig(
+            correction="Electron-ID-SF",
+            campaign=electron_sf_campaign,
+            # campaign="2024",
+            # working_point=ele_reco_wp_func,
+            working_point={
+                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+            },
+        )
+        # else:
+        #     cfg.x.electron_sf_names = ElectronSFConfig(
+        #         correction="Electron-ID-SF",
+        #         # campaign=electron_sf_campaign,
+        #         campaign="2024",
+        #         working_point="Tight",
+        #     )
+        #     cfg.x.electron_reco_sf_names = ElectronSFConfig(
+        #         correction="Electron-ID-SF",
+        #         campaign=electron_sf_campaign,
+        #         # campaign="2024",
+        #         # working_point=ele_reco_wp_func,
+        #         working_point={
+        #             # NOTE: ATM no SF available for pt below 20 GeV in 2024
+        #             "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+        #             "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+        #             "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+        #         },
+        #     )
         # names of muon correction sets and working points
         # (used in the muon producer)
         # TODO: we might need to use different SFs for control regions
@@ -941,7 +941,7 @@ def add_config(
                 era="24CDEReprocessingFGHIPrompt-Summer24",
                 pog_directories={"dc": "Collisions24"},
                 # TODO: tau and lum not yet available
-                snapshot=CATSnapshot(btv="2025-08-19", dc="2025-07-25", egm="2025-10-22", jme="2025-07-17", muo="2025-10-17"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2025-12-03", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", lum="2025-12-02", muo="2025-11-27"),  # noqa: E501
             ),
         }[(year, campaign.x.postfix, vnano)]
     else:
@@ -951,14 +951,13 @@ def add_config(
     if cfg.x.run == 2:
         raise NotImplementedError("External files for Run 2 not yet implemented/checked")
     # pileup weight corrections
-    if year != 2024:  # TODO: not yet available, see https://cms-analysis-corrections.docs.cern.ch
-        add_external("pu_sf", (cat_info.get_file("lum", "puWeights.json.gz"), "v1"))
-    else:  # 2024
-        add_external("pu_sf", ("/afs/desy.de/user/m/markusla/public/data/preliminary_pu_weights/puWeights.json", "v2"))
+    if year != 2024:
+        add_external("pu_sf", (cat_info.get_file("lum", "puWeights.json.gz"), "v1"))  # noqa: E501
+    else:
+        add_external("pu_sf", (cat_info.get_file("lum", "puWeights_BCDEFGHI.json.gz"), "v1"))
     # jet energy correction
-    add_external("jet_jerc", (cat_info.get_file("jme", "jet_jerc.json.gz"), "v1"))
-    if year != 2024:  # NOTE: For now not available for 2024
-        add_external("fat_jet_jerc", (cat_info.get_file("jme", "fatJet_jerc.json.gz"), "v1")) 
+    add_external("jet_jerc", (cat_info.get_file("jme", "jet_jerc.json.gz"), "v2"))
+    add_external("fat_jet_jerc", (cat_info.get_file("jme", "fatJet_jerc.json.gz"), "v2"))
     # jet veto map
     add_external("jet_veto_map", (cat_info.get_file("jme", "jetvetomaps.json.gz"), "v1"))
     # btag scale factor
@@ -979,20 +978,20 @@ def add_config(
     })
 
     # muon scale factors
-    add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v1"))
+    add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v2"))
     # met phi correction
     if year != 2024:  # TODO: 2024: not yet available
         add_external("met_phi_corr", (cat_info.get_file("jme", f"met_xyCorrections_{year}_{year}{campaign.x.postfix}.json.gz"), "v1"))  # noqa: E501
     # electron scale factors
-    if year != 2024:  # NOTE: Taken from Johanna that they are called different for 2024
-        add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
-    else:
+    add_external("electron_sf", (cat_info.get_file("egm", "electron.json.gz"), "v2"))
+    if year == 2024:
         add_external("electron_reco_sf", (cat_info.get_file("egm", "electron.json.gz"), "v1"))
-        add_external("electron_sf", (cat_info.get_file("egm", "electronID.json.gz"), "v1"))
+    #     add_external("electron_sf", (cat_info.get_file("egm", "electronID.json.gz"), "v1"))
     # electron energy correction and smearing
     add_external("electron_ss", (cat_info.get_file("egm", "electronSS_EtDependent.json.gz"), "v2"))
 
     # custom Trigger SF (produced in 2022+2023 combined)
+    # TODO should maybe be not used by mathis anymore at some point
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
     trigger_sf_path = "/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
 
@@ -1009,9 +1008,10 @@ def add_config(
     # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
     add_external("vjets_reweighting", (f"{json_mirror}/data/json/vjets_pt.json.gz", "v1"))
 
+    # Recoil corrections taken from https://gitlab.cern.ch/cms-higgs-leprare/hleprare/-/blob/master/DYandRecoilCorrlib/DY_pTll_recoil_corrections_v5.json.gz?ref_type=heads # noqa: E501
     recoil_path = "/afs/cern.ch/user/l/lmarkus/public/recoil_correction"
-    add_external("dy_recoil_sf", (f"{recoil_path}/Recoil_corrections_v3.json.gz", "v2"))
-    add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v2"))
+    add_external("dy_recoil_sf", (f"{recoil_path}/DY_pTll_recoil_corrections_v5.json.gz", "v2"))
+    # add_external("dy_weight_sf", (f"{json_mirror}/data/dy/DY_pTll_weights_v2.json.gz", "v2"))
     # add_external("dy_recoil_sf", (f"{json_mirror}/data/dy/Recoil_corrections_v2.json.gz", "v2"))
 
     cfg.x.dy_weight_config = DrellYanConfig(
@@ -1080,7 +1080,7 @@ def add_config(
         })
     elif year == 2024:
         # No lumi for now using this as provided by Johanna
-        # 2024: ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json", "v1"),
+        # 2024: ("https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions24/Cert_Collisions2024_378981_386951_Golden.json", "v1"),  # noqa
         add_external("lumi", {
             # files from https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGoodLumiSectionsJSONFile
             # TODO: should be updated at the end of 2024 campaign
@@ -1121,7 +1121,7 @@ def add_config(
         # columns for btag reweighting crosschecks
         "njets", "ht", "nhf",
         # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
-        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,btagUParTAK4B,hadronFlavour,qgl}",
+        "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,btagUParTAK4B,hadronFlavour,qgl}",  # noqa
         # FatJets
         "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
         # FatJet particleNet scores (all for now, should be reduced at some point)

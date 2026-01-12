@@ -200,7 +200,7 @@ def create_hbw_analysis(
     #
 
     software_tasks = ("cf.BundleBashSandbox", "cf.BundleCMSSWSandbox", "cf.BundleSoftware")
-    shareable_analysis_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
+    shareable_analysis_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
     histogram_tasks = ("cf.CreateHistograms", "cf.MergeHistograms", "cf.MergeShiftedHistograms")
     skip_new_version_schema = ()

@@ -18,7 +18,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.cms.jet import jet_id, fatjet_id
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13, IF_NANO_V14, IF_NANO_geV14
+from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13, IF_NANO_geV14
 from hbw.production.jets import jetId_v12, fatjetId_v12
 
 np = maybe_import("numpy")

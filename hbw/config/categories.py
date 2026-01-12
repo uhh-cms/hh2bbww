@@ -224,7 +224,19 @@ def add_jet_categories(config: od.Config) -> None:
         name="2b",
         id=600,
         selection="catid_2b",
-        label=r"$\geq 2 btag$",
+        label=r"$2 btag$",
+    )
+    cat_3b = config.add_category(  # noqa: F841
+        name="3b",
+        id=900,
+        selection="catid_3b",
+        label=r"$3 btag$",
+    )
+    cat_3b = config.add_category(  # noqa: F841
+        name="4b",
+        id=1000,
+        selection="catid_4b",
+        label=r"$\geq 4 btag$",
     )
 
 
