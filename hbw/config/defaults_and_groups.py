@@ -213,11 +213,11 @@ def set_config_defaults_and_groups(config_inst):
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
-        "dl9": ["data_e", "data_mu", "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
-        "dl8": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy_ee_m50toinf", "dy_mumu_m50toinf", "dy_tautau_m50toinf", "st", "tt"],  # noqa: E501
+        # "dl9": ["data_e", "data_mu", "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
+        # "dl8": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy_ee_m50toinf", "dy_mumu_m50toinf", "dy_tautau_m50toinf", "st", "tt"],  # noqa: E501
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
-        "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501

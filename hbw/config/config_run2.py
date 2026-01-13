@@ -1020,12 +1020,32 @@ def add_config(
         correction="DY_pTll_reweighting",
         unc_correction="DY_pTll_reweighting_N_uncertainty",
     )
-    cfg.x.dy_recoil_config = DrellYanConfig(
-        era=cfg.x.cpn_tag,
-        order="NLO",  # only when using v2
-        correction="Recoil_correction_QuantileMapHist",
-        unc_correction="Recoil_correction_Uncertainty",
-    )
+    if year != 2024:
+        cfg.x.dy_recoil_config = DrellYanConfig(
+            era=cfg.x.cpn_tag,
+            order="NLO",  # only when using v2
+            correction="Recoil_correction_QuantileMapHist",
+            unc_correction="Recoil_correction_Uncertainty",
+            systs={
+                "RespUp": "recoilresp_up",
+                "RespDown": "recoilresp_down",
+                "ResolUp": "recoilres_up",
+                "ResolDown": "recoilres_down",
+            },
+        )
+    else:
+        cfg.x.dy_recoil_config = DrellYanConfig(
+            era=cfg.x.cpn_tag,
+            order="NLO",  # only when using v2
+            correction="Recoil_correction_QuantileMapHist",
+            unc_correction="Recoil_correction_Uncertainty",
+        )
+    # TODO: implement these in the config for year 2022/23 since they are available herre already not 2024
+    # for syst, postfix in [
+    #     ("RespUp", "recoilresp_up"),
+    #     ("RespDown", "recoilresp_down"),
+    #     ("ResolUp", "recoilres_up"),
+    #     ("ResolDown", "recoilres_down")
 
     # # Louvain Transformer Model
     # add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501

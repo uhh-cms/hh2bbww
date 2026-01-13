@@ -66,7 +66,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     nondy_hist_producer=None,
     dy_correction_weight_producer=None,
     pre_label="",
-    version=2,
+    version=0,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
     # apply behavior (for variable reconstruction)
@@ -305,6 +305,7 @@ unstitched_weight_columns = {
 # weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
 default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+check = base.derive("check", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],
     # "dy_correction_weight": [],
@@ -365,6 +366,15 @@ from hbw.categorization.categories import (
 
 met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,
+})
+
+no_dycorr = default_hist_producer.derive("no_dycorr", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
 })
 
 met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_dict={

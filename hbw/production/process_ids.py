@@ -65,9 +65,9 @@ def hbw_process_ids_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.process_producer = hh_bbvv_process_producer
-    # elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
-    #     # stitching of DY NLO samples
-    #     self.process_producer = dy_nlo_process_producer
+    elif "dy" in self.dataset_inst.name and "amcatnlo" in self.dataset_inst.name:
+        # stitching of DY NLO samples
+        self.process_producer = dy_nlo_process_producer
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         # stitching of DY NLO samples
         self.process_producer = w_lnu_nlo_process_producer
