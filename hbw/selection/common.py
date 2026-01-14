@@ -22,6 +22,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from hbw.production.process_ids import hbw_process_ids
 from columnflow.production.cms.seeds import deterministic_seeds
+from columnflow.production.cms.jet import jet_id
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
@@ -31,6 +32,9 @@ from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
 from hbw.selection.bad_events import extend_bad_events, get_outlier_scale_weights
 from hbw.util import IF_MC
+from hbw.production.jets import jetId_v12
+
+from hbw.util import IF_NANO_V12, IF_NANO_geV13
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -84,7 +88,9 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
-        # jet_veto_map, moved to post selection
+        IF_NANO_V12(jetId_v12),
+        IF_NANO_geV13(jet_id),
+        jet_veto_map,
         hbw_met_filters, json_filter, "PV.npvsGood",
         hbw_process_ids, attach_coffea_behavior,
         mc_weight, large_weights_killer,
@@ -117,6 +123,15 @@ def pre_selection(
     # run deterministic seeds when no Calibrator has been requested
     if not task.calibrators:
         events = self[deterministic_seeds](events, **kwargs)
+
+    # produce custom jetID, since it is used in jet_veto_map
+    if self.has_dep(jetId_v12):
+        raise NotImplementedError("jetId_v12 is not implemented consistently, should be updated to really translate in the ID column.")
+        events = self[jet_id](events, **kwargs)
+    elif self.has_dep(jet_id):
+        events = self[jet_id](events, **kwargs)
+    else:
+        logger.warning("No Producer found to fix the Jet.jetId, using default Jet.jetId")
 
     # mc weight
     if self.dataset_inst.is_mc:
@@ -151,13 +166,12 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
-    # apply jet veto map --> moved to post selection
-    # events, jet_veto_results = self[jet_veto_map](events, **kwargs)
-    # results += jet_veto_results
+    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
+    results += jet_veto_results
 
     # combine quality criteria into a single step
     results.steps["cleanup"] = (
-        # results.steps.jet_veto_map & moved to post selection
+        results.steps.jet_veto_map &
         results.steps.good_vertex &
         results.steps.met_filter &
         results.steps.json
@@ -222,7 +236,7 @@ def get_weights_and_no_sel_mask(
 @selector(
     uses={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
-        hbw_selection_hists, jet_veto_map,  # NOTE: moved from pre selection
+        hbw_selection_hists,
     },
     produces={
         category_ids, hbw_increment_stats, hbw_selection_step_stats,
@@ -246,10 +260,6 @@ def post_selection(
     events = self[hbw_selection_step_stats](events, results, stats, **kwargs)
     events = self[hbw_increment_stats](events, results, stats, **kwargs)
     events = self[hbw_selection_hists](events, results, hists, **kwargs)
-
-    # NOTE: Moved here from pre selection because no jetid is available but custom produced in CF
-    events, jet_veto_results = self[jet_veto_map](events, **kwargs)
-    results += jet_veto_results
 
     def log_fraction(stats_key: str, msg: str | None = None):
         if not stats.get(stats_key):

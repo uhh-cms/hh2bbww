@@ -15,11 +15,11 @@ import order as od
 from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column, optional_column as optional
 from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.production.cms.jet import jet_id, fatjet_id
+from columnflow.production.cms.jet import fatjet_id
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import call_once_on_config, IF_NANO_V12, IF_NANO_geV13, IF_NANO_geV14
-from hbw.production.jets import jetId_v12, fatjetId_v12
+from hbw.util import call_once_on_config, IF_NANO_geV14
+from hbw.production.jets import fatjetId_v12
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -29,9 +29,8 @@ logger = law.logger.get_logger(__name__)
 
 @selector(
     uses={
-        IF_NANO_V12(jetId_v12),
-        IF_NANO_geV13(jet_id),
-        "Jet.{pt,eta,phi,mass}", optional("Jet.puId"), optional("Jet.jetid"),
+        # Jet ID is prdocued in preselection
+        "Jet.{pt,eta,phi,mass}", optional("Jet.puId"), optional("Jet.jetId"),
     },
     exposed=True,
 )
@@ -57,16 +56,7 @@ def jet_selection(
     # assign local index to all Jets
     events = set_ak_column(events, "local_index", ak.local_index(events.Jet))
 
-    # get correct jet Ids (Jet.TightId and Jet.TightLepVeto)
-    if self.has_dep(jetId_v12):
-        events = self[jetId_v12](events, **kwargs)
-        tight_jet_id = events.Jet.TightId
-    elif self.has_dep(jet_id):
-        events = self[jet_id](events, **kwargs)
-        tight_jet_id = events.Jet.jetId & 2 == 2
-    else:
-        logger.warning("No Producer found to fix the Jet.jetId, using default Jet.jetId")
-        tight_jet_id = events.Jet.jetId & 2 == 2
+    tight_jet_id = events.Jet.jetId & 2 == 2
 
     # default jet definition
     jet_mask_loose = (
