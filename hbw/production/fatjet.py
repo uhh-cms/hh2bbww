@@ -15,6 +15,8 @@ from columnflow.columnar_util import (  # noqa: F401
 )
 from columnflow.types import Any
 
+from hbw.production.prepare_objects import prepare_objects
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -24,6 +26,7 @@ logger = law.logger.get_logger(__name__)
 
 @producer(
     uses={
+        prepare_objects,
         "FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,hadronFlavour}",
         # optional_column("FatJet.hadronFlavour"),
     },
@@ -36,6 +39,7 @@ logger = law.logger.get_logger(__name__)
     # function to determine the correction file
     get_hbb_sf_file=(lambda self, external_files: external_files.hbb_sf_corr),
     # function to determine the btag sf config
+    version=1,
 )
 def hbb_sf_weights(
     self: Producer,
@@ -54,6 +58,8 @@ def hbb_sf_weights(
     2. flat: if the combined uncertainty is < 20%, a flat uncertainty of 20% is used instead.
     The resulting weights are stored as event-level weights, multiplying the per-FatJet scale factors.
     """
+
+    events = self[prepare_objects](events, **kwargs)
 
     cpn_tag = task.config_inst.x.cpn_tag.replace("post", "_post").replace("pre", "_pre")
 
@@ -103,6 +109,7 @@ def hbb_sf_weights(
         num_lf_hbbjets,
         value_type=np.int32,
     )
+    num_sf_applied = num_cc_hbbjets + num_bb_hbbjets
 
     def get_sf_per_fatjet(variation):
         """
@@ -165,15 +172,6 @@ def hbb_sf_weights(
             value_type=np.float32,
         )
 
-        # # inflate the combined uncertainty by a factor 2
-        # combined_sf_inflated = sf_nominal + sign * np.sqrt((sf_nominal - sf) ** 2 + (sf_nominal - sf_tau21) ** 2) * 2
-        # events = set_ak_column(
-        #     events,
-        #     f"{self.weight_name}_inflated_{variation}",
-        #     ak.prod(combined_sf_inflated, axis=1),
-        #     value_type=np.float32,
-        # )
-
     # create additional variations with inflated and flat 20% uncertainties (per event)
     sf_nominal = events[self.weight_name]
     for variation in ("up", "down"):
@@ -188,12 +186,11 @@ def hbb_sf_weights(
                 "nominal and down variations are always smaller).",
             )
 
-        # TODO: update to per-object inflating
         # inflate the uncertainty by a factor 2
         events = set_ak_column(
             events,
             f"{self.weight_name}_inflated_{variation}",
-            sf_nominal + (sf_variation - sf_nominal) * 2,
+            sf_nominal + (sf_variation - sf_nominal) * 2 ** num_sf_applied,
             value_type=np.float32,
         )
 
@@ -203,7 +200,7 @@ def hbb_sf_weights(
             f"{self.weight_name}_flat_{variation}",
             ak.where(
                 (sf_nominal != 1.0) & (abs(sf_variation - sf_nominal) < 0.20),
-                sf_nominal * 1.20 ** sign,
+                sf_nominal * 1.20 ** (sign * num_sf_applied),
                 sf_variation,
             ),
             value_type=np.float32,
