@@ -965,7 +965,19 @@ def add_variables(config: od.Config) -> None:
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
-                    "rebin": 2,
+                    "rebin": 4,
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pnet_xbb".lower(),
+                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(100, 0, 1),
+                x_title=rf"{obj} %i PNet Xbb score" % i,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop,particleNet_XbbVsQCD}"},
+                    "rebin": 4,
                 },
             )
             # config.add_variable(
@@ -988,6 +1000,17 @@ def add_variables(config: od.Config) -> None:
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pnet_xbb_pass_fail".lower(),
+                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=[0, 0.92, 1.00],
+                x_title=rf"{obj} %i PNet Xbb score" % i,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop,particleNet_XbbVsQCD}"},
                 },
             )
             # config.add_variable(
