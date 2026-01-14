@@ -258,6 +258,8 @@ processes_per_shape = {
     "hbb_sf_signal_bkg_{campaign}": sorted(signals),
     "hbb_sf": ["all"],
     "hbb_sf_{campaign}": ["all"],
+    "hbb_sf_flat": ["all"],
+    "hbb_sf_flat_{campaign}": ["all"],
 }
 
 remove_processes = {
@@ -317,6 +319,7 @@ for campaign, campaign_fmt in campaign_format.items():
         # analysis-specific
         f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
         f"hbb_sf_{campaign}": f"CMS_HIG25018_hbb_sf_{campaign_fmt}",
+        f"hbb_sf_flat_{campaign}": f"CMS_HIG25018_hbb_sf_flat_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:

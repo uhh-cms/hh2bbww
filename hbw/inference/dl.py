@@ -341,6 +341,22 @@ systematics["rate_default"] = [
     *systematics.hbb_efficiency,
     *systematics.rate_unconstrained3,
 ]
+systematics["rate_hbbsf"] = [
+    *systematics.lumi,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    "hbb_sf_{campaign}",
+    *systematics.rate_unconstrained3,
+]
+systematics["rate_hbbsf_flat"] = [
+    *systematics.lumi,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    "hbb_sf_flat_{campaign}",
+    *systematics.rate_unconstrained3,
+]
 systematics["rate"] = [
     *systematics.lumi,
     *systematics.QCDscale,
@@ -390,10 +406,14 @@ systematics["hbbsf_no_jerc"] = [
     *systematics.hbb_sf,
 ]
 systematics["hbbsf_full"] = [
-    *systematics.rate_default,
+    *systematics.rate_hbbsf,
     *systematics.shape_only_cpn_uncorr,
-    # *systematics.jerc_only_cpn_uncorr,
-    *systematics.hbb_sf,
+    *systematics.jerc_only_cpn_uncorr,
+]
+systematics["hbbsf_flat"] = [
+    *systematics.rate_hbbsf_flat,
+    *systematics.shape_only_cpn_uncorr,
+    *systematics.jerc_only_cpn_uncorr,
 ]
 
 systematics["default_year_uncorr"] = [
@@ -725,7 +745,7 @@ hbbsf_no_jerc = dl.derive("hbbsf_no_jerc", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
-hbbsf_full = dl.derive("hbbsf_full", cls_dict={
+hbbsf_v1_full = dl.derive("hbbsf_v1_full", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,
     "processes": processes_dict["hwwzztt"],
@@ -733,9 +753,15 @@ hbbsf_full = dl.derive("hbbsf_full", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
-# hbbsf_no_jerc = pas.derive("hbbsf_no_jerc", cls_dict={
-#     "systematics": systematics.hbbsf_no_jerc,
-# })
+hbbsf_v1_flat = dl.derive("hbbsf_v1_flat", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "processes": processes_dict["hwwzztt"],
+    "systematics": systematics.hbbsf_flat,
+    "unblind": True,
+    "skip_data": False,
+})
+
 
 vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],

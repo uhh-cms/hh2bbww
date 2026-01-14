@@ -244,8 +244,8 @@ def base_init(self: HistProducer) -> None:
                     f"in 'column_aliases' aux {shift.x('column_aliases')}",
                 )
 
-            # declare shifts that the produced event weight depends on
-            self.shifts |= set(shifts)
+        # declare shifts that the produced event weight depends on
+        self.shifts |= set(shifts)
 
     # remove dummy column from weight columns and uses
     self.local_weight_columns.pop("dummy_weight", "")
@@ -399,11 +399,12 @@ met_geq40_with_hbbsf = default_hist_producer.derive("met_geq40_with_hbbsf", cls_
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
-        "hbb_sf_weight": ["hbb_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_met_geq40,
+    "version": 3,
 })
 met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dict={
     "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
@@ -414,9 +415,10 @@ met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dic
         **default_correction_weights,
         "dy_correction_weight": ["dy_correction"],
         "trigger_weight": ["trigger_sf"],
-        "hbb_sf_weight": ["hbb_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
         "stitched_normalization_weight": [],
     },
+    "version": 3,
 })
 
 mbb80 = with_dy_corr.derive("mbb80", cls_dict={

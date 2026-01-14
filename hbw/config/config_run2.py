@@ -678,6 +678,15 @@ def add_config(
             "hbb_sf_weight": "hbb_sf_weight_{direction}",
         },
     )
+    cfg.add_shift(name="hbb_sf_flat_up", id=192, type="shape")
+    cfg.add_shift(name="hbb_sf_flat_down", id=193, type="shape")
+    add_shift_aliases(
+        cfg,
+        "hbb_sf_flat",
+        {
+            "hbb_sf_weight": "hbb_sf_weight_flat_{direction}",
+        },
+    )
 
     cfg.add_shift(name="mur_up", id=201, type="shape")
     cfg.add_shift(name="mur_down", id=202, type="shape")
