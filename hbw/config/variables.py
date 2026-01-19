@@ -935,6 +935,42 @@ def add_variables(config: od.Config) -> None:
                 },
             )
             config.add_variable(
+                name=f"{obj}{i}_msoftdrop_rebin".lower(),
+                expression=f"{obj}.msoftdrop[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(120, 0, 240),
+                unit="GeV",
+                x_title=rf"{obj} %i softdrop mass" % i,
+                aux={
+                    "rebin": 5,
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+
+            fj_preselection = lambda fj: (
+                (fj["pt"] > 300) &
+                (fj["msoftdrop"] > 30) &
+                ((fj["tau2"] / fj["tau1"]) < 0.30)
+            )
+            config.add_variable(
+                name=f"{obj}{i}_msoftdrop_preselected".lower(),
+                expression=lambda events, i=i, obj=obj: ak.fill_none(ak.pad_none(
+                    events[obj]["msoftdrop"][fj_preselection(events[obj])], i + 1
+                ), EMPTY_FLOAT)[:, i],
+                null_value=EMPTY_FLOAT,
+                binning=(120, 0, 240),
+                unit="GeV",
+                x_title=f"{obj} {i} softdrop mass ($p_T > 300$, $m_{{softdrop}} > 30$, $\\tau_2 / \\tau_1 < 0.30$)",
+                aux={
+                    "rebin": 10,
+                    # "underflow": True,
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,tau2,tau1,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+
+            config.add_variable(
                 name=f"{obj}{i}_particleNet_XbbVsQCD".lower(),
                 expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
                 null_value=EMPTY_FLOAT,
