@@ -52,6 +52,7 @@ def pre_ml_cats_init(self: Producer) -> None:
     # uses in init, produces should not be empty
     produces={"category_ids", "mlscore.max_score"},
     ml_model_name=None,
+    category_function=add_categories_ml,
     version=law.config.get_expanded("analysis", "cats_ml_version", 5),
 )
 def cats_ml(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -111,7 +112,7 @@ def cats_ml_init(self: Producer) -> None:
         )
 
     # add categories to config inst
-    add_categories_ml(self.config_inst, self.ml_model_name)
+    type(self).category_function(self.config_inst, self.ml_model_name)
 
     self.uses.add(category_ids)
     self.produces.add(category_ids)
@@ -119,8 +120,14 @@ def cats_ml_init(self: Producer) -> None:
 
 # get all the derived MLModels and instantiate a corresponding producer for each one
 from hbw.ml.base import MLClassifierBase
+# from hbw.config.categories import add_categories_ml_xbb
 ml_model_names = get_subclasses_deep(MLClassifierBase)
 logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
+
 for ml_model_name in ml_model_names:
     cats_ml.derive(f"cats_ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
+    # cats_ml.derive(f"cats_xbb_ml_{ml_model_name}", cls_dict={
+    #     "category_function": add_categories_ml_xbb,
+    #     "ml_model_name": ml_model_name,
+    # })
