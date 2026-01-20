@@ -27,6 +27,79 @@ logger = law.logger.get_logger(__name__)
 @producer(
     uses={
         prepare_objects,
+        "FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}",
+        # optional_column("FatJet.hadronFlavour"),
+    },
+    produces={"msd_nonclosure_weight{,_up,_down}"},
+    # only run on mc
+    mc_only=True,
+    get_msd_nonclosure_file=(lambda self, external_files: external_files.msd_nonclosure),
+)
+def msd_nonclosure_uncertainty(
+    self: Producer,
+    events: ak.Array,
+    task: law.Task,
+    **kwargs,
+) -> ak.Array:
+    """
+    Compute the softdrop mass non-closure uncertainty SF from json.
+    """
+    events = self[prepare_objects](events, **kwargs)
+    msd = events.FatBjet.msoftdrop
+
+    events = set_ak_column(
+        events,
+        "msd_nonclosure_weight",
+        ak.ones_like(events.event, dtype=np.float32),
+        value_type=np.float32,
+    )
+
+    for variation in ("up", "down"):
+        sf_variation = self.msd_nonclosure_corrector[f"msoftdrop_correction_{variation}"].evaluate(
+            msd,
+        )
+        sf_variation = ak.fill_none(ak.pad_none(sf_variation, 1), 1.0)[:, 0]
+
+        events = set_ak_column(
+            events,
+            f"msd_nonclosure_weight_{variation}",
+            sf_variation,
+            value_type=np.float32,
+        )
+    return events
+
+
+@msd_nonclosure_uncertainty.requires
+def msd_nonclosure_uncertainty_requires(
+    self: Producer,
+    task: law.Task,
+    reqs: dict[str, DotDict[str, Any]],
+    **kwargs,
+) -> None:
+    if "external_files" in reqs:
+        return
+
+    from columnflow.tasks.external import BundleExternalFiles
+    reqs["external_files"] = BundleExternalFiles.req(task)
+
+
+@msd_nonclosure_uncertainty.setup
+def msd_nonclosure_uncertainty_setup(
+    self: Producer,
+    task: law.Task,
+    reqs: dict[str, DotDict[str, Any]],
+    inputs: dict[str, Any],
+    reader_targets: law.util.InsertableDict,
+    **kwargs,
+) -> None:
+    # load the btag sf corrector
+    msd_nonclosure_file = self.get_msd_nonclosure_file(reqs["external_files"].files)
+    self.msd_nonclosure_corrector = load_correction_set(msd_nonclosure_file)
+
+
+@producer(
+    uses={
+        prepare_objects,
         "FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,hadronFlavour}",
         # optional_column("FatJet.hadronFlavour"),
     },

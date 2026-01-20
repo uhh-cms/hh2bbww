@@ -128,6 +128,10 @@ def base_setup(
         # add hbb_sf_weights to the reader targets
         reader_targets["hbb_sf_weights"] = inputs["hbb_sf_weights"]["columns"]
 
+    if task.dataset_inst.is_mc:
+        # add msd_nonclosure_uncertainty to the reader targets
+        reader_targets["msd_nonclosure_uncertainty"] = inputs["msd_nonclosure_uncertainty"]["columns"]
+
 
 @base.requires
 def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableDict) -> None:
@@ -151,6 +155,12 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
         reqs["hbb_sf_weights"] = ProduceColumns.req(
             task,
             producer="hbb_sf_weights",
+        )
+
+    if self.dataset_inst.is_mc:
+        reqs["msd_nonclosure_uncertainty"] = ProduceColumns.req(
+            task,
+            producer="msd_nonclosure_uncertainty",
         )
 
 
@@ -400,6 +410,7 @@ met_geq40_with_hbbsf = default_hist_producer.derive("met_geq40_with_hbbsf", cls_
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
         "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
@@ -416,6 +427,7 @@ met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dic
         "dy_correction_weight": ["dy_correction"],
         "trigger_weight": ["trigger_sf"],
         "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
         "stitched_normalization_weight": [],
     },
     "version": 3,

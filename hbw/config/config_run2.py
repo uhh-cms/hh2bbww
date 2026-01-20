@@ -687,6 +687,15 @@ def add_config(
             "hbb_sf_weight": "hbb_sf_weight_flat_{direction}",
         },
     )
+    cfg.add_shift(name="msd_nonclosure_up", id=194, type="shape")
+    cfg.add_shift(name="msd_nonclosure_down", id=195, type="shape")
+    add_shift_aliases(
+        cfg,
+        "msd_nonclosure",
+        {
+            "msd_nonclosure_weight": "msd_nonclosure_weight_{direction}",
+        },
+    )
 
     cfg.add_shift(name="mur_up", id=201, type="shape")
     cfg.add_shift(name="mur_down", id=202, type="shape")
@@ -961,6 +970,7 @@ def add_config(
     # Hbb Scale Factors
     # add_external("hbb_sf_corr", f"/afs/cern.ch/user/a/aguzel/public/AK8SF/jsons/ak8_sf_corrections_bbww_300toInf_{year}_{corr_postfix}.json")  # noqa: E501
     add_external("hbb_sf_corr", f"/afs/cern.ch/user/a/aguzel/public/AK8SF/jsons/ak8_sf_corrections_bbww_combined_{year}_{corr_postfix}.json")  # noqa: E501
+    add_external("msd_nonclosure", "/afs/cern.ch/user/m/mfrahm/public/data/msoftdrop_correction.json")
 
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
