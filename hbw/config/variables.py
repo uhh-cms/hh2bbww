@@ -942,7 +942,7 @@ def add_variables(config: od.Config) -> None:
                 unit="GeV",
                 x_title=rf"{obj} %i softdrop mass" % i,
                 aux={
-                    "rebin": 5,
+                    "rebin": 10,
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
@@ -956,7 +956,7 @@ def add_variables(config: od.Config) -> None:
             config.add_variable(
                 name=f"{obj}{i}_msoftdrop_preselected".lower(),
                 expression=lambda events, i=i, obj=obj: ak.fill_none(ak.pad_none(
-                    events[obj]["msoftdrop"][fj_preselection(events[obj])], i + 1
+                    events[obj]["msoftdrop"][fj_preselection(events[obj])], i + 1,
                 ), EMPTY_FLOAT)[:, i],
                 null_value=EMPTY_FLOAT,
                 binning=(120, 0, 240),
