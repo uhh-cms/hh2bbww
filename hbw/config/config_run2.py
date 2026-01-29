@@ -176,23 +176,32 @@ def add_config(
         })
     # https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun3Analysis?rev=182 (after update)
     # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=26
+    # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=36
     elif year == 2022:
         if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(5010.4 + 2970.0, {
                 "lumi_13p6TeV_2022": 0.013j,
+                "lumi_13p6TeV_2223": 0.0101j,
+                "lumi_13p6TeV_222324": 0.0120j,
             })
         elif campaign.has_tag("postEE"):
             cfg.x.luminosity = Number(5807.0 + 17781.9 + 3082.8, {
                 "lumi_13p6TeV_2022": 0.013j,
+                "lumi_13p6TeV_2223": 0.0101j,
+                "lumi_13p6TeV_222324": 0.0120j,
             })
     elif year == 2023:
         if campaign.has_tag("preBPix"):
             cfg.x.luminosity = Number(18063, {
                 "lumi_13p6TeV_2023": 0.014j,
+                "lumi_13p6TeV_2223": 0.0101j,
+                "lumi_13p6TeV_222324": 0.0120j,
             })
         elif campaign.has_tag("postBPix"):
             cfg.x.luminosity = Number(9693, {
                 "lumi_13p6TeV_2023": 0.014j,
+                "lumi_13p6TeV_2223": 0.0101j,
+                "lumi_13p6TeV_222324": 0.0120j,
             })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
