@@ -13,7 +13,7 @@ import order as od
 from collections import defaultdict
 
 from columnflow.inference import InferenceModel, ParameterType, ParameterTransformation, ParameterTransformations
-from columnflow.util import maybe_import, DotDict
+from columnflow.util import maybe_import
 from columnflow.config_util import get_datasets_from_process
 
 from hbw.util import timeit_multiple
@@ -115,8 +115,8 @@ class HBWInferenceModelBase(InferenceModel):
 
     def cat_name(self: InferenceModel, config_cat_inst: od.Category):
         """ Function to determine inference category name from config category """
-        # NOTE: the name of the inference category cannot start with a Number
-        # -> use config category with single letter added at the start?
+        # NOTE: the name of the inference category cannot start with a Number, so add some prefix in that case
+        # NOTE: this function cannot be used to separate categories with same cat instance but different variables
         return f"{config_cat_inst.name}"
 
     @cached_property
@@ -127,7 +127,25 @@ class HBWInferenceModelBase(InferenceModel):
 
     @cached_property
     def cat_names(self: InferenceModel):
-        return [self.cat_name(cat_inst) for cat_inst in self.cat_insts]
+        # NOTE: includes variable names if multi_variables is True
+        if self.multi_variables:
+            cat_names = [
+                f"{self.cat_name(cat_inst)}__var_{var}"
+                for cat_inst in self.cat_insts
+                for var in self.config_variable(cat_inst)
+            ]
+        else:
+            cat_names = [self.cat_name(cat_inst) for cat_inst in self.cat_insts]
+        return cat_names
+
+    @classmethod
+    def split_datacard_cat_name(cls, datacard_cat_name):
+        if cls.multi_variables:
+            cat_name, var_name = datacard_cat_name.split("__var_")
+        else:
+            cat_name = datacard_cat_name
+            var_name = None
+        return cat_name, var_name
 
     def config_variable(self: InferenceModel, config_cat_inst: od.Config):
         """ Function to determine inference variable name from config category """
@@ -139,16 +157,6 @@ class HBWInferenceModelBase(InferenceModel):
             return "mlscore.max_score"
         else:
             return "mli_lep_pt"
-
-    def customize_category(self: InferenceModel, cat_inst: DotDict, config_cat_inst: od.Config):
-        """ Function to allow customizing the inference category """
-        # root_cats = config_cat_inst.x.root_cats
-        # variables = ["jet1_pt"]
-        # if dnn_cat := root_cats.get("dnn"):
-        #     dnn_proc = dnn_cat.replace("ml_", "")
-        #     variables.append(f"mlscore.{dnn_proc}")
-        # cat_inst.variables_to_plot = variables
-        return
 
     @timeit_multiple
     def __init__(self, config_insts: od.Config, *args, **kwargs):
@@ -264,6 +272,62 @@ class HBWInferenceModelBase(InferenceModel):
                 f"{', '.join(not_considered)}. Please check your configuration.",
             )
 
+    def resolve_var_and_cat_name(self: InferenceModel, config_category):
+        cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
+
+        if self.multi_variables:
+            if len(self.config_insts) > 1:
+                var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts][0]
+                var_names = [var_names]
+            else:
+                var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
+                var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts]
+
+            if len(var_sets) > 1:
+                raise ValueError(
+                    f"Multiple variables found for category {config_category}: {var_names}. "
+                    "Please ensure that all config categories use the same variable.",
+                )
+        else:
+            var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
+            if len(var_names) > 1:
+                raise ValueError(
+                    f"Multiple variables found for category {config_category}: {var_names}. "
+                    "Please ensure that all config categories use the same variable.",
+                )
+
+        var_name = var_names.pop()
+
+        if self.multi_variables:
+            for var in var_name:
+                if not all(has_var := [config_inst.has_variable(var) for config_inst in self.config_insts]):
+                    missing_var_configs = [
+                        config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                    ]
+                    raise ValueError(
+                        f"Variable {var} not found in configs {', '.join(missing_var_configs)} "
+                        f"for {config_category}. Please ensure that {var} is part of all configs.",
+                    )
+        else:
+            if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
+                missing_var_configs = [
+                    config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
+                ]
+                raise ValueError(
+                    f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
+                    f"for {config_category}. Please ensure that {var_name} is part of all configs.",
+                )
+        cat_names = {self.cat_name(cat_inst) for cat_inst in cat_insts}
+        if len(cat_names) > 1:
+            raise ValueError(
+                f"Multiple category names found for category {config_category}: {cat_names}. "
+                "Please ensure that all config categories use the same name.",
+            )
+
+        cat_name = cat_names.pop()
+        return var_name, cat_name
+
     def add_inference_categories(self: InferenceModel):
         """
         This function creates categories for the inference model
@@ -271,87 +335,36 @@ class HBWInferenceModelBase(InferenceModel):
         # get the MLModel inst
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
         for config_category in self.config_categories:
-            # TODO: loop over configs here
+            var_name, cat_name = self.resolve_var_and_cat_name(config_category)
 
-            cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
-
-            if self.multi_variables:
-                if len(self.config_insts) > 1:
-                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
-                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts][0]
-                    var_names = [var_names]
-                else:
-                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
-                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts]
-
-                if len(var_sets) > 1:
-                    raise ValueError(
-                        f"Multiple variables found for category {config_category}: {var_names}. "
-                        "Please ensure that all config categories use the same variable.",
-                    )
-            else:
-                var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
-                if len(var_names) > 1:
-                    raise ValueError(
-                        f"Multiple variables found for category {config_category}: {var_names}. "
-                        "Please ensure that all config categories use the same variable.",
-                    )
-
-            var_name = var_names.pop()
-            if self.multi_variables:
-                for var in var_name:
-                    if not all(has_var := [config_inst.has_variable(var) for config_inst in self.config_insts]):
-                        missing_var_configs = [
-                            config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
-                        ]
-                        raise ValueError(
-                            f"Variable {var} not found in configs {', '.join(missing_var_configs)} "
-                            f"for {config_category}. Please ensure that {var} is part of all configs.",
+            for _var_name in law.util.make_list(var_name):
+                datacard_cat_name = f"{cat_name}__var_{_var_name}" if self.multi_variables else cat_name
+                cat_kwargs = dict(
+                    config_data={
+                        config_inst.name: self.category_config_spec(
+                            category=config_category,
+                            variable=_var_name,
+                            data_datasets=[
+                                dataset_inst.name for dataset_inst in
+                                get_datasets_from_process(config_inst, "data", strategy="all", only_first=False)
+                            ],
                         )
-            else:
-                if not all(has_var := [config_inst.has_variable(var_name) for config_inst in self.config_insts]):
-                    missing_var_configs = [
-                        config_inst.name for config_inst, has_var in zip(self.config_insts, has_var) if not has_var
-                    ]
-                    raise ValueError(
-                        f"Variable {var_name} not found in configs {', '.join(missing_var_configs)} "
-                        f"for {config_category}. Please ensure that {var_name} is part of all configs.",
-                    )
-
-            cat_names = {self.cat_name(cat_inst) for cat_inst in cat_insts}
-            if len(cat_names) > 1:
-                raise ValueError(
-                    f"Multiple category names found for category {config_category}: {cat_names}. "
-                    "Please ensure that all config categories use the same name.",
+                        for config_inst in self.config_insts
+                    },
+                    mc_stats=self.mc_stats,
+                    flow_strategy=self.flow_strategy,
+                    empty_bin_value=0.0,  # NOTE: remove this when removing custom rebin task
                 )
-            cat_name = cat_names.pop()
-            cat_kwargs = dict(
-                config_data={
-                    config_inst.name: self.category_config_spec(
-                        category=config_category,
-                        variable=var_name,
-                        data_datasets=[
-                            dataset_inst.name for dataset_inst in
-                            get_datasets_from_process(config_inst, "data", strategy="all", only_first=False)
-                        ],
-                    )
-                    for config_inst in self.config_insts
-                },
-                mc_stats=self.mc_stats,
-                flow_strategy=self.flow_strategy,
-                empty_bin_value=0.0,  # NOTE: remove this when removing custom rebin task
-            )
-            # TODO: check that data datasets are requested as expected
-            if self.skip_data:
-                cat_kwargs["data_from_processes"] = [
-                    proc for proc in self.inf_processes
-                    if not proc.startswith("hh_")
-                ]
+                # TODO: check that data datasets are requested as expected
+                if self.skip_data:
+                    cat_kwargs["data_from_processes"] = [
+                        proc for proc in self.inf_processes
+                        if not proc.startswith("hh_")
+                    ]
 
-            # add the category to the inference model
-            self.add_category(cat_name, **cat_kwargs)
-            # do some customization of the inference category
-            self.customize_category(self.get_category(cat_name), cat_insts[0])
+                # add the category to the inference model
+                self.add_category(datacard_cat_name, **cat_kwargs)
+                logger.debug(f"Added category {datacard_cat_name} with variable {_var_name}.")
 
     def add_inference_processes(self: InferenceModel):
         """

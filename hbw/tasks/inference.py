@@ -1099,6 +1099,7 @@ class PrepareInferenceTaskCalls(
             f"--datacard-names 1b,2b,Boosted,Combined "
             # f"--UpperLimits-workflow htcondor "
             f"--workers 10 "
+            f"--show-theory False "
         )
         if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded True "
@@ -1355,6 +1356,9 @@ class MultiDatacards(
     HistProducerClassMixin,
     HistHookMixin,
 ):
+    """
+    Task that allows requesting multiple inference models in a single command.
+    """
     resolution_task_cls = MergeHistograms
     single_config = False
 
@@ -1402,32 +1406,35 @@ class MultiDatacards(
         return output
 
     def run(self):
+        """
+        This run method allows to prepare a single command that runs
+        MergePreAndPostFitShapes for multiple datacard sets at once.
+        """
+        def get_cat_var(inference_model_cls, cat_name):
+            var_name = inference_model_cls.config_variable(inference_model_cls, cat_name)
+            if inference_model_cls.multi_variables:
+                cat_name, var_name = inference_model_cls.split_datacard_cat_name(cat_name)
+            return cat_name, var_name
+
         inputs = self.input()
         output = self.output()
 
         apply_fit_datacards = []
         variables = []
         for _input, inference_model_cls in zip(inputs["datacards"], self.inference_model_clses):
-            datacards = []
-            variable = ""
             for category, target in _input.targets.items():
-                if not variable:
-                    variable = inference_model_cls.config_variable(inference_model_cls, category)
-                elif variable != inference_model_cls.config_variable(inference_model_cls, category):
-                    raise ValueError(
-                        f"Variable {variable} from category {category} does not agree with previous "
-                        f"variable {inference_model_cls.config_variable(inference_model_cls, category)}",
-                    )
+                datacards = []
+                cat_name, variable = get_cat_var(inference_model_cls, category)
                 abspath = target["card"].abspath
-                datacards.append(f"{category}={abspath}")
-            variables.append(variable)
-            apply_fit_datacards.append(",".join(datacards))
+                datacards.append(f"{cat_name}={abspath}")
+                variables.append(variable)
+                apply_fit_datacards.append(",".join(datacards))
 
         cmd = (
             "law run MergePreAndPostFitShapes "
             "--FitParameters-workflow local "
             "--PreAndPostFitShapes-workflow htcondor --workers 5 --unblinded True --prefit "
-            "--version shapes --datacards $CARDS "
+            "--version shapes2 --datacards $CARDS "
             f"--apply-fit-datacards {':'.join(apply_fit_datacards)} "
             f"--fit-datacard-variables {','.join(variables)} "
         )
