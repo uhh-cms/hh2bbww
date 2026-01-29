@@ -431,7 +431,8 @@ class PlotPostfitShapes(
         # initialize histogram
         n_bins = sum([b["count"] for b in bins_dict.values()])
         h_out = {
-            process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            # process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            process: hist.Hist.new.Var(list(n + 0.5 for n in range(n_bins + 1)), name="xaxis", flow=False).Weight()
             for process in all_processes
         }
         view_dict = {process: dummy_view.copy() for process in all_processes}
@@ -470,7 +471,6 @@ class PlotPostfitShapes(
             ml_proc_bins[ml_proc] += bins_info["count"]
         for cat_name, bins_info in bins_dict.items():
             bins_info["ml_proc_count"] = ml_proc_bins[bins_info["ml_proc"]]
-
         return bins_dict
 
     @view_output_plots
@@ -564,7 +564,7 @@ class PlotPostfitShapes(
             # some adjustments for the merged plot
             if channel == "cat_merged" or channel == "merged":
                 line_pos = 0.71
-                bins_count = 0
+                bins_count = 0.5
                 axs[0].axhline(
                     get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
                     color="grey", linewidth=2.5,
