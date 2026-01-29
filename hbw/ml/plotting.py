@@ -29,8 +29,9 @@ logger = law.logger.get_logger(__name__)
 cms_label_kwargs = {
     "data": False,
     # "llabel": "Private work (CMS simulation)",
-    # "llabel": "Simulation work in progress",
-    "llabel": "Simulation preliminary",
+    "llabel": "Simulation Work in progress",
+    # "llabel": "Simulation Preliminary",
+    # "llabel": "Simulation Supplementary",
     "lumi": "62",  # NOTE: hard-coded, to be updated if needed
     # "exp": "",
 }
@@ -312,7 +313,7 @@ def plot_roc_ovr(
         title="ROC (process vs rest)",
         loc="lower right",
     )
-    mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+    mplhep.cms.label(ax=ax, fontsize=24, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
     plt.close(fig)
