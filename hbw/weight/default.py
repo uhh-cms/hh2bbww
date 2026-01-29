@@ -128,7 +128,7 @@ def base_setup(
         # add hbb_sf_weights to the reader targets
         reader_targets["hbb_sf_weights"] = inputs["hbb_sf_weights"]["columns"]
 
-    if task.dataset_inst.is_mc:
+    if self.require_msd_nonclosure_producer:
         # add msd_nonclosure_uncertainty to the reader targets
         reader_targets["msd_nonclosure_uncertainty"] = inputs["msd_nonclosure_uncertainty"]["columns"]
 
@@ -157,11 +157,21 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
             producer="hbb_sf_weights",
         )
 
-    if self.dataset_inst.is_mc:
-        reqs["msd_nonclosure_uncertainty"] = ProduceColumns.req(
-            task,
-            producer="msd_nonclosure_uncertainty",
+    self.require_msd_nonclosure_producer = False
+    if "msd_nonclosure_weight" in self.local_weight_columns.keys():
+        msd_nonclosure_shifts = get_shifts_from_sources(
+            self.config_inst,
+            self.local_weight_columns["msd_nonclosure_weight"],
         )
+        if self.dataset_inst.is_mc and task.shift in msd_nonclosure_shifts:
+            reqs["msd_nonclosure_uncertainty"] = ProduceColumns.req(
+                task,
+                producer="msd_nonclosure_uncertainty",
+            )
+            self.require_msd_nonclosure_producer = True
+        else:
+            self.local_weight_columns.pop("msd_nonclosure_weight", None)
+            self.uses.discard("msd_nonclosure_weight")
 
 
 @base.init
@@ -347,7 +357,7 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
 # because the dy_correction_weight is only relevant for DY processes. This is implemented in
 # hbw/analysis/create_analysis.py
 with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
-    "pre_label": "After DY correction",
+    "pre_label": "After DY correction (per campaign)",
     "nondy_hist_producer": "with_trigger_weight",
     "weight_columns": {
         **default_correction_weights,
@@ -363,6 +373,29 @@ incl_dy_corr = default_hist_producer.derive("incl_dy_corr", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
+})
+with_hbbsf = default_hist_producer.derive("with_hbbsf", cls_dict={
+    "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights,
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+})
+incl_dy_corr_hbbsf = default_hist_producer.derive("incl_dy_corr_hbbsf", cls_dict={
+    "pre_label": "After DY correction",
+    "nondy_hist_producer": "with_hbbsf",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
         "trigger_weight": ["trigger_sf"],
         "stitched_normalization_weight": [],
     },
@@ -405,7 +438,8 @@ met_geq40_incl_dy_corr = with_dy_corr.derive("met_geq40_incl_dy_corr", cls_dict=
 })
 
 met_geq40_with_hbbsf = default_hist_producer.derive("met_geq40_with_hbbsf", cls_dict={
-    "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
@@ -418,7 +452,8 @@ met_geq40_with_hbbsf = default_hist_producer.derive("met_geq40_with_hbbsf", cls_
     "version": 3,
 })
 met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dict={
-    "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
     "nondy_hist_producer": "met_geq40_with_hbbsf",
     "categorizer_cls": mask_fn_met_geq40,
     "dy_correction_weight_producer": "dy_incl_corr_weight",
