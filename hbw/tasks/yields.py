@@ -80,6 +80,7 @@ class CustomCreateYieldTable(
     )
     ratio = law.CSVParameter(
         default=("data", "background"),
+        # default=(),
         significant=False,
         description="Ratio of two processes to be calculated and added to the table",
     )
@@ -92,8 +93,11 @@ class CustomCreateYieldTable(
         "if 'subtract', (p[0] - p[1] + p[2]) / p[2] is calculated, ",
     )
 
-    # simple flag to indicate that the yield tables are created for the analysis note
-    for_analysis_note: bool = False
+    for_analysis_note = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="simple flag to indicate that the yield tables are created for the analysis note",
+    )
 
     # upstream requirements
     reqs = Requirements(
@@ -205,7 +209,9 @@ class CustomCreateYieldTable(
                 config_inst=config_inst,
                 processes=sub_processes,
                 categories=self.categories,
-                shifts=self.shift,
+                # NOTE: this could lead to double-counting if (for some reason) one event is assigned to both nominal
+                # and varied shift; should not happen in practice though
+                shifts={self.shift, "nominal"},
             )
             hist_per_config = hist_per_config[{"shift": sum, self.yields_variable: sum}]
 
@@ -246,6 +252,7 @@ class CustomCreateYieldTable(
                         math.sqrt(h_cat.variance),
                     )
                 yields[category_inst].append(value)
+
         return yields, processes
 
     def apply_ratio(self, yields, processes):
@@ -346,7 +353,8 @@ class CustomCreateYieldTable(
                 # cat_label = category.name.replace("__", " ")
                 cat_label = category.label.replace("\n", ", ")
                 if self.for_analysis_note:
-                    cat_label = f"\\labelfunc{{{category.name}}}"
+                    # cat_label = f"\\labelfunc{{{category.name}}}"
+                    cat_label = category.name
                 yields_str[cat_label].append(yield_str)
 
         return raw_yields, yields_str

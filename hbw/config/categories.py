@@ -229,6 +229,35 @@ def add_jet_categories(config: od.Config) -> None:
 
 
 @call_once_on_config()
+def add_jet_categories_xbb(config: od.Config) -> None:
+    cat_resolved = config.add_category(  # noqa: F841
+        name="resolved",
+        id=100,
+        selection="catid_resolved_xbb",
+        label="resolved",
+    )
+    cat_boosted = config.add_category(  # noqa: F841
+        name="boosted",
+        id=200,
+        selection="catid_boosted_xbb",
+        label="boosted",
+    )
+
+    cat_1b = config.add_category(  # noqa: F841
+        name="1b",
+        id=300,
+        selection="catid_1b",
+        label=r"$\leq 1 btag$",
+    )
+    cat_2b = config.add_category(  # noqa: F841
+        name="2b",
+        id=600,
+        selection="catid_2b",
+        label=r"$\geq 2 btag$",
+    )
+
+
+@call_once_on_config()
 def add_categories_selection(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `SelectEvents`.
@@ -322,7 +351,7 @@ def add_categories_production(config: od.Config) -> None:
 
 
 @call_once_on_config()
-def add_categories_ml(config, ml_model_inst):
+def add_categories_ml(config, ml_model_inst, add_jet_categories_func=add_jet_categories):
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
 
@@ -330,7 +359,7 @@ def add_categories_ml(config, ml_model_inst):
     # prepare non-ml categories
     #
 
-    add_jet_categories(config)
+    add_jet_categories_func(config)
 
     #
     # add parent ml model categories
@@ -379,13 +408,6 @@ def add_categories_ml(config, ml_model_inst):
         "dnn": ml_categories,
     })
 
-    # # NOTE: temporary solution: only build DNN leafs
-    # combined_categories = [cat for cat in config.get_leaf_categories() if len(cat.parent_categories) != 0]
-    # category_blocks = OrderedDict({
-    #     "leafs": combined_categories,
-    #     "dnn": ml_categories,
-    # })
-
     t0 = time()
     # create combination of categories
     n_cats = create_category_combinations(
@@ -421,24 +443,10 @@ def add_categories_ml(config, ml_model_inst):
         bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
         sr__boosted__ml_bkg.add_category(bkg_cat)
 
-    # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
-    # # to be discussed and included in future versions.
-    # category_blocks_bkg = OrderedDict({
-    #     "main": [config.get_category("ttcr"), config.get_category("dycr")],
-    #     "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-    #     # "jet": [config.get_category("resolved"), config.get_category("boosted")],
-    #     # "b": [config.get_category("1b"), config.get_category("2b")],
-    #     # "dnn": ml_categories,
-    # })
-    # # create combination of categories
-    # n_cats_vr = create_category_combinations(
-    #     config,
-    #     category_blocks_bkg,
-    #     name_fn=name_fn,
-    #     kwargs_fn=kwargs_fn,
-    #     skip_existing=True,
-    # )
-    # logger.info(f"Number of produced VR category insts: {n_cats_vr} (took {(time() - t0):.3f}s)")
 
-    # dycr__nonmixed.add_category(config.get_category("dycr__2e"))
-    # dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+from functools import partial
+add_categories_ml_xbb = partial(
+    add_categories_ml,
+    add_jet_categories_func=add_jet_categories_xbb,
+)
+add_categories_ml_xbb.__name__ = "add_categories_ml_xbb"

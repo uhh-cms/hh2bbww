@@ -935,6 +935,42 @@ def add_variables(config: od.Config) -> None:
                 },
             )
             config.add_variable(
+                name=f"{obj}{i}_msoftdrop_rebin".lower(),
+                expression=f"{obj}.msoftdrop[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(120, 0, 240),
+                unit="GeV",
+                x_title=rf"{obj} %i softdrop mass" % i,
+                aux={
+                    "rebin": 10,
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+
+            fj_preselection = lambda fj: (
+                (fj["pt"] > 300) &
+                (fj["msoftdrop"] > 30) &
+                ((fj["tau2"] / fj["tau1"]) < 0.30)
+            )
+            config.add_variable(
+                name=f"{obj}{i}_msoftdrop_preselected".lower(),
+                expression=lambda events, i=i, obj=obj: ak.fill_none(ak.pad_none(
+                    events[obj]["msoftdrop"][fj_preselection(events[obj])], i + 1,
+                ), EMPTY_FLOAT)[:, i],
+                null_value=EMPTY_FLOAT,
+                binning=(120, 0, 240),
+                unit="GeV",
+                x_title=f"{obj} {i} softdrop mass ($p_T > 300$, $m_{{softdrop}} > 30$, $\\tau_2 / \\tau_1 < 0.30$)",
+                aux={
+                    "rebin": 10,
+                    # "underflow": True,
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,tau2,tau1,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+
+            config.add_variable(
                 name=f"{obj}{i}_particleNet_XbbVsQCD".lower(),
                 expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
                 null_value=EMPTY_FLOAT,
@@ -965,7 +1001,19 @@ def add_variables(config: od.Config) -> None:
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
-                    "rebin": 2,
+                    "rebin": 4,
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pnet_xbb".lower(),
+                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(100, 0, 1),
+                x_title=rf"{obj} %i PNet Xbb score" % i,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop,particleNet_XbbVsQCD}"},
+                    "rebin": 4,
                 },
             )
             # config.add_variable(
@@ -988,6 +1036,17 @@ def add_variables(config: od.Config) -> None:
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pnet_xbb_pass_fail".lower(),
+                expression=f"{obj}.particleNet_XbbVsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=[0, 0.92, 1.00],
+                x_title=rf"{obj} %i PNet Xbb score" % i,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop,particleNet_XbbVsQCD}"},
                 },
             )
             # config.add_variable(
@@ -1252,4 +1311,42 @@ def add_variables(config: od.Config) -> None:
         name="uperp",
         binning=(60, -150., 150.),
         x_title=r"U$_{perp}$",
+    )
+
+    # variables from Hbb SF production
+    config.add_variable(
+        name="hbb_sf_weight",
+        binning=(50, 0.0, 2.0),
+        unit="",
+        x_title="Hbb FatJet SF weight",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_cc_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged cc jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_bb_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged bb jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_lf_hbbjets",
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged lf jets",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="hbb_sf_weight_num_hbbjets",
+        expression=lambda events: events["hbb_sf_weight_num_cc_hbbjets"] + events["hbb_sf_weight_num_bb_hbbjets"],  # noqa: E501
+        binning=(4, -0.5, 3.5),
+        unit="",
+        x_title="Number of Hbb-tagged bb/cc jets",
+        aux={"overflow": True},
     )

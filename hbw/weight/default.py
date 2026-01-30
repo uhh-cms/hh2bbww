@@ -63,6 +63,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     dy_weight=None,
     nondy_hist_producer=None,
     dy_correction_weight_producer=None,
+    require_hbb_sf_producer=True,
     pre_label="",
     version=2,
 )
@@ -123,6 +124,14 @@ def base_setup(
         # add dy_correction_weight to the reader targets
         reader_targets["dy_correction_weight"] = inputs["dy_correction_weight_producer"]["columns"]
 
+    if self.require_hbb_sf_producer and not task.dataset_inst.is_data:
+        # add hbb_sf_weights to the reader targets
+        reader_targets["hbb_sf_weights"] = inputs["hbb_sf_weights"]["columns"]
+
+    if task.dataset_inst.is_mc:
+        # add msd_nonclosure_uncertainty to the reader targets
+        reader_targets["msd_nonclosure_uncertainty"] = inputs["msd_nonclosure_uncertainty"]["columns"]
+
 
 @base.requires
 def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableDict) -> None:
@@ -140,6 +149,18 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
         reqs["dy_correction_weight_producer"] = ProduceColumns.req(
             task,
             producer=self.dy_correction_weight_producer,
+        )
+
+    if self.require_hbb_sf_producer and not self.dataset_inst.is_data:
+        reqs["hbb_sf_weights"] = ProduceColumns.req(
+            task,
+            producer="hbb_sf_weights",
+        )
+
+    if self.dataset_inst.is_mc:
+        reqs["msd_nonclosure_uncertainty"] = ProduceColumns.req(
+            task,
+            producer="msd_nonclosure_uncertainty",
         )
 
 
@@ -233,8 +254,8 @@ def base_init(self: HistProducer) -> None:
                     f"in 'column_aliases' aux {shift.x('column_aliases')}",
                 )
 
-            # declare shifts that the produced event weight depends on
-            self.shifts |= set(shifts)
+        # declare shifts that the produced event weight depends on
+        self.shifts |= set(shifts)
 
     # remove dummy column from weight columns and uses
     self.local_weight_columns.pop("dummy_weight", "")
@@ -381,6 +402,35 @@ met_geq40_incl_dy_corr = with_dy_corr.derive("met_geq40_incl_dy_corr", cls_dict=
     "nondy_hist_producer": "met_geq40_no_dycorr",
     "categorizer_cls": mask_fn_met_geq40,
     "dy_correction_weight_producer": "dy_incl_corr_weight",
+})
+
+met_geq40_with_hbbsf = default_hist_producer.derive("met_geq40_with_hbbsf", cls_dict={
+    "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+    "version": 3,
+})
+met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dict={
+    "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": "met_geq40_with_hbbsf",
+    "categorizer_cls": mask_fn_met_geq40,
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "stitched_normalization_weight": [],
+    },
+    "version": 3,
 })
 
 mbb80 = with_dy_corr.derive("mbb80", cls_dict={

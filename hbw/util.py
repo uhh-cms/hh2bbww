@@ -779,3 +779,51 @@ def IF_HBV(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set
         return self.get()
 
     return self.get() if func.dataset_inst.has_tag("is_hbv") else None
+
+
+def make_correction_json_from_hist(
+    sfhist,
+    name="msoftdrop_correction",
+    description="Softdrop mass correction",
+    out_file="msoftdrop_correction.json",
+):
+    """
+    Helper to create a correctionlib json file from a histogram with up/down variations.
+    The idea is that the input histogram contains data/MC ratios.
+    The up variation is defined as the histogram itself (leading to perfect closure in this obsservable/category),
+    while the down variation is defined as 2 - histogram (leading to an inverted correction).
+
+    :param sfhist: input histogram with data/MC ratios
+    :param name: base name for the corrections
+    :param description: description for the correction set
+    :param out_file: output json file name
+    """
+
+    import correctionlib
+    import correctionlib.convert
+    sf_map = {}
+
+    sfhist.name = f"{name}_up"
+    sfhist.label = "out"
+
+    sfcorr = correctionlib.convert.from_histogram(sfhist)
+    sfcorr.description = f"{description} (up variation)"
+    sfcorr.data.flow = "clamp"
+    sf_map["up"] = sfcorr
+
+    sfhist_down = sfhist.copy() * -1 + 2
+    sfhist_down.name = f"{name}_down"
+
+    sfcorr_down = correctionlib.convert.from_histogram(sfhist_down)
+    sfcorr_down.description = f"{description} (down variation)"
+    sfcorr_down.data.flow = "clamp"
+    sf_map["down"] = sfcorr_down
+
+    cset = correctionlib.schemav2.CorrectionSet(
+        schema_version=2,
+        description=description,
+        corrections=list(sf_map.values()),
+    )
+    cset_json = cset.json()
+    with open(out_file, "w") as f:
+        f.write(cset_json)

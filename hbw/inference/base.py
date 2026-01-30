@@ -190,8 +190,6 @@ class HBWInferenceModelBase(InferenceModel):
             for bjet_cat in self.bjet_cats
         })
 
-        available_procs = set(self.processes)
-
         self.processes_per_QCDscale = {
             unc_formatted: available_procs
             for unc, procs in const.processes_per_QCDscale.items()
@@ -222,6 +220,7 @@ class HBWInferenceModelBase(InferenceModel):
                 any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
             )
         }
+        # NOTE: might be nice to do resolving of "is_signal" etc. here already
         self.processes_per_shape = {
             unc_formatted: available_procs
             for year in years
@@ -231,9 +230,14 @@ class HBWInferenceModelBase(InferenceModel):
             if (
                 (unc_formatted := unc.format(year=year, campaign=campaign, bjet_cat=bjet_cat))
                 in systematics_formatted and
-                any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
+                any(available_procs := [proc for proc in procs if proc in [
+                    "all", "is_signal", "is_bkg",
+                    *self.processes,
+                ]])
             )
         }
+        self.signal_procs = {proc for proc in self.processes if "hh_" in proc.lower()}
+        self.bkg_procs = set(self.processes) - self.signal_procs
 
         # check that all systematics are considered and warn if not
         all_systs = set()
@@ -244,7 +248,7 @@ class HBWInferenceModelBase(InferenceModel):
             self.processes_per_rate_unconstrained,
             self.processes_per_shape,
         ):
-            for syst, procs in processes_per_syst.items():
+            for syst, procs in processes_per_syst.copy().items():
                 if procs:
                     all_systs.add(syst)
                 else:
@@ -642,8 +646,12 @@ class HBWInferenceModelBase(InferenceModel):
 
             # If "all" is included, takes all processes except for the ones specified (starting with !)
             if "all" in shape_processes:
-                _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
+                _remove_processes = {proc[1:] for proc in shape_processes if proc.startswith("!")}
                 shape_processes = set(self.processes) - _remove_processes
+            elif "is_signal" in shape_processes:
+                shape_processes = self.signal_procs
+            elif "is_bkg" in shape_processes:
+                shape_processes = self.bkg_procs
 
             param_kwargs = {
                 "process": [self.inf_proc(proc) for proc in shape_processes],

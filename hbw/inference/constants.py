@@ -132,6 +132,7 @@ processes_per_rate_unconstrained = {
 
 is_signal = lambda process: process.startswith("hh_")
 is_bkg = lambda process: not is_signal(process)
+is_boosted = lambda category: "boosted" in category
 is_boosted_ggf = lambda category: "boosted" in category and "sig_ggf" in category
 is_boosted_vbf = lambda category: "boosted" in category and "sig_vbf" in category
 is_boosted_bkg = lambda category: "boosted" in category and "bkg" in category
@@ -143,6 +144,12 @@ hbb_efficiency_params = {
     "eff_hbb_bkg_vbf": (is_bkg, is_boosted_vbf),
     "eff_hbb_bkg_bkg": (is_bkg, is_boosted_bkg),
 }
+
+
+# TODO: implement such that hbb_sf etc. are only applied to boosted channels
+# (currently taken care of in prepare_cards.py script)
+categories_per_shape = {}
+
 
 # mapping for each shape uncertainty, which process is used.
 # If "all" is included, takes all processes except for the ones specified (starting with !)
@@ -231,6 +238,7 @@ processes_per_shape = {
     "pdf_shape_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "pdf_shape_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
     "pdf_shape_hh_ggf_hbb_htt": sorted(signals_hh_ggf_hhdecay("hbb_htt")),
+    "pdf_shape_hh_ggf": sorted(signals_hh_ggf),
     # "pdf_shape_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "pdf_shape_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "pdf_shape_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
@@ -248,9 +256,23 @@ processes_per_shape = {
     "murf_envelope_hh_ggf_hbb_hww": sorted(signals_hh_ggf_hhdecay("hbb_hww")),
     "murf_envelope_hh_ggf_hbb_hzz": sorted(signals_hh_ggf_hhdecay("hbb_hzz")),
     "murf_envelope_hh_ggf_hbb_htt": sorted(signals_hh_ggf_hhdecay("hbb_htt")),
+    "murf_envelope_hh_ggf": sorted(signals_hh_ggf),
     # "murf_envelope_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "murf_envelope_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "murf_envelope_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
+    "hbb_sf_signal_ggf_{campaign}": sorted(signals),
+    "hbb_sf_signal_vbf_{campaign}": sorted(signals),
+    "hbb_sf_signal_bkg_{campaign}": sorted(signals),
+    "hbb_sf": ["all"],
+    "hbb_sf_{campaign}": ["all"],
+    "hbb_sf_flat": ["all"],
+    "hbb_sf_flat_{campaign}": ["all"],
+    "msd_nonclosure": ["all"],
+    "msd_nonclosure_{campaign}": ["all"],
+    "msd_nonclosure_signal": ["is_signal"],
+    "msd_nonclosure_bkg": ["is_bkg"],
+    "hbb_sf_signal": ["is_signal"],
+    "hbb_sf_bkg": ["is_bkg"],
 }
 
 remove_processes = {
@@ -264,6 +286,10 @@ remove_processes = {
 # mapping for each shape uncertainty, which shift source is used
 # per default: shape and source have the same name (except for pdf and murf, which are implemented per process)
 source_per_shape = {shape: shape for shape in processes_per_shape.keys()}
+source_per_shape["msd_nonclosure_signal"] = "msd_nonclosure"
+source_per_shape["msd_nonclosure_bkg"] = "msd_nonclosure"
+source_per_shape["hbb_sf_signal"] = "hbb_sf"
+source_per_shape["hbb_sf_bkg"] = "hbb_sf"
 for shape in processes_per_shape.keys():
     if "pdf_shape" in shape:
         source_per_shape[shape] = "pdf"
@@ -309,6 +335,9 @@ for campaign, campaign_fmt in campaign_format.items():
         f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
         # analysis-specific
         f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+        f"hbb_sf_{campaign}": f"CMS_HIG25018_hbb_sf_{campaign_fmt}",
+        f"hbb_sf_flat_{campaign}": f"CMS_HIG25018_hbb_sf_flat_{campaign_fmt}",
+        f"msd_nonclosure_{campaign}": f"CMS_HIG25018_msd_nonclosure_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:

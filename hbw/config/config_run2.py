@@ -669,6 +669,34 @@ def add_config(
             },
         )
 
+    cfg.add_shift(name="hbb_sf_up", id=190, type="shape")
+    cfg.add_shift(name="hbb_sf_down", id=191, type="shape")
+    add_shift_aliases(
+        cfg,
+        "hbb_sf",
+        {
+            "hbb_sf_weight": "hbb_sf_weight_{direction}",
+        },
+    )
+    cfg.add_shift(name="hbb_sf_flat_up", id=192, type="shape")
+    cfg.add_shift(name="hbb_sf_flat_down", id=193, type="shape")
+    add_shift_aliases(
+        cfg,
+        "hbb_sf_flat",
+        {
+            "hbb_sf_weight": "hbb_sf_weight_flat_{direction}",
+        },
+    )
+    cfg.add_shift(name="msd_nonclosure_up", id=194, type="shape")
+    cfg.add_shift(name="msd_nonclosure_down", id=195, type="shape")
+    add_shift_aliases(
+        cfg,
+        "msd_nonclosure",
+        {
+            "msd_nonclosure_weight": "msd_nonclosure_weight_{direction}",
+        },
+    )
+
     cfg.add_shift(name="mur_up", id=201, type="shape")
     cfg.add_shift(name="mur_down", id=202, type="shape")
     cfg.add_shift(name="muf_up", id=203, type="shape")
@@ -939,6 +967,10 @@ def add_config(
     # # Louvain Transformer Model
     # add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
     # add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
+    # Hbb Scale Factors
+    # add_external("hbb_sf_corr", f"/afs/cern.ch/user/a/aguzel/public/AK8SF/jsons/ak8_sf_corrections_bbww_300toInf_{year}_{corr_postfix}.json")  # noqa: E501
+    add_external("hbb_sf_corr", f"/afs/cern.ch/user/a/aguzel/public/AK8SF/jsons/ak8_sf_corrections_bbww_combined_{year}_{corr_postfix}.json")  # noqa: E501
+    add_external("msd_nonclosure", "/afs/cern.ch/user/m/mfrahm/public/data/msoftdrop_correction.json")
 
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
@@ -1030,7 +1062,7 @@ def add_config(
         # Jets (NOTE: we might want to store a local index to simplify selecting jet subcollections later on)
         "{Jet,ForwardJet,Bjet,Lightjet,VBFJet}.{pt,eta,phi,mass,btagDeepFlavB,btagPNetB,hadronFlavour,qgl}",
         # FatJets
-        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD}",
+        "{FatJet,HbbJet}.{pt,eta,phi,mass,msoftdrop,tau1,tau2,tau3,btagHbb,deepTagMD_HbbvsQCD,hadronFlavour}",
         # FatJet particleNet scores (all for now, should be reduced at some point)
         # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
