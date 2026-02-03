@@ -833,6 +833,57 @@ run_and_fetch_all_plots() {
     # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
 }
 
+run_paper_plots() {
+    # command to create datacards & inference task call script
+    claw run hbw.PrepareInferenceTaskCalls --inference-model hbbsf --configs $all_configs  --remove-output 0,a,y --workers 6
+
+    # the inference task call script (can be sources or run in inference setup)
+    # /data/dust/user/frahmmat/public/hh2bbww/data/hbw_store/hbw_dl/calib__ak4V5__ak8V5__eleV6/sel__dl1V3/red__default/c22prev14__c22postv14__c23prev14__c23postv14/prod__event_weightsV5__dl_ml_inputsV3__cats_ml_multiclassv3V5/ml__multiclassv3__9b016e72b3__ggfv3__7d73ff7875__vbfv3_tag__696759553a/hist__met_geq40_with_hbbsf_dyV3/inf__hbbsfV15/hbw.PrepareInferenceTaskCalls/2022_2023/prod3/rerun.sh
+
+    # command to create confusion & ROC curves (Supplementary material)
+    claw run hbw.PlotMLResultsSingleFoldTest --ml-model multiclassv3 --remove-output 0,a,y
+
+    #
+    # commands to create prefit & postfit plots
+    #
+
+    # prefit
+    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl4 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --merged-only True
+
+    # postfit
+    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_postfit.root --inference-model hbbsf --processes ddl4 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --merged-only True
+
+    #
+    # commands to produce inference models that are used to create prefit distributions of for the paper plots
+    #
+
+    # NN input features / NN scores (with MET>40 cut applied)
+    claw run hbw.MultiDatacards --inference-models nn_variables --hist-producer met_geq40_with_hbbsf_dy --ml-models multiclassv3,ggfv3,vbfv3_tag --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
+
+    # DY correction features + mLL (before DY correction, MET inclusive)
+    claw run hbw.MultiDatacards --inference-models before_dycorr --hist-producer with_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
+
+    # DY correction features + mll (after DY correction, MET inclusive)
+    claw run hbw.MultiDatacards --inference-models after_dycorr --hist-producer incl_dy_corr_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
+
+    #
+    # commands from inference task that produce the final plots (with all the proper settings for the plot style of the paper)
+    # (for Supplementary material, rerun with --cms-label Supplementary)
+    #
+
+    # NN input features / NN scores (with MET>40 cut applied)
+    law run hbw.PlotPostfitShapes --version nn_variables --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_e34c508369__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --density --hist-producer with_hbbsf
+
+    # DY correction features (before DY correction, MET inclusive)
+    law run hbw.PlotPostfitShapes --version before_dycorr --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_4b56f241e3__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --hist-producer with_hbbsf
+
+    # DY correction features (after DY correction, MET inclusive)
+    law run hbw.PlotPostfitShapes --version after_dycorr --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes3/shapes_merged_72bcf97f2a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --hist-producer incl_dy_corr_hbbsf
+
+    # mll (after DY correction, MET inclusive)
+    law run hbw.PlotPostfitShapes --version mll --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes3/shapes_merged_72bcf97f2a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl9 --general-settings dpostfit --custom-style-config dpostfit_mll --prefit --merged-only False --density --hist-producer incl_dy_corr_hbbsf --cms-label Supplementary
+}
+
 run_dycorr_plots() {
     # to be run without any ml models
     claw run cf.PlotShiftedVariables1D --processes ddl4 --variables "mli_ll_pt,mli_n_jet,mli_mll" --workers 123 --categories dycr__1b,dycr__2b,dycr__boosted,dycr,dycr__2mu,dycr__2e,dycr__emu --hist-producer with_dy_corr --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} --shift-sources all

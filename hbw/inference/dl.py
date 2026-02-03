@@ -629,50 +629,104 @@ default_unblind = dl.derive("default_unblind", cls_dict={
 })
 
 
+nn_variables = default_unblind.derive("nn_variables", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "mli_mbbllMET_rebinned3",
+        "mli_mbb_rebinned3",
+        "mli_b1_pt_rebinned3",
+        "mli_bb_pt_rebinned3",
+        "mli_mll",
+        "mlscore.sig_ggf_binary",
+        "mlscore.sig_vbf_binary",
+        "rebinlogit_mlscore.sig_ggf_binary",
+        "rebinlogit_mlscore.sig_vbf_binary",
+    ],
+    "multi_variables": True,
+    "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+})
+
+before_dycorr = default_unblind.derive("before_dycorr1", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "mli_ll_pt",
+        "mli_n_jet",
+        "mli_mll",
+    ] if "dycr" in getattr(config_cat_inst, "name", config_cat_inst) else ["mli_mll"],
+    "multi_variables": True,
+    "config_categories": ["dycr", "incl"],
+    "ml_model_name": [],
+    "flow_strategy": "remove",
+    "systematics": list(set(systematics.default) - {"dy_correction"}),
+    "skip_ratify_shapes": True,
+})
+
+after_dycorr = default_unblind.derive("after_dycorr1", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "mli_ll_pt",
+        "mli_n_jet",
+        "mli_mll",
+    ] if "dycr" in getattr(config_cat_inst, "name", config_cat_inst) else ["mli_mll"],
+    "multi_variables": True,
+    "config_categories": ["dycr", "incl"],
+    "ml_model_name": [],
+    "flow_strategy": "remove",
+    "skip_ratify_shapes": True,
+})
+
 mbbllMET = default_unblind.derive("mbbllMET", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mli_mbbllMET_rebinned3",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 mbb = default_unblind.derive("mbb", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mli_mbb_rebinned3",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 b1_pt = default_unblind.derive("b1_pt", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mli_b1_pt_rebinned3",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 bb_pt = default_unblind.derive("bb_pt", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mli_bb_pt_rebinned3",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 mlscore_sig_ggf_binary = default_unblind.derive("mlscore_sig_ggf_binary", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mlscore.sig_ggf_binary",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 mlscore_sig_vbf_binary = default_unblind.derive("mlscore_sig_vbf_binary", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mlscore.sig_vbf_binary",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 rebinlogit_mlscore_sig_ggf_binary = default_unblind.derive("rebinlogit_mlscore_sig_ggf_binary", cls_dict={
     "config_variable": lambda self, config_cat_inst: "rebinlogit_mlscore.sig_ggf_binary",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 rebinlogit_mlscore_sig_vbf_binary = default_unblind.derive("rebinlogit_mlscore_sig_vbf_binary", cls_dict={
     "config_variable": lambda self, config_cat_inst: "rebinlogit_mlscore.sig_vbf_binary",
     "config_categories": ["sr"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 
 mll = default_unblind.derive("mll", cls_dict={
     "config_variable": lambda self, config_cat_inst: "mli_mll",
     "config_categories": ["incl"],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
 
@@ -736,6 +790,23 @@ pas = default_unblind.derive("pas", cls_dict={  # using outputs from Lara
     "config_categories": config_categories.default_boosted_bkg,
 })
 
+pas_no_boosted = default_unblind.derive("pas_no_boosted", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.sr + config_categories.background,
+})
+
+# final model: decorrelated between campaigns (decorr. between channels in prepare_cards)
+hbbsf = dl.derive("hbbsf", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "processes": processes_dict["hwwzztt"],
+    "systematics": systematics.hbbsf_full,
+    "unblind": True,
+    "skip_data": False,
+})
+hbbsfTEST = hbbsf.derive("hbbsfTEST")
+
+# used during studies: decorrelated between campaigns
 hbbsf_v2_full = dl.derive("hbbsf_v2_full", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,
@@ -744,6 +815,7 @@ hbbsf_v2_full = dl.derive("hbbsf_v2_full", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+# used during studies: correlated between campaigns
 hbbsf_v2_full1 = dl.derive("hbbsf_v2_full1", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,
@@ -752,6 +824,7 @@ hbbsf_v2_full1 = dl.derive("hbbsf_v2_full1", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+# used during studies: correlated between campaigns, signal & bkg processes separately
 hbbsf_v2_full2_fix = dl.derive("hbbsf_v2_full2_fix", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "config_categories": config_categories.default_boosted_bkg,

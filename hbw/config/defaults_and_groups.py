@@ -265,6 +265,7 @@ def set_config_defaults_and_groups(config_inst):
         "table3": ["background", "tt", "dy", "st", "w", "h", "vv", "ttv", "other"],
         "table4": [*hh_sm, *backgrounds1[::-1], "background"],
         "table5": ["tt", "dy", "st", "minor", "data", "background"],
+        "table6": [*backgrounds1[::-1], "data", "background"],
         "inference": [
             # TODO: merge st_schannel, st_tchannel
             "st_tchannel",
@@ -555,6 +556,8 @@ def set_config_defaults_and_groups(config_inst):
     # (used in plotting)
     cms_label = "wip"
     # cms_label = "pre"
+    # cms_label = "public"
+
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
@@ -796,7 +799,7 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.95),
+                "xy": (0.03, 0.97),
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
@@ -833,7 +836,7 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.95),
+                "xy": (0.03, 0.97),
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
@@ -854,7 +857,7 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_data_first,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.95),
+                "xy": (0.03, 0.97),
                 "xycoords": "axes fraction",
                 "fontsize": 22,
             },
@@ -879,7 +882,7 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_mll,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.95),
+                "xy": (0.03, 0.97),
                 "xycoords": "axes fraction",
                 "fontsize": 22,
             },
@@ -905,7 +908,7 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_data_first,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.95),
+                "xy": (0.03, 0.97),
                 "xycoords": "axes fraction",
                 "fontsize": 22,
             },
