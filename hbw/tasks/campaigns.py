@@ -42,13 +42,17 @@ valid_campaigns = {
     "run3_2023_postBPix_nano_uhh_v12",
     "run3_2023_postBPix_nano_uhh_v14",
     "run3_2024_nano_v15",
+    "run3_2024_nano_custom_v15",
 }
 
 cpn_module = lambda campaign: f"cmsdb.campaigns.{campaign}"
 cpn_local_name = lambda campaign: f"campaign_{campaign}"
 
 is_data_func = lambda dataset_name: dataset_name.startswith("data_")
+is_hhh_func = lambda dataset_name: dataset_name.startswith("hhh_")
+is_xhh_func = lambda dataset_name: (dataset_name.startswith("tthh_") | dataset_name.startswith("vhh_"))
 is_mc_func = lambda dataset_name: not dataset_name.startswith("data_")
+
 
 campaign_map = {
     "c17v9": {
@@ -66,11 +70,14 @@ campaign_map = {
     },
     "c23prev14": {
         "run3_2023_preBPix_nano_uhh_v14": {},
-        # "run3_2023_preBPix_nano_v12": {"skip_data_func": is_mc_func},
+        "run3_2023_preBPix_nano_v13": {},  # {"dataset_prio_func": is_hhh_func},
+        # TODO: instead of skipping say what should be used with --> need that for ttbb
+        "run3_2023_preBPix_nano_v12": {"dataset_prio_func": is_xhh_func},
     },
     "c23postv14": {
         "run3_2023_postBPix_nano_uhh_v14": {},
-        # "run3_2023_postBPix_nano_v12": {"skip_data_func": is_mc_func},
+        "run3_2023_postBPix_nano_v12": {"dataset_prio_func": is_xhh_func},
+        # "run3_2023_postBPix_nano_v12": "skip_data_func": is_mc_func}, # TODO: instead of skipping say what should be used with --> need that for ttbb
     },
     "c22postv12_das": {
         "run3_2022_postEE_nano_v12": {},
@@ -93,13 +100,16 @@ campaign_map = {
     # Nano V14
     "c22prev14": {
         "run3_2022_preEE_nano_uhh_v14": {},
+        "run3_2022_preEE_nano_v12": {"dataset_prio_func": is_xhh_func},
     },
     "c22postv14": {
         "run3_2022_postEE_nano_uhh_v14": {},
+        "run3_2022_postEE_nano_v12": {"dataset_prio_func": is_xhh_func},
     },
     # Nano V15
     "c24v15": {
         "run3_2024_nano_v15": {},
+        "run3_2024_nano_custom_v15": {"dataset_prio_func": is_hhh_func},
     },
 }
 
