@@ -351,9 +351,21 @@ class ModifyDatacardsFlatRebin(
 
     def get_signal_processes(self):
         signal_processes = [
-            proc for proc in self.branch_data.inf_cat.processes.copy()
-            if proc.is_signal and (
-                proc.name.startswith("ggHH_kl_1_kt_1") or proc.name.startswith("qqHH_CV_1_C2V_1_kl_1")
+            proc
+            for proc in self.branch_data.inf_cat.processes
+            if proc.is_signal
+            and (
+                (
+                    self.config_inst.has_tag("is_hh")
+                    and (
+                        proc.name.startswith("ggHH_kl_1_kt_1")
+                        or proc.name.startswith("qqHH_CV_1_C2V_1_kl_1")
+                    )
+                )
+                or (
+                    self.config_inst.has_tag("is_hhh")
+                    and proc.name.startswith("hhh_")
+                )
             )
         ]
         return signal_processes

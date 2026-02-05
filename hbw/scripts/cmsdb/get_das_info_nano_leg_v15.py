@@ -237,6 +237,23 @@ def vv_decay(part: str):
     return "_".join(parts).replace("/", "")
 
 
+def hhh_decay(part: str):
+    # print("Hello")
+    # print(part)
+    hhh_decay = part.split("to")[1].replace("B", "b")
+    # parts = [p.lower() for p in part.split("_Tune")[0].split("to")]
+    # parts = part.split("_")
+    # decay = parts[0].split("to")[1].replace("B", "b")
+    # c3 = parts[1].split("-")
+    # c3 = c3[1].replace("minus", "m")
+    # d4 = parts[2].split("-")
+    # d4 = d4[1].replace("minus", "m")
+    # hhh_decay = f"{decay}_c3{c3}_d4{d4}"
+    # hhh_decay = part.split("HHHto")[1].split("_Tune")[0].lower()
+
+    return hhh_decay
+
+
 def hh_decay(part: str):
     decay = part.split("HHto")[1]
     parts = [p.lower() for p in part.split("-")[0].split("to")]
@@ -264,6 +281,9 @@ name_identifier = {
     "/TTtoLNu2Q": lambda part: "tt_sl",
     "/TTto2L2Nu": lambda part: "tt_dl",
     "/TTto4Q": lambda part: "tt_fh",
+    "/TTBBto2L2Nu": lambda part: "ttbb_dl",
+    "/TTBBto4Q": lambda part: "ttbb_fh",
+    "/TTHH": lambda part: "tthh",
     # Single t
     "/TBbarQ-t-channel": lambda part: "st_tchannel_t",  # NOTE: undersore before t-channel in DAS
     "/TbarBQ-t-channel": lambda part: "st_tchannel_tbar",  # NOTE: undersore before t-channel in DAS
@@ -286,12 +306,16 @@ name_identifier = {
     "/WZZ": lambda part: "wzz",
     "/WWZ": lambda part: "wwz",
     "/WWW": lambda part: "www",
+    "/WHH-HHto4B": lambda part: "whh_4b",
+    "/ZHH-HHto4B": lambda part: "zhh_4b",
     "/WW": vv_decay,
     "/WZ": vv_decay,
     "/ZZ": vv_decay,
     # Di-Higgs
     "/VBFHH": lambda part: "hh_vbf" + hh_decay(part),
     "/GluGlutoHH": lambda part: "hh_ggf" + hh_decay(part),
+    # Triple Higgs
+    "/HHH": lambda part: "hhh_" + hhh_decay(part),
     # Higgs
     "/GluGluH": lambda part: "h_ggf" + f"_{higgs_decay(part)}" if "hto" in part.lower() else "h_ggf",
     "/VBFH": lambda part: "h_vbf" + f"_{higgs_decay(part)}" if "hto" in part.lower() else "h_vbf",
@@ -329,7 +353,7 @@ def convert_parameter(part: str):
     # rename the parameters to the correct names
     part = part.replace("CV", "kv").replace("C2V", "k2v").replace("C3", "kl")
     # remove unnecessary parts of the parameter identifier
-    part = part.replace("-", "").replace("p00", "")
+    part = part.replace("-", "").replace("p00", "").replace("minus", "m")
     while part.endswith("0") and "p" in part:
         part = part[:-1]
     return part
@@ -344,6 +368,8 @@ additional_identifier = {
     # "5FS": lambda part: "5f",
     "To3LNu": lambda part: "wlnu_zll",
     "To2L2Nu": lambda part: "dl",
+    "to2L2Nu": lambda part: "dl",
+    "toLNu2Q": lambda part: "sl",
     "ToLNu2Q": lambda part: "sl",
     "HtoZG": lambda part: "hzg",
     "WtoLNu": lambda part: "wlnu",
@@ -355,6 +381,8 @@ additional_identifier = {
     "ZtoNuNu": lambda part: "znunu",
     "Hto2": higgs_decay,
     "To4Q": lambda part: "fh",
+    "to4Q": lambda part: "fh",
+    "-HHto4B": lambda part: "4b",
     "MLNu-": lambda part: part.replace("MLNu-", "mlnu") + add_inf(part),
     "MLL-": lambda part: part.replace("MLL-", "m") + add_inf(part),
     "NJet-": lambda part: part.replace("NJet-", "") + "j",
@@ -365,6 +393,7 @@ additional_identifier = {
     "2J": lambda part: "2j",
     "3J": lambda part: "3j",
     "4J": lambda part: "4j",
+    "Par": lambda part: "",
     "PTLL-": lambda part: part.replace("PTLL-", "pt") + add_inf(part),
     "PTLNu-": lambda part: part.replace("PTLNu-", "ptlnu") + add_inf(part),
     "PTG-": lambda part: part.replace("PTG-", "pt") + add_inf(part),
@@ -375,6 +404,8 @@ additional_identifier = {
     "C3-": convert_parameter,
     "kl-": convert_parameter,
     "kt-": convert_parameter,
+    "c3-": convert_parameter,
+    "d4-": convert_parameter,
     # "c2-": lambda part: part.replace("c2-", "c2").replace("p00", ""),
 }
 

@@ -97,6 +97,7 @@ def default_init(self: Reducer) -> None:
 
 test_default = default.derive("test_default")
 triggersf = default.derive("triggersf")
+noselection = default.derive("noselection")
 
 
 @triggersf.init
@@ -261,3 +262,18 @@ def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
 
 
 test_triggersf = triggersf.derive("test_triggersf")
+
+
+@noselection.post_init
+def noselection_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception("Selector steps are not supported in noselection reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("no_sel_mask",)
+
+
+test_noselection = noselection.derive("test_noselection")
