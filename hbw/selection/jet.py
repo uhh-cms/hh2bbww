@@ -18,7 +18,7 @@ from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.production.cms.jet import fatjet_id
 
 from hbw.selection.common import masked_sorted_indices
-from hbw.util import call_once_on_config, IF_NANO_geV14
+from hbw.util import call_once_on_config, IF_NANO_geV14, IF_NANO_V12
 from hbw.production.jets import fatjetId_v12
 
 np = maybe_import("numpy")
@@ -271,7 +271,7 @@ def vbf_jet_selection_init(self: Selector) -> None:
         # NOTE: in NanoV12, the FatJet.{chEmEf,muEF,neEmEF,neHEF} columns are not available,
         # so the fatjetId_v12 is not useable and we cannot recalculate the jetId in NanoV12.
         # For consistency, we also do not recalculate the fatjetId in NanoV13.
-        # IF_NANO_V12(fatjetId_v12),
+        IF_NANO_V12(fatjetId_v12),
         IF_NANO_geV14(fatjet_id),
         jet_selection,
         "{Electron,Muon,Jet,FatJet}.{pt,eta,phi,mass}",

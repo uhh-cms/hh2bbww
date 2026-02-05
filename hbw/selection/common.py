@@ -126,7 +126,7 @@ def pre_selection(
 
     # produce custom jetID, since it is used in jet_veto_map
     if self.has_dep(jetId_v12):
-        raise NotImplementedError("jetId_v12 is not implemented consistently, should be updated to really translate in the ID column.")
+        raise NotImplementedError("jetId_v12 is not implemented consistently, should be updated to really translate in the ID column.")  # noqa E501
         events = self[jet_id](events, **kwargs)
     elif self.has_dep(jet_id):
         events = self[jet_id](events, **kwargs)

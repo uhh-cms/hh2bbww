@@ -121,7 +121,7 @@ def dl_lepton_selection(
         value_type=np.float32,
     )
     # since we veto additional loose leptons, we can use the mass of the selected lepton pair for mll cuts
-    lepton_results.steps["DiLeptonMass20"] = ak.fill_none(dilepton.mass >= 20, False)
+    lepton_results.steps["DiLeptonMass12"] = ak.fill_none(dilepton.mass >= 12, False)
     lepton_results.steps["DiLeptonMass81"] = ak.fill_none(dilepton.mass <= m_z.nominal - 10, False)
     # lepton channel masks
     lepton_results.steps["Lep_mm"] = mm_mask = (
@@ -255,7 +255,7 @@ def dl1(
     results.steps["all_but_trigger_and_bjet"] = (
         results.steps.cleanup &
         jet_step &
-        results.steps.DiLeptonMass20 &
+        results.steps.DiLeptonMass12 &
         results.steps.TripleLooseLeptonVeto &
         results.steps.Charge &
         results.steps.Dilepton &

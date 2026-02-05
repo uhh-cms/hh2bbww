@@ -227,6 +227,25 @@ ak8uncs = ak8.derive("ak8uncs", cls_dict=dict(
 ak8_test = ak8.derive("ak8_test")
 
 
+# pt clamping for the evaluation of the L2L3Residual jec corrections in 2024
+def jec_clamp_2024_data_l2l3residual(calibrator, corrector, variable_map):
+    # apply only to L2L3Residual for data in 2024
+    if (
+        calibrator.config_inst.campaign.x.year == 2024 and
+        calibrator.dataset_inst.is_data and
+        corrector.level == "L2L3Residual"
+    ):
+        min_eta, max_eta = 2.0, 2.5
+        clamp_pt = np.float32(35.0)
+        clamp_mask = (
+            ((abs_eta := abs(variable_map["JetEta"])) > min_eta) &
+            (abs_eta < max_eta) &
+            (variable_map["JetPt"] > clamp_pt)
+        )
+        variable_map["JetPt"] = ak.where(clamp_mask, clamp_pt, variable_map["JetPt"])
+    return variable_map
+
+
 @seeds_user_base.calibrator(
     version=law.config.get_expanded("analysis", "jet_version", 0),
     uses={deterministic_seeds_calibrator.PRODUCES, MET_COLUMN("{pt,phi}")},
@@ -280,17 +299,23 @@ def jet_base_init(self: Calibrator) -> None:
             "met_name": met_name,
             "raw_met_name": raw_met_name,
         }
-
         # jec calibrators
+        update_jec_corrector_variables = (
+            jec_clamp_2024_data_l2l3residual
+            if self.config_inst.campaign.x.year == 2024
+            else None
+        )
         self.config_inst.x.calib_jec_full_cls = jec.derive("jec_full", cls_dict={
             **jec_cls_kwargs,
             "mc_only": True,
             "uncertainty_sources": self.jec_sources,
+            "update_corrector_variables": update_jec_corrector_variables,
         })
         self.config_inst.x.calib_jec_data_cls = jec.derive("jec_data", cls_dict={
             **jec_cls_kwargs,
             "data_only": True,
             "uncertainty_sources": [],
+            "update_corrector_variables": update_jec_corrector_variables,
         })
         # version of jer that uses the first random number from deterministic_seeds
         base_jer_cls = jer_horn_handling if self.jer_horn_handling else jer
