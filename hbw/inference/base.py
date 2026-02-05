@@ -104,6 +104,10 @@ class HBWInferenceModelBase(InferenceModel):
             pattern = r"hh_vbf_([a-zA-Z\d]+)_([a-zA-Z\d]+)_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)"
             replacement = r"qqHH_CV_\3_C2V_\4_kl_\5_\1\2"
             return re.sub(pattern, replacement, proc)
+        elif proc.startswith("hhh_4b2w"):
+            pattern = r"^hhh_4b2w_2l2nu(.*)$"
+            replacement = r"hhh_4b2w2l2nu\1"
+            return re.sub(pattern, replacement, proc)
         else:
             return proc
 
@@ -402,7 +406,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     for config_inst in self.config_insts
                 },
-                "is_signal": ("hh_" in proc.lower()),
+                "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower())
             }
             if self.scale_signal and kwargs["is_signal"]:
                 logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")

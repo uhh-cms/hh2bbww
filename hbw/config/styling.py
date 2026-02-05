@@ -40,6 +40,14 @@ cms_color_palette_2 = {
     "black": "#000000",                                         # data, hh sm
 }
 
+red_shades = {
+    "red_crimson": "#DC143C",   # Crimson
+    "red_firebrick": "#B22222", # Firebrick
+    "red_indian": "#CD5C5C",    # Indian Red
+    "red_tomato": "#FF6347",    # Tomato
+    "red_ruby": "#9B111E"       # Ruby Red
+}
+
 color_palette_1 = {
     "black": "#000000",
     "red": "#e41a1c",
@@ -66,6 +74,8 @@ color_palette = cms_color_palette_2
 default_process_colors = {
     "data": color_palette["black"],
     "tt": color_palette["red"],
+    "ttbb_custom": red_shades["red_crimson"],
+    "tt_custom": red_shades["red_firebrick"],
     "qcd": color_palette["blue"],
     "qcd_mu": color_palette["blue"],
     "qcd_ele": color_palette["blue"],
@@ -137,6 +147,8 @@ default_labels = {
     "dy_hf": "DY+HF",
     "dy_lf": "DY+LF",
     "tt": r"$t\bar{t}$",
+    "tt_custom": r"$t\bar{t}$ (custom)",
+    "ttbb_custom": r"$t\bar{t} + \geq 1b$ (custom)",
     "dy_m50toinf": "DY ($M > 50$)",
     "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
     "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
@@ -243,10 +255,16 @@ def stylize_processes(config: od.Config) -> None:
             proc.short_label = short_label
 
         # unstack signal in plotting
-        if "hh_" in proc.name.lower():
-            proc.add_tag("is_signal")
-            proc.unstack = True
-            proc.scale = "stack"
+        if config.has_tag("is_hh"):
+            if "hh_" in proc.name.lower():
+                proc.add_tag("is_signal")
+                proc.unstack = True
+                proc.scale = "stack"
+        elif config.has_tag("is_hhh"):
+            if "hhh_" in proc.name.lower():
+                proc.add_tag("is_signal")
+                proc.unstack = True
+                proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)

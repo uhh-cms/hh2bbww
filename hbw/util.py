@@ -708,6 +708,12 @@ def IF_HHH(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set
 
 
 @deferred_column
+def IF_HH(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_hh") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
 def BTAG_COLUMN(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
     This helper allows adding the correct btag column based on the b_tagger configuration.
