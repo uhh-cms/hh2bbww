@@ -19,6 +19,7 @@ import cmsdb.processes as cmsdb_procs
 from columnflow.util import DotDict
 from columnflow.tasks.external import GetDatasetLFNs
 from columnflow.config_util import get_root_processes_from_campaign
+from hbw.config.processes import create_parent_process
 
 
 logger = law.logger.get_logger(__name__)
@@ -234,7 +235,20 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         "hhh": [
             *config.x.if_era(run=3, year=2023, values=[
-                "hhh_4b2W_c30_d40_amcatnlo",
+                "hhh_4b2w_c30_d40_amcatnlo",
+                "hhh_4b2w_c30_d499_amcatnlo",
+                "hhh_4b2w_c30_d4m1_amcatnlo",
+                "hhh_4b2w_c319_d419_amcatnlo",
+                "hhh_4b2w_c31_d40_amcatnlo",
+                "hhh_4b2w_c31_d42_amcatnlo",
+                "hhh_4b2w_c32_d4m1_amcatnlo",
+                "hhh_4b2w_c34_d49_amcatnlo",
+                "hhh_4b2w_c3m1_d40_amcatnlo",
+                "hhh_4b2w_c3m1_d4m1_amcatnlo",
+                "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
+            ]),
+            *config.x.if_era(run=3, year=2024, values=[
+                "hhh_4b2w_2l2nu_c30_d4_custom",
             ]),
         ],
         "ttv": [
@@ -259,6 +273,29 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "ttww_madgraph",
             "ttwz_madgraph",
             "ttzz_madgraph",
+        ],
+        "ttbb": [
+            *config.x.if_era(run=3, year=2024, values=[
+                "ttbb_dl_powheg",
+                "ttbb_sl_powheg",
+                "ttbb_fh_powheg",
+            ]),
+        ],
+        "tthh_4b": [
+            *config.x.if_era(run=3, year=2024, values=[
+                "tthh_4b_madgraph",
+            ]),
+            # "tthh_4b_madgraph",
+        ],
+        "vhh_4b": [
+            *config.x.if_era(run=3, year=2024, values=[
+                "whh_4b_k2v1p0kl0p0kv1p0_madgraph",
+                "zhh_4b_k2v1p0kl0p0kv1p0_madgraph",
+            ]),
+            *config.x.if_era(run=3, year=2022, values=[
+                "whh_4b_k2v1p0kl0p0kv1p0_madgraph",
+                "zhh_4b_k2v1p0kl0p0kv1p0_madgraph",
+            ]),
         ],
         "tttt": ["tttt_amcatnlo"],
         "h": [
@@ -301,7 +338,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
+                "thw_4f_madgraph",
                 "thw_madgraph",
+                "thq_madgraph",
             ]),
         ],
         "hh_ggf": [
@@ -449,7 +488,29 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
 
     # get all root processes
     config.x.procs = procs = get_root_processes_from_campaign(campaign)
+    # NOTE: I added this here, because of the logic get_root_processes_from_campaign is abour root process and parent process. # noqa 501
+    tt_dl_nonb = config.x.procs.get("tt_dl_nonb")
+    tt_sl_nonb = config.x.procs.get("tt_sl_nonb")
+    tt_fh_nonb = config.x.procs.get("tt_fh_nonb")
+    ttbb_dl_1b = config.x.procs.get("ttbb_dl_1b")
+    ttbb_sl_1b = config.x.procs.get("ttbb_sl_1b")
+    ttbb_fh_1b = config.x.procs.get("ttbb_fh_1b")
 
+    tt_custom = create_parent_process(
+        [tt_dl_nonb, tt_sl_nonb, tt_fh_nonb],
+        name="tt_custom",
+        id=21199,
+        label="TT Custom",
+    )
+
+    ttbb_custom = create_parent_process(
+        [ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b],
+        name="ttbb_custom",
+        id=68899,
+        label="TTBB Custom",
+    )
+    config.x.procs.n.tt.add_process(tt_custom)
+    config.x.procs.n.ttbb.add_process(ttbb_custom)
     # add processes to config
     for proc_name in process_names:
         config.add_process(procs.n(proc_name))
@@ -457,7 +518,6 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # for signal_proc in ("hh_ggf_hbb_hvvqqlnu", "hh_ggf_hbb_hvv2l2nu", "hh_vbf_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
     #     for dataset_name in dataset_names[signal_proc]:
     #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
-
     # loop over all dataset names and add them to the config
     missing_datasets = set()
     for dataset_name in list(itertools.chain(*dataset_names.values())):
