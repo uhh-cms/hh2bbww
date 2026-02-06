@@ -13,7 +13,7 @@ from columnflow.categorization import Categorizer, categorizer
 from columnflow.selection import SelectionResult
 from columnflow.columnar_util import has_ak_column, optional_column
 
-from hbw.util import MET_COLUMN, BTAG_COLUMN, IF_DY
+from hbw.util import MET_COLUMN, BTAG_COLUMN
 from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
@@ -192,13 +192,77 @@ def catid_lowmet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     return events, mask
 
 #
+# Categorizer for hhh sr and cr such, that the bcut is applied on cat level and not in selection
+#
+@categorizer(
+    uses={"mll", "Jet.pt", BTAG_COLUMN("Jet")},
+    n_jet=2,
+)
+def catid_hhh_sr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (events.mll >= 12) & (events.mll < 80)
+    mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 2)
+    return events, mask
+
+
+@categorizer(
+    uses={"mll", "Jet.pt", BTAG_COLUMN("Jet")},
+    n_jet=2,
+)
+def catid_hhh_cr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (events.mll >= 80)
+    mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 2)
+    return events, mask
+
+
+@categorizer(
+    uses={"mll", "Jet.pt", BTAG_COLUMN("Jet")},
+    n_jet=2,
+)
+def catid_hhh_dycr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (events.mll >= 80) & (events.mll < 100)
+    mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 2)
+    return events, mask
+
+
+@categorizer(
+    uses={"mll", "Jet.pt", BTAG_COLUMN("Jet")},
+    n_jet=2,
+)
+def catid_hhh_ttcr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (events.mll < 100)
+    mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 2)
+    return events, mask
+
+#
 # Categorizer for mll categories
 #
 
 
 @categorizer(uses={"mll"})
-def catid_mll_low(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def catid_mll_low_narrow(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 20) & (events.mll < 70)
+    return events, mask
+
+
+@categorizer(uses={"mll"})
+def catid_mll_low_wide(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 12) & (events.mll < 80)
     return events, mask
 
 
@@ -209,20 +273,42 @@ def catid_cr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 
 
 @categorizer(uses={"mll"})
-def catid_mll_z(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def catid_cr_wide(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 80)
+    return events, mask
+
+
+@categorizer(uses={"mll"})
+def catid_mll_z_narrow(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 80) & (events.mll < 100)
+    return events, mask
+
+
+@categorizer(
+    uses={"mll", "Jet.pt"},
+    n_jet=2,
+)
+def catid_mll_z_wide(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 70) & (events.mll < 110)
+    mask = mask & ak.num(events.Jet["pt"], axis=-1) >= self.n_jet
     return events, mask
 
 
 @categorizer(uses={"mll"})
 def catid_mll_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    mask = (events.mll >= 110)
+    mask = (events.mll >= 100)
     return events, mask
 
+
+@categorizer(uses={"mll"})
+def catid_mll_very_high(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 110)
+    return events, mask
 
 #
 # Jet categorization
 #
+
 
 @categorizer(uses={"FatJet.pt"})
 def catid_fatjet(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
@@ -256,23 +342,29 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
     fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
     mask = (ak.sum(fj_mask, axis=-1) == 0)
-
-    # TODO: This is very dangerous!!! becaus ebaludin need this for HH
-    # mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= 2)
     return events, mask
 
 
 @categorizer(
     uses={"Jet.pt"},
-    n_jet=2,
+    n_jet=1,
 )
-def catid_njet2(
+def catid_njet1(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
     if results:
         return events, results.steps.nJet1
     mask = ak.num(events.Jet["pt"], axis=-1) >= self.n_jet
     return events, mask
+
+
+catid_njet2 = catid_njet1.derive("catid_njet2", cls_dict={"n_jet": 2})
+catid_njet3 = catid_njet1.derive("catid_njet3", cls_dict={"n_jet": 3})
+catid_njet4 = catid_njet1.derive("catid_njet4", cls_dict={"n_jet": 4})
+
+#
+# Bjet categorization
+#
 
 
 @categorizer(uses={BTAG_COLUMN("Jet")})
@@ -309,12 +401,21 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet >= 2)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_eq2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (n_deepjet == 2)
     return events, mask
 
 
 @categorizer(uses={BTAG_COLUMN("Jet")})
-def catid_3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def catid_eq3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
@@ -323,117 +424,41 @@ def catid_3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
 
 
 @categorizer(uses={BTAG_COLUMN("Jet")})
-def catid_4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+def catid_geq4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (n_deepjet >= 4)
     return events, mask
+
 #
 # DNN categorizer
 #
 
 
-# TODO: not hard-coded -> use config?
-ml_processes = [
-    "signal_ggf", "signal_ggf2", "signal_vbf", "signal_vbf2",
-    "signal_ggf4", "signal_ggf5", "signal_vbf4", "signal_vbf5",
-    "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1",
-    "hh_ggf_hbb_hvvqqlnu_kl1_kt1", "hh_vbf_hbb_hvvqqlnu_kv1_k2v1_kl1",
-    "hh_ggf_hbb_hvv2l2nu_kl1_kt1", "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-    "hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1",
-    "tt", "st", "w_lnu", "dy", "v_lep", "h", "qcd",
-    "dy_m10toinf",
-    "dy_m50toinf", "tt_dl", "st_tchannel_t",
-    "bkg_binary", "sig_ggf_binary", "sig_vbf_binary",
-    "sig_ggf", "sig_vbf",
-]
-for proc in ml_processes:
-    @categorizer(
-        uses=set(f"mlscore.{proc1}" for proc1 in ml_processes),
-        cls_name=f"catid_ml_{proc}",
-        proc_col_name=f"{proc}",
-        # skip check because we don't know which ML processes were used from the MLModel
-        check_used_columns=False,
-    )
-    def dnn_mask(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-        """
-        dynamically built Categorizer that categorizes events based on dnn scores
-        """
-        # start with true mask
-        outp_mask = np.ones(len(events), dtype=bool)
-        for col_name in events.mlscore.fields:
-            # check for each mlscore if *this* score is larger and combine all masks
-            mask = events.mlscore[self.proc_col_name] >= events.mlscore[col_name]
-            outp_mask = outp_mask & mask
-
-        return events, outp_mask
-
-
-@categorizer(uses={"{Electron,Muon}.{pt,eta,phi,mass}", "mll"})
-def mask_fn_highpt(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    """
-    Categorizer that selects events in the phase space that we understand.
-    Needs to be used in combination with a Producer that defines the leptons.
-    """
-    mask = (events.Lepton[:, 0].pt > 70) & (events.Lepton[:, 1].pt > 50) & (events.mll > 20)
-    return events, mask
-
-
-@categorizer(uses={"gen_hbw_decay.*.*"})
-def mask_fn_gen_barrel(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    """
-    Categorizer that selects events generated only in the barrel region
-    """
-    mask = (abs(events.gen_hbw_decay["sec1"]["eta"]) < 2.4) & (abs(events.gen_hbw_decay["sec2"]["eta"]) < 2.4)
-    return events, mask
-
-
-@categorizer(uses={"mll"}, mll=20)
-def mask_fn_mll20(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    return events, (events.mll > self.mll)
-
-
-@categorizer(uses={"mli_mbb"}, mbb=80)
-def mask_fn_mbb80(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    return events, (events.mli_mbb > self.mbb)
-
-
-mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})
-
-
-@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}")}, met_req=70)
-def mask_fn_met70(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    if self.dataset_inst.has_tag("is_dy"):
-        mask = events.RecoilCorrMET.pt < self.met_req
-    else:
-        mask = events[self.config_inst.x.met_name]["pt"] < self.met_req
-    return events, mask
-
-
-@categorizer(uses={MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"), "Muon.pt"}, met_req=70)
-def mask_fn_dyvr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    if self.dataset_inst.has_tag("is_dy"):
-        mask = events.RecoilCorrMET.pt < self.met_req
-        mask = mask & (ak.sum(events.Muon["pt"] > 0, axis=-1) == 2)
-    else:
-        mask = events[self.config_inst.x.met_name]["pt"] < self.met_req
-        mask = mask & (ak.sum(events.Muon["pt"] > 0, axis=-1) == 2)
-    return events, mask
-
-
 @categorizer(
-    uses={
-        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
-    },
-    met_req=40,
+    uses=("mlscore.*"),
+    check_used_columns=False,
+    proc_col_name=None,
 )
-def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    if self.dataset_inst.has_tag("is_dy"):
-        mask = events.RecoilCorrMET.pt >= self.met_req
-    else:
-        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
-    return events, mask
+def catid_ml_base(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    dynamically built Categorizer that categorizes events based on dnn scores
+    """
+    if not self.proc_col_name:
+        raise ValueError("proc_col_name must be set for catid_ml_base")
+    # start with true mask
+    outp_mask = np.ones(len(events), dtype=bool)
+    for col_name in events.mlscore.fields:
+        # check for each mlscore if *this* score is larger and combine all masks
+        mask = events.mlscore[self.proc_col_name] >= events.mlscore[col_name]
+        outp_mask = outp_mask & mask
+
+    return events, outp_mask
+
+#
+# triggers
+#
 
 
 def require_triggers(events, require_trigger_ids=None, veto_trigger_ids=None):

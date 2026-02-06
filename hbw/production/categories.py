@@ -10,7 +10,9 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 from columnflow.production.categories import category_ids
+from columnflow.ml import MLModel
 
+from hbw.categorization.categories import catid_ml_base
 from hbw.config.categories import add_categories_production, add_categories_ml
 from hbw.util import get_subclasses_deep
 
@@ -24,10 +26,11 @@ logger = law.logger.get_logger(__name__)
 # version 4: adding FatJet.pt > 200 and changing Hbb Score to > 0.90 for boosted category
 # version 5: adding FatJet.pt > 200 and changing Hbb Score to > 0.92 for boosted category
 
+
 @producer(
     # uses in init, produces should not be empty
     produces={"category_ids"},
-    version=5,
+    version=0,
 )
 def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -35,7 +38,6 @@ def pre_ml_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     # category ids
     events = self[category_ids](events, **kwargs)
-
     return events
 
 
@@ -98,6 +100,15 @@ def cats_ml_init(self: Producer) -> None:
 
     # NOTE: if necessary, we could initialize the MLModel ourselves, e.g. via:
     # MLModelMixinBase.get_ml_model_inst(self.ml_model_name, self.analysis_inst, requested_configs=[self.config_inst])
+
+    if isinstance(self.ml_model_name, str):
+        ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
+
+    for node, _ in ml_model_inst.train_nodes.items():
+        catid_ml_base.derive(
+            f"catid_ml_{node}",
+            cls_dict={"proc_col_name": node},
+        )
 
     if not self.config_inst.has_variable("mlscore.max_score"):
         self.config_inst.add_variable(
