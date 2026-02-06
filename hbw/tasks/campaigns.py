@@ -77,7 +77,6 @@ campaign_map = {
     "c23postv14": {
         "run3_2023_postBPix_nano_uhh_v14": {},
         "run3_2023_postBPix_nano_v12": {"dataset_prio_func": is_xhh_func},
-        # "run3_2023_postBPix_nano_v12": "skip_data_func": is_mc_func}, # TODO: instead of skipping say what should be used with --> need that for ttbb
     },
     "c22postv12_das": {
         "run3_2022_postEE_nano_v12": {},

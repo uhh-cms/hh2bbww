@@ -406,7 +406,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     for config_inst in self.config_insts
                 },
-                "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower())
+                "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower()),  # noqa E501
             }
             if self.scale_signal and kwargs["is_signal"]:
                 logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")

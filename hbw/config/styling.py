@@ -42,10 +42,10 @@ cms_color_palette_2 = {
 
 red_shades = {
     "red_crimson": "#DC143C",   # Crimson
-    "red_firebrick": "#B22222", # Firebrick
-    "red_indian": "#CD5C5C",    # Indian Red
-    "red_tomato": "#FF6347",    # Tomato
-    "red_ruby": "#9B111E"       # Ruby Red
+    "red_firebrick": "#B22222",  # Firebrick
+    "red_indian": "#CD5C5C",  # Indian Red
+    "red_tomato": "#FF6347",  # Tomato
+    "red_ruby": "#9B111E",  # Ruby Red
 }
 
 color_palette_1 = {
