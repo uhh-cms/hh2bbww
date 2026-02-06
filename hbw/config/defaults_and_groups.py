@@ -28,7 +28,10 @@ def ml_inputs_producer(container):
     if container.has_tag("is_sl") and not container.has_tag("is_resonant"):
         ml_inputs = "sl_ml_inputs"
     if container.has_tag("is_dl"):
-        ml_inputs = "dl_ml_inputs"
+        if container.has_tag("is_hh"):
+            ml_inputs = "dl_ml_inputs"
+        elif container.has_tag("is_hhh"):
+            ml_inputs = "hhh_dl_ml_inputs"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -212,6 +215,11 @@ def set_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
+        "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl15B": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl16": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b", "tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],  # noqa: E501
         "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
         # "dl9": ["data_e", "data_mu", "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
         # "dl8": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy_ee_m50toinf", "dy_mumu_m50toinf", "dy_tautau_m50toinf", "st", "tt"],  # noqa: E501
@@ -298,7 +306,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in ("dl16", "dl15", "dl15B", "dl11", "dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -400,11 +408,13 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
+        "hhh_sr": bracket_expansion(["resolved__{eq2b,eq3b,geq4b}__ml_{sig_hhh,hhh_4b2w_2l2nu_c30_d40}"]),
+        "hhh_bkg": bracket_expansion(["resolved__eq2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}", "resolved__eq3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}", "resolved__geq4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
-    from hbw.ml.derived.dl import input_features as ml_inputs
+    from hbw.ml.derived.ml_dl_dih import input_features as ml_inputs
     config_inst.x.variable_groups = {
         "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
@@ -414,6 +424,29 @@ def set_config_defaults_and_groups(config_inst):
             "rebinlogit_mlscore.sig_{ggf,vbf}_binary",
             "mlscore.sig_{ggf,vbf}_binary",
         ]),
+        "hhh_ml_inputs": [
+            "mli_mbb1",
+            "mli_mbb2",
+            "mli_bb_pt",
+            "mli_ll_pt",
+            "mli_n_jet",
+            "mli_dr_bb_bb",
+            "mli_dr_ll_bb1",
+            "mli_dr_ll_bb2",
+            "mli_met_pt",
+            "mli_lep_pt",
+            "mli_n_btag",
+            "mli_ht",
+            "mli_lep1_pt",
+            "mli_hhh",
+            "mli_m4bllMET",
+            "mli_dr_bb1_llMET",
+            "mli_dr_bb2_llMET",
+            "mli_mll",
+            "mli_b_score_sum",
+            "mli_mllMET",
+            "mli_b1_pt",
+        ],  # noqa: E501
         "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
@@ -1051,11 +1084,14 @@ def set_config_defaults_and_groups(config_inst):
         "sr__boosted__ml_sig_ggf": 3,
         "sr__boosted__ml_sig_vbf": 3,
         "sr__boosted": 3,
+        "hhh_bkg": 1,
+        "hhh_sr": 10,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
     is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
     is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
+    is_signal_hhh = lambda proc_name: "hhh" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
@@ -1064,6 +1100,7 @@ def set_config_defaults_and_groups(config_inst):
         "hbb_hvv" not in proc_name and "hbb_hww" not in proc_name and
         "hbb_hzz" not in proc_name and "hbb_htt" not in proc_name
     )
+    is_background_hhh = lambda proc_name: ("hhh" not in proc_name)
 
     config_inst.x.inference_category_rebin_processes = {
         # Single lepton
@@ -1088,4 +1125,6 @@ def set_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
+        "hhh_sr": is_signal_hhh,
+        "hhh_bkg": is_background_hhh,
     }

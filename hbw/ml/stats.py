@@ -14,9 +14,10 @@ from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
-from hbw.categorization.categories import catid_sr, catid_mll_low
+from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr
 from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.default import default_hist_producer
+from hbw.weight.hp_dih import default_hist_producer
+from hbw.weight.hp_trih import default_hist_producer_trih
 
 
 ak = maybe_import("awkward")
@@ -45,7 +46,7 @@ def del_sub_proc_stats(
 
 
 @producer(
-    uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
+    uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), increment_stats, "process_id", "fold_indices"},
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
 )
@@ -61,10 +62,25 @@ def prepml(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
+
+    if self.config_inst.has_tag("is_sl"):
+        sr_categorizer = catid_sr
+    elif self.config_inst.has_tag("is_dl"):
+        if self.config_inst.has_tag("is_hh"):
+            sr_categorizer = catid_mll_low_narrow
+            default_hp = default_hist_producer
+        elif self.config_inst.has_tag("is_hhh"):
+            sr_categorizer = catid_hhh_sr
+            default_hp = default_hist_producer_trih
+        else:
+            raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
+    else:
+        raise Exception(f"config {self.config_inst.name} needs either the 'is_sl' or 'is_dl' tag")
+
     if task.task_family == "cf.PrepareMLEvents":
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
-        sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
+
         events, mask = self[sr_categorizer](events, **kwargs)
         logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
         events = events[mask]
@@ -82,7 +98,7 @@ def prepml(
 
     if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_hist_producer](events, task, **kwargs)
+        events, weight = self[default_hp](events, task, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
@@ -134,8 +150,18 @@ def prepml_init(self):
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
         return
 
+    if self.config_inst.has_tag("is_dl"):
+        if self.config_inst.has_tag("is_hh"):
+            default_hp = default_hist_producer
+        elif self.config_inst.has_tag("is_hhh"):
+            default_hp = default_hist_producer_trih
+        else:
+            raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
+    else:
+        raise Exception(f"config {self.config_inst.name} needs 'is_dl' tag")
+
     self.uses.add("stitched_normalization_weight")
-    self.uses.add(default_hist_producer)
+    self.uses.add(default_hp)
 
     if self.extra_categorizer:
         self.categorizers_cls = []
@@ -154,3 +180,4 @@ prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
 prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})
+prepml_hhh_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})

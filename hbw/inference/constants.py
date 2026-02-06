@@ -130,6 +130,9 @@ processes_per_rate_unconstrained = {
     "st": ["st_schannel", "st_tchannel", "st_twchannel"],
 }
 
+# TODO: maybe we should change this at some point to have HH and HHH signal,
+#  but since we are not doing those hbb_efficiency atm anyway,
+# and in HHH i am not sure what i will be doing I will just leave it as is
 is_signal = lambda process: process.startswith("hh_")
 is_bkg = lambda process: not is_signal(process)
 is_boosted_ggf = lambda category: "boosted" in category and "sig_ggf" in category

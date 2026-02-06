@@ -17,7 +17,11 @@ from columnflow.util import DotDict
 from columnflow.config_util import add_shift_aliases
 from columnflow.columnar_util import ColumnCollection, skip_column
 from hbw.config.styling import stylize_processes
-from hbw.config.categories import add_categories_selection
+from hbw.config.categories import (
+    add_categories_selection,
+    add_dih_mll_categories, add_trih_mll_categories,
+    add_dih_bjet_categories, add_trih_bjet_categories,
+)
 from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
@@ -103,6 +107,12 @@ def add_config(
         )
         return (values or []) if match else []
 
+    # NOTE: custom get_dataset_lfns for HHH custom produced signal samples
+    # def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
+    #         return ["/" + dataset_key]
+
+    # cfg.x.get_dataset_lfns = get_local_dataset_lfns
+
     cfg.x.if_era = if_era
 
     # add tag if used for scale factor calculation
@@ -119,6 +129,17 @@ def add_config(
         cfg.x.lepton_tag = "dl"
     else:
         raise Exception(f"config {cfg.name} needs either the 'is_sl' or 'is_dl' tag")
+
+    if cfg.has_tag("is_hh"):
+        cfg.x.signal_tag = "hh"
+        cfg.x.add_mll_categories_func = add_dih_mll_categories
+        cfg.x.add_bjet_categories_func = add_dih_bjet_categories
+    elif cfg.has_tag("is_hhh"):
+        cfg.x.signal_tag = "hhh"
+        cfg.x.add_mll_categories_func = add_trih_mll_categories
+        cfg.x.add_bjet_categories_func = add_trih_bjet_categories
+    else:
+        raise Exception(f"config {cfg.name} needs either the 'is_hh' or 'is_hhh' tag")
 
     # define all resonant masspoints
     if cfg.has_tag("is_resonant"):
@@ -1171,6 +1192,8 @@ def add_config(
         "HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
         # Recoil corrected MET
         "RecoilCorrMET.{pt,phi}_{recoilresp,recoilres}_{up,down}",
+        # information of tt sample additional bs
+        "genTtbarId",
         # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,

@@ -282,3 +282,74 @@ def add_dl_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
         x_title="Mixed channel tag",
     )
+
+
+@call_once_on_config()
+def add_hhh_dl_ml_variables(config: od.Config) -> None:
+    config.add_variable(
+        name="mli_mbb1",
+        expression="mli_mbb1",
+        binning=(40, 0, 1200),
+        aux={"overflow": True},
+        unit="GeV",
+        x_title=r"$m_{bb1}$",
+    )
+    config.add_variable(
+        name="mli_mbb2",
+        expression="mli_mbb2",
+        binning=(40, 0, 1200),
+        aux={"overflow": True},
+        unit="GeV",
+        x_title=r"$m_{bb2}$",
+    )
+    config.add_variable(
+        name="mli_dr_bb_bb",
+        expression="mli_dr_bb_bb",
+        binning=(40, 0, 6),
+        aux={"overflow": True},
+        x_title=r"$\Delta R(bb1, bb2)$",
+    )
+    config.add_variable(
+        name="mli_dr_ll_bb1",
+        expression="mli_dr_ll_bb1",
+        binning=(40, 0, 6),
+        aux={"overflow": True},
+        x_title=r"$\Delta R(ll, bb1)$",
+    )
+    config.add_variable(
+        name="mli_dr_ll_bb2",
+        expression="mli_dr_ll_bb2",
+        binning=(40, 0, 6),
+        aux={"overflow": True},
+        x_title=r"$\Delta R(ll, bb2)$",
+    )
+    config.add_variable(
+        name="mli_mhhh",
+        expression="mli_mhhh",
+        binning=(40, 0, 1200),
+        aux={"overflow": True},
+        unit="GeV",
+        x_title=r"$m_{HHH}$",
+    )
+    config.add_variable(
+        name="mli_m4bllMET",
+        expression="mli_m4bllMET",
+        binning=(40, 0, 1200),
+        aux={"overflow": True},
+        unit="GeV",
+        x_title=r"$m_{4b ll MET}$",
+    )
+    config.add_variable(
+        name="mli_dr_bb1_llMET",
+        expression="mli_dr_bb1_llMET",
+        binning=(40, 0, 6),
+        aux={"overflow": True},
+        x_title=r"$\Delta R(bb1, ll MET)$",
+    )
+    config.add_variable(
+        name="mli_dr_bb2_llMET",
+        expression="mli_dr_bb2_llMET",
+        binning=(40, 0, 6),
+        aux={"overflow": True},
+        x_title=r"$\Delta R(bb2, ll MET)$",
+    )
