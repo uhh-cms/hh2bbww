@@ -128,7 +128,7 @@ def set_config_defaults_and_groups(config_inst):
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     # config_inst.x.default_hist_producer = "with_dy_corr"
-    config_inst.x.default_hist_producer = "met_geq40_incl_dy_corr"
+    config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"  # "met_geq40_incl_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -227,7 +227,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
-        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501 "dy_lf", "dy_hf",
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],

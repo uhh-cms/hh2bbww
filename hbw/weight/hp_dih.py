@@ -13,6 +13,7 @@ btag_uncs = [
     "hfstats2", "lfstats2",
 ]
 
+
 default_correction_weights = {
     # "dummy_weight": ["dummy_{cpn_tag}"],
     "normalized_pu_weight": ["minbias_xs"],
@@ -36,21 +37,6 @@ default_weight_columns = {
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
-no_sel_weight_columns = {
-    "stitched_normalization_weight": [],
-    "normalized_murmuf_envelope_weight": ["murf_envelope"],
-    "normalized_mur_weight": ["mur"],
-    "normalized_muf_weight": ["muf"],
-    "normalized_pdf_weight": ["pdf"],
-    "normalized_isr_weight": ["isr"],
-    "normalized_fsr_weight": ["fsr"],
-    "top_pt_theory_weight": ["top_pt"],
-    "electron_weight": ["e_sf"],
-    "normalized_pu_weight": ["minbias_xs"],
-    # "dy_correction_weight": [],
-    # "trigger_weight": ["trigger_sf"],
-    # **default_correction_weights,
-}
 unstitched_weight_columns = {
     "dataset_normalization_weight": [],
     "dy_correction_weight": [],
@@ -60,8 +46,14 @@ unstitched_weight_columns = {
 # weight_columns_execpt_btag = default_weight_columns.copy()
 # weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
-default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
-no_sel_hist_producer = base.derive("no_sel", cls_dict={"weight_columns": no_sel_weight_columns})
+default_hist_producer = base.derive(
+    "default",
+    cls_dict={
+        "weight_columns": default_weight_columns,
+        "dy_correction_weight_producer": "dy_correction_weight",
+    },
+
+)
 check = base.derive("check", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],
@@ -116,16 +108,14 @@ incl_dy_corr = default_hist_producer.derive("incl_dy_corr", cls_dict={
 # HistProducers with masks via categorization
 #
 
-
-from hbw.categorization.categories import (catid_ge2b_loose, catid_njet2)
-from hbw.categorization.masks_dih import (
-    mask_fn_mbb80, mask_fn_met70,
+from hbw.categorization.categories import (
+    mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70,
     mask_fn_met_geq40,
 )
 
-# met70 = with_trigger_weight.derive("met70", cls_dict={
-#     "categorizer_cls": mask_fn_met70,
-# })
+met70 = with_trigger_weight.derive("met70", cls_dict={
+    "categorizer_cls": mask_fn_met70,
+})
 
 no_dycorr = default_hist_producer.derive("no_dycorr", cls_dict={
     "weight_columns": {
@@ -258,26 +248,29 @@ base.derive("stitched_leptonsf_btag_pu_trigger_ttdycorr", cls_dict={"weight_colu
 # }})
 
 # weight sets for closure tests
-base.derive("norm_and_btag", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_njet", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_ht_njet", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
-base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
-    "stitched_normalization_weight": [],
-    "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
-}})
+# base.derive("norm_and_btag", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_njet", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_ht_njet", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_ht_njet_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+# base.derive("norm_and_btag_ht", cls_dict={"weight_columns": {
+#     "stitched_normalization_weight": [],
+#     "normalized_ht_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+# }})
+
+
+# from hbw.categorization.categories import mask_fn_highpt
 
 # no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 
-from hbw.categorization.masks_dih import mask_fn_dyvr
+from hbw.categorization.categories import mask_fn_met70, mask_fn_dyvr
 
 with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})

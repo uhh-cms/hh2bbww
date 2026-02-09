@@ -21,6 +21,7 @@ np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 logger = law.logger.get_logger(__name__)
+
 #
 # configs
 #
@@ -49,12 +50,6 @@ processes = DotDict({
     "backgrounds_multiclass": [
         "tt", "st", "dy_m10to50", "dy_m50toinf",
         "vv", "h",
-    ],
-    "backgrounds_hhh": [
-        "tt", "st", "dy", "h", "hh_ggf", "hh_vbf", "other",
-    ],
-    "backgrounds_hhh_v1": [
-        "tt", "st", "dy", "h",   # "tthh_4b",   # "vhh_4b",
     ],
     "ggf_hbb_hvv2l2nu": hh_train_procs_ggf("_hbb_hvv2l2nu"),
     "vbf_hbb_hvv2l2nu": hh_train_procs_vbf("_hbb_hvv2l2nu"),
@@ -311,10 +306,10 @@ class_factors = {
 
 configs = DotDict({
     "22post": lambda self, requested_configs: ["c22postv14"],
-    "23pre": lambda self, requested_configs: ["c23prev14"],
     "22": lambda self, requested_configs: ["c22prev14", "c22postv14"],
     "23": lambda self, requested_configs: ["c23prev14", "c23postv14"],
     "full": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+    "twentyfour": lambda self, requested_configs: ["c24v15"],
 })
 
 #
@@ -485,4 +480,168 @@ ggf_met40 = ggfv1.derive("ggf_met40", cls_dict={
 vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
     "input_features": input_features["v2"],
     "preparation_producer_name": "prepml_met40",
+})
+
+# first Iteration on 2024 samples, some signal samples still missing
+multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2"],
+    "processes": (
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+        "tt",
+        "st",
+        "dy",
+        "h",
+    ),
+    "train_nodes": {
+        "sig_ggf": {
+            "ml_id": 0,
+            "label": r"HH_{ggF}",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+            ),
+        },
+        "sig_vbf": {
+            "ml_id": 1,
+            "label": r"HH_{VBF}",
+            "color": "#999999",  # grey
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+            ),
+        },
+        "tt": {"ml_id": 2},
+        "st": {"ml_id": 3},
+        "dy": {
+            "ml_id": 4,
+            "label": "DY",
+            "color": color_palette["yellow"],
+        },
+        "h": {"ml_id": 5},
+    },
+})
+ggf24 = ggfv1.derive("ggf24", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2"],
+    "processes": [
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+        "tt", "st", "dy",
+        "vv", "h",
+    ],
+    "train_nodes": {
+        "sig_ggf_binary": {
+            "ml_id": 0,
+            "label": r"HH_{ggF}",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+            ),
+        },
+        "bkg_binary_for_ggf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": (
+                "tt", "st", "dy",
+                "vv", "h",
+            ),
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "sig_ggf_binary": 1,
+        "bkg_binary_for_ggf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "dy": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "epochs": 100,
+})
+vbf24 = vbfv1.derive("vbf24", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2"],
+    "processes": [
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+        "tt", "st", "dy",
+        "vv", "h",
+    ],
+    "train_nodes": {
+        "sig_vbf_binary": {
+            "ml_id": 0,
+            "label": r"HH_{VBF}",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": (
+                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+                "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+            ),
+        },
+        "bkg_binary_for_vbf": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": (
+                "tt", "st", "dy",
+                "vv", "h",
+            ),
+        },
+    },
+    "class_factors": {
+        "sig_vbf_binary": 1,
+        "bkg_binary_for_vbf": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": 1,
+        "tt": 1,
+        "st": 1,
+        "dy": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
 })
