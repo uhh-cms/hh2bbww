@@ -830,36 +830,36 @@ run_triggersf_production() {
     fi
 }
 
-run_and_fetch_all_plots() {
-
-    # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
-
-    # run_and_fetch_gen_plots
-    # run_and_fetch_all_mcsyst_plots
-    # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
-    # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
-    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
-
-    # run_and_fetch_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
-    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "sr__boosted" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
-    # run_and_fetch_all_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
-
-    # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
-    # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
-
-    # run_and_fetch_all_mlscore_plots
-    # run_and_fetch_all_yield_tables
-    # run_and_fetch_btag_norm_sf
-    # run_and_fetch_mlplots
-    # fetch_ml_metrics
-
-    # run_and_fetch_kinematics
-
-    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb"
-    # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
-    # run_and_fetch_efficiency_plots "$all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
-    # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
-}
+# run_and_fetch_all_plots() {
+# 
+#     # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
+# 
+#     # run_and_fetch_gen_plots
+#     # run_and_fetch_all_mcsyst_plots
+#     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
+#     # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
+#     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
+# 
+#     # run_and_fetch_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+#     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "sr__boosted" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+#     # run_and_fetch_all_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
+# 
+#     # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
+#     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
+# 
+#     # run_and_fetch_all_mlscore_plots
+#     # run_and_fetch_all_yield_tables
+#     # run_and_fetch_btag_norm_sf
+#     # run_and_fetch_mlplots
+#     # fetch_ml_metrics
+# 
+#     # run_and_fetch_kinematics
+# 
+#     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb"
+#     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
+#     # run_and_fetch_efficiency_plots "$all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+#     # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
+# }
 
 run_dycorr_plots() {
     # to be run without any ml models
@@ -904,8 +904,8 @@ run_all() {
     # run_ml_training "vbfv3_mqq,multiclassv3_mqq,vbfv3_tag,multiclassv3_tag"
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
 
-    # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "$ml_inputs,$all_ml_scores,mli_full_vbf_tag,mli_full_vbf_mass"
-    run_merge_histograms_htcondor "c24v15" "ml_inputs"
+    run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "$ml_inputs,$all_ml_scores,mli_full_vbf_tag,mli_full_vbf_mass"
+    # run_merge_histograms_htcondor "c24v15" "ml_inputs"
 
     # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"

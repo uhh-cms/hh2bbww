@@ -144,11 +144,40 @@ setup_hbw() {
     export HBW_SETUP="true"
 }
 
+hbw_show_banner() {
+    local no_utf8="$( cf_cast_bool "${1}" )"
+    if ! ${no_utf8}; then
+        local charmap="$( cf_lower_case "$( locale charmap )" )"
+        no_utf8="$( [ "${charmap}" = "utf-8" ] && echo "false" || echo "true" )"
+    fi
+
+    if ! ${no_utf8}; then
+        cat << EOF
+    $(cf_color green "T    T T    T         |       |       \              / \              / ") 
+    $(cf_color green "|    | |    |         |       |        \            /   \            /  ") 
+    $(cf_color green "+----+ +----+  -----> |-----+ |-----+   \    /\    /     \    /\    /   ")   
+    $(cf_color green "|    | |    |         |     | |     |    \  /  \  /       \  /  \  /    ")    
+    $(cf_color green "|    l |    l         l_____j l_____j     \/    \/         \/    \/     ")   
+EOF
+    else
+        cat << EOF
+
+  $( cf_color green '┃' )
+  $( cf_color green '┃' )
+  $( cf_color green '┃' )
+  $( cf_color green '┃' )
+  $( cf_color green '┃' )
+
+EOF
+    fi
+}
+
 main() {
     # Invokes the main action of this script, catches possible error codes and prints a message.
 
     # run the actual setup
     if setup_hbw "$@"; then
+        hbw_show_banner
         cf_color green "HH -> bbWW analysis successfully setup"
         return "0"
     else

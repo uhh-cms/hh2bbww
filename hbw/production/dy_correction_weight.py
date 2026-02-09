@@ -66,6 +66,7 @@ def dy_correction_weight(
         "c22postv14": "2022EE",
         "c23prev14": "2023",
         "c23postv14": "2023BPix",
+        "c24v15": "2024",
     }
     if self.derivation_configs:
         era = "_".join([era_map[cfg] for cfg in self.derivation_configs])

@@ -216,25 +216,25 @@ def add_jet_categories(config: od.Config) -> None:
 
     cat_1b = config.add_category(  # noqa: F841
         name="1b",
-        id=300,
+        id=10000,
         selection="catid_1b",
         label=r"$\leq 1 btag$",
     )
     cat_2b = config.add_category(  # noqa: F841
         name="2b",
-        id=600,
+        id=20000,
         selection="catid_2b",
         label=r"$2 btag$",
     )
     cat_3b = config.add_category(  # noqa: F841
         name="3b",
-        id=900,
+        id=30000,
         selection="catid_3b",
         label=r"$3 btag$",
     )
-    cat_3b = config.add_category(  # noqa: F841
+    cat_4b = config.add_category(  # noqa: F841
         name="4b",
-        id=1000,
+        id=40000,
         selection="catid_4b",
         label=r"$\geq 4 btag$",
     )
@@ -335,6 +335,7 @@ def add_categories_production(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
+    print("test.", ml_model_inst)
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
 

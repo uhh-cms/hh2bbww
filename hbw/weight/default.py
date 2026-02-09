@@ -304,7 +304,14 @@ unstitched_weight_columns = {
 # weight_columns_execpt_btag = default_weight_columns.copy()
 # weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
-default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+default_hist_producer = base.derive(
+    "default",
+    cls_dict={
+        "weight_columns": default_weight_columns,
+        "dy_correction_weight_producer": "dy_correction_weight",
+    },
+
+)
 check = base.derive("check", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],

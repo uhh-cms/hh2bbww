@@ -32,13 +32,13 @@ config_categories = DotDict({
         "sr__1b__ml_sig_vbf",
         "sr__1b__ml_tt",
         "sr__1b__ml_st",
-        "sr__1b__ml_dy_m10toinf",
+        "sr__1b__ml_dy",  # _m10toinf",
         "sr__1b__ml_h",
         "sr__2b__ml_sig_ggf",
         "sr__2b__ml_sig_vbf",
         "sr__2b__ml_tt",
         "sr__2b__ml_st",
-        "sr__2b__ml_dy_m10toinf",
+        "sr__2b__ml_dy",  # _m10toinf",
         "sr__2b__ml_h",
     ],
     "sr": [
@@ -88,11 +88,13 @@ config_categories = DotDict({
     "background_resolved": [
         "sr__resolved__1b__ml_tt",
         "sr__resolved__1b__ml_st",
-        "sr__resolved__1b__ml_dy_m10toinf",
+        # "sr__resolved__1b__ml_dy_m10toinf",
+        "sr__resolved__1b__ml_dy",
         "sr__resolved__1b__ml_h",
         "sr__resolved__2b__ml_tt",
         "sr__resolved__2b__ml_st",
-        "sr__resolved__2b__ml_dy_m10toinf",
+        # "sr__resolved__2b__ml_dy_m10toinf",
+        "sr__resolved__2b__ml_dy",
         "sr__resolved__2b__ml_h",
     ],
     "no_nn_cats": [
@@ -543,6 +545,35 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 #
 # currently "final" inference models
 #
+rate_only_24_v4 = dl.derive("rate_only_24_v4", cls_dict={
+    "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+    "config_categories": config_categories.default_boosted,
+    "processes": [
+        "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+        "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww2l2nu_kv2p12_k2v3p87_klm5p96",
+        "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+        "hh_ggf_hbb_hzz2l2nu_kl1_kt1",
+        "hh_ggf_hbb_hzz2l2nu_kl2p45_kt1",
+        "hh_vbf_hbb_hzz2l2nu_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hzz2l2nu_kv2p12_k2v3p87_klm5p96",
+        "hh_vbf_hbb_hzz2l2nu_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hzz2l2nu_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hzz2l2nu_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hzz2l2nu_kvm0p758_k2v1p44_klm19p3",
+        "hh_ggf_hbb_htt_kl1_kt1",
+        "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+        "tt",
+        "st",
+        "dy",
+        "h",
+        "vv",
+    ],
+})
 
 rate_only = dl.derive("rate_only", cls_dict={
     "systematics": systematics.rate_default,

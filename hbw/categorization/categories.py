@@ -309,7 +309,7 @@ def catid_2b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
-    mask = (n_deepjet == 2)
+    mask = (n_deepjet >= 2)
     return events, mask
 
 
