@@ -109,7 +109,11 @@ incl_dy_corr = default_hist_producer.derive("incl_dy_corr", cls_dict={
 #
 
 from hbw.categorization.categories import (
-    mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70,
+    catid_ge2b_loose, catid_njet2,
+)
+
+from hbw.categorization.masks_dih import (
+    mask_fn_mbb80, mask_fn_met70,
     mask_fn_met_geq40,
 )
 
@@ -270,7 +274,7 @@ base.derive("stitched_leptonsf_btag_pu_trigger_ttdycorr", cls_dict={"weight_colu
 
 # no_btag_weight.derive("no_btag_weight_highpt", cls_dict={"categorizer_cls": mask_fn_highpt})
 
-from hbw.categorization.categories import mask_fn_met70, mask_fn_dyvr
+from hbw.categorization.masks_dih import mask_fn_met70, mask_fn_dyvr
 
 with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
