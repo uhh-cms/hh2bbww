@@ -190,8 +190,8 @@ systematics = DotDict({
     "rate_unconstrained3": [
         "rate_ttbar",
         "rate_ttbar_boosted",
-        "rate_dy_lf",
-        "rate_dy_hf",
+        "rate_dy",  # _lf",
+        # "rate_dy_hf",
     ],
     "rate_unconstrained_bjet_uncorr": [
         "rate_ttbar_{bjet_cat}",
@@ -545,9 +545,10 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 #
 # currently "final" inference models
 #
-rate_only_24_v4 = dl.derive("rate_only_24_v4", cls_dict={
+rate_only_24_v5 = dl.derive("rate_only_24_v5", cls_dict={
     "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
     "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_default,
     "processes": [
         "hh_ggf_hbb_hww2l2nu_kl1_kt1",
         "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
@@ -570,8 +571,10 @@ rate_only_24_v4 = dl.derive("rate_only_24_v4", cls_dict={
         "tt",
         "st",
         "dy",
-        "h",
+        "w_lnu",
         "vv",
+        "ttv",
+        "h",
     ],
 })
 
