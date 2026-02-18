@@ -128,7 +128,8 @@ def set_config_defaults_and_groups(config_inst):
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     # config_inst.x.default_hist_producer = "with_dy_corr"
-    config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"  # "met_geq40_incl_dy_corr"
+    # config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"  # "met_geq40_incl_dy_corr"
+    config_inst.x.default_hist_producer = "default_hist_producer_trih"  # "met_geq40_incl_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -408,13 +409,14 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
-        "hhh_sr": bracket_expansion(["resolved__{eq2b,eq3b,geq4b}__ml_{sig_hhh,hhh_4b2w_2l2nu_c30_d40}"]),
-        "hhh_bkg": bracket_expansion(["resolved__eq2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}", "resolved__eq3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}", "resolved__geq4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b}"]),  # noqa: E501
+        "hhh_sr": bracket_expansion(["sr__resolved__{2b,3b,4b}__ml_{sig_hhh,hhh_4b2w_2l2nu_c30_d40}"]),
+        "hhh_bkg": bracket_expansion(["sr__resolved__2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     from hbw.ml.derived.ml_dl_dih import input_features as ml_inputs
+    from hbw.ml.derived.ml_dl_trih import input_features as ml_input_trih
     config_inst.x.variable_groups = {
         "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
@@ -424,34 +426,12 @@ def set_config_defaults_and_groups(config_inst):
             "rebinlogit_mlscore.sig_{ggf,vbf}_binary",
             "mlscore.sig_{ggf,vbf}_binary",
         ]),
-        "hhh_ml_inputs": [
-            "mli_mbb1",
-            "mli_mbb2",
-            "mli_bb_pt",
-            "mli_ll_pt",
-            "mli_n_jet",
-            "mli_dr_bb_bb",
-            "mli_dr_ll_bb1",
-            "mli_dr_ll_bb2",
-            "mli_met_pt",
-            "mli_lep_pt",
-            "mli_n_btag",
-            "mli_ht",
-            "mli_lep1_pt",
-            "mli_hhh",
-            "mli_m4bllMET",
-            "mli_dr_bb1_llMET",
-            "mli_dr_bb2_llMET",
-            "mli_mll",
-            "mli_b_score_sum",
-            "mli_mllMET",
-            "mli_b1_pt",
-        ],  # noqa: E501
         "iso": bracket_expansion(["lepton{0,1}_{pfreliso,minipfreliso,mvatth}"]),
         "sl": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "hhh_ml_inputs": ml_input_trih.hhh_v0,  # should correspond to our currently used ML input features
         "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
             "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",

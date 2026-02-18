@@ -349,17 +349,17 @@ class ModifyDatacardsFlatRebin(
         ]
         return background_processes
 
-    def get_signal_processes(self):
+    def get_signal_processes(self, cfg):
         signal_processes = [
             proc
             for proc in self.branch_data.inf_cat.processes
             if proc.is_signal and (
                 (
-                    self.config_inst.has_tag("is_hh") and (
+                    cfg.has_tag("is_hh") and (
                         proc.name.startswith("ggHH_kl_1_kt_1") or proc.name.startswith("qqHH_CV_1_C2V_1_kl_1")
                     )
                 ) or (
-                    self.config_inst.has_tag("is_hhh") and proc.name.startswith("hhh_")
+                    cfg.has_tag("is_hhh") and proc.name.startswith("hhh_")
                 )
             )
         ]
@@ -473,7 +473,7 @@ class ModifyDatacardsFlatRebin(
             background_hists = [nominal_hists[proc.name] for proc in background_processes]
             background_hist = sum(background_hists[1:], background_hists[0])
 
-            signal_processes = self.get_signal_processes()
+            signal_processes = self.get_signal_processes(self.config_insts[0])
             signal_hists = [nominal_hists[proc.name] for proc in signal_processes]
             signal_hist = sum(signal_hists[1:], signal_hists[0])
 

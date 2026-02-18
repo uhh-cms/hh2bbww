@@ -52,8 +52,8 @@ processes = DotDict({
     "backgrounds_hhh": [
         "tt", "st", "dy", "h", "hh_ggf", "hh_vbf", "other",
     ],
-    "backgrounds_hhh_v1": [
-        "tt", "st", "dy", "h",   # "tthh_4b",   # "vhh_4b",
+    "backgrounds_hhh_v2": [
+        "st", "dy", "h", "tt_custom", "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
     ],
     "sig_hhh": [
         "hhh_4b2w_2l2nu_c30_d40",
@@ -96,6 +96,7 @@ input_features = DotDict({
         for obj in ["lep", "lep2"]
         for var in ["pt", "eta"]
     ],
+    # NOTE: ATM This is basically all that is available but this should be refined
     "hhh_v0": [
         "mli_mbb1",
         "mli_mbb2",
@@ -106,7 +107,6 @@ input_features = DotDict({
         "mli_dr_ll_bb1",
         "mli_dr_ll_bb2",
         "mli_met_pt",
-        "mli_lep_pt",
         "mli_mhhh",
         "mli_m4bllMET",
         "mli_dr_bb1_llMET",
@@ -115,6 +115,24 @@ input_features = DotDict({
         "mli_b_score_sum",
         "mli_mllMET",
         "mli_b1_pt",
+        "mli_b2_pt",
+        "mli_j1_pt",
+        "mli_ht",
+        "mli_lep_pt",
+        "mli_lep_eta",
+        "mli_b1_eta",
+        "mli_b2_eta",
+        "mli_j1_eta",
+        "mli_j2_eta",
+        "mli_mixed_channel",
+        "mli_lep2_pt",
+        "mli_lep2_eta",
+        "mli_mllMET",
+        "mli_n_jet",
+        "mli_n_btag",
+        "mli_maxdr_jj",
+        "mli_mindr_jj",
+        "mli_dr_bb",
     ],
 })
 
@@ -228,18 +246,25 @@ configs = DotDict({
 #         "other": 8,
 #     },
 #     "epochs": 100,
-#     "preparation_producer_name": "prepml_hhh_sr",
+#     "preparation_producer_name": "prepml_sr",
 # })
 
 
 # 2024 test
 
-multiclass_hhh_v0 = DenseClassifierDL.derive("multiclass_hhh_v0", cls_dict={
+multiclass_hhh_v2 = DenseClassifierDL.derive("multiclass_hhh_v2", cls_dict={
     # "training_configs": ["c24v15"],
     "input_features": input_features["hhh_v0"],
     "processes": (
         "hhh_4b2w_2l2nu_c30_d40",
-        "tt",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
         "st",
         "dy",
         "h",
@@ -251,42 +276,448 @@ multiclass_hhh_v0 = DenseClassifierDL.derive("multiclass_hhh_v0", cls_dict={
         # "other",
     ),
     "train_nodes": {
-        # "sig_hhh": {
-        #     "ml_id": 0,
-        #     "label": r"HHH",
-        #     "color": "#000000",  # black
-        #     "class_factor_mode": "equal",
-        #     "sub_processes": processes.sig_hhh,
-        # },
         "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
-        "tthh_4b": {"ml_id": 5, "label": r"HH"},
-        # "hh_bkg": {
-        #     "ml_id": 5,
-        #     "label": r"HH",
-        #     "color": "#999999",  # grey
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "ttbb_custom": {"ml_id": 4},
+        # "tt_nonb_custom": {
+        #     "ml_id": 3,
+        #     "label": r"tt",
+        #     "color": "#000000",  # black
         #     "class_factor_mode": "xsec",
-        #     # "sub_processes": ["hh_ggf", "hh_vbf", "tthh_4b", "vhh_4b"],
-        #     "sub_processes": ["tthh_4b", "vhh_4b"],
+        #     "sub_processes": ["tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],
         # },
-        "h": {"ml_id": 4},
-        "tt": {"ml_id": 1},
-        "st": {"ml_id": 2},
-        "dy": {"ml_id": 3},
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 5},
+        "dy": {"ml_id": 6},
     },
     "class_factors": {
         "hhh_4b2w_2l2nu_c30_d40": 1,
-        "bkg_binary_for_hhh": 1,
+        "tthh_4b": 1,
+        "tt_custom": 8,
+        "ttbb_custom": 4,
+        "st": 2,
+        "dy": 2,
+        "h": 1,
     },
-    "preparation_producer_name": "prepml_hhh_sr",
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
+})
+multiclass_hhh_v3 = DenseClassifierDL.derive("multiclass_hhh_v3", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "ttbb_custom": {"ml_id": 4},
+        # "tt_nonb_custom": {
+        #     "ml_id": 3,
+        #     "label": r"tt",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],
+        # },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 5},
+        "dy": {"ml_id": 6},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_custom": 4,
+        "ttbb_custom": 2,
+        "st": 2,
+        "dy": 2,
+        "h": 1,
+    },
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
+})
+multiclass_hhh_v4 = DenseClassifierDL.derive("multiclass_hhh_v4", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "ttbb_custom": {"ml_id": 4},
+        # "tt_nonb_custom": {
+        #     "ml_id": 3,
+        #     "label": r"tt",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],
+        # },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 5},
+        "dy": {"ml_id": 6},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_custom": 2,
+        "ttbb_custom": 1,
+        "st": 2,
+        "dy": 2,
+        "h": 1,
+    },
+})
+multiclass_hhh_v5 = DenseClassifierDL.derive("multiclass_hhh_v5", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "ttbb_custom": {"ml_id": 4},
+        # "tt_nonb_custom": {
+        #     "ml_id": 3,
+        #     "label": r"tt",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],
+        # },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 5},
+        "dy": {"ml_id": 6},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_custom": 1,
+        "ttbb_custom": 1,
+        "st": 2,
+        "dy": 2,
+        "h": 1,
+    },
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
+})
+multiclass_hhh_v6 = DenseClassifierDL.derive("multiclass_hhh_v6", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "ttbb_custom": {"ml_id": 4},
+        # "tt_nonb_custom": {
+        #     "ml_id": 3,
+        #     "label": r"tt",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],
+        # },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 5},
+        "dy": {"ml_id": 6},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_custom": 1,
+        "ttbb_custom": 1,
+        "st": 1,
+        "dy": 1,
+        "h": 1,
+    },
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
+})
+multiclass_hhh_v7 = DenseClassifierDL.derive("multiclass_hhh_v7", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        # "tt_custom": {"ml_id": 3},
+        # "ttbb_custom": {"ml_id": 4},
+        "tt_ml": {
+            "ml_id": 3,
+            "label": r"tt",
+            "color": "#000000",  # black
+            "class_factor_mode": "xsec",
+            "sub_processes": ["tt_custom", "ttbb_custom"],
+        },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 4},
+        "dy": {"ml_id": 5},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_ml": 2,
+        # "ttbb_custom": 1,
+        "st": 1,
+        "dy": 1,
+        "h": 1,
+    },
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
+})
+multiclass_hhh_v8 = DenseClassifierDL.derive("multiclass_hhh_v8", cls_dict={
+    # "training_configs": ["c24v15"],
+    "input_features": input_features["hhh_v0"],
+    "processes": (
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        "h",
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
+        "tt_custom",
+        "ttbb_custom",
+        "st",
+        "dy",
+        # "hh_ggf",
+        # "hh_vbf",
+        # "vhh_4b",
+        # "vv",
+        # "other",
+    ),
+    "train_nodes": {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0, "label": r"HHH"},
+        "tthh_4b": {"ml_id": 1, "label": r"HH"},
+        "h": {"ml_id": 2},
+        # "tt_custom": {"ml_id": 3},
+        # "ttbb_custom": {"ml_id": 4},
+        "tt_ml": {
+            "ml_id": 3,
+            "label": r"tt",
+            "color": "#000000",  # black
+            "class_factor_mode": "xsec",
+            "sub_processes": ["tt_custom", "ttbb_custom"],
+        },
+        # "ttbb_1b_custom": {
+        #     "ml_id": 4,
+        #     "label": r"tt + b",
+        #     "color": "#000000",  # black
+        #     "class_factor_mode": "xsec",
+        #     "sub_processes": ["ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b"],
+        # },
+        "st": {"ml_id": 4},
+        "dy": {"ml_id": 5},
+    },
+    "class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "tthh_4b": 1,
+        "tt_ml": 1,
+        # "ttbb_custom": 1,
+        "st": 1,
+        "dy": 1,
+        "h": 1,
+    },
+    # # relative process weights within one class
+    # "sub_process_class_factors": {
+    #     "ttbb_dl_1b": 1,
+    #     "ttbb_sl_1b": 1,
+    #     "ttbb_fh_1b": 1,
+    #     "tt_dl_nonb": 1,
+    #     "tt_sl_nonb": 1,
+    #     "tt_fh_nonb": 1,
+    # },
+    # "preparation_producer_name": "prepml_sr",
 })
 
-hhh_v0 = DenseClassifierDL.derive("hhh_v0", cls_dict={
+hhh_v2 = DenseClassifierDL.derive("hhh_v2", cls_dict={
     # "training_configs": ["c24v15"],
     "input_features": input_features["hhh_v0"],
     "processes": [
         "hhh_4b2w_2l2nu_c30_d40",
         # *processes.backgrounds_hhh,
-        *processes.backgrounds_hhh_v1,
+        *processes.backgrounds_hhh_v2,
+        # "tt_dl_nonb",
+        # "tt_sl_nonb",
+        # "tt_fh_nonb",
+        # "ttbb_dl_1b",
+        # "ttbb_sl_1b",
+        # "ttbb_fh_1b",
     ],
     "train_nodes": {
         # "sig_hhh_binary": {
@@ -303,7 +734,7 @@ hhh_v0 = DenseClassifierDL.derive("hhh_v0", cls_dict={
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
             # "sub_processes": processes.backgrounds_hhh,
-            "sub_processes": processes.backgrounds_hhh_v1,
+            "sub_processes": processes.backgrounds_hhh_v2,
         },
     },
     # relative class factors between different nodes
@@ -313,13 +744,14 @@ hhh_v0 = DenseClassifierDL.derive("hhh_v0", cls_dict={
     },
     # relative process weights within one class
     "sub_process_class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 2,
-        "tt": 1,
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "ttbb_custom": 1,
+        "tt_custom": 1,
         # "tthh_4b": 4,
         "st": 1,
         "dy": 1,
-        "ttv": 2,
-        "h": 2,
+        "ttv": 1,
+        "h": 1,
         # "vv": 2,
         # "hh_ggf": 4,
         # "hh_vbf": 4,
@@ -327,7 +759,7 @@ hhh_v0 = DenseClassifierDL.derive("hhh_v0", cls_dict={
         # "other": 4,
     },
     "epochs": 100,
-    "preparation_producer_name": "prepml_hhh_sr",
+    # "preparation_producer_name": "prepml_sr",
 })
 
 # # hhh_sr

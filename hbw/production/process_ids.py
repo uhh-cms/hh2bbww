@@ -263,9 +263,12 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     # hf_genjets = hf_genjets[ak.num(hf_genjets, axis=1) >= 1]
 
     # identify base process as "dy_{mass-window}"
-    base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
+    if self.config_inst.campaign.x.year == 2024:
+        base_proc_name = "_".join(self.dataset_inst.name.split("_")[:3])
+    else:
+        base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
     print(base_proc_name)
-    if base_proc_name == "dy_m50toinf":
+    if "dy" in base_proc_name and "m50toinf" in base_proc_name:
         # separate into njet and hf/lf
         process_masks = {
             f"{base_proc_name}_0j_hf": (n_partons == 0) & is_hf,
@@ -281,7 +284,7 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             # f"{base_proc_name}_2j": n_partons == 2,
             # f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
         }
-    elif base_proc_name == "dy_m4to10" or base_proc_name == "dy_m10to50":
+    elif ("dy" in base_proc_name and "m10to50" in base_proc_name) or ("dy" in base_proc_name and "m4to10" in base_proc_name):  # noqa E501
         # separate into hf/lf
         process_masks = {
             f"{base_proc_name}_hf": is_hf,

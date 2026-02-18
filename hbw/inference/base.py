@@ -82,7 +82,8 @@ class HBWInferenceModelBase(InferenceModel):
         This classmethod defines, which datasets are used from the inference model
         and is used to declare for which datasets to run TAF init functions.
         """
-        used_datasets = {"hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg"}
+        # used_datasets = {"hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg"}
+        used_datasets = {"tt_dl_powheg"}
         # used_datasets = set().union(*[
         #     get_datasets_from_process(config_inst, proc, strategy="all")
         #     for proc in cls.processes
@@ -108,6 +109,10 @@ class HBWInferenceModelBase(InferenceModel):
             pattern = r"^hhh_4b2w_2l2nu(.*)$"
             replacement = r"hhh_4b2w2l2nu\1"
             return re.sub(pattern, replacement, proc)
+        elif proc.startswith("tt_custom"):
+            return "ttbar"
+        elif proc.startswith("ttbb_custom"):
+            return "ttbb"
         else:
             return proc
 
@@ -536,6 +541,9 @@ class HBWInferenceModelBase(InferenceModel):
             for proc in procs:
                 if proc not in self.processes:
                     continue
+                # NOTE: Done this for HHH there is some tsuff I have to sort out
+                # elif "dy" in proc:
+                #     continue
                 elif proc in proc_handled_by_unconstrained_rate:
                     logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
@@ -577,6 +585,9 @@ class HBWInferenceModelBase(InferenceModel):
             for proc in procs:
                 if proc not in self.processes:
                     continue
+                # NOTE: Done this for HHH there is some tsuff I have to sort out
+                # elif "dy" in proc:
+                #     continue
                 elif proc in proc_handled_by_unconstrained_rate:
                     logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "

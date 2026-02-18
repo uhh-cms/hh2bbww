@@ -3,7 +3,7 @@
 from columnflow.util import maybe_import
 from hbw.weight.default import base
 from hbw.categorization.masks_trih import (
-    mask_fn_hhh_sr, mask_fn_hhh_sr_bcut,
+    mask_fn_hhh_sr, mask_fn_hhh_sr_bcut, mask_fn_hhh_bcut,
 )
 
 np = maybe_import("numpy")
@@ -72,13 +72,24 @@ unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     **default_correction_weights,
 }})
 
-default_hist_producer_trih = default_hist_producer.derive("default_hist_producer_trih", cls_dict={
+default_hist_producer_trih = base.derive("default_hist_producer_trih", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_hhh_sr_bcut,
+})
+
+default_hist_producer_trih_cr1 = base.derive("default_hist_producer_trih_cr1", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_hhh_bcut,
 })
 
 test_hhh_sr = default_hist_producer_trih.derive("test_hhh_sr", cls_dict={

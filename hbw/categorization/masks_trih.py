@@ -29,6 +29,19 @@ def mask_fn_hhh_sr_bcut(self: Categorizer, events: ak.Array, **kwargs) -> tuple[
 
 
 @categorizer(
+    uses={"Jet.pt", BTAG_COLUMN("Jet")},
+    n_jet=2,
+)
+def mask_fn_hhh_bcut(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 2)
+    return events, mask
+
+
+@categorizer(
     uses={"mll", "Jet.pt"},
     n_jet=2,
 )

@@ -108,8 +108,23 @@ def add_config(
         return (values or []) if match else []
 
     # NOTE: custom get_dataset_lfns for HHH custom produced signal samples
+    # ### one single file
     # def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
-    #         return ["/" + dataset_key]
+    #     return ["/" + dataset_key]
+
+    # ### multiple files
+    # import glob
+    # import os
+
+    # BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_0_d4_0/Run3Summer24"
+
+    # def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
+    #     files = sorted(
+    #         glob.glob(os.path.join(BASE, "GF_HHH_Run3Summer24_merged_*.root"))
+    #     )
+
+    #     # strip the base → relative LFNs
+    #     return [os.path.basename(f) for f in files]
 
     # cfg.x.get_dataset_lfns = get_local_dataset_lfns
 

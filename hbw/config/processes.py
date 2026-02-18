@@ -77,13 +77,30 @@ def configure_hbw_processes(config: od.Config):
     """
     # add main HH process
     # config.add_process(config.x.procs.n.hh_ggf)
-
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
     config.add_process(config.x.procs.n.other)
     config.add_process(config.x.procs.n.hh_other)
+    config.add_process(config.x.procs.n.tt_custom)
+    config.add_process(config.x.procs.n.ttbb_custom)
     minor = config.add_process(config.x.procs.n.minor)
+
+    # NOTE: I think this is unnecessary, but atm i like to keep it,
+    # as I am not sure how the whole od.Process jungle behaves otehrwise
+    dataset_inst = config.get_dataset("tt_dl_powheg")
+    dataset_inst.add_process(config.x.procs.n.tt_custom)
+    dataset_inst = config.get_dataset("tt_sl_powheg")
+    dataset_inst.add_process(config.x.procs.n.tt_custom)
+    dataset_inst = config.get_dataset("tt_fh_powheg")
+    dataset_inst.add_process(config.x.procs.n.tt_custom)
+    dataset_inst = config.get_dataset("ttbb_dl_powheg")
+    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+    dataset_inst = config.get_dataset("ttbb_sl_powheg")
+    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+    dataset_inst = config.get_dataset("ttbb_fh_powheg")
+    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+
     minor.label = "minor"
 
     color, sub_id = {
@@ -164,7 +181,6 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
         "weighting": None,
         "ml_id": -1,
     }
-
     for proc_name, process_settings in train_nodes.items():
         process_settings = law.util.merge_dicts(default_process_settings, process_settings)
 

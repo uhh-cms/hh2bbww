@@ -15,10 +15,9 @@ from columnflow.columnar_util import set_ak_column
 
 from hbw.production.prepare_objects import prepare_objects
 # from hbw.production.jets import vbf_candidates
-from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_dl_ml_variables
+from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_dl_ml_variables, add_hhh_bjet_variables
 from hbw.production.ml_inputs import common_ml_inputs  # , METCorr, vbf_jets
 
-from hbw.util import call_once_on_config
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -67,7 +66,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         prepare_objects,
         "Jet.*",
     },
-    produces={"{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,b_score}"},
+    produces={"{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", "hhh_dr_bb", "mli_mindr_bb", "mli_maxdr_bb"},  # noqa E501
 )
 def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -77,33 +76,43 @@ def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
     events = set_ak_column(events, "hbjets", ak.pad_none(events.Jet, 4))
-    hbjets = events.hbjets[ak.argsort(events.hbjets.b_score, ascending=False)]
+    # __import__("IPython").embed()
+    hbjets = events.hbjets[ak.argsort(events.hbjets.btagUParTAK4B, ascending=False)]
 
     for i in range(4):
-        for col in ("pt", "eta", "phi", "mass", "b_score"):
+        for col in ("pt", "eta", "phi", "mass", "btagUParTAK4B"):
             events = set_ak_column_f32(events, f"hbjet{i+1}.{col}", hbjets[:, i][col])
 
-    for col in ["pt", "eta", "phi", "mass", "b_score"]:
+    hbjet_pairs = ak.combinations(hbjets, 2)
+    dr = hbjet_pairs[:, :, "0"].delta_r(hbjet_pairs[:, :, "1"])
+    events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
+    events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
+    events = set_ak_column_f32(events, "hhh_dr_bb", hbjets[:, 0].delta_r(hbjets[:, 1]))
+
+    for col in ["pt", "eta", "phi", "mass", "btagUParTAK4B"]:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events.hbjets[col]), ZERO_PADDING_VALUE))
+
+    for col in ["hhh_dr_bb", "mli_mindr_bb", "mli_maxdr_bb"]:
+        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
 
 
 @hhh_bjets.init
 def hhh_bjets_init(self: Producer) -> None:
-    @call_once_on_config
-    def add_hhh_b_variables(config: law.config.Config) -> None:
-        from hbw.config.styling import default_var_unit, default_var_title_format, default_var_binning
-        for i in range(4):
-            for var in ["pt", "eta", "phi", "mass", "b_score"]:
-                config.add_variable(
-                    name=f"hbjet{i+1}_{var}",
-                    expression=f"hbjet{i+1}.{var}",
-                    unit=default_var_unit.get(var, "1"),
-                    binning=default_var_binning[var] if var != "b_score" else (50, 0, 1),
-                    x_title=f"Bjet (hhh) {i+1} {default_var_title_format.get(var, var)}",
-                )
-    add_hhh_b_variables(self.config_inst)
+    # @call_once_on_config
+    # def add_hhh_b_variables(config: law.config.Config) -> None:
+    #     from hbw.config.styling import default_var_unit, default_var_title_format, default_var_binning
+    #     for i in range(4):
+    #         for var in ["pt", "eta", "phi", "mass", "b_score"]:
+    #             config.add_variable(
+    #                 name=f"hbjet{i+1}_{var}",
+    #                 expression=f"hbjet{i+1}.{var}",
+    #                 unit=default_var_unit.get(var, "1"),
+    #                 binning=default_var_binning[var] if var != "b_score" else (50, 0, 1),
+    #                 x_title=f"Bjet (hhh) {i+1} {default_var_title_format.get(var, var)}",
+    #             )
+    add_hhh_bjet_variables(self.config_inst)
 
 
 @producer(

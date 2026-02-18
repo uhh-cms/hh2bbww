@@ -228,8 +228,11 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
 
     # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
-    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    # if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
+    if self.dataset_inst.name.startswith("dy_"):
         events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
+
     return events
 
 
@@ -240,8 +243,11 @@ def combined_normalization_weights_init(self: Producer) -> None:
 
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
+    # TODO this is a difference for 2023 and 2024 but lets see if we need "the same" for 2024
     elif "dy_m50" in self.dataset_inst.name:
         self.norm_weights_producer = stitched_normalization_weights
+    # elif "dy_" in self.dataset_inst.name:
+    #     self.norm_weights_producer = stitched_normalization_weights
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         self.norm_weights_producer = stitched_normalization_weights
     else:
@@ -270,7 +276,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
         # IF_NOT_2024(normalized_pu_weights),   # NOTE: using preliminary atm for 2024
     },
     mc_only=True,
-    version=law.config.get_expanded("analysis", "event_weights_version", 5),
+    version=law.config.get_expanded("analysis", "event_weights_version", 0),
 )
 def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

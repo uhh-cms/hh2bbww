@@ -435,7 +435,6 @@ class MLClassifierBase(MLModel):
             if datasets_already_used := used_datasets.intersection(dataset_insts):
                 raise Exception(f"{datasets_already_used} datasets are used for multiple processes")
             used_datasets |= set(dataset_insts)
-
         return used_datasets
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:

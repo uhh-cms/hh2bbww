@@ -166,7 +166,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         binning=(40, 0, 160),
         aux={
             "overflow": True,
-            "x_min": 20,
+            "x_min": 10,
         },
         x_title=r"$m_{\ell\ell}$",
     )
@@ -353,3 +353,57 @@ def add_hhh_dl_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
         x_title=r"$\Delta R(bb2, ll MET)$",
     )
+
+
+@call_once_on_config()
+def add_hhh_bjet_variables(config: od.Config) -> None:
+    config.add_variable(
+        name="hhh_dr_bb",
+        expression="hhh_dr_bb",
+        binning=(40, 0, 6),
+        aux={"overflow": False},
+        x_title=r"$ \Delta R(b,b)$",
+    )
+    config.add_variable(
+        name="mli_mindr_bb",
+        expression="mli_mindr_bb",
+        binning=(40, 0, 6),
+        aux={"overflow": False},
+        x_title=r"$min_{b,b} \Delta R(b,b)$",
+    )
+    config.add_variable(
+        name="mli_maxdr_bb",
+        expression="mli_maxdr_bb",
+        binning=(40, 0, 6),
+        aux={"overflow": False},
+        x_title=r"$max_{b,b} \Delta R(b,b)$",
+    )
+    for i in range(0, 4):
+        config.add_variable(
+            name=f"mli_bjet{i+1}_pt",
+            expression=f"hbjet{i+1}_pt",
+            binning=(40, 0, 400),
+            aux={"overflow": True},
+            x_title=f"p_T(b{i+1})",
+        )
+        config.add_variable(
+            name=f"mli_bjet{i+1}_eta",
+            expression=f"hbjet{i+1}_eta",
+            binning=(40, -4, 4),
+            aux={"overflow": True},
+            x_title=f"eta(b{i+1})",
+        )
+        config.add_variable(
+            name=f"mli_bjet{i+1}_phi",
+            expression=f"hbjet{i+1}_phi",
+            binning=(40, -4, 4),
+            aux={"overflow": True},
+            x_title=f"phi(b{i+1})",
+        )
+        config.add_variable(
+            name=f"mli_bjet{i+1}_btagUParTAK4B",
+            expression=f"hbjet{i+1}_btagUParTAK4B",
+            binning=(40, 0, 1),
+            aux={"overflow": True},
+            x_title=f"$b{i+1} b score$",
+        )

@@ -46,7 +46,7 @@ def del_sub_proc_stats(
 
 
 @producer(
-    uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), increment_stats, "process_id", "fold_indices"},
+    uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), IF_DL(catid_hhh_sr), increment_stats, "process_id", "fold_indices"},  # noqa E501
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
 )
@@ -180,4 +180,5 @@ prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
 prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})
-prepml_hhh_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
+# prepml_hhh_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
+# prepml_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})

@@ -23,40 +23,67 @@ def modify_cmsdb_processes():
         qcd_mu, qcd_em, qcd_bctoe,
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+        dy_ee, dy_ee_m10to50, dy_ee_m50toinf, dy_ee_m50toinf_0j, dy_ee_m50toinf_1j, dy_ee_m50toinf_2j,
+        dy_mumu, dy_mumu_m10to50, dy_mumu_m50toinf, dy_mumu_m50toinf_0j, dy_mumu_m50toinf_1j, dy_mumu_m50toinf_2j,
+        dy_tautau, dy_tautau_m10to50, dy_tautau_m50toinf, dy_tautau_m50toinf_0j, dy_tautau_m50toinf_1j, dy_tautau_m50toinf_2j,  # noqa E501
         ttvv, tttt, vvv,
         h_ggf, h_vbf, vh,
         tth, thq, thw,
         st_twchannel_t_dl, st_twchannel_tbar_dl,
         tt_dl,
+        tt_dl_nonb, tt_sl_nonb, tt_fh_nonb,
+        ttbb, ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
         hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
         hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1,
     )
 
     data.remove_process(data_met)
 
+    # NOTE: This can be commented out in order to plot data split in era
+    # !!! The process_ids have to be touched though in the hist producer base
     # configure_data_split_in_eras()
 
     decay_map = {
         "lf": {
             "name": "lf",
-            "id": 50,
+            "id": 50050,
             "label": "(lf)",
             "br": -1,
         },
         "hf": {
             "name": "hf",
-            "id": 70,
+            "id": 70070,
             "label": "(hf)",
             "br": -1,
         },
     }
 
+    # top-level disambiguation
+    # NOTE: this is needed since 2024 we have the additional lep verbosity
+    dy.aux = {}
+    dy_m4to10.aux = {}
+    dy_m10to50.aux = {}
+    dy_m50toinf.aux = {}
+    dy_ee.aux = {"production_mode_parent": ["dy"]}
+    dy_mumu.aux = {"production_mode_parent": ["dy"]}
+    dy_tautau.aux = {"production_mode_parent": ["dy"]}
+    dy_ee_m10to50.aux = {"production_mode_parent": ["dy_ee"]}
+    dy_ee_m50toinf.aux = {"production_mode_parent": ["dy_ee"]}
+    dy_ee_m50toinf_0j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
+    dy_ee_m50toinf_1j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
+    dy_ee_m50toinf_2j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
+
     for dy_proc_inst in (
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+        dy_ee, dy_ee_m10to50, dy_ee_m50toinf, dy_ee_m50toinf_0j, dy_ee_m50toinf_1j, dy_ee_m50toinf_2j,
+        dy_mumu, dy_mumu_m10to50, dy_mumu_m50toinf, dy_mumu_m50toinf_0j, dy_mumu_m50toinf_1j, dy_mumu_m50toinf_2j,
+        dy_tautau, dy_tautau_m10to50, dy_tautau_m50toinf, dy_tautau_m50toinf_0j, dy_tautau_m50toinf_1j, dy_tautau_m50toinf_2j,  # noqa E501
     ):
-        add_production_mode_parent = dy_proc_inst.name != "dy"
         for flavour in ("hf", "lf"):
-            # the 'add_decay_process' function helps us to create all parent-daughter relationships
+            aux = {"flavour": flavour}
+            if hasattr(dy_proc_inst, "aux") and dy_proc_inst.aux:
+                aux.update(dy_proc_inst.aux)  # merge pre-set production_mode_parent
+            add_production_mode_parent = "production_mode_parent" in aux
             add_decay_process(
                 dy_proc_inst,
                 decay_map[flavour],
@@ -64,8 +91,24 @@ def modify_cmsdb_processes():
                 name_func=lambda parent_name, decay_name: f"{parent_name}_{decay_name}",
                 label_func=lambda parent_label, decay_label: f"{parent_label} {decay_label}",
                 xsecs=None,
-                aux={"flavour": flavour},
+                aux=aux,
             )
+
+    tt_custom = create_parent_process(
+        [tt_dl_nonb, tt_sl_nonb, tt_fh_nonb],
+        name="tt_custom",
+        id=21199,
+        label="TT Custom",
+    )
+    tt_custom.add_parent_process(tt)
+
+    ttbb_custom = create_parent_process(
+        [ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b],
+        name="ttbb_custom",
+        id=68899,
+        label="TTBB Custom",
+    )
+    ttbb_custom.add_parent_process(ttbb)
 
     qcd_mu.label = "QCD Muon enriched"
     qcd_ele = create_parent_process(
