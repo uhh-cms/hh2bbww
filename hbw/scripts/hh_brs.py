@@ -1,5 +1,11 @@
 
 
+"""
+Usage:
+cf_sandbox venv_columnar "python3 hh_brs.py"
+"""
+
+
 from cmsdb.util import DotDict
 from collections import defaultdict
 from scinum import Number
@@ -87,19 +93,75 @@ br_labels = {
     "mm": r"$\mu\mu$",
 }
 
+
+def make_br_tabular(brs=br_h, labels=br_labels):
+    from tabulate import tabulate
+    toplabels = ["Decay mode", "Branching ratio"]
+    table = []
+    sum_brs = 0.
+    for decay_mode, label in labels.items():
+        sum_brs += brs[decay_mode].nominal
+        br = brs[decay_mode]
+        table.append([label, f"${br.str(format='pdg', style='latex', combine_uncs='all'  )}$"])
+
+    tabular = tabulate(table, headers=toplabels, tablefmt="latex_raw")
+    print(tabular)
+    print(f"sum of BRs: {sum_brs:.8f}")
+    return tabular
+
+
+def make_table_from_tabular(tabular, caption="", label="tab:"):
+    table = rf"""
+\begin{{table}}[!htbp]
+  \centering
+  \caption{{{caption}}}%
+  \label{{{label}}}
+  \renewcommand{{\arraystretch}}{{1.3}}
+  \begin{{small}}{tabular}
+  \end{{small}}
+  \renewcommand{{\arraystretch}}{{1.0}}
+\end{{table}}
+"""
+    return table
+
+
+tab = make_br_tabular()
+tab = make_table_from_tabular(tab, caption="Branching ratios of Higgs decay modes.", label="tab:higgs_brs")
+print(tab)
+
+
 # collect the HH BRs by looping over all combinations of H decay modes and applying the appropriate combinatorial factor
 def make_br_dict(brs=br_h, labels=br_labels, base_br: float = 1.0):
     out_brs = defaultdict(dict)
     for i, (decay1, label1) in enumerate(labels.items()):
         br1 = brs[decay1]
-        for j, (decay2, label2) in enumerate(labels.items()):
         # for j, (decay2, label2) in enumerate(reversed(list(labels.items()))):
+        for j, (decay2, label2) in enumerate(labels.items()):
             br2 = brs[decay2]
-            hh_decay = f"{label1}{label2}"
             if decay1 == decay2:
                 br_value = br1**2
             else:
                 br_value = 2 * br1 * br2
+            out_brs[label1][label2] = br_value.nominal * base_br
+            # if i > j:
+            #     out_brs[label1][label2] = -1  # only fill the lower triangle of the matrix to avoid double counting
+    return out_brs
+
+
+def make_hhh_br_dict(brs=br_h, labels=br_labels, decay3: str = "bb", base_br: float = 1.0):
+    br3 = brs[decay3]
+    out_brs = defaultdict(dict)
+    for i, (decay1, label1) in enumerate(labels.items()):
+        br1 = brs[decay1]
+        # for j, (decay2, label2) in enumerate(reversed(list(labels.items()))):
+        for j, (decay2, label2) in enumerate(labels.items()):
+            br2 = brs[decay2]
+            if (decay1 == decay2) and (decay2 == decay3):
+                br_value = br1**3
+            elif (decay1 != decay2) and (decay2 != decay3) and (decay1 != decay3):
+                br_value = 6 * br1 * br2 * br3
+            else:
+                br_value = 3 * br1 * br2 * br3
             out_brs[label1][label2] = br_value.nominal * base_br
             # if i > j:
             #     out_brs[label1][label2] = -1  # only fill the lower triangle of the matrix to avoid double counting
@@ -225,10 +287,10 @@ def make_plot_hh(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadran
     make_plot(
         hh_brs,
         br_labels,
-        title="Branching Ratios of HH decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{HH \to XXYY}})$",
-        xlabel=rf"$\mathrm{{H \to XX}}$",
-        ylabel=rf"$\mathrm{{H \to YY}}$",
+        title=r"Branching Ratios of $\mathrm{HH \to XXYY}$ decay modes",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HH \to XXYY})$",
+        xlabel=r"$\mathrm{H \to XX}$",
+        ylabel=r"$\mathrm{H \to YY}$",
         outfile_base="hh_brs",
         cmap=cmap,
         reverse_x=reverse_x,
@@ -236,7 +298,6 @@ def make_plot_hh(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadran
         upper_quadrant=upper_quadrant,
         # color_threshold_small=1e-4,
     )
-
 
 
 # initialize BR dictionaries for HH, WW, and ZZ decays
@@ -250,59 +311,53 @@ def make_plot_ww(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadran
     make_plot(
         ww_brs,
         br_w_labels,
-        title="Branching Ratios of WW decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{WW \to XXYY}})$",
-        xlabel=rf"$\mathrm{{W \to XX}}$",
-        ylabel=rf"$\mathrm{{W \to YY}}$",
+        title=r"Branching Ratios of $\mathrm{WW \to XXYY}$ decay modes",
+        cbar_label=r"$\mathcal{BR}(\mathrm{WW \to XXYY})$",
+        xlabel=r"$\mathrm{W \to XX}$",
+        ylabel=r"$\mathrm{W \to YY}$",
         outfile_base="ww_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
+
 
 def make_plot_zz(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadrant=False):
     make_plot(
         zz_brs,
         br_z_labels,
-        title="Branching Ratios of ZZ decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{ZZ \to XXYY}})$",
-        xlabel=rf"$\mathrm{{Z \to XX}}$",
-        ylabel=rf"$\mathrm{{Z \to YY}}$",
+        title=r"Branching Ratios of $\mathrm{ZZ \to XXYY}$ decay modes",
+        cbar_label=r"$\mathcal{BR}(\mathrm{ZZ \to XXYY})$",
+        xlabel=r"$\mathrm{Z \to XX}$",
+        ylabel=r"$\mathrm{Z \to YY}$",
         outfile_base="zz_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
+
 
 def make_plot_tautau(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadrant=False):
     make_plot(
         tautau_brs,
         br_tau_labels,
-        title="Branching Ratios of $\\tau\\tau$ decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{\tau\tau \to XXYY}})$",
-        xlabel=rf"$\mathrm{{\tau \to XX}}$",
-        ylabel=rf"$\mathrm{{\tau \to YY}}$",
+        title=r"Branching Ratios of $\mathrm{\tau\tau \to XXYY}$ decay modes",
+        cbar_label=r"$\mathcal{BR}(\mathrm{\tau\tau \to XXYY})$",
+        xlabel=r"$\mathrm{\tau \to XX}$",
+        ylabel=r"$\mathrm{\tau \to YY}$",
         outfile_base="tautau_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
 
 
-make_plot_hh(reverse_x=True)
-make_plot_ww(reverse_x=True)
-make_plot_zz(reverse_x=True)
-make_plot_tautau(reverse_x=True)
-
 #
 # make plots with multiplying the appropriate HH BR to get the absolute BR for the
-#  full decay chain (e.g. HH->bbWW->bbXXYY)
+# full decay chain (e.g. HH->bbWW->bbXXYY)
 #
 
 bbww_brs = make_br_dict(br_w_full, br_w_labels, base_br=br_hh.bbww.nominal)
@@ -315,52 +370,75 @@ def make_plot_bbww(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadr
         bbww_brs,
         br_w_labels,
         title=r"Branching Ratios of $\mathrm{HH \to bbWW}$ decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{HH \to bbWW \to bbXXYY}})$",
-        xlabel=rf"$\mathrm{{W \to XX}}$",
-        ylabel=rf"$\mathrm{{W \to YY}}$",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HH \to bbWW \to bbXXYY})$",
+        xlabel=r"$\mathrm{W \to XX}$",
+        ylabel=r"$\mathrm{W \to YY}$",
         outfile_base="bbww_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
+
 
 def make_plot_bbzz(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadrant=False):
     make_plot(
         bbzz_brs,
         br_z_labels,
         title=r"Branching Ratios of $\mathrm{HH \to bbZZ}$ decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{HH \to bbZZ \to bbXXYY}})$",
-        xlabel=rf"$\mathrm{{Z \to XX}}$",
-        ylabel=rf"$\mathrm{{Z \to YY}}$",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HH \to bbZZ \to bbXXYY})$",
+        xlabel=r"$\mathrm{Z \to XX}$",
+        ylabel=r"$\mathrm{Z \to YY}$",
         outfile_base="bbzz_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
+
 
 def make_plot_bbtautau(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadrant=False):
     make_plot(
         bbtautau_brs,
         br_tau_labels,
         title=r"Branching Ratios of $\mathrm{HH \to bb\tau\tau}$ decay modes",
-        cbar_label=rf"$\mathcal{{BR}}(\mathrm{{HH \to bb\tau\tau \to bbXXYY}})$",
-        xlabel=rf"$\mathrm{{\tau \to XX}}$",
-        ylabel=rf"$\mathrm{{\tau \to YY}}$",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HH \to bb\tau\tau \to bbXXYY})$",
+        xlabel=r"$\mathrm{\tau \to XX}$",
+        ylabel=r"$\mathrm{\tau \to YY}$",
         outfile_base="bbtautau_brs",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
         upper_quadrant=upper_quadrant,
-        # color_threshold_small=1e-1,
     )
 
+
+hhh_brs = make_hhh_br_dict(br_h, br_labels, decay3="bb")
+
+
+def make_plot_hhh(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadrant=False):
+    make_plot(
+        hhh_brs,
+        br_labels,
+        title="Branching Ratios of HHH decay modes",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HHH \to bbXXYY})$",
+        xlabel=r"$\mathrm{H \to XX}$",
+        ylabel=r"$\mathrm{H \to YY}$",
+        outfile_base="hhh_brs",
+        cmap=cmap,
+        reverse_x=reverse_x,
+        reverse_y=reverse_y,
+        upper_quadrant=upper_quadrant,
+    )
+
+
+make_plot_hh(reverse_x=True)
+make_plot_hhh(reverse_x=True)
+
+make_plot_ww(reverse_x=True)
+make_plot_zz(reverse_x=True)
+make_plot_tautau(reverse_x=True)
 
 make_plot_bbww(reverse_x=True)
 make_plot_bbzz(reverse_x=True)
 make_plot_bbtautau(reverse_x=True)
-
-from IPython import embed; embed()
