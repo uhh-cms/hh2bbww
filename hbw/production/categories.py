@@ -121,6 +121,7 @@ def cats_ml_init(self: Producer) -> None:
 # get all the derived MLModels and instantiate a corresponding producer for each one
 from hbw.ml.base import MLClassifierBase
 # from hbw.config.categories import add_categories_ml_xbb
+# from hbw.config.categories import add_categories_ml_dycr
 ml_model_names = get_subclasses_deep(MLClassifierBase)
 logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
@@ -129,5 +130,9 @@ for ml_model_name in ml_model_names:
     cats_ml.derive(f"cats_ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})
     # cats_ml.derive(f"cats_xbb_ml_{ml_model_name}", cls_dict={
     #     "category_function": add_categories_ml_xbb,
+    #     "ml_model_name": ml_model_name,
+    # })
+    # cats_ml.derive(f"cats_dycr_ml_{ml_model_name}", cls_dict={
+    #     "category_function": add_categories_ml_dycr,
     #     "ml_model_name": ml_model_name,
     # })

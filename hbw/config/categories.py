@@ -353,7 +353,11 @@ def add_categories_production(config: od.Config) -> None:
 
 
 @call_once_on_config()
-def add_categories_ml(config, ml_model_inst, add_jet_categories_func=add_jet_categories):
+def add_categories_ml(
+    config, ml_model_inst,
+    add_jet_categories_func=add_jet_categories,
+    main_category="sr",
+):
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
 
@@ -396,11 +400,11 @@ def add_categories_ml(config, ml_model_inst, add_jet_categories_func=add_jet_cat
     # create combination of categories
     #
 
-    sr = config.get_category("sr")
+    main = config.get_category(main_category)
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
         # NOTE: when building DNN categories, we do not need the control regions
-        "main": [sr],
+        "main": [main],
         # "main": [config.get_category(cat) for cat in config.x.main_categories],
         # "lepid": [config.get_category("sr"), config.get_category("fake")],
         # "met": [config.get_category("highmet"), config.get_category("lowmet")],
@@ -423,26 +427,27 @@ def add_categories_ml(config, ml_model_inst, add_jet_categories_func=add_jet_cat
 
     # NOTE: needed for downstream tasks that use the non-mixed dycr categories, but
     # category_ids Producer would not produce the corresponding categories as it is right now
-    dycr__2mu = config.add_category(  # noqa: F841
-        name="dycr__2mu",
-        selection="catid_never",  # dummy Categorizer, never selected
-        id=2349237509,
-        label="dycr (2mu)",
-    )
+    if not config.has_category("dycr__2mu"):
+        dycr__2mu = config.add_category(  # noqa: F841
+            name="dycr__2mu",
+            selection="catid_never",  # dummy Categorizer, never selected
+            id=2349237509,
+            label="dycr (2mu)",
+        )
 
     # add boosted ml bkg category by hand, combining all boosted ml signal categories
     sr__boosted__ml_bkg = config.add_category(  # noqa: F841
-        name="sr__boosted__ml_bkg",
+        name=f"{main_category}__boosted__ml_bkg",
         selection="catid_never",  # dummy Categorizer, never selected
         id=201000,
-        label="\n".join([sr.label, "boosted", "ml_bkg"]),
-        aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
+        label="\n".join([main.label, "boosted", "ml_bkg"]),
+        aux={"root_cats": {"main": main_category, "jet": "boosted", "dnn": "ml_bkg"}},
     )
     for proc, node_config in ml_model_inst.train_nodes.items():
         # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
         if "sig" in proc or "hh" in proc:
             continue
-        bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
+        bkg_cat = config.get_category(f"{main_category}__boosted__ml_{proc}")
         sr__boosted__ml_bkg.add_category(bkg_cat)
 
 
@@ -452,3 +457,9 @@ add_categories_ml_xbb = partial(
     add_jet_categories_func=add_jet_categories_xbb,
 )
 add_categories_ml_xbb.__name__ = "add_categories_ml_xbb"
+
+add_categories_ml_dycr = partial(
+    add_categories_ml,
+    main_category="dycr",
+)
+add_categories_ml_dycr.__name__ = "add_categories_ml_dycr"
