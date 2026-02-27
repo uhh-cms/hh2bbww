@@ -17,6 +17,7 @@ from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
 from hbw.util import IF_SL, IF_DL, IF_MC
 from hbw.weight.default import default_hist_producer
+from columnflow.histogramming import HistProducer
 
 
 ak = maybe_import("awkward")
@@ -48,6 +49,9 @@ def del_sub_proc_stats(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
+    skip_sr_categorizer=False,
+    # HistProducer that produces the event weight, which is needed for the ML stats.
+    hist_producer="default",
 )
 def prepml(
     self: Producer,
@@ -64,10 +68,11 @@ def prepml(
     if task.task_family == "cf.PrepareMLEvents":
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
-        sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
-        events, mask = self[sr_categorizer](events, **kwargs)
-        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
-        events = events[mask]
+        if not self.skip_sr_categorizer:
+            sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
+            events, mask = self[sr_categorizer](events, **kwargs)
+            logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
+            events = events[mask]
 
         if self.extra_categorizer:
             for cat_cls in self.categorizers_cls:
@@ -82,7 +87,7 @@ def prepml(
 
     if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_hist_producer](events, task, **kwargs)
+        events, weight = self[self.hist_producer_cls](events, task, **kwargs)
         events = set_ak_column_f32(events, "event_weight", weight)
         stats["sum_weights"] += float(ak.sum(weight, axis=0))
         weight_map["sum_weights"] = weight
@@ -135,7 +140,10 @@ def prepml_init(self):
         return
 
     self.uses.add("stitched_normalization_weight")
-    self.uses.add(default_hist_producer)
+    if not HistProducer.has_cls(self.hist_producer):
+        raise ValueError(f"Histogram producer {self.hist_producer} not found for {self.cls_name}.")
+    self.hist_producer_cls = HistProducer.get_cls(self.hist_producer)
+    self.uses.add(self.hist_producer_cls)
 
     if self.extra_categorizer:
         self.categorizers_cls = []
@@ -153,3 +161,9 @@ def prepml_init(self):
 prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"})
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
+
+prepml_dycr = prepml.derive("prepml_dycr", cls_dict={
+    "extra_categorizer": "catid_mll_z",
+    "skip_sr_categorizer": True,
+    "hist_producer": "with_hbbsf",  # no DY correction here
+})
