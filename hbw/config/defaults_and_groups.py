@@ -91,6 +91,7 @@ def default_producers(cls, container, task_params):
         default_producers.remove("pre_ml_cats")
         # NOTE: this producer needs to be added as the last element! otherwise, category_ids will be overwritten
         default_producers.append(f"cats_ml_{ml_model}")
+        # default_producers.append(f"cats_dycr_ml_{ml_model}")
         # default_producers.append(f"cats_xbb_ml_{ml_model}")
 
     return default_producers
@@ -126,6 +127,7 @@ def set_config_defaults_and_groups(config_inst):
     # config_inst.x.default_hist_producer = "with_trigger_weight"
     # config_inst.x.default_hist_producer = "with_dy_corr"
     # config_inst.x.default_hist_producer = "met_geq40_incl_dy_corr"
+    # config_inst.x.default_hist_producer = "with_hbbsf"  # no MET cut, no DY correction
     config_inst.x.default_hist_producer = "met_geq40_with_hbbsf_dy"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
@@ -145,12 +147,47 @@ def set_config_defaults_and_groups(config_inst):
     backgrounds1 = ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"]
     hbbhww_sm = ["hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1"]
     hbbhww_variations = [
-        "hh_ggf_hbb_hww_kl0_kt1",
         "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl0_kt1",
         "hh_ggf_hbb_hww_kl2p45_kt1",
         "hh_ggf_hbb_hww_kl5_kt1",
         "hh_vbf_hbb_hww_kv1_k2v1_kl1",
     ]
+    hbbhww_ggf = [
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hww_kl0_kt1",
+        "hh_ggf_hbb_hww_kl2p45_kt1",
+        "hh_ggf_hbb_hww_kl5_kt1",
+    ]
+    hbbhww_vbf = [  # noqa: F841
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
+        "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
+        # "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",  # missing NanoAOD file?
+        "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
+        "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96",
+    ]
+    hbbhww_vbf_resolved_base = [
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
+        "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
+        "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",
+        "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96",
+    ]
+    hbbhww_vbf_boosted_base = [  # noqa: F841
+        "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+        "hh_vbf_hbb_hww_kv1_k2v0_kl1",
+        "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
+        "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",
+        "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
+        "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
+    ]
+
     hh_sm = [
         "hh_ggf_hbb_hww_kl1_kt1", "hh_vbf_hbb_hww_kv1_k2v1_kl1",
         "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
@@ -291,6 +328,8 @@ def set_config_defaults_and_groups(config_inst):
         "hh_sm": hh_sm,
         "hh_sm1": hh_sm1,
         "hbbhww_sm": hbbhww_sm,
+        "hbbhww_ggf": hbbhww_ggf,
+        "hbbhww_vbf": hbbhww_vbf_resolved_base,
         "signals": [*hh_sm, *hh_sm1],
     }
     for proc, datasets in config_inst.x.dataset_names.items():
@@ -398,6 +437,7 @@ def set_config_defaults_and_groups(config_inst):
         "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
+        "BR_bbzz": bracket_expansion(["dycr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
 
@@ -552,18 +592,17 @@ def set_config_defaults_and_groups(config_inst):
         "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
     }
 
+    # cms label options: "wip", "pw", "preliminary", "public"
+    cms_label = "public"
+
     # plotting settings groups
     # (used in plotting)
-    cms_label = "wip"
-    # cms_label = "pre"
-    # cms_label = "public"
-
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
         "dpostfit_merged": {
             "remove_negative": True,
-            "whitespace_fraction": 0.35,
+            # "whitespace_fraction": 0.36,  # NOTE: setting consistent y-axis range instead in the custom_style_config
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
@@ -573,7 +612,7 @@ def set_config_defaults_and_groups(config_inst):
         },
         "postfit_merged": {
             "remove_negative": True,
-            "whitespace_fraction": 0.35,
+            # "whitespace_fraction": 0.36,  # NOTE: setting consistent y-axis range instead in the custom_style_config
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
@@ -614,6 +653,21 @@ def set_config_defaults_and_groups(config_inst):
             "whitespace_fraction": 0.4,
             "cms_label": f"{cms_label}",
             "yscale": "log",
+        },
+        "gen_vbf": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.3,
+            "cms_label": f"sim{cms_label}",
+            "magnitudes": 3.5,
+            "yscale": "log",
+        },
+        "gen_ggf": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.3,
+            "cms_label": f"sim{cms_label}",
+            "magnitudes": 3.5,
+            "yscale": "log",
+            # "cumsum_reverse": False,
         },
         "more_magnitudes": {
             "remove_negative": True,
@@ -799,7 +853,7 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.97),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
@@ -807,7 +861,7 @@ def set_config_defaults_and_groups(config_inst):
                 "ylabel_fontsize": 30,
                 "xlabel_fontsize": 30,
                 # "ylim": (2e-1, 6e7),
-                "ylim": (2e-1, 1e8),
+                "ylim": (2e-1, 2e8),
             },
             "rax_cfg": {
                 "ylabel_fontsize": 30,
@@ -836,7 +890,7 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.97),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 24,
             },
@@ -857,9 +911,9 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_data_first,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.97),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 22,
+                "fontsize": 21,
             },
             "ax_cfg": {
                 "xlabel_fontsize": 30,
@@ -882,9 +936,9 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_mll,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.97),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 22,
+                "fontsize": 21,
             },
             "ax_cfg": {
                 "xlabel_fontsize": 30,
@@ -908,9 +962,9 @@ def set_config_defaults_and_groups(config_inst):
                 "cf_update_handles_labels": reorder_data_first,
             },
             "annotate_cfg": {
-                "xy": (0.03, 0.97),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
-                "fontsize": 22,
+                "fontsize": 21,
             },
             "ax_cfg": {
                 "xlabel_fontsize": 30,
@@ -932,7 +986,7 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.05, 0.95),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 16,
             },
@@ -947,10 +1001,13 @@ def set_config_defaults_and_groups(config_inst):
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "annotate_cfg": {
-                "xy": (0.05, 0.95),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 16,
             },
+            # "rax_cfg": {
+            #     "ylim": (0.75, 1.25),
+            # },
         },
         "default_rax40": {
             "legend_cfg": {
@@ -962,7 +1019,7 @@ def set_config_defaults_and_groups(config_inst):
                 "ylim": (0.60, 1.40),
             },
             "annotate_cfg": {
-                "xy": (0.05, 0.95),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 16,
             },
@@ -977,7 +1034,7 @@ def set_config_defaults_and_groups(config_inst):
                 "ylim": (0.40, 1.60),
             },
             "annotate_cfg": {
-                "xy": (0.05, 0.95),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 16,
             },
@@ -995,9 +1052,40 @@ def set_config_defaults_and_groups(config_inst):
                 "ylim": (0.25, 1.75),
             },
             "annotate_cfg": {
-                "xy": (0.05, 0.95),
+                "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 16,
+            },
+        },
+        "gen_vbf": {
+            "legend_cfg": {
+                "title": r"$HH_{VBF}\rightarrow bbWW$",
+                "ncols": 2,
+                "fontsize": 15,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "rax_cfg": {
+                "ylim": (0.1, 10.),
+                "yscale": "log",
+            },
+            "annotate_cfg": {
+                "text": "",
+            },
+        },
+        "gen_ggf": {
+            "legend_cfg": {
+                "title": r"$HH\rightarrow bbWW$",
+                "cf_entries_per_column": [4, 1],
+                "ncols": 2,
+                "fontsize": 15,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "rax_cfg": {
+                "ylim": (0.1, 10.),
+                "yscale": "log",
+            },
+            "annotate_cfg": {
+                "text": "",
             },
         },
         "legend_single_col": {
@@ -1048,6 +1136,19 @@ def set_config_defaults_and_groups(config_inst):
         "sr__boosted__ml_sig_ggf": 3,
         "sr__boosted__ml_sig_vbf": 3,
         "sr__boosted": 3,
+
+        "BR_bbzz": 1,
+        "dycr__resolved__1b__ml_sig_ggf": 10,
+        "dycr__resolved__2b__ml_sig_ggf": 6,
+        "dycr__resolved__1b__ml_sig_vbf": 8,
+        "dycr__resolved__2b__ml_sig_vbf": 6,
+        "dycr__1b__ml_sig_ggf": 10,
+        "dycr__2b__ml_sig_ggf": 6,
+        "dycr__1b__ml_sig_vbf": 8,
+        "dycr__2b__ml_sig_vbf": 6,
+        "dycr__boosted__ml_sig_ggf": 3,
+        "dycr__boosted__ml_sig_vbf": 3,
+        "dycr__boosted": 3,
     }
 
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
@@ -1085,4 +1186,18 @@ def set_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
+
+        # bbZZ
+        "BR_bbzz": is_background,
+        "dycr__resolved__1b__ml_sig_ggf": is_signal_sm_ggf,
+        "dycr__resolved__2b__ml_sig_ggf": is_signal_sm_ggf,
+        "dycr__resolved__1b__ml_sig_vbf": is_signal_sm_vbf,
+        "dycr__resolved__2b__ml_sig_vbf": is_signal_sm_vbf,
+        "dycr__1b__ml_sig_ggf": is_signal_sm_ggf,
+        "dycr__2b__ml_sig_ggf": is_signal_sm_ggf,
+        "dycr__1b__ml_sig_vbf": is_signal_sm_vbf,
+        "dycr__2b__ml_sig_vbf": is_signal_sm_vbf,
+        "dycr__boosted__ml_sig_ggf": is_signal_sm_ggf,
+        "dycr__boosted__ml_sig_vbf": is_signal_sm_vbf,
+        "dycr__boosted": is_signal_sm_vbf,
     }
