@@ -437,7 +437,7 @@ def set_config_defaults_and_groups(config_inst):
         "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
-        "BR_bbzz": bracket_expansion(["dycr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
+        "BR_bbzz": bracket_expansion(["dycr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),  # noqa: E501
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
 

@@ -16,7 +16,6 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low
 from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.default import default_hist_producer
 from columnflow.histogramming import HistProducer
 
 
@@ -71,7 +70,9 @@ def prepml(
         if not self.skip_sr_categorizer:
             sr_categorizer = catid_sr if self.config_inst.has_tag("is_sl") else catid_mll_low
             events, mask = self[sr_categorizer](events, **kwargs)
-            logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
+            logger.info(
+                f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}",
+            )
             events = events[mask]
 
         if self.extra_categorizer:

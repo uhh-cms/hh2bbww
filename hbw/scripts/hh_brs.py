@@ -234,7 +234,7 @@ def make_plot(
     if reverse_x.__xor__(reverse_y):
         # show only the lower right triangle
         n_y, n_x = br_matrix.shape
-        row_indices, col_indices = np.meshgrid(np.arange(n_y), np.arange(n_x), indexing='ij')
+        row_indices, col_indices = np.meshgrid(np.arange(n_y), np.arange(n_x), indexing="ij")
         if upper_quadrant:
             br_matrix = np.where(row_indices <= (n_x - 1 - col_indices), br_matrix, -1)
         else:
@@ -242,7 +242,7 @@ def make_plot(
     else:
         # show only the lower left triangle
         n_y, n_x = br_matrix.shape
-        row_indices, col_indices = np.meshgrid(np.arange(n_y), np.arange(n_x), indexing='ij')
+        row_indices, col_indices = np.meshgrid(np.arange(n_y), np.arange(n_x), indexing="ij")
         if upper_quadrant:
             br_matrix = np.where(row_indices <= col_indices, br_matrix, -1)
         else:
@@ -261,7 +261,7 @@ def make_plot(
 
             color = "white" if br < color_threshold_small else "black"
             if br < 0.01:
-                mantissa, exponent = f"{br:.2e}".split('e')
+                mantissa, exponent = f"{br:.2e}".split("e")
                 exponent = int(exponent)
                 plt.text(j, i, f"${mantissa}$\n$\\times 10^{{{exponent}}}$",
                         ha="center", va="center", color=color, fontsize=text_font_size)
@@ -275,7 +275,7 @@ def make_plot(
     plt.xticks(ticks=np.arange(len(decay_modes_x)), labels=decay_modes_x, fontsize=ticks_fontsize, rotation=0)
     plt.xlabel(xlabel, fontsize=26)
     plt.ylabel(ylabel, fontsize=26)
-    plt.yticks(ticks=np.arange(len(decay_modes_y)), labels=decay_modes_y, fontsize=ticks_fontsize, rotation=90, va="center")
+    plt.yticks(ticks=np.arange(len(decay_modes_y)), labels=decay_modes_y, fontsize=ticks_fontsize, rotation=90, va="center")  # noqa: E
     plt.title(title, fontsize=24)
     plt.tight_layout()
     plt.savefig(f"{outfile_base}.png")

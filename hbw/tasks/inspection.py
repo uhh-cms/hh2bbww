@@ -412,7 +412,7 @@ class DumpAnalysisSummary(
             },
         }
         tablecommandname = r"\makesignalxstable"
-        caption = "Cross sections of the \HHggf and \HHvbf processes for different coupling parameters."
+        caption = r"Cross sections of the \HHggf and \HHvbf processes for different coupling parameters."
         label = "tab:signal_xs_table"
         cols = "llllr"
         lines = [

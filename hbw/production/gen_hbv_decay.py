@@ -430,10 +430,12 @@ def make_pair_variables(
         #     continue
         var_title = var_title_dict.get(feature, lambda col_repr_comb: feature)(col_repr_comb)
         binning = bins_dict.get(feature).get(col_name, bins_dict.get(feature).get("default"))
-        var = config.add_variable(
+        var = config.add_variable(  # noqa: F841
             name=f"{var_basename}_{feature}",
             # expression to use behaviour instead of direct column access
-            expression=lambda events, col_name=col_name, feature=feature: getattr(Route(col_name).apply(events), feature),
+            expression=lambda events, col_name=col_name, feature=feature: (
+                getattr(Route(col_name).apply(events), feature)
+            ),
             binning=binning,
             unit=default_var_unit.get(feature, ""),
             x_title=rf"{x_title_prefix} {var_title}",
