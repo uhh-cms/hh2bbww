@@ -47,6 +47,34 @@ ak = maybe_import("awkward")
 logger = law.logger.get_logger(__name__)
 
 
+def make_table_func(
+    newcommands: str = "",
+    tablecommandname: str = r"\maketable",
+    table_content: str = r"Table content & value & value \\",
+    caption: str = "Caption.",
+    label: str = "tab:label",
+    cols: str = "lcc",
+):
+    table = rf"""
+
+{newcommands}
+\newcommand{{{tablecommandname}}}[0]{{%
+\begin{{table}}[!htbp]
+  \centering
+  \caption{{{caption}}}%
+  \label{{{label}}}
+  \renewcommand{{\arraystretch}}{{1.3}}
+  \begin{{small}}
+    \begin{{tabular}}{{{cols}}}{table_content}
+    \end{{tabular}}
+  \end{{small}}
+  \renewcommand{{\arraystretch}}{{1.0}}
+\end{{table}}
+}}%
+"""
+    return table
+
+
 def create_table_from_csv(csv_file_path, transpose=False, with_header=True):
     import csv
     from tabulate import tabulate
@@ -273,6 +301,7 @@ class DumpAnalysisSummary(
 
     def output(self):
         output = {
+            "xs_table": self.target("xs_table.tex"),
             "latex_table": self.target("latex_table.tex"),
             "dataset_summary": self.target(f"dataset_summary_{self.keys_repr}.txt"),
         }
@@ -294,7 +323,10 @@ class DumpAnalysisSummary(
         das_keys_formatted = "\\texttt{" + das_keys_formatted + "}"
         return das_keys_formatted
 
-    def build_xs_table(self):
+    def build_xs_table_uncs(self):
+        """
+        Builds a LaTeX table summarizing the cross sections and uncertainties of various processes.
+        """
         processes_dict = {
             "tt": r"\ttbar",
             "st_tchannel": r"\sttchannel",
@@ -353,6 +385,185 @@ class DumpAnalysisSummary(
                     latex_name = info["latex_name"]
                     unc_repr = info[unc_key]
                     print(rf"{latex_name} & {unc_repr}~\cite{{TODO}} \\")
+
+    def build_signal_xs_table(self):
+        root_processes = {
+            "hh_ggf": r"\HHggf",
+            "hh_vbf": r"\HHvbf",
+        }
+        sub_processes = {
+            "hh_ggf": {
+                "hh_ggf_kl1_kt1": ("1", "", ""),
+                "hh_ggf_kl0_kt1": ("0", "", ""),
+                "hh_ggf_kl2p45_kt1": ("2.45", "", ""),
+                "hh_ggf_kl5_kt1": ("5", "", ""),
+            },
+            "hh_vbf": {
+                "hh_vbf_kv1_k2v1_kl1": ("1", "1", "1"),
+                "hh_vbf_kv1_k2v0_kl1": ("1", "0", "1"),
+                "hh_vbf_kv1p74_k2v1p37_kl14p4": ("1.74", "1.37", "14.4"),
+                "hh_vbf_kvm0p012_k2v0p03_kl10p2": ("0.012", "0.03", "10.2"),
+                "hh_vbf_kvm0p758_k2v1p44_klm19p3": ("0.758", "1.44", "-19.3"),
+                "hh_vbf_kvm0p962_k2v0p959_klm1p43": ("0.962", "0.959", "-1.43"),
+                "hh_vbf_kvm1p21_k2v1p94_klm0p94": ("-1.21", "1.94", "-0.94"),
+                "hh_vbf_kvm1p6_k2v2p72_klm1p36": ("-1.6", "2.72", "-1.36"),
+                "hh_vbf_kvm1p83_k2v3p57_klm3p39": ("-1.83", "3.57", "-3.39"),
+                "hh_vbf_kv2p12_k2v3p87_klm5p96": ("2.12", "3.87", "-5.96"),
+            },
+        }
+        tablecommandname = r"\makesignalxstable"
+        caption = "Cross sections of the \HHggf and \HHvbf processes for different coupling parameters."
+        label = "tab:signal_xs_table"
+        cols = "llllr"
+        lines = [
+            r"\hline",
+            r"Process & $\kappa_\lambda$ & $\kappa_V$ & $\kappa_{2V}$ & Cross section [pb] \\",
+            r"\hline",
+        ]
+
+        for process, latex_name in root_processes.items():
+            lines.append(r"\hline")
+            proc_inst = self.config_inst.get_process(process)
+            if not proc_inst:
+                raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
+            xsec = proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
+            if xsec and xsec.nominal == 0.1:
+                xsec = None
+
+            # Add main process line
+            # main_xsec = f"{round_sig(xsec.nominal, 4)}" if xsec else ""
+            # lines.append(f"  {latex_name} &  &  &  & {main_xsec} \\\\")
+
+            # Add sub-process lines if they exist
+            if process in sub_processes:
+                # lines.append(r"\hline")
+                for sub_proc, sub_latex_name in sub_processes[process].items():
+                    kl, kv, k2v = [r"\textemdash" if val == "" else f"${val}$" for val in sub_latex_name]
+                    sub_proc_inst = self.config_inst.get_process(sub_proc)
+                    if not sub_proc_inst:
+                        raise Exception(f"Sub-process '{sub_proc}' not found in config '{self.config_inst.name}'")
+                    sub_xsec = sub_proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
+                    if sub_xsec:
+                        sub_xsec_str = f"{round_sig(sub_xsec.nominal, 4)}"
+                        lines.append(f" {latex_name} & {kl} & {kv} & {k2v} & {sub_xsec_str} \\\\")
+                    latex_name = ""
+
+        table_content = "\n".join(lines)
+        table = make_table_func(
+            tablecommandname=tablecommandname,
+            table_content=table_content,
+            caption=caption,
+            label=label,
+            cols=cols,
+        )
+        print(table)
+        output_file = self.output()["latex_table"]
+        output_file.dump(table, formatter="text")
+
+    def build_bkg_xs_table(self):
+        root_processes_bkg = {
+            # "data": "skip",
+            # "hh_ggf": r"\HHggF",
+            # "hh_vbf": r"\HHVBF",
+            "tt": r"\ttbar",
+            "st": r"\singlet",
+            "dy": r"\DY",
+            "w_lnu": r"\Wjets",
+            "vv": r"\diboson",
+            "ttv": r"\ttV",
+            "h": r"\PH",
+            "other": r"\other",
+        }
+        sub_processes_bkg = {
+            "tt": {
+                "tt_dl": r"\ttdl",
+                "tt_sl": r"\ttsl",
+                "tt_fh": r"\ttfh",
+            },
+            "st": {
+                "st_tchannel": r"\sttchannel",
+                "st_schannel": r"\stschannel",
+                "st_twchannel": r"\tW",
+            },
+            "dy": {
+                "dy_m10to50": r"\DYmten",
+                "dy_m50toinf": r"\DYmfifty",
+            },
+            "vv": {
+                "ww": r"\WW",
+                "wz": r"\WZ",
+                "zz": r"\ZZ",
+            },
+            "ttv": {
+                "ttw": r"\ttW",
+                "ttz": r"\ttZ",
+            },
+            "h": {
+                "h_ggf": r"\Hggf",
+                "h_vbf": r"\Hvbf",
+                "zh": r"\ZH",
+                "zh_gg": r"\ggZH",
+                "wh": r"\WH",
+                "tth": r"\ttH",
+                "ttvh": r"\ttVH",
+                "thq": r"\tHq",
+                "thw": r"\tHW",
+            },
+            "other": {
+                "tttt": r"\tttt",
+                "ttvv": r"\ttVV",
+                "vvv": r"\triboson",
+            },
+        }
+        self.build_xs_table_subprocs(root_processes_bkg, sub_processes_bkg)
+
+    def build_xs_table_subprocs(self, root_processes, sub_processes):
+        tablecommandname = r"\makexstable"
+        caption = "Cross sections of the main processes and their sub-processes."
+        label = "tab:xs_table"
+        cols = "llr"
+        lines = [
+            r"\hline",
+            r"Process & Sub-process & Cross section [pb] \\",
+            r"\hline",
+        ]
+
+        for process, latex_name in root_processes.items():
+            lines.append(r"\hline")
+            proc_inst = self.config_inst.get_process(process)
+            if not proc_inst:
+                raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
+            xsec = proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
+            if xsec and xsec.nominal == 0.1:
+                xsec = None
+
+            # Add main process line
+            main_xsec = f"{round_sig(xsec.nominal, 4)}" if xsec else ""
+            lines.append(f"  {latex_name} &  & {main_xsec} \\\\")
+
+            # Add sub-process lines if they exist
+            if process in sub_processes:
+                # lines.append(r"\hline")
+                for sub_proc, sub_latex_name in sub_processes[process].items():
+                    sub_proc_inst = self.config_inst.get_process(sub_proc)
+                    if not sub_proc_inst:
+                        raise Exception(f"Sub-process '{sub_proc}' not found in config '{self.config_inst.name}'")
+                    sub_xsec = sub_proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
+                    if sub_xsec:
+                        sub_xsec_str = f"{round_sig(sub_xsec.nominal, 4)}"
+                        lines.append(f"    &  {sub_latex_name} & {sub_xsec_str} \\\\")
+
+        table_content = "\n".join(lines)
+        table = make_table_func(
+            tablecommandname=tablecommandname,
+            table_content=table_content,
+            caption=caption,
+            label=label,
+            cols=cols,
+        )
+        print(table)
+        output_file = self.output()["latex_table"]
+        output_file.dump(table, formatter="text")
 
     def build_table(self):
         root_processes = {
@@ -413,6 +624,7 @@ class DumpAnalysisSummary(
         output_file = self.output()["latex_table"]
         output_file.dump(latex_table, formatter="text")
 
+        # return "\n".join(lines)
         return table_dict
 
     def generate_latex_table(self, table_dict):
@@ -481,7 +693,9 @@ class DumpAnalysisSummary(
     def run(self):
         output = self.output()
         self.build_table()
-        self.build_xs_table()
+        self.build_xs_table_uncs()
+        self.build_signal_xs_table()
+        self.build_bkg_xs_table()
         self.write_dataset_summary(output["dataset_summary"])
 
 
