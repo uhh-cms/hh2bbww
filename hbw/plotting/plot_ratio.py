@@ -135,8 +135,6 @@ def plot_ratio(
         style_config,
         deep=True,
     )
-    # change cms label to 2018
-    style_config["cms_label_cfg"] = {"lumi": "59.8", "com": 13}
     style_config["rax_cfg"]["ylabel"] = "Ratio"
 
     return plot_all(plot_config, style_config, **kwargs)

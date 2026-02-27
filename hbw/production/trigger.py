@@ -120,6 +120,8 @@ def dl_trigger_weights(
                 value=_sf,
             )
 
+    if not ak.all(full_mask):
+        raise Exception(f"Not all events are assigned to a trigger SF category in {dl_trigger_weights.cls_name}")
     return events
 
 
