@@ -45,28 +45,34 @@ def rebin(task, hists: hist.Histogram, **kwargs):
     """
     # get variable inst assuming we created a 1D histogram
     variable_inst = task.config_inst.get_variable(task.branch_data.variable)
+    category_inst = task.config_inst.get_category(task.branch_data.category)
+    edges_path = "/data/dust/user/frahmmat/public/hh2bbww/data/hbw_store/hbw_dl/calib__ak4V5__ak8V5__eleV6/sel__dl1V3/red__default/c22prev14__c22postv14__c23prev14__c23postv14/prod__event_weightsV5__dl_ml_inputsV3__cats_ml_multiclassv3V5/ml__multiclassv3__9b016e72b3__ggfv3__7d73ff7875__vbfv3_tag__696759553a/hist__met_geq40_with_hbbsf_dyV3/inf__hbbsfV15/hbw.ModifyDatacardsFlatRebin/prod3"  # noqa: E501
 
-    # edges for 2b channel
-    edges = {
-        "mlscore.hh_ggf_hbb_hvv2l2nu_kl1_kt1": [0.0, 0.429, 0.509, 0.5720000000000001, 0.629, 0.68, 0.72, 0.757, 0.789, 0.8200000000000001, 1.0],  # noqa
-        "mlscore.hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": [0.0, 0.427, 0.529, 0.637, 0.802, 1.0],
-        "mlscore.tt": [0.0, 0.533, 0.669, 1.0],
-        "mlscore.h": [0.0, 0.494, 0.651, 1.0],
-    }
+    edges_filename = {
+        "sr__boosted__ml_sig_ggf": "edges_3__cfg_2022_2023__cat_sr__boosted__ml_sig_ggf.json",
+        "sr__boosted__ml_sig_vbf": "edges_3__cfg_2022_2023__cat_sr__boosted__ml_sig_vbf.json",
+        "sr__resolved__1b__ml_sig_ggf": "edges_10__cfg_2022_2023__cat_sr__resolved__1b__ml_sig_ggf.json",
+        "sr__resolved__1b__ml_sig_vbf": "edges_8__cfg_2022_2023__cat_sr__resolved__1b__ml_sig_vbf.json",
+        "sr__resolved__2b__ml_sig_ggf": "edges_6__cfg_2022_2023__cat_sr__resolved__2b__ml_sig_ggf.json",
+        "sr__resolved__2b__ml_sig_vbf": "edges_6__cfg_2022_2023__cat_sr__resolved__2b__ml_sig_vbf.json",
+    }[category_inst.name]
+    import json
+    with open(f"{edges_path}/{edges_filename}", "r") as f:
+        edges = json.load(f)
 
     h_rebinned = DotDict()
+    for config_inst, proc_hists in hists.items():
+        h_rebinned[config_inst] = DotDict()
+        for proc_inst, proc_hist in proc_hists.items():
+            old_axis = proc_hist.axes[variable_inst.name]
 
-    edges = edges[variable_inst.name]
-    for proc, h in hists.items():
-        old_axis = h.axes[variable_inst.name]
+            h_rebin = apply_rebinning_edges(proc_hist.copy(), old_axis.name, edges)
 
-        h_rebin = apply_rebinning_edges(h.copy(), old_axis.name, edges)
-
-        if not np.isclose(h.sum().value, h_rebin.sum().value):
-            raise Exception(f"Rebinning changed histogram value: {h.sum().value} -> {h_rebin.sum().value}")
-        if not np.isclose(h.sum().variance, h_rebin.sum().variance):
-            raise Exception(f"Rebinning changed histogram variance: {h.sum().variance} -> {h_rebin.sum().variance}")
-        h_rebinned[proc] = h_rebin
+            if not np.isclose(proc_hist.sum().value, h_rebin.sum().value):
+                raise Exception(f"Rebinning changed histogram value: {proc_hist.sum().value} -> {h_rebin.sum().value}")
+            if not np.isclose(proc_hist.sum().variance, h_rebin.sum().variance):
+                raise Exception(f"Rebinning changed histogram variance: {proc_hist.sum().variance} -> {h_rebin.sum().variance}")  # noqa: E501
+            h_rebinned[config_inst][proc_inst] = h_rebin
 
     return h_rebinned
 
