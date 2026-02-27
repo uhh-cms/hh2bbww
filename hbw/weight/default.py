@@ -11,7 +11,7 @@ from columnflow.util import maybe_import
 from columnflow.histogramming import HistProducer
 from columnflow.histogramming.default import cf_default
 from columnflow.config_util import get_shifts_from_sources
-from columnflow.columnar_util import Route, set_ak_column
+from columnflow.columnar_util import Route, has_ak_column, set_ak_column, attach_behavior
 from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
@@ -38,6 +38,12 @@ def norm_brs_cmsdb(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
 
 @cf_default.hist_producer(uses={"stitched_normalization_weight"}, mc_only=True)
 def stitched_norm(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
+    if has_ak_column(events, "gen_hbw"):
+        # for gen-level studies: allow 4-vector behaviour when creating histograms
+        for field in events.gen_hbw.fields:
+            events = set_ak_column(events, f"gen_hbw.{field}", attach_behavior(
+                events.gen_hbw[field], "PtEtaPhiMLorentzVector",
+            ))
     return events, events.stitched_normalization_weight
 
 
@@ -328,8 +334,10 @@ unstitched_weight_columns = {
 }
 weight_columns_execpt_btag = default_weight_columns.copy()
 weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
+weight_columns_execpt_dycorr = default_weight_columns.copy()
+weight_columns_execpt_dycorr.pop("dy_correction_weight")
 
-default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
+default_hist_producer = base.derive("default", cls_dict={"weight_columns": weight_columns_execpt_dycorr})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],
     "dy_correction_weight": [],

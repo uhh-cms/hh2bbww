@@ -96,6 +96,7 @@ def default_init(self: Reducer) -> None:
 
 
 test_default = default.derive("test_default")
+genstudies = default.derive("genstudies")  # copy to rerun gen_hbv_decay with np.float64
 triggersf = default.derive("triggersf")
 
 
