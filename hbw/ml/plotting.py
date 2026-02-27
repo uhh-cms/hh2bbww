@@ -180,26 +180,69 @@ def plot_confusion(
         input_type: str,
         process_insts: tuple[od.Process],
         stats: dict | None = None,
+        true_process_insts: tuple[od.Process] | None = None,
         normalize: str = "columns",
         with_title: bool = False,
+        plot_postfix: str = "",
 ) -> None:
     """
     Simple function to create and store a confusion matrix plot
     """
+    # NOTE: process_insts should always be the train_node_process_insts, otherwise y_pred is not mapped correctly
+    process_insts = model.train_node_process_insts
     # use CMS plotting style but with non-quadratic figsize to avoid stretching the colorbar
     plt.style.use(mplhep.style.CMS)
-    plt.rcParams["figure.figsize"] = (11.8, 10)
-    if with_title:
-        plt.rcParams["figure.figsize"] = (11.6, 10)  # with title
+    width_factor = 1.16 if with_title else 1.18
+    len_factor = 1
+    if true_process_insts is not None and len(true_process_insts) != len(process_insts):
+        # make figures larger based on the number of processes evaluated
+        # width_factor = width_factor * (len(true_process_insts) / len(process_insts))
+        len_factor = len(true_process_insts) / len(process_insts)
+        width_factor = width_factor * (1 + 0.16 * (len(true_process_insts) / len(process_insts) - 1))
+
+    plt.rcParams["figure.figsize"] = (width_factor * 10, len_factor * 10)
 
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
+    # gather process labels
+    labels = (
+        [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
+        if process_insts else None
+    )
+
+    num_classes = len(np.unique(inputs.labels))
     # Create confusion matrix and normalizes it over predicted (columns)
+    if not true_process_insts:
+        y_true = inputs.labels
+        y_labels = labels
+    else:
+        y_true = np.ones(len(inputs.labels), dtype=int) * -1
+        y_labels = []
+        for i, proc_inst in enumerate(true_process_insts):
+            y_labels.append(proc_inst.x("ml_label", proc_inst.label))
+            mask = inputs.process_labels == proc_inst.name
+            if np.any(mask):
+                y_true[mask] = i
+            elif proc_inst.x.ml_id != -1:
+                logger.warning(
+                    f"No events found for process {proc_inst.name} with ml_id "
+                    f"{proc_inst.x.ml_id} in confusion matrix inputs.")
+                mask = inputs.labels == proc_inst.x.ml_id
+                if np.any(mask):
+                    y_true[mask] = i
+        y_true[y_true == -1] = len(true_process_insts)  # assign unknown processes to a separate class
+
+    y_pred = np.argmax(inputs.prediction, axis=1)
+
     confusion = confusion_matrix(
-        y_true=inputs.labels,
-        y_pred=np.argmax(inputs.prediction, axis=1),
+        y_true=y_true,
+        y_pred=y_pred,
         sample_weight=inputs.equal_weights,
     )
+    if true_process_insts:
+        # make confusion non-square if there are more evaluation processes than classes to predict
+        confusion = confusion[:, :num_classes]
+
     if isinstance(stats, dict):
         gather_confusion_stats(confusion, process_insts, input_type, stats)
 
@@ -216,16 +259,22 @@ def plot_confusion(
     else:
         logger.info(f"Confusion will not be normalized with normalize={normalize}")
 
-    # gather process labels
-    labels = (
-        [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
-        if process_insts else None
-    )
-
     # Create a plot of the confusion matrix
     fig, ax = plt.subplots()
-    disp = ConfusionMatrixDisplay(confusion, display_labels=labels)
-    disp.plot(ax=ax)
+    if confusion.shape[0] == confusion.shape[1]:
+        disp = ConfusionMatrixDisplay(confusion, display_labels=labels)
+        disp.plot(ax=ax)
+    else:
+        im = ax.imshow(confusion, vmin=0, vmax=1)
+        fig.colorbar(im, ax=ax)
+        for (i, j), value in np.ndenumerate(confusion):
+            ax.text(j, i, f"{value:.2f}", ha="center", va="center", color="w")
+        if labels:
+            ax.set_xticks(np.arange(len(labels)))
+            ax.set_xticklabels(labels)
+            ax.set_yticks(np.arange(len(y_labels)))
+            ax.set_yticklabels(y_labels)
+
     ax.set_yticklabels(
         ax.get_yticklabels(),
         rotation=90,
@@ -238,7 +287,7 @@ def plot_confusion(
     mplhep.cms.label(ax=ax, fontsize=24, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     plt.tight_layout()
-    output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
+    output.child(f"Confusion_{input_type}_{plot_postfix}.pdf", type="f").dump(fig, formatter="mpl")
 
 
 @timeit

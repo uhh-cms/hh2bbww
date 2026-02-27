@@ -886,7 +886,6 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
         # Since we only have test data, process sequentially with cleanup
         for data_split in self.data_splits:
             logger.info(f"Creating plots for {data_split} split...")
-
             # confusion matrix
             plot_confusion(
                 self.ml_model_inst,
@@ -894,8 +893,26 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
                 output["plots"],
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
-                stats,
+                stats=stats,
             )
+            try:
+                # example for non-diagonal confusion matrix (bit hard-coded still)
+                sig_vbf = self.config_inst.get_process("sig_vbf", default=None)
+                hh_ggf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_ggf")]
+                bkg_procs = [self.config_inst.get_process(p) for p in ("tt", "st", "dy_m10to50", "dy_m50toinf", "h")]
+                procs = [*hh_ggf, sig_vbf, *bkg_procs]
+                procs = [p for p in procs if p is not None]
+                plot_confusion(
+                    self.ml_model_inst,
+                    data[data_split],
+                    output["plots"],
+                    data_split,
+                    self.ml_model_inst.train_node_process_insts,
+                    true_process_insts=procs,
+                    plot_postfix="split",
+                )
+            except Exception as e:
+                logger.warning(f"Error plotting non-diagonal confusion matrix for {data_split} split: {e}")
             plt.close("all")
             gc.collect()
 

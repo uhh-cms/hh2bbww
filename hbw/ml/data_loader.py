@@ -496,6 +496,7 @@ class MLProcessData:
             "_features", "_weights", "_train_weights", "_equal_weights",
             "_target", "_labels", "_prediction", "_m_negative_weights",
             "_shuffle_indices", "_input_features", "_n_events", "_folds",
+            "_process_labels",
         ]
 
         for attr in cached_attrs:
@@ -616,23 +617,42 @@ class MLProcessData:
         labels = np.ones(len(weights), dtype=np.int32) * ml_id
         return labels
 
+    def load_process_labels(self, data_split, process, fold):
+        """
+        Load the labels for a given process and fold.
+        """
+        proc_inst = self._ml_model_inst.config_inst.get_process(process)
+
+        # load any column to get the array length
+        weights = self.load_file("weights", data_split, process, fold)
+
+        # store process name per event
+        process_labels = np.ones(len(weights), dtype=object) * proc_inst.name
+        # process_labels = np.array([proc_inst.name] * len(weights))
+        return process_labels
+
     def load_data(self, data_str: str) -> np.ndarray:
         """
         Load data from the input dictionary. Options for data_str are "features", "weights", "train_weights",
-        "equal_weights", "labels", and "prediction".
+        "equal_weights", "labels", "process_labels", and "prediction".
         When the data is loaded, it is concatenated over all processes and folds.
         When the *shuffle* attribute is set to True, the data is shuffled using the *shuffle_indices* attribute.
         """
-        if data_str not in ("features", "weights", "train_weights", "equal_weights", "labels", "prediction"):
+        if data_str not in (
+            "features", "weights", "train_weights", "equal_weights", "labels", "process_labels", "prediction",
+        ):
             logger.warning(f"Unknown data string {data_str} for MLProcessData.")
         data = []
         for process in self._processes:
             for fold in self.folds:
                 if data_str == "labels":
                     fold_data = self.load_labels(self._data_split, process, fold)
+                elif data_str == "process_labels":
+                    fold_data = self.load_process_labels(self._data_split, process, fold)
                 else:
                     fold_data = self.load_file(data_str, self._data_split, process, fold)
-                if np.any(~np.isfinite(fold_data)):
+                # Skip isfinite check for non-numeric data (e.g., process_labels with dtype=object)
+                if data_str != "process_labels" and np.any(~np.isfinite(fold_data)):
                     raise Exception(f"Found non-finite values in {data_str} for {process} in fold {fold}.")
                 data.append(fold_data)
 
@@ -724,6 +744,14 @@ class MLProcessData:
 
         self._labels = self.load_data("labels")
         return self._labels
+
+    @property
+    def process_labels(self) -> np.ndarray:
+        if hasattr(self, "_process_labels"):
+            return self._process_labels
+
+        self._process_labels = self.load_data("process_labels")
+        return self._process_labels
 
     @property
     def prediction(self) -> np.ndarray:
