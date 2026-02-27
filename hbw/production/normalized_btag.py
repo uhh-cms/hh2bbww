@@ -81,7 +81,11 @@ def normalized_btag_weights_post_init(self: Producer, task: law.Task) -> None:
 @normalized_btag_weights.requires
 def normalized_btag_weights_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     from hbw.tasks.corrections import GetBtagNormalizationSF
-    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(task)
+    shift = task.shift
+    if shift.startswith("hdamp") or shift.startswith("tune") or shift.startswith("mtop"):
+        # ignore per-dataset shifts
+        shift = "nominal"
+    reqs["btag_renormalization_sf"] = GetBtagNormalizationSF.req(task, shift=shift)
 
 
 normalized_btag_weights_full = normalized_btag_weights.derive("normalized_btag_weights_full", cls_dict=dict(
