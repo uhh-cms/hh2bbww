@@ -224,8 +224,8 @@ class HBWInferenceModelBase(
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
-    unblind_step1 = True
-    fully_unblind = True
+    unblind_step1 = False
+    fully_unblind = False
 
     @property
     def inference_model_cls(self):
@@ -826,6 +826,12 @@ class PrepareInferenceTaskCalls(
         description="Whether to rerun the tasks even if their output exists.",
         significant=False,
     )
+    allow_args = luigi.BoolParameter(
+        default=True,
+        description="Whether to allow passing additional arguments to the tasks. "
+        "If False, only the default arguments will be used.",
+        significant=False,
+    )
     # systematics that are frozen for kl and c2v scans
     frozen_for_scans = ",".join([
         "THU_HH", "pdf_Higgs_hh_vbf", "pdf_Higgs_hh_ggf", "QCDscale_hh_vbf",
@@ -1222,7 +1228,12 @@ class PrepareInferenceTaskCalls(
         cmd_dict["impacts"] = cmd
         cmd_dict["impacts_retry"] = cmd.replace(pulls_and_impacts_params, retry_pulls_and_impacts_params)
 
-        # MultiplePullsAndImpacts
+        # impacts paper (leading 25 impacts, without best fit value, only first page)
+        cmd_dict["impacts_paper"] = cmd + (
+            " --show-best-fit False --order-by-impact --parameters-per-page 25 --page 0"
+        )
+
+        # MultiplePullsAndImpact
         cmd = (
             f"law run PlotMultiplePullsAndImpacts --version {identifier} --campaign {campaign} "
             f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
@@ -1282,6 +1293,11 @@ class PrepareInferenceTaskCalls(
                 if key in ("prepare_cards", "export"):
                     continue
                 cmd_dict[key] = cmd + " --remove-output 0,a,y"
+        if self.allow_args:
+            for key, cmd in cmd_dict.items():
+                if key in ("prepare_cards", "export"):
+                    continue
+                cmd_dict[key] = cmd + "  \"$@\""
 
         # dump all the commands to one output file
         functions_cmd = "\n\n".join([
@@ -1380,6 +1396,10 @@ class MultiDatacards(
     def inference_model_clses(self):
         return [InferenceModel.get_cls(inference_model) for inference_model in self.inference_models]
 
+    @property
+    def inference_models_repr(self):
+        return "_".join([str(inf_model) for inf_model in self.inference_models])
+
     @classmethod
     def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
         for inference_model in params["inference_models"]:
@@ -1398,6 +1418,15 @@ class MultiDatacards(
             ) for inference_model in self.inference_models],
         }
         return reqs
+
+    def store_parts(self) -> law.util.InsertableDict:
+        """
+        :return: Dictionary with parts that will be translated into an output directory path.
+        """
+        parts = super().store_parts()
+        if self.inference_models != law.NO_STR:
+            parts.insert_after(self.config_store_anchor, "inf_model", f"inf__{self.inference_models_repr}")
+        return parts
 
     def output(self):
         output = {
