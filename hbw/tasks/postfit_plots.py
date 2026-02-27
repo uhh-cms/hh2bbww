@@ -77,6 +77,12 @@ def get_hists_from_fit_diagnostics(tfile):
 
 def get_hists_from_merged_multidimfit(tfile):
     """ Helper function to load histograms from root file created by MultiDimFit """
+
+    # setup to rescale signal to prefit
+    import numpy as np
+    is_signal = lambda proc: proc.startswith("ggHH_kl_1_kt_1") or proc.startswith("qqHH_CV_1_C2V_1_kl_1")
+    sum_sig_prefit, sum_sig_postfit = defaultdict(np.float64), defaultdict(np.float64)
+
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
@@ -90,6 +96,8 @@ def get_hists_from_merged_multidimfit(tfile):
 
         # unpack key
         variable, fit_and_channel, process = key
+        if ";2" in process:
+            continue
         variables.add(variable)
 
         fit = fit_and_channel.split("_")[-1]
@@ -97,7 +105,18 @@ def get_hists_from_merged_multidimfit(tfile):
         channel = fit_and_channel.replace(f"_{fit}", "")
         process = process.split(";")[0]
 
+        # get sum of signal processes
+        if is_signal(process):
+            if fit == "prefit":
+                sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+            elif fit == "postfit":
+                sum_sig_postfit[variable] += h_in.to_hist().values().sum()
         if "Total" in process and process != "TotalBkg":
+            if process == "TotalSig":
+                if fit == "prefit":
+                    sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+                elif fit == "postfit":
+                    sum_sig_postfit[variable] += h_in.to_hist().values().sum()
             continue
         else:
             h_in = h_in.to_hist()
@@ -109,6 +128,22 @@ def get_hists_from_merged_multidimfit(tfile):
             deep=True,
         )
 
+    # rescale the postfit signal histograms to match the prefit signal yield if requested.
+    rescale_postfit_signal: bool = True
+    if rescale_postfit_signal and sum_sig_postfit and sum_sig_prefit:
+        for variable in variables:
+            signal_scale = np.float64(sum_sig_prefit[variable]) / np.float64(sum_sig_postfit[variable])
+            logger.warning(f"Prefit signal yield {sum_sig_prefit[variable]:.3f}, postfit signal yield {sum_sig_postfit[variable]:.3f}")  # noqa: E501
+            logger.info(f"Rescaling postfit signal histograms for variable {variable} by factor {signal_scale:.3f}")
+            for channel in hists.postfit[variable].keys():
+                for process in hists.postfit[variable][channel].keys():
+                    if is_signal(process):
+                        hists.postfit[variable][channel][process] *= signal_scale
+    elif rescale_postfit_signal:
+        logger.warning(
+            "Signal yields are zero in prefit or postfit, cannot rescale "
+            "postfit signal histograms to match prefit yield.",
+        )
     return hists
 
 
@@ -539,7 +574,8 @@ class PlotPostfitShapes(
                     variable,
                     default=od.Variable("dummy", aux={"x_min": None, "x_max": None}),
                 )
-            if self.fit_type not in config_category.label.lower():
+            if self.fit_type not in config_category.label.lower() and "merged" in channel:
+                # "prefit" or "postfit" labels, only in merged plot
                 config_category.label = self.fit_type + "\n" + config_category.label
 
             # sort histograms
@@ -564,6 +600,7 @@ class PlotPostfitShapes(
             # some adjustments for the merged plot
             if channel == "cat_merged" or channel == "merged":
                 line_pos = 0.71
+                line_pos = 0.70
                 bins_count = 0.5
                 axs[0].axhline(
                     get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
