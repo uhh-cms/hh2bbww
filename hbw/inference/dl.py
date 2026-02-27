@@ -647,28 +647,28 @@ nn_variables = default_unblind.derive("nn_variables", cls_dict={
     "flow_strategy": "remove",
 })
 
-before_dycorr = default_unblind.derive("before_dycorr1", cls_dict={
+before_dycorr3 = default_unblind.derive("before_dycorr3", cls_dict={
     "config_variable": lambda self, config_cat_inst: [
         "mli_ll_pt",
         "mli_n_jet",
         "mli_mll",
     ] if "dycr" in getattr(config_cat_inst, "name", config_cat_inst) else ["mli_mll"],
     "multi_variables": True,
-    "config_categories": ["dycr", "incl"],
+    "config_categories": ["dycr", "dycr__2e", "dycr__2mu", "dycr__nonmixed", "incl"],
     "ml_model_name": [],
     "flow_strategy": "remove",
     "systematics": list(set(systematics.default) - {"dy_correction"}),
     "skip_ratify_shapes": True,
 })
 
-after_dycorr = default_unblind.derive("after_dycorr1", cls_dict={
+after_dycorr3 = default_unblind.derive("after_dycorr3", cls_dict={
     "config_variable": lambda self, config_cat_inst: [
         "mli_ll_pt",
         "mli_n_jet",
         "mli_mll",
     ] if "dycr" in getattr(config_cat_inst, "name", config_cat_inst) else ["mli_mll"],
     "multi_variables": True,
-    "config_categories": ["dycr", "incl"],
+    "config_categories": ["dycr", "dycr__2e", "dycr__2mu", "dycr__nonmixed", "incl"],
     "ml_model_name": [],
     "flow_strategy": "remove",
     "skip_ratify_shapes": True,

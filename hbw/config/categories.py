@@ -111,25 +111,25 @@ def add_mll_categories(config: od.Config) -> None:
         name="sr",
         id=1,
         selection="catid_mll_low",
-        label=r"$20 \leq m_{\ell\ell} < 70$",
+        label=r"$20 \leq m_{\ell\ell} \, [GeV] < 70$",
     )
     cr = config.add_category(
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$20 \leq m_{\ell\ell} \geq 70$",
+        label=r"$m_{\ell\ell} \geq 70 \, GeV$",
     )
     cr.add_category(
         name="dycr",
         id=3,
         selection="catid_mll_z",
-        label=r"$70 \leq m_{\ell\ell} < 110$",
+        label=r"$70 \leq m_{\ell\ell} \, [GeV] < 110$",
     )
     cr.add_category(
         name="ttcr",
         id=4,
         selection="catid_mll_high",
-        label=r"$m_{\ell\ell} \geq 110$",
+        label=r"$m_{\ell\ell} \geq 110 \, GeV$",
     )
 
 
@@ -341,13 +341,15 @@ def add_categories_production(config: od.Config) -> None:
     )
     logger.info(f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
 
+    dycr__2e = config.get_category("dycr__2e")
+    dycr__2mu = config.get_category("dycr__2mu")
     dycr__nonmixed = config.add_category(
         name="dycr__nonmixed",
         id=2349237509,
-        label="dycr (Nonmixed)",
+        label=dycr__2e.label.replace("2 Electron", "2 Electron/Muon"),
     )
-    dycr__nonmixed.add_category(config.get_category("dycr__2e"))
-    dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+    dycr__nonmixed.add_category(dycr__2e)
+    dycr__nonmixed.add_category(dycr__2mu)
 
 
 @call_once_on_config()

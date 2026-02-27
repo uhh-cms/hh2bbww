@@ -519,6 +519,27 @@ run_and_fetch_mcstat_plots() {
         # --cf.MergeHistograms-pilot
 }
 
+run_and_fetch_shifted_plots() {
+    local configs="${1:-$all_configs}"
+    local categories="${2:-"$inf_categories_sig"}"
+    local variables="${3:-logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary}"
+
+    local folder_name=${configs//,/_}
+    echo "→ PlotVariables: config=$configs, categories=$categories, variables=$variables"
+    run_and_fetch_cmd shifted/$folder_name claw run cf.PlotShiftedVariablesPerShift1D \
+        --plot-function columnflow.plotting.plot_functions_1d.plot_shifted_variable \
+        --configs "$configs" \
+        --ml-models $all_models \
+        --variables $variables \
+        --processes tt_dl \
+        --shift-sources hdamp \
+        --categories "$categories" \
+        --general-settings data_mc_plots_not_blinded \
+        --workers 8 \
+        --cf.CreateHistograms-pilot \
+        --hist-hooks rebin
+}
+
 run_and_fetch_mcsyst_plots() {
     local configs="${1:-$all_configs}"
     local categories="${2:-"incl,dycr,ttcr,sr,sr__resolved__1b,sr__resolved__2b"}"
@@ -630,25 +651,79 @@ run_gen_plots() {
     # pass arguments
     claw run cf.PlotVariables1D \
       --selector-steps no_sel_mask \
+      --reducer genstudies \
       --producers "combined_normalization_weights,gen_hbw_decay_features" \
       --hist-producer stitched_norm \
       --processes hbbhww_sm \
-      --variables "gen_hbw*" \
+      --variables "GENHBW_*" \
       --categories incl \
       --shape-norm \
-      --workers 6
+      --workers 6 --remove-output 0,a,y
+
+      # ggF
+      claw run cf.PlotVariables1D \
+      --selector-steps no_sel_mask \
+      --reducer genstudies \
+      --producers "combined_normalization_weights,gen_hbw_decay_features" \
+      --hist-producer stitched_norm \
+      --processes hbbhww_ggf,hbbhww_sm \
+      --variables "GENHBW_*" \
+      --categories incl \
+      --shape-norm \
+      --plot-function hbw.plotting.plot_ratio.plot_ratio --plot-suffix ratio --custom-style-config gen_ggf --general-settings gen_ggf \
+      --workers 6 --remove-output 0,a,y
+
+      # VBF
+      claw run cf.PlotVariables1D \
+      --selector-steps no_sel_mask \
+      --reducer genstudies \
+      --producers "combined_normalization_weights,gen_hbw_decay_features" \
+      --hist-producer stitched_norm \
+      --processes hbbhww_vbf \
+      --variables "GENHBW_*" \
+      --categories incl \
+      --shape-norm \
+      --plot-function hbw.plotting.plot_ratio.plot_ratio --plot-suffix ratio --custom-style-config gen_vbf --general-settings gen_vbf \
+      --workers 6 --remove-output 0,a,y
+
+      # efficiency ggF
+      claw run cf.PlotVariables1D \
+      --selector-steps no_sel_mask \
+      --reducer genstudies \
+      --producers "combined_normalization_weights,gen_hbw_decay_features" \
+      --hist-producer stitched_norm \
+      --processes hbbhww_ggf,hbbhww_sm \
+      --variables "GENHBW_*for_eff" \
+      --categories incl \
+      --shape-norm \
+      --plot-function columnflow.plotting.plot_functions_1d.plot_variable_efficiency --plot-suffix eff_linear --custom-style-config gen_ggf --general-settings gen_ggf \
+      --workers 6 --remove-output 0,a,y --yscale linear --skip-ratio
+
+      # efficiency VBF
+      claw run cf.PlotVariables1D \
+      --selector-steps no_sel_mask \
+      --reducer genstudies \
+      --producers "combined_normalization_weights,gen_hbw_decay_features" \
+      --hist-producer stitched_norm \
+      --processes hbbhww_vbf \
+      --variables "GENHBW_*for_eff" \
+      --categories incl \
+      --shape-norm \
+      --plot-function columnflow.plotting.plot_functions_1d.plot_variable_efficiency --plot-suffix eff_linear --custom-style-config gen_vbf --general-settings gen_vbf \
+      --workers 6 --remove-output 0,a,y --yscale linear --skip-ratio
 }
 
 run_and_fetch_gen_plots() {
     local base_cmd=(claw run cf.PlotVariables1D \
       --selector-steps no_sel_mask \
+      --reducer genstudies \
       --producers "combined_normalization_weights,gen_hbw_decay_features" \
       --hist-producer stitched_norm \
       --processes hbbhww_sm \
-      --variables "gen_hbw.*" \
+      --variables "GENHBW*" \
       --categories incl \
       --shape-norm \
-      --workers 6
+      --workers 6 --remove-output 0,a,y
     )
     run_and_fetch_cmd gen_plots "${base_cmd[@]}"
     run_and_fetch_cmd gen_plots "${base_cmd[@]}" --plot-suffix linear --yscale linear
@@ -848,10 +923,13 @@ run_paper_plots() {
     #
 
     # prefit
-    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl4 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --merged-only True
+    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --prefit --merged-only True --cms-label public
+
+    # prefit per category
+    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15_per_category --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --cms-label Internal
 
     # postfit
-    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_postfit.root --inference-model hbbsf --processes ddl4 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --merged-only True
+    law run hbw.PlotPostfitShapes --version 2022_2023__hbbsfV15 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/2022_2023__hbbsfV15/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_postfit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --merged-only True --cms-label public
 
     #
     # commands to produce inference models that are used to create prefit distributions of for the paper plots
@@ -861,27 +939,31 @@ run_paper_plots() {
     claw run hbw.MultiDatacards --inference-models nn_variables --hist-producer met_geq40_with_hbbsf_dy --ml-models multiclassv3,ggfv3,vbfv3_tag --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
 
     # DY correction features + mLL (before DY correction, MET inclusive)
-    claw run hbw.MultiDatacards --inference-models before_dycorr --hist-producer with_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
+    claw run hbw.MultiDatacards --inference-models before_dycorr3 --hist-producer with_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
 
     # DY correction features + mll (after DY correction, MET inclusive)
-    claw run hbw.MultiDatacards --inference-models after_dycorr --hist-producer incl_dy_corr_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
+    claw run hbw.MultiDatacards --inference-models after_dycorr3 --hist-producer incl_dy_corr_hbbsf --workers 6 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,no-poll,remote-claw-sandbox=venv_columnar}
 
     #
     # commands from inference task that produce the final plots (with all the proper settings for the plot style of the paper)
-    # (for Supplementary material, rerun with --cms-label Supplementary)
     #
 
-    # NN input features / NN scores (with MET>40 cut applied)
-    law run hbw.PlotPostfitShapes --version nn_variables --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_e34c508369__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --density --hist-producer with_hbbsf
+    # CWR plots v1
 
-    # DY correction features (before DY correction, MET inclusive)
-    law run hbw.PlotPostfitShapes --version before_dycorr --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_4b56f241e3__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --hist-producer with_hbbsf
+    # nn inputs
+    law run hbw.PlotPostfitShapes --version nn_variables --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_e34c508369__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --density --hist-producer met_geq40_with_hbbsf_dy --cms-label public --remove-output 0,a,y
 
-    # DY correction features (after DY correction, MET inclusive)
-    law run hbw.PlotPostfitShapes --version after_dycorr --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes3/shapes_merged_72bcf97f2a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --hist-producer incl_dy_corr_hbbsf
+    # dy before/after (MET inclusive)
+    law run hbw.PlotPostfitShapes --version before_dycorr3 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/before_dycorr3/shapes_merged_5e6fea8d39__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model before_dycorr3 --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --cms-label public --hist-producer with_hbbsf
+    law run hbw.PlotPostfitShapes --version after_dycorr3 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/after_dycorr3/shapes_merged_a1bae85616__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model after_dycorr3 --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --cms-label public --local-scheduler --hist-producer incl_dy_corr_hbbsf
 
-    # mll (after DY correction, MET inclusive)
-    law run hbw.PlotPostfitShapes --version mll --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes3/shapes_merged_72bcf97f2a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl9 --general-settings dpostfit --custom-style-config dpostfit_mll --prefit --merged-only False --density --hist-producer incl_dy_corr_hbbsf --cms-label Supplementary
+    # postfit
+    law run hbw.PlotPostfitShapes --version prepostfit --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/prepostfit/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --merged-only True --hist-producer met_geq40_with_hbbsf_dy --remove-output 0,a,y --local-scheduler --prefit
+    law run hbw.PlotPostfitShapes --version postfitscaled --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/prepostfit/shapes_merged_64b792600e__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit_merged --custom-style-config dpostfit_merged --merged-only True --hist-producer met_geq40_with_hbbsf_dy --remove-output 0,a,y --local-scheduler --process-settings hh_ggf_kl1_kt1,scale=12:hh_vbf_kv1_k2v1_kl1,scale=120
+
+    # Supplementary
+    law run hbw.PlotPostfitShapes --version nn_variables --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_e34c508369__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --density --cms-label Supplementary --hist-producer met_geq40_with_hbbsf_dy --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version mll --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/after_dycorr3/shapes_merged_a1bae85616__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model after_dycorr3 --processes ddl9 --general-settings dpostfit --custom-style-config dpostfit_mll --prefit --merged-only False --density --cms-label Supplementary --local-scheduler --hist-producer incl_dy_corr_hbbsf
 }
 
 run_dycorr_plots() {
@@ -917,6 +999,8 @@ run_all() {
     run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum" --local-scheduler
     # recreate_campaign_summary
 
+    run_and_fetch_shifted_plots $all_configs
+
     # run_merge_reduced_events "c22prev14,c23prev14,c23postv14" "nominal"
     # run_merge_reduced_events "$all_configs" "nominal"
     # run_merge_reduced_events "$all_configs" "jec_Total_up,jec_Total_down,jer_up,jer_down"
@@ -938,6 +1022,10 @@ run_all() {
     # prepare_mlcolumns "$all_configs" "$nominal" "multiclassv3,ggfv3,vbfv3" "$ml_scores"
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclassv3,ggfv3,vbfv3" "$ml_scores"
 
+    # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_dycr" "mli_mbb"
+    # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_dycr,ggf_dycr,vbf_dycr" "$ml_scores"
+
+
     # prepare_mlcolumns "$all_configs" "$nominal" "multiclassv3,ggfv3,vbfv3_vbf_extended" "$ml_scores"
     # prepare_mlcolumns "$all_configs" "$jerc_shifts" "multiclassv3,ggfv3,vbfv3_vbf_extended" "$ml_scores"
     # run_datacards "vbfextended_unblind" $all_configs
@@ -952,7 +1040,7 @@ run_all() {
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "ml_inputs,ml_inputs_vbf_extended,mli_full_vbf_tag,mli_full_vbf_mass"
 
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3_tag,ggfv3,vbfv3_tag"
-    run_datacards "vbfmqq1_unblind" $all_configs
+    # run_datacards "vbfmqq1_unblind" $all_configs
     # run_datacards "vbftag1_unblind" $all_configs
 
     # run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
