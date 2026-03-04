@@ -262,4 +262,3 @@ def base_post_init(self: HistProducer, task: law.Task):
         # no nominal FSR weight --> remove it from uses and local_weight_columns
         self.uses.discard("normalized_fsr_weight")
         self.local_weight_columns.pop("normalized_fsr_weight", None)
-

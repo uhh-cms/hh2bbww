@@ -1,4 +1,4 @@
-
+# coding: utf-8
 
 from columnflow.util import maybe_import
 from hbw.weight.default import base
@@ -52,7 +52,6 @@ default_hist_producer = base.derive(
         "weight_columns": default_weight_columns,
         "dy_correction_weight_producer": "dy_correction_weight",
     },
-
 )
 check = base.derive("check", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {

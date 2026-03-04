@@ -415,20 +415,20 @@ default_cls_dict = {
     "skip_data": True,
 }
 
-dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
+dl_trih = HBWInferenceModelBase.derive("dl_trih", cls_dict=default_cls_dict)
 
 #
 # currently "final" inference models
 #
 
-rate_only_hhh_v2 = dl.derive("rate_only_hhh_v2", cls_dict={
+rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
     "systematics": systematics.rate_default,
     "config_categories": config_categories.hhh_v0,
     "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
     "config_variable": config_variable_hhh,
     "processes": processes_dict["hhh_v0"],
 })
-rate_only_hhh_v8 = dl.derive("rate_only_hhh_v8", cls_dict={
+rate_only_hhh_v8 = dl_trih.derive("rate_only_hhh_v8", cls_dict={
     "systematics": systematics.rate_default,
     "config_categories": config_categories.hhh_v8,
     "ml_model_name": ["multiclass_hhh_v8", "hhh_v2"],
