@@ -150,7 +150,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_2j_amcatnlo",
             ]),
             *config.x.if_era(run=3, year=2024, values=[
-                # NLO samples NOTE: In 2024 e only have them split into pt, therefore I am using those
+                # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
                 "dy_ee_m50toinf_amcatnlo",
                 "dy_mumu_m50toinf_amcatnlo",
                 "dy_tautau_m50toinf_amcatnlo",

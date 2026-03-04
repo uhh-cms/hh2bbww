@@ -72,6 +72,16 @@ def modify_cmsdb_processes():
     dy_ee_m50toinf_0j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
     dy_ee_m50toinf_1j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
     dy_ee_m50toinf_2j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
+    dy_mumu_m10to50.aux = {"production_mode_parent": ["dy_mumu"]}
+    dy_mumu_m50toinf.aux = {"production_mode_parent": ["dy_mumu"]}
+    dy_mumu_m50toinf_0j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
+    dy_mumu_m50toinf_1j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
+    dy_mumu_m50toinf_2j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
+    dy_tautau_m10to50.aux = {"production_mode_parent": ["dy_tautau"]}
+    dy_tautau_m50toinf.aux = {"production_mode_parent": ["dy_tautau"]}
+    dy_tautau_m50toinf_0j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_tautau_m50toinf_1j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_tautau_m50toinf_2j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
 
     for dy_proc_inst in (
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
