@@ -48,8 +48,8 @@ processes = DotDict({
         "vv", "ttv", "h", "other",
     ],
     "backgrounds_multiclass": [
-        "tt", "st", "dy_m10to50", "dy_m50toinf",
-        "vv", "h",
+        "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+        "h",  # "vv",
     ],
     "ggf_hbb_hvv2l2nu": hh_train_procs_ggf("_hbb_hvv2l2nu"),
     "vbf_hbb_hvv2l2nu": hh_train_procs_vbf("_hbb_hvv2l2nu"),
@@ -495,10 +495,7 @@ multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "tt",
-        "st",
-        "dy",
-        "h",
+        *processes.backgrounds_multiclass,
     ),
     "train_nodes": {
         "sig_ggf": {
@@ -527,10 +524,14 @@ multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
         },
         "tt": {"ml_id": 2},
         "st": {"ml_id": 3},
-        "dy": {
+        "dy_m10toinf": {
             "ml_id": 4,
+            "sub_processes": [
+                "dy_ee_m10to50", "dy_mumu_m10to50",
+                "dy_m50toinf"],
             "label": "DY",
             "color": color_palette["yellow"],
+            "class_factor_mode": "xsec",
         },
         "h": {"ml_id": 5},
     },
@@ -541,8 +542,8 @@ ggf24 = ggfv1.derive("ggf24", cls_dict={
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "tt", "st", "dy",
-        "vv", "h",
+        "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+        "vv", "ttv", "h", "other",
     ],
     "train_nodes": {
         "sig_ggf_binary": {
@@ -561,8 +562,9 @@ ggf24 = ggfv1.derive("ggf24", cls_dict={
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
             "sub_processes": (
-                "tt", "st", "dy",
-                "vv", "h",
+                "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50",
+                "dy_m50toinf",
+                "vv", "ttv", "h", "other",
             ),
         },
     },
@@ -577,7 +579,9 @@ ggf24 = ggfv1.derive("ggf24", cls_dict={
         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
         "tt": 1,
         "st": 1,
-        "dy": 1,
+        "dy_ee_m10to50": 0.5,
+        "dy_mumu_m10to50": 0.5,
+        "dy_m50toinf": 1,
         "vv": 2,
         "ttv": 2,
         "h": 2,
@@ -595,8 +599,8 @@ vbf24 = vbfv1.derive("vbf24", cls_dict={
         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "tt", "st", "dy",
-        "vv", "h",
+        "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+        "vv", "ttv", "h", "other",
     ],
     "train_nodes": {
         "sig_vbf_binary": {
@@ -619,8 +623,8 @@ vbf24 = vbfv1.derive("vbf24", cls_dict={
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
             "sub_processes": (
-                "tt", "st", "dy",
-                "vv", "h",
+                "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+                "vv", "ttv", "h", "other",
             ),
         },
     },
@@ -638,7 +642,9 @@ vbf24 = vbfv1.derive("vbf24", cls_dict={
         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": 1,
         "tt": 1,
         "st": 1,
-        "dy": 1,
+        "dy_ee_m10to50": 0.5,
+        "dy_mumu_m10to50": 0.5,
+        "dy_m50toinf": 1,
         "vv": 2,
         "ttv": 2,
         "h": 2,

@@ -127,9 +127,9 @@ def set_config_defaults_and_groups(config_inst):
     #     "default": default_producers(None, config_inst, {}),
     # }
     # config_inst.x.default_hist_producer = "with_trigger_weight"
-    # config_inst.x.default_hist_producer = "with_dy_corr"
+    config_inst.x.default_hist_producer = "with_dy_corr"
     # config_inst.x.default_hist_producer = "met_geq40_with_dy_corr"  # "met_geq40_incl_dy_corr"
-    config_inst.x.default_hist_producer = "default_hist_producer_trih"  # "met_geq40_incl_dy_corr"
+    # config_inst.x.default_hist_producer = "default_hist_producer_trih"  # "met_geq40_incl_dy_corr"
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
@@ -228,7 +228,9 @@ def set_config_defaults_and_groups(config_inst):
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
-        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501 "dy_lf", "dy_hf",
+        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl91": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl92": [*hh_sm1, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_tautau_m10to50", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_tautau_m50toinf", "dy_ee_m50toinf", "dy_mumu_m50toinf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -307,7 +309,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl16", "dl15", "dl15B", "dl11", "dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
+    for group in ("dl16", "dl15", "dl15B", "dl11", "dl9", "dl91", "dl92", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -569,7 +571,7 @@ def set_config_defaults_and_groups(config_inst):
     # plotting settings groups
     # (used in plotting)
     # cms_label = "wip"
-    cms_label = "pre"
+    cms_label = "pw"
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
         "default_norm": {"shape_norm": True, "yscale": "log"},
@@ -589,7 +591,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },

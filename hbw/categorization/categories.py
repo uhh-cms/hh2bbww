@@ -288,11 +288,9 @@ def catid_mll_z_narrow(self: Categorizer, events: ak.Array, **kwargs) -> tuple[a
 
 @categorizer(
     uses={"mll", "Jet.pt"},
-    n_jet=2,
 )
 def catid_mll_z_wide(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.mll >= 70) & (events.mll < 110)
-    mask = mask & ak.num(events.Jet["pt"], axis=-1) >= self.n_jet
     return events, mask
 
 
