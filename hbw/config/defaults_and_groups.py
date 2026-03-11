@@ -219,6 +219,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
         "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl15C": ["tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl15B": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl16": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b", "tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],  # noqa: E501
         "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501

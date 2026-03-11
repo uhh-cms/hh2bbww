@@ -119,6 +119,10 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_tbar_sl_powheg",
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
+                "st_tchannel_t_had_4f_powheg",
+                "st_tchannel_tbar_had_4f_powheg",
+                "st_tchannel_t_lep_4f_powheg",
+                "st_tchannel_tbar_lep_4f_powheg",
             ]),
         ],
         "dy": [
@@ -157,6 +161,15 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_ee_m10to50_amcatnlo",
                 "dy_mumu_m10to50_amcatnlo",
                 "dy_tautau_m10to50_amcatnlo",
+                "dy_ee_m50toinf_0j_amcatnlo",
+                "dy_mumu_m50toinf_0j_amcatnlo",
+                "dy_tautau_m50toinf_0j_amcatnlo",
+                "dy_ee_m50toinf_1j_amcatnlo",
+                "dy_mumu_m50toinf_1j_amcatnlo",
+                "dy_tautau_m50toinf_1j_amcatnlo",
+                "dy_ee_m50toinf_2j_amcatnlo",
+                # "dy_mumu_m50toinf_2j_amcatnlo",
+                "dy_tautau_m50toinf_2j_amcatnlo",
             ]),
         ],
         "w_lnu": [
@@ -618,6 +631,47 @@ def configure_hbw_datasets(
         if dataset.is_data:
             if config.x.cpn_tag == "2022preEE":
                 dataset.x.jec_era = "RunCD"
+
+        # NOTE copied from Johanna for btagging stuff
+        if config.campaign.x.year == 2024:
+            # TODO figure out which datasets should be grouped together;
+            # for now, don't group any datasets together and treat each type of dataset separately
+            config.x.btag_wp_eff_groups = [
+                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant
+                # ["*"],
+                # ["dy_*"],
+                # ["hhh_*"],
+                # ["w_lnu_*"],
+                # ["st_*"],
+                # ["tt_*", "ttbb_*"],
+                # ["ww_*", "wz_*", "zz_*"],
+                # ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
+                # ["hh_*", "whh_*", "tthh_*", "zhh_*"],
+                # ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                ["dy_*",
+                "hhh_*",
+                "w_lnu_*",
+                "st_*",
+                "tt_*", "ttbb_*",
+                "ww_*", "wz_*", "zz_*",
+                "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
+                "hh_*", "whh_*", "tthh_*", "zhh_*",
+                "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+            ]
+            group_matched = False
+            for i, dataset_pattern in enumerate(config.x.btag_wp_eff_groups):
+                if law.util.multi_match(dataset.name, dataset_pattern):
+                    if group_matched:
+                        raise ValueError(
+                            f"dataset '{dataset.name}' already has a btag WP group assigned! Cannot assign it to more "
+                            "than one group",
+                        )
+                    group_matched = True
+                    dataset.add_tag(f"btag_wp_eff_group_{i}")
+            if not group_matched and dataset.is_mc:
+                raise ValueError(f"no btag_wp_eff_group_* assigned to dataset '{dataset.name}'")
+            if group_matched and dataset.is_data:
+                raise ValueError(f"must not assign btag_wp_eff_group_* to dataset '{dataset.name}'")
 
     if split_data_in_era:
         for dataset in config.datasets:

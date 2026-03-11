@@ -16,6 +16,7 @@ from cmsdb.constants import m_z
 from columnflow.util import maybe_import, DotDict
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 from columnflow.selection import Selector, SelectionResult, selector
+from columnflow.selection.cms.btag import fill_btag_wp_count_hists
 
 from hbw.selection.common import (
     masked_sorted_indices, pre_selection, get_weights_and_no_sel_mask, post_selection, configure_selector,
@@ -26,6 +27,7 @@ from hbw.selection.trigger import hbw_trigger_selection
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+hist = maybe_import("hist")
 
 # helper functions
 set_ak_bool = partial(set_ak_column, value_type=np.bool_)
@@ -162,8 +164,8 @@ def dl_lepton_selection_init(self: Selector) -> None:
     # configuration of defaults
     self.mu_pt = self.config_inst.x("mu_pt", 25)
     self.ele_pt = self.config_inst.x("ele_pt", 25)
-    self.mu2_pt = self.config_inst.x("mu2_pt", 15)
-    self.ele2_pt = self.config_inst.x("ele2_pt", 15)
+    self.mu2_pt = self.config_inst.x("mu2_pt", 5)
+    self.ele2_pt = self.config_inst.x("ele2_pt", 7)
 
     # update selector steps labels
     self.config_inst.x.selector_step_labels = self.config_inst.x("selector_step_labels", {})
@@ -213,7 +215,8 @@ def dl1(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,
-    hists: DotDict,
+    # hists: DotDict,
+    hists: DotDict[str, hist.Hist],
     **kwargs,
 ) -> tuple[ak.Array, SelectionResult]:
     # prepare events
@@ -289,6 +292,12 @@ def dl1(
     # build categories
     events, results = self[post_selection](events, results, stats, hists, **kwargs)
 
+    # fill btagging efficiency histograms (in-place, so no return value)
+    # ! note that this uses selected jets only of selected events with the full "event_sel", so selecting a subset
+    # of selection-steps later on will not affect these histograms
+    if self.dataset_inst.is_mc and self.has_dep(fill_btag_wp_count_hists):
+        self[fill_btag_wp_count_hists](events, results.steps.all_but_bjet, results.objects.Jet.Jet, hists, **kwargs)
+
     # keep various steps for last-minute selection changes for data/MC debugging
     keep_steps = (
         "all", "all_but_trigger", "all_but_bjet", "all_but_trigger_and_bjet",
@@ -345,6 +354,14 @@ def dl1_init(self: Selector) -> None:
             r"or $N_{H \rightarrow bb}^{AK8} \geq 1$"
         ),
     })
+
+    if hasattr(self, "dataset_inst") and self.dataset_inst.is_mc:
+        self.uses |= {
+            fill_btag_wp_count_hists,
+        }
+        self.produces |= {
+            fill_btag_wp_count_hists,
+        }
 
 
 dl1_no_btag = dl1.derive("dl1_no_btag", cls_dict={"n_btag": 0})

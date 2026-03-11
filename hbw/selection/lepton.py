@@ -110,7 +110,7 @@ def lepton_definition(
 
     e_mask_fakeable = (
         e_mask_loose &
-        (electron.pt >= 10) &
+        (electron.pt >= 7) &
         ak.where(
             abs(electron.eta) < 1.479,
             (electron.dxy < 0.05) & (electron.dz < 0.1),  # barrel
@@ -120,7 +120,7 @@ def lepton_definition(
 
     mu_mask_fakeable = (
         mu_mask_loose &
-        (muon.pt >= 10) &
+        (muon.pt >= 5) &
         # muon id also covers dxy/dz cuts
         self.muon_id_req(muon)
     )

@@ -20,7 +20,7 @@ from columnflow.production.normalization import (
 )
 from columnflow.production.cms.electron import electron_weights
 from columnflow.production.cms.muon import muon_weights, MuonSFConfig
-from columnflow.production.cms.btag import btag_weights
+from columnflow.production.cms.btag import btag_weights, btag_wp_weights
 from columnflow.production.cms.scale import murmuf_weights, murmuf_envelope_weights
 from columnflow.production.cms.pdf import pdf_weights
 # from columnflow.production.cms.top_pt_weight import top_pt_weight
@@ -102,7 +102,8 @@ def event_weights_to_normalize_init(self) -> None:
     # if self.config_inst.campaign.x.year != 2024:
     #     self.uses |= {pu_weight}
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {btag_weights}
+        if self.config_inst.campaign.x.year != 2024:
+            self.uses |= {btag_weights}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {murmuf_envelope_weights, murmuf_weights}
@@ -119,10 +120,12 @@ def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
     for _cls in self.uses:
         if _cls == btag_weights and task.shift == "nominal":
-            self.produces |= {btag_weights}
+            if self.config_inst.campaign.x.year != 2024:
+                self.produces |= {btag_weights}
         elif _cls == btag_weights:
-            self.produces |= self.deps[btag_weights].produced_columns
-        elif task.shift == "nominal":
+            if self.config_inst.campaign.x.year != 2024:
+                self.produces |= self.deps[btag_weights].produced_columns
+        if task.shift == "nominal":
             self.produces |= self.deps[_cls].produced_columns
         else:
             self.produces |= {
@@ -296,14 +299,20 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = self[vjets_weight](events, **kwargs)
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        # compute and normalize btag SF weights
-        events = self[btag_weights](
-            events,
-            negative_b_score_action="ignore",
-            negative_b_score_log_mode="debug",
-            **kwargs,
-        )
-        events = self[normalized_btag_weights](events, **kwargs)
+        if self.config_inst.campaign.x.year in [2022, 2023]:
+        # different for 2024 and not for qcd datasets
+            events = self[normalized_btag_weights](events, **kwargs)
+            # compute and normalize btag SF weights
+            events = self[btag_weights](
+                events,
+                negative_b_score_action="ignore",
+                negative_b_score_log_mode="debug",
+                **kwargs,
+            )
+            events = self[normalized_btag_weights](events, **kwargs)
+        elif self.config_inst.campaign.x.year == 2024:
+            jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
+            events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
 
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
@@ -368,8 +377,12 @@ def event_weights_init(self: Producer) -> None:
         self.produces |= {self.trigger_weights_producer}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {btag_weights, normalized_btag_weights}
-        self.produces |= {normalized_btag_weights}
+        if self.config_inst.campaign.x.year == 2024:
+            self.uses |= {btag_wp_weights}
+            self.produces |= {btag_wp_weights}
+        else:
+            self.uses |= {btag_weights, normalized_btag_weights}
+            self.produces |= {normalized_btag_weights}
 
     if not has_tag("no_ps_weights", self.config_inst, self.dataset_inst, operator=any):
         self.uses |= {normalized_ps_weights}

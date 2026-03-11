@@ -39,6 +39,8 @@ from columnflow.production.cms.jet import JetIdConfig
 
 from columnflow.cms_util import CATInfo, CATSnapshot  # , CMSDatasetInfo
 
+from hbw.config.corrections import btag_sf_cfg
+
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
 logger = law.logger.get_logger(__name__)
@@ -232,8 +234,8 @@ def add_config(
             })
     elif year == 2024:
         # taken lumi from above, subtracted era B, since not in cmsdb yet
-        cfg.x.luminosity = Number(108950, {
-            "lumi_13p6TeV_2024": 0.015j,  # No uncertainty so far -> put to 1.5%
+        cfg.x.luminosity = Number(109820, {
+            "lumi_13p6TeV_2024": 0.016j,  # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
         })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
@@ -428,6 +430,15 @@ def add_config(
                 "tight": {"2024": 0.4648}.get(cfg.x.cpn_tag, 0.0),  # noqa
             },
         })
+        cfg.x.btag_wp_names = DotDict.wrap({
+            "UParTAK4": {
+                "loose": 0.0246,  # noqa
+                "medium": 0.1272,  # noqa
+                "tight": 0.4648,  # noqa
+                "xtight": 0.6298,  # noqa
+                "xxtight": 0.9739,  # noqa
+            },
+        })
     else:
         cfg.x.btag_working_points = DotDict.wrap({
             "deepjet": {
@@ -444,6 +455,14 @@ def add_config(
                 "loose": {"2022preEE": 0.047, "2022postEE": 0.0499, "2023preBPix": 0.0358, "2023postBPix": 0.359}.get(cfg.x.cpn_tag, 0.0),  # noqa
                 "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
                 "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
+            },
+            # NOTE: TODO this should be consistend whith how we create a btag_sf however i like johannas... 
+            "UParTAK4": {
+                "loose": {"2024": 0.0246}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "medium": {"2024": 0.1272}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "tight": {"2024": 0.4648}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "xtight": {"2024": 0.6298}.get(cfg.x.cpn_tag, 0.0),  # noqa
+                "xxtight": {"2024": 0.9739}.get(cfg.x.cpn_tag, 0.0),  # noqa
             },
             # taken from preliminary studies from HH(4b)
             # source: https://indico.cern.ch/event/1372046/#2-run-3-particlenet-bb-sfs-sfb
@@ -472,24 +491,77 @@ def add_config(
         )
     elif cfg.x.run == 3:
         if year == 2024:
-            cfg.x.b_tagger = "upart"
-            # TODO: not sure which and how the SF are read out and what keys should be used.
-            cfg.x.btag_sf = BTagSFConfig(
-                correction_set="UParTAK4_kinfit",
-                jec_sources=cfg.x.btag_sf_jec_sources,
-                discriminator="btagUParTAK4B",
-                systs={
-                    "fsrdef": "fsrdef",
-                    "hdamp": "hdamp",
-                    "isrdef": "isrdef",
-                    "jer": "jer",
-                    "jes": "jes",
-                    "mass": "mass",
-                    "statistic": "statistic",
-                    "tune": "tune",
+            # NOTE: copied from Johanna syst declaration for new wp based btagging
+            btag_uncs_bc = [
+                "fsrdef", "isrdef",
+                "hdamp", "jer", "jes",
+                "mass", "statistic",
+                "tune",
+            ]
+            btag_uncs_light = [
+                "correlated", "uncorrelated",
+            ]
+            for i, unc in enumerate(btag_uncs_bc):
+                cfg.add_shift(name=f"btag_{unc}_bc_up", id=501 + 4 * i, type="shape")
+                cfg.add_shift(name=f"btag_{unc}_bc_down", id=502 + 4 * i, type="shape")
+                add_shift_aliases(
+                    cfg,
+                    f"btag_{unc}_bc",
+                    {
+                        f"btag_weight_{unc}_bc": f"btag_weight_{unc}_bc_" + "{direction}",
+                    },
+                )
+            for i, unc in enumerate(btag_uncs_light):
+                cfg.add_shift(name=f"btag_{unc}_light_up", id=503 + 4 * i, type="shape")
+                cfg.add_shift(name=f"btag_{unc}_light_down", id=504 + 4 * i, type="shape")
+                add_shift_aliases(
+                    cfg,
+                    f"btag_{unc}_light",
+                    {
+                        f"btag_weight_{unc}_light": f"btag_weight_{unc}_light_" + "{direction}",
+                    },
+                )
+
+            cfg.add_shift(name="btag_bc_up", id=501 + 4 * len(btag_uncs_bc), type="shape")
+            cfg.add_shift(name="btag_bc_down", id=502 + 4 * len(btag_uncs_bc), type="shape")
+            cfg.add_shift(name="btag_light_up", id=503 + 4 * len(btag_uncs_light), type="shape")
+            cfg.add_shift(name="btag_light_down", id=504 + 4 * len(btag_uncs_light), type="shape")
+            add_shift_aliases(
+                cfg,
+                "btag_bc",
+                {
+                    "btag_weight_bc": "btag_weight_bc_" + "{direction}",
                 },
-                corrector_kwargs={"working_point": "M", "flavor": 5},
             )
+            add_shift_aliases(
+                cfg,
+                "btag_light",
+                {
+                    "btag_weight_light": "btag_weight_light_" + "{direction}",
+                },
+            )
+            cfg.x.b_tagger = "upart"
+            # # TODO: not sure which and how the SF are read out and what keys should be used.
+            # NOTE: Iam using Johannas fucntion for 2024, which makes the year splitting inevident. I am not sure I do not want to change anythign for 22 + 23, so lets see
+            # cfg.x.btag_sf = BTagSFConfig(
+            #     correction_set="UParTAK4_kinfit",
+            #     jec_sources=cfg.x.btag_sf_jec_sources,
+            #     discriminator="btagUParTAK4B",
+            #     systs={
+            #         "fsrdef": "fsrdef",
+            #         "hdamp": "hdamp",
+            #         "isrdef": "isrdef",
+            #         "jer": "jer",
+            #         "jes": "jes",
+            #         "mass": "mass",
+            #         "statistic": "statistic",
+            #         "tune": "tune",
+            #     },
+            #     corrector_kwargs={"working_point": "M", "flavor": 5},
+            # )
+            cfg.x.btag_wp_count_config = btag_sf_cfg(cfg, 2024)["btag_wp_count_config"]
+            cfg.x.btag_wp_sf_config = btag_sf_cfg(cfg, 2024)["btag_wp_sf_config"]
+            cfg.x.btag_column = "btagUParTAK4B"
         else:
             cfg.x.b_tagger = "particlenet"
             cfg.x.btag_sf = BTagSFConfig(
@@ -508,8 +580,9 @@ def add_config(
                 },
                 # corrector_kwargs=...,
             )
+            cfg.x.btag_column = cfg.x.btag_sf.discriminator
 
-    cfg.x.btag_column = cfg.x.btag_sf.discriminator
+    # cfg.x.btag_column = cfg.x.btag_sf.discriminator
     cfg.x.btag_wp = "medium"
     cfg.x.btag_wp_score = (
         cfg.x.btag_working_points[cfg.x.b_tagger][cfg.x.btag_wp]
@@ -977,7 +1050,8 @@ def add_config(
                 era="24CDEReprocessingFGHIPrompt-Summer24",
                 pog_directories={"dc": "Collisions24"},
                 # TODO: tau and lum not yet available
-                snapshot=CATSnapshot(btv="2025-12-03", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", lum="2025-12-02", muo="2025-11-27"),  # noqa: E501
+                # snapshot=CATSnapshot(btv="2025-12-03", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", lum="2025-12-02", muo="2025-11-27"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2026-01-30", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", muo="2025-11-27", lum="2025-12-02"),  # noqa: E501
             ),
         }[(year, campaign.x.postfix, vnano)]
     else:
@@ -1000,7 +1074,8 @@ def add_config(
     if year != 2024:
         add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
     else:
-        add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
+        # add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
+        add_external("btag_wp_sf_corr", ("/data/dust/user/matthiej/mttbar/mtt/config/run3/btagging_preliminary_merged.json.gz", "v1"))  # noqa: E501
 
     # updated jet id
     add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))

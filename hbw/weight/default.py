@@ -151,7 +151,6 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
 
 @base.init
 def base_init(self: HistProducer) -> None:
-
     if not getattr(self, "config_inst"):
         return
 

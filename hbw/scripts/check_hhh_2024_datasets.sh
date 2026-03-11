@@ -16,13 +16,22 @@ KEYS_LIST=(
     # # WH?
     # # ttbb
     # "/TTBB*13p6TeV*/*24*v15*/NANOAODSIM"
+    # "ST*E*F*A*N*/*24*v15*/NANOAODSIM"
+    "/TBbarQ*4FS_TuneCP5_*/RunIII2024Summer24NanoAODv15-150X*/NANOAODSIM"
+    "/TbarBQ*4FS_TuneCP5_*/RunIII2024Summer24NanoAODv15-150X*/NANOAODSIM"
+    "/THQ_4F*/*24*v15*/NANOAODSIM"
+    "/THW-5FS-ctcvcp*/*24*v15*/NANOAODSIM"
+    "/TTZ-*/*24*v15*/NANOAODSIM"
+    "/TTZH-*/*24*v15*/NANOAODSIM"
+    "/ZH_*Hto2Wto2L2Nu*/*24*v15*/NANOAODSIM"
     # "/TTTT*/*24*v15*/NANOAODSIM"
     # check with xandras liste
     # HHH 
     # "/HHHto4B2W*_TuneCP5_13p6TeV*/*/NANOAODSIM"
     # "/TTHH*13p6TeV*/Run3*v1*/NANOAODSIM"
     # "/WHH*4B*1_0*1_0*_0_0*/Run3*v12*Run3*/NANOAODSIM"
-    "/ZHH*4B*1_0*1_0*_0_0*/Run3*v12*Run3*/NANOAODSIM"
+    # "/ZHH*4B*1_0*1_0*_0_0*/Run3*v12*Run3*/NANOAODSIM"
+    # "/*Z*Z*H*/*24*v15*/NANOAODSIM"
     # "/DYto2*MLL-10to50*amcatnlo*/*24*v15*/NANOAODSIM"
 )
 

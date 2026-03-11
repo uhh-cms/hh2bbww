@@ -115,7 +115,8 @@ def hbw_increment_stats(
         weight_columns = set(self[event_weights_to_normalize].produced_columns)
         if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
             # btag_weights are not produced and therefore need some manual care
-            weight_columns |= set(self[btag_weights].produced_columns)
+            if self.config_inst.campaign.x.year != 2024:
+                weight_columns |= set(self[btag_weights].produced_columns)
 
         weight_columns = sorted([col.string_nano_column for col in weight_columns])
 
@@ -164,7 +165,8 @@ def hbw_increment_stats_init(self: Selector) -> None:
         return
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        self.uses |= {btag_weights}
+        if self.config_inst.campaign.x.year != 2024:
+            self.uses |= {btag_weights}
 
     if self.dataset_inst.is_mc:
         self.uses |= {"mc_weight"}

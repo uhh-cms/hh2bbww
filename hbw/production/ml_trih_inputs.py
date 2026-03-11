@@ -12,6 +12,7 @@ import functools
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
+from columnflow.production.cms.btag import btag_wp_weights
 
 from hbw.production.prepare_objects import prepare_objects
 # from hbw.production.jets import vbf_candidates
@@ -66,7 +67,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         prepare_objects,
         "Jet.*",
     },
-    produces={"{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", "hhh_dr_bb", "mli_mindr_bb", "mli_maxdr_bb"},  # noqa E501
+    produces={"{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", "hhh_dr_bb"},  # , "mli_mindr_bb", "mli_maxdr_bb"},  # noqa E501
 )
 def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -85,14 +86,14 @@ def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     hbjet_pairs = ak.combinations(hbjets, 2)
     dr = hbjet_pairs[:, :, "0"].delta_r(hbjet_pairs[:, :, "1"])
-    events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
-    events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
+    # events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
+    # events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
     events = set_ak_column_f32(events, "hhh_dr_bb", hbjets[:, 0].delta_r(hbjets[:, 1]))
 
     for col in ["pt", "eta", "phi", "mass", "btagUParTAK4B"]:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events.hbjets[col]), ZERO_PADDING_VALUE))
 
-    for col in ["hhh_dr_bb", "mli_mindr_bb", "mli_maxdr_bb"]:
+    for col in ["hhh_dr_bb"]:  # , "mli_mindr_bb", "mli_maxdr_bb"]:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
@@ -223,6 +224,7 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
         "mli_dr_ll_bb1", "mli_dr_ll_bb2",
         "mli_mhhh", "mli_m4bllMET",
         "mli_dr_bb1_llMET", "mli_dr_bb2_llMET",
+
         # "mli_min_dr_llbb",
         # hh system
         # "mli_dr_ll_bb",
@@ -242,3 +244,46 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     add_dl_ml_variables(self.config_inst)
     add_hhh_dl_ml_variables(self.config_inst)
     check_variable_existence(self)
+
+
+
+@producer(
+    uses={
+        # "*", "*.*",
+        prepare_objects,
+        btag_wp_weights,
+        "Jet.*",
+    },
+    produces={"flavour_test","PT","btag_weight"},
+)
+def testing_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Simple Producer to extract pt and eta of the two VBF jets.
+    """
+
+    # add behavior and define new collections (e.g. Lepton)
+    events = self[prepare_objects](events, **kwargs)
+    jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
+    events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
+    events = set_ak_column_f32(events, "flavour_test", events.Jet["hadronFlavour"])
+    events = set_ak_column_f32(events, "PT", events.Jet["pt"])
+    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)
+
+    return events
+
+
+# @testing_btag_weights.init
+# def testing_btag_weights_init(self: Producer) -> None:
+
+#     # @call_once_on_config
+#     # def add_btesting_variables(config: law.config.Config) -> None:
+#     #     from hbw.config.styling import default_var_unit, default_var_title_format, default_var_binning
+#     #     for i in range(4):
+#     #         for var in ["pt", "eta", "phi", "mass", "b_score"]:
+#     #             config.add_variable(
+#     #                 name=f"hbjet{i+1}_{var}",
+#     #                 expression=f"hbjet{i+1}.{var}",
+#     #                 unit=default_var_unit.get(var, "1"),
+#     #                 binning=default_var_binning[var] if var != "b_score" else (50, 0, 1),
+#     #                 x_title=f"Bjet (hhh) {i+1} {default_var_title_format.get(var, var)}",
+#     #             )

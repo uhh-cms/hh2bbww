@@ -23,6 +23,7 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
+    "btag_weight": [],
     # "electron_reco_weight": ["e_reco_sf"],
     # "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
@@ -36,6 +37,7 @@ default_correction_weights = {
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
+    "btag_weight": [],
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
