@@ -908,6 +908,11 @@ run_and_fetch_all_plots() {
     # run_and_fetch_efficiency_plots "$configs_sep $all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"
 }
 
+run_thesis_plots() {
+    # cutflow
+    claw run cf.PlotCutflow --selector-steps Trigger,TripleLooseLeptonVeto,Dilepton,Charge,DiLeptonMass20,nJet1,nBjet1,cleanup --processes cutflow --config l22postv14 --workers 6 --categories incl --shape-norm --process-settings unstack_all --remove-output 0,a,y --custom-style-config cutflow --general-settings cutflow
+}
+
 run_paper_plots() {
     # command to create datacards & inference task call script
     claw run hbw.PrepareInferenceTaskCalls --inference-model hbbsf --configs $all_configs  --remove-output 0,a,y --workers 6

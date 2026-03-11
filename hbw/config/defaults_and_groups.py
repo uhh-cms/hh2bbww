@@ -250,6 +250,10 @@ def set_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "cutflow": [
+            "hh_ggf_hbb_hww2l2nu_kl1_kt1", "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+            "tt", "dy_hf", "dy_lf", "st", "w_lnu", "vv", "ttv", "h",
+        ],
         "dl5": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
@@ -669,6 +673,14 @@ def set_config_defaults_and_groups(config_inst):
             "yscale": "log",
             # "cumsum_reverse": False,
         },
+        "cutflow": {
+            "remove_negative": True,
+            "whitespace_fraction": 0.2,
+            "cms_label": "simpw",
+            "magnitudes": 3.2,
+            "yscale": "log",
+            # "cumsum_reverse": False,
+        },
         "more_magnitudes": {
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group
@@ -1083,6 +1095,24 @@ def set_config_defaults_and_groups(config_inst):
             "rax_cfg": {
                 "ylim": (0.1, 10.),
                 "yscale": "log",
+            },
+            "annotate_cfg": {
+                "text": "",
+            },
+        },
+        "cutflow": {
+            "gridspec_cfg": {
+                "left": 0.15,
+                "right": 0.95,
+                "top": 0.95,
+                "bottom": 0.2,
+            },
+            "legend_cfg": {
+                "ncols": 3,
+                "cf_entries_per_column": [2, 4, 4],
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+
             },
             "annotate_cfg": {
                 "text": "",

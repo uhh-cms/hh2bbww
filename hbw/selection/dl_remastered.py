@@ -173,6 +173,7 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "TripleTightLeptonVeto": r"$N_{lepton}^{tight} \leq 2$",
         "Charge": r"$\sum q_{\ell} = 0$",
         "Dilepton": r"$N_{lepton} = 2$",
+        "DiLeptonMass20": r"$m_{\ell\ell} > 20$",
         "DiLeptonMass81": r"$m_{\ell\ell} < 81$",
         "Lep_mm": r"$N_{\mu} = 2$ and $N_{e} = 0$",
         "Lep_ee": r"$N_{\mu} = 0$ and $N_{e} = 2$",

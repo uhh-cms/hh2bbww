@@ -93,6 +93,8 @@ default_process_colors = {
     "hh_ggf_hbb_htt": color_palette["grey"],
     "hh_ggf_kl1_kt1": color_palette["black"],
     "hh_vbf_kv1_k2v1_kl1": color_palette["blue"],
+    "hh_ggf_hbb_hww2l2nu_kl1_kt1": color_palette["black"],
+    "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1": color_palette["blue"],
     "hh_ggf_hbb_hww_kl1_kt1": cms_color_palette_1["black"],
     "hh_ggf_hbb_hww_kl0_kt1": cms_color_palette_2["red"],
     "hh_ggf_hbb_hww_kl2p45_kt1": cms_color_palette_2["yellow"],
