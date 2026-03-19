@@ -331,6 +331,10 @@ class PlotPostfitShapes(
         default=True,
         description="Whether to only plot the merged category; defaults to True",
     )
+    skip_merged = luigi.BoolParameter(
+        default=False,
+        description="Whether to skip plotting the merged category; defaults to False",
+    )
 
     @property
     def fit_type(self) -> str:
@@ -531,7 +535,8 @@ class PlotPostfitShapes(
         processes_map = self.prepare_processes_map(hist_processes, process_insts)
 
         # make a combined histogram of all categories
-        bins_dict = self.create_merged_hist(all_hists)
+        if not self.skip_merged:
+            bins_dict = self.create_merged_hist(all_hists)
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():

@@ -90,6 +90,7 @@ default_process_colors = {
     "vv": color_palette["grey"],
     "ttv": color_palette["turqoise"],
     "other": color_palette["darkgrey"],
+    "hh_other": "#5F8F63",
     "hh_ggf_hbb_htt": color_palette["grey"],
     "hh_ggf_kl1_kt1": color_palette["black"],
     "hh_vbf_kv1_k2v1_kl1": color_palette["blue"],
