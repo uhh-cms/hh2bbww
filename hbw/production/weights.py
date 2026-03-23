@@ -231,10 +231,10 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
 
     # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
-    # if self.dataset_inst.name == "dy_m10to50_amcatnlo":
-    #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
-    if self.dataset_inst.name.startswith("dy_"):
+    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
         events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
+    # if self.dataset_inst.name.startswith("dy_"):
+    #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
 
     return events
 
@@ -247,7 +247,7 @@ def combined_normalization_weights_init(self: Producer) -> None:
     if self.dataset_inst.has_tag("is_hbv"):
         self.norm_weights_producer = stitched_normalization_weights_brs_from_processes
     # TODO this is a difference for 2023 and 2024 but lets see if we need "the same" for 2024
-    elif "dy_m50" in self.dataset_inst.name:
+    elif (("dy_" in self.dataset_inst.name) and ("_m50" in self.dataset_inst.name)):
         self.norm_weights_producer = stitched_normalization_weights
     # elif "dy_" in self.dataset_inst.name:
     #     self.norm_weights_producer = stitched_normalization_weights
@@ -285,10 +285,10 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
-
+        # __import__("IPython").embed()  # for debugging
     # compute normalization weights
     events = self[combined_normalization_weights](events, **kwargs)
-
+    # __import__("IPython").embed()  # for debugging
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
         # events = self[top_pt_weight](events, **kwargs)
@@ -317,22 +317,24 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
         if self.config_inst.campaign.x.year == 2024:
-            # electron_mask = ((events.Electron["pt"] >= 20.0) & (events.Electron["pt"] < 1000.0))
+            electron_mask = ((events.Electron["pt"] >= 10.0) & (events.Electron["pt"] < 1000.0))
             SCeta = (abs(events.Electron["eta"] + events.Electron["deltaEtaSC"]))
             # NOTE: atm we allow some penalty range if SCeta is slightly above 2.5
             # due to numerical precision also it has to be < 2.5 not <= 2.5
             SCeta = ak.where(((SCeta >= 2.5) & (SCeta < 2.505)), 2.49999, SCeta)
             SCeta = ak.where(((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
             events = set_ak_column_f32(events, "Electron.superclusterEta", SCeta)
-            events = self[electron_weights](events, **kwargs)
-            # events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)
-            events = self[electron_reco_weights](events, **kwargs)
+            # events = self[electron_weights](events, **kwargs)
+            events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt
+            events = self[electron_reco_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt
+            # events = self[electron_reco_weights](events, **kwargs)
         else:
             events = self[electron_weights](events, **kwargs)
             events = self[electron_reco_weights](events, **kwargs)
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
-        events = self[muon_id_iso_weights](events, **kwargs)
+        mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
+        events = self[muon_id_iso_weights](events, muon_mask=mu_mask, **kwargs)
 
     if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[self.trigger_weights_producer](events, **kwargs)

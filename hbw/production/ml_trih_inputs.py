@@ -67,33 +67,67 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
         prepare_objects,
         "Jet.*",
     },
-    produces={"{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", "hhh_dr_bb"},  # , "mli_mindr_bb", "mli_maxdr_bb"},  # noqa E501
+    produces={
+        "{btag_jet1,btag_jet2,btag_jet3,btag_jet4}.{pt,eta,phi,mass,btagUParTAK4B,discrete_b_score}",
+        # "{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", 
+        "hhh_dr_bb",  # "mli_mindr_bb", "mli_maxdr_bb",
+        "Jet.discrete_b_score", "discrete_sum_b_score",
+        "check_n_btag",
+    },  # noqa E501
+    version=2,
 )
 def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Simple Producer to extract pt and eta of the two VBF jets.
+    Producer to extract bjetas and btag properties for HHH analysis
+    hbjets are just possible jets from which to extract Hiuggs candidate and corresponding properties. 
+    btag_jets actually fulfill the btag wp threshold medium.
     """
 
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-    events = set_ak_column(events, "hbjets", ak.pad_none(events.Jet, 4))
+    # events = set_ak_column(events, "hbjets", ak.pad_none(events.Jet, 4))
     # __import__("IPython").embed()
-    hbjets = events.hbjets[ak.argsort(events.hbjets.btagUParTAK4B, ascending=False)]
+    # get discrete batg scores
+    discrete_btag_scores = ak.zeros_like(events.Jet.btagUParTAK4B)
+    for wp in [0.0246, 0.1272, 0.4648, 0.6298, 0.9739]:  # loose, medium, tight, etc.
+        discrete_btag_scores = ak.where(events.Jet.btagUParTAK4B >= wp, ak.full_like(events.Jet.btagUParTAK4B, wp), discrete_btag_scores)  # noqa E501
+    events = set_ak_column_f32(events, "Jet.discrete_b_score", discrete_btag_scores)
+    events = set_ak_column_f32(events, "discrete_sum_b_score", ak.sum(discrete_btag_scores, axis=1))
 
+    # get btagged jets acoording to the medium WP and sort them by pt
+    btag_wp = self.config_inst.x.btag_wp_names["UParTAK4"][self.config_inst.x.btag_wp]
+    # hhh_btag_mask = events.Jet.btagUParTAK4B > btag_wp
+    btag_jet = events.Jet[events.Jet.btagUParTAK4B >= btag_wp]
+    btag_jet = btag_jet[ak.argsort(btag_jet.pt, ascending=False)]
+    btag_jet = btag_jet[ak.argsort(btag_jet.discrete_b_score, ascending=False)]
+    events = set_ak_column_f32(events, "check_n_btag", ak.sum(events.Jet.btagUParTAK4B >= btag_wp, axis=1))
+    # events = set_ak_column(events, "btag_jet", btagged_jets)
+
+    # get low level properties of 4 leading bjets (if less than 4 btagged jets, the rest is filled with None)
+    events = set_ak_column(events, "btag_jets", ak.pad_none(btag_jet, 4))
+    btag_jets = events.btag_jets
     for i in range(4):
-        for col in ("pt", "eta", "phi", "mass", "btagUParTAK4B"):
-            events = set_ak_column_f32(events, f"hbjet{i+1}.{col}", hbjets[:, i][col])
+        for col in ("pt", "eta", "phi", "mass", "discrete_b_score", "btagUParTAK4B"):
 
-    hbjet_pairs = ak.combinations(hbjets, 2)
+            events = set_ak_column_f32(events, f"btag_jet{i+1}.{col}", ak.fill_none(ak.nan_to_none(btag_jets[:, i][col]), ZERO_PADDING_VALUE)) # noqa E501
+
+    # hbjets = events.hbjets[ak.argsort(events.hbjets.btagUParTAK4B, ascending=False)]
+    # for i in range(4):
+    #     for col in ("pt", "eta", "phi", "mass", "btagUParTAK4B"):
+    #         events = set_ak_column_f32(events, f"hbjet{i+1}.{col}", hbjets[:, i][col])
+
+    hbjet_pairs = ak.combinations(btag_jets, 2)
     dr = hbjet_pairs[:, :, "0"].delta_r(hbjet_pairs[:, :, "1"])
-    # events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
-    # events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
-    events = set_ak_column_f32(events, "hhh_dr_bb", hbjets[:, 0].delta_r(hbjets[:, 1]))
+    #events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
+    #events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
+    events = set_ak_column_f32(events, "hhh_dr_bb", btag_jets[:, 0].delta_r(btag_jets[:, 1]))
 
-    for col in ["pt", "eta", "phi", "mass", "btagUParTAK4B"]:
-        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events.hbjets[col]), ZERO_PADDING_VALUE))
+    # for i in range(4):
+    #     for col in ["pt", "eta", "phi", "mass", "btagUParTAK4B", "discrete_b_score"]:
+    #         events = set_ak_column_f32(events, events[f"btag_jet{i+1}"][col], ak.fill_none(ak.nan_to_none(events[f"btag_jet{i+1}"][col]), ZERO_PADDING_VALUE))  # noqa E501
 
-    for col in ["hhh_dr_bb"]:  # , "mli_mindr_bb", "mli_maxdr_bb"]:
+    # for col in ["hhh_dr_bb", "mli_mindr_bb", "mli_maxdr_bb", "discrete_sum_b_score"]:
+    for col in ["hhh_dr_bb", "discrete_sum_b_score"]:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
 
     return events
@@ -154,9 +188,9 @@ def hhh_dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_deta_ll", abs(events.Lepton[:, 0].eta - (events.Lepton[:, 1]).eta))
 
     # create bjets combinatorics according to the minimum ∆R
-    events = set_ak_column(events, "hbbjets", ak.pad_none(events.Jet, 4))
-    hbbjets = events.hbbjets
-    hbbjets = hbbjets[ak.argsort(hbbjets.b_score, ascending=False)]
+    # events = set_ak_column(events, "hbbjets", ak.pad_none(events.Jet, 4))
+    hbbjets = events.btag_jets
+    # hbbjets = hbbjets[ak.argsort(hbbjets.b_score, ascending=False)]
 
     b1 = hbbjets[:, 0]
     b2 = hbbjets[:, 1]

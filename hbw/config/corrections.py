@@ -99,8 +99,8 @@ def btag_sf_cfg(
             btag_column=discr,
             btag_wps=config.x.btag_wp_names.UParTAK4,
             pt_edges=(0, 20, 30, 50, 70, 100, 140, 200, 300, 600, 10_000),
-            # abs_eta_edges=(0.0, 1.0, 1.5, 2.0, 5.0),
-            abs_eta_edges=(0.0, 1.5, 5.0),
+            abs_eta_edges=(0.0, 1.0, 1.5, 2.0, 5.0),
+            # abs_eta_edges=(0.0, 1.5, 5.0),
         )
 
         from columnflow.production.cms.btag import BTagWPSFConfig
@@ -121,13 +121,27 @@ def btag_sf_cfg(
             jet_name="Jet",
             btag_column=discr,
             correction_set="UParTAK4_merged",
-            btag_wps=config.x.btag_wp_names.UParTAK4,
+            # btag_wps=config.x.btag_wp_names.UParTAK4,
             dataset_groups=dataset_groups,
             # pt_edges=(0, 10_000),
             pt_edges=(0, 20, 30, 50, 70, 100, 140, 200, 300, 600, 10_000),
+            # abs_eta_edges=(0.0, 1.0, 1.5, 2.0, 5.0),
             systs=btag_uncs,
+            wp_merging = {
+                "loose": ["loose"],
+                "medium": ["medium"],
+                "tight": ["tight"],
+                "xtight": ["xtight", "xxtight"],
+            },
             # further merge eta bins for sufficient statistics in each bin
             abs_eta_edges=(0.0, 5.0),
+            btag_wps={
+                "loose": 0.0246,
+                "medium": 0.1272,
+                "tight": 0.4648,
+                "xtight": 0.6298,
+                # "xxtight": 0.9739,
+            },
         )
     else:
         raise NotImplementedError("B-tagging SFs for 2022 and 2023 not implemented yet.")

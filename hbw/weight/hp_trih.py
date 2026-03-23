@@ -37,7 +37,7 @@ default_correction_weights = {
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
-    "btag_weight": [],
+    # "btag_weight": [],
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
@@ -82,6 +82,27 @@ default_hist_producer_trih = base.derive("default_hist_producer_trih", cls_dict=
     },
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_hhh_sr_bcut,
+})
+
+default_hhh = base.derive("default_hhh", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_hhh_bcut,
+})
+
+default_hhh_non_btag = base.derive("default_hhh_non_btag", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_hhh_bcut,
 })
 
 default_hist_producer_trih_cr1 = base.derive("default_hist_producer_trih_cr1", cls_dict={
