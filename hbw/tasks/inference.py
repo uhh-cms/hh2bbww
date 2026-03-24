@@ -1297,7 +1297,7 @@ class PrepareInferenceTaskCalls(
             for key, cmd in cmd_dict.items():
                 if key in ("prepare_cards", "export"):
                     continue
-                cmd_dict[key] = cmd + ' --allow-args "$@"'
+                cmd_dict[key] = cmd + ' "$@"'
 
         # dump all the commands to one output file
         functions_cmd = "\n\n".join([
