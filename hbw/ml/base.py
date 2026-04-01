@@ -333,6 +333,13 @@ class MLClassifierBase(MLModel):
                         x_title=x_title,
                     )
                     config_inst.add_variable(
+                        name=f"mlscore_manybins.{proc}",
+                        expression=f"mlscore.{proc}",
+                        null_value=-1,
+                        binning=(1000, 0., 1.),
+                        x_title=x_title,
+                    )
+                    config_inst.add_variable(
                         name=f"rebinlogit_mlscore.{proc}",
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
                         null_value=-1,

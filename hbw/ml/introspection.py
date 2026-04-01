@@ -102,7 +102,7 @@ def gradient_times_input(model, inputs, output_node: int = 0, input_features: li
 
 def shap_ranking(model, inputs, output_node: int = 0, input_features: list | None = None):
     # create an explainer function using the background distribution 'X100'
-    X100 = shap.utils.sample(inputs, 100)
+    X100 = shap.utils.sample(inputs, 10000)
     predict = functools.partial(model.predict, verbose=0)
     explainer = shap.Explainer(predict, X100)
 

@@ -19,6 +19,7 @@ from columnflow.types import TYPE_CHECKING
 np = maybe_import("numpy")
 plt = maybe_import("matplotlib.pyplot")
 mplhep = maybe_import("mplhep")
+mticker = maybe_import("matplotlib.ticker")
 
 if TYPE_CHECKING:
     hist = maybe_import("hist")
@@ -85,15 +86,64 @@ def plot_introspection(
     output: law.FileSystemDirectoryTarget,
     inputs,
     output_node: int = 0,
+    postfix: str = "",
     input_features: list | None = None,
     stats: dict | None = None,
+    store_shap_values: bool = False,
 ):
     from hbw.ml.introspection import sensitivity_analysis, gradient_times_input, shap_ranking
 
-    # get only signal events for now
-    inputs = inputs.features[inputs.labels == 0]
+    # get only target-node events and subsample for expensive SHAP computations
+    inputs = inputs.features[inputs.labels == output_node]
 
     shap_ranking_dict, shap_values = shap_ranking(model.trained_model, inputs, output_node, input_features)
+
+    # get signal-like & bkg-like events
+    import shap
+    plt.style.use("seaborn-v0_8")
+    predicted_values = model.trained_model.predict(inputs[:100], verbose=0)[:, output_node]
+    sorted_idxs = np.argsort(predicted_values)
+    signal_idx = sorted_idxs[0]
+    bkg_idx = sorted_idxs[-1]
+    scatter_features = input_features or list(shap_ranking_dict.keys())
+    for input_feature in scatter_features:
+        try:
+            shap.plots.scatter(shap_values[:, input_feature, output_node], show=False)
+            fig = plt.gcf()
+            for ax in fig.axes:
+                ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+                ax.yaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+            output.child(f"shap_scatter_{input_feature}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+            plt.close(fig)
+        except Exception:
+            logger.exception(f"Failed to produce SHAP scatter plot for feature '{input_feature}'")
+    try:
+        shap.plots.waterfall(shap_values[signal_idx, :, output_node], max_display=10, show=True)
+        fig = plt.gcf()
+        for ax in fig.axes:
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+        output.child(f"shap_waterfall_sig{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+
+        shap.plots.waterfall(shap_values[bkg_idx, :, output_node], max_display=10, show=True)
+        fig = plt.gcf()
+        for ax in fig.axes:
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+        output.child(f"shap_waterfall_bkg{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+    except Exception:
+        logger.exception("Failed to produce SHAP waterfall plots")
+
+
+    if store_shap_values:
+        shap_payload = {
+            "values": np.asarray(shap_values.values),
+            "base_values": np.asarray(shap_values.base_values),
+            "data": np.asarray(shap_values.data),
+            "feature_names": list(shap_values.feature_names),
+            "output_node": int(output_node),
+        }
+        output.child(f"shap_values{postfix}.pkl", type="f").dump(shap_payload, formatter="pickle")
 
     rankings = {
         "SHAP": shap_ranking_dict,
@@ -105,7 +155,7 @@ def plot_introspection(
     #     stats["rankings"] = rankings
     fig, ax = barplot_from_multidict(rankings)
 
-    output.child("rankings.pdf", type="f").dump(fig, formatter="mpl")
+    output.child(f"rankings{postfix}.pdf", type="f").dump(fig, formatter="mpl")
     return fig, ax
 
 
