@@ -231,7 +231,8 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
 
     # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
-    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    # if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    if (("dy_" in self.dataset_inst.name) and ("_m10to50" in self.dataset_inst.name)):
         events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
     # if self.dataset_inst.name.startswith("dy_"):
     #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)

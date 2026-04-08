@@ -50,7 +50,30 @@ def mask_fn_hhh_sr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
     return events, mask
 
+@categorizer(
+    uses={
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+    }
+)
+def mask_fn_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = events.Lepton[:, 1].pt > 15
+    return events, mask
+
+@categorizer(
+    uses={"mll", "Jet.pt", "{Electron,Muon}.{pt,eta,phi,mass}"},
+    n_jet=3,
+)
+def mask_fn_test_parth2(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.mll >= 20) & (events.mll < 80)
+    mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (events.Lepton[:, 1].pt > 15)
+    return events, mask
+
 
 @categorizer(uses={"mll"}, mll=20)
 def mask_fn_mll20(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     return events, (events.mll > self.mll)
+
+@categorizer(uses={"mll"}, mll=20)
+def mask_fn_hhcuts(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, ((events.mll > self.mll) & (events.mll < 70))

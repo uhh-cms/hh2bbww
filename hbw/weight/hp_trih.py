@@ -3,7 +3,7 @@
 from columnflow.util import maybe_import
 from hbw.weight.default import base
 from hbw.categorization.masks_trih import (
-    mask_fn_hhh_sr, mask_fn_hhh_sr_bcut, mask_fn_hhh_bcut,
+    mask_fn_hhh_sr, mask_fn_hhh_sr_bcut, mask_fn_hhh_bcut, mask_fn_test_parth2, mask_fn_hhcuts
 )
 
 np = maybe_import("numpy")
@@ -23,7 +23,7 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    "btag_weight": [],
+    # "btag_weight": [],
     # "electron_reco_weight": ["e_reco_sf"],
     # "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
@@ -84,6 +84,25 @@ default_hist_producer_trih = base.derive("default_hist_producer_trih", cls_dict=
     "categorizer_cls": mask_fn_hhh_sr_bcut,
 })
 
+default_hp = base.derive("default_hp", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+})
+default_hp_w_btag = base.derive("default_hp_w_btag", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+})
+
 default_hhh = base.derive("default_hhh", cls_dict={
     "weight_columns": {
         **default_correction_weights,
@@ -95,6 +114,46 @@ default_hhh = base.derive("default_hhh", cls_dict={
     "categorizer_cls": mask_fn_hhh_bcut,
 })
 
+default_hh = base.derive("default_hh", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_hhcuts,
+})
+test_parth2 = base.derive("test_parth2", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_test_parth2,
+})
+
+test_parth3 = base.derive("test_parth3", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        # "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_test_parth2,
+})
+default_test_hh = base.derive("default_test_hh", cls_dict={
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": [],
+        "stitched_normalization_weight": [],
+    },
+    "nondy_hist_producer": None,
+})
 default_hhh_non_btag = base.derive("default_hhh_non_btag", cls_dict={
     "weight_columns": {
         **default_correction_weights,

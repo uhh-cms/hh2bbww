@@ -131,7 +131,8 @@ def btag_sf_cfg(
                 "loose": ["loose"],
                 "medium": ["medium"],
                 "tight": ["tight"],
-                "xtight": ["xtight", "xxtight"],
+                "xtight": ["xtight"], 
+                # "xxtight": ["xxtight"],
             },
             # further merge eta bins for sufficient statistics in each bin
             abs_eta_edges=(0.0, 5.0),

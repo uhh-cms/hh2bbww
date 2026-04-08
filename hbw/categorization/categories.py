@@ -424,6 +424,15 @@ def catid_eq3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
 
 
 @categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_geq3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet >= 3)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_geq4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column
     btag_wp_score = self.config_inst.x.btag_wp_score

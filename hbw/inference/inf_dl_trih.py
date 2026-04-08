@@ -73,6 +73,46 @@ config_categories = DotDict({
         "sr__resolved__4b__ml_tthh_4b",
         "sr__resolved__4b__ml_hhh_4b2w_2l2nu_c30_d40",
     ],
+    "hhh_V3": [
+        "sr__resolved__2b__ml_tt_ml",
+        # "sr__resolved__2b__ml_ttbb_custom",
+        "sr__resolved__2b__ml_st",
+        "sr__resolved__2b__ml_dy",
+        "sr__resolved__2b__ml_h",
+        "sr__resolved__2b__ml_hh_custom",
+        "sr__resolved__2b__ml_hhh_signal",
+        "sr__resolved__3b__ml_tt_ml",
+        # "sr__resolved__3b__ml_ttbb_custom",
+        "sr__resolved__3b__ml_st",
+        "sr__resolved__3b__ml_dy",
+        "sr__resolved__3b__ml_h",
+        "sr__resolved__3b__ml_hh_custom",
+        "sr__resolved__3b__ml_hhh_signal",
+        "sr__resolved__4b__ml_tt_ml",
+        # "sr__resolved__4b__ml_ttbb_custom",
+        "sr__resolved__4b__ml_st",
+        "sr__resolved__4b__ml_dy",
+        "sr__resolved__4b__ml_h",
+        "sr__resolved__4b__ml_hh_custom",
+        "sr__resolved__4b__ml_hhh_signal",
+    ],
+    "hhh_V4": [
+        "sr__resolved__2b__ml_tt_ml",
+        # "sr__resolved__2b__ml_ttbb_custom",
+        "sr__resolved__2b__ml_tth",
+        "sr__resolved__2b__ml_tthh_4b",
+        "sr__resolved__2b__ml_hhh_signal",
+        "sr__resolved__3b__ml_tt_ml",
+        # "sr__resolved__3b__ml_ttbb_custom",
+        "sr__resolved__3b__ml_tth",
+        "sr__resolved__3b__ml_tthh_4b",
+        "sr__resolved__3b__ml_hhh_signal",
+        "sr__resolved__4b__ml_tt_ml",
+        # "sr__resolved__4b__ml_ttbb_custom",
+        "sr__resolved__4b__ml_tth",
+        "sr__resolved__4b__ml_tthh_4b",
+        "sr__resolved__4b__ml_hhh_signal",
+    ],
     "no_nn_cats": [
         "sr__1b",
         "sr__2b",
@@ -153,8 +193,9 @@ systematics = DotDict({
     ],
     "rate_unconstrained3": [
         "rate_ttbar",
-        "rate_ttbb",
-        "rate_ttbar_boosted",
+        "rate_ttbb_3b",
+        "rate_ttbb_4b",
+        "rate_ttbb_2b",
         "rate_dy_lf",
         "rate_dy_hf",
     ],
@@ -331,7 +372,6 @@ hhprocs = lambda hhdecay: [*hhprocs_ggf(hhdecay), *hhprocs_vbf(hhdecay)]
 hhhprocs = [
     "hhh_4b2w_2l2nu_c30_d40",
     "hhh_4b2w_2l2nu_c30_d499",
-    "hhh_4b2w_2l2nu_c30_d4m1",
     "hhh_4b2w_2l2nu_c319_d419",
     "hhh_4b2w_2l2nu_c31_d40",
     "hhh_4b2w_2l2nu_c31_d42",
@@ -355,9 +395,9 @@ backgrounds_hhh_v0 = [
     "vvv",
     "h_ggf", "h_vbf", "wh", "tth",  # "zh_gg","zh"
     "ttvh",  # "thq", "thw",
-    # "tttt",
+    "tttt",
     "ttvv",
-    # "hh_ggf", "hh_vbf",
+    "hh_ggf", "hh_vbf",
     "vhh_4b", "tthh_4b",
     # TODO: add bbh
     # "qcd",  # probably not needed
@@ -380,6 +420,7 @@ backgrounds_skip_dy = [
 
 processes_dict = {
     "hhh_v0": [*backgrounds_hhh_v0, "hhh_4b2w_2l2nu_c30_d40"],
+    "hhh_v1": [*backgrounds_hhh_v0, *hhhprocs],
 }
 
 from hbw.ml.derived.ml_dl_trih import input_features
@@ -393,10 +434,10 @@ def config_variable_hhh(self, config_cat_inst):
 
     # Super unnötig atm... well
     if "sig_hhh" in config_cat_inst.name:
-        return "logit_mlscore.hhh_4b2w_2l2nu_c30_d40"
+        return "logit_mlscore.sig_hhh_binary"
     elif config_cat_inst.x.root_cats.get("dnn"):
         # since we merge into 1 bin anyways, we can use either score
-        return "logit_mlscore.hhh_4b2w_2l2nu_c30_d40"
+        return "logit_mlscore.sig_hhh_binary"
     else:
         # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
         logger.warning(
@@ -432,6 +473,27 @@ rate_only_hhh_v8 = dl_trih.derive("rate_only_hhh_v8", cls_dict={
     "systematics": systematics.rate_default,
     "config_categories": config_categories.hhh_v8,
     "ml_model_name": ["multiclass_hhh_v8", "hhh_v2"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["hhh_v0"],
+})
+rate_only_hhh_V3 = dl_trih.derive("rate_only_hhh_V3", cls_dict={
+    "systematics": systematics.rate_default,
+    "config_categories": config_categories.hhh_V3,
+    "ml_model_name": ["multiclass_hhh_V3", "hhh_V1"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["hhh_v1"],
+})
+rate_only_hhh_V4 = dl_trih.derive("rate_only_hhh_V4", cls_dict={
+    "systematics": systematics.rate_default,
+    "config_categories": config_categories.hhh_V4,
+    "ml_model_name": ["multiclass_hhh_V4", "hhh_V1"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["hhh_v1"],
+})
+rate_only_hhh_V4SM_only = dl_trih.derive("rate_only_hhh_V4SM_only", cls_dict={
+    "systematics": systematics.rate_default,
+    "config_categories": config_categories.hhh_V4,
+    "ml_model_name": ["multiclass_hhh_V4", "hhh_V1"],
     "config_variable": config_variable_hhh,
     "processes": processes_dict["hhh_v0"],
 })

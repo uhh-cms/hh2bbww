@@ -186,3 +186,55 @@ def prepare_objects(self: Producer, events: ak.Array, results: SelectionResult =
         events["RecoilCorrMET"] = ak.with_name(events["RecoilCorrMET"], "PtEtaPhiMLorentzVector")
 
     return events
+
+
+@producer(
+    uses={
+        prepare_objects,
+        "Jet.*",
+    },
+)
+def prepare_hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Producer to extract bjetas and btag properties for HHH analysis
+    hbjets are just possible jets from which to extract Hiuggs candidate and corresponding properties. 
+    btag_jets actually fulfill the btag wp threshold medium.
+    """
+
+    # add behavior and define new collections (e.g. Lepton) 
+    # -> Not needed at this point, but might be nice in the future if we will ever hav VBF. 
+    events = self[prepare_objects](events, **kwargs)
+
+    # get discrete batg scores
+    discrete_btag_scores = ak.zeros_like(events.Jet.btagUParTAK4B)
+    # for wp, b_score in [(0.0246, 0), (0.1272, 1), (0.4648, 2), (0.6298, 3), (0.9739, 4)]:  # loose, medium, tight, etc.
+    #     discrete_btag_scores = ak.where(events.Jet.btagUParTAK4B >= wp, ak.full_like(events.Jet.btagUParTAK4B, wp), discrete_btag_scores)  # noqa E501
+    for wp, b_score in [(0.0246, 1), (0.1272, 2), (0.4648, 3), (0.6298, 4), (0.9739, 5)]:
+        discrete_btag_scores = ak.where(
+            events.Jet.btagUParTAK4B >= wp,
+            ak.full_like(events.Jet.btagUParTAK4B, b_score, dtype=int),
+            discrete_btag_scores
+        )
+    events = set_ak_column(events, "Jet.discrete_b_score", discrete_btag_scores)
+
+    # Get BtaggedJet collection where jets fulfill the set WP thershold
+    # Sorted accoridng to discrete btag score and the pt (therefore the inverted logic)
+    btag_wp = self.config_inst.x.btag_wp_names["UParTAK4"][self.config_inst.x.btag_wp]
+    btag_jet = events.Jet[events.Jet.btagUParTAK4B >= btag_wp]
+    btag_jet = btag_jet[ak.argsort(btag_jet.pt, ascending=False)]
+    btag_jet = btag_jet[ak.argsort(btag_jet.discrete_b_score, ascending=False)]
+    # Take only the first 4, which will be assigned to the Higgses 
+    btag_jet = ak.where(ak.num(btag_jet.pt > 0) > 4, btag_jet[:,:4], btag_jet)
+
+    # Define BtaggedJet collection and save it with all correspondign fields
+    events = set_ak_column(events, "BtaggedJet", btag_jet)
+
+    # Get HB candidates, so jets that do not fulfill the btag WP, but care still "most likely" to be coming froma b jet 
+    # therefore take the next leading b score (so only loose available)
+    # if none is available, then take the leading jet after pt
+    hb_candidate = events.Jet[ak.argsort(events.Jet.pt, ascending=False)]
+    hb_candidate = hb_candidate[ak.argsort(hb_candidate.discrete_b_score, ascending=False)]
+    hb_candidate = ak.where(ak.num(hb_candidate.pt > 0) > 4, hb_candidate[:,:4], hb_candidate)
+    events = set_ak_column(events, "HBjetCandidate", hb_candidate)
+
+    return events

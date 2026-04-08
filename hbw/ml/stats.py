@@ -14,7 +14,7 @@ from columnflow.util import maybe_import
 from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
-from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr
+from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr, catid_geq3b
 from hbw.util import IF_SL, IF_DL, IF_MC
 from hbw.weight.hp_dih import default_hist_producer
 from hbw.weight.hp_trih import default_hist_producer_trih
@@ -177,8 +177,9 @@ def prepml_init(self):
 
 
 prepml_2b = prepml.derive("prepml_2b", cls_dict={"extra_categorizer": "catid_2b"})
+prepml_geq3b = prepml.derive("prepml_geq3b", cls_dict={"extra_categorizer": "catid_geq3b"})
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
 prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})
 # prepml_hhh_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
-# prepml_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
+prepml_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})

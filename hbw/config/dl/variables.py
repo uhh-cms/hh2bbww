@@ -366,14 +366,14 @@ def add_hhh_bjet_variables(config: od.Config) -> None:
     )
     config.add_variable(
         name="mli_mindr_bb",
-        expression="mli_mindr_bb",
+        expression="mindr_bb",
         binning=(40, 0, 6),
         aux={"overflow": False},
         x_title=r"$min_{b,b} \Delta R(b,b)$",
     )
     config.add_variable(
         name="mli_maxdr_bb",
-        expression="mli_maxdr_bb",
+        expression="maxdr_bb",
         binning=(40, 0, 6),
         aux={"overflow": False},
         x_title=r"$max_{b,b} \Delta R(b,b)$",
@@ -457,3 +457,94 @@ def add_hhh_bjet_variables(config: od.Config) -> None:
             aux={"overflow": True},
             x_title=f"$b{i+1} b score$",
         )
+
+
+@call_once_on_config()
+def add_hhh_ml_variables(config: od.Config) -> None:
+
+    # =========================================================
+    # --- btag & hb_candidate (shared structure)
+    # =========================================================
+    for obj in ["btag", "hb_candidate"]:
+
+        # --- ΔR jj ---
+        for var in ["maxdr_jj", "mindr_jj"]:
+            name = f"mli_{obj}_{var}"
+
+            config.add_variable(
+                name=name,
+                expression=name,
+                binning=(40, 0, 6),
+                aux={"overflow": True},
+                x_title=rf"${var}({obj})$",
+            )
+
+        # --- physics variables ---
+        for var in [
+            "mh1", "mh2",
+            "dr_h1_h2",
+            "dr_ll_h1", "dr_ll_h2",
+            "mhhh", "m4bllMET",
+            "dr_h1_llMET", "dr_h2_llMET",
+        ]:
+            name = f"mli_{obj}_{var}"
+
+            if var.startswith("m"):
+                config.add_variable(
+                    name=name,
+                    expression=name,
+                    binning=(40, 0, 1200),
+                    aux={"overflow": True},
+                    unit="GeV",
+                    x_title=rf"${var}({obj})$",
+                )
+            else:
+                config.add_variable(
+                    name=name,
+                    expression=name,
+                    binning=(40, 0, 6),
+                    aux={"overflow": True},
+                    x_title=rf"${var}$",
+                )
+
+    # =========================================================
+    # --- indexed objects (btag + hb_candidate)
+    # =========================================================
+    for obj_base, label in [
+        ("btag", "b"),
+        ("hb_candidate", "hb"),
+    ]:
+        for i in range(1, 5):
+            obj = f"{obj_base}{i}"
+
+            for var in ["discrete_b_score", "pt", "eta"]:
+                name = f"mli_{obj}_{var}"
+
+                if var == "pt":
+                    config.add_variable(
+                        name=name,
+                        expression=name,
+                        binning=(40, 0, 400),
+                        aux={"overflow": True},
+                        unit="GeV",
+                        x_title=rf"$p_T^{{{label}_{i}}}$",
+                    )
+
+                elif var == "eta":
+                    config.add_variable(
+                        name=name,
+                        expression=name,
+                        binning=(40, -3, 3),
+                        aux={"overflow": True},
+                        x_title=rf"$\eta_{{{label}_{i}}}$",
+                    )
+
+                elif var == "discrete_b_score":
+                    config.add_variable(
+                        name=name,
+                        expression=name,
+                        aux={"overflow": True},
+                        x_title=rf"b-score$_{{{label}_{i}}}$",
+                        # binning=[0.0, 0.0246, 0.1272, 0.4648, 0.6298, 0.9739, 1.0],
+                        binning=(6, -0.5, 5.5),
+                    )

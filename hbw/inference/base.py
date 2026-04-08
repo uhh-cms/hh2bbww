@@ -555,6 +555,8 @@ class HBWInferenceModelBase(InferenceModel):
                 ecm = config_inst.campaign.ecm
                 if "scale" in process_inst.xsecs[ecm]:
                     scale_key = "scale"
+                elif "dy" in process_inst.name:
+                    continue
                 elif "scale" in process_inst.xsecs[13]:
                     scale_key = "scale"
                     ecm = 13
@@ -597,6 +599,8 @@ class HBWInferenceModelBase(InferenceModel):
                 ecm = config_inst.campaign.ecm
                 if "pdf" in process_inst.xsecs[ecm]:
                     pdf_key = "pdf"
+                elif "dy" in process_inst.name:
+                    continue
                 elif "pdf" in process_inst.xsecs[13]:
                     pdf_key = "pdf"
                     ecm = 13

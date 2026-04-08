@@ -219,6 +219,8 @@ def set_config_defaults_and_groups(config_inst):
         "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
         "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl17": ["hhh", "tthh_4b", "vhh_4b", "hh_ggf", "hh_vbf", "other", "h", "tth", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl18": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "other", "h", "tth", "ttv", "vv", "w_lnu", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl15C": ["tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl15B": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl16": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b", "tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],  # noqa: E501
@@ -412,8 +414,8 @@ def set_config_defaults_and_groups(config_inst):
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
-        "hhh_sr": bracket_expansion(["sr__resolved__{2b,3b,4b}__ml_{sig_hhh,hhh_4b2w_2l2nu_c30_d40}"]),
-        "hhh_bkg": bracket_expansion(["sr__resolved__2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml}"]),  # noqa: E501
+        "hhh_sr": bracket_expansion(["sr__resolved__{2b,3b,4b}__ml_{sig_hhh,hhh_signal,hhh_4b2w_2l2nu_c30_d40}"]),
+        "hhh_bkg": bracket_expansion(["sr__resolved__2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables
@@ -421,6 +423,7 @@ def set_config_defaults_and_groups(config_inst):
     from hbw.ml.derived.ml_dl_dih import input_features as ml_inputs
     from hbw.ml.derived.ml_dl_trih import input_features as ml_input_trih
     config_inst.x.variable_groups = {
+        "gen_features": ["gen_hbw.lep0.pt", "gen_hbw.lep1.pt", "gen_hbw.dilep.pt", "gen_hbw.dilep.mass", "gen_hbw.hh.mass"],
         "gen_vbf": ["vbfpair.deta", "vbfpair.mass", "gen_sec1_eta", "gen_sec2_eta", "gen_sec1_pt", "gen_sec2_pt"],
         "mli": ["mli_*"],
         "pas": bracket_expansion([
@@ -471,6 +474,80 @@ def set_config_defaults_and_groups(config_inst):
             "ll_pt", "bb_pt", "E_miss", "delta_Phi", "MT", "min_dr_lljj",
             "m_lljjMET", "channel_id", "n_bjet", "wp_score", "charge", "m_ll_check",
         ],
+        "possible_ml_observables": [
+            "mli_n_jet",
+            "mli_n_btag",
+            "mli_met_pt",
+            "mli_ht",
+            "mli_mixed_channel",
+            
+            "mli_mll",
+            "mli_ll_pt",
+            "mli_mllMET",
+            "mli_dr_ll",
+            "mli_dphi_ll",
+            "mli_deta_ll",
+
+            "mli_lep2_pt",
+            "mli_lep2_eta",
+            "mli_lep_tag",
+            "mli_lep2_tag",
+            "mli_lep_pt",
+            "mli_lep_eta",  
+            "mli_mixed_channel",
+
+            "mli_maxdr_jj",
+            "mli_mindr_jj",
+            "mli_btag_maxdr_jj",
+            "mli_btag_mindr_jj",
+            "mli_hb_candidate_maxdr_jj",
+            "mli_hb_candidate_mindr_jj",
+
+            "mli_btag_mh1",
+            "mli_btag_mh2",
+            "mli_btag_dr_h1_h2",
+            "mli_btag_dr_ll_h1",
+            "mli_btag_dr_ll_h2",
+            "mli_btag_mhhh",
+            "mli_btag_dr_h1_llMET",
+            "mli_btag_dr_h2_llMET",
+
+            "mli_hb_candidate_mh1",
+            "mli_hb_candidate_mh2",
+            "mli_hb_candidate_dr_h1_h2",
+            "mli_hb_candidate_dr_ll_h1",
+            "mli_hb_candidate_dr_ll_h2",
+            "mli_hb_candidate_mhhh",
+            "mli_hb_candidate_dr_h1_llMET",
+            "mli_hb_candidate_dr_h2_llMET",
+
+            "mli_btag1_discrete_b_score",
+            "mli_btag1_pt",
+            "mli_btag1_eta",
+            "mli_btag2_discrete_b_score",
+            "mli_btag2_pt",
+            "mli_btag2_eta",
+            "mli_btag3_discrete_b_score",
+            "mli_btag3_pt",
+            "mli_btag3_eta",
+            "mli_btag4_discrete_b_score",
+            "mli_btag4_pt",
+            "mli_btag4_eta",
+
+            "mli_hb_candidate1_discrete_b_score",
+            "mli_hb_candidate1_pt",
+            "mli_hb_candidate1_eta",
+            "mli_hb_candidate2_discrete_b_score",
+            "mli_hb_candidate2_pt",
+            "mli_hb_candidate2_eta",
+            "mli_hb_candidate3_discrete_b_score",
+            "mli_hb_candidate3_pt",
+            "mli_hb_candidate3_eta",
+            "mli_hb_candidate4_discrete_b_score",
+            "mli_hb_candidate4_pt",
+            "mli_hb_candidate4_eta",
+        ],
+
     }
 
     # add all groups from ml inputs to variable groups
@@ -1074,7 +1151,7 @@ def set_config_defaults_and_groups(config_inst):
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
     is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
     is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
-    is_signal_hhh = lambda proc_name: "hhh" in proc_name
+    is_signal_hhh = lambda proc_name: "hhh_4b2w_2l2nu_c30_d40" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
