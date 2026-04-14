@@ -581,6 +581,29 @@ def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
         return "logit_mlscore.sig_ggf_binary"
 
 
+def config_variable_multiclass(self, config_cat_inst):
+    """
+    Function to set the config variable for the multiclass model.
+    """
+    if config_cat_inst.name == "sr__boosted":
+        return "mlscore_manybins.sig_vbf"
+    if "sig_ggf" in config_cat_inst.name:
+        return "mlscore_manybins.sig_ggf"
+    elif "sig_vbf" in config_cat_inst.name:
+        return "mlscore_manybins.sig_vbf"
+    elif "ggf" in config_cat_inst.name or "vbf" in config_cat_inst.name:
+        return f"mlscore_manybins.{config_cat_inst.x.root_cats.get('dnn').replace('ml_', '')}"
+    elif config_cat_inst.x.root_cats.get("dnn"):
+        # since we merge into 1 bin anyways, we can use either score
+        return "mlscore_manybins.sig_ggf"
+    else:
+        # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+        logger.warning(
+            f"Category {config_cat_inst.name} is not a DNN category, using ggF classifier score.",
+        )
+        return "mlscore_manybins.sig_ggf"
+
+
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes_dict["hwwzztt"],
@@ -803,6 +826,9 @@ hbbsf = dl.derive("hbbsf", cls_dict={
     "systematics": systematics.hbbsf_full,
     "unblind": True,
     "skip_data": False,
+})
+hbbsf_multiclass_only = hbbsf.derive("hbbsf_multiclass_only", cls_dict={
+    "config_variable": config_variable_multiclass,
 })
 hbbsfTEST = hbbsf.derive("hbbsfTEST")
 
