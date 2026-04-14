@@ -136,7 +136,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
             230, 260, 300,
         ],
         unit="GeV",
-        x_title=r"$p_{T}$ of jet with highest b-tagging score",
+        x_title=r"$p_{T}$ of jet with highest b tagging score",
         aux={
             "x_min": 25,
         },
@@ -164,6 +164,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_mll",
         expression="mli_mll",
         binning=(40, 0, 160),
+        unit="GeV",
         aux={
             "overflow": True,
             "x_min": 20,
@@ -245,7 +246,12 @@ def add_dl_ml_variables(config: od.Config) -> None:
     )
 
     for obj in ["lep2"]:
+        obj_label = "\ell2"
         for var in ["pt", "eta"]:
+            if var == "pt":
+                x_title = rf"$p_{{T}}^{{{obj_label}}}$"
+            elif var == "eta":
+                x_title = rf"$\eta^{{{obj_label}}}$"
             binning = default_var_binning[var]
             if obj == "lep2" and var == "pt":
                 # TODO: change to 160? 120? idk.
@@ -256,7 +262,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
                 binning=binning,
                 aux={"overflow": True},
                 unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
+                x_title=x_title,
             )
 
     config.add_variable(

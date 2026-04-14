@@ -28,7 +28,7 @@ def add_common_ml_variables(config: od.Config) -> None:
             expression=f"mli_ht{postfix}",
             binning=(40, 0, 1200),
             unit="GeV",
-            x_title=f"HT ({object_label})",
+            x_title=f"$H_{{T}} ({object_label})$",
             aux={"overflow": True},
         )
         config.add_variable(
@@ -37,8 +37,9 @@ def add_common_ml_variables(config: od.Config) -> None:
             binning=(11, -0.5, 10.5),
             x_title=f"Number of {object_label}",
             aux={
-                "overflow": True,
+                # "overflow": True,
                 "x_min": 0.5,
+                "x_max": 8.5,
             },
         )
 
@@ -223,12 +224,25 @@ def add_common_ml_variables(config: od.Config) -> None:
                 binning = (48, -4.7, 4.7)
             elif obj == "lep" and var == "pt":
                 binning = (40, 0, 240)
+
+            # Build better LaTeX labels
+            obj_label = {
+                "lep": r"\ell1",
+                "met": r"miss",
+            }.get(obj, obj)
+            if var == "pt":
+                x_title = rf"$p_{{T}}^{{{obj_label}}}$"
+            elif var == "eta":
+                x_title = rf"$\eta^{{{obj_label}}}$"
+            elif var == "phi":
+                x_title = rf"$\phi^{{{obj_label}}}$"
+
             config.add_variable(
                 name=f"mli_{obj}_{var}",
                 expression=f"mli_{obj}_{var}",
                 binning=binning,
                 unit=default_var_unit.get(var, "1"),
-                x_title="{obj} {var}".format(obj=obj, var=var),
+                x_title=x_title,
                 aux={"overflow": True},
             )
 
@@ -244,9 +258,6 @@ def add_common_ml_variables(config: od.Config) -> None:
                 x_title="{obj} {var} (Hbb-score leading)".format(obj=obj_label, var=var_label),
                 aux={"overflow": True},
             )
-
-    b1_pt = config.get_variable("mli_b1_pt")
-    b1_pt.x_title = r"$p_{T}^{b1}$"
 
 
 @call_once_on_config()
