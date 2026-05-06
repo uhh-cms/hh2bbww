@@ -27,6 +27,7 @@ def modify_cmsdb_processes():
         tt_dl,
         hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
         hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1,
+        hh_ggf_kl1_kt1, hh_vbf_kv1_k2v1_kl1,
     )
 
     data.remove_process(data_met)
@@ -137,6 +138,13 @@ def modify_cmsdb_processes():
         name="hh_other",
         id=99993,
         label="HH (other)",
+        color=color_palette["darkgrey"],
+    )
+    hh_sm = create_parent_process(  # noqa: F841
+        [hh_ggf_kl1_kt1, hh_vbf_kv1_k2v1_kl1],
+        name="hh_sm",
+        id=99992,
+        label=r"$HH_{SM}$",
         color=color_palette["darkgrey"],
     )
 
