@@ -44,7 +44,7 @@ def rebin(task, hists: hist.Histogram, **kwargs):
     Lots of hard-coded stuff at the moment.
     """
     # get variable inst assuming we created a 1D histogram
-    variable_inst = task.config_inst.get_variable(task.branch_data.variable)
+    variable_inst = task.config_inst.get_variable(task.branch_data.variable.split("-")[0])
     category_inst = task.config_inst.get_category(task.branch_data.category)
     edges_path = "/data/dust/user/frahmmat/public/hh2bbww/data/hbw_store/hbw_dl/calib__ak4V5__ak8V5__eleV6/sel__dl1V3/red__default/c22prev14__c22postv14__c23prev14__c23postv14/prod__event_weightsV5__dl_ml_inputsV3__cats_ml_multiclassv3V5/ml__multiclassv3__9b016e72b3__ggfv3__7d73ff7875__vbfv3_tag__696759553a/hist__met_geq40_with_hbbsf_dyV3/inf__hbbsfV15/hbw.ModifyDatacardsFlatRebin/prod3"  # noqa: E501
 
