@@ -827,6 +827,12 @@ hbbsf = dl.derive("hbbsf", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+hbbsf_no_dycorr = hbbsf.derive("hbbsf_no_dycorr", cls_dict={
+    "systematics": list(set(systematics.hbbsf_full) - {"dy_correction"}),
+})
+hbbsf_no_ratify_shapes = hbbsf.derive("hbbsf_no_ratify_shapes", cls_dict={
+    "skip_ratify_shapes": True,
+})
 hbbsf_multiclass_only = hbbsf.derive("hbbsf_multiclass_only", cls_dict={
     "config_variable": config_variable_multiclass,
 })
