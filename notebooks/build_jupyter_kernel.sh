@@ -6,7 +6,7 @@
 
 action () {
     # customizable variables
-    CF_SETUP_NAME="dev"
+    CF_SETUP_NAME="dl"
     VENV_NAME="cf_ml"
     DISPLAY_NAME=$VENV_NAME
 
@@ -18,11 +18,17 @@ action () {
     # set some other paths
     local HBW_BASE="$this_dir/.."
     local CF_BASE="$HBW_BASE/modules/columnflow"
-    source $HBW_BASE/.setups/${CF_SETUP_NAME}.sh
+    source "$HBW_BASE/.setups/${CF_SETUP_NAME}.sh" || {
+        echo "ERROR: failed to source setup '$HBW_BASE/.setups/${CF_SETUP_NAME}.sh'" >&2
+        exit 1
+    }
 
     # setup path to venv location
     local JUPYTER_VENV_PATH="$CF_SOFTWARE_BASE/jupyter_venvs"
-    mkdir -p $JUPYTER_VENV_PATH
+    mkdir -p "$JUPYTER_VENV_PATH" || {
+        echo "ERROR: failed to create directory '$JUPYTER_VENV_PATH'" >&2
+        exit 1
+    }
 
     # create and activate python venv from conda
     $CF_SOFTWARE_BASE/conda/bin/python3.9 -m venv $JUPYTER_VENV_PATH/$VENV_NAME
