@@ -346,7 +346,7 @@ def plot_efficiencies(
                     #     label = "with isolated" + "\n" + "trigger paths"
                     # label += "\n" + fr"($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
                     label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
-                    yield_increase = 1 / efficiency_sum - 1 if efficiency_sum < 1 else -1
+                    # yield_increase = 1 / efficiency_sum - 1 if efficiency_sum < 1 else -1
                     # if yield_increase > 0:
                     #     label += "\n" + fr"(yield increase: {(yield_increase * 100):.2f}%)"
                     # if "old" in i:

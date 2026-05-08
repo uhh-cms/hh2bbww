@@ -457,7 +457,6 @@ def trigger_prod_dl_init(self: Producer) -> None:
     )
 
 
-
 # dilepton trigger prod without sequential combinations to reduce memory usage
 @producer(
     produces={"trig_ids"},

@@ -138,6 +138,14 @@ def add_variables(config: od.Config) -> None:
         aux={"x_max": 600, "rebin": 2},
     )
     config.add_variable(
+        name="gen_top_pt0",
+        expression="GenPartonTop.pt[:, 0]",
+        binning=(240, 0., 1200.),
+        unit="GeV",
+        x_title=r"$p_{T}^{t}$ (generator level)",
+        aux={"x_max": 600, "rebin": 2},
+    )
+    config.add_variable(
         name="weight_unweighted",  # used in histProducer specificially accessing this name to set weight=1
         expression="weight",
         binning=(100, -10, 10),

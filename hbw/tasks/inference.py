@@ -224,8 +224,8 @@ class HBWInferenceModelBase(
     sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
 
     # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
-    unblind_step1 = False
-    fully_unblind = False
+    unblind_step1 = True
+    fully_unblind = True
 
     @property
     def inference_model_cls(self):

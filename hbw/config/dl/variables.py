@@ -246,7 +246,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
     )
 
     for obj in ["lep2"]:
-        obj_label = "\ell2"
+        obj_label = r"\ell2"
         for var in ["pt", "eta"]:
             if var == "pt":
                 x_title = rf"$p_{{T}}^{{{obj_label}}}$"

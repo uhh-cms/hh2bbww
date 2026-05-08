@@ -192,7 +192,7 @@ def base_init(self: HistProducer) -> None:
             cat_inst.label = "\n".join([pre_label, cat_inst.label])
 
             # hard-coded change for inclusive category label (basically for mll Suppl. figure)
-            if "Inclusive" in cat_inst.label and not r"\n" in cat_inst.label:
+            if "Inclusive" in cat_inst.label and r"\n" not in cat_inst.label:
                 cat_inst.label = "Baseline selection"
 
     if self.pre_label:
