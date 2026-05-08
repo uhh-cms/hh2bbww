@@ -279,6 +279,25 @@ class CustomCreateYieldTable(
                     den = yields[category_inst][den_idxs]
                     yields[category_inst].append(num / den)
 
+            if "s_over_sqrt_b" in self.ratio_modes or "s_over_b" in self.ratio_modes:
+                num_idxs = [i for i, p in enumerate(processes) if p.has_tag("is_signal")]
+                den_idx = [i for i, p in enumerate(processes) if p.name == "background"]
+                if not num_idxs:
+                    logger.warning("Cannot calculate S/sqrt(B), no signal process found.")
+                elif not den_idx:
+                    logger.warning("Cannot calculate S/sqrt(B), no background process found.")
+                else:
+                    den_idx = den_idx[0]
+                    for category_inst in self.category_insts:
+                        s = sum(yields[category_inst][i] for i in num_idxs)
+                        b = yields[category_inst][den_idx]
+                        if "s_over_b" in self.ratio_modes:
+                            processes.append(od.Process("S_over_B", id=-9872, label="S / B"))
+                            yields[category_inst].append(s / b)
+                        if "s_over_sqrt_b" in self.ratio_modes:
+                            processes.append(od.Process("S_over_sqrt_B", id=-9873, label="S / sqrt(B)"))
+                            yields[category_inst].append(s / math.sqrt(b))
+
             if len(self.ratio) >= 3 and "subtract" in self.ratio_modes:
                 num_idx = processes.index(config_inst.get_process(self.ratio[0]))
                 subtract_idx = processes.index(config_inst.get_process(self.ratio[1]))
@@ -353,8 +372,8 @@ class CustomCreateYieldTable(
                 # cat_label = category.name.replace("__", " ")
                 cat_label = category.label.replace("\n", ", ")
                 if self.for_analysis_note:
-                    # cat_label = f"\\labelfunc{{{category.name}}}"
-                    cat_label = category.name
+                    cat_label = f"\\labelfunc{{{category.name}}}"
+                    # cat_label = category.name
                 yields_str[cat_label].append(yield_str)
 
         return raw_yields, yields_str
