@@ -20,6 +20,7 @@ np = maybe_import("numpy")
 plt = maybe_import("matplotlib.pyplot")
 mplhep = maybe_import("mplhep")
 mticker = maybe_import("matplotlib.ticker")
+shap = maybe_import("shap")
 
 if TYPE_CHECKING:
     hist = maybe_import("hist")
@@ -30,9 +31,9 @@ logger = law.logger.get_logger(__name__)
 cms_label_kwargs = {
     "data": False,
     # "llabel": "Private work (CMS simulation)",
-    "llabel": "Simulation Work in progress",
+    # "llabel": "Simulation Work in progress",
     # "llabel": "Simulation Preliminary",
-    # "llabel": "Simulation Supplementary",
+    "llabel": "Simulation Supplementary",
     "lumi": "62",  # NOTE: hard-coded, to be updated if needed
     # "exp": "",
 }
@@ -80,8 +81,356 @@ def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights:
     return fig, ax
 
 
+def _sample_shap_background_per_class(
+    features,
+    labels,
+    num_events_per_class: int,
+    random_state: int = 42,
+):
+    sampled = []
+    rng = np.random.default_rng(random_state)
+    sampled_counts = {}
+    for cls in np.unique(labels):
+        class_features = features[labels == cls]
+        if len(class_features) == 0:
+            continue
+        n_sample = min(num_events_per_class, len(class_features))
+        sampled.append(shap.utils.sample(class_features, n_sample, random_state=random_state))
+        sampled_counts[int(cls)] = int(n_sample)
+
+    if not sampled:
+        logger.warning("No class-wise background samples found, using fallback sample over all events")
+        return shap.utils.sample(features, min(num_events_per_class, len(features)), random_state=random_state)
+
+    background = np.concatenate(sampled, axis=0)
+    shuffle_idx = rng.permutation(len(background))
+    logger.info(
+        "SHAP background sampled: n_events=%d, n_classes=%d, per_class=%s",
+        len(background),
+        len(sampled_counts),
+        sampled_counts,
+    )
+    return background[shuffle_idx]
+
+
+def _sample_shap_explain_values(
+    features,
+    labels,
+    max_events: int = 100,
+    random_state: int = 42,
+):
+    # Sample explain events per class to keep SHAP slices separable by process.
+    sampled_features = []
+    sampled_labels = []
+    rng = np.random.default_rng(random_state)
+    sampled_counts = {}
+
+    for cls in np.unique(labels):
+        class_features = features[labels == cls]
+        if len(class_features) == 0:
+            continue
+        n_sample = min(max_events, len(class_features))
+        cls_sample = shap.utils.sample(class_features, n_sample, random_state=random_state)
+        sampled_features.append(cls_sample)
+        sampled_labels.append(np.full(len(cls_sample), cls, dtype=labels.dtype))
+        sampled_counts[int(cls)] = int(n_sample)
+
+    if not sampled_features:
+        logger.warning("No class-wise explain samples found, using fallback sample over all events")
+        sampled_features = [shap.utils.sample(features, min(max_events, len(features)), random_state=random_state)]
+        sampled_labels = [np.full(len(sampled_features[0]), -1, dtype=labels.dtype)]
+
+    explain_inputs = np.concatenate(sampled_features, axis=0)
+    explain_labels = np.concatenate(sampled_labels, axis=0)
+    shuffle_idx = rng.permutation(len(explain_inputs))
+    logger.info(
+        "SHAP explain sampled: n_events=%d, n_classes=%d, per_class=%s",
+        len(explain_inputs),
+        len(sampled_counts),
+        sampled_counts,
+    )
+    return explain_inputs[shuffle_idx], explain_labels[shuffle_idx]
+
+
+def _calculate_shap_values(
+    model: MLModel,
+    background,
+    explain_inputs,
+    input_features: list | None,
+):
+    predict = functools.partial(model.trained_model.predict, verbose=0)
+    explainer = shap.Explainer(predict, background)
+    logger.info(
+        "Computing SHAP values with background shape %s and explain shape %s",
+        getattr(background, "shape", None),
+        getattr(explain_inputs, "shape", None),
+    )
+    shap_values = explainer(explain_inputs)
+    if input_features is not None:
+        shap_values.feature_names = list(input_features)
+    return shap_values
+
+
+def _shap_ranking_for_output_node(shap_values, output_node: int) -> dict:
+    ranking = dict(zip(shap_values.feature_names, shap_values[:, :, output_node].abs.mean(axis=0).values))
+    return dict(sorted(ranking.items(), key=lambda x: abs(x[1]), reverse=True))
+
+
+def _plot_shap_scatter_plots(
+    model: MLModel,
+    output: law.FileSystemDirectoryTarget,
+    shap_values,
+    explain_labels,
+    class_label_map: dict[int, str],
+    output_node: int,
+    postfix: str,
+    cmap: str | None = None,
+) -> None:
+    plt.style.use("seaborn-v0_8")
+    feature_names = list(shap_values.feature_names)
+    cmap = plt.get_cmap("tab10")  # for now, overwrite any custom cmap
+    class_ids = [int(cls) for cls in np.unique(explain_labels)]
+    output_class = class_label_map.get(output_node, str(output_node))
+    logger.info(
+        "Creating SHAP scatter plots for class %s with %d features across classes %s",
+        output_class,
+        len(feature_names),
+        class_ids,
+    )
+
+    for feature_idx, input_feature in enumerate(feature_names):
+        try:
+            logger.debug("Scatter SHAP plot: feature='%s', node=%d", input_feature, output_node)
+
+            sub_shap_values = shap_values[:, input_feature, output_node]
+            explain_class_labels = np.array(
+                [class_label_map.get(int(lbl), str(lbl)) for lbl in explain_labels],
+                dtype=object,
+            )
+
+            process_labels = shap.Explanation(values=sub_shap_values.values, data=explain_labels)
+            process_labels.display_data = explain_class_labels
+
+            shap.plots.scatter(
+                sub_shap_values,
+                show=False,
+                color=process_labels,
+                xmin=sub_shap_values.percentile(1),
+                xmax=sub_shap_values.percentile(99),
+                dot_size=8,
+                alpha=1.0,
+                # TODO: for some reason the last color legend does not match the scatter points,
+                # to be investigated (maybe a bug in shap.plots.scatter with categorical coloring?
+                cmap=cmap,
+            )
+
+            fig = plt.gcf()
+            ax = fig.axes[0]
+
+            ax.set_xlabel(model.config_inst.get_variable(input_feature).x_title, fontsize=16)
+            ax.set_ylabel(f"SHAP value ({output_class} node)", fontsize=16)
+            plt.tight_layout()
+            output.child(f"shap_scatter_{input_feature}_node{output_node}{postfix}.pdf", type="f").dump(
+                fig,
+                formatter="mpl",
+            )
+            plt.close(fig)
+        except Exception:
+            logger.exception(
+                f"Failed to produce SHAP scatter plot for feature '{input_feature}' and output node {output_node}",
+            )
+
+
+def _plot_shap_waterfall_plots(
+    model: MLModel,
+    output: law.FileSystemDirectoryTarget,
+    shap_values,
+    explain_inputs,
+    output_node: int,
+    postfix: str,
+) -> None:
+    """
+    Note: this plot function fails (or takes forever) when the mplhep.style.CMS style is used, to be investigated.
+    """
+    try:
+        plt.style.use("seaborn-v0_8")
+        predicted_values = model.trained_model.predict(explain_inputs, verbose=0)[:, output_node]
+        sorted_idxs = np.argsort(predicted_values)
+        signal_idx = sorted_idxs[0]
+        bkg_idx = sorted_idxs[-1]
+
+        shap.plots.waterfall(shap_values[signal_idx, :, output_node], max_display=10, show=True)
+        fig = plt.gcf()
+        for ax in fig.axes:
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+        output.child(f"shap_waterfall_sig_node{output_node}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+
+        shap.plots.waterfall(shap_values[bkg_idx, :, output_node], max_display=10, show=True)
+        fig = plt.gcf()
+        for ax in fig.axes:
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+        output.child(f"shap_waterfall_bkg_node{output_node}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+    except Exception:
+        logger.exception(f"Failed to produce SHAP waterfall plots for output node {output_node}")
+
+
+def _plot_shap_rankings(
+    model: MLModel,
+    output: law.FileSystemDirectoryTarget,
+    explain_inputs,
+    shap_ranking_dict: dict,
+    output_node: int,
+    input_features: list | None,
+    postfix: str,
+):
+    from hbw.ml.introspection import sensitivity_analysis, gradient_times_input
+
+    rankings = {
+        "SHAP": shap_ranking_dict,
+        "Sensitivity Analysis": sensitivity_analysis(
+            model.trained_model,
+            explain_inputs,
+            output_node,
+            input_features,
+        ),
+        "Gradient * Input": gradient_times_input(
+            model.trained_model,
+            explain_inputs,
+            output_node,
+            input_features,
+        ),
+    }
+    fig, ax = barplot_from_multidict(rankings)
+    logger.info("Saving SHAP ranking comparison plot for node %d", output_node)
+    output.child(f"rankings_node{output_node}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+    plt.close(fig)
+    return fig, ax
+
+
 @timeit
 def plot_introspection(
+    model: MLModel,
+    output: law.FileSystemDirectoryTarget,
+    inputs,
+    postfix: str = "",
+    input_features: list | None = None,
+    stats: dict | None = None,
+    store_shap_values: bool = False,
+):
+    # if input_features:
+    #     input_features = [
+    #         model.config_inst.get_variable(feature).x_title if isinstance(feature, str) else feature.label
+    #         for feature in input_features
+    #     ]
+    class_label_map = {
+        node_config["ml_id"]: proc
+        for proc, node_config in model.train_nodes.items()
+    }
+    class_colors = {
+        _id: model.config_inst.get_process(proc).color for _id, proc in class_label_map.items()
+    }
+    from matplotlib.colors import LinearSegmentedColormap
+    # NOTE: this colormap does not really work as I want to... use ListedColormap instead?
+    cmap = LinearSegmentedColormap.from_list(
+        "custom_cmap", [class_colors[_id] for _id in sorted(class_colors.keys())], N=len(class_colors),
+    )
+
+    class_label_map = {_id: model.config_inst.get_process(proc).label for _id, proc in class_label_map.items()}
+    missing_labels = [int(lbl) for lbl in np.unique(inputs.labels) if int(lbl) not in class_label_map]
+    if missing_labels:
+        raise ValueError(
+            "SHAP introspection requires that all classes in the inputs "
+            "have a corresponding process in the model's train nodes. "
+            f"Missing classes: {missing_labels}",
+        )
+
+    features = inputs.features  # numpy array with multiple features per event
+    labels = inputs.labels  # np.array integers
+    num_bkg_events_per_class = 1000
+    num_explain_events_per_class = 100
+    logger.info(
+        "Starting plot_introspection: features_shape=%s, unique_labels=%s, postfix='%s'",
+        getattr(features, "shape", None),
+        [int(x) for x in np.unique(labels)],
+        postfix,
+    )
+
+    # first, sample a single background distribution for SHAP with up to N events per class
+    background = _sample_shap_background_per_class(features, labels, num_bkg_events_per_class)
+    explain_inputs, explain_labels = _sample_shap_explain_values(
+        features,
+        labels,
+        num_explain_events_per_class,
+    )
+    shap_target = output.parent.child(f"shap_values{postfix}.pkl", type="f")
+    if shap_target.exists():
+        logger.info("Found existing SHAP values at %s, loading from file", shap_target.path)
+        shap_payload = shap_target.load(formatter="pickle")
+        shap_values = shap.Explanation(
+            values=shap_payload["values"],
+            base_values=shap_payload["base_values"],
+            data=shap_payload["data"],
+            # feature_names=shap_payload["feature_names"],
+            feature_names=input_features if input_features else shap_payload["feature_names"],
+        )
+        if not np.array_equal(shap_values.data, explain_inputs):
+            raise ValueError("SHAP explain inputs do not match loaded SHAP values data, cannot reuse SHAP values")
+        if not np.array_equal(shap_payload["labels"], explain_labels):
+            raise ValueError("SHAP explain labels do not match loaded SHAP payload labels, cannot reuse SHAP values")
+        explain_labels = shap_payload["labels"]
+        logger.info(
+            "Loaded SHAP payload: values_shape=%s, labels_shape=%s, output_nodes=%s",
+            getattr(shap_values.values, "shape", None),
+            getattr(explain_labels, "shape", None),
+            shap_payload.get("output_nodes", []),
+        )
+    else:
+        shap_values = _calculate_shap_values(model, background, explain_inputs, input_features)
+        logger.info("SHAP values computed with shape %s", getattr(shap_values.values, "shape", None))
+        if store_shap_values:
+            shap_payload = {
+                "values": np.asarray(shap_values.values),
+                "base_values": np.asarray(shap_values.base_values),
+                "data": np.asarray(shap_values.data),
+                "labels": np.asarray(explain_labels),
+                "feature_names": list(shap_values.feature_names),
+                # "output_nodes": [int(i) for i in output_nodes],
+            }
+            shap_target.dump(shap_payload, formatter="pickle")
+            logger.info(
+                "Stored SHAP payload: values_shape=%s, labels_shape=%s, output_nodes=%s",
+                getattr(shap_payload["values"], "shape", None),
+                getattr(shap_payload["labels"], "shape", None),
+                shap_payload.get("output_nodes", []),
+            )
+
+    output_nodes = sorted(np.unique(labels))
+    fig = ax = None
+    for output_node in output_nodes:
+        logger.info("Generating SHAP plots for output node %d", int(output_node))
+        shap_ranking_dict = _shap_ranking_for_output_node(shap_values, output_node)
+
+        _plot_shap_scatter_plots(
+            model, output, shap_values, explain_labels, class_label_map, output_node, postfix, cmap=cmap,
+        )
+        # _plot_shap_waterfall_plots(model, output, shap_values, explain_inputs, output_node, postfix)
+        fig, ax = _plot_shap_rankings(
+            model,
+            output,
+            explain_inputs,
+            shap_ranking_dict,
+            output_node,
+            input_features,
+            postfix,
+        )
+
+    return fig, ax
+
+
+@timeit
+def plot_introspection_old(
     model: MLModel,
     output: law.FileSystemDirectoryTarget,
     inputs,
@@ -105,8 +454,7 @@ def plot_introspection(
     sorted_idxs = np.argsort(predicted_values)
     signal_idx = sorted_idxs[0]
     bkg_idx = sorted_idxs[-1]
-    scatter_features = input_features or list(shap_ranking_dict.keys())
-    for input_feature in scatter_features:
+    for input_feature in shap_values.feature_names:
         try:
             shap.plots.scatter(shap_values[:, input_feature, output_node], show=False)
             fig = plt.gcf()
@@ -133,7 +481,6 @@ def plot_introspection(
         plt.close(fig)
     except Exception:
         logger.exception("Failed to produce SHAP waterfall plots")
-
 
     if store_shap_values:
         shap_payload = {
@@ -407,7 +754,7 @@ def plot_roc_ovr(
         if process_insts else range(n_classes)
     )
     ax.legend(
-        [f"{labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
+        [f"{labels[i]} (AUC: {auc_score:.2f})" for i, auc_score in enumerate(auc_scores)],
         # title=f"ROC (process vs rest), {input_type} set",
         title="ROC (process vs rest)",
         loc="lower right",

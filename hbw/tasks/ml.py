@@ -880,7 +880,17 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             plot_roc_ovr,
             plot_roc_ovo,
             plot_output_nodes,
+            # plot_introspection_old,
             plot_introspection,
+        )
+
+        plot_introspection(
+            self.ml_model_inst,
+            output["plots"],
+            data.test,
+            input_features=self.ml_model_inst.input_features_ordered,
+            stats=stats,
+            store_shap_values=True,
         )
 
         # Since we only have test data, process sequentially with cleanup
@@ -947,25 +957,6 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
         )
         plt.close("all")
         gc.collect()
-
-        for proc, node_config in self.ml_model_inst.train_nodes.items():
-            # introspection plot for variable importance ranking
-            plot_introspection(
-                self.ml_model_inst,
-                output["plots"],
-                data.test,
-                input_features=self.ml_model_inst.input_features_ordered,
-                output_node=node_config["ml_id"],
-                postfix=f"_{proc}",
-                stats=stats,
-                store_shap_values=True,
-            )
-            plt.close("all")
-            gc.collect()
-            if len(self.ml_model_inst.train_nodes) <= 2:
-                # fake binary; no need to plot for each process separately
-                break
-
 
         # dump all stats into yaml file
         output["stats"].dump(stats, formatter="json")
