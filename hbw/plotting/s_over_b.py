@@ -54,6 +54,9 @@ def separate_sig_bkg_hists(hists: OrderedDict):
     return h_sig, h_bkg
 
 
+significance_value_func = lambda s, b: np.sqrt(2 * ((s + b) * np.log(1 + s / b) - s))
+
+
 def plot_s_over_b(
     hists: OrderedDict,
     config_inst: od.Config,
@@ -64,7 +67,7 @@ def plot_s_over_b(
     shape_norm: bool | None = False,
     yscale: str | None = "",
     hide_errors: bool | None = None,
-    sqrt_b: bool | None = None,
+    metric: str = "s_over_b",
     cumsum: bool = False,
     reversed_cumsum: bool = False,
     process_settings: dict | None = None,
@@ -80,8 +83,9 @@ def plot_s_over_b(
         law run cf.PlotVariables1D --version prod1 \
             --processes hh_ggf_hbb_hvvqqlnu_kl1_kt1,tt_sl --variables jet1_pt \
             --plot-function hbw.plotting.s_over_b.plot_s_over_b \
-            --general-settings sqrt_b
+            --general-settings metric=s_over_sqrt_b
     """
+    assert metric in ["s_over_b", "s_over_sqrt_b", "significance"], f"Unsupported metric {metric}"
     if cumsum and reversed_cumsum:
         raise Exception("We can only do the cumulative cumsum in one direction at the time!")
 
@@ -96,11 +100,18 @@ def plot_s_over_b(
     h_sig, h_bkg = separate_sig_bkg_hists(hists)
 
     # TODO: include uncertainties
-    S_over_B = h_sig[::sum].value / h_bkg[::sum].value
-    S_over_sqrtB = h_sig[::sum].value / np.sqrt(h_bkg[::sum].value)
+    sum_sig = h_sig[::sum].value
+    sum_bkg = h_bkg[::sum].value
+    S_over_B = sum_sig / sum_bkg if sum_bkg > 0 else float("inf")
+    S_over_sqrtB = sum_sig / np.sqrt(sum_bkg) if sum_bkg > 0 else float("inf")
+    significance = (
+        np.sqrt(2 * ((sum_sig + sum_bkg) * np.log(1 + sum_sig / sum_bkg) - sum_sig))
+        if sum_bkg > 0 else float("inf")
+    )
     logger.info(
         f"\n    Integrated S over B:     {round_sig(S_over_B)}" +
-        f"\n    Integrated S over sqrtB: {round_sig(S_over_sqrtB)}",
+        f"\n    Integrated S over sqrtB: {round_sig(S_over_sqrtB)}" +
+        f"\n    Integrated significance: {round_sig(significance)}",
     )
 
     if cumsum or reversed_cumsum:
@@ -116,9 +127,22 @@ def plot_s_over_b(
             h[...] = h_view
 
     # NOTE: this does not take into account the variances on the background stack
-    if sqrt_b:
+    if metric == "s_over_sqrt_b":
         h_out = h_sig / np.sqrt(h_bkg.values())
         ylabel = r"$Signal / \sqrt{Background}$"
+    elif metric == "significance":
+        sig_values = h_sig.values()
+        bkg_values = h_bkg.values()
+        significance_values = significance_value_func(sig_values, bkg_values)
+        h_out = h_sig.copy()
+        h_out.values()[...] = significance_values
+        # h_out.variances()[...] = significance_variances
+        h_out.variances()[...] = np.zeros_like(significance_values)
+
+        ylabel = "Significance"
+        # add significanes (inverse quadratically)
+        overall_significance = np.sqrt(np.sum(significance_values**2))
+        logger.info(f"Overall significance (quadratic sum over bins): {overall_significance}")
     else:
         h_out = h_sig / h_bkg.values()
         ylabel = "Signal / Background"
@@ -140,6 +164,9 @@ def plot_s_over_b(
     # disable autmatic setting of ylim
     default_style_config["ax_cfg"]["ylim"] = None
     default_style_config["ax_cfg"]["ylabel"] = ylabel
+    default_style_config["legend_cfg"]["title"] = (
+        f"significance: {round_sig(overall_significance)}" if metric == "significance" else None
+    )
 
     style_config = law.util.merge_dicts(
         default_style_config,
