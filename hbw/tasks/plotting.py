@@ -13,6 +13,7 @@ import order as od
 from columnflow.tasks.framework.base import Requirements, ShiftTask, TaskShifts
 from columnflow.tasks.framework.mixins import (
     CalibratorClassesMixin, SelectorClassMixin, ProducerClassesMixin,
+    ReducerClassMixin,
     # CalibratorsMixin, SelectorMixin, ProducersMixin,
     MLModelsMixin,
     CategoriesMixin,
@@ -73,7 +74,7 @@ def plot_multi_hist_producer(
         hists[hist_producer] = sum(w_hists.values())
 
     remove_residual_axis(hists, "shift")
-    hists = apply_variable_settings(hists, variable_insts, variable_settings)
+    hists, _ = apply_variable_settings(hists, variable_insts, variable_settings)
 
     plot_config = OrderedDict()
 
@@ -105,7 +106,6 @@ def plot_multi_hist_producer(
     # set process label as legend title
     process_label = processes[0].label if len(processes) == 1 else "Processes"
     default_style_config["legend_cfg"]["title"] = process_label
-
     return plot_all(plot_config, default_style_config, **kwargs)
 
 
@@ -113,6 +113,7 @@ class PlotVariablesMultiHistProducer(
     HBWTask,
     CalibratorClassesMixin,
     SelectorClassMixin,
+    ReducerClassMixin,
     ProducerClassesMixin,
     MLModelsMixin,
     CategoriesMixin,
@@ -146,7 +147,7 @@ class PlotVariablesMultiHistProducer(
     )
 
     @classmethod
-    def build_taf_insts(cls, params, shifts: TaskShifts | None = None):
+    def resolve_instances(cls, params, shifts: TaskShifts | None = None):
         # TODO: HistProducersMixin
         if not cls.resolution_task_cls:
             raise ValueError(f"resolution_task_cls must be set for multi-config task {cls.task_family}")
@@ -169,7 +170,7 @@ class PlotVariablesMultiHistProducer(
                     _params["dataset"] = dataset
                     _params["hist_producer"] = hist_producer
                     logger.warning(f"building taf insts for {hist_producer} {config_inst.name}, {dataset}")
-                    _params = cls.resolution_task_cls.build_taf_insts(_params, shifts)
+                    _params = cls.resolution_task_cls.resolve_instances(_params, shifts)
                     cls.resolution_task_cls.get_known_shifts(_params, shifts)
 
         params["known_shifts"] = shifts
@@ -209,7 +210,7 @@ class PlotVariablesMultiHistProducer(
     def store_parts(self):
         parts = super().store_parts()
         parts.insert_before("version", "plot", f"datasets_{self.datasets_repr}")
-        parts.insert_before("version", "weights", f"weights_{self.hist_producers_repr}")
+        parts.insert_before("version", "weights", f"hists_{self.hist_producers_repr}")
         return parts
 
     def create_branch_map(self):
@@ -258,7 +259,6 @@ class PlotVariablesMultiHistProducer(
                 for dataset, inp in inputs.items():
                     dataset_inst = self.config_inst.get_dataset(dataset)
                     h_in = inp["collection"][0]["hists"].targets[self.branch_data.variable].load(formatter="pickle")
-
                     # loop and extract one histogram per process
                     for process_inst in process_insts:
                         # skip when the dataset is already known to not contain any sub process
@@ -271,9 +271,9 @@ class PlotVariablesMultiHistProducer(
                         # axis selections
                         h = h[{
                             "process": [
-                                hist.loc(p.id)
+                                hist.loc(p.name)
                                 for p in sub_process_insts[process_inst]
-                                if p.id in h.axes["process"]
+                                if p.name in h.axes["process"]
                             ],
                             "category": [
                                 hist.loc(c.name)
@@ -289,7 +289,6 @@ class PlotVariablesMultiHistProducer(
 
                         # axis reductions
                         h = h[{"process": sum, "category": sum}]
-
                         # add the histogram
                         if hist_producer in hists and process_inst in hists[hist_producer]:
                             hists[hist_producer][process_inst] = hists[hist_producer][process_inst] + h
