@@ -17,6 +17,16 @@ from cmsdb.constants import (  # noqa: F401
     br_z,
 )
 
+from cmsdb.processes import (
+    hh_ggf_kl1_kt1,
+    hh_vbf_kv1_k2v1_kl1,
+    hhh_ggf,
+)
+com = 13.6
+lumi = 62.4
+xs_hh = hh_ggf_kl1_kt1.xsecs[com] + hh_vbf_kv1_k2v1_kl1.xsecs[com]
+xs_hhh = hhh_ggf.xsecs[com]
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
@@ -43,6 +53,10 @@ br_w_full = br_w.copy()
 br_w_full.tau_lep = br_wlep.tau * br_tau.lep
 br_w_full.tau_had = br_wlep.tau * br_tau.had
 br_w_full.lep_no_tau = br_wlep.e + br_wlep.mu
+br_w_lep_no_tau_had = br_wlep.e + br_wlep.mu + br_wlep.tau * br_tau.lep
+
+
+br_bbww_dl_no_tau_had = br_hh.bbww * br_w_lep_no_tau_had ** 2
 
 br_z_full = br_z.copy()
 br_z_full.tau_leplep = br_zlep.tau * br_tau.lep ** 2
@@ -91,6 +105,15 @@ br_labels = {
     "gg": r"$\gamma\gamma$",
     "zg": r"$Z\gamma$",
     "mm": r"$\mu\mu$",
+}
+br_labels_reduced = {
+    "bb": "bb",
+    "ww": "WW",
+    "gluglu": "gg",
+    "tt": r"$\tau\tau$",
+    "cc": "cc",
+    "zz": "ZZ",
+    "gg": r"$\gamma\gamma$",
 }
 
 
@@ -205,6 +228,7 @@ def make_plot(
         4: 22,
         5: 20,
         6: 18,
+        7: 16,
         9: 13,
     }.get(len(labels_dict), 13)  # adjust text size based on number of decay modes
 
@@ -298,10 +322,26 @@ def make_plot_hh(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadran
         upper_quadrant=upper_quadrant,
         # color_threshold_small=1e-4,
     )
+    make_plot(
+        hh_brs,
+        br_labels_reduced,
+        # title=r"Branching Ratios of $\mathrm{HH \to XXYY}$ decay modes",
+        title="",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HH \to XXYY})$",
+        xlabel=r"$\mathrm{H \to XX}$",
+        ylabel=r"$\mathrm{H \to YY}$",
+        outfile_base="hh_brs_reduced",
+        cmap=cmap,
+        reverse_x=reverse_x,
+        reverse_y=reverse_y,
+        upper_quadrant=upper_quadrant,
+        # color_threshold_small=1e-4,
+    )
 
 
 # initialize BR dictionaries for HH, WW, and ZZ decays
 hh_brs = make_br_dict(br_h, br_labels)
+hh_brs_reduced = make_br_dict(br_h, br_labels_reduced)
 ww_brs = make_br_dict(br_w_full, br_w_labels)
 zz_brs = make_br_dict(br_z_full, br_z_labels)
 tautau_brs = make_br_dict(br_tau, br_tau_labels)
@@ -425,6 +465,19 @@ def make_plot_hhh(cmap="viridis", reverse_x=False, reverse_y=False, upper_quadra
         xlabel=r"$\mathrm{H \to XX}$",
         ylabel=r"$\mathrm{H \to YY}$",
         outfile_base="hhh_brs",
+        cmap=cmap,
+        reverse_x=reverse_x,
+        reverse_y=reverse_y,
+        upper_quadrant=upper_quadrant,
+    )
+    make_plot(
+        hhh_brs,
+        br_labels_reduced,
+        title="",
+        cbar_label=r"$\mathcal{BR}(\mathrm{HHH \to bbXXYY})$",
+        xlabel=r"$\mathrm{H \to XX}$",
+        ylabel=r"$\mathrm{H \to YY}$",
+        outfile_base="hhh_brs_reduced",
         cmap=cmap,
         reverse_x=reverse_x,
         reverse_y=reverse_y,
