@@ -329,7 +329,7 @@ def set_config_defaults_and_groups(config_inst):
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
         "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
         # "minor_all": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
-        "hh_sm": hh_sm,
+        "hh_sm0": hh_sm,
         "hh_sm1": hh_sm1,
         "hbbhww_sm": hbbhww_sm,
         "hbbhww_ggf": hbbhww_ggf,
@@ -597,7 +597,7 @@ def set_config_defaults_and_groups(config_inst):
     }
 
     # cms label options: "wip", "pw", "preliminary", "public"
-    cms_label = "public"
+    cms_label = "pw"
 
     # plotting settings groups
     # (used in plotting)
@@ -986,6 +986,7 @@ def set_config_defaults_and_groups(config_inst):
                 "ylabel_fontsize": 30,
                 "xlabel_fontsize": 30,
                 "ylabel": "Data / Bkg.",
+                "ylim": (0.25, 1.75),
             },
             "cms_label_cfg": {
                 "fontsize": 24,
@@ -1017,9 +1018,32 @@ def set_config_defaults_and_groups(config_inst):
                 "xycoords": "axes fraction",
                 "fontsize": 16,
             },
-            # "rax_cfg": {
-            #     "ylim": (0.75, 1.25),
-            # },
+            "rax_cfg": {
+                "ylim": (0.75, 1.25),
+            },
+        },
+        "profiles": {
+            "ax_cfg": {
+                # "ylim": (0., 1.5),
+                "ylim": (-10., 12.),
+            },
+            "gridspec_cfg": {
+                "left": 0.15,
+                "right": 0.85,
+                "top": 0.95,
+                # "bottom": 0.05,
+                "bottom": 0.1,
+            },
+            "legend_cfg": {
+                "ncols": 1,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.04, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 20,
+            },
         },
         "default_rax40": {
             "legend_cfg": {
@@ -1120,6 +1144,12 @@ def set_config_defaults_and_groups(config_inst):
         },
         "legend_single_col": {
             "legend_cfg": {"ncols": 1, "fontsize": 20},
+        },
+        "shifted": {
+            "legend_cfg": {"ncols": 1, "fontsize": 20},
+            "rax_cfg": {
+                "ylim": (0.75, 1.25),
+            },
         },
         "small_legend": {
             "legend_cfg": {"ncols": 2, "fontsize": 16},

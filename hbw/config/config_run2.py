@@ -602,8 +602,8 @@ def add_config(
     )
 
     # top pt reweighting
-    cfg.add_shift(name="top_pt_up", id=9, type="shape")
-    cfg.add_shift(name="top_pt_down", id=10, type="shape")
+    cfg.add_shift(name="top_pt_up", id=9, type="shape", label=r"$p_{T}^{top}$ weight applied twice")
+    cfg.add_shift(name="top_pt_down", id=10, type="shape", label=r"$p_{T}^{top}$ weight not applied")
     add_shift_aliases(cfg, "top_pt", {"top_pt_theory_weight": "top_pt_theory_weight_{direction}"})
 
     # V+jets reweighting
@@ -1044,7 +1044,7 @@ def add_config(
     cfg.x.keep_columns = DotDict.wrap({
         "cf.MergeSelectionMasks": {
             "mc_weight", "normalization_weight", "process_id", "category_ids", "cutflow.*",
-            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "gen_hbw_decay",
+            "HbbJet.n_subjets", "HbbJet.n_separated_jets", "HbbJet.max_dr_ak4", "gen_hbw_decay.*.*",
         },
     })
 

@@ -347,6 +347,10 @@ class MLClassifierBase(MLModel):
                         x_title=f"logit({x_title})",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
+                            # "slice": (-4j, 10j),
+                            # "x_min": -4,
+                            "overflow": True,
+                            "underflow": True,
                         },
                     )
                     config_inst.add_variable(
@@ -362,6 +366,11 @@ class MLClassifierBase(MLModel):
                                 "processes": [proc],
                                 "n_bins": 4,
                             },
+                            "overflow": True,
+                            "underflow": True,
+                            # "slice": (4.228j, 10j),  # last 1b ggF bin
+                            # "slice": (5.788j, 10j),  # last 2b ggF bin
+                            # "slice": (4.595j, 10j),  # NN score > 0.99
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
 
