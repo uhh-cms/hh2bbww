@@ -325,7 +325,7 @@ def trigger_prod_sl_ids_init(self: Producer) -> None:
 # dilepton trigger prod
 @producer(
     produces={"trig_ids"},
-    version=1,
+    version=3,
 )
 def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
@@ -334,6 +334,14 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     This column can then be used to fill a Histogram where each bin corresponds to a certain trigger.
     """
     # build sequential combinations of triggers, ids can be found in the trigger config
+    inclusive_trigger_sequence = {
+        "dilep": [102, 202, 301, 401],
+        "single": [101, 201],
+        "new": [203, 204],
+        "old": [101, 102, 201, 202, 301, 401],
+        "allExclDoubleEle": [101, 102, 201, 202, 203, 301, 401],
+        "all": [101, 102, 201, 202, 203, 204, 301, 401],
+    }
     mixed_trigger_sequence = {
         "emu_dilep": [301, 401],
         "emu_single": [201, 101],
@@ -351,6 +359,7 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "mm_single": [101],
     }
     trigger_sequence = {
+        "incl": inclusive_trigger_sequence,
         "ee": ee_trigger_sequence,
         "mm": mm_trigger_sequence,
         "mixed": mixed_trigger_sequence,
@@ -364,7 +373,7 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         trig_ids = ak.concatenate([trig_ids, ak.where(trig_passed, [[trigger.hlt_field]], [[]])], axis=1)
 
     # add sequential combinations of triggers
-    for channel in ["ee", "mm", "mixed"]:
+    for channel in trigger_sequence.keys():
         seq_trigger = events.run * 0  # initialize with zeros
         seq_label = ""
         for label, trigger_ids in trigger_sequence[channel].items():
@@ -394,6 +403,59 @@ def trigger_prod_dl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @trigger_prod_dl.init
 def trigger_prod_dl_init(self: Producer) -> None:
     self.uses.add("trigger_ids")
+
+    if self.config_inst.has_variable("trg_lepton0_pt"):
+        return
+
+    # change lepton pt binning
+    self.config_inst.add_variable(
+        name="trg_lepton0_pt",
+        expression=lambda events: events.Lepton[:, 0].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+            slice=(0j, 200j),
+            x_max=200,
+            rebin=10,
+            overflow=True,
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=-99999,
+        x_title=r"Leading lepton $p_{{T}}$",
+    )
+    self.config_inst.add_variable(
+        name="trg_lepton1_pt",
+        expression=lambda events: events.Lepton[:, 1].pt,
+        aux=dict(
+            inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
+        ),
+        binning=(400, 0., 400.),
+        unit="GeV",
+        null_value=-99999,
+        x_title=r"Subleading lepton $p_{{T}}$",
+    )
+    self.config_inst.add_variable(
+        name="sf_npvs",
+        expression=lambda events: events.PV.npvs * 1.0,
+        aux={
+            "inputs": {"PV.npvs"},
+        },
+        binning=[0., 30.] + [i for i in range(31, 41)] + [50., 81.],
+        x_title=r"$\text{N}_{\text{PV}}$",
+    )
+    # add trigger ids as variables
+    self.config_inst.add_variable(
+        name="trigger_ids",  # these are the trigger IDs saved during the selection
+        aux={"axis_type": "intcat"},
+        x_title="Trigger IDs",
+    )
+    # trigger ids für scale factors
+    self.config_inst.add_variable(
+        name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
+        aux={"axis_type": "strcat"},
+        x_title="Trigger IDs for scale factors",
+    )
+
 
 
 # dilepton trigger prod without sequential combinations to reduce memory usage

@@ -194,6 +194,8 @@ def plot_efficiencies(
     # switch trigger and processes when plotting efficiency of one trigger for multiple processes
     proc_as_label = False
     label_dict = {
+        "old": "Baseline triggers",
+        "all": "All triggers",
         "mixed": r"$e^\pm\mu^\pm$ trigger",  # "mixed + ele&jet",
         "emu_dilep": "Dilepton triggers",
         "ee_dilep": "Dilepton triggers",
@@ -214,8 +216,8 @@ def plot_efficiencies(
         "QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65": "QuadPFJet",
         "ee": r"$e^+e^-$ trigger",
         "mm": r"$\mu^+\mu^-$ trigger",
-        "ee_old": r"$e^+e^-$ trigger",
-        "emu_old": r"$e^\pm\mu^\pm$ trigger ",
+        "ee_old": r"$e^+e^-$ trigger (old)",
+        "emu_old": r"$e^\pm\mu^\pm$ trigger (old)",
         "MC background": "MC background",
         "Data JetHT/MET": r"$\varepsilon^{\text{meas.}}_{\text{Data}}$",
         "sf_bkg_eff": r"$\varepsilon^{\text{true}}_{\text{MC}}$(Background)",
@@ -344,6 +346,9 @@ def plot_efficiencies(
                     #     label = "with isolated" + "\n" + "trigger paths"
                     # label += "\n" + fr"($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
                     label += fr" ($\varepsilon_{{\text{{int}}}}$: {efficiency_sum:.3f})"
+                    yield_increase = 1 / efficiency_sum - 1 if efficiency_sum < 1 else -1
+                    # if yield_increase > 0:
+                    #     label += "\n" + fr"(yield increase: {(yield_increase * 100):.2f}%)"
                     # if "old" in i:
                     #     label += "\n" + "w/o non-isolated trigger paths"
                 # calculate uncertainties
@@ -410,6 +415,7 @@ def plot_efficiencies(
     style_config["cms_label_cfg"]["fontsize"] = 23
     style_config["annotate_cfg"]["fontsize"] = 22
     style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 1.5))
+    # style_config["ax_cfg"]["ylim"] = kwargs.get("ylim", (0, 3))
     style_config["ax_cfg"]["yscale"] = kwargs.get("yscale", "linear")
     style_config["rax_cfg"]["ylabel"] = "Ratio"
     style_config["rax_cfg"]["ylim"] = kwargs.get("rax_ylim", (0.92, 1.08))
