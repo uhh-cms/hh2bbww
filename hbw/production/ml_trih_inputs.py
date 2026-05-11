@@ -69,7 +69,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
     },
     produces={
         "{btag_jet1,btag_jet2,btag_jet3,btag_jet4}.{pt,eta,phi,mass,btagUParTAK4B,discrete_b_score}",
-        # "{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", 
+        # "{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}",
         "hhh_dr_bb",  # "mli_mindr_bb", "mli_maxdr_bb",
         "Jet.discrete_b_score", "discrete_sum_b_score",
         "check_n_btag",
@@ -79,7 +79,7 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
 def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer to extract bjetas and btag properties for HHH analysis
-    hbjets are just possible jets from which to extract Hiuggs candidate and corresponding properties. 
+    hbjets are just possible jets from which to extract Hiuggs candidate and corresponding properties.
     btag_jets actually fulfill the btag wp threshold medium.
     """
 
@@ -118,8 +118,8 @@ def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     hbjet_pairs = ak.combinations(btag_jets, 2)
     dr = hbjet_pairs[:, :, "0"].delta_r(hbjet_pairs[:, :, "1"])
-    #events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
-    #events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
+    # events = set_ak_column_f32(events, "mli_mindr_bb", ak.min(dr, axis=1))
+    # events = set_ak_column_f32(events, "mli_maxdr_bb", ak.max(dr, axis=1))
     events = set_ak_column_f32(events, "hhh_dr_bb", btag_jets[:, 0].delta_r(btag_jets[:, 1]))
 
     # for i in range(4):
@@ -280,7 +280,6 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     check_variable_existence(self)
 
 
-
 @producer(
     uses={
         # "*", "*.*",
@@ -288,7 +287,7 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
         btag_wp_weights,
         "Jet.*",
     },
-    produces={"flavour_test","PT","btag_weight"},
+    produces={"flavour_test", "PT", "btag_weight"},
 )
 def testing_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
