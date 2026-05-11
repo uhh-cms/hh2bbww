@@ -18,6 +18,7 @@ from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_
 from hbw.util import IF_SL, IF_DL, IF_MC
 from hbw.weight.hp_dih import default_hist_producer
 from hbw.weight.hp_trih import default_hist_producer_trih
+from hbw.production.prepare_objects import prepare_objects
 
 
 ak = maybe_import("awkward")
@@ -46,7 +47,7 @@ def del_sub_proc_stats(
 
 
 @producer(
-    uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), IF_DL(catid_hhh_sr), increment_stats, "process_id", "fold_indices"},  # noqa E501
+    uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), IF_DL(catid_hhh_sr), increment_stats, prepare_objects, "process_id", "fold_indices"},  # noqa E501
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
 )
@@ -62,6 +63,8 @@ def prepml(
     """
     Producer that is run as part of PrepareMLEvents to collect relevant stats
     """
+
+    events = self[prepare_objects](events, **kwargs)
 
     if self.config_inst.has_tag("is_sl"):
         sr_categorizer = catid_sr
@@ -182,3 +185,5 @@ prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "c
 prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})
 # prepml_hhh_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
 # prepml_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
+prepml_lep2pt15 = prepml.derive("prepml_lep2pt15", cls_dict={"extra_categorizer": "mask_fn_lep2_pt15"})
+prepml_lep2pt10 = prepml.derive("prepml_lep2pt10", cls_dict={"extra_categorizer": "mask_fn_lep2_pt10"})

@@ -188,7 +188,7 @@ class MLDatasetLoader:
     @property
     def weights(self) -> np.ndarray:
         if not hasattr(self, "_weights"):
-            self._weights = ak.to_numpy(self._events.event_weight).astype(np.float32)
+            self._weights = ak.to_numpy(self._events.event_weight, allow_missing=False).astype(np.float32)
 
         return self._weights
 
@@ -211,7 +211,7 @@ class MLDatasetLoader:
 
         # transform features into numpy npdarray
         # NOTE: when converting to numpy, the awkward array seems to stay in memory...
-        features = ak.to_numpy(features)
+        features = ak.to_numpy(features, allow_missing=False)
         features = features.astype(
             [(name, np.float32) for name in features.dtype.names], copy=False,
         ).view(np.float32).reshape((-1, len(features.dtype)))
@@ -345,7 +345,7 @@ class MLDatasetLoader:
         else:
             train_weights = self.get_xsec_train_weights()
 
-        self._train_weights = ak.to_numpy(train_weights).astype(np.float32)
+        self._train_weights = ak.to_numpy(train_weights, allow_missing=False).astype(np.float32)
 
         return self._train_weights
 
@@ -379,7 +379,7 @@ class MLDatasetLoader:
             num_events_per_process[proc] = num_events_per_proc
 
         validation_weights = self.weights / sum_abs_weights * max(num_events_per_process.values())
-        self._validation_weights = ak.to_numpy(validation_weights).astype(np.float32)
+        self._validation_weights = ak.to_numpy(validation_weights, allow_missing=False).astype(np.float32)
 
         return self._validation_weights
 
