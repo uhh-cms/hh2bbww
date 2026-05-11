@@ -36,7 +36,7 @@ logger = law.logger.get_logger(__name__)
     # produced dy weight column
     produced_column="dy_correction_weight",
     uses_column=None,
-    version=4,
+    version=5,
     n_jet=2,
     derivation_region="with_trigger_weight",
     derivation_configs=None,
@@ -130,6 +130,11 @@ def dy_correction_weight_init(self: Producer) -> None:
 
 @dy_correction_weight.requires
 def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
+
+    # TODO: the here required categories don't exist in some workflows leading to errors here.
+    # In that case this can be commented out, but we should probably find a less hacky solution
+    # return None
+
     from hbw.tasks.dy_corrections import ExportDYWeights
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(

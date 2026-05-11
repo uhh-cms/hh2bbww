@@ -161,6 +161,11 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
 })
+low_pt_muon_id_weights = muon_weights.derive("low_pt_muon_id_weights", cls_dict={
+    "weight_name": "muon_low_pt_id_weight",
+    "get_muon_file": (lambda self, external_files: external_files.muon_low_pt_sf),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.low_pt_muon_id_sf_names)),
+})
 
 # electron weights
 electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
@@ -170,17 +175,21 @@ electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dic
 
 
 @producer(
-    uses={muon_id_weights, muon_iso_weights},
-    produces={muon_id_weights, muon_iso_weights},
+    uses={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
+    produces={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
     mc_only=True,
 )
 def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer that calculates the muon id and iso weights.
     """
+    # TODO: maybe we could merge the two id jsons similar to the btag SFs?
+    high_pt_mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
+    low_pt_mu_mask = (events.Muon["pt"] < 10.0)
     # run muon id and iso weights
-    events = self[muon_id_weights](events, **kwargs)
-    events = self[muon_iso_weights](events, **kwargs)
+    events = self[muon_id_weights](events, muon_mask=high_pt_mu_mask, **kwargs)
+    events = self[muon_iso_weights](events, muon_mask=high_pt_mu_mask, **kwargs)
+    events = self[low_pt_muon_id_weights](events, muon_mask=low_pt_mu_mask, **kwargs)
 
     return events
 
@@ -231,7 +240,8 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
 
     # hotfix: c/f normalization weights producer breaks for our dy_m10to50_amcatnlo dataset
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
-    if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    # if self.dataset_inst.name == "dy_m10to50_amcatnlo":
+    if (("dy_" in self.dataset_inst.name) and ("_m10to50" in self.dataset_inst.name)):
         events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
     # if self.dataset_inst.name.startswith("dy_"):
     #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
@@ -285,7 +295,6 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
-        # __import__("IPython").embed()  # for debugging
     # compute normalization weights
     events = self[combined_normalization_weights](events, **kwargs)
     # __import__("IPython").embed()  # for debugging
@@ -300,7 +309,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         if self.config_inst.campaign.x.year in [2022, 2023]:
-        # different for 2024 and not for qcd datasets
+            # different for 2024 and not for qcd datasets
             events = self[normalized_btag_weights](events, **kwargs)
             # compute and normalize btag SF weights
             events = self[btag_weights](
@@ -333,8 +342,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events = self[electron_reco_weights](events, **kwargs)
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
-        mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
-        events = self[muon_id_iso_weights](events, muon_mask=mu_mask, **kwargs)
+        # mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
+        events = self[muon_id_iso_weights](events, **kwargs)  # muon_mask=mu_mask, **kwargs)
 
     if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[self.trigger_weights_producer](events, **kwargs)
