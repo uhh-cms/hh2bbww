@@ -247,6 +247,66 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
+    "v2_discrete": [
+        # new input features:
+        "mli_dr_ll_bb",  # used instead of mli_dr_bb_llMET
+        # v1 sorted from GGF SHAP
+        "mli_mbbllMET",
+        "mli_b1_pt",
+        "mli_mbb",
+        "mli_mll",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        "mli_maxdr_jj",
+        "mli_mixed_channel",
+        "mli_dr_bb",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_dr_ll",
+        "mli_met_pt",
+        "mli_min_dr_llbb",
+        "mli_discrete_b_score_sum",
+        "mli_ll_pt",
+        "mli_ht",
+        # "mli_mindr_lb",  # removed: correlated with mli_min_dr_llbb
+        # "mli_dr_bb_llMET",  # using mli_dr_ll_bb instead
+        "mli_j1_eta",
+        "mli_n_jet",
+        "mli_j1_pt",
+    ],
+    "v3_discrete": [
+        # new input features:
+        "mli_dr_ll_bb",  # used instead of mli_dr_bb_llMET
+        # v1 sorted from GGF SHAP
+        "mli_mbbllMET",
+        "mli_b1_pt",
+        "mli_mbb",
+        "mli_mll",
+        "mli_bb_pt",
+        "mli_mllMET",
+        "mli_lep_pt",
+        "mli_maxdr_jj",
+        "mli_mixed_channel",
+        "mli_dr_bb",
+        "mli_lep2_pt",
+        "mli_b2_pt",
+        "mli_dr_ll",
+        "mli_met_pt",
+        "mli_min_dr_llbb",
+        # "mli_discrete_b_score_sum",
+        "mli_ll_pt",
+        "mli_ht",
+        # "mli_mindr_lb",  # removed: correlated with mli_min_dr_llbb
+        # "mli_dr_bb_llMET",  # using mli_dr_ll_bb instead
+        "mli_j1_eta",
+        "mli_n_jet",
+        "mli_j1_pt",
+        "mli_b1_discrete_b_score",
+        "mli_b2_discrete_b_score",
+        "mli_j1_discrete_b_score",
+        "mli_j2_discrete_b_score",
+    ],
     "vbf_extended": [
         "mli_dr_ll_bb",
         "mli_mbbllMET",
@@ -485,7 +545,7 @@ vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
 # first Iteration on 2024 samples, some signal samples still missing
 multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2"],
+    "input_features": input_features["v2_discrete"],
     "processes": (
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
@@ -538,7 +598,7 @@ multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
 })
 ggf24 = ggfv1.derive("ggf24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2"],
+    "input_features": input_features["v2_discrete"],
     "processes": [
         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
@@ -591,7 +651,7 @@ ggf24 = ggfv1.derive("ggf24", cls_dict={
 })
 vbf24 = vbfv1.derive("vbf24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2"],
+    "input_features": input_features["v2_discrete"],
     "processes": [
         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
         "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
@@ -651,3 +711,47 @@ vbf24 = vbfv1.derive("vbf24", cls_dict={
         "other": 8,
     },
 })
+multiclass24_v3 = multiclass24.derive("multiclass24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+ggf24_v3 = ggf24.derive("ggf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+vbf24_v3 = vbf24.derive("vbf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+multiclass24_v0 = multiclass24.derive("multiclass24_v0", cls_dict={
+    "input_features": input_features["v3_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+ggf24_v0 = ggf24.derive("ggf24_v0", cls_dict={
+    "input_features": input_features["v3_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+vbf24_v0 = vbf24.derive("vbf24_v0", cls_dict={
+    "input_features": input_features["v3_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+multiclass24_lep2pt15 = multiclass24.derive("multiclass24_lep2pt15", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+ggf24_lep2pt15 = ggf24.derive("ggf24_lep2pt15", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+vbf24_lep2pt15 = vbf24.derive("vbf24_lep2pt15", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+multiclass24_lep2pt10 = multiclass24.derive("multiclass24_lep2pt10", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt10",
+})
+ggf24_lep2pt10 = ggf24.derive("ggf24_lep2pt10", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt10",
+})
+vbf24_lep2pt10 = vbf24.derive("vbf24_lep2pt10", cls_dict={
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt10",
+})
+multiclass24_debug = multiclass24.derive("multiclass24_debug", cls_dict={
+    "input_features": input_features["v2_discrete"],
+})
+# ggf24_v3 = ggf24.derive("ggf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+# vbf24_v3 = vbf24.derive("vbf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})

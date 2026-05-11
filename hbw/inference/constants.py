@@ -158,6 +158,8 @@ processes_per_shape = {
     "jer_{campaign}": ["all"],
     "jec_Total_{year}": ["all"],
     "jer_{year}": ["all"],
+    "btag_bc": ["all"],
+    "btag_light": ["all"],
     "btag_hf_{bjet_cat}": ["all"],
     "btag_lf_{bjet_cat}": ["all"],
     "btag_hfstats1_{bjet_cat}": ["all"],
