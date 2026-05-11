@@ -102,8 +102,8 @@ def _merge_btv_corrections_inplace(
        - merge with light under working_point nodes, which is trivial as per step 3)
     """
     # 1) get b and light corrections
-    b_corr = copy.deepcopy(_get_correction(cset, "UParTAK4_kinfit"))
-    l_corr = copy.deepcopy(_get_correction(cset, "UParTAK4_negtagDY"))
+    b_corr = copy.deepcopy(_get_correction(cset, "UParTAK4_mujets"))
+    l_corr = copy.deepcopy(_get_correction(cset, "UParTAK4_light"))
 
     # 2) amend systematic names with suffixes, store central ones for 3)
     b_syst_item_central = None
@@ -131,19 +131,19 @@ def _merge_btv_corrections_inplace(
             b_syst_item.key = l_syst_item.key
             b_corr.data.content.append(b_syst_item)
 
-    # 4) create c correction
-    c_corr = copy.deepcopy(b_corr)
-    central_sf_values = {}
-    for c_syst_item, wp_item, flavor_item, eta_binning, eta_edges, _, sf_values in _iter_btv_correction(c_corr):
-        # overwrite flavor
-        flavor_item.key = 4
-        # save central values during central iteration, or double uncertainty for other systematics
-        central_key = (wp_item.key, eta_edges)
-        if c_syst_item.key == "central":
-            central_sf_values[central_key] = sf_values
-        elif c_syst_item.key.endswith("_bc"):
-            for i, (syst_value, central_value) in enumerate(zip(sf_values, central_sf_values[central_key])):
-                sf_values[i] = 2 * syst_value - central_value
+    # 4) create c correction NOTE: these blocks are not needed if the json already conatains c corrections
+    # c_corr = copy.deepcopy(b_corr)
+    # central_sf_values = {}
+    # for c_syst_item, wp_item, flavor_item, eta_binning, eta_edges, _, sf_values in _iter_btv_correction(c_corr):
+    #     # overwrite flavor
+    #     flavor_item.key = 4
+    #     # save central values during central iteration, or double uncertainty for other systematics
+    #     central_key = (wp_item.key, eta_edges)
+    #     if c_syst_item.key == "central":
+    #         central_sf_values[central_key] = sf_values
+    #     elif c_syst_item.key.endswith("_bc"):
+    #         for i, (syst_value, central_value) in enumerate(zip(sf_values, central_sf_values[central_key])):
+    #             sf_values[i] = 2 * syst_value - central_value
 
     # 5) merge b, c and light corrections into a single one
     merged_corr = copy.deepcopy(b_corr)
@@ -156,12 +156,12 @@ def _merge_btv_corrections_inplace(
         "systematic variations ending in '_bc' ('_light') only affect flavor 4/5 (0) and evaluate to 'central' values "
         "otherwise."
     )
-    # merge with c at working_point level
+    # merge with c at working_point level see NOTE above
     # (pairwise traversal would be faster, but brute-force is perfectly fine to keep it simple)
-    for syst_item, wp_item in _iter_btv_correction(merged_corr, stop="working_point"):
-        for c_syst_item, c_wp_item in _iter_btv_correction(c_corr, stop="working_point"):
-            if (syst_item.key, wp_item.key) == (c_syst_item.key, c_wp_item.key):
-                wp_item.value.content += c_wp_item.value.content
+    # for syst_item, wp_item in _iter_btv_correction(merged_corr, stop="working_point"):
+    #     for c_syst_item, c_wp_item in _iter_btv_correction(c_corr, stop="working_point"):
+    #         if (syst_item.key, wp_item.key) == (c_syst_item.key, c_wp_item.key):
+    #             wp_item.value.content += c_wp_item.value.content
     # merge with light at working_point level (possible as per 3)
     for syst_item, wp_item in _iter_btv_correction(merged_corr, stop="working_point"):
         for l_syst_item, l_wp_item in _iter_btv_correction(l_corr, stop="working_point"):

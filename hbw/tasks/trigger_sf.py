@@ -60,6 +60,7 @@ class ComputeTriggerSF(
     HistogramsUserSingleShiftBase,
     DatasetsProcessesMixin,
     law.LocalWorkflow,
+    RemoteWorkflow,
 ):
     """
     Base task to calculate trigger scale factors.
@@ -180,15 +181,15 @@ class ComputeTriggerSF(
     pre_edges = {
         "2e": {
             "lepton0_pt": [0., 25., 32., 38., 45., 50., 55., 65., 75., 85., 95., 120., 200., 400.],
-            "lepton1_pt": [0., 15., 23., 32., 38., 55.] + [95., 120., 400.],
+            "lepton1_pt": [0., 7., 8., 9., 10., 11., 12., 13., 14., 15., 23., 32., 38., 55.] + [95., 120., 400.],
         },
         "2mu": {
             "lepton0_pt": [0., 25., 29., 35., 40.] + [40. + (i * 5.) for i in range(1, 7)] + [77., 90., 120., 400.],
-            "lepton1_pt": [0., 15., 22., 29., 35., 45.] + [90., 120., 400.],
+            "lepton1_pt": [0., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 22., 29., 35., 45.] + [90., 120., 400.],  # noqa: E501
         },
         "emu": {
             "lepton0_pt": [0., 25., 30., 35., 40.] + [40. + (i * 5.) for i in range(1, 9)] + [90., 100., 120., 150., 180., 400.],  # noqa: E501
-            "lepton1_pt": [0., 15., 20., 25., 30., 35., 45., 60., 80., 100., 120., 400.],
+            "lepton1_pt": [0., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 20., 25., 30., 35., 45., 60., 80., 100., 120., 400.],  # noqa: E501
         },
     }
 
@@ -743,10 +744,10 @@ class ComputeTriggerSF(
 
                 cms_label_kwargs = {
                     "ax": ax,
-                    "llabel": "Work in progress",
+                    "llabel": "Private Work (CMS data/simulation)",  # "Work in progress",
                     "fontsize": 22,
                     "data": False,
-                    # "exp": "",
+                    "exp": "",
                     "com": self.config_inst.campaign.ecm,
                     "lumi": round(0.001 * sum([
                         config_inst.x.luminosity.get("nominal")
@@ -833,10 +834,10 @@ class ComputeTriggerSF(
 
             cms_label_kwargs = {
                 "ax": ax,
-                "llabel": "Work in progress",
+                "llabel": "Private Work (CMS data/simulation)",
                 "fontsize": 22,
                 "data": False,
-                # "exp": "",
+                "exp": "",
                 "com": self.config_inst.campaign.ecm,
                 "lumi": round(0.001 * sum([
                     config_inst.x.luminosity.get("nominal")

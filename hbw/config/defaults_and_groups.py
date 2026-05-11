@@ -216,6 +216,9 @@ def set_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl4_bkg": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl41": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl42": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
         "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
@@ -310,7 +313,7 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl16", "dl15", "dl15B", "dl11", "dl9", "dl91", "dl92", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
+    for group in ("dl16", "dl15", "dl15B", "dl11", "dl9", "dl91", "dl92", "dl8", "dl7", "dl6", "dl5", "dl42", "dl4", "dl4_bkg", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -434,6 +437,11 @@ def set_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "ml_inputs_discrete": ml_inputs.v2_discrete + bracket_expansion([
+            "mli_{b1,b2,j1,j2}_{pt,eta,discrete_b_score,b_score}",
+            "mli_n_btag",
+            "mli_{b,l}_discrete_b_score_sum",
+        ]),
         "hhh_ml_inputs": ml_input_trih.hhh_v0,  # should correspond to our currently used ML input features
         "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
@@ -582,7 +590,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -592,7 +600,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -603,7 +611,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "postfit": {
@@ -612,7 +620,7 @@ def set_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
@@ -823,14 +831,14 @@ def set_config_defaults_and_groups(config_inst):
                 "fontsize": 24,
             },
             "ax_cfg": {
-                "ylabel_fontsize": 30,
-                "xlabel_fontsize": 30,
+                # "ylabel_fontsize": 30,
+                # "xlabel_fontsize": 30,
                 # "ylim": (2e-1, 6e7),
                 "ylim": (2e-1, 1e8),
             },
             "rax_cfg": {
-                "ylabel_fontsize": 30,
-                "xlabel_fontsize": 30,
+                # "ylabel_fontsize": 30,
+                # "xlabel_fontsize": 30,
                 "ylim": (0.30, 1.70),
                 "ylabel": "Data / Bkg.",
                 "xlabel": "Bin number",
@@ -882,10 +890,10 @@ def set_config_defaults_and_groups(config_inst):
             },
             "ax_cfg": {
                 "xlabel_fontsize": 30,
-                "ylabel_fontsize": 30,
+                # "ylabel_fontsize": 30,
             },
             "rax_cfg": {
-                "ylabel_fontsize": 30,
+                # "ylabel_fontsize": 30,
                 "xlabel_fontsize": 30,
                 "ylabel": "Data / Bkg.",
             },
@@ -1056,10 +1064,10 @@ def set_config_defaults_and_groups(config_inst):
         # "vbfSR_sl_boosted": 3,
         # Dilepton
         "BR_dl": 1,
-        "sr__resolved__1b__ml_sig_ggf": 10,
-        "sr__resolved__2b__ml_sig_ggf": 6,
-        "sr__resolved__1b__ml_sig_vbf": 8,
-        "sr__resolved__2b__ml_sig_vbf": 6,
+        "sr__resolved__1b__ml_sig_ggf": 12,
+        "sr__resolved__2b__ml_sig_ggf": 8,
+        "sr__resolved__1b__ml_sig_vbf": 10,
+        "sr__resolved__2b__ml_sig_vbf": 8,
         "sr__1b__ml_sig_ggf": 10,
         "sr__2b__ml_sig_ggf": 6,
         "sr__1b__ml_sig_vbf": 8,

@@ -168,7 +168,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_mumu_m50toinf_1j_amcatnlo",
                 "dy_tautau_m50toinf_1j_amcatnlo",
                 "dy_ee_m50toinf_2j_amcatnlo",
-                # "dy_mumu_m50toinf_2j_amcatnlo",
+                "dy_mumu_m50toinf_2j_amcatnlo",
                 "dy_tautau_m50toinf_2j_amcatnlo",
             ]),
         ],
@@ -637,7 +637,7 @@ def configure_hbw_datasets(
             # TODO figure out which datasets should be grouped together;
             # for now, don't group any datasets together and treat each type of dataset separately
             config.x.btag_wp_eff_groups = [
-                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant
+                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant # noqa: E501
                 # ["*"],
                 ["dy_*", "w_lnu_*"],
                 ["hhh_*"],
@@ -648,15 +648,15 @@ def configure_hbw_datasets(
                 ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
                 ["hh_*", "whh_*", "tthh_*", "zhh_*"],
                 ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
-            #     ["dy_*",
-            #     "hhh_*",
-            #     "w_lnu_*",
-            #     "st_*",
-            #     "tt_*", "ttbb_*",
-            #     "ww_*", "wz_*", "zz_*",
-            #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
-            #     "hh_*", "whh_*", "tthh_*", "zhh_*",
-            #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                #     ["dy_*",
+                #     "hhh_*",
+                #     "w_lnu_*",
+                #     "st_*",
+                #     "tt_*", "ttbb_*",
+                #     "ww_*", "wz_*", "zz_*",
+                #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
+                #     "hh_*", "whh_*", "tthh_*", "zhh_*",
+                #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
             ]
             group_matched = False
             for i, dataset_pattern in enumerate(config.x.btag_wp_eff_groups):
