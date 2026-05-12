@@ -84,6 +84,9 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.hh_other)
     config.add_process(config.x.procs.n.tt_custom)
     config.add_process(config.x.procs.n.ttbb_custom)
+    config.add_process(config.x.procs.n.ttb_custom)
+    config.add_process(config.x.procs.n.tt2b_custom)
+    config.add_process(config.x.procs.n.tt_bb_custom)
     minor = config.add_process(config.x.procs.n.minor)
 
     # NOTE: I think this is unnecessary, but atm i like to keep it,
@@ -186,9 +189,7 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
 
         if process_settings["ml_id"] == -1:
             logger.warning("ml_id for process {proc_name} set to '-1'; will not be used in training")
-
         sub_processes = process_settings.pop("sub_processes", None)
-
         if config_inst.has_process(proc_name):
             logger.debug(f"update process {proc_name}")
             if sub_processes:

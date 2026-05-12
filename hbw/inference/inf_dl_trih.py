@@ -27,115 +27,49 @@ if use_old_version:
 
 # All categories to be included in the final datacard
 config_categories = DotDict({
-    "hhh_v0": [
-        "sr__resolved__2b__ml_tt_custom",
-        "sr__resolved__2b__ml_ttbb_custom",
+    "eq2b": [
+        "sr__resolved__2b__ml_tt_ml",
         "sr__resolved__2b__ml_st",
         "sr__resolved__2b__ml_dy",
-        "sr__resolved__2b__ml_h",
-        "sr__resolved__2b__ml_tthh_4b",
-        "sr__resolved__2b__ml_hhh_4b2w_2l2nu_c30_d40",
-        "sr__resolved__3b__ml_tt_custom",
-        "sr__resolved__3b__ml_ttbb_custom",
-        "sr__resolved__3b__ml_st",
-        "sr__resolved__3b__ml_dy",
-        "sr__resolved__3b__ml_h",
-        "sr__resolved__3b__ml_tthh_4b",
-        "sr__resolved__3b__ml_hhh_4b2w_2l2nu_c30_d40",
-        "sr__resolved__4b__ml_tt_custom",
-        "sr__resolved__4b__ml_ttbb_custom",
-        "sr__resolved__4b__ml_st",
-        "sr__resolved__4b__ml_dy",
-        "sr__resolved__4b__ml_h",
-        "sr__resolved__4b__ml_tthh_4b",
-        "sr__resolved__4b__ml_hhh_4b2w_2l2nu_c30_d40",
-    ],
-    "hhh_v8": [
-        "sr__resolved__2b__ml_tt_ml",
-        # "sr__resolved__2b__ml_ttbb_custom",
-        "sr__resolved__2b__ml_st",
-        "sr__resolved__2b__ml_dy",
-        "sr__resolved__2b__ml_h",
-        "sr__resolved__2b__ml_tthh_4b",
-        "sr__resolved__2b__ml_hhh_4b2w_2l2nu_c30_d40",
-        "sr__resolved__3b__ml_tt_ml",
-        # "sr__resolved__3b__ml_ttbb_custom",
-        "sr__resolved__3b__ml_st",
-        "sr__resolved__3b__ml_dy",
-        "sr__resolved__3b__ml_h",
-        "sr__resolved__3b__ml_tthh_4b",
-        "sr__resolved__3b__ml_hhh_4b2w_2l2nu_c30_d40",
-        "sr__resolved__4b__ml_tt_ml",
-        # "sr__resolved__4b__ml_ttbb_custom",
-        "sr__resolved__4b__ml_st",
-        "sr__resolved__4b__ml_dy",
-        "sr__resolved__4b__ml_h",
-        "sr__resolved__4b__ml_tthh_4b",
-        "sr__resolved__4b__ml_hhh_4b2w_2l2nu_c30_d40",
-    ],
-    "hhh_V3": [
-        "sr__resolved__2b__ml_tt_ml",
-        # "sr__resolved__2b__ml_ttbb_custom",
-        "sr__resolved__2b__ml_st",
-        "sr__resolved__2b__ml_dy",
-        "sr__resolved__2b__ml_h",
-        "sr__resolved__2b__ml_hh_custom",
-        "sr__resolved__2b__ml_hhh_signal",
-        "sr__resolved__3b__ml_tt_ml",
-        # "sr__resolved__3b__ml_ttbb_custom",
-        "sr__resolved__3b__ml_st",
-        "sr__resolved__3b__ml_dy",
-        "sr__resolved__3b__ml_h",
-        "sr__resolved__3b__ml_hh_custom",
-        "sr__resolved__3b__ml_hhh_signal",
-        "sr__resolved__4b__ml_tt_ml",
-        # "sr__resolved__4b__ml_ttbb_custom",
-        "sr__resolved__4b__ml_st",
-        "sr__resolved__4b__ml_dy",
-        "sr__resolved__4b__ml_h",
-        "sr__resolved__4b__ml_hh_custom",
-        "sr__resolved__4b__ml_hhh_signal",
-    ],
-    "hhh_V4": [
-        "sr__resolved__2b__ml_tt_ml",
-        # "sr__resolved__2b__ml_ttbb_custom",
         "sr__resolved__2b__ml_tth",
         "sr__resolved__2b__ml_tthh_4b",
         "sr__resolved__2b__ml_hhh_signal",
+    ],
+    "eq3b": [
         "sr__resolved__3b__ml_tt_ml",
-        # "sr__resolved__3b__ml_ttbb_custom",
         "sr__resolved__3b__ml_tth",
         "sr__resolved__3b__ml_tthh_4b",
         "sr__resolved__3b__ml_hhh_signal",
+    ],
+    "geq4b": [
         "sr__resolved__4b__ml_tt_ml",
-        # "sr__resolved__4b__ml_ttbb_custom",
         "sr__resolved__4b__ml_tth",
         "sr__resolved__4b__ml_tthh_4b",
         "sr__resolved__4b__ml_hhh_signal",
     ],
-    "no_nn_cats": [
-        "sr__1b",
+    "v0": [
+        "sr__resolved__2b__ml_tt_ml",
+        "sr__resolved__2b__ml_tth",
+        "sr__resolved__2b__ml_tthh_4b",
+        "sr__resolved__2b__ml_hhh_signal",
+        "sr__resolved__3b__ml_tt_ml",
+        "sr__resolved__3b__ml_tth",
+        "sr__resolved__3b__ml_tthh_4b",
+        "sr__resolved__3b__ml_hhh_signal",
+        "sr__resolved__4b__ml_tt_ml",
+        "sr__resolved__4b__ml_tth",
+        "sr__resolved__4b__ml_tthh_4b",
+        "sr__resolved__4b__ml_hhh_signal",
+    ],
+    "bcats": [
         "sr__2b",
+        "sr__3b",
+        "sr__4b",
     ],
 })
-# config_categories.default_boosted = (
-#     config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved
-# )
-# config_categories.default_boosted_mergedbkg = (
-#     config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background
-# )
-# config_categories.default_boosted_bkg = (
-#     config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved +
-#     ["sr__boosted__ml_bkg"]
-# )
-
 
 systematics = DotDict({
     "lumi": [
-        # "lumi_13TeV_2016",
-        # "lumi_13TeV_2017",
-        # "lumi_13TeV_1718",
-        # "lumi_13TeV_correlated",
         "lumi_13p6TeV_2022",
         "lumi_13p6TeV_2023",
     ],
@@ -175,45 +109,15 @@ systematics = DotDict({
         "BR_htt",
         "BR_hgg",
     ],
-    "rate_unconstrained": [
+    "rates": [
         "rate_ttbar",
+        "rate_ttbar_b",
+        "rate_ttbar_bb",
         "rate_dy",
     ],
-    "rate_unconstrained1": [
-        "rate_ttbar",
-        "rate_dy_lf",
-        "rate_dy_hf",
-    ],
-    "rate_unconstrained2": [
-        "rate_ttbar"
-        "rate_ttbb"
-        "rate_st",
-        "rate_dy_lf",
-        "rate_dy_hf",
-    ],
-    "rate_unconstrained3": [
-        "rate_ttbar",
-        "rate_ttbb_3b",
-        "rate_ttbb_4b",
-        "rate_ttbb_2b",
-        "rate_dy_lf",
-        "rate_dy_hf",
-    ],
-    "rate_unconstrained_bjet_uncorr": [
-        "rate_ttbar_{bjet_cat}",
-        "rate_dy_{bjet_cat}",
-    ],
-    "hbb_efficiency": [
-        "eff_hbb_signal_ggf",
-        "eff_hbb_signal_vbf",
-        "eff_hbb_bkg_ggf",
-        "eff_hbb_bkg_vbf",
-        "eff_hbb_bkg_bkg",
-        "eff_hbb_signal_bkg",
-    ],
     "murf_envelope": [
-        # "murf_envelope_hh_ggf_hbb_hvv2l2nu_kl1_kt1",
         "murf_envelope_ttbar",
+        "murf_envelope_ttbb",
         "murf_envelope_st",
         "murf_envelope_dy",
         # "murf_envelope_w",
@@ -223,12 +127,10 @@ systematics = DotDict({
         "murf_envelope_hh_ggf_hbb_hww",
         "murf_envelope_hh_ggf_hbb_hzz",
         "murf_envelope_hh_ggf_hbb_htt",
-        # "murf_envelope_hh_vbf_hbb_hww",
-        # "murf_envelope_hh_vbf_hbb_hzz",
-        # "murf_envelope_hh_vbf_hbb_htt",
     ],
     "pdf_shape": [
         "pdf_shape_ttbar",
+        "pdf_shape_ttbb",
         "pdf_shape_st",
         "pdf_shape_dy",
         # "pdf_shape_w",
@@ -238,11 +140,8 @@ systematics = DotDict({
         "pdf_shape_hh_ggf_hbb_hww",
         "pdf_shape_hh_ggf_hbb_hzz",
         "pdf_shape_hh_ggf_hbb_htt",
-        # "pdf_shape_hh_vbf_hbb_hww",
-        # "pdf_shape_hh_vbf_hbb_hzz",
-        # "pdf_shape_hh_vbf_hbb_htt",
     ],
-    "btag": [
+    "btag_22_23": [
         "btag_hf",
         "btag_lf",
         "btag_hfstats1_{campaign}",
@@ -252,35 +151,21 @@ systematics = DotDict({
         "btag_cferr1",
         "btag_cferr2",
     ],
-    "btag_year_uncorr": [
-        "btag_hf_{year}",
-        "btag_lf_{year}",
-        "btag_hfstats1_{campaign}",
-        "btag_hfstats2_{campaign}",
-        "btag_lfstats1_{campaign}",
-        "btag_lfstats2_{campaign}",
-        "btag_cferr1_{year}",
-        "btag_cferr2_{year}",
+    "btag_24": [
+        "btag_fsrdef_bc",
+        "btag_isrdef_bc",
+        "btag_hdamp_bc",
+        "btag_jer_bc",
+        "btag_jes_bc",
+        "btag_mass_bc",
+        "btag_statistic_bc",
+        "btag_tune_bc",
+        "btag_correlated_light",
+        "btag_uncorrelated_light",
     ],
-    "btag_bjet_uncorr": [
-        "btag_hf_{bjet_cat}",
-        "btag_lf_{bjet_cat}",
-        "btag_hfstats1_{campaign}_{bjet_cat}",
-        "btag_hfstats2_{campaign}_{bjet_cat}",
-        "btag_lfstats1_{campaign}_{bjet_cat}",
-        "btag_lfstats2_{campaign}_{bjet_cat}",
-        "btag_cferr1_{bjet_cat}",
-        "btag_cferr2_{bjet_cat}",
-    ],
-    "btag_cpn_uncorr": [
-        "btag_hf_{campaign}",
-        "btag_lf_{campaign}",
-        "btag_hfstats1_{campaign}",
-        "btag_hfstats2_{campaign}",
-        "btag_lfstats1_{campaign}",
-        "btag_lfstats2_{campaign}",
-        "btag_cferr1_{campaign}",
-        "btag_cferr2_{campaign}",
+    "btag_short": [
+        "btag_bc",
+        "btag_light",
     ],
     "experiment": [
         "mu_id_sf",
@@ -301,7 +186,13 @@ systematics = DotDict({
         "dy_correction",
     ],
     "other": [
-        "isr",
+        "isr_ttbar",
+        "isr_ttbb",
+        "isr_V",
+        "isr_ttV",
+        "isr_VV",
+        "isr_st",
+        "isr_H",
         "fsr_ttbar",
         "fsr_st",
         "fsr_V",
@@ -329,46 +220,24 @@ systematics = DotDict({
         "jec_Total_{year}",
     ],
 })
-systematics["rate_default"] = [
+systematics["default"] = [
+    *systematics.lumi,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    *systematics.rates,
+]
+systematics["hhh_shape_ffn"] = [
     *systematics.lumi,
     *systematics.QCDscale,
     *systematics.pdf,
     *systematics.BR,
     *systematics.hbb_efficiency,
-    *systematics.rate_unconstrained3,
-]
-systematics["shape_only_cpn_uncorr"] = [
+    *systematics.rates,
     *systematics.murf_envelope,
-    *systematics.pdf_shape,
-    *systematics.btag_cpn_uncorr,
-    *systematics.experiment_cpn_uncorr,
     *systematics.other,
+    *systematics.btag_24,
 ]
-# default set of all systematics
-systematics["default"] = [
-    *systematics.rate_default,
-    *systematics.shape_only_cpn_uncorr,
-    *systematics.jerc_only_cpn_uncorr,
-]
-hhprocs_ggf = lambda hhdecay: [
-    f"hh_ggf_{hhdecay}_kl0_kt1",
-    f"hh_ggf_{hhdecay}_kl1_kt1",
-    f"hh_ggf_{hhdecay}_kl2p45_kt1",
-    f"hh_ggf_{hhdecay}_kl5_kt1",
-]
-hhprocs_vbf = lambda hhdecay: [
-    f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
-    f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
-    f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
-    f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96",
-    f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
-    f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",  # missing bbtt sample
-    f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
-    f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
-    f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
-    f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",  # missing bbtt sample
-]
-hhprocs = lambda hhdecay: [*hhprocs_ggf(hhdecay), *hhprocs_vbf(hhdecay)]
 hhhprocs = [
     "hhh_4b2w_2l2nu_c30_d40",
     "hhh_4b2w_2l2nu_c30_d499",
@@ -381,16 +250,16 @@ hhhprocs = [
     "hhh_4b2w_2l2nu_c3m1_d4m1",
     "hhh_4b2w_2l2nu_c3m1p5_d4m0p5",
 ]
-
-backgrounds_hhh_v0 = [
-    # "st_tchannel",
+backgrounds_v0 = [
+    # "st_tchannel",  # I have a problem with this one
     "st_twchannel",
     "st_schannel",
-    "tt_custom", "ttbb_custom",
+    "tt_custom",
+    "ttb_custom", "tt_bb_custom", "tt2b_custom",
     "ttw",
     "ttz",
-    "dy",
     "w_lnu",
+    "dy",
     "vv",
     "vvv",
     "h_ggf", "h_vbf", "wh", "tth",  # "zh_gg","zh"
@@ -400,27 +269,11 @@ backgrounds_hhh_v0 = [
     "hh_ggf", "hh_vbf",
     "vhh_4b", "tthh_4b",
     # TODO: add bbh
-    # "qcd",  # probably not needed
-]
-backgrounds_skip_dy = [
-    "st_tchannel",
-    "st_twchannel",
-    "st_schannel",
-    "tt",
-    "ttw",
-    "ttz",
-    "w_lnu",
-    "vv",
-    "vvv",
-    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    "thq", "thw", "ttvh",
-    "tttt",
-    "ttvv",
 ]
 
 processes_dict = {
-    "hhh_v0": [*backgrounds_hhh_v0, "hhh_4b2w_2l2nu_c30_d40"],
-    "hhh_v1": [*backgrounds_hhh_v0, *hhhprocs],
+    "hhh_SM": [*backgrounds_v0, "hhh_4b2w_2l2nu_c30_d40"],
+    "v0": [*backgrounds_v0, *hhhprocs],
 }
 
 from hbw.ml.derived.ml_dl_trih import input_features
@@ -448,9 +301,9 @@ def config_variable_hhh(self, config_cat_inst):
 
 default_cls_dict = {
     "ml_model_name": ml_model_name,
-    "processes": processes_dict["hhh_v0"],
-    "config_categories": config_categories.hhh_v0,
-    "systematics": systematics.rate_default,
+    "processes": processes_dict["v0"],
+    "config_categories": config_categories.v0,
+    "systematics": systematics.default,
     "config_variable": config_variable_hhh,
     "mc_stats": True,
     "skip_data": True,
@@ -459,41 +312,49 @@ default_cls_dict = {
 dl_trih = HBWInferenceModelBase.derive("dl_trih", cls_dict=default_cls_dict)
 
 #
-# currently "final" inference models
+# current inference models
 #
 
 rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
     "systematics": systematics.rate_default,
-    "config_categories": config_categories.hhh_v0,
+    "config_categories": config_categories.v0,
     "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
     "config_variable": config_variable_hhh,
     "processes": processes_dict["hhh_v0"],
 })
-rate_only_hhh_v8 = dl_trih.derive("rate_only_hhh_v8", cls_dict={
-    "systematics": systematics.rate_default,
-    "config_categories": config_categories.hhh_v8,
-    "ml_model_name": ["multiclass_hhh_v8", "hhh_v2"],
+
+# ----------------------- BASELINE INFERENCE MODELS SPLIT IN BJET CAT ------------------------------
+
+Cat_eq2b_Bin_V5_shape = dl_trih.derive("Cat_eq2b_Bin_V5_shape", cls_dict={
+    "systematics": systematics.hhh_shape_ffn,
+    "config_categories": config_categories.eq2b,
+    "ml_model_name": ["Cat_eq2b_V1", "Bin_V1"],
     "config_variable": config_variable_hhh,
-    "processes": processes_dict["hhh_v0"],
+    "processes": processes_dict["v0"],
 })
-rate_only_hhh_V3 = dl_trih.derive("rate_only_hhh_V3", cls_dict={
-    "systematics": systematics.rate_default,
-    "config_categories": config_categories.hhh_V3,
-    "ml_model_name": ["multiclass_hhh_V3", "hhh_V1"],
-    "config_variable": config_variable_hhh,
-    "processes": processes_dict["hhh_v1"],
+Cat_eq2b_Bin_V5_shape_unblind = Cat_eq2b_Bin_V5_shape.derive("Cat_eq2b_Bin_V5_shape_unblind", cls_dict={
+    "unblind": False,
+    "skip_data": False,
 })
-rate_only_hhh_V4 = dl_trih.derive("rate_only_hhh_V4", cls_dict={
-    "systematics": systematics.rate_default,
-    "config_categories": config_categories.hhh_V4,
-    "ml_model_name": ["multiclass_hhh_V4", "hhh_V1"],
+Cat_eq3b_Bin_V5_shape = dl_trih.derive("Cat_eq3b_Bin_V5_shape", cls_dict={
+    "systematics": systematics.hhh_shape_ffn,
+    "config_categories": config_categories.eq3b,
+    "ml_model_name": ["Cat_eq3b_V1", "Bin_V1"],
     "config_variable": config_variable_hhh,
-    "processes": processes_dict["hhh_v1"],
+    "processes": processes_dict["v0"],
 })
-rate_only_hhh_V4SM_only = dl_trih.derive("rate_only_hhh_V4SM_only", cls_dict={
-    "systematics": systematics.rate_default,
-    "config_categories": config_categories.hhh_V4,
-    "ml_model_name": ["multiclass_hhh_V4", "hhh_V1"],
+Cat_eq3b_Bin_V5_shape_unblind = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_shape_unblind", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+})
+Cat_geq4b_Bin_V5_shape = dl_trih.derive("Cat_geq4b_Bin_V5_shape", cls_dict={
+    "systematics": systematics.hhh_shape_ffn,
+    "config_categories": config_categories.geq4b,
+    "ml_model_name": ["Cat_geq4b_V1", "Bin_V1"],
     "config_variable": config_variable_hhh,
-    "processes": processes_dict["hhh_v0"],
+    "processes": processes_dict["v0"],
+})
+Cat_geq4b_Bin_V5_shape_unblind = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_shape_unblind", cls_dict={
+    "unblind": False,
+    "skip_data": False,
 })

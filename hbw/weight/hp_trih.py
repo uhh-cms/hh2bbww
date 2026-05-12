@@ -3,7 +3,7 @@
 from columnflow.util import maybe_import
 from hbw.weight.default import base
 from hbw.categorization.masks_trih import (
-    mask_fn_hhh_sr, mask_fn_hhh_sr_bcut, mask_fn_hhh_bcut, mask_fn_test_parth2, mask_fn_hhcuts
+    mask_fn_ar,  # mask_fn_sr,
 )
 
 np = maybe_import("numpy")
@@ -14,6 +14,15 @@ btag_uncs = [
     "cferr1", "cferr2",
     "hfstats1", "lfstats1",
     "hfstats2", "lfstats2",
+]
+
+btag_uncs_2024 = [
+    "fsrdef_bc", "isrdef_bc",
+    "hdamp_bc", "jer_bc", "jes_bc",
+    "mass_bc", "statistic_bc",
+    "tune_bc",
+    "correlated_light",
+    "uncorrelated_light",
 ]
 
 
@@ -61,30 +70,13 @@ unstitched_weight_columns = {
     "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }
-# weight_columns_execpt_btag = default_weight_columns.copy()
-# weight_columns_execpt_btag.pop("normalized_ht_njet_nhf_btag_weight")
 
-# default_hist_producer = base.derive("default", cls_dict={"weight_columns": default_weight_columns})
-no_sel_hist_producer = base.derive("no_sel", cls_dict={"weight_columns": no_sel_weight_columns})
-# check = base.derive("check", cls_dict={"weight_columns": default_weight_columns})
 unstitched = base.derive("unstitched", cls_dict={"weight_columns": {
     "dataset_normalization_weight": [],
-    # "dy_correction_weight": [],
-    # "trigger_weight": ["trigger_sf"],
     **default_correction_weights,
 }})
 
-default_hist_producer_trih = base.derive("default_hist_producer_trih", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_hhh_sr_bcut,
-})
-
-default_hp = base.derive("default_hp", cls_dict={
+hhh_default = base.derive("hhh_default", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
@@ -92,92 +84,17 @@ default_hp = base.derive("default_hp", cls_dict={
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
-})
-default_hp_w_btag = base.derive("default_hp_w_btag", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_ar,
 })
 
-default_hhh = base.derive("default_hhh", cls_dict={
+hhh_shape = base.derive("hhh_shape", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
+        "btag_weight": [f"btag_{unc}" for unc in btag_uncs_2024],
+        # "btag_weight": [ "btag_bc", "btag_light"],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_hhh_bcut,
-})
-
-default_hh = base.derive("default_hh", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_hhcuts,
-})
-test_parth2 = base.derive("test_parth2", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_test_parth2,
-})
-
-test_parth3 = base.derive("test_parth3", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        # "btag_weight": [],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_test_parth2,
-})
-default_test_hh = base.derive("default_test_hh", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-})
-default_hhh_non_btag = base.derive("default_hhh_non_btag", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_hhh_bcut,
-})
-
-default_hist_producer_trih_cr1 = base.derive("default_hist_producer_trih_cr1", cls_dict={
-    "weight_columns": {
-        **default_correction_weights,
-        "trigger_weight": ["trigger_sf"],
-        "stitched_normalization_weight": [],
-    },
-    "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_hhh_bcut,
-})
-
-test_hhh_sr = default_hist_producer_trih.derive("test_hhh_sr", cls_dict={
-    "categorizer_cls": mask_fn_hhh_sr,
-})
-
-test_hhh_sr_bcut = default_hist_producer_trih.derive("test_hhh_sr_bcut", cls_dict={
-    "categorizer_cls": mask_fn_hhh_sr_bcut,
+    "categorizer_cls": mask_fn_ar,
 })

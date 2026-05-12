@@ -30,9 +30,12 @@ def modify_cmsdb_processes():
         h_ggf, h_vbf, vh,
         tth, thq, thw,
         st_twchannel_t_dl, st_twchannel_tbar_dl,
-        tt_dl,
+        tt_dl, ttbb,
         tt_dl_nonb, tt_sl_nonb, tt_fh_nonb,
-        ttbb, ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
+        ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
+        ttbb_dl_b, ttbb_sl_b, ttbb_fh_b,
+        ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b,
+        ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb,
         hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
         hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1,
     )
@@ -119,6 +122,30 @@ def modify_cmsdb_processes():
         label="TTBB Custom",
     )
     ttbb_custom.add_parent_process(ttbb)
+
+    ttb_custom = create_parent_process(
+        [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b],
+        name="ttb_custom",
+        id=6827365,
+        label="TT (+b)",
+    )
+    ttb_custom.add_parent_process(ttbb)
+
+    tt2b_custom = create_parent_process(
+        [ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b],
+        name="tt2b_custom",
+        id=913856,
+        label="TT (+b) (from gluon)",
+    )
+    tt2b_custom.add_parent_process(ttbb)
+
+    tt_bb_custom = create_parent_process(
+        [ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
+        name="tt_bb_custom",
+        id=192350,
+        label="TT (+ bb)",
+    )
+    tt_bb_custom.add_parent_process(ttbb)
 
     qcd_mu.label = "QCD Muon enriched"
     qcd_ele = create_parent_process(

@@ -113,6 +113,12 @@ class HBWInferenceModelBase(InferenceModel):
             return "ttbar"
         elif proc.startswith("ttbb_custom"):
             return "ttbb"
+        elif proc.startswith("ttb_custom"):
+            return "ttbar_b"
+        elif proc.startswith("tt2b_custom"):
+            return "ttbar_2b"
+        elif proc.startswith("tt_bb_custom"):
+            return "ttbar_bb"
         else:
             return proc
 
@@ -675,7 +681,7 @@ class HBWInferenceModelBase(InferenceModel):
             #         param_kwargs["category"] = f"*_{bjet_cat}_*"
             #         param_kwargs["category_match_mode"] = "all"
             #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
-            for year in (2022, 2023):
+            for year in (2022, 2023, 2024):
                 if shape_uncertainty.endswith(str(year)):
                     shift_source = shift_source.replace(f"_{year}", "")
                     config_insts = [

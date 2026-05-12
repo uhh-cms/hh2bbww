@@ -12,12 +12,10 @@ import functools
 from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
-from columnflow.production.cms.btag import btag_wp_weights
 
 from hbw.production.prepare_objects import prepare_objects, prepare_hhh_bjets
-# from hbw.production.jets import vbf_candidates
-from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_dl_ml_variables, add_hhh_bjet_variables, add_hhh_ml_variables
-from hbw.production.ml_inputs import common_ml_inputs  # , METCorr, vbf_jets
+from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_ml_variables
+from hbw.production.ml_inputs import common_ml_inputs
 
 
 ak = maybe_import("awkward")
@@ -63,95 +61,6 @@ def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
 
 
 @producer(
-    uses={
-        # "*", "*.*",
-        prepare_objects,
-        "Jet.*",
-    },
-    produces={
-        "{btag_jet1,btag_jet2,btag_jet3,btag_jet4}.{pt,eta,phi,mass,btagUParTAK4B,discrete_b_score}",
-        # "{hbjet1,hbjet2,hbjet3,hbjet4}.{pt,eta,phi,mass,btagUParTAK4B}", 
-        "hhh_dr_bb", "mindr_bb", "maxdr_bb",
-        "Jet.discrete_b_score", "discrete_sum_b_score",
-        "check_n_btag",
-    },  # noqa E501
-    version=2,
-)
-def hhh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Producer to extract bjetas and btag properties for HHH analysis
-    hbjets are just possible jets from which to extract Hiuggs candidate and corresponding properties. 
-    btag_jets actually fulfill the btag wp threshold medium.
-    """
-
-    # add behavior and define new collections (e.g. Lepton)
-    events = self[prepare_objects](events, **kwargs)
-    # events = set_ak_column(events, "hbjets", ak.pad_none(events.Jet, 4))
-    # __import__("IPython").embed()
-    # get discrete batg scores
-    discrete_btag_scores = ak.zeros_like(events.Jet.btagUParTAK4B)
-    for wp in [0.0246, 0.1272, 0.4648, 0.6298, 0.9739]:  # loose, medium, tight, etc.
-        discrete_btag_scores = ak.where(events.Jet.btagUParTAK4B >= wp, ak.full_like(events.Jet.btagUParTAK4B, wp), discrete_btag_scores)  # noqa E501
-    events = set_ak_column_f32(events, "Jet.discrete_b_score", discrete_btag_scores)
-    events = set_ak_column_f32(events, "discrete_sum_b_score", ak.sum(discrete_btag_scores, axis=1))
-
-    # get btagged jets acoording to the medium WP and sort them by pt
-    btag_wp = self.config_inst.x.btag_wp_names["UParTAK4"][self.config_inst.x.btag_wp]
-    # hhh_btag_mask = events.Jet.btagUParTAK4B > btag_wp
-    btag_jet = events.Jet[events.Jet.btagUParTAK4B >= btag_wp]
-    btag_jet = btag_jet[ak.argsort(btag_jet.pt, ascending=False)]
-    btag_jet = btag_jet[ak.argsort(btag_jet.discrete_b_score, ascending=False)]
-    events = set_ak_column_f32(events, "check_n_btag", ak.sum(events.Jet.btagUParTAK4B >= btag_wp, axis=1))
-    # events = set_ak_column(events, "btag_jet", btagged_jets)
-
-    # get low level properties of 4 leading bjets (if less than 4 btagged jets, the rest is filled with None)
-    events = set_ak_column(events, "btag_jets", ak.pad_none(btag_jet, 4))
-    btag_jets = events.btag_jets
-    for i in range(4):
-        for col in ("pt", "eta", "phi", "mass", "discrete_b_score", "btagUParTAK4B"):
-
-            events = set_ak_column_f32(events, f"btag_jet{i+1}.{col}", ak.fill_none(ak.nan_to_none(btag_jets[:, i][col]), ZERO_PADDING_VALUE)) # noqa E501
-
-    # hbjets = events.hbjets[ak.argsort(events.hbjets.btagUParTAK4B, ascending=False)]
-    # for i in range(4):
-    #     for col in ("pt", "eta", "phi", "mass", "btagUParTAK4B"):
-    #         events = set_ak_column_f32(events, f"hbjet{i+1}.{col}", hbjets[:, i][col])
-
-    hbjet_pairs = ak.combinations(btag_jets, 2)
-    dr = hbjet_pairs[:, :, "0"].delta_r(hbjet_pairs[:, :, "1"])
-    events = set_ak_column_f32(events, "mindr_bb", ak.min(dr, axis=1))
-    events = set_ak_column_f32(events, "maxdr_bb", ak.max(dr, axis=1))
-    events = set_ak_column_f32(events, "hhh_dr_bb", btag_jets[:, 0].delta_r(btag_jets[:, 1]))
-
-    # for i in range(4):
-    #     for col in ["pt", "eta", "phi", "mass", "btagUParTAK4B", "discrete_b_score"]:
-    #         events = set_ak_column_f32(events, events[f"btag_jet{i+1}"][col], ak.fill_none(ak.nan_to_none(events[f"btag_jet{i+1}"][col]), ZERO_PADDING_VALUE))  # noqa E501
-
-    for col in ["hhh_dr_bb", "mindr_bb", "maxdr_bb", "discrete_sum_b_score"]:
-    # for col in ["hhh_dr_bb", "discrete_sum_b_score"]:
-        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-
-    return events
-
-
-@hhh_bjets.init
-def hhh_bjets_init(self: Producer) -> None:
-    # @call_once_on_config
-    # def add_hhh_b_variables(config: law.config.Config) -> None:
-    #     from hbw.config.styling import default_var_unit, default_var_title_format, default_var_binning
-    #     for i in range(4):
-    #         for var in ["pt", "eta", "phi", "mass", "b_score"]:
-    #             config.add_variable(
-    #                 name=f"hbjet{i+1}_{var}",
-    #                 expression=f"hbjet{i+1}.{var}",
-    #                 unit=default_var_unit.get(var, "1"),
-    #                 binning=default_var_binning[var] if var != "b_score" else (50, 0, 1),
-    #                 x_title=f"Bjet (hhh) {i+1} {default_var_title_format.get(var, var)}",
-    #             )
-    add_hhh_bjet_variables(self.config_inst)
-
-
-@producer(
     uses={common_ml_inputs, prepare_hhh_bjets},
     produces={common_ml_inputs, prepare_hhh_bjets},
     # produced columns set in the init function
@@ -194,7 +103,7 @@ def hhh_dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         b1 = jet_collection[:, 0]
         b2 = jet_collection[:, 1]
         b3 = jet_collection[:, 2]
-        b4 = jet_collection[:, 3] 
+        b4 = jet_collection[:, 3]
 
         A = b1.delta_r(b2) + b3.delta_r(b4)
         B = b1.delta_r(b3) + b2.delta_r(b4)
@@ -205,6 +114,7 @@ def hhh_dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         min_index = ak.argmin(delta_r_sums, axis=1)
 
         bjets_template = ak.full_like(((b1 + b2) * 1), 99999)  # same dimension as events.
+
         # Combination A
         hbb1 = ak.where(min_index == 0, (b1 + b2) * 1, bjets_template)
         hbb2 = ak.where(min_index == 0, ((b3 + b4) * 1), bjets_template)
@@ -217,27 +127,31 @@ def hhh_dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         hbb1 = ak.where(min_index == 2, (b1 + b4) * 1, hbb1)
         hbb2 = ak.where(min_index == 2, (b2 + b3) * 1, hbb2)
 
-        return hbb1, hbb2
+        return hbb1, hbb2, min_index
 
     btag_jets = ak.pad_none(events.BtaggedJet, 4)
     hb_candidate = ak.pad_none(events.HBjetCandidate, 4)
     for jet_collection in [btag_jets, hb_candidate]:
         jet_collection_name = "btag" if jet_collection is btag_jets else "hb_candidate"
         # Higss reco properties
-        hbb1, hbb2 = get_reco_higgs_properties(jet_collection, jet_collection_name)
+        hbb1, hbb2, min_index = get_reco_higgs_properties(jet_collection, jet_collection_name)
 
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_mh1", hbb1.mass)
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_mh2", hbb2.mass)
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_h1_pt", hbb1.pt)
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_h2_pt", hbb2.pt)
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h1_h2", hbb1.delta_r(hbb2))
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_ll_h1", hll.delta_r(hbb1))
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_ll_h2", hll.delta_r(hbb2))
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h1_nu", hbb1.delta_r(events[met_name]))
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h2_nu", hbb2.delta_r(events[met_name]))
 
-        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_mhhh", ((hll + events[met_name][:]) + hbb1 + hbb2).mass)
-        # events = set_ak_column_f32(events, f"mli_{jet_collection_name}_m4bllMET", (hll + ((b1 + b2 + b3 + b4) * 1) + events[met_name][:]).mass)
-        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h1_llMET", hbb1.delta_r(hll + events[met_name][:]))
-        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h2_llMET", hbb2.delta_r(hll + events[met_name][:]))
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_mhhh", ((hll + events[met_name][:]) + hbb1 + hbb2).mass)  # noqa E501
+        # events = set_ak_column_f32(events, f"mli_{jet_collection_name}_m4bllMET", (hll + ((b1 + b2 + b3 + b4) * 1) + events[met_name][:]).mass)  # noqa E501
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h1_llMET", hbb1.delta_r(hll + events[met_name][:]))  # noqa E501
+        events = set_ak_column_f32(events, f"mli_{jet_collection_name}_dr_h2_llMET", hbb2.delta_r(hll + events[met_name][:]))  # noqa E501
 
-        for i in range(0, 4): 
+        for i in range(0, 4):
             # low-level features
             for var in ["pt", "eta", "discrete_b_score"]:
                 events = set_ak_column_f32(events, f"mli_{jet_collection_name}{i+1}_{var}", jet_collection[:, i][var])
@@ -247,6 +161,24 @@ def hhh_dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column_f32(events, "maxdr_bb", ak.max(dr, axis=1))
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_maxdr_jj", ak.max(dr, axis=1))
         events = set_ak_column_f32(events, f"mli_{jet_collection_name}_mindr_jj", ak.min(dr, axis=1))
+
+    # NOTE Bjet variables that not necesssarily aare related to higgs kinematics, but just ordered, by our bjet logic
+    events = set_ak_column_f32(events, "mli_dr_hbb", hb_candidate[:, 0].delta_r(hb_candidate[:, 1]))
+    events = set_ak_column_f32(events, "mli_dphi_hbb", hb_candidate[:, 0].delta_phi(hb_candidate[:, 1]))
+    events = set_ak_column_f32(events, "mli_discrete_b_score_sum", ak.sum(events.Jet.discrete_b_score, axis=1))
+
+    # NOTE: Lepton and leading bjet properties
+    min_dr_lb = ak.min(events.HBjetCandidate.delta_r(events.Lepton[:, 0]), axis=-1)
+    events = set_ak_column_f32(events, "mli_min_dr_lb", min_dr_lb)
+
+    hbjet_pairs = ak.combinations(events.HBjetCandidate, 2)
+    min_dr_ll_bb = ak.min(hbjet_pairs[:, :, "0"].delta_r(hll), axis=1)
+    events = set_ak_column_f32(events, "mli_min_dr_ll_bb", min_dr_ll_bb)
+
+    lb = (events.Lepton[:, 0] + hb_candidate[:, 0] * 1)
+    events = set_ak_column_f32(events, "mli_lb_pt", lb.pt)
+    events = set_ak_column_f32(events, "mli_lb_mass", lb.mass)
+    events = set_ak_column_f32(events, "mli_lb_pt_sum", events.Lepton[:, 0].pt + hb_candidate[:, 0].pt)
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
@@ -265,10 +197,14 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     self.ml_input_columns = {
         # high-level ll system
         "mli_mll", "mli_ll_pt", "mli_mllMET",
-        "mli_dr_ll", "mli_dphi_ll", "mli_deta_ll", 
+        "mli_dr_ll", "mli_dphi_ll", "mli_deta_ll",
         # low-level features lepton features
         "mli_lep2_pt", "mli_lep2_eta",
         "mli_lep_tag", "mli_lep2_tag", "mli_mixed_channel",
+        # additional hhh-specific features
+        "mli_dr_hbb", "mli_dphi_hbb", "mli_discrete_b_score_sum",
+        "mli_min_dr_lb", "mli_min_dr_ll_bb",
+        "mli_lb_pt_sum", "mli_lb_pt", "mli_lb_mass",
     } | set(
         f"mli_{obj}_{var}"
         for obj in ["btag", "hb_candidate"]
@@ -276,8 +212,8 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     ) | set(
         f"mli_{obj}_{var}"
         for obj in ["btag", "hb_candidate"]
-        for var in ["mh1", "mh2", "dr_h1_h2", "dr_ll_h1", "dr_ll_h2", "mhhh", "dr_h1_llMET", "dr_h2_llMET"]  # "m4bllMET", 
-    ) | set( 
+        for var in ["mh1", "mh2", "h1_pt", "h2_pt", "dr_h1_h2", "dr_ll_h1", "dr_ll_h2", "mhhh", "dr_h1_llMET", "dr_h2_llMET", "dr_h1_nu", "dr_h2_nu"]  # "m4bllMET"  # noqa E501
+    ) | set(
         f"mli_{obj}_{var}"
         for obj in ["btag1", "btag2", "btag3", "btag4"]
         for var in ["discrete_b_score", "pt", "eta"]
@@ -295,46 +231,3 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     add_dl_ml_variables(self.config_inst)
     add_hhh_ml_variables(self.config_inst)
     check_variable_existence(self)
-
-
-
-@producer(
-    uses={
-        # "*", "*.*",
-        prepare_objects,
-        btag_wp_weights,
-        "Jet.*",
-    },
-    produces={"flavour_test","PT","btag_weight"},
-)
-def testing_btag_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Simple Producer to extract pt and eta of the two VBF jets.
-    """
-
-    # add behavior and define new collections (e.g. Lepton)
-    events = self[prepare_objects](events, **kwargs)
-    jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
-    events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
-    events = set_ak_column_f32(events, "flavour_test", events.Jet["hadronFlavour"])
-    events = set_ak_column_f32(events, "PT", events.Jet["pt"])
-    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)
-
-    return events
-
-
-# @testing_btag_weights.init
-# def testing_btag_weights_init(self: Producer) -> None:
-
-#     # @call_once_on_config
-#     # def add_btesting_variables(config: law.config.Config) -> None:
-#     #     from hbw.config.styling import default_var_unit, default_var_title_format, default_var_binning
-#     #     for i in range(4):
-#     #         for var in ["pt", "eta", "phi", "mass", "b_score"]:
-#     #             config.add_variable(
-#     #                 name=f"hbjet{i+1}_{var}",
-#     #                 expression=f"hbjet{i+1}.{var}",
-#     #                 unit=default_var_unit.get(var, "1"),
-#     #                 binning=default_var_binning[var] if var != "b_score" else (50, 0, 1),
-#     #                 x_title=f"Bjet (hhh) {i+1} {default_var_title_format.get(var, var)}",
-#     #             )

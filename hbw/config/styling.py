@@ -74,7 +74,10 @@ color_palette = cms_color_palette_2
 default_process_colors = {
     "data": color_palette["black"],
     "tt": color_palette["red"],
-    "ttbb_custom": red_shades["red_crimson"],
+    "ttbb_custom": red_shades["red_indian"],
+    "ttb_custom": red_shades["red_crimson"],
+    "tt2b_custom": red_shades["red_tomato"],
+    "tt_bb_custom": red_shades["red_ruby"],
     "tt_custom": red_shades["red_firebrick"],
     "qcd": color_palette["blue"],
     "qcd_mu": color_palette["blue"],
@@ -173,6 +176,7 @@ default_labels = {
     "ttv": r"$t\bar{t}V$",
     # paper request: no couplings in labels for SM signals
     "hh_ggf_kl1_kt1": r"$HH_{ggF}$",
+    "hhh_4b2w_2l2nu_c30_d40": r"$HHH_{SM}$",
     "hh_vbf_kv1_k2v1_kl1": r"$HH_{VBF}$",
     "hh_ggf_hbb_htt_kl1_kt1": r"$HH_{ggF}\rightarrow bb\tau\tau$",
     "hh_vbf_hbb_htt_kv1_k2v1_kl1": r"$HH_{VBF}\rightarrow bb\tau\tau$",

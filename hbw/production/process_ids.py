@@ -314,23 +314,23 @@ def tt_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
 
     top_id = events.genTtbarId % 100
-    is_ttb = top_id == 51
-    is_tt2b = top_id == 52
+    is_ttb = (top_id == 51)  # & (top_id == 52)
+    is_tt2b = top_id == 52  # Onde additional bjet (gluon psliiting taht is so close we only see one)
     is_tt_bb = (top_id >= 53) & (top_id <= 55)
     is_ttcc = (top_id >= 41) & (top_id <= 45)
     is_ttlf = (top_id == 0)
-    is_ttbb = (is_ttb | is_tt2b | is_tt_bb)
+    is_ttbb = (is_ttb | is_tt2b | is_tt_bb)  # noqa
     is_tt = (is_ttcc | is_ttlf)
 
     base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
     print(base_proc_name)
     if base_proc_name.startswith("tt"):
         process_masks = {
-            f"{base_proc_name}_1b": (is_ttbb),
+            # f"{base_proc_name}_1b": (is_ttbb),
             f"{base_proc_name}_nonb": (is_tt),
-            # f"{base_proc_name}_b": is_ttb,
-            # f"{base_proc_name}_2b": is_tt2b,
-            # f"{base_proc_name}_bb": is_ttbb,
+            f"{base_proc_name}_b": is_ttb,
+            f"{base_proc_name}_2b": is_tt2b,
+            f"{base_proc_name}_bb": is_tt_bb,
             # f"{base_proc_name}_cc": is_ttcc,
             # f"{base_proc_name}_lf": is_ttlf,
         }

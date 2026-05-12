@@ -92,6 +92,7 @@ def get_rebin_values(
         N_bins_final: int = 10,
         min_bkg_events: int = 10,
         blinding_threshold: float | None = None,
+        blinded_by_significance: bool = True,
 ):
     """
     Function that determines how to rebin a histogram to *N_bins_final* bins such that
@@ -164,13 +165,17 @@ def get_rebin_values(
                 _sum = rebin_hist.values()[:last_bin_index].sum()
                 events_per_bin = _sum / (N_bins_final - bin_count)
                 logger.info(f"============ Continuing with {round(events_per_bin, 3)} events per bin")
-
                 # check if this bin should be blinded
-                should_be_blinded = blind_bool_func(N_signal, N_bkg_value)
-                if should_be_blinded:
-                    logger.warning(f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
-                    rebin_values = []
-
+                if blinded_by_significance:
+                    should_be_blinded = blind_bool_func(N_signal, N_bkg_value)
+                    if should_be_blinded:
+                        logger.warning(f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
+                        rebin_values = []
+                else:
+                    if this_edge >= blinding_threshold:
+                        logger.warning(f"Bin edge {this_edge} is above blinding threshold {blinding_threshold}, "
+                                       f"first bin edge is set to {this_edge}")
+                        rebin_values = []
                 # append bin edge and reset event counts
                 rebin_values.append(this_edge)
                 bin_count += 1
@@ -485,6 +490,18 @@ class ModifyDatacardsFlatRebin(
                 elif "sig_" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     blinding_threshold = 0.008
+                elif "2b__ml_hhh_signal" in cat_name:
+                    # for the GGF categories, we use a blinding threshold
+                    # blinding_threshold = 0.000003
+                    blinding_threshold = 0.9
+                elif "3b__ml_hhh_signal" in cat_name:
+                    # for the GGF categories, we use a blinding threshold
+                    # blinding_threshold = 0.0005
+                    blinding_threshold = 1.5
+                elif "4b__ml_hhh_signal" in cat_name:
+                    # for the GGF categories, we use a blinding threshold
+                    # blinding_threshold = 0.001
+                    blinding_threshold = 2.2
                 else:
                     # for all other categories, we do not blind the bins
                     blinding_threshold = 0.008

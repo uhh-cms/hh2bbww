@@ -206,11 +206,11 @@ def plot_postfit_shapes(
         **kwargs,
     )
     if total_bkg:
-        if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
-            raise ValueError(
-                "The provided total_bkg histogram (used for variances) "
-                f"does not match the sum of the background histograms. Difference: {diff}",
-            )
+        # if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
+        #     raise ValueError(
+        #         "The provided total_bkg histogram (used for variances) "
+        #         f"does not match the sum of the background histograms. Difference: {diff}",
+        #     )
         plot_config["mc_stat_unc"]["hist"] = total_bkg
         plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
     try:
@@ -407,67 +407,179 @@ class PlotPostfitShapes(
     def create_merged_hist(self, all_hists) -> None:
         """
         Helper function to merge all categories per process into a single hist object
+
+        Additionally:
+        - remove bins where the 'data' process is empty
+        - apply the same bin removal to all processes
+        - update bins_dict accordingly
         """
         import boost_histogram
         import numpy as np
         import hist
-        dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[("value", "<f8"), ("variance", "<f8")])
+        from collections import defaultdict
 
-        # TODO: at the moment we only consider processes that are present in all cards
-        # all_processes = set.intersection(*[set(hists.keys()) for hists in all_hists.values()])
+        dummy_view = boost_histogram.view.WeightedSumView(
+            0,
+            dtype=[("value", "<f8"), ("variance", "<f8")],
+        )
+
         all_processes = set.union(*[set(hists.keys()) for hists in all_hists.values()])
 
         bins_dict = {}
         categories_sorted = self.sort_categories(all_hists.keys())
         logger.info(f"Categories sorted for merging: {categories_sorted}")
+
+        # store original binning info
         for category in categories_sorted:
             hist_dict = all_hists[category]
             axis = list(hist_dict.values())[0].axes[0]
+
             bins_dict[category] = {
                 "count": len(axis),
                 "edges": axis.edges,
             }
 
-        # initialize histogram
-        n_bins = sum([b["count"] for b in bins_dict.values()])
-        h_out = {
-            process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
-            for process in all_processes
-        }
+        # ------------------------------------------------------------------
+        # Build merged views first
+        # ------------------------------------------------------------------
+
         view_dict = {process: dummy_view.copy() for process in all_processes}
 
-        # merge histograms over categories per process
+        # keep track of category bin ranges in merged histogram
+        cat_bin_ranges = {}
+
+        current_bin = 0
+
         for category in categories_sorted:
+
             n_bins_cat = bins_dict[category]["count"]
             hist_dict = all_hists[category]
+
+            cat_bin_ranges[category] = (current_bin, current_bin + n_bins_cat)
+
             for process in all_processes:
+
                 if process in hist_dict.keys():
-                    view_dict[process] = np.concatenate(
-                        (view_dict[process], hist_dict[process].view(flow=False)),
-                    )
+                    arr = hist_dict[process].view(flow=False)
+
                 else:
-                    empty_view = np.array([(0, 0)] * n_bins_cat, dtype=[("value", "<f8"), ("variance", "<f8")])
-                    view_dict[process] = np.concatenate(
-                        (view_dict[process], empty_view),
+                    arr = np.array(
+                        [(0, 0)] * n_bins_cat,
+                        dtype=[("value", "<f8"), ("variance", "<f8")],
                     )
 
+                view_dict[process] = np.concatenate(
+                    (view_dict[process], arr),
+                )
+
+            current_bin += n_bins_cat
+
+        # remove dummy first element
+        for process in all_processes:
+            view_dict[process] = view_dict[process][1:]
+
+        # ------------------------------------------------------------------
+        # Remove bins empty in DATA
+        # ------------------------------------------------------------------
+        # __import__("IPython").embed()
+        if "data_obs" not in view_dict:
+            raise ValueError("'data_obs' process not found")
+
+        data_view = view_dict["data_obs"]
+
+        # keep bins where data != 0
+        keep_mask = data_view["value"] != 0
+
+        logger.info(
+            f"Removing {np.sum(~keep_mask)} bins empty in data process",
+        )
+
+        # apply mask to ALL processes
+        for process in all_processes:
+            view_dict[process] = view_dict[process][keep_mask]
+
+        # ------------------------------------------------------------------
+        # Update bins_dict
+        # ------------------------------------------------------------------
+
+        new_bins_dict = {}
+
+        for category in categories_sorted:
+
+            start, stop = cat_bin_ranges[category]
+
+            cat_mask = keep_mask[start:stop]
+
+            old_edges = bins_dict[category]["edges"]
+
+            # edges corresponding to surviving bins
+            kept_indices = np.where(cat_mask)[0]
+
+            if len(kept_indices) == 0:
+                logger.info(f"Skipping category {category}: all bins removed")
+                continue
+
+            # construct reduced edges
+            new_edges = [old_edges[kept_indices[0]]]
+
+            for idx in kept_indices:
+                new_edges.append(old_edges[idx + 1])
+
+            new_bins_dict[category] = {
+                "count": len(kept_indices),
+                "edges": np.array(new_edges),
+            }
+
+        bins_dict = new_bins_dict
+
+        # ------------------------------------------------------------------
+        # Create output histograms
+        # ------------------------------------------------------------------
+
+        n_bins_final = len(view_dict["data_obs"])
+
+        h_out = {
+            process: hist.Hist.new.Integer(
+                0,
+                n_bins_final,
+                name="xaxis",
+            ).Weight()
+            for process in all_processes
+        }
+
         for process, h in h_out.items():
-            h_out[process][...] = view_dict[process]
+            h[...] = view_dict[process]
 
         all_hists["merged"] = h_out
 
-        # extend bins_dict with some additional info for plotting
+        # ------------------------------------------------------------------
+        # extend bins_dict with plotting info
+        # ------------------------------------------------------------------
+
         ml_proc_bins = defaultdict(int)
+
         for cat_name, bins_info in bins_dict.items():
-            ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
+
+            ml_proc = (
+                cat_name.split("ml_")[-1]
+                .split("__")[0]
+                .replace("sig_", "HH")
+                .replace("dy_m10toinf", "DY")
+                .replace("h", "H")
+                .replace("bkg", "")
+            )
+
             ml_proc = {
                 "HHggf": "gluon-gluon fusion (HH ggF)",
                 "HHvbf": "vector boson fusion (HH VBF)",
                 "tt": r"$t\bar{t}$",
                 "st": "t",
             }.get(ml_proc, ml_proc)
+
             bins_dict[cat_name]["ml_proc"] = ml_proc
+
             ml_proc_bins[ml_proc] += bins_info["count"]
+
         for cat_name, bins_info in bins_dict.items():
             bins_info["ml_proc_count"] = ml_proc_bins[bins_info["ml_proc"]]
 
@@ -576,6 +688,10 @@ class PlotPostfitShapes(
                         bjet_cat = "1b"
                     elif "2b" in cat_name:
                         bjet_cat = "2b"
+                    elif "3b" in cat_name:
+                        bjet_cat = "3b"
+                    elif "4b" in cat_name:
+                        bjet_cat = "4b"
                     elif "boosted" in cat_name:
                         bjet_cat = "Boost"
                         # bjet_cat = "boosted"

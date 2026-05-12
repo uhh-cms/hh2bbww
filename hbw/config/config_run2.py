@@ -25,7 +25,9 @@ from hbw.config.categories import (
 from hbw.config.variables import add_variables
 from hbw.config.datasets import add_hbw_processes_and_datasets, configure_hbw_datasets
 from hbw.config.processes import configure_hbw_processes
-from hbw.config.defaults_and_groups import set_config_defaults_and_groups
+from hbw.config.defaults_and_groups import set_dl_config_defaults_and_groups
+from hbw.config.defaults_and_groups_hh import set_dl_hh_config_defaults_and_groups
+from hbw.config.defaults_and_groups_hhh import set_dl_hhh_config_defaults_and_groups
 from hbw.config.sl_defaults_and_groups import set_sl_config_defaults_and_groups
 from hbw.util import timeit_multiple
 from columnflow.production.cms.dy import DrellYanConfig
@@ -114,7 +116,7 @@ def add_config(
     # def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
     #     return ["/" + dataset_key]
 
-    ### multiple files
+    # multiple files
     import glob
     import os
 
@@ -122,7 +124,7 @@ def add_config(
 
     def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
         files = sorted(
-            glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root"))
+            glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
         )
 
         # strip the base → relative LFNs
@@ -456,7 +458,7 @@ def add_config(
                 "medium": {"2022preEE": 0.245, "2022postEE": 0.2605, "2023preBPix": 0.1917, "2023postBPix": 0.1919}.get(cfg.x.cpn_tag, 0.0),  # noqa
                 "tight": {"2022preEE": 0.6734, "2022postEE": 0.6915, "2023preBPix": 0.6172, "2023postBPix": 0.6133}.get(cfg.x.cpn_tag, 0.0),  # noqa
             },
-            # NOTE: TODO this should be consistend whith how we create a btag_sf however i like johannas... 
+            # NOTE: This is consistent with Johannas code, probably duplicate here
             "UParTAK4": {
                 "loose": {"2024": 0.0246}.get(cfg.x.cpn_tag, 0.0),  # noqa
                 "medium": {"2024": 0.1272}.get(cfg.x.cpn_tag, 0.0),  # noqa
@@ -508,7 +510,7 @@ def add_config(
                     cfg,
                     f"btag_{unc}_bc",
                     {
-                        f"btag_weight_{unc}_bc": f"btag_weight_{unc}_bc_" + "{direction}",
+                        "btag_weight": f"btag_weight_{unc}_bc_" + "{direction}",
                     },
                 )
             for i, unc in enumerate(btag_uncs_light):
@@ -518,7 +520,7 @@ def add_config(
                     cfg,
                     f"btag_{unc}_light",
                     {
-                        f"btag_weight_{unc}_light": f"btag_weight_{unc}_light_" + "{direction}",
+                        "btag_weight": f"btag_weight_{unc}_light_" + "{direction}",
                     },
                 )
 
@@ -530,35 +532,17 @@ def add_config(
                 cfg,
                 "btag_bc",
                 {
-                    "btag_weight_bc": "btag_weight_bc_" + "{direction}",
+                    "btag_weight": "btag_weight_bc_" + "{direction}",
                 },
             )
             add_shift_aliases(
                 cfg,
                 "btag_light",
                 {
-                    "btag_weight_light": "btag_weight_light_" + "{direction}",
+                    "btag_weight": "btag_weight_light_" + "{direction}",
                 },
             )
             cfg.x.b_tagger = "upart"
-            # # TODO: not sure which and how the SF are read out and what keys should be used.
-            # NOTE: Iam using Johannas fucntion for 2024, which makes the year splitting inevident. I am not sure I do not want to change anythign for 22 + 23, so lets see
-            # cfg.x.btag_sf = BTagSFConfig(
-            #     correction_set="UParTAK4_kinfit",
-            #     jec_sources=cfg.x.btag_sf_jec_sources,
-            #     discriminator="btagUParTAK4B",
-            #     systs={
-            #         "fsrdef": "fsrdef",
-            #         "hdamp": "hdamp",
-            #         "isrdef": "isrdef",
-            #         "jer": "jer",
-            #         "jes": "jes",
-            #         "mass": "mass",
-            #         "statistic": "statistic",
-            #         "tune": "tune",
-            #     },
-            #     corrector_kwargs={"working_point": "M", "flavor": 5},
-            # )
             cfg.x.btag_wp_count_config = btag_sf_cfg(cfg, 2024)["btag_wp_count_config"]
             cfg.x.btag_wp_sf_config = btag_sf_cfg(cfg, 2024)["btag_wp_sf_config"]
             cfg.x.btag_column = "btagUParTAK4B"
@@ -1308,7 +1292,12 @@ def add_config(
     if cfg.has_tag("is_sl"):
         set_sl_config_defaults_and_groups(cfg)
     elif cfg.has_tag("is_dl"):
-        set_config_defaults_and_groups(cfg)
+        if cfg.has_tag("is_hh"):
+            set_dl_hh_config_defaults_and_groups(cfg)
+        elif cfg.has_tag("is_hhh"):
+            set_dl_hhh_config_defaults_and_groups(cfg)
+        else:
+            set_dl_config_defaults_and_groups(cfg)
 
     # only produce cutflow features when number of dataset_files is limited (used in selection module)
     cfg.x.do_cutflow_features = bool(limit_dataset_files) and limit_dataset_files <= 10

@@ -357,6 +357,33 @@ class MLClassifierBase(MLModel):
                             },
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
+                    config_inst.add_variable(
+                        name=f"rebinned_logit2b.{proc}",  # used in histProducer specificially accessing this name to set weight=1  # noqa E501
+                        expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
+                        binning=[-2.0, -1.112, -0.488, 0.028000000000000025, 0.496, 0.964, 1.48, 2.0920000000000005, 3.088, 10.0],  # noqa E501
+                        x_title="logit score rebinned",
+                        aux={
+                            "inputs": {f"mlscore.{proc}"},
+                        },
+                    )
+                    config_inst.add_variable(
+                        name=f"rebinned_logit3b.{proc}",  # used in histProducer specificially accessing this name to set weight=1   # noqa E501
+                        expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
+                        binning=[-2.0, 0.31599999999999984, 0.7840000000000003, 1.12, 1.432, 1.7080000000000002, 2.0200000000000005, 2.3440000000000003, 2.752, 3.232, 10.0],  # noqa E501
+                        x_title="logit score rebinned",
+                        aux={
+                            "inputs": {f"mlscore.{proc}"},
+                        },
+                    )
+                    config_inst.add_variable(
+                        name=f"rebinned_logit4b.{proc}",  # used in histProducer specificially accessing this name to set weight=1  # noqa E501
+                        expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
+                        binning=[-2.0, 1.7320000000000002, 2.1879999999999997, 2.5360000000000005, 2.8360000000000003, 3.1000000000000005, 3.364, 3.652, 4.072, 4.708, 10.0],  # noqa E501
+                        x_title="logit score rebinned",
+                        aux={
+                            "inputs": {f"mlscore.{proc}"},
+                        },
+                    )
 
         # add tag to allow running this function just once
         self.config_inst.add_tag(f"{self.cls_name}_called")
