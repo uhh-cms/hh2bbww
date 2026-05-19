@@ -57,31 +57,39 @@ def btag_sf_cfg(
     ]
 
     btag_uncs = {
-        ## combined(?) uncertainties
+        # combined(?) uncertainties
         # uncertainties to b/c jets
         "down_bc": "bc_down",
         "up_bc": "bc_up",
         # uncertainties to light jets
         "down_light": "light_down",
         "up_light": "light_up",
-        ## split uncertainties(?) (all needed?)
+        # split uncertainties(?) (all needed?)
         # uncertainties to b/c jets
-        "up_fsrdef_bc": "fsrdef_bc_up",
-        "up_isrdef_bc": "isrdef_bc_up",
-        "up_hdamp_bc": "hdamp_bc_up",
-        "up_jer_bc": "jer_bc_up",
-        "up_jes_bc": "jes_bc_up",
-        "up_mass_bc": "mass_bc_up",
+        # "up_fsrdef_bc": "fsrdef_bc_up",
+        # "up_isrdef_bc": "isrdef_bc_up",
+        # "up_hdamp_bc": "hdamp_bc_up",
+        # "up_jer_bc": "jer_bc_up",
+        # "up_jes_bc": "jes_bc_up",
+        # "up_mass_bc": "mass_bc_up",
+        # "up_statistic_bc": "statistic_bc_up",
+        # "up_tune_bc": "tune_bc_up",
+        # "down_fsrdef_bc": "fsrdef_bc_down",
+        # "down_isrdef_bc": "isrdef_bc_down",
+        # "down_hdamp_bc": "hdamp_bc_down",
+        # "down_jer_bc": "jer_bc_down",
+        # "down_jes_bc": "jes_bc_down",
+        # "down_mass_bc": "mass_bc_down",
+        # "down_statistic_bc": "statistic_bc_down",
+        # "down_tune_bc": "tune_bc_down",
+        "up_bfragmentation_bc": "bfragmentation_bc_up",
+        "up_pileup_bc": "pileup_bc_up",
+        "up_type3_bc": "type3_bc_up",
         "up_statistic_bc": "statistic_bc_up",
-        "up_tune_bc": "tune_bc_up",
-        "down_fsrdef_bc": "fsrdef_bc_down",
-        "down_isrdef_bc": "isrdef_bc_down",
-        "down_hdamp_bc": "hdamp_bc_down",
-        "down_jer_bc": "jer_bc_down",
-        "down_jes_bc": "jes_bc_down",
-        "down_mass_bc": "mass_bc_down",
+        "down_bfragmentation_bc": "bfragmentation_bc_down",
+        "down_pileup_bc": "pileup_bc_down",
+        "down_type3_bc": "type3_bc_down",
         "down_statistic_bc": "statistic_bc_down",
-        "down_tune_bc": "tune_bc_down",
         # uncertainties to light jets
         "down_correlated_light": "correlated_light_down",
         "up_correlated_light": "correlated_light_up",
@@ -127,7 +135,7 @@ def btag_sf_cfg(
             pt_edges=(0, 20, 30, 50, 70, 100, 140, 200, 300, 600, 10_000),
             # abs_eta_edges=(0.0, 1.0, 1.5, 2.0, 5.0),
             systs=btag_uncs,
-            wp_merging = {
+            wp_merging={
                 "loose": ["loose"],
                 "medium": ["medium"],
                 "tight": ["tight"],

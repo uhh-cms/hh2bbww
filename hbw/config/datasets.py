@@ -328,12 +328,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
-                # "zh_zqq_hbb_powheg",  # TODO
-                # "zh_zll_hbb_powheg",  # TODO
+                "zh_zqq_hbb_powheg",  # TODO
+                "zh_zll_hbb_powheg",  # TODO
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
-                "zh_hww2l2nu_powheg",
-                # "zh_gg_zll_hbb_powheg",  # TODO
-                # "zh_gg_zqq_hbb_powheg",
+                # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
+                "zh_gg_zll_hbb_powheg",  # TODO
+                "zh_gg_zqq_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
@@ -359,9 +359,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
-                "thw_4f_madgraph",
+                # "thw_4f_madgraph",
                 "thw_madgraph",
-                "thq_madgraph",
+                # "thq_madgraph",
             ]),
         ],
         "hh_ggf": [
@@ -646,7 +646,7 @@ def configure_hbw_datasets(
             # TODO figure out which datasets should be grouped together;
             # for now, don't group any datasets together and treat each type of dataset separately
             config.x.btag_wp_eff_groups = [
-                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant
+                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant # noqa: E501
                 # ["*"],
                 ["dy_*", "w_lnu_*"],
                 ["hhh_*"],
@@ -657,15 +657,15 @@ def configure_hbw_datasets(
                 ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
                 ["hh_*", "whh_*", "tthh_*", "zhh_*"],
                 ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
-            #     ["dy_*",
-            #     "hhh_*",
-            #     "w_lnu_*",
-            #     "st_*",
-            #     "tt_*", "ttbb_*",
-            #     "ww_*", "wz_*", "zz_*",
-            #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
-            #     "hh_*", "whh_*", "tthh_*", "zhh_*",
-            #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                #     ["dy_*",
+                #     "hhh_*",
+                #     "w_lnu_*",
+                #     "st_*",
+                #     "tt_*", "ttbb_*",
+                #     "ww_*", "wz_*", "zz_*",
+                #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
+                #     "hh_*", "whh_*", "tthh_*", "zhh_*",
+                #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
             ]
             group_matched = False
             for i, dataset_pattern in enumerate(config.x.btag_wp_eff_groups):

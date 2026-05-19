@@ -680,7 +680,7 @@ def add_hhh_bjet_variables(config: od.Config) -> None:
         x_title="sum of btag scores",
         aux={"overflow": True},
     )
-    for i in range(0, 4):
+    for i in range(0, 2):
         config.add_variable(
             name=f"mli_bjet{i+1}_pt",
             expression=f"btag_jet{i+1}.pt",
@@ -871,4 +871,67 @@ def add_hhh_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
         unit="GeV",
         x_title=r"$p_T(\ell) + p_T(b)$",
+    )
+
+
+@call_once_on_config()
+def add_hh_bjet_variables(config: od.Config) -> None:
+    label_dict = {
+        "": "",
+        "_b": "(BJets)",
+        "_l": "(LightJets)",
+    }
+    for obj in ["", "_b", "_l"]:
+        config.add_variable(
+            name=f"mli{obj}_discrete_b_score_sum",
+            binning=(16, -0.5, 15.5),
+            aux={"overflow": True},
+            x_title=f"sum of discrete b-scores {label_dict[obj]}",
+        )
+    for obj in ["b1", "b2", "j1", "j2"]:
+        config.add_variable(
+            name=f"mli_{obj}_discrete_b_score",
+            binning=(6, -0.5, 5.5),
+            aux={"overflow": True},
+            x_title=f"{obj} discrete b-score",
+        )
+    config.add_variable(
+        name="test_discrete_sum_b_score",
+        expression="mli_discrete_b_score_sum",
+        binning=(16, 0, 16),
+        aux={"overflow": True},
+        x_title="sum of discrete b-scores (test)",
+    )
+    for i in range(4):
+        config.add_variable(
+            name=f"mli_jet{i+1}_discrete_b_score",
+            expression=f"Jet.discrete_b_score[:, {i}]",
+            null_value=-9999,
+            binning=(6, -0.5, 5.5),
+            aux={"overflow": True},
+            x_title=f"Jet{i+1} b-score",
+        )
+    config.add_variable(
+        name="btag_weights",
+        expression="btag_weight",
+        binning=(200, 0, 4),
+        aux={"overflow": True},
+        x_title="b-tagging weight",
+    )
+    config.add_variable(
+        name="low_lep2_pt",
+        expression=lambda events: events.Lepton.pt[:, 1],
+        binning=(20, 0, 20),
+        aux={
+            "overflow": False,
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass}"},
+        },
+        x_title=r"Subleading lepton $p_T$ (below 20 GeV)",
+    )
+    config.add_variable(
+        name="discrete_b_scores",
+        expression="Jet.discrete_b_score",
+        binning=(6, -0.5, 5.5),
+        aux={"overflow": True},
+        x_title="Jet discrete b-scores",
     )

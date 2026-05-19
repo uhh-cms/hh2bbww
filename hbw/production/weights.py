@@ -161,6 +161,11 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
 })
+low_pt_muon_id_weights = muon_weights.derive("low_pt_muon_id_weights", cls_dict={
+    "weight_name": "muon_low_pt_id_weight",
+    "get_muon_file": (lambda self, external_files: external_files.muon_low_pt_sf),
+    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.low_pt_muon_id_sf_names)),
+})
 
 # electron weights
 electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
@@ -170,17 +175,17 @@ electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dic
 
 
 @producer(
-    uses={muon_id_weights, muon_iso_weights},
-    produces={muon_id_weights, muon_iso_weights},
+    uses={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
+    produces={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
     mc_only=True,
 )
 def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer that calculates the muon id and iso weights.
     """
-    # run muon id and iso weights
     events = self[muon_id_weights](events, **kwargs)
     events = self[muon_iso_weights](events, **kwargs)
+    events = self[low_pt_muon_id_weights](events, **kwargs)
 
     return events
 
@@ -286,7 +291,6 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
-        # __import__("IPython").embed()  # for debugging
     # compute normalization weights
     events = self[combined_normalization_weights](events, **kwargs)
     # __import__("IPython").embed()  # for debugging
@@ -301,7 +305,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
         if self.config_inst.campaign.x.year in [2022, 2023]:
-        # different for 2024 and not for qcd datasets
+            # different for 2024 and not for qcd datasets
             events = self[normalized_btag_weights](events, **kwargs)
             # compute and normalize btag SF weights
             events = self[btag_weights](
@@ -334,8 +338,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events = self[electron_reco_weights](events, **kwargs)
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
-        mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
-        events = self[muon_id_iso_weights](events, muon_mask=mu_mask, **kwargs)
+        # mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))  NOTE: handled in MuonSFConfig
+        events = self[muon_id_iso_weights](events, **kwargs)  # muon_mask=mu_mask, **kwargs)
 
     if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[self.trigger_weights_producer](events, **kwargs)

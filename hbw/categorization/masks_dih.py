@@ -78,3 +78,49 @@ def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
     else:
         mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
     return events, mask
+
+
+@categorizer(
+    uses={
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+    }
+)
+def mask_fn_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.Lepton[:, 1].pt > 15)
+    return events, mask
+
+
+@categorizer(
+    uses={
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+    }
+)
+def mask_fn_lep2_pt10(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = (events.Lepton[:, 1].pt > 10)
+    return events, mask
+
+
+@categorizer(
+    uses={
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+    },
+    met_req=40,
+)
+def mask_fn_met_geq40_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt >= self.met_req
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+    mask = mask & (events.Lepton[:, 1].pt > 15)
+    return events, mask
+
+
+@categorizer(
+    uses={
+        "trigger_ids",
+    },
+)
+def mask_fn_single_lep_triggers(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = ak.any(events.trigger_ids == 101, axis=-1) | ak.any(events.trigger_ids == 201, axis=-1)
+    return events, mask

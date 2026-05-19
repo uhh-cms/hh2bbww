@@ -494,11 +494,15 @@ def add_config(
     elif cfg.x.run == 3:
         if year == 2024:
             # NOTE: copied from Johanna syst declaration for new wp based btagging
+            # btag_uncs_bc = [
+            #     "fsrdef", "isrdef",
+            #     "hdamp", "jer", "jes",
+            #     "mass", "statistic",
+            #     "tune",
+            # ]
             btag_uncs_bc = [
-                "fsrdef", "isrdef",
-                "hdamp", "jer", "jes",
-                "mass", "statistic",
-                "tune",
+                "bfragmentation", "pileup",
+                "type3", "statistic",
             ]
             btag_uncs_light = [
                 "correlated", "uncorrelated",
@@ -730,10 +734,20 @@ def add_config(
         cfg.x.muon_id_sf_names = MuonSFConfig(
             correction="NUM_TightID_DEN_TrackerMuons",
             campaign=f"{cfg.x.cpn_tag}",
+            min_pt=10.0,
+            max_pt=1000.0,
         )
         cfg.x.muon_iso_sf_names = MuonSFConfig(
             correction="NUM_TightPFIso_DEN_TightID",
             campaign=f"{cfg.x.cpn_tag}",
+            min_pt=10.0,
+            max_pt=1000.0,
+        )
+        cfg.x.low_pt_muon_id_sf_names = MuonSFConfig(
+            correction="NUM_TightID_DEN_TrackerMuons",
+            campaign=f"{cfg.x.cpn_tag}",
+            min_pt=5.0,
+            max_pt=10.0,
         )
 
         # central trigger SF, only possible for SL
@@ -813,6 +827,10 @@ def add_config(
     add_shift_aliases(cfg, "mu_id_sf", {"muon_id_weight": "muon_id_weight_{direction}"})
     add_shift_aliases(cfg, "mu_iso_sf", {"muon_iso_weight": "muon_iso_weight_{direction}"})
     # add_shift_aliases(cfg, "mu_trig_sf", {"muon_trigger_weight": "muon_trigger_weight_{direction}"})
+    # TODO: it would probably be better to combine these with the other muon SFs into a single id shift
+    cfg.add_shift(name="mu_low_pt_id_sf_up", id=58, type="shape")
+    cfg.add_shift(name="mu_low_pt_id_sf_down", id=59, type="shape")
+    add_shift_aliases(cfg, "mu_low_pt_id_sf", {"muon_low_pt_id_weight": "muon_low_pt_id_weight_{direction}"})
 
     # trigger SFs
     cfg.add_shift(name="trigger_sf_up", id=60, type="shape")
@@ -1059,7 +1077,8 @@ def add_config(
         add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
     else:
         # add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
-        add_external("btag_wp_sf_corr", ("/data/dust/user/matthiej/mttbar/mtt/config/run3/btagging_preliminary_merged.json.gz", "v1"))  # noqa: E501
+        # add_external("btag_wp_sf_corr", ("/data/dust/user/matthiej/mttbar/mtt/config/run3/btagging_preliminary_merged.json.gz", "v1"))  # noqa: E501
+        add_external("btag_wp_sf_corr", ("/data/dust/user/letzerba/public/hh2bbww/jsons/merged_btagging.json.gz", "v2"))  # noqa: E501
 
     # updated jet id
     add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))
@@ -1074,6 +1093,7 @@ def add_config(
 
     # muon scale factors
     add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v2"))
+    add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
     # met phi correction
     if year != 2024:  # TODO: 2024: not yet available
         add_external("met_phi_corr", (cat_info.get_file("jme", f"met_xyCorrections_{year}_{year}{campaign.x.postfix}.json.gz"), "v1"))  # noqa: E501
@@ -1088,11 +1108,20 @@ def add_config(
     # custom Trigger SF (produced in 2022+2023 combined)
     # TODO should maybe be not used by mathis anymore at some point
     json_mirror = "/afs/cern.ch/user/m/mfrahm/public/mirrors/jsonpog-integration-406118ec"
-    trigger_sf_path = "/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
+    if year != 2024:
+        trigger_sf_path = "/afs/cern.ch/user/m/mfrahm/public/data/trig_sf_v6"
 
-    add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))
-    add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))
-    add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
+        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
+        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
+        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
+    elif year == 2024:
+        trigger_sf_path = "/data/dust/user/letzerba/public/hh2bbww/triggersf"
+
+        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV0.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV0.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV0.json.gz", "v0"))  # noqa: E501
+    else:
+        raise NotImplementedError(f"Trigger SFs not yet implemented for year {year}")
 
     # trigger configuration (can be overwritten in the Selector)
     from hbw.config.trigger import add_triggers

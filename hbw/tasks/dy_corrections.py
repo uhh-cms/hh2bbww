@@ -795,6 +795,7 @@ def get_fit_str(
         sigma=np.maximum(ratio_err, 1e-5),
         absolute_sigma=True,
         bounds=(lower_bounds, upper_bounds),
+        max_nfev=10000,
     )
     print("Fit parameters:", param_fit)
 

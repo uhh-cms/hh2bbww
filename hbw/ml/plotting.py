@@ -28,10 +28,10 @@ logger = law.logger.get_logger(__name__)
 
 cms_label_kwargs = {
     "data": False,
-    # "llabel": "Private work (CMS simulation)",
+    "llabel": "Private work (CMS simulation)",
     # "llabel": "Simulation work in progress",
-    "llabel": "Simulation preliminary",
-    "lumi": "62",  # NOTE: hard-coded, to be updated if needed
+    # "llabel": "Simulation preliminary",
+    "lumi": "109.8",  # NOTE: hard-coded, to be updated if needed
     # "exp": "",
 }
 if "CMS" in cms_label_kwargs["llabel"]:

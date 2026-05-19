@@ -82,6 +82,14 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "dl2": [*hbbhww_sm, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl3": [*hh_sm1, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl4": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl41": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
+        "dl42": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
+        "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "ttbb_custom", "tt_custom"],  # noqa: E501
+        "dl91": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl92": [*hh_sm1, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_tautau_m10to50", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_tautau_m50toinf", "dy_ee_m50toinf", "dy_mumu_m50toinf", "tt"],  # noqa: E501
     }
     for proc, datasets in config_inst.x.dataset_names.items():
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
@@ -193,6 +201,11 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "ml_inputs_discrete": ml_inputs.v2_discrete + bracket_expansion([
+            "mli_{b1,b2,j1,j2}_{pt,eta,discrete_b_score,b_score}",
+            "mli_n_btag",
+            "mli_{b,l}_discrete_b_score_sum",
+        ]),
         "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
             "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
@@ -248,7 +261,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -258,7 +271,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -269,7 +282,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "postfit": {
@@ -278,7 +291,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
@@ -287,12 +300,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "whitespace_fraction": 0.4,
             "cms_label": f"{cms_label}",
             "yscale": "log",
-            "hide_signal_errors": True,
-            # "hide_stat_errors": True,
-            # "blinding_threshold": 0.00006,
-            "blinding_threshold": 0.00003,  # NOTE: good for hhh 2b
-            # "blinding_threshold": 0.00005,  # NOTE: good for 3b I think
-            # "blinding_threshold": 0.0001,  # NOTE: good for 4b with cat strategy
+            "blinding_threshold": 0.008,
         },
         "data_mc_plots_not_blinded": {
             "remove_negative": True,
@@ -406,10 +414,11 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         # "vbfSR_sl_boosted": 3,
         # Dilepton
         "BR_dl": 1,
-        "sr__resolved__1b__ml_sig_ggf": 10,
-        "sr__resolved__2b__ml_sig_ggf": 6,
-        "sr__resolved__1b__ml_sig_vbf": 8,
-        "sr__resolved__2b__ml_sig_vbf": 6,
+        "sr_boosted_bkg": 1,
+        "sr__resolved__1b__ml_sig_ggf": 12,
+        "sr__resolved__2b__ml_sig_ggf": 8,
+        "sr__resolved__1b__ml_sig_vbf": 10,
+        "sr__resolved__2b__ml_sig_vbf": 8,
         "sr__1b__ml_sig_ggf": 10,
         "sr__2b__ml_sig_ggf": 6,
         "sr__1b__ml_sig_vbf": 8,
@@ -424,7 +433,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
     is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
     is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
-    is_signal_hhh = lambda proc_name: "hhh_4b2w_2l2nu_c30_d40" in proc_name
+    is_signal_hhh = lambda proc_name: "hhh" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
@@ -458,6 +467,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
+        "sr_boosted_bkg": is_background,
         "hhh_sr": is_signal_hhh,
         "hhh_bkg": is_background_hhh,
     }
