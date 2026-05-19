@@ -319,12 +319,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
-                # "zh_zqq_hbb_powheg",  # TODO
-                # "zh_zll_hbb_powheg",  # TODO
+                "zh_zqq_hbb_powheg",  # TODO
+                "zh_zll_hbb_powheg",  # TODO
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
-                "zh_hww2l2nu_powheg",
-                # "zh_gg_zll_hbb_powheg",  # TODO
-                # "zh_gg_zqq_hbb_powheg",
+                # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
+                "zh_gg_zll_hbb_powheg",  # TODO
+                "zh_gg_zqq_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
@@ -350,9 +350,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
-                "thw_4f_madgraph",
+                # "thw_4f_madgraph",
                 "thw_madgraph",
-                "thq_madgraph",
+                # "thq_madgraph",
             ]),
         ],
         "hh_ggf": [

@@ -550,13 +550,34 @@ def set_config_defaults_and_groups(config_inst):
             "jer_up",
             "jec_Total_up",
         ],
+        "all24_up": [
+            # # theory unc.
+            "pdf_up",
+            "murf_envelope_up",
+            "isr_up",
+            "fsr_up",
+            "top_pt_up",
+            "dy_correction_up",
+            # # experimental unc.
+            "lumi_13p6TeV_2024_up",
+            # b-tagging
+            "btag_bc_up",
+            "btag_light_up",
+            # other experimental unc.
+            "mu_id_sf_up",
+            "mu_iso_sf_up",
+            "e_sf_up",
+            "e_reco_sf_up",
+            "trigger_sf_up",
+            "minbias_xs_up",
+        ],
     }
     config_inst.x.shift_groups["shapes_up"] = [
         *config_inst.x.shift_groups["theory_up"],
         *config_inst.x.shift_groups["btag_up"],
         *config_inst.x.shift_groups["experimental_up"],
     ]
-    for shift_groups in ("all", "theory", "btag", "experimental", "jerc"):
+    for shift_groups in ("all", "theory", "btag", "experimental", "jerc", "all24"):
         config_inst.x.shift_groups[shift_groups + "_down"] = [
             shift.replace("_up", "_down") for shift in config_inst.x.shift_groups[shift_groups + "_up"]
         ]
@@ -1064,6 +1085,7 @@ def set_config_defaults_and_groups(config_inst):
         # "vbfSR_sl_boosted": 3,
         # Dilepton
         "BR_dl": 1,
+        "sr_boosted_bkg": 1,
         "sr__resolved__1b__ml_sig_ggf": 12,
         "sr__resolved__2b__ml_sig_ggf": 8,
         "sr__resolved__1b__ml_sig_vbf": 10,
@@ -1116,6 +1138,7 @@ def set_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
+        "sr_boosted_bkg": is_background,
         "hhh_sr": is_signal_hhh,
         "hhh_bkg": is_background_hhh,
     }

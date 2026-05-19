@@ -542,216 +542,274 @@ vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
     "preparation_producer_name": "prepml_met40",
 })
 
-# first Iteration on 2024 samples, some signal samples still missing
+
+# 2024 models with all datasets
 multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
-    "processes": (
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-        *processes.backgrounds_multiclass,
-    ),
-    "train_nodes": {
-        "sig_ggf": {
-            "ml_id": 0,
-            "label": r"HH_{ggF}",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-            ),
-        },
-        "sig_vbf": {
-            "ml_id": 1,
-            "label": r"HH_{VBF}",
-            "color": "#999999",  # grey
-            "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-                "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-            ),
-        },
-        "tt": {"ml_id": 2},
-        "st": {"ml_id": 3},
-        "dy_m10toinf": {
-            "ml_id": 4,
-            "sub_processes": [
-                "dy_ee_m10to50", "dy_mumu_m10to50",
-                "dy_m50toinf"],
-            "label": "DY",
-            "color": color_palette["yellow"],
-            "class_factor_mode": "xsec",
-        },
-        "h": {"ml_id": 5},
-    },
+    "input_features": input_features["v3_discrete"],
 })
 ggf24 = ggfv1.derive("ggf24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
-    "processes": [
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-        "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
-        "vv", "ttv", "h", "other",
-    ],
-    "train_nodes": {
-        "sig_ggf_binary": {
-            "ml_id": 0,
-            "label": r"HH_{ggF}",
-            "color": "#000000",
-            "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
-                "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
-            ),
-        },
-        "bkg_binary_for_ggf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": (
-                "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50",
-                "dy_m50toinf",
-                "vv", "ttv", "h", "other",
-            ),
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "sig_ggf_binary": 1,
-        "bkg_binary_for_ggf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
-        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_ee_m10to50": 0.5,
-        "dy_mumu_m10to50": 0.5,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
-    "epochs": 100,
+    "input_features": input_features["v3_discrete"],
 })
 vbf24 = vbfv1.derive("vbf24", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
-    "processes": [
-        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
-        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-        "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
-        "vv", "ttv", "h", "other",
-    ],
-    "train_nodes": {
-        "sig_vbf_binary": {
-            "ml_id": 0,
-            "label": r"HH_{VBF}",
-            "color": "#000000",
-            "class_factor_mode": "equal",
-            "sub_processes": (
-                "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
-                "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
-                "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
-                "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
-            ),
-        },
-        "bkg_binary_for_vbf": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": (
-                "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
-                "vv", "ttv", "h", "other",
-            ),
-        },
-    },
-    "class_factors": {
-        "sig_vbf_binary": 1,
-        "bkg_binary_for_vbf": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
-        "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": 1,
-        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
-        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
-        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
-        "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": 1,
-        "tt": 1,
-        "st": 1,
-        "dy_ee_m10to50": 0.5,
-        "dy_mumu_m10to50": 0.5,
-        "dy_m50toinf": 1,
-        "vv": 2,
-        "ttv": 2,
-        "h": 2,
-        "other": 8,
-    },
+    "input_features": input_features["v3_discrete"],
 })
-multiclass24_v3 = multiclass24.derive("multiclass24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
-ggf24_v3 = ggf24.derive("ggf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
-vbf24_v3 = vbf24.derive("vbf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
-multiclass24_v0 = multiclass24.derive("multiclass24_v0", cls_dict={
+multiclass24_closure = multiclassv1.derive("multiclass24_closure", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+ggf24_closure = ggfv1.derive("ggf24_closure", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+vbf24_closure = vbfv1.derive("vbf24_closure", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
+})
+multiclass24_v3l2pt15 = multiclassv1.derive("multiclass24_v3l2pt15", cls_dict={
+    "training_configs": configs.twentyfour,
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-ggf24_v0 = ggf24.derive("ggf24_v0", cls_dict={
+ggf24_v3l2pt15 = ggfv1.derive("ggf24_v3l2pt15", cls_dict={
+    "training_configs": configs.twentyfour,
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-vbf24_v0 = vbf24.derive("vbf24_v0", cls_dict={
+vbf24_v3l2pt15 = vbfv1.derive("vbf24_v3l2pt15", cls_dict={
+    "training_configs": configs.twentyfour,
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-multiclass24_lep2pt15 = multiclass24.derive("multiclass24_lep2pt15", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt15",
-})
-ggf24_lep2pt15 = ggf24.derive("ggf24_lep2pt15", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt15",
-})
-vbf24_lep2pt15 = vbf24.derive("vbf24_lep2pt15", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt15",
-})
-multiclass24_lep2pt10 = multiclass24.derive("multiclass24_lep2pt10", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt10",
-})
-ggf24_lep2pt10 = ggf24.derive("ggf24_lep2pt10", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt10",
-})
-vbf24_lep2pt10 = vbf24.derive("vbf24_lep2pt10", cls_dict={
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt10",
-})
-multiclass24_debug = multiclass24.derive("multiclass24_debug", cls_dict={
+multiclass24_l2pt57 = multiclassv1.derive("multiclass24_l2pt57", cls_dict={
+    "training_configs": configs.twentyfour,
     "input_features": input_features["v2_discrete"],
 })
+ggf24_l2pt57 = ggfv1.derive("ggf24_l2pt57", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2_discrete"],
+})
+vbf24_l2pt57 = vbfv1.derive("vbf24_l2pt57", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features["v2_discrete"],
+})
+
+
+# first Iteration on 2024 samples, some signal samples still missing
+# multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "processes": (
+#         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         *processes.backgrounds_multiclass,
+#     ),
+#     "train_nodes": {
+#         "sig_ggf": {
+#             "ml_id": 0,
+#             "label": r"HH_{ggF}",
+#             "color": "#000000",  # black
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#                 "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#             ),
+#         },
+#         "sig_vbf": {
+#             "ml_id": 1,
+#             "label": r"HH_{VBF}",
+#             "color": "#999999",  # grey
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#                 "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+#             ),
+#         },
+#         "tt": {"ml_id": 2},
+#         "st": {"ml_id": 3},
+#         "dy_m10toinf": {
+#             "ml_id": 4,
+#             "sub_processes": [
+#                 "dy_ee_m10to50", "dy_mumu_m10to50",
+#                 "dy_m50toinf"],
+#             "label": "DY",
+#             "color": color_palette["yellow"],
+#             "class_factor_mode": "xsec",
+#         },
+#         "h": {"ml_id": 5},
+#     },
+# })
+# ggf24 = ggfv1.derive("ggf24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "processes": [
+#         "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#         "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+#         "vv", "ttv", "h", "other",
+#     ],
+#     "train_nodes": {
+#         "sig_ggf_binary": {
+#             "ml_id": 0,
+#             "label": r"HH_{ggF}",
+#             "color": "#000000",
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_ggf_hbb_hvv2l2nu_kl1_kt1",
+#                 "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1",
+#             ),
+#         },
+#         "bkg_binary_for_ggf": {
+#             "ml_id": 1,
+#             "label": "Background",
+#             "color": "#e76300",  # Spanish Orange
+#             "class_factor_mode": "xsec",
+#             "sub_processes": (
+#                 "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50",
+#                 "dy_m50toinf",
+#                 "vv", "ttv", "h", "other",
+#             ),
+#         },
+#     },
+#     # relative class factors between different nodes
+#     "class_factors": {
+#         "sig_ggf_binary": 1,
+#         "bkg_binary_for_ggf": 1,
+#     },
+#     # relative process weights within one class
+#     "sub_process_class_factors": {
+#         "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+#         "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
+#         "tt": 1,
+#         "st": 1,
+#         "dy_ee_m10to50": 0.5,
+#         "dy_mumu_m10to50": 0.5,
+#         "dy_m50toinf": 1,
+#         "vv": 2,
+#         "ttv": 2,
+#         "h": 2,
+#         "other": 8,
+#     },
+#     "epochs": 100,
+# })
+# vbf24 = vbfv1.derive("vbf24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "processes": [
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+#         "vv", "ttv", "h", "other",
+#     ],
+#     "train_nodes": {
+#         "sig_vbf_binary": {
+#             "ml_id": 0,
+#             "label": r"HH_{VBF}",
+#             "color": "#000000",
+#             "class_factor_mode": "equal",
+#             "sub_processes": (
+#                 "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1",
+#                 "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39",
+#                 "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3",
+#             ),
+#         },
+#         "bkg_binary_for_vbf": {
+#             "ml_id": 1,
+#             "label": "Background",
+#             "color": "#e76300",  # Spanish Orange
+#             "class_factor_mode": "xsec",
+#             "sub_processes": (
+#                 "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
+#                 "vv", "ttv", "h", "other",
+#             ),
+#         },
+#     },
+#     "class_factors": {
+#         "sig_vbf_binary": 1,
+#         "bkg_binary_for_vbf": 1,
+#     },
+#     # relative process weights within one class
+#     "sub_process_class_factors": {
+#         "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
+#         "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": 1,
+#         "tt": 1,
+#         "st": 1,
+#         "dy_ee_m10to50": 0.5,
+#         "dy_mumu_m10to50": 0.5,
+#         "dy_m50toinf": 1,
+#         "vv": 2,
+#         "ttv": 2,
+#         "h": 2,
+#         "other": 8,
+#     },
+# })
+# multiclass24_v3 = multiclass24.derive("multiclass24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+# ggf24_v3 = ggf24.derive("ggf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+# vbf24_v3 = vbf24.derive("vbf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
+# multiclass24_v0 = multiclass24.derive("multiclass24_v0", cls_dict={
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# ggf24_v0 = ggf24.derive("ggf24_v0", cls_dict={
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# vbf24_v0 = vbf24.derive("vbf24_v0", cls_dict={
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# multiclass24_lep2pt15 = multiclass24.derive("multiclass24_lep2pt15", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# ggf24_lep2pt15 = ggf24.derive("ggf24_lep2pt15", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# vbf24_lep2pt15 = vbf24.derive("vbf24_lep2pt15", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# multiclass24_lep2pt10 = multiclass24.derive("multiclass24_lep2pt10", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt10",
+# })
+# ggf24_lep2pt10 = ggf24.derive("ggf24_lep2pt10", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt10",
+# })
+# vbf24_lep2pt10 = vbf24.derive("vbf24_lep2pt10", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt10",
+# })
+# multiclass24_debug = multiclass24.derive("multiclass24_debug", cls_dict={
+#     "input_features": input_features["v2_discrete"],
+# })
 # ggf24_v3 = ggf24.derive("ggf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
 # vbf24_v3 = vbf24.derive("vbf24_v3", cls_dict={"input_features": input_features["v3_discrete"]})
