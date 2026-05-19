@@ -183,13 +183,9 @@ def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Producer that calculates the muon id and iso weights.
     """
-    # TODO: maybe we could merge the two id jsons similar to the btag SFs?
-    high_pt_mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
-    low_pt_mu_mask = (events.Muon["pt"] < 10.0)
-    # run muon id and iso weights
-    events = self[muon_id_weights](events, muon_mask=high_pt_mu_mask, **kwargs)
-    events = self[muon_iso_weights](events, muon_mask=high_pt_mu_mask, **kwargs)
-    events = self[low_pt_muon_id_weights](events, muon_mask=low_pt_mu_mask, **kwargs)
+    events = self[muon_id_weights](events, **kwargs)
+    events = self[muon_iso_weights](events, **kwargs)
+    events = self[low_pt_muon_id_weights](events, **kwargs)
 
     return events
 
@@ -342,7 +338,7 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events = self[electron_reco_weights](events, **kwargs)
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
-        # mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))
+        # mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))  NOTE: handled in MuonSFConfig
         events = self[muon_id_iso_weights](events, **kwargs)  # muon_mask=mu_mask, **kwargs)
 
     if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):

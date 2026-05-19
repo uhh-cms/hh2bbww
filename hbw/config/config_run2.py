@@ -751,14 +751,20 @@ def add_config(
         cfg.x.muon_id_sf_names = MuonSFConfig(
             correction="NUM_TightID_DEN_TrackerMuons",
             campaign=f"{cfg.x.cpn_tag}",
+            min_pt=10.0,
+            max_pt=1000.0,
         )
         cfg.x.muon_iso_sf_names = MuonSFConfig(
             correction="NUM_TightPFIso_DEN_TightID",
             campaign=f"{cfg.x.cpn_tag}",
+            min_pt=10.0,
+            max_pt=1000.0,
         )
         cfg.x.low_pt_muon_id_sf_names = MuonSFConfig(
             correction="NUM_TightID_DEN_TrackerMuons",
             campaign=f"{cfg.x.cpn_tag}",
+            min_pt=5.0,
+            max_pt=10.0,
         )
 
         # central trigger SF, only possible for SL

@@ -31,6 +31,23 @@ default_correction_weights = {
     "normalized_fsr_weight": ["fsr"],
     "top_pt_theory_weight": ["top_pt"],
 }
+default_correction_weights2 = {
+    # "dummy_weight": ["dummy_{cpn_tag}"],
+    "normalized_pu_weight": ["minbias_xs"],
+    "muon_id_weight": ["mu_id_sf"],
+    # "muon_low_pt_id_weight": ["mu_low_pt_id_sf"],
+    "muon_iso_weight": ["mu_iso_sf"],
+    "electron_weight": ["e_sf"],
+    "electron_reco_weight": ["e_reco_sf"],
+    # "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "normalized_murmuf_envelope_weight": ["murf_envelope"],
+    "normalized_mur_weight": ["mur"],
+    "normalized_muf_weight": ["muf"],
+    "normalized_pdf_weight": ["pdf"],
+    "normalized_isr_weight": ["isr"],
+    "normalized_fsr_weight": ["fsr"],
+    "top_pt_theory_weight": ["top_pt"],
+}
 
 default_weight_columns = {
     "stitched_normalization_weight": [],
@@ -111,6 +128,28 @@ with_trigger_weight_nolep2 = default_hist_producer.derive("with_trigger_weight_n
     # "pre_label": "Before DY correction",
     "weight_columns": {
         **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    # "categorizer_cls": mask_fn_lep2_pt15,
+})
+with_trigger_weight_nolep2_nob = default_hist_producer.derive("with_trigger_weight_nolep2_nob", cls_dict={
+    # "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights2,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        # "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    # "categorizer_cls": mask_fn_lep2_pt15,
+})
+with_trigger_weight_nolep2_nolowmusf = default_hist_producer.derive("with_trigger_weight_nolep2_nolowmusf", cls_dict={
+    # "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights2,
         # "vjets_weight": [],  # TODO: corrections/shift missing
         "trigger_weight": ["trigger_sf"],
         "btag_weight": ["btag_bc", "btag_light"],
