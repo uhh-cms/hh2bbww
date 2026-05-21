@@ -872,3 +872,18 @@ def add_hhh_ml_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$p_T(\ell) + p_T(b)$",
     )
+
+@call_once_on_config()
+def add_gatja_scores_variables(config: od.Config) -> None:
+    for i in range(23):
+        config.add_variable(
+            name=f"gatja_output_{i}",
+            expression=f"gatja_output_{i}",
+            binning=(40, 0, 1),
+            aux={
+                "overflow": True,
+                "underflow": True,
+            },
+            unit="score",
+            x_title=f"gatja score {i}",
+        )

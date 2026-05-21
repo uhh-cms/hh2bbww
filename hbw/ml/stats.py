@@ -17,7 +17,7 @@ from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr, catid_geq3b, catid_geq4b, catid_eq2b, catid_eq3b  # noqa
 from hbw.util import IF_SL, IF_DL, IF_MC
 from hbw.weight.hp_dih import default_hist_producer
-from hbw.weight.hp_trih import default_hist_producer_trih
+from hbw.weight.hp_trih import hhh_default
 
 
 ak = maybe_import("awkward")
@@ -71,7 +71,7 @@ def prepml(
             default_hp = default_hist_producer
         elif self.config_inst.has_tag("is_hhh"):
             sr_categorizer = catid_hhh_sr
-            default_hp = default_hist_producer_trih
+            default_hp = hhh_default
         else:
             raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
     else:
@@ -154,7 +154,7 @@ def prepml_init(self):
         if self.config_inst.has_tag("is_hh"):
             default_hp = default_hist_producer
         elif self.config_inst.has_tag("is_hhh"):
-            default_hp = default_hist_producer_trih
+            default_hp = hhh_default
         else:
             raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
     else:

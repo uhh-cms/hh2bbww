@@ -776,6 +776,22 @@ def IF_DATASET_HAS_LHE_WEIGHTS(
 
 
 @deferred_column
+def IF_NOT_GATJA(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if func.dataset_inst.has_tag("gatja_not_possible") else None
+
+
+@deferred_column
+def IF_GATJA(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    if getattr(func, "dataset_inst", None) is None:
+        return self.get()
+
+    return self.get() if not func.dataset_inst.has_tag("gatja_not_possible") else None
+
+
+@deferred_column
 def IF_MC(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     if getattr(func, "dataset_inst", None) is None:
         return self.get()

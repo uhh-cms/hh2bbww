@@ -4,7 +4,7 @@ from hbw.util import bracket_expansion
 from hbw.config.defaults_and_groups import set_dl_config_defaults_and_groups
 
 
-def set_dl_hh_config_defaults_and_groups(config_inst):
+def set_dl_hhh_config_defaults_and_groups(config_inst):
     set_dl_config_defaults_and_groups(config_inst)
 
     config_inst.x.default_dataset = "hhh_4b2w_2l2nu_c30_d4_custom"
@@ -28,7 +28,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl1", ):  # noqa: E501
+    for group in ("dl20", ):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # category groups for conveniently looping over certain categories
@@ -36,8 +36,8 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
     config_inst.x.category_groups = {
         "sr_bcats": ["sr__2b", "sr__3b", "sr__4b"],
         "ml_cats": bracket_expansion(["sr__resolved__{3b,4b}__ml_{hhh_signal,tthh_4b,tt_ml,tth}", "sr__resolved__2b__ml_{hhh_signal,st,dy,tt_ml,tth,tthh_4b}"]),  # noqa: E501
-        "hhh_sr": bracket_expansion(["sr__resolved__{2b,3b,4b}__ml_{sig_hhh,hhh_signal,hhh_4b2w_2l2nu_c30_d40}", "sr__{2b,3b,4b}__ml_sig_all"]),  # noqa: E501
-        "hhh_bkg": bracket_expansion(["sr__{2,3,4}b__ml_{tt,st,dy,h,hh,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__2b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}"]),  # noqa: E501
+        "hhh_sr": bracket_expansion(["sr__resolved__{2b,2b_1l,1b_1tb,3b,4b}__ml_{sig_hhh,hhh_signal,hhh_4b2w_2l2nu_c30_d40}", "sr__{2b,3b,4b}__ml_sig_all", "sr__{boosted,boosted_low,boosted_loose}{,__ml_hhh_signal}"]),  # noqa: E501
+        "hhh_bkg": bracket_expansion(["sr__{2b,3b,4b,2b_1l,1b_1tb,}__ml_{tt,st,dy,h,hh,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__{2b,2b_1l,1b_1tb}__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}"]),  # noqa: E501
     }
 
     # variable groups for conveniently looping over certain variables

@@ -66,7 +66,7 @@ def plot_s_over_b(
     hide_errors: bool | None = None,
     sqrt_b: bool | None = None,
     cumsum: bool = False,
-    reversed_cumsum: bool = False,
+    reversed_cumsum: bool = True,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,

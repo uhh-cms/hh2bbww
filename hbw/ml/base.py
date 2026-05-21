@@ -465,13 +465,36 @@ class MLClassifierBase(MLModel):
         return used_datasets
 
     def uses(self, config_inst: od.Config) -> set[Route | str]:
-        if not all(var.startswith("mli_") for var in self.input_features):
-            raise Exception(
-                "We currently expect all input_features to start with 'mli_', which is not the case"
-                f"for one of the variables in the 'input_features' {self.input_features}",
-            )
+        # if not all(var.startswith("mli_") for var in self.input_features):
+        #     raise Exception(
+        #         "We currently expect all input_features to start with 'mli_', which is not the case"
+        #         f"for one of the variables in the 'input_features' {self.input_features}",
+        #     )
         # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
         columns = {"mli_*"}
+        columns.add("gatja_output_0")
+        columns.add("gatja_output_1")
+        columns.add("gatja_output_2")
+        columns.add("gatja_output_3")
+        columns.add("gatja_output_4")
+        columns.add("gatja_output_5")
+        columns.add("gatja_output_6")
+        columns.add("gatja_output_7")
+        columns.add("gatja_output_8")
+        columns.add("gatja_output_9")
+        columns.add("gatja_output_10")
+        columns.add("gatja_output_11")
+        columns.add("gatja_output_12")
+        columns.add("gatja_output_13")
+        columns.add("gatja_output_14")
+        columns.add("gatja_output_15")
+        columns.add("gatja_output_16")
+        columns.add("gatja_output_17")
+        columns.add("gatja_output_18")
+        columns.add("gatja_output_19")
+        columns.add("gatja_output_20")
+        columns.add("gatja_output_21")
+        columns.add("gatja_output_22")
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
         columns.add("process_id")
@@ -645,11 +668,11 @@ class MLClassifierBase(MLModel):
         from columnflow.columnar_util import fill_at
         # TODO: this function is currently copy-pasted from MLPreTraining task
         # change padding value to -1 for btag scores
-        for col in (
-            "mli_fj_particleNetWithMass_HbbvsQCD",
-            "mli_fj_particleNet_XbbVsQCD",
-        ):
-            events = fill_at(events, events[col] == -10, col, -1, value_type=np.float32)
+        # for col in (
+        #     "mli_fj_particleNetWithMass_HbbvsQCD",
+        #     "mli_fj_particleNet_XbbVsQCD",
+        # ):
+        #     events = fill_at(events, events[col] == -10, col, -1, value_type=np.float32)
 
         return events
 
