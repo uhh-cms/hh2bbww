@@ -528,9 +528,9 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     version=law.config.get_expanded("analysis", "gatja_scores_version", 0),
 )
 def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    import tensorflow
 
     def create_graphs(df, index, drop_empty=True):
+        import tensorflow
         import pandas as pd
         # Get the column names for the minimum and second minimum Higgs chi2 matching indices
         col_lp = "bjetMinChiHiggsIndex" + str(index + 1)
@@ -712,6 +712,7 @@ def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[hhh_dl_ml_inputs](events, **kwargs)
     if self.has_dep(gatja_inputs):
+        import tensorflow
         events = self[gatja_inputs](events, **kwargs)
 
         zero_padding = ak.full_like(events.bjetNumber, -6)
