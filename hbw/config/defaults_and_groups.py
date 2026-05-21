@@ -39,7 +39,7 @@ def ml_inputs_producer(container):
 def default_hist_producer(container):
     if container.has_tag("is_dl"):
         if container.has_tag("is_hh"):
-            hist_producer = "with_trigger_weight"
+            hist_producer = "with_dy_corr"
         elif container.has_tag("is_hhh"):
             hist_producer = "hhh_default"
     return hist_producer

@@ -117,20 +117,21 @@ def add_config(
     #     return ["/" + dataset_key]
 
     # multiple files
-    import glob
-    import os
+    if cfg.has_tag("is_hhh"):
+        import glob
+        import os
 
-    BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
+        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
 
-    def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
-        files = sorted(
-            glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
-        )
+        def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
+            files = sorted(
+                glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
+            )
 
-        # strip the base → relative LFNs
-        return [os.path.basename(f) for f in files]
+            # strip the base → relative LFNs
+            return [os.path.basename(f) for f in files]
 
-    cfg.x.get_dataset_lfns = get_local_dataset_lfns
+        cfg.x.get_dataset_lfns = get_local_dataset_lfns
 
     cfg.x.if_era = if_era
 

@@ -135,49 +135,49 @@ configs = DotDict({
 
 # ----------------------- BASELINE BINARY MODELS FOR HHH SIGNAL ------------------------------
 
-hhh_V1 = DenseClassifierDL.derive("hhh_V1", cls_dict={
-    "input_features": input_features["hhh_v1"],
-    "processes": [
-        *processes.hhh,
-        *processes.backgrounds_hhh_v2,
-    ],
-    "train_nodes": {
-        "sig_hhh_binary": {
-            "ml_id": 0,
-            "label": r"HHH",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.hhh,
-        },
-        "bkg_binary_for_hhh": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_v0,
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "sig_hhh_binary": 1,
-        "bkg_binary_for_hhh": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 1,
-        "ttbb_custom": 1,
-        "tt_custom": 1,
-        "st": 1,
-        "dy": 1,
-        "ttv": 1,
-        "h": 1,
-    },
-    "epochs": 100,
-})
-Bin_V1 = hhh_V1.derive("Bin_V1", cls_dict={
-    "preparation_producer_name": "prepml_geq3b",
-    "input_features": input_features["expanded_hhh_inputs"],
-})
+# hhh_V1 = DenseClassifierDL.derive("hhh_V1", cls_dict={
+#     "input_features": input_features["hhh_v1"], NOTE: hhh_v1 not defined
+#     "processes": [
+#         *processes.hhh,
+#         *processes.backgrounds_hhh_v2,
+#     ],
+#     "train_nodes": {
+#         "sig_hhh_binary": {
+#             "ml_id": 0,
+#             "label": r"HHH",
+#             "color": "#000000",  # black
+#             "class_factor_mode": "equal",
+#             "sub_processes": processes.hhh,
+#         },
+#         "bkg_binary_for_hhh": {
+#             "ml_id": 1,
+#             "label": "Background",
+#             "color": "#e76300",  # Spanish Orange
+#             "class_factor_mode": "xsec",
+#             "sub_processes": processes.backgrounds_v0,
+#         },
+#     },
+#     # relative class factors between different nodes
+#     "class_factors": {
+#         "sig_hhh_binary": 1,
+#         "bkg_binary_for_hhh": 1,
+#     },
+#     # relative process weights within one class
+#     "sub_process_class_factors": {
+#         "hhh_4b2w_2l2nu_c30_d40": 1,
+#         "ttbb_custom": 1,
+#         "tt_custom": 1,
+#         "st": 1,
+#         "dy": 1,
+#         "ttv": 1,
+#         "h": 1,
+#     },
+#     "epochs": 100,
+# })
+# Bin_V1 = hhh_V1.derive("Bin_V1", cls_dict={
+#     "preparation_producer_name": "prepml_geq3b",
+#     "input_features": input_features["expanded_hhh_inputs"],
+# })
 
 # ----------------------- BASELINE MULTICLASS MODELS SPLIT IN BJET CAT ------------------------------
 

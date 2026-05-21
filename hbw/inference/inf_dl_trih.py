@@ -232,7 +232,7 @@ systematics["hhh_shape_ffn"] = [
     *systematics.QCDscale,
     *systematics.pdf,
     *systematics.BR,
-    *systematics.hbb_efficiency,
+    # *systematics.hbb_efficiency,
     *systematics.rates,
     *systematics.murf_envelope,
     *systematics.other,
@@ -276,8 +276,8 @@ processes_dict = {
     "v0": [*backgrounds_v0, *hhhprocs],
 }
 
-from hbw.ml.derived.ml_dl_trih import input_features
-mli_inputs = input_features.hhh_v0
+# from hbw.ml.derived.ml_dl_trih import input_features
+# mli_inputs = input_features.hhh_v0
 
 
 def config_variable_hhh(self, config_cat_inst):
@@ -315,13 +315,13 @@ dl_trih = HBWInferenceModelBase.derive("dl_trih", cls_dict=default_cls_dict)
 # current inference models
 #
 
-rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
-    "systematics": systematics.rate_default,
-    "config_categories": config_categories.v0,
-    "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
-    "config_variable": config_variable_hhh,
-    "processes": processes_dict["hhh_v0"],
-})
+# rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
+#     "systematics": systematics.rate_default,
+#     "config_categories": config_categories.v0,
+#     "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
+#     "config_variable": config_variable_hhh,
+#     "processes": processes_dict["hhh_v0"],
+# })
 
 # ----------------------- BASELINE INFERENCE MODELS SPLIT IN BJET CAT ------------------------------
 

@@ -4,7 +4,7 @@ from hbw.util import bracket_expansion
 from hbw.config.defaults_and_groups import set_dl_config_defaults_and_groups
 
 
-def set_dl_hh_config_defaults_and_groups(config_inst):
+def set_dl_hhh_config_defaults_and_groups(config_inst):
     set_dl_config_defaults_and_groups(config_inst)
 
     config_inst.x.default_dataset = "hhh_4b2w_2l2nu_c30_d4_custom"

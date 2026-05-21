@@ -86,7 +86,6 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "dl42": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
-        "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl91": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl92": [*hh_sm1, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_tautau_m10to50", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_tautau_m50toinf", "dy_ee_m50toinf", "dy_mumu_m50toinf", "tt"],  # noqa: E501
@@ -95,7 +94,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl20", "dl15", "dl15B", "dl11", "dl9", "dl91", "dl92", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):  # noqa: E501
+    for group in ("dl9", "dl91", "dl92", "dl6", "dl4", "dl3", "dl2", "dl1", "dl"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # category groups for conveniently looping over certain categories
