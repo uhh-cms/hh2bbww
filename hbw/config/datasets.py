@@ -357,6 +357,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "zh_htt_powheg", # TODO: Failing atm, not sure why
                 "wph_htt_powheg",
                 "wmh_htt_powheg",
+                "bbh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
                 # "thw_4f_madgraph",
@@ -656,7 +657,7 @@ def configure_hbw_datasets(
                 ["ww_*", "wz_*", "zz_*"],
                 ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
                 ["hh_*", "whh_*", "tthh_*", "zhh_*"],
-                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*", "bbh_*"],
                 #     ["dy_*",
                 #     "hhh_*",
                 #     "w_lnu_*",
