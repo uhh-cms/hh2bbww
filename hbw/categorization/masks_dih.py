@@ -83,7 +83,7 @@ def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
 @categorizer(
     uses={
         "{Electron,Muon}.{pt,eta,phi,mass}",
-    }
+    },
 )
 def mask_fn_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.Lepton[:, 1].pt > 15)
@@ -93,7 +93,7 @@ def mask_fn_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
 @categorizer(
     uses={
         "{Electron,Muon}.{pt,eta,phi,mass}",
-    }
+    },
 )
 def mask_fn_lep2_pt10(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.Lepton[:, 1].pt > 10)

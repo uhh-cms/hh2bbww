@@ -90,7 +90,7 @@ def hh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         discrete_btag_scores = ak.where(
             events.Jet.btagUParTAK4B >= wp,
             ak.full_like(events.Jet.btagUParTAK4B, wp),
-            discrete_btag_scores
+            discrete_btag_scores,
         )
     events = set_ak_column_f32(events, "Jet.discrete_b_score", discrete_btag_scores)
     events = set_ak_column_f32(events, "discrete_sum_b_score", ak.sum(discrete_btag_scores, axis=1))
@@ -112,7 +112,7 @@ def hh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
             events = set_ak_column_f32(
                 events, f"btag_jet{i+1}.{col}",
-                ak.fill_none(ak.nan_to_none(btag_jets[:, i][col]), ZERO_PADDING_VALUE)
+                ak.fill_none(ak.nan_to_none(btag_jets[:, i][col]), ZERO_PADDING_VALUE),
             )
 
     # hbjets = events.hbjets[ak.argsort(events.hbjets.btagUParTAK4B, ascending=False)]

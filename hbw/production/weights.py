@@ -330,8 +330,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             SCeta = ak.where(((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
             events = set_ak_column_f32(events, "Electron.superclusterEta", SCeta)
             # events = self[electron_weights](events, **kwargs)
-            events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt
-            events = self[electron_reco_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt
+            events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt  # noqa: E501
+            events = self[electron_reco_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt  # noqa: E501
             # events = self[electron_reco_weights](events, **kwargs)
         else:
             events = self[electron_weights](events, **kwargs)

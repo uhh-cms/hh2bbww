@@ -6,55 +6,55 @@ Configuration of corrections for the m(ttbar) analysis.
 
 import order as od
 
-from columnflow.util import DotDict
-from columnflow.production.cms.btag import BTagSFConfig
+# from columnflow.util import DotDict
+# from columnflow.production.cms.btag import BTagSFConfig
 
 
 def btag_sf_cfg(
     config: od.Config,
     year: int = None,
 ) -> list[tuple, list]:
-    name = ("deepJet_shape") if year != 2024 else ("UParTAK4_kinfit")
+    # name = ("deepJet_shape") if year != 2024 else ("UParTAK4_kinfit")
     discr = "btagPNetB" if year != 2024 else "btagUParTAK4B"
-    jec_sources = [
-        "",  # same as "Total"
-        "Absolute",
-        "AbsoluteMPFBias",
-        "AbsoluteScale",
-        "AbsoluteStat",
-        f"Absolute_{year}",
-        "BBEC1",
-        f"BBEC1_{year}",
-        "EC2",
-        f"EC2_{year}",
-        "FlavorQCD",
-        "Fragmentation",
-        "HF",
-        f"HF_{year}",
-        "PileUpDataMC",
-        "PileUpPtBB",
-        "PileUpPtEC1",
-        "PileUpPtEC2",
-        "PileUpPtHF",
-        "PileUpPtRef",
-        "RelativeBal",
-        "RelativeFSR",
-        "RelativeJEREC1",
-        "RelativeJEREC2",
-        "RelativeJERHF",
-        "RelativePtBB",
-        "RelativePtEC1",
-        "RelativePtEC2",
-        "RelativePtHF",
-        "RelativeSample",
-        f"RelativeSample_{year}",
-        "RelativeStatEC",
-        "RelativeStatFSR",
-        "RelativeStatHF",
-        "SinglePionECAL",
-        "SinglePionHCAL",
-        "TimePtEta",
-    ]
+    # jec_sources = [
+    #     "",  # same as "Total"
+    #     "Absolute",
+    #     "AbsoluteMPFBias",
+    #     "AbsoluteScale",
+    #     "AbsoluteStat",
+    #     f"Absolute_{year}",
+    #     "BBEC1",
+    #     f"BBEC1_{year}",
+    #     "EC2",
+    #     f"EC2_{year}",
+    #     "FlavorQCD",
+    #     "Fragmentation",
+    #     "HF",
+    #     f"HF_{year}",
+    #     "PileUpDataMC",
+    #     "PileUpPtBB",
+    #     "PileUpPtEC1",
+    #     "PileUpPtEC2",
+    #     "PileUpPtHF",
+    #     "PileUpPtRef",
+    #     "RelativeBal",
+    #     "RelativeFSR",
+    #     "RelativeJEREC1",
+    #     "RelativeJEREC2",
+    #     "RelativeJERHF",
+    #     "RelativePtBB",
+    #     "RelativePtEC1",
+    #     "RelativePtEC2",
+    #     "RelativePtHF",
+    #     "RelativeSample",
+    #     f"RelativeSample_{year}",
+    #     "RelativeStatEC",
+    #     "RelativeStatFSR",
+    #     "RelativeStatHF",
+    #     "SinglePionECAL",
+    #     "SinglePionHCAL",
+    #     "TimePtEta",
+    # ]
 
     btag_uncs = {
         # combined(?) uncertainties
@@ -139,7 +139,7 @@ def btag_sf_cfg(
                 "loose": ["loose"],
                 "medium": ["medium"],
                 "tight": ["tight"],
-                "xtight": ["xtight"], 
+                "xtight": ["xtight"],
                 # "xxtight": ["xxtight"],
             },
             # further merge eta bins for sufficient statistics in each bin

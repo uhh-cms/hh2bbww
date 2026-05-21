@@ -100,7 +100,7 @@ class MergeNanos(law.Task):
 
     # required parameter (no default)
     sample = luigi.Parameter(
-        description="Sample name, e.g. GF_HHH_c3_0_d4_0"
+        description="Sample name, e.g. GF_HHH_c3_0_d4_0",
     )
 
     # target size per merged file (≈2.4 GB)
@@ -109,7 +109,7 @@ class MergeNanos(law.Task):
     def output(self):
         return law.LocalFileTarget(
             f"/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/"
-            f"{self.sample}/Run3Summer24/{self.sample}_merged"
+            f"{self.sample}/Run3Summer24/{self.sample}_merged",
         )
 
     def run(self):
@@ -173,7 +173,7 @@ class MergeNanos(law.Task):
         for i, chunk in enumerate(chunks):
             out_file = f"{output_base.abspath}_{i:03d}.root"
             self.logger.info(
-                f" → output {i:03d}: {len(chunk)} files"
+                f" → output {i:03d}: {len(chunk)} files",
             )
 
             law.root.hadd_task(

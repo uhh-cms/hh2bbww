@@ -458,7 +458,7 @@ def prepare_bjets(
         discrete_btag_scores = ak.where(
             events.Jet[btag_column] >= wp,
             ak.full_like(events.Jet[btag_column], b_score, dtype=int),
-            discrete_btag_scores
+            discrete_btag_scores,
         )
     events = set_ak_column(events, "Jet.b_score", events.Jet[btag_column])
     events = set_ak_column(events, "Jet.discrete_b_score", discrete_btag_scores)
