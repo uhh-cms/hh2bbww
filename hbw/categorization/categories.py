@@ -333,6 +333,58 @@ def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
 
 
 @categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
+def catid_boosted_low(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    fulfilling medium WP of PNetHbb
+    """
+    events = self[prepare_objects](events, **kwargs)
+    hbb_btag_wp_score = 0.6
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 1)
+    return events, mask
+
+
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
+def catid_boosted_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    fulfilling medium WP of PNetHbb
+    """
+    events = self[prepare_objects](events, **kwargs)
+    hbb_btag_wp_score = 0.85
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 1)
+    return events, mask
+
+
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
+def catid_boosted_eq1(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    fulfilling medium WP of PNetHbb
+    """
+    events = self[prepare_objects](events, **kwargs)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) == 1)
+    return events, mask
+
+
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
+def catid_boosted_geq2(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    fulfilling medium WP of PNetHbb
+    """
+    events = self[prepare_objects](events, **kwargs)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 2)
+    return events, mask
+
+
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
 def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
     Categorization of events in the resolved category: presence of no AK8 jet candidate
@@ -371,19 +423,42 @@ catid_njet4 = catid_njet1.derive("catid_njet4", cls_dict={"n_jet": 4})
 def catid_le1b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     b_tagger = self.config_inst.x.b_tagger
     btag_column = self.config_inst.x.btag_column
-    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["loose"]
+    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["tight"]
     n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
     mask = (n_deepjet_loose <= 1)
     return events, mask
 
 
-@categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_ge2b_loose(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     b_tagger = self.config_inst.x.b_tagger
     btag_column = self.config_inst.x.btag_column
-    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["loose"]
+    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["tight"]
     n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
-    mask = (n_deepjet_loose >= 2)
+    mask = (n_deepjet_loose >= 1)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_2b_1l(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    b_tagger = self.config_inst.x.b_tagger
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    btag_wp_score_loose = self.config_inst.x.btag_working_points[b_tagger]["tight"]
+    n_deepjet_loose = ak.sum(events.Jet[btag_column] >= btag_wp_score_loose, axis=-1)
+    n_deepjet_med = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet_loose >= 2) & (n_deepjet_med == 2)
+    return events, mask
+
+
+@categorizer(uses={BTAG_COLUMN("Jet")})
+def catid_1b_1tb(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    b_tagger = self.config_inst.x.b_tagger
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    btag_wp_score_tight = self.config_inst.x.btag_working_points[b_tagger]["tight"]
+    n_deepjet_tight = ak.sum(events.Jet[btag_column] >= btag_wp_score_tight, axis=-1)
+    n_deepjet_med = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (n_deepjet_tight == 1) & (n_deepjet_med == 2)
     return events, mask
 
 

@@ -265,6 +265,30 @@ def add_jet_categories(config: od.Config) -> None:
         selection="catid_boosted",
         label="boosted",
     )
+    cat_boosted_eq1 = config.add_category(  # noqa: F841
+        name="boosted_eq1",
+        id=300,
+        selection="catid_boosted_eq1",
+        label="boosted",
+    )
+    cat_boosted_geq2 = config.add_category(  # noqa: F841
+        name="boosted_geq2",
+        id=400,
+        selection="catid_boosted_geq2",
+        label="boosted",
+    )
+    cat_boosted_low = config.add_category(  # noqa: F841
+        name="boosted_low",
+        id=500,
+        selection="catid_boosted_low",
+        label="boosted",
+    )
+    cat_boosted_loose = config.add_category(  # noqa: F841
+        name="boosted_loose",
+        id=600,
+        selection="catid_boosted_loose",
+        label="boosted",
+    )
 
 
 def add_dih_bjet_categories(config: od.Config) -> None:
@@ -287,6 +311,18 @@ def add_trih_bjet_categories(config: od.Config) -> None:
         name="2b",
         id=19000,
         selection="catid_eq2b",
+        label=r"$2 btag$",
+    )
+    cat_2b_1l = config.add_category(  # noqa: F841
+        name="2b_1l",
+        id=39050,
+        selection="catid_2b_1l",
+        label=r"$2 btag$",
+    )
+    cat_1b_1tb = config.add_category(  # noqa: F841
+        name="1b_1tb",
+        id=29050,
+        selection="catid_1b_1tb",
         label=r"$2 btag$",
     )
     cat_3b = config.add_category(  # noqa: F841
@@ -342,7 +378,8 @@ def add_categories_selection(config: od.Config) -> None:
             config.x.bjet_categories = ["1b", "2b"]
         elif config.x.signal_tag == "hhh":
             # add_mll_categories(config, add_trih_mll_categories)
-            config.x.bjet_categories = ["2b", "3b", "4b"]
+            config.x.bjet_categories = ["2b", "2b_1l", "1b_1tb", "3b", "4b"]
+            config.x.jet_categories = ["resolved", "boosted", "boosted_loose", "boosted_eq1", "boosted_geq2", "boosted_low"]
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -389,7 +426,8 @@ def add_categories_production(config: od.Config) -> None:
     category_blocks = OrderedDict({
         "main": [config.get_category(cat) for cat in config.x.main_categories],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        "jet": [config.get_category(mode) for mode in config.x.jet_categories],
         "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
     })
     t0 = time()
@@ -461,7 +499,8 @@ def add_categories_ml(config, ml_model_inst):
     category_blocks = OrderedDict({
         # NOTE: when building DNN categories, we do not need the control regions
         "main": [config.get_category("sr")],
-        "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        "jet": [config.get_category(mode) for mode in config.x.jet_categories],
         "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
         "dnn": ml_categories,
     })

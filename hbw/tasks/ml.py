@@ -8,8 +8,10 @@ Example usage:
 law run hbw.MLOptimizer --version prod1 --ml-models dense_3x64,dense_3x128,dense_3x256,dense_3x512
 ```
 """
-
 from __future__ import annotations
+
+import itertools
+
 
 from collections import defaultdict
 
@@ -20,7 +22,7 @@ from hbw.util import log_memory
 import law
 import luigi
 
-from columnflow.tasks.framework.base import Requirements, DatasetTask
+from columnflow.tasks.framework.base import Requirements, AnalysisTask, DatasetTask, wrapper_factory, RESOLVE_DEFAULT
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin,
     SelectorMixin,
@@ -38,6 +40,66 @@ from columnflow.tasks.ml import PrepareMLEvents, MergeMLEvents, MergeMLStats, ML
 from hbw.tasks.base import HBWTask
 
 logger = law.logger.get_logger(__name__)
+
+
+from columnflow.tasks.production import ProduceColumns
+
+class ProduceColumnsTF(
+    ProduceColumns,
+    HBWTask,
+):
+
+    sandbox = dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
+
+
+_ProduceColumnsTFWrapperBase = wrapper_factory(
+    base_cls=AnalysisTask,
+    require_cls=ProduceColumnsTF,
+    enable=["configs", "skip_configs", "datasets", "skip_datasets", "shifts", "skip_shifts"],
+)
+_ProduceColumnsTFWrapperBase.exclude_index = True
+delattr(_ProduceColumnsTFWrapperBase, "producer")
+
+
+class ProduceColumnsTFWrapper(_ProduceColumnsTFWrapperBase):
+
+    producers = law.CSVParameter(
+        default=(RESOLVE_DEFAULT,),
+        description="comma-separated names of producers to be applied; default: value of the 'default_producer' "
+        "analysis aux",
+        brace_expand=True,
+        parse_empty=True,
+    )
+
+    @classmethod
+    def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
+        params = super().modify_param_values(params)
+
+        if params.get("analysis_inst"):
+            config_insts = [params["analysis_inst"].get_config(name) for name in params["configs"]]
+            params["producers"] = cls.resolve_config_default_and_groups(
+                param=params.get("producers"),
+                task_params=params,
+                container=config_insts,
+                default_str="default_producer",
+                groups_str="producer_groups",
+                multi_strategy="same",
+            )
+
+        return params
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.producers:
+            # add the producers parameter
+            self.wrapper_fields.append("producer")
+
+            # extend the parameter combinations with producers
+            self.wrapper_parameters = [
+                params + (producer,)
+                for params, producer in itertools.product(self.wrapper_parameters, self.producers)
+            ]
 
 
 class SimpleMergeMLEvents(
@@ -348,8 +410,30 @@ class MLPreTraining(
         for config_inst in self.ml_model_inst.config_insts:
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
-                # gather stats per ml process
                 stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
+                # if "ttbb_" in dataset:
+                #     # __import__("IPython").embed()
+                #     processes = config_inst.get_dataset(dataset).processes
+                #     for proc_inst in processes:
+                #         process = proc_inst.name
+                #         if process in self.ml_model_inst.processes:
+                #             # proc_inst = config_inst.get_process(process)
+                #             sub_id = [
+                #                 proc_inst.id
+                #                 for proc_inst, _, _ in proc_inst.walk_processes(include_self=True)
+                #             ]
+
+                #             for id in list(stats["num_events_per_process"].keys()):
+                #                 if int(id) not in sub_id:
+                #                     for key in list(stats.keys()):
+                #                         stats[key].pop(id, None)
+
+                #             MergeMLStats.merge_counts(merged_stats[process], stats)
+                #         else: 
+                #             continue
+                # else: 
+                # gather stats per ml process
+                # stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
                 proc_inst = config_inst.get_process(process)
                 sub_id = [
@@ -363,6 +447,7 @@ class MLPreTraining(
                             stats[key].pop(id, None)
 
                 MergeMLStats.merge_counts(merged_stats[process], stats)
+                # __import__("IPython").embed()
 
         return merged_stats
 
@@ -377,6 +462,29 @@ class MLPreTraining(
             for dataset in used_datasets:
                 input_target = inputs["events"][config_inst.name][dataset].collection[0]["mlevents"][self.fold]
                 # input_target = inputs["events"][config_inst.name][dataset]["mlevents"]
+                # if "ttbb_" in dataset:
+                #     # __import__("IPython").embed()
+                #     processes = config_inst.get_dataset(dataset).processes
+                #     for proc_inst in processes:
+                #         process = proc_inst.name
+                #         if process in self.ml_model_inst.processes:
+                #             try:
+                #                 events[process].append(ak.from_parquet(input_target.path))
+                #             except IndexError as e:
+                #                 if e.args[0] == "0 out of bounds":
+                #                     logger.warning(
+                #                         f"No events found for process {process} in dataset {dataset} "
+                #                         f"for config {config_inst.name} and fold {self.fold}. "
+                #                         "File will be skipped after checking stats that it is indeed empty "
+                #                         "(if not, exception will be raised).",
+                #                     )
+                #                     stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")  # noqa: E501
+                #                     if stats["num_fold_events"][str(self.fold)] == 0:
+                #                         continue
+                #                     else:
+                #                         raise e
+
+                # else: 
                 process = config_inst.get_dataset(dataset).x.ml_process
                 try:
                     events[process].append(ak.from_parquet(input_target.path))
@@ -468,6 +576,221 @@ class MLPreTraining(
     @law.workflow.base.workflow_property
     def workflow_run(self):
         pass
+
+
+class MLEvaluationGATJA(
+    # NOTE: mixins might need fixing, needs to be checked
+    HBWTask,
+    MLModelTrainingMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    This task creates evaluation outputs for a single trained MLModel.
+    """
+    resolution_task_cls = SimpleMergeMLEvents
+
+    sandbox = None
+
+    allow_empty_ml_model = False
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        # MLPreTraining=MLPreTraining,
+        # MLTraining=MLTraining,
+    )
+
+    # upstream requirements
+    processes = luigi.Parameter(  # Check here what kind of parameter this is?
+        RemoteWorkflow.reqs,
+        # MLPreTraining=MLPreTraining,
+        # MLTraining=MLTraining,
+    )
+
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
+    def create_branch_map(self):
+        return [
+            DotDict({"process": process})
+            for process in self.processes  # here müssen wir noch schauen wie die processes geladen werden 
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # set the sandbox
+        self.sandbox = self.ml_model_inst.sandbox(self)
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        # reqs["models"] = self.reqs.MLTraining.req(
+        #     self,
+        #     processes=processes  # Sth like that 
+        #     configs=(self.config_inst.name,),
+        # )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+
+        return reqs
+
+    def requires(self):
+        reqs = {}
+        if not self.is_branch():
+            return reqs
+
+        # reqs["training"] = self.reqs.MLTraining.req(
+        #     self,
+        #     configs=(self.config_inst.name,),
+        # )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        return reqs
+
+    # def output(self):
+    #     k = self.ml_model_inst.folds
+    #     process = self.branch_data["process"]
+
+    #     outputs = {
+    #         evaluation_array: {
+    #             self.data_split: {process: {fold: (
+    #                 self.target(f"{evaluation_array}_{self.data_split}_{process}_fold{fold}of{k}.npy")
+    #             ) for fold in range(self.ml_model_inst.folds)
+    #             }}}
+    #         for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays
+    #     }
+
+    #     return outputs
+
+    def output(self):
+        outputs = {}
+
+        # only declare the output in case the producer actually creates columns
+        # if self.producer_inst.produced_columns:
+        outputs["columns"] = self.target(f"columns_{self.branch}.parquet")
+
+        return outputs
+
+
+    @law.decorator.log
+    @law.decorator.localize
+    @law.decorator.safe_output
+    @law.decorator.timeit()
+    def run(self):
+        from hbw.ml.data_loader import MLProcessData
+
+        # prepare inputs and outputs
+        inputs = self.input()
+        output = self.output()
+        process = self.branch_data["process"]
+
+        logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
+
+        def make_model_gatja(input_shape, index_node, index_neigh1, index_neigh2):
+            inputs = keras.Input(shape=input_shape)
+
+            # Extract node, neighbor1 and neighbor2 values from inputs using Lambda layers
+            input_node_value = layers.Lambda(lambda x: x[:, :index_node])(inputs)
+            input_neigh1_value = layers.Lambda(lambda x: x[:, -(index_neigh1+index_neigh2):-index_neigh2])(inputs)
+            input_neigh2_value = layers.Lambda(lambda x: x[:, -index_neigh2:])(inputs)
+
+            # Define a function to create dense layers with LeakyReLU activation
+            def dense_layer(x, units):
+                x = layers.Dense(units)(x)
+                x = layers.LeakyReLU()(x)
+                return x
+
+            # Process node embedding
+            node_value = dense_layer(input_node_value, 256)
+            node_value = layers.Concatenate()([node_value, input_node_value])
+            node_value = dense_layer(node_value, 128)
+
+            # Process neighbor1 embedding
+            neigh1_value = dense_layer(input_neigh1_value, 256)
+            neigh1_value = layers.Concatenate()([neigh1_value, input_neigh1_value])
+            neigh1_value = dense_layer(neigh1_value, 128)
+
+            # Process neighbor2 embedding
+            neigh2_value = dense_layer(input_neigh2_value, 256)
+            neigh2_value = layers.Concatenate()([neigh2_value, input_neigh2_value])
+            neigh2_value = dense_layer(neigh2_value, 128)
+
+            # Compute attention scores per sample using element-wise dot products
+            # For each sample, compute a scalar score by taking the dot product along the features.
+            node_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, node_value])
+            neigh1_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, neigh1_value])
+            neigh2_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, neigh2_value])
+
+            # Concatenate scores to shape (batch_size, 3) and apply softmax
+            scores = layers.Concatenate(axis=-1)([node_score, neigh1_score, neigh2_score])
+            attention_weights = layers.Softmax()(scores)
+
+            # Extract individual attention weights; each will have shape (batch_size, 1)
+            node_weight = layers.Lambda(lambda x: x[:, 0:1])(attention_weights)
+            neigh1_weight = layers.Lambda(lambda x: x[:, 1:2])(attention_weights)
+            neigh2_weight = layers.Lambda(lambda x: x[:, 2:3])(attention_weights)
+
+            # Apply the attention weights (element-wise multiplication)
+            node = layers.Multiply()([node_value, node_weight])
+            neigh1 = layers.Multiply()([neigh1_value, neigh1_weight])
+            neigh2 = layers.Multiply()([neigh2_value, neigh2_weight])
+
+            # Concatenate node embedding with the maximum of neighbor embeddings
+            max_embed = layers.Concatenate()([node, layers.Maximum()([neigh1, neigh2])])
+
+            # Extract the rest of the input features using a Lambda layer
+            input_rest = layers.Lambda(lambda x: x[:, index_node:-(index_neigh1+index_neigh2)])(inputs)
+            rest = dense_layer(input_rest, 256)
+            rest = layers.Concatenate()([rest, input_rest])
+            rest = dense_layer(rest, 128)
+
+            # Concatenate rest with the attended node and neighbor features
+            x_dense = layers.Concatenate()([rest, max_embed])
+            x_dense = layers.Dropout(0.15)(x_dense)
+
+            # Define a function to create dropout layers with LeakyReLU activation and concatenation
+            def dropout_layer(x, units):
+                x_new = layers.Dense(units)(x)
+                x_new = layers.LeakyReLU()(x_new)
+                x_new = layers.Dropout(0.15)(x_new)
+                # Concatenate with the original x_dense for residual-like connection
+                x_new = layers.Concatenate()([x_new, x_dense])
+                return x_new
+
+            x = dropout_layer(x_dense, 512)
+            x = dropout_layer(x, 128)
+            x = dropout_layer(x, 32)
+
+
+            # Final output layer with softmax activation for 3 classes
+            outputs = layers.Dense(3, activation="softmax")(x)
+
+            return keras.Model(inputs, outputs)
+
+        gatja_model = make_model_gatja((27,),5,4,4)
+        gatja_model.load_weights("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5")
+
+        input_files = inputs["preml"]["collection"]
+        input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
+
+        for fold in range(self.ml_model_inst.folds):
+            data = MLProcessData(
+                self.ml_model_inst, input_files, self.data_split, process, fold, fold_modus="evaluation_only",
+            )
+
+            for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays:
+                # store loaded data
+                output[evaluation_array][self.data_split][self.branch_data["process"]][fold].dump(
+                    getattr(data, evaluation_array), formatter="numpy",
+                )
 
 
 class MLEvaluationSingleFold(

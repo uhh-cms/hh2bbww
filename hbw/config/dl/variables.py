@@ -949,3 +949,19 @@ def add_hh_bjet_variables(config: od.Config) -> None:
         aux={"overflow": False},
         x_title=r"$m_{\ell\ell}$ (zoomed in)",
     )
+
+
+@call_once_on_config()
+def add_gatja_scores_variables(config: od.Config) -> None:
+    for i in range(23):
+        config.add_variable(
+            name=f"gatja_output_{i}",
+            expression=f"gatja_output_{i}",
+            binning=(40, 0, 1),
+            aux={
+                "overflow": True,
+                "underflow": True,
+            },
+            unit="score",
+            x_title=f"gatja score {i}",
+        )

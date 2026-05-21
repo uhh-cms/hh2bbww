@@ -89,7 +89,7 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
     weight = ak.Array(np.ones(len(events), dtype=np.float64))
     for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
-
+    # __import__("IPython").embed()
     if self.tt_weight and self.tt_weight > 0 and self.dataset_inst.has_tag("is_ttbar"):
         weight = weight * self.tt_weight
     if self.dy_weight and self.dy_weight > 0 and self.dataset_inst.has_tag("is_dy"):
