@@ -92,7 +92,7 @@ def get_rebin_values(
         N_bins_final: int = 10,
         min_bkg_events: int = 10,
         blinding_threshold: float | None = None,
-        blinded_by_significance: bool = True,
+        blinded_by_significance: bool = False,
 ):
     """
     Function that determines how to rebin a histogram to *N_bins_final* bins such that
@@ -497,14 +497,18 @@ class ModifyDatacardsFlatRebin(
                 elif "3b__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.0005
-                    blinding_threshold = 1.5
+                    blinding_threshold = 2.5
                 elif "4b__ml_hhh_signal" in cat_name:
+                    # for the GGF categories, we use a blinding threshold
+                    # blinding_threshold = 0.001
+                    blinding_threshold = 3.5
+                elif "boosted__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.001
                     blinding_threshold = 2.2
                 else:
                     # for all other categories, we do not blind the bins
-                    blinding_threshold = 0.008
+                    blinding_threshold = 10
             else:
                 blinding_threshold = None
             rebin_values = get_rebin_values(

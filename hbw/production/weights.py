@@ -291,9 +291,9 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     Wrapper of several event weight producers that are typically called in ProduceColumns.
     """
+
     # compute normalization weights
     events = self[combined_normalization_weights](events, **kwargs)
-    # __import__("IPython").embed()  # for debugging
     # compute gen top pt weights
     if self.dataset_inst.has_tag("is_ttbar"):
         # events = self[top_pt_weight](events, **kwargs)

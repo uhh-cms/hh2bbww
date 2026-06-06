@@ -183,6 +183,8 @@ prepml_eq2b = prepml.derive("prepml_eq2b", cls_dict={"extra_categorizer": "catid
 prepml_eq3b = prepml.derive("prepml_eq3b", cls_dict={"extra_categorizer": "catid_eq3b"})
 prepml_geq4b = prepml.derive("prepml_geq4b", cls_dict={"extra_categorizer": "catid_geq4b"})
 prepml_geq3b = prepml.derive("prepml_geq3b", cls_dict={"extra_categorizer": "catid_geq3b"})
+prepml_geq3b_boosted = prepml.derive("prepml_geq3b_boosted", cls_dict={"extra_categorizer": "catid_geq3b_boosted"})
+prepml_boosted = prepml.derive("prepml_boosted", cls_dict={"extra_categorizer": "catid_boosted"})
 prepml_met40 = prepml.derive("prepml_met40", cls_dict={"extra_categorizer": "mask_fn_met_geq40"})
 prepml_fatjet = prepml.derive("prepml_fatjet", cls_dict={"extra_categorizer": "catid_fatjet"})
 prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2njet"})

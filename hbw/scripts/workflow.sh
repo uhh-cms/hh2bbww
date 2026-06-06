@@ -40,6 +40,7 @@ all_ml_scores="mlscore.*,rebinlogit_mlscore.sig*binary,logit_mlscore.sig*binary"
 shape_shift_groups="btag_up,btag_down,theory_up,theory_down,experimental_up,experimental_down"
 jerc_shifts="jec_Total_up,jec_Total_down,jer_up,jer_down"
 all_shift_sources="all"
+shape_shifts="lumi_13p6TeV_2022,lumi_13p6TeV_2023,QCDscale_ttbar,QCDscale_V,QCDscale_VV,QCDscale_VVV,QCDscale_ggH,QCDscale_qqH,QCDscale_VH,QCDscale_ttH,QCDscale_hh_vbf,pdf_gg,pdf_qqbar,pdf_qg,pdf_Higgs_gg,pdf_Higgs_qqbar,pdf_Higgs_ttH,pdf_Higgs_hh_ggf,pdf_Higgs_hh_vbf,BR_hbb,BR_hww,BR_hzz,BR_htt,BR_hgg,rate_ttbar,rate_ttbar_b,rate_ttbar_bb,rate_dy,murf_envelope_ttbar,murf_envelope_ttbb,murf_envelope_st,murf_envelope_dy,murf_envelope_ttV,murf_envelope_VV,murf_envelope_H,murf_envelope_hh_ggf_hbb_hww,murf_envelope_hh_ggf_hbb_hzz,murf_envelope_hh_ggf_hbb_htt,isr_ttbar,isr_ttbb,isr_V,isr_ttV,isr_VV,isr_st,isr_H,fsr_ttbar,fsr_st,fsr_V,fsr_VV,fsr_ttV,fsr_H,top_pt,btag_fsrdef_bc,btag_isrdef_bc,btag_hdamp_bc,btag_jer_bc,btag_jes_bc,btag_mass_bc,btag_statistic_bc,btag_tune_bc,btag_correlated_light,btag_uncorrelated_light" 
 
 vr_categories="incl,sr,dycr,ttcr"
 lep_categories="sr__2e,sr__2mu,sr__emu"
@@ -890,8 +891,8 @@ run_triggersf() {
 # we might want to implement a proper dispatcher at some point
 run_all() {
     # Set global checksum once for this entire workflow run
-    global_checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
+    # global_checksum=$(checksum)
+    # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum"
     # recreate_campaign_summary
 
     # run_merge_reduced_events "c24v15" "nominal"
@@ -904,7 +905,7 @@ run_all() {
     # run_ml_training "vbfv3_mqq,multiclassv3_mqq,vbfv3_tag,multiclassv3_tag"
     # prepare_mlcolumns "$all_configs" "$nominal" "$dnn_multiclass,$dnn_ggf,$dnn_vbf" "$ml_scores"
 
-    run_merge_shifted_histograms_htcondor "$all_configs" "$all" "multiclassv3,ggfv3,vbfv3" "$ml_inputs,$all_ml_scores,mli_full_vbf_tag,mli_full_vbf_mass"
+    run_merge_shifted_histograms_htcondor "c24v15" "shape_hhh" "Cat_eq3b_V2,Bin_V1" "logit_mlscore.sig_hhh_binary"
     # run_merge_histograms_htcondor "c24v15" "ml_inputs"
 
     # prepare_mlcolumns "$all_configs" "$nominal" "multiclass_met40,ggf_met40,vbf_met40" "$ml_scores"
