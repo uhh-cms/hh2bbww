@@ -47,6 +47,31 @@ config_categories = DotDict({
         "sr__resolved__4b__ml_tthh_4b",
         "sr__resolved__4b__ml_hhh_signal",
     ],
+    "eq3b_V2": [
+        "sr__3b__ml_tt_custom",
+        "sr__3b__ml_ttbb_custom",
+        "sr__3b__ml_tth",
+        "sr__3b__ml_tthh_4b",
+        "sr__3b__ml_hhh_signal",
+    ],
+    "geq4b_V2": [
+        "sr__4b__ml_ttbb_custom",
+        "sr__4b__ml_tth",
+        "sr__4b__ml_tthh_4b",
+        "sr__4b__ml_hhh_signal",
+    ],
+    "eq3b_incl": [
+        "sr__3b__ml_tt_ml",
+        "sr__3b__ml_tth",
+        "sr__3b__ml_tthh_4b",
+        "sr__3b__ml_hhh_signal",
+    ],
+    "geq4b_incl": [
+        "sr__4b__ml_tt_ml",
+        "sr__4b__ml_tth",
+        "sr__4b__ml_tthh_4b",
+        "sr__4b__ml_hhh_signal",
+    ],
     "v0": [
         "sr__resolved__2b__ml_tt_ml",
         "sr__resolved__2b__ml_tth",
@@ -82,9 +107,14 @@ config_categories = DotDict({
         "sr__3b",
         "sr__4b",
     ],
-    "boosted": [
+    "boosted_v0": [
         "sr__boosted",
         "sr__boosted__ml_hhh_signal",
+    ],
+    "boosted": [
+        "sr__boosted__ml_sig_hhh_binary",
+        "sr__boosted__ml_bkg_binary_for_hhh",
+        "sr__boosted",
     ],
     "boosted_low": [
         "sr__boosted_low",
@@ -289,12 +319,26 @@ backgrounds_v0 = [
     "dy",
     "vv",
     "vvv",
-    "h_ggf", "h_vbf", "wh", "tth",  # "zh_gg","zh"
-    "ttvh",  # "thq", "thw",
+    "h_ggf", "h_vbf", "wh", "tth", "zh_gg","zh", 
+    "ttvh", "thq", "thw", "bbh",
     "tttt",
     "ttvv",
     "hh_ggf", "hh_vbf",
     "vhh_4b", "tthh_4b",
+    "hh_ggf_hbb_hww_kl0_kt1",
+    "hh_ggf_hbb_hww_kl1_kt1",
+    "hh_ggf_hbb_hww_kl2p45_kt1",
+    "hh_ggf_hbb_hww_kl5_kt1",
+    "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
+    "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",
+    "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
+    "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96",
+    "hh_vbf_hbb_hww_kv1_k2v1_kl1",
+    "hh_vbf_hbb_hww_kv1_k2v0_kl1",  # missing bbtt sample
+    "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
+    "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
+    "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
+    "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",  # missing bbtt sample
     # TODO: add bbh
 ]
 
@@ -370,8 +414,15 @@ Cat_boosted_Bin_V5_shape_unblind = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin
 Cat_boosted_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V5_shape", cls_dict={
     "config_categories": config_categories.boosted,
 })
+Cat_boosted_Bin_V2_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V2_shape", cls_dict={
+    "config_categories": config_categories.boosted_v0,
+    "ml_model_name": ["boosted_V2", "Bin_V1"],
+    # "skip_data": False,
+    # "unblind": False,
+})
 Cat_boosted_Bin_V5_gatja = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V5_gatja", cls_dict={
     "config_categories": config_categories.boosted,
+    "systematics": systematics.default,
     "ml_model_name": ["Gatja_Cat_eq3b_V3", "Gatja_Bin_V3"],
 })
 Cat_boosted_low_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_low_Bin_V5_shape", cls_dict={
@@ -401,6 +452,11 @@ Cat_eq3b_Bin_V5_gatja = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_gatja", cl
     "systematics": systematics.default,
     "ml_model_name": ["Gatja_Cat_eq3b_V3", "Gatja_Bin_V3"],
 })
+Cat_eq3b_Bin_V5_gatja_incl = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_gatja_incl", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Gatja_Cat_eq3b_V3", "Gatja_Bin_V3"],
+    "config_categories": config_categories.eq3b_incl,
+})
 Cat_eq3b_Bin_V5_shape_unblind = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_shape_unblind", cls_dict={
     "unblind": False,
     "skip_data": False,
@@ -414,9 +470,44 @@ Cat_geq4b_Bin_V5_shape = dl_trih.derive("Cat_geq4b_Bin_V5_shape", cls_dict={
 })
 Cat_geq4b_Bin_V5_gatja = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_gatja", cls_dict={
     "systematics": systematics.default,
+    "config_categories": config_categories.geq4b,
+    "ml_model_name": ["Gatja_Cat_geq4b_V3", "Gatja_Bin_V3"],
+})
+Cat_geq4b_Bin_V5_gatja_incl = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_gatja_incl", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.geq4b_incl,
     "ml_model_name": ["Gatja_Cat_geq4b_V3", "Gatja_Bin_V3"],
 })
 Cat_geq4b_Bin_V5_shape_unblind = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_shape_unblind", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+})
+
+# ------------------------ New Baseline, no resolved / boosted, changed bkg nodes --------------------------------
+Cat_eq3b_Bin_V2_shape = dl_trih.derive("Cat_eq3b_Bin_V2_shape", cls_dict={
+    "systematics": systematics.hhh_shape_ffn,
+    "config_categories": config_categories.eq3b_V2,
+    "ml_model_name": ["Cat_eq3b_V2", "Bin_V1"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["v0"],
+})
+Cat_geq4b_Bin_V2_shape = dl_trih.derive("Cat_geq4b_Bin_V2_shape", cls_dict={
+    "systematics": systematics.hhh_shape_ffn,
+    "config_categories": config_categories.geq4b_V2,
+    "ml_model_name": ["Cat_geq4b_V2", "Bin_V1"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["v0"],
+})
+Cat_eq3b_Bin_V2_shape_unblind = Cat_eq3b_Bin_V2_shape.derive("Cat_eq3b_Bin_V2_shape_unblind", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+})
+Cat_gatja__eq3b_Bin_V2_shape_unblind = Cat_eq3b_Bin_V2_shape.derive("Cat_gatja_eq3b_Bin_V2_shape_unblind", cls_dict={
+    "unblind": False,
+    "ml_model_name": ["Gatja_Cat_eq3b_V2", "Bin_V1"],
+    "skip_data": False,
+})
+Cat_geq4b_Bin_V2_shape_unblind = Cat_geq4b_Bin_V2_shape.derive("Cat_geq4b_Bin_V2_shape_unblind", cls_dict={
     "unblind": False,
     "skip_data": False,
 })

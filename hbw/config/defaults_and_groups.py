@@ -30,8 +30,8 @@ def ml_inputs_producer(container):
         if container.has_tag("is_hh"):
             ml_inputs = "dl_ml_inputs"
         elif container.has_tag("is_hhh"):
-            # ml_inputs = "hhh_dl_ml_inputs"
-            ml_inputs = "gatja_scores"
+            ml_inputs = "hhh_dl_ml_inputs"
+            # ml_inputs = "gatja_scores"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -153,6 +153,70 @@ def set_dl_config_defaults_and_groups(config_inst):
     # (used during plotting)
     config_inst.x.shift_groups = {
         "jer": ["nominal", "jer_up", "jer_down"],
+        "shape_hhh_up": [
+            "lumi_13p6TeV_2022_up",
+            "lumi_13p6TeV_2023_up",
+            "QCDscale_ttbar_up",
+            "QCDscale_V_up",
+            "QCDscale_VV_up",
+            "QCDscale_VVV_up",
+            "QCDscale_ggH_up",
+            "QCDscale_qqH_up",
+            "QCDscale_VH_up",
+            "QCDscale_ttH_up",
+            "QCDscale_hh_vbf_up",
+            "pdf_gg_up",
+            "pdf_qqbar_up",
+            "pdf_qg_up",
+            "pdf_Higgs_gg_up",
+            "pdf_Higgs_qqbar_up",
+            "pdf_Higgs_ttH_up",
+            "pdf_Higgs_hh_ggf_up",
+            "pdf_Higgs_hh_vbf_up",
+            "BR_hbb_up",
+            "BR_hww_up",
+            "BR_hzz_up",
+            "BR_htt_up",
+            "BR_hgg_up",
+            "rate_ttbar_up",
+            "rate_ttbar_b_up",
+            "rate_ttbar_bb_up",
+            "rate_dy_up",
+            "murf_envelope_ttbar_up",
+            "murf_envelope_ttbb_up",
+            "murf_envelope_st_up",
+            "murf_envelope_dy_up",
+            "murf_envelope_ttV_up",
+            "murf_envelope_VV_up",
+            "murf_envelope_H_up",
+            "murf_envelope_hh_ggf_hbb_hww_up",
+            "murf_envelope_hh_ggf_hbb_hzz_up",
+            "murf_envelope_hh_ggf_hbb_htt_up",
+            "isr_ttbar_up",
+            "isr_ttbb_up",
+            "isr_V_up",
+            "isr_ttV_up",
+            "isr_VV_up",
+            "isr_st_up",
+            "isr_H_up",
+            "fsr_ttbar_up",
+            "fsr_st_up",
+            "fsr_V_up",
+            "fsr_VV_up",
+            "fsr_ttV_up",
+            "fsr_H_up",
+            "top_pt_up",
+            "btag_fsrdef_bc_up",
+            "btag_isrdef_bc_up",
+            "btag_hdamp_bc_up",
+            "btag_jer_bc_up",
+            "btag_jes_bc_up",
+            "btag_mass_bc_up",
+            "btag_statistic_bc_up",
+            "btag_tune_bc_up",
+            "btag_correlated_light_up",
+            "btag_uncorrelated_light_up",
+        ],
         # TODO this is just a workaround to call cf.PlotShiftedVariables with a group or shift-sources
         "all_up": [
             # # theory unc.
@@ -376,6 +440,28 @@ def set_dl_config_defaults_and_groups(config_inst):
             },
             "cms_label_cfg": {
                 "fontsize": 24,
+            },
+        },
+        "d02": {
+            "rax_cfg": {
+                # "ylabel_fontsize": 30,
+                # "xlabel_fontsize": 30,
+                # "ylim": (2e-1, 6e7),
+                "ylim": (0, 2),
+            },
+
+        },
+        "gatja": {
+            "legend_cfg": {
+                "ncols": 5,
+                "cf_entries_per_column": [0, 3, 4, 4, 3],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
+                "fontsize": 12,
+            },
+            "ax_cfg": {
+                # "ylabel_fontsize": 30,
+                # "xlabel_fontsize": 30,
+                # "ylim": (2e-1, 6e7),
+                "ylim": (0, 0.7),
             },
         },
         "postfit_merged": {

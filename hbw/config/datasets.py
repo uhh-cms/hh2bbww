@@ -167,7 +167,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_ee_m50toinf_0j_amcatnlo",
                 "dy_mumu_m50toinf_0j_amcatnlo",
                 "dy_tautau_m50toinf_0j_amcatnlo",
-                # "dy_ee_m50toinf_1j_amcatnlo",
+                "dy_ee_m50toinf_1j_amcatnlo",
                 "dy_mumu_m50toinf_1j_amcatnlo",
                 "dy_tautau_m50toinf_1j_amcatnlo",
                 "dy_ee_m50toinf_2j_amcatnlo",
@@ -302,7 +302,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "ttbb_dl_powheg",
                 "ttbb_sl_powheg",
-                "ttbb_fh_powheg",  # TODO commented out for ttbb mdoeliing differnt processes
+                "ttbb_fh_powheg",
             ]),
         ],
         "tthh_4b": [
@@ -328,7 +328,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_ggf_hzz2l2q_powheg",
-                # "h_vbf_hbb_powheg",  #TODO fails for gatja because zero sized (u geuss due to the selection cuts... not sure how to handle that) 
+                "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",  # TODO
@@ -356,7 +356,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "ttwh_madgraph",
                 # htt
                 "h_ggf_htt_powheg",
-                # "h_vbf_htt_powheg",
+                "h_vbf_htt_powheg",
                 # "zh_htt_powheg", # TODO: Failing atm, not sure why
                 "wph_htt_powheg",
                 "wmh_htt_powheg",

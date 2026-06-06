@@ -507,6 +507,21 @@ def catid_geq3b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array
     return events, mask
 
 
+@categorizer(uses={BTAG_COLUMN("Jet"), prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
+def catid_geq3b_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask_geq3b = (n_deepjet >= 3)
+
+    events = self[prepare_objects](events, **kwargs)
+    hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
+    fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 1)
+    mask = mask & mask_geq3b
+    return events, mask
+
+
 @categorizer(uses={BTAG_COLUMN("Jet")})
 def catid_geq4b(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     btag_column = self.config_inst.x.btag_column
