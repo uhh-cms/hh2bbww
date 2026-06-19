@@ -30,10 +30,10 @@ logger = law.logger.get_logger(__name__)
 
 cms_label_kwargs = {
     "data": False,
-    # "llabel": "Private work (CMS simulation)",
+    "llabel": "Private work (CMS simulation)",
     # "llabel": "Simulation Work in progress",
     # "llabel": "Simulation Preliminary",
-    "llabel": "Simulation Supplementary",
+    # "llabel": "Simulation Supplementary",
     "lumi": "62",  # NOTE: hard-coded, to be updated if needed
     # "exp": "",
 }
@@ -41,7 +41,11 @@ if "CMS" in cms_label_kwargs["llabel"]:
     cms_label_kwargs["exp"] = ""
 
 
-def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
+def barplot_from_multidict(
+        dict_of_rankings: dict[str, dict],
+        normalize_weights: bool = True,
+        title: str | None = None,
+):
     """
     :param dict_of_rankings: dictionary of multiple dictionaries of rankings of variables. The keys of this
     dictionary are interpreted as labels for different types of variable rankings. The keys of the sub-dictionaries
@@ -70,12 +74,15 @@ def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights:
 
         ax.barh(index - offset, weights, bar_width, label=d_label)
 
-    ax.set_xlabel("Contribution")
-    ax.set_ylabel("Input features")
+    xlabel = f"Contribution to {title}" if title else "Contribution"
+    ax.set_xlabel(xlabel, fontsize=20)
+    ax.set_ylabel("Input feature", fontsize=20)
     ax.set_yticks(index - (bar_width * (num_dicts - 1)) / 2)
-    ax.set_yticklabels(labels)
-    ax.legend()
+    ax.set_yticklabels(labels)  # fontsize = 14?
+    ax.legend(fontsize=18, loc="lower right")
+    # ax.legend(title=title, fontsize=18, title_fontsize=20, loc="lower right")
 
+    mplhep.cms.label(ax=ax, **cms_label_kwargs, com=13.6, fontsize=16)
     plt.tight_layout()
 
     return fig, ax
@@ -185,24 +192,34 @@ def _plot_shap_scatter_plots(
     output_node: int,
     postfix: str,
     cmap: str | None = None,
+    input_features: list | None = None,  # HOTFIX: used only to set output file name
 ) -> None:
     plt.style.use("seaborn-v0_8")
-    feature_names = list(shap_values.feature_names)
+    feature_labels = list(shap_values.feature_names)
+    if input_features and len(input_features) != len(feature_labels):
+        logger.warning(
+            "Provided input_features list has length %d but shap_values has %d features, ignoring input_features",
+            len(input_features),
+            len(feature_labels),
+        )
+        input_features = None
     cmap = plt.get_cmap("tab10")  # for now, overwrite any custom cmap
     class_ids = [int(cls) for cls in np.unique(explain_labels)]
     output_class = class_label_map.get(output_node, str(output_node))
     logger.info(
         "Creating SHAP scatter plots for class %s with %d features across classes %s",
         output_class,
-        len(feature_names),
+        len(feature_labels),
         class_ids,
     )
 
-    for feature_idx, input_feature in enumerate(feature_names):
+    for feature_idx, feature_label in enumerate(feature_labels):
         try:
-            logger.debug("Scatter SHAP plot: feature='%s', node=%d", input_feature, output_node)
+            if input_features:
+                feature_name = input_features[feature_idx]
+            logger.debug("Scatter SHAP plot: feature='%s', node=%d", feature_label, output_node)
 
-            sub_shap_values = shap_values[:, input_feature, output_node]
+            sub_shap_values = shap_values[:, feature_label, output_node]
             explain_class_labels = np.array(
                 [class_label_map.get(int(lbl), str(lbl)) for lbl in explain_labels],
                 dtype=object,
@@ -227,17 +244,23 @@ def _plot_shap_scatter_plots(
             fig = plt.gcf()
             ax = fig.axes[0]
 
-            ax.set_xlabel(model.config_inst.get_variable(input_feature).x_title, fontsize=16)
+            x_title = (
+                feature_label if isinstance(feature_label, str)
+                else model.config_inst.get_variable(feature_label).x_title
+            )
+            ax.set_xlabel(x_title, fontsize=16)
             ax.set_ylabel(f"SHAP value ({output_class} node)", fontsize=16)
+            mplhep.cms.label(ax=ax, **cms_label_kwargs, com=13.6, fontsize=14)
             plt.tight_layout()
-            output.child(f"shap_scatter_{input_feature}_node{output_node}{postfix}.pdf", type="f").dump(
+            output.child(f"shap_scatter_{feature_name}_node{output_node}{postfix}.pdf", type="f").dump(
                 fig,
                 formatter="mpl",
             )
             plt.close(fig)
         except Exception:
             logger.exception(
-                f"Failed to produce SHAP scatter plot for feature '{input_feature}' and output node {output_node}",
+                f"Failed to produce SHAP scatter plot for feature '{feature_name}' "
+                f"(label: '{feature_label}') and output node {output_node}",
             )
 
 
@@ -302,9 +325,27 @@ def _plot_shap_rankings(
             input_features,
         ),
     }
-    fig, ax = barplot_from_multidict(rankings)
+    title = {
+        "ggfv3": r"$NN_{ggF}$" + (" (bkg node)" if output_node == 1 else ""),
+        "vbfv3": r"$NN_{VBF}$" + (" (bkg node)" if output_node == 1 else ""),
+        "vbfv3_tag": r"$NN_{VBF}$" + (" (bkg node)" if output_node == 1 else ""),
+        "multiclassv3": r"$NN_{mult}$" + {
+            0: r" ($HH_{ggF}$ node)",
+            1: r" ($HH_{VBF}$ node)",
+            2: r" ($t\bar{t}$ node)",
+            3: r" (single $t/\bar{t}$ node)",
+            4: r" (DY node)",
+            5: r" (H node)",
+        }[output_node],
+    }.get(model.cls_name, model.cls_name)
+    fig, ax = barplot_from_multidict(rankings, title=title)
     logger.info("Saving SHAP ranking comparison plot for node %d", output_node)
     output.child(f"rankings_node{output_node}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
+
+    reduced_rankings = rankings.copy()
+    reduced_rankings.pop("Gradient * Input")
+    fig, ax = barplot_from_multidict(reduced_rankings, title=title)
+    output.child(f"rankings_node{output_node}{postfix}_reduced.pdf", type="f").dump(fig, formatter="mpl")
     plt.close(fig)
     return fig, ax
 
@@ -319,11 +360,13 @@ def plot_introspection(
     stats: dict | None = None,
     store_shap_values: bool = False,
 ):
-    # if input_features:
-    #     input_features = [
-    #         model.config_inst.get_variable(feature).x_title if isinstance(feature, str) else feature.label
-    #         for feature in input_features
-    #     ]
+    input_labels = None
+    if input_features:
+        input_labels = [
+            model.config_inst.get_variable(feature).x_title if isinstance(feature, str) else feature.x_title
+            for feature in input_features
+        ]
+
     class_label_map = {
         node_config["ml_id"]: proc
         for proc, node_config in model.train_nodes.items()
@@ -373,7 +416,7 @@ def plot_introspection(
             base_values=shap_payload["base_values"],
             data=shap_payload["data"],
             # feature_names=shap_payload["feature_names"],
-            feature_names=input_features if input_features else shap_payload["feature_names"],
+            feature_names=input_labels if input_labels else shap_payload["feature_names"],
         )
         if not np.array_equal(shap_values.data, explain_inputs):
             raise ValueError("SHAP explain inputs do not match loaded SHAP values data, cannot reuse SHAP values")
@@ -387,7 +430,7 @@ def plot_introspection(
             shap_payload.get("output_nodes", []),
         )
     else:
-        shap_values = _calculate_shap_values(model, background, explain_inputs, input_features)
+        shap_values = _calculate_shap_values(model, background, explain_inputs, input_labels)
         logger.info("SHAP values computed with shape %s", getattr(shap_values.values, "shape", None))
         if store_shap_values:
             shap_payload = {
@@ -414,6 +457,7 @@ def plot_introspection(
 
         _plot_shap_scatter_plots(
             model, output, shap_values, explain_labels, class_label_map, output_node, postfix, cmap=cmap,
+            input_features=input_features,
         )
         # _plot_shap_waterfall_plots(model, output, shap_values, explain_inputs, output_node, postfix)
         fig, ax = _plot_shap_rankings(
@@ -422,7 +466,7 @@ def plot_introspection(
             explain_inputs,
             shap_ranking_dict,
             output_node,
-            input_features,
+            input_labels,
             postfix,
         )
 
@@ -859,13 +903,18 @@ def plot_output_nodes(
         data: DotDict[DotDict],
         output: law.FileSystemDirectoryTarget,
         process_insts: tuple[od.Process],
+        plot_process_insts: tuple[od.Process] | None = None,
         shape_norm: bool = True,
         y_log: bool = True,
+        postfix: str = "",
 ) -> None:
     """
     Function that creates a plot for each ML output node,
     displaying all processes per plot.
     """
+    if not plot_process_insts:
+        plot_process_insts = process_insts
+
     import hist
     # use CMS plotting style
     plt.style.use(mplhep.style.CMS)
@@ -886,8 +935,24 @@ def plot_output_nodes(
         )
 
         for input_type, inputs in data.items():
-            for j in range(n_classes):
-                mask = (inputs.labels == j)
+            for j, proc_inst in enumerate(plot_process_insts):
+                mask = (inputs.process_labels == proc_inst.name)
+                if proc_inst.name == "dy":
+                    # hard-coded process mapping for DY
+                    # (TODO: we should use process ids instead and improve process mapping as done in columnflow plots)
+                    mask = mask | (inputs.process_labels == "dy_m10to50") | (inputs.process_labels == "dy_m50toinf")
+                if not np.any(mask):
+                    logger.warning(
+                        f"No events found for process {proc_inst.name} in {input_type} set with process_labels, "
+                        f"falling back to labels for masking.",
+                    )
+                    mask = (inputs.labels == proc_inst.x.ml_id)
+                    if not np.any(mask):
+                        logger.warning(
+                            f"No events found for process {proc_inst.name} in {input_type} set with labels either, "
+                            f"skipping this process for output node plotting.",
+                        )
+                        continue
                 # mask = (np.argmax(inputs.target, axis=1) == j)
                 fill_kwargs = {
                     "type": input_type,
@@ -897,10 +962,10 @@ def plot_output_nodes(
                 }
                 h.fill(**fill_kwargs)
 
-        label = [proc_inst.label for proc_inst in process_insts]
+        label = [proc_inst.label for proc_inst in plot_process_insts]
         plot_kwargs = {
             "ax": ax,
-            "color": [proc_inst.color for proc_inst in process_insts],
+            "color": [proc_inst.color for proc_inst in plot_process_insts],
         }
 
         labels = {
@@ -917,7 +982,8 @@ def plot_output_nodes(
         scale_factors = {}
         for input_type, inputs in data.items():
             scale_factors[input_type] = np.array([
-                h[{"type": input_type, "process": i}].sum().value for i in range(n_classes)
+                # hist.loc(i) ?
+                h[{"type": input_type, "process": i}].sum().value for i in range(len(plot_process_insts))
             ])[:, np.newaxis]
         keys = list(scale_factors.keys())
         if not shape_norm:
@@ -954,10 +1020,19 @@ def plot_output_nodes(
             )
 
         # legend
-        ax.legend(loc="best", ncols=2, title="")
+        from math import ceil
+        ncols = 2
+        num_entries_per_col = ceil(len(plot_process_insts) + 3 / ncols)
+        handles, labels = ax.get_legend_handles_labels()
+        empty_handle = ax.plot([], label="", linestyle="None")[0]
+        if num_entries_per_col > 3:
+            for _ in range(num_entries_per_col - 4):
+                handles.insert(3, empty_handle)
+                labels.insert(3, "")
+        ax.legend(handles=handles, labels=labels, loc="best", ncols=2, title="")
 
-        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
-        output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
+        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm, fontsize=24)
+        output.child(f"Node_{process_insts[i].name}{postfix}.pdf", type="f").dump(fig, formatter="mpl")
 
 
 @timeit

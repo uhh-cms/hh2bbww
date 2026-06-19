@@ -646,6 +646,11 @@ class PlotMLResultsSingleFold(
         "terminal; no default",
     )
 
+    plotfolder = luigi.Parameter(
+        default="plots",
+        description="the name of the folder to which the plots will be written; default: 'plots'",
+    )
+
     data_splits = ("train", "val", "test")
 
     @property
@@ -692,7 +697,7 @@ class PlotMLResultsSingleFold(
 
     def output(self):
         return {
-            "plots": self.target("plots", dir=True),
+            "plots": self.target(self.plotfolder, dir=True),
             "stats": self.target("stats.json"),
         }
 
@@ -791,6 +796,36 @@ class PlotMLResultsSingleFold(
         plt.close("all")
         gc.collect()
 
+        # output nodes
+        hh_vbf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_vbf")]
+        hh_ggf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_ggf")]
+        # bkg_procs = [self.config_inst.get_process(p) for p in ("tt", "st", "dy_m10to50", "dy_m50toinf", "h")]
+        bkg_procs = [
+            self.config_inst.get_process(p, default=None)
+            for p in ("tt", "st", "dy", "h")
+        ]
+        sigs = [p for p in self.ml_model_inst.process_insts if p.name.startswith("sig_")]
+        procs = [*hh_vbf, *hh_ggf, *bkg_procs]
+        procs = [p for p in procs if p is not None]
+        for (_procs, postfix) in (
+            (hh_vbf, "_vbf"),
+            (hh_ggf, "_ggf"),
+            (bkg_procs, "_bkg"),
+            ([*sigs, *bkg_procs], "sigbkg"),
+            (procs, "_allprocs"),
+        ):
+            plot_output_nodes(
+                self.ml_model_inst,
+                data,
+                output["plots"],
+                self.ml_model_inst.train_node_process_insts,
+                plot_process_insts=_procs,
+                postfix=postfix,
+            )
+        log_memory("After plotting sub-process output nodes")
+        plt.close("all")
+        gc.collect()
+
         # iterate over all data splits and create plots
         for data_split in self.data_splits:
             logger.info(f"Creating plots for {data_split} split...")
@@ -854,6 +889,7 @@ class PlotMLResultsSingleFold(
             data.test,
             input_features=self.ml_model_inst.input_features_ordered,
             stats=stats,
+            store_shap_values=True,
         )
         log_memory("After plotting introspection")
         plt.close("all")
@@ -884,14 +920,28 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             plot_introspection,
         )
 
-        plot_introspection(
-            self.ml_model_inst,
-            output["plots"],
-            data.test,
-            input_features=self.ml_model_inst.input_features_ordered,
-            stats=stats,
-            store_shap_values=True,
-        )
+        # output nodes
+        hh_vbf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_vbf")]
+        hh_ggf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_ggf")]
+        bkg_procs = [self.config_inst.get_process(p) for p in ("tt", "st", "dy_m10to50", "dy_m50toinf", "h")]
+        procs = [*hh_vbf, *hh_ggf, *bkg_procs]
+        procs = [p for p in procs if p is not None]
+        for (_procs, postfix) in (
+            (hh_vbf, "_vbf"),
+            (hh_ggf, "_ggf"),
+            (bkg_procs, "_bkg"),
+            (procs, "_allprocs"),
+        ):
+            plot_output_nodes(
+                self.ml_model_inst,
+                data,
+                output["plots"],
+                self.ml_model_inst.train_node_process_insts,
+                plot_process_insts=_procs,
+                postfix=postfix,
+            )
+        plt.close("all")
+        gc.collect()
 
         # Since we only have test data, process sequentially with cleanup
         for data_split in self.data_splits:
@@ -907,10 +957,10 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             )
             try:
                 # example for non-diagonal confusion matrix (bit hard-coded still)
-                sig_vbf = self.config_inst.get_process("sig_vbf", default=None)
+                # sig_vbf = self.config_inst.get_process("sig_vbf", default=None)
                 hh_ggf = [p for p in self.ml_model_inst.process_insts if p.name.startswith("hh_ggf")]
                 bkg_procs = [self.config_inst.get_process(p) for p in ("tt", "st", "dy_m10to50", "dy_m50toinf", "h")]
-                procs = [*hh_ggf, sig_vbf, *bkg_procs]
+                procs = [*hh_ggf, *bkg_procs]
                 procs = [p for p in procs if p is not None]
                 plot_confusion(
                     self.ml_model_inst,
@@ -957,6 +1007,15 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
         )
         plt.close("all")
         gc.collect()
+
+        plot_introspection(
+            self.ml_model_inst,
+            output["plots"],
+            data.test,
+            input_features=self.ml_model_inst.input_features_ordered,
+            stats=stats,
+            store_shap_values=True,
+        )
 
         # dump all stats into yaml file
         output["stats"].dump(stats, formatter="json")
