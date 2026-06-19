@@ -501,8 +501,10 @@ class PlotPostfitShapes(
         for cat_name, bins_info in bins_dict.items():
             ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
             ml_proc = {
-                "HHggf": "gluon-gluon fusion (HH ggF)",
-                "HHvbf": "vector boson fusion (HH VBF)",
+                "HHggf": r"$HH_{ggF}$",
+                "HHvbf": r"$HH_{VBF}$",
+                # "HHggf": "gluon-gluon fusion (HH ggF)",
+                # "HHvbf": "vector boson fusion (HH VBF)",
                 "tt": r"$t\bar{t}$",
                 "st": "t",
             }.get(ml_proc, ml_proc)

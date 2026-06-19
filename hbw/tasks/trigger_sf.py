@@ -74,6 +74,9 @@ class ComputeTriggerSF(
         default=("no_trig_sf", "dl_orth2_with_l1_seeds"),
         description="Weight producers to use for plotting",
     )
+    hist_producer = HistogramsUserSingleShiftBase.hist_producer.copy(
+        default="no_trig_sf",  # hotfix
+    )
     suffix = luigi.Parameter(
         default="",
         description="Suffix to append to the output file names",
@@ -610,7 +613,7 @@ class ComputeTriggerSF(
                         ax.set_ylabel(r"Subleading lepton $p_T$ [GeV]")
 
                         label = self.config_inst.get_category(self.branch_data.category).label
-                        ax.annotate(label, xy=(0.05, 0.95), xycoords="axes fraction",
+                        ax.annotate(label, xy=(0.05, 0.88), xycoords="axes fraction",
                                     fontsize=20)
                     else:
                         fig, axs = plt.subplots(4, 1, gridspec_kw=dict(hspace=0), sharex=True)
@@ -678,7 +681,7 @@ class ComputeTriggerSF(
                             "ylim": (0.92, 1.08),  # subleading, others
                             "xlim": (0, 100),
                             "ylabel": "Ratio to nominal",
-                            "xlabel": f"{variable_insts[0].x_title} [GeV]",
+                            "xlabel": variable_insts[0].get_full_x_title(unit_format="{title} [{unit}]"),
                             "yscale": "linear",
                         }
                         rax.set(**rax_kwargs)
@@ -707,16 +710,22 @@ class ComputeTriggerSF(
                             yerr=uncertainties, fmt="o",
                             xerr=sfhist.axes[0].widths / 2,
                             label=f"rel. unc = {uncertainties[:2] / sfhist.values()[:2]}",
+                            color="black",
                             # color="red",
                         )
+                        # rax.errorbar(
+                        #     x=sfhist.axes[0].centers, y=np.ones_like(sfhist.values()),
+                        #     fmt="o", xerr=sfhist.axes[0].widths / 2, label="nominal",
+                        # )
                         rax.axhline(y=1.0, linestyle="dashed", color="gray")
+                        # rax.axhline(y=1.0, linestyle="dashed", color="orange")
                         rax_kwargs = {
                             "ylim": (0.82, 1.18),  # leading lep
                             # "ylim": (0.92, 1.08),  # subleading, others
                             "xscale": "log",
                             # "ylabel": "Scale factors",
                             "ylabel": "Data / MC",
-                            "xlabel": f"{variable_insts[0].x_title} [GeV]",
+                            "xlabel": variable_insts[0].get_full_x_title(unit_format="{title} [{unit}]"),
                             "yscale": "linear",
                         }
                         if "_pt" in self.branch_data.variable:
@@ -732,26 +741,42 @@ class ComputeTriggerSF(
                             logger.info("Applying linear scale for non-pt variable")
                             rax_kwargs["xscale"] = "linear"
                             rax.set(**rax_kwargs)
+                        rax.set_ylabel(rax_kwargs["ylabel"], loc="center")
 
                         ax.set_ylabel("Efficiency")
                         ax.set_ylim(0.68, 1.18)
                         ax.legend(fontsize=24)
 
                     label = self.config_inst.get_category(self.branch_data.category).label
-                    ax.annotate(label, xy=(0.05, 0.85), xycoords="axes fraction",
+                    ax.annotate(label, xy=(0.05, 0.88), xycoords="axes fraction",
                                 fontsize=20)
 
+                    # line at perfect efficiency
+
+                if add_grid := False:  # noqa
+                    # add grid lines
+                    ax.grid(True, which="major", linestyle="--", alpha=0.6)
+                    ax.grid(True, which="minor", linestyle=":", alpha=0.3)
+                    ax.set_axisbelow(True)
+
+                    rax.grid(True, which="major", linestyle="--", alpha=0.6)
+                    rax.grid(True, which="minor", linestyle=":", alpha=0.3)
+                    rax.set_axisbelow(True)
+                else:
+                    ax.axhline(y=1.0, linestyle=(0, (10, 2)), color="gray")
+
+                lumi = sum([
+                    config_inst.x.luminosity.get("nominal")
+                    for config_inst in self.config_insts
+                ])
                 cms_label_kwargs = {
                     "ax": ax,
-                    "llabel": "Work in progress",
+                    "llabel": "Private work (CMS data/simulation)",
                     "fontsize": 22,
                     "data": False,
-                    # "exp": "",
+                    "exp": "",
                     "com": self.config_inst.campaign.ecm,
-                    "lumi": round(0.001 * sum([
-                        config_inst.x.luminosity.get("nominal")
-                        for config_inst in self.config_insts
-                    ]), 1),
+                    "lumi": f"{(0.001 * lumi):.0f}",
                 }
                 mplhep.cms.label(**cms_label_kwargs)
                 fig.tight_layout()
@@ -833,15 +858,12 @@ class ComputeTriggerSF(
 
             cms_label_kwargs = {
                 "ax": ax,
-                "llabel": "Work in progress",
+                "llabel": "Private work (CMS data/simulation)",
                 "fontsize": 22,
                 "data": False,
                 # "exp": "",
                 "com": self.config_inst.campaign.ecm,
-                "lumi": round(0.001 * sum([
-                    config_inst.x.luminosity.get("nominal")
-                    for config_inst in self.config_insts
-                ]), 1),
+                "lumi": round(0.001 * lumi, 1),
             }
             mplhep.cms.label(**cms_label_kwargs)
             fig.tight_layout()
