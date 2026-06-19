@@ -612,7 +612,7 @@ from hbw.trigger.trigger_cats import mask_fn_dl_orth2_with_l1_seeds
 no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={"weight_columns": {
     **default_correction_weights,
     "stitched_normalization_weight": [],
-}})
+}, "require_hbb_sf_producer": False})
 dl_orth2_with_l1_seeds = no_trig_sf.derive("dl_orth2_with_l1_seeds", cls_dict={
     "categorizer_cls": mask_fn_dl_orth2_with_l1_seeds,
 })
