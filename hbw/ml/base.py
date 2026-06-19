@@ -398,6 +398,15 @@ class MLClassifierBase(MLModel):
         # NOTE: since automatic resolving is not working here, we do it ourselves
         return requested_calibrators or [analysis_inst.x.default_calibrator]
 
+    def training_selector(self, analysis_inst: od.Analysis, requested_selector: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        return "dl1"
+
+    def training_reducer(self, analysis_inst: od.Analysis, requested_reducer: Sequence[str]) -> list[str]:
+        # fix MLTraining Phase Space
+        # NOTE: since automatic resolving is not working here, we do it ourselves
+        return "default"
+
     def training_producers(self, analysis_inst: od.Analysis, requested_producers: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space
         # NOTE: might be nice to keep the "pre_ml_cats" for consistency, but running two
