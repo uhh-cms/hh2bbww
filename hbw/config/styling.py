@@ -100,13 +100,26 @@ default_process_colors = {
     "hh_ggf_hbb_hww_kl0_kt1": cms_color_palette_2["red"],
     "hh_ggf_hbb_hww_kl2p45_kt1": cms_color_palette_2["yellow"],
     "hh_ggf_hbb_hww_kl5_kt1": cms_color_palette_2["purple"],
+    "hh_ggf_hbb_hvv2l2nu_kl1_kt1": cms_color_palette_1["black"],
+    "hh_ggf_hbb_hvv2l2nu_kl0_kt1": cms_color_palette_2["red"],
+    "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": cms_color_palette_2["yellow"],
+    "hh_ggf_hbb_hvv2l2nu_kl5_kt1": cms_color_palette_2["purple"],
     "hh_vbf_hbb_hww_kv1_k2v1_kl1": cms_color_palette_2["blue"],
     "hh_vbf_hbb_hww_kv1_k2v0_kl1": cms_color_palette_1["red"],
-    # for resolved base
+    #  ## for resolved base
     "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2": cms_color_palette_1["yellow"],
     "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94": cms_color_palette_1["purple"],
     "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39": cms_color_palette_1["violet"],
     "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96": cms_color_palette_1["grey"],
+    # for NN training plots
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": cms_color_palette_2["blue"],
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": cms_color_palette_1["red"],
+    # "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2": cms_color_palette_1["yellow"],
+    "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": cms_color_palette_1["purple"],
+    "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": cms_color_palette_1["violet"],
+    # "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": cms_color_palette_1["grey"],
+    "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": cms_color_palette_2["brown"],
+    "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": cms_color_palette_2["darkgrey"],
 }
 
 vbf_sample_coupling = {
@@ -172,6 +185,16 @@ default_labels = {
     # "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36": r"$\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36$",
     # "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39": r"$\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39$",
     # "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96": r"$\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96$",
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=0, \kappa_{\lambda}=1}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4": r"$HH_{VBF}^{\kappa_{V}=1.74, \kappa_{2V}=1.37, \kappa_{\lambda}=14.4}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2": r"$HH_{VBF}^{\kappa_{V}=-0.012, \kappa_{2V}=0.03, \kappa_{\lambda}=10.2}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": r"$HH_{VBF}^{\kappa_{V}=-0.758, \kappa_{2V}=1.44, \kappa_{\lambda}=-19.3}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": r"$HH_{VBF}^{\kappa_{V}=-0.962, \kappa_{2V}=0.959, \kappa_{\lambda}=-1.43}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": r"$HH_{VBF}^{\kappa_{V}=-1.21, \kappa_{2V}=1.94, \kappa_{\lambda}=-0.94}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": r"$HH_{VBF}^{\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": r"$HH_{VBF}^{\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39}$",  # noqa: E501
+    "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": r"$HH_{VBF}^{\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96}$",  # noqa: E501
 }
 
 ml_labels = {

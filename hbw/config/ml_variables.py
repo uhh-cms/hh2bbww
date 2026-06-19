@@ -19,23 +19,24 @@ def add_common_ml_variables(config: od.Config) -> None:
 
     for postfix, object_label in (
         # ("", "central jets"),
-        ("", "jets"),
-        ("_alljets", "central + forward jets"),
-        ("_fwjets", "forward jets"),
+        # ("", "(jets)"),
+        ("", ""),
+        ("_alljets", "(central + forward jets)"),
+        ("_fwjets", "(forward jets)"),
     ):
         config.add_variable(
             name=f"mli_ht{postfix}",
             expression=f"mli_ht{postfix}",
             binning=(40, 0, 1200),
             unit="GeV",
-            x_title=f"$H_{{T}} ({object_label})$",
+            x_title=f"$H_{{T}} {object_label}$",
             aux={"overflow": True},
         )
         config.add_variable(
             name=f"mli_n_jet{postfix}",
             expression=f"mli_n_jet{postfix}",
             binning=(11, -0.5, 10.5),
-            x_title=f"Number of {object_label}",
+            x_title=f"Number of {object_label if object_label else 'jets'}",
             aux={
                 # "overflow": True,
                 "x_min": 0.5,
@@ -131,21 +132,22 @@ def add_common_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
     )
     for postfix, object_label in (
-        ("", "central jets"),
-        ("_alljets", "central + forward jets"),
+        ("", ""),
+        # ("", "(central jets)"),
+        ("_alljets", "(central + forward jets)"),
     ):
         config.add_variable(
             name=f"mli_mindr_jj{postfix}",
             expression=f"mli_mindr_jj{postfix}",
             binning=(40, 0, 6),
-            x_title=rf"min $\Delta R(j,j)$ ({object_label})",
+            x_title=rf"min $\Delta R(j,j)$ {object_label}",
             aux={"overflow": True},
         )
         config.add_variable(
             name=f"mli_maxdr_jj{postfix}",
             expression=f"mli_maxdr_jj{postfix}",
             binning=(40, 0, 8),
-            x_title=rf"max $\Delta R(j,j)$ ({object_label})",
+            x_title=rf"max $\Delta R(j,j)$ {object_label}",
             aux={"overflow": True},
         )
 
@@ -194,7 +196,8 @@ def add_common_ml_variables(config: od.Config) -> None:
             name=f"mli_{prefix}vbf_tag",
             expression=f"mli_{prefix}vbf_tag",
             binning=(2, -0.5, 1.5),
-            x_title=rf"VBF pair tag ($|\eta| < {eta_range}|$)",
+            # x_title=rf"VBF pair tag ($|\eta| < {eta_range}|$)",
+            x_title="VBF pair tag" if eta_range == "4.7" else "VBF pair tag (central jets)",
             aux={"overflow": True},
         )
 

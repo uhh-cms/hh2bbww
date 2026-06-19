@@ -1159,7 +1159,8 @@ def add_variables(config: od.Config) -> None:
             binning=(50, -2.5, 2.5),
             unit="GeV",
             null_value=EMPTY_FLOAT,
-            x_title=f"Lepton {i} $\\eta$",
+            # x_title=f"Lepton {i} $\\eta$",
+            x_title=r"Leading lepton $\eta$" if i == 0 else r"Subleading lepton $\eta$",
         )
         config.add_variable(
             name=f"lepton{i}_phi",

@@ -193,6 +193,11 @@ def set_config_defaults_and_groups(config_inst):
         "hh_ggf_hbb_hzz_kl1_kt1", "hh_vbf_hbb_hzz_kv1_k2v1_kl1",
         "hh_ggf_hbb_htt_kl1_kt1", "hh_vbf_hbb_htt_kv1_k2v1_kl1",
     ]
+    gghh_sm = [  # noqa: F841
+        "hh_ggf_hbb_hww_kl1_kt1",
+        "hh_ggf_hbb_hzz_kl1_kt1",
+        "hh_ggf_hbb_htt_kl1_kt1",
+    ]
     hh_sm1 = [
         "hh_ggf_kl1_kt1", "hh_vbf_kv1_k2v1_kl1",
     ]
@@ -259,6 +264,7 @@ def set_config_defaults_and_groups(config_inst):
         "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl8": [*hbbhww_variations, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl10": [*hh_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dlmu": ["data_mu", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dleg": ["data_egamma", default_signal_process, "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dlmajor": [default_signal_process, "st", "dy", "tt"],
@@ -340,7 +346,9 @@ def set_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch"):
+    for group in (
+        "dl10", "dl9", "dl8", "dl7", "dl6", "dl5", "dl4", "dl3", "dl2", "dl1", "dl", "2much", "2ech", "emuch",
+    ):
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # dataset groups for conveniently looping over certain datasets
@@ -373,7 +381,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_ech_resolved": ["sr__1e__resolved", "sr__1e__resolved__1b", "sr__1e__resolved__2b"],
         "sl_much_boosted": ["sr__1mu__boosted"],
         "sl_ech_boosted": ["sr__1e__boosted"],
-        "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
+        # "dl": ["sr", "dycr", "ttcr", "sr__1b", "sr__2b", "dycr__1b", "dycr__2b", "ttcr__1b", "ttcr__2b"],
         "dl_preml_incl": bracket_expansion(["incl", "{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
         "dl_preml_small": bracket_expansion(["incl", "{sr,ttcr,dycr}{,__2e,__2mu,__emu}__resolved{,__1b,__2b}"]),
         "dl_preml_large": bracket_expansion(["incl", "{,sr__,ttcr__,dycr__}{,2e__,2mu__,emu__}resolved{,__1b,__2b}"]),
@@ -441,6 +449,7 @@ def set_config_defaults_and_groups(config_inst):
         "SR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_ggf2,sig_ggf,hh_ggf_hbb_hvv2l2nu_kl1_kt1,hh_ggf_kl1_kt1}"]),  # noqa: E501
         "vbfSR_dl_boosted": bracket_expansion(["sr__boosted__ml_{signal_vbf2,sig_vbf,hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1,hh_vbf_kv1_k2v1_kl1}"]),  # noqa: E501
         "BR_dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),
+        "dl": bracket_expansion(["sr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{sig_ggf,sig_vbf,bkg,tt,st,dy,dy_m10toinf,h}"]),  # noqa: E501
         "BR_bbzz": bracket_expansion(["dycr__{resolved__1b,resolved__2b,boosted,1b,2b}__ml_{bkg,tt,st,dy,dy_m10toinf,h}"]),  # noqa: E501
         "BR_bjets_incl": bracket_expansion(["sr__ml_{tt,st,dy,dy_m10toinf,h}"]),
     }
