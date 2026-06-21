@@ -811,11 +811,11 @@ def set_config_defaults_and_groups(config_inst):
         """Reorder legend entries to put 'data' first"""
         # Find the index of the data entry
         data_idx = None
-        empty_label_idx = None
+        empty_label_idxs = []
         for i, label in enumerate(labels):
             # if empty_label_idx is None and label == "":
             if label == "":
-                empty_label_idx = i
+                empty_label_idxs.append(i)
             if data_idx is None and "data" in label.lower():
                 data_idx = i
 
@@ -824,8 +824,12 @@ def set_config_defaults_and_groups(config_inst):
             data_handle = handles.pop(data_idx)
             data_label = labels.pop(data_idx)
 
-            handles.pop(empty_label_idx)  # remove empty entry added via cf_entries_per_column
-            labels.pop(empty_label_idx)
+            # handles.pop(empty_label_idxs[-1])  # remove empty entry added via cf_entries_per_column
+            # labels.pop(empty_label_idx[-1])
+            empty_label_idxs = empty_label_idxs[::-1]  # reverse to pop from the end first
+            for empty_label_idx in empty_label_idxs[1:]:  # keep the first empty entry for the first column
+                handles.pop(empty_label_idx)  # remove empty entry added via cf_entries_per_column
+                labels.pop(empty_label_idx)
 
             # insert data at the top of column 1 (index 0)
             handles.insert(0, data_handle)
@@ -926,7 +930,8 @@ def set_config_defaults_and_groups(config_inst):
         "dpostfit": {
             "legend_cfg": {
                 "ncols": 2,
-                "fontsize": 20,
+                # "fontsize": 20,
+                "fontsize": 18,
                 "bbox_to_anchor": (0., 0., 1., 1.),
                 "cf_entries_per_column": [5, 8],
                 "cf_update_handles_labels": reorder_data_first,

@@ -155,7 +155,24 @@ def add_dl_ml_variables(config: od.Config) -> None:
         unit="GeV",
         x_title=r"$m_{bb}$",
     )
-
+    config.add_variable(
+        name="mli_mll_rebinned",
+        expression="mli_mll",
+        binning=(50, 20, 70),
+        unit="GeV",
+        aux={
+            "overflow": True,
+        },
+        x_title=r"$m_{\ell\ell}$",
+    )
+    config.add_variable(
+        name="mli_lep2_pt_rebinned",
+        expression="mli_lep2_pt",
+        binning=(40, 0, 160),
+        aux={"overflow": True},
+        x_title=r"Subleading lepton $p_{T}$",
+        unit="GeV",
+    )
     # reconstructed variables
     config.add_variable(
         name="mli_dphi_bb_nu",
@@ -201,6 +218,7 @@ def add_dl_ml_variables(config: od.Config) -> None:
         expression="mli_mllMET",
         binning=(40, 0, 600),
         aux={"overflow": True},
+        unit="GeV",
         x_title=r"$m_{\ell\ell MET}$",
     )
     config.add_variable(
@@ -289,6 +307,6 @@ def add_dl_ml_variables(config: od.Config) -> None:
         name="mli_mixed_channel",
         expression="mli_mixed_channel",
         binning=(2, -0.5, 1.5),
-        aux={"overflow": True},
+        aux={"overflow": True, "skip_rebin": True},
         x_title="Mixed channel tag",
     )

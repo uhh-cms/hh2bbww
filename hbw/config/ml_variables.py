@@ -41,6 +41,7 @@ def add_common_ml_variables(config: od.Config) -> None:
                 # "overflow": True,
                 "x_min": 0.5,
                 "x_max": 8.5,
+                "skip_rebin": True,
             },
         )
 
@@ -198,7 +199,7 @@ def add_common_ml_variables(config: od.Config) -> None:
             binning=(2, -0.5, 1.5),
             # x_title=rf"VBF pair tag ($|\eta| < {eta_range}|$)",
             x_title="VBF pair tag" if eta_range == "4.7" else "VBF pair tag (central jets)",
-            aux={"overflow": True},
+            aux={"overflow": True, "skip_rebin": True},
         )
 
     #
