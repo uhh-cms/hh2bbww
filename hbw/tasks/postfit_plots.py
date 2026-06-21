@@ -211,9 +211,28 @@ def plot_postfit_shapes(
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
+    logger.info(f"Processing variable: {variable_inst.name} in category {category_inst.name}")
     hists, process_style_config = apply_process_settings(hists, process_settings)
     # process scaling
     hists = apply_process_scaling(hists)
+
+    # hotfix: make padded bins really zero
+    # padded value seems to be 1e-9 per process listed in datacard
+    total_bkg_view = total_bkg.view()
+    if any(padded := total_bkg_view.value < 1e-7):
+        logger.warning(
+            f"Found {padded.sum()} bins in total_bkg with value < 1e-7, setting them to zero.",
+        )
+        total_bkg_view.value[padded] = 0
+        for proc_inst, h in hists.items():
+            if proc_inst.is_mc and not proc_inst.has_tag("is_signal"):
+                h.view().value[padded] = 0
+            elif proc_inst.has_tag("is_signal") and any(sig_zero := h.view().value < 1e-7):
+                # mark signal bins as empty if both signal and bkg is zero
+                h.view().value[sig_zero & padded] = 0
+            elif proc_inst.is_data and any(data_zero := h.view().value < 1e-7):
+                # mark data bins as empty (negative value) if both data and bkg is zero
+                h.view().value[data_zero & padded] = -1
 
     # density scaling per bin
     if density:
