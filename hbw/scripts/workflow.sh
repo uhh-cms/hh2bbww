@@ -52,7 +52,9 @@ inf_categories_sig="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr
 inf_categories_sig_resolved="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf"
 inf_categories_sig_boosted="sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf"
 inf_categories_bkg="sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
+inf_categories_bkgnew="sr__resolved__1b__ml_tt,sr__resolved__1b__ml_st,sr__resolved__1b__ml_dy_m10toinf,sr__resolved__1b__ml_h,sr__resolved__2b__ml_tt,sr__resolved__2b__ml_st,sr__resolved__2b__ml_dy_m10toinf,sr__resolved__2b__ml_h,sr__boosted__ml_bkg"
 inf_categories="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf,sr__1b__ml_tt,sr__1b__ml_st,sr__1b__ml_dy_m10toinf,sr__1b__ml_h,sr__2b__ml_tt,sr__2b__ml_st,sr__2b__ml_dy_m10toinf,sr__2b__ml_h"
+inf_categories_new="sr__resolved__1b__ml_sig_ggf,sr__resolved__1b__ml_sig_vbf,sr__resolved__2b__ml_sig_ggf,sr__resolved__2b__ml_sig_vbf,sr__boosted__ml_sig_ggf,sr__boosted__ml_sig_vbf,sr__resolved__1b__ml_tt,sr__resolved__1b__ml_st,sr__resolved__1b__ml_dy_m10toinf,sr__resolved__1b__ml_h,sr__resolved__2b__ml_tt,sr__resolved__2b__ml_st,sr__resolved__2b__ml_dy_m10toinf,sr__resolved__2b__ml_h,sr__boosted__ml_bkg"
 
 
 
@@ -782,9 +784,9 @@ run_and_fetch_triggersf() {
     local processes="${3:-"data_met,sf_bkg_reduced"}"
     local uncs="${4:-"False"}"
 
-    local suffix="V6"
+    local suffix="V8"
     if [[ "$uncs" != "False" ]]; then
-        suffix="unc_V6"
+        suffix="unc_V8"
     fi
 
     local folder_name=triggersf/${configs//,/_}
@@ -863,7 +865,7 @@ run_triggersf_production() {
                     --datasets "$datasets" \
                     --shifts nominal \
                     --cf.CreateHistograms-reducer "$reducer" \
-                    --cf.CreateHistograms-producer "$producers" \
+                    --cf.CreateHistograms-producers "$producers" \
                     --cf.CreateHistograms-variables "$variables" \
                     --cf.CreateHistograms-hist-producer "$hist_producer" \
                     --cf.CreateHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar} \
@@ -879,10 +881,11 @@ run_triggersf_production() {
 
 run_and_fetch_all_plots() {
 
-    run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
+    # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
 
     # run_and_fetch_gen_plots
     # run_and_fetch_all_mcsyst_plots
+    run_and_fetch_mcstat_plots "$all_configs" "sr,dycr,ttcr" "ml_inputs,mli_full_vbf_tag"
     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
     # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
@@ -909,8 +912,70 @@ run_and_fetch_all_plots() {
 }
 
 run_thesis_plots() {
+    # trigger effs bbWW(2l2nu)
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__2e --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww2l2nu_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=ee_oldAAAee,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__emu --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww2l2nu_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=emu_oldAAAmixed,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww2l2nu_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+
+
+    # trigger effs bbWW
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__2e --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=ee_oldAAAee,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__emu --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=emu_oldAAAmixed,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+
+    # trigger effs HH
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__2e --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_sm --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=ee_oldAAAee,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr__emu --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_sm --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=emu_oldAAAmixed,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_sm --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,rebin=10,x_max=200:rebinlogit_mlscore.sig_ggf_binary,x_min=-4" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories "sr__{resolved__2b,resolved__1b,boosted}__ml_sig_{ggf,vbf}" --hist-hooks rebin --variables mlscore.sig_ggf_binary-trig_ids --processes hh_sm --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6
+
+    # trigger eff with triggersf reducer + flow bins
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,pre_ml_cats,trigger_prod_dl --categories sr --variables rebinlogit_mlscore.sig_ggf_binary-trig_ids,trg_lepton0_pt-trig_ids --processes hh_ggf_hbb_hww_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True,grid=True" --skip-ratio True --shape-norm True --variable-settings "trg_lepton0_pt,overflow,rebin=10,x_max=200,slice=25jAAA200j:rebinlogit_mlscore.sig_ggf_binary,x_min=-4,slice=-4jAAA10j,underflow,overflow" --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6 --ml-models ggfv3 --reducer triggersf
+
+    # trigger effs VBF SRs rebinned
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,dl_ml_inputs,cats_ml_multiclassv3,trigger_prod_dl --categories "sr__{resolved__2b,resolved__1b,boosted}__ml_sig_vbf" --hist-hooks rebin --variables logit_mlscore.sig_vbf_binary-trig_ids --processes hh_vbf_kv1_k2v1_kl1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6 --file-types pdf,png
+    claw run cf.PlotVariables1D --configs $all_configs --producers event_weights,dl_ml_inputs,cats_ml_multiclassv3,trigger_prod_dl --categories "sr__{resolved__2b,resolved__1b,boosted}__ml_sig_ggf" --hist-hooks rebin --variables logit_mlscore.sig_ggf_binary-trig_ids --processes hh_ggf_kl1_kt1 --plot-function hbw.trigger.plot_efficiencies.plot_efficiencies --general-settings "bin_sel=oldAAAall,show_int_effies=True" --skip-ratio True --shape-norm True --cms-label simpw  --plot-suffix oldVsNew --remove-output 0,a,y --workers 6 --file-types pdf,png
+
     # cutflow
     claw run cf.PlotCutflow --selector-steps Trigger,TripleLooseLeptonVeto,Dilepton,Charge,DiLeptonMass20,nJet1,nBjet1,cleanup --processes cutflow --config l22postv14 --workers 6 --categories incl --shape-norm --process-settings unstack_all --remove-output 0,a,y --custom-style-config cutflow --general-settings cutflow
+^
+    # data/MC plots for control regions (no ptmiss cut)
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables ml_inputs --processes ddl7 --general-settings data_mc_plots_not_blinded --hist-producer incl_dy_corr_hbbsf --workers 6 --categories dycr,ttcr
+
+    # data/MC plots for analysis regions (with ptmiss cut) and sub-channels
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "ml_inputs,jet{0,1}_{pt,eta,btagPNetB},mli_lep_pt,mli_lep2_pt" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr,sr__{2e,2mu,emu,resolved__1b,resolved__2b,boosted}" --workers 6
+
+    # data/MC plots for analysis regions (with ptmiss cut) and NN scores
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "mlscore.*" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr,sr__{2e,2mu,emu,resolved__1b,resolved__2b,boosted}" --workers 6
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "mlscore.{sig_ggf,sig_vbf,tt,st,dy_m10toinf,h}" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr,sr__{2e,2mu,emu,resolved__1b,resolved__2b,boosted}" --workers 6
+
+    # NN score categorized before/after rebinning
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "logit_mlscore.sig_ggf_binary" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_sig_ggf" --workers 6 --remove-output 0,a,y
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "logit_mlscore.sig_ggf_binary" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_sig_ggf" --workers 6 --remove-output 0,a,y --hist-hooks rebin --variable-settings "logit_mlscore.sig_ggf_binary,rebin=1"
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "logit_mlscore.sig_vbf_binary" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_sig_vbf" --workers 6 --remove-output 0,a,y
+    claw run cf.PlotVariables1D --configs c22prev14,c22postv14,c23prev14,c23postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --variables "logit_mlscore.sig_vbf_binary" --processes ddl6 --general-settings data_mc_plots_not_blinded --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_sig_vbf" --workers 6 --remove-output 0,a,y --hist-hooks rebin --variable-settings "logit_mlscore.sig_vbf_binary,rebin=1"
+
+    # profile plots (mHH vs signal score)
+    claw run cf.PlotVariables1D --configs c22postv14 --ml-models multiclassv3,ggfv3,vbfv3_tag --producers event_weights,dl_ml_inputs,cats_ml_multiclassv3,gen_hbw_decay_features --variables "mli_mbbllMET-mlscore.sig_ggf_binary,GENHBW_hh_mass-mlscore.sig_ggf_binary,mli_mbbllMET-rebinlogit_mlscore.sig_ggf_binary,GENHBW_hh_mass-rebinlogit_mlscore.sig_ggf_binary" --processes hh_ggf_hbb_hww_kl1_kt1 --general-settings data_mc_plots_not_blinded --categories "sr" --workers 6 --plot-function columnflow.plotting.plot_functions_1d.plot_profile --yscale linear --remove-output 0,a,y
+
+    # profile plots (NN inputs vs signal score)
+    claw run cf.PlotVariables1D --configs c22postv14 --variables "ml_inputs-mlscore.sig_ggf_binary" --processes hh_ggf_hbb_hww_kl1_kt1,tt --general-settings data_mc_plots_not_blinded --categories "sr" --workers 6 --plot-function columnflow.plotting.plot_functions_1d.plot_profile --yscale linear --remove-output 0,a,y
+    claw run cf.PlotVariables1D --configs c22postv14 --variables "ml_inputs-mlscore.sig_ggf" --processes hh_ggf_hbb_hww_kl1_kt1,tt --general-settings data_mc_plots_not_blinded --categories "sr" --workers 6 --plot-function columnflow.plotting.plot_functions_1d.plot_profile --yscale linear --remove-output 0,a,y
+
+    # s/sqrt(b) and significance plots
+    claw run cf.PlotVariables1D --processes hh_vbf_kv1_k2v1_kl1,hh_ggf_kl1_kt1,background --variables logit_mlscore.sig_vbf_binary --categories "sr__{resolved__2b,resolved__1b,boosted}__ml_sig_{ggf,vbf}" --hist-hooks rebin --general-settings metric=significance --plot-function hbw.plotting.s_over_b.plot_s_over_b --remove-output 0,a,y  --configs $all_configs
+
+    # yields
+    claw run hbw.CustomCreateYieldTable --remove-output 0,a,y --configs c22prev14,c22postv14,c23prev14,c23postv14 --categories sr__resolved__1b__ml_sig_ggf,sr__resolved__2b__ml_sig_ggf,sr__boosted__ml_sig_ggf --processes table1 --table-format latex_raw
+
+    claw run hbw.MultiDatacards --inference-models nn_inputs_res,nn_inputs_boost,nn_inputs_lep --hist-producer met_geq40_with_hbbsf_dy --ml-models multiclassv3,ggfv3,vbfv3_tag --workers 12 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=6GB} --local-scheduler --rebin-cards
+    claw run hbw.MultiDatacards --inference-models nn_mult_res,nn_mult_boost,nn_mult_lep --hist-producer met_geq40_with_hbbsf_dy --ml-models multiclassv3,ggfv3,vbfv3_tag --workers 12 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=6GB} --local-scheduler --rebin-cards
+    claw run hbw.MultiDatacards --inference-models nn_binary_res,nn_binary_boost,nn_binary_lep --hist-producer met_geq40_with_hbbsf_dy --ml-models multiclassv3,ggfv3,vbfv3_tag --workers 12 --configs $all_configs --cf.MergeShiftedHistograms-{workflow=htcondor,pilot,remote-claw-sandbox=venv_columnar,htcondor-memory=6GB} --local-scheduler --rebin-cards
+
+    law run hbw.PlotPostfitShapes --version shapes7 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes7/shapes_merged_3dd5c4e1c2__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model nn_mult_res --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --skip-merged --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version shapes7 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes7/shapes_merged_f90e6e62f7__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model nn_binary --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --skip-merged --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version shapes7 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes7/shapes_merged_e914ce5e2c__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model nn_input_variables --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --skip-merged --density
 }
 
 run_paper_plots() {
@@ -968,7 +1033,7 @@ run_paper_plots() {
 
     # Supplementary
     law run hbw.PlotPostfitShapes --version nn_variables --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/shapes2/shapes_merged_e34c508369__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model hbbsf --processes ddl6 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --density --cms-label Supplementary --hist-producer met_geq40_with_hbbsf_dy --remove-output 0,a,y
-    law run hbw.PlotPostfitShapes --version mll --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/after_dycorr3/shapes_merged_a1bae85616__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model after_dycorr3 --processes ddl9 --general-settings dpostfit --custom-style-config dpostfit_mll --prefit --merged-only False --density --cms-label Supplementary --local-scheduler --hist-producer incl_dy_corr_hbbsf --remove-output 0,a,y
+    law run hbw.PlotPostfitShapes --version mll --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/after_dycorr3/shapes_merged_a1bae85616__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model after_dycorr3 --processes ddl9 --general-settings dpostfit --custom-style-config dpostfit_mll --prefit --merged-only False --cms-label Supplementary --local-scheduler --hist-producer incl_dy_corr_hbbsf --remove-output 0,a,y
     law run hbw.PlotPostfitShapes --version before_dycorr3SUPPL --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/before_dycorr3/shapes_merged_5e6fea8d39__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model before_dycorr3 --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --cms-label Supplementary --hist-producer with_hbbsf --remove-output 0,a,y
     law run hbw.PlotPostfitShapes --version after_dycorr3SUPPL --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_88329aae7e/m125.0/poi_r/after_dycorr3/shapes_merged_a1bae85616__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model after_dycorr3 --processes ddl7 --general-settings dpostfit --custom-style-config dpostfit_nosig --prefit --merged-only False --density --cms-label Supplementary --local-scheduler --hist-producer incl_dy_corr_hbbsf --remove-output 0,a,y
 
@@ -991,11 +1056,11 @@ run_dycorr_plots() {
 }
 
 run_triggersf() {
-    run_and_fetch_twodim_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
     run_and_fetch_all_triggersf "$all_configs" "trg_lepton0_pt-trig_ids" "data_met,sf_bkg_reduced"
     run_and_fetch_all_triggersf "$all_configs" "trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
     run_and_fetch_all_triggersf "$all_configs" "lepton0_eta-trig_ids" "data_met,sf_bkg_reduced"
     run_and_fetch_all_triggersf "$all_configs" "trg_n_jet-trig_ids" "data_met,sf_bkg_reduced"
+    # run_and_fetch_twodim_triggersf "$all_configs" "trg_lepton0_pt-trg_lepton1_pt-trig_ids" "data_met,sf_bkg_reduced"
 }
 
 # === Dispatcher ===
@@ -1004,10 +1069,12 @@ run_triggersf() {
 run_all() {
     # Set global checksum once for this entire workflow run
     global_checksum=$(checksum)
-    run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum" --local-scheduler
+    # run_cmd law run cf.BundleRepo --custom-checksum "$global_checksum" --local-scheduler
     # recreate_campaign_summary
 
-    run_and_fetch_shifted_plots $all_configs
+    run_triggersf
+
+    # run_and_fetch_shifted_plots $all_configs
 
     # run_merge_reduced_events "c22prev14,c23prev14,c23postv14" "nominal"
     # run_merge_reduced_events "$all_configs" "nominal"
