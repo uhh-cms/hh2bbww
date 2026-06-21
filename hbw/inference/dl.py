@@ -651,6 +651,122 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "skip_data": False,
 })
 
+from hbw.ml.derived.dl import input_features as ml_inputs
+nn_input_variables = default_unblind.derive("nn_input_variables", cls_dict={
+    "config_variable": lambda self, config_cat_inst: ml_inputs.v2 + [
+        "mli_full_vbf_tag",
+        # "mli_full_vbf_mass",
+        # "mli_full_vbf_deta",
+        "mli_mll_rebinned",
+        "mli_lep2_pt_rebinned",
+    ],
+    "multi_variables": True,
+    "config_categories": [
+        # "sr", "sr__resolved__1b", "sr__resolved__2b", "sr__boosted",
+        # "sr__2e", "sr__2mu", "sr__emu",
+        "sr", "sr__boosted",
+    ],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+    "min_bkg_events": 12,  # 8.3% relative uncertainty
+    "max_data_unc": 0.15,  # relative uncertainty
+    "skip_flat_rebin": True,  # rebinning only to constrain data and bkg uncertainties
+})
+
+nn_inputs_boost = nn_input_variables.derive("nn_inputs_boost", cls_dict={
+    "config_categories": ["sr__boosted"],
+    "max_data_unc": 0.15,  # relative uncertainty
+})
+nn_inputs_res = nn_input_variables.derive("nn_inputs_res", cls_dict={
+    "config_categories": ["sr", "sr__resolved__1b", "sr__resolved__2b"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_inputs_lep = nn_input_variables.derive("nn_inputs_lep", cls_dict={
+    "config_categories": ["sr__2e", "sr__2mu", "sr__emu"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_inputs_vr = nn_input_variables.derive("nn_inputs_vr", cls_dict={
+    "config_categories": ["ttcr", "dycr"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+
+nn_multiclass = default_unblind.derive("nn_multiclass", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        # "mlscore.sig_ggf_binary",
+        # "mlscore.sig_vbf_binary",
+        # "rebinlogit_mlscore.sig_ggf_binary",
+        # "rebinlogit_mlscore.sig_vbf_binary",
+        "mlscore.sig_ggf",
+        "mlscore.sig_vbf",
+        "mlscore.tt",
+        "mlscore.st",
+        "mlscore.h",
+        "mlscore.dy_m10toinf",
+    ],
+    "multi_variables": True,
+    "config_categories": [
+        # "sr", "sr__resolved__1b", "sr__resolved__2b", "sr__boosted",
+        # "sr__2e", "sr__2mu", "sr__emu",
+        "sr",
+        # "sr__boosted",
+    ],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+    "min_bkg_events": 12,  # 8.3% relative uncertainty
+    "max_data_unc": 0.03,  # relative uncertainty
+    "skip_flat_rebin": True,  # rebinning only to constrain data and bkg uncertainties
+})
+nn_mult_boost = nn_multiclass.derive("nn_mult_boost", cls_dict={
+    "config_categories": ["sr__boosted"],
+    "max_data_unc": 0.15,  # relative uncertainty
+})
+nn_mult_res = nn_multiclass.derive("nn_mult_res", cls_dict={
+    "config_categories": ["sr", "sr__resolved__1b", "sr__resolved__2b"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_mult_lep = nn_multiclass.derive("nn_mult_lep", cls_dict={
+    "config_categories": ["sr__2e", "sr__2mu", "sr__emu"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_mult_vr = nn_multiclass.derive("nn_mult_vr", cls_dict={
+    "config_categories": ["ttcr", "dycr"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+
+nn_binary = default_unblind.derive("nn_binary", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "mlscore.sig_ggf_binary",
+        "mlscore.sig_vbf_binary",
+        "rebinlogit_mlscore.sig_ggf_binary",
+        "rebinlogit_mlscore.sig_vbf_binary",
+    ],
+    "multi_variables": True,
+    "config_categories": [
+        "sr",
+    ],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+    "min_bkg_events": 12,  # 8.3% relative uncertainty
+    "max_data_unc": 0.03,  # relative uncertainty
+    "skip_flat_rebin": True,  # rebinning only to constrain data and bkg uncertainties
+})
+nn_binary_boost = nn_binary.derive("nn_binary_boost", cls_dict={
+    "config_categories": ["sr__boosted"],
+    "max_data_unc": 0.15,  # relative uncertainty
+})
+nn_binary_res = nn_binary.derive("nn_binary_res", cls_dict={
+    "config_categories": ["sr", "sr__resolved__1b", "sr__resolved__2b"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_binary_lep = nn_binary.derive("nn_binary_lep", cls_dict={
+    "config_categories": ["sr__2e", "sr__2mu", "sr__emu"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+nn_binary_vr = nn_binary.derive("nn_binary_vr", cls_dict={
+    "config_categories": ["ttcr", "dycr"],
+    "max_data_unc": 0.03,  # relative uncertainty
+})
+
 
 nn_variables = default_unblind.derive("nn_variables", cls_dict={
     "config_variable": lambda self, config_cat_inst: [
@@ -669,6 +785,7 @@ nn_variables = default_unblind.derive("nn_variables", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
     "flow_strategy": "remove",
 })
+
 
 before_dycorr3 = default_unblind.derive("before_dycorr3", cls_dict={
     "config_variable": lambda self, config_cat_inst: [

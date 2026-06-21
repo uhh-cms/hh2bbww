@@ -89,9 +89,12 @@ def get_rebin_values(
         rebin_hist,
         signal_hist,
         background_hist,
+        data_hist=None,
         N_bins_final: int = 10,
         min_bkg_events: int = 10,
+        max_data_unc: float | None = None,
         blinding_threshold: float | None = None,
+        skip_flat_rebin: bool = False,
 ):
     """
     Function that determines how to rebin a histogram to *N_bins_final* bins such that
@@ -102,6 +105,11 @@ def get_rebin_values(
         msg += f" Requires at least {min_bkg_events} background events per bin."
     if blinding_threshold:
         msg += f" Blinding threshold is set to {blinding_threshold}."
+    if max_data_unc is not None:
+        msg += f" Maximum data uncertainty is set to {max_data_unc}."
+        if data_hist is None:
+            raise ValueError("max_data_unc is set but no data_hist is provided.")
+
     logger.info(msg)
     N_bins_input = rebin_hist.axes[0].size
     if N_bins_input != background_hist.axes[0].size:
@@ -119,6 +127,7 @@ def get_rebin_values(
     N_events = 0
     N_signal = 0
     N_bkg_value = N_bkg_variance = 0
+    N_data_value = N_data_variance = 0
 
     x_max = rebin_hist.axes[0].edges[N_bins_input]
     x_min = rebin_hist.axes[0].edges[0]
@@ -127,6 +136,7 @@ def get_rebin_values(
     h_view = rebin_hist.view()
     background_view = background_hist.view()
     signal_view = signal_hist.view()
+    data_view = data_hist.view() if data_hist is not None else None
 
     max_error = lambda value: value ** 2 / min_bkg_events
 
@@ -139,9 +149,13 @@ def get_rebin_values(
     # ending loop at 0 to exclude underflow
     # starting at the end to allow checking for empty background bins
     for i in range(N_bins_input - 1, 0, -1):
-        if bin_count == N_bins_final:
+        if not skip_flat_rebin and bin_count == N_bins_final:
             # break as soon as N-1 bin edges have been determined --> final bin is x_max
             break
+
+        if max_data_unc is not None:
+            N_data_value += data_view["value"][i]
+            N_data_variance += data_view["variance"][i]
 
         N_signal += signal_view["value"][i]
         N_events += h_view["value"][i]
@@ -149,9 +163,14 @@ def get_rebin_values(
         N_bkg_variance += background_view["variance"][i]
         if i % 100 == 0:
             logger.info(f"//////////// Bin {i} of {N_bins_input}, {N_events} events")
-        if N_events >= events_per_bin:
-            # when *N_events* surpasses threshold, check if background variance is small enough
-            if N_bkg_variance < max_error(N_bkg_value):
+        if skip_flat_rebin or N_events >= events_per_bin:
+            # when *N_events* surpasses threshold, check if data and background variance is small enough
+            data_variance_check = (
+                # (max_data_unc is None) or ((N_data_value > 0) and (1 / np.sqrt(N_data_value) <= max_data_unc))
+                (max_data_unc is None) or (N_data_value > 0 and np.sqrt(N_data_variance) / N_data_value <= max_data_unc)
+            )
+            bkg_variance_check = N_bkg_variance < max_error(N_bkg_value)
+            if bkg_variance_check and data_variance_check:
                 # when background variance is small enough, append the corresponding bin edge and count
                 this_edge = rebin_hist.axes[0].edges[i]
                 logger.info(
@@ -175,18 +194,65 @@ def get_rebin_values(
                 rebin_values.append(this_edge)
                 bin_count += 1
                 N_events = N_signal = N_bkg_value = N_bkg_variance = 0
+                N_data_value = N_data_variance = 0
             else:
                 this_edge = rebin_hist.axes[0].edges[i]
+                msg = ""
+                if not bkg_variance_check:
+                    msg += f"Background variance {N_bkg_variance} is too large for bin {i} with value {N_bkg_value}. "
+                if not data_variance_check:
+                    msg += f"Data variance {N_data_variance} is too large for bin {i} with value {N_data_value}. "
+                msg += f"Skipping bin edge {this_edge}."
                 logger.warning_once(
                     f"get_rebin_values_{bin_count}",
-                    f"Background variance {N_bkg_variance} is too large for bin {i} with value {N_bkg_value}, "
-                    f"skipping bin edge {this_edge}",
+                    f"{msg}",
                 )
 
+    if skip_flat_rebin and not data_variance_check or not bkg_variance_check:
+        # last bin might not fulfill criteria; in that case, just merge the two last bins into one
+        logger.warning(
+            f"Final bin edge {rebin_values[-1]} before minimum {x_min} is skipped "
+            f"because data or background variance is too large. "
+            f"Data variance: {N_data_variance}, background variance: {N_bkg_variance}.",
+        )
+        rebin_values = rebin_values[:-1]
     rebin_values.append(x_min)
     # change order of the bin edges to be ascending
     rebin_values = rebin_values[::-1]
     logger.info(f"final bin edges: {rebin_values}")
+
+    if len(rebin_values) <= 1:
+        logger.warning(
+            f"Only one bin edge remaining: {rebin_values}; "
+            "using initial binning instead...",
+            # "using x_min,x_max instead...",
+        )
+        rebin_values = rebin_hist.axes[0].edges.tolist()
+        # rebin_values = [x_min, x_max]
+        return rebin_values
+
+    if skip_flat_rebin:
+        # hotfix: move all empty bins at start and end into the first and last bin, respectively
+        for i in range(N_bins_input - 1):
+            N_bkg = background_view["value"][i]
+            if N_bkg > 0:
+                # when first count is observed, put edge here and break
+                this_edge = rebin_hist.axes[0].edges[i]
+                if this_edge != rebin_values[0] and this_edge != rebin_values[1]:
+                    rebin_values.insert(1, this_edge)
+                    logger.info(f"First non-empty bin is at {this_edge}, moving first bin edge to this value")
+                break
+        for i in range(N_bins_input - 1, 0, -1):
+            N_bkg = background_view["value"][i]
+            if N_bkg > 0:
+                # when last count is observed, put edge here and break
+                this_edge = rebin_hist.axes[0].edges[i + 1]
+                if this_edge != rebin_values[-1] and this_edge != rebin_values[-2]:
+                    rebin_values.insert(-1, this_edge)
+                    logger.info(f"Last non-empty bin is at {this_edge}, moving last bin edge to this value")
+                break
+        logger.info(f"final bin edges after moving empty bins: {rebin_values}")
+
     return rebin_values
 
 
@@ -279,7 +345,7 @@ class ModifyDatacardsFlatRebin(
         CreateDatacards=CreateDatacards,
     )
 
-    min_bkg_events = 12
+    default_min_bkg_events = 12
 
     @classmethod
     def resolve_param_values(cls, params):
@@ -297,6 +363,24 @@ class ModifyDatacardsFlatRebin(
             config_inst,
         )
         return params
+
+    @property
+    def variable_inst(self):
+        variable = self.branch_data.inf_cat.config_data[self.config_insts[0].name].variable
+        variable_inst = self.config_insts[0].get_variable(variable)
+        return variable_inst
+
+    @property
+    def min_bkg_events(self):
+        return getattr(self.inference_model_cls, "min_bkg_events", None) or self.default_min_bkg_events
+
+    @property
+    def max_data_unc(self):
+        return getattr(self.inference_model_cls, "max_data_unc", None)
+
+    @property
+    def skip_flat_rebin(self):
+        return getattr(self.inference_model_cls, "skip_flat_rebin", False)
 
     def get_n_bins(self, DEFAULT_N_BINS=8):
         """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
@@ -390,6 +474,10 @@ class ModifyDatacardsFlatRebin(
         configs_repr = self.configs_str(self.branch_data.configs)
         cat_obj = self.branch_data.inf_cat.config_data[self.config_insts[0].name]
         basename = lambda name, ext: f"{name}__cfg_{configs_repr}__cat_{cat_obj.category}.{ext}"
+        if self.inference_model_cls.multi_variables:
+            basename = lambda name, ext: (
+                f"{name}__cfg_{configs_repr}__cat_{cat_obj.category}__var_{cat_obj.variable}.{ext}"
+            )
         n_bins = self.get_n_bins()
         return {
             "card": self.target(basename(f"card_{n_bins}", "txt")),
@@ -470,6 +558,10 @@ class ModifyDatacardsFlatRebin(
             signal_hists = [nominal_hists[proc.name] for proc in signal_processes]
             signal_hist = sum(signal_hists[1:], signal_hists[0])
 
+            data_hist = None
+            if "data_obs" in proc_names:
+                data_hist = nominal_hists["data_obs"]
+
             logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_inf_proc_names}")
             if "data_obs" in proc_names and self.partially_unblinded:
                 if "sig_vbf" in cat_name:
@@ -483,14 +575,23 @@ class ModifyDatacardsFlatRebin(
                     blinding_threshold = 0.008
             else:
                 blinding_threshold = None
-            rebin_values = get_rebin_values(
-                rebin_hist,
-                signal_hist,
-                background_hist,
-                N_bins_final=self.get_n_bins(),
-                min_bkg_events=self.min_bkg_events,
-                blinding_threshold=blinding_threshold,
-            )
+
+            # hotfix: allow for skippng the rebinning and just use the original bin edges
+            if self.variable_inst.x("skip_rebin", False):
+                logger.info(f"Skipping rebinning for variable {self.variable_inst.name} in category {cat_name}")
+                rebin_values = rebin_hist.axes[0].edges.tolist()
+            else:
+                rebin_values = get_rebin_values(
+                    rebin_hist,
+                    signal_hist,
+                    background_hist,
+                    data_hist=data_hist,
+                    N_bins_final=self.get_n_bins(),
+                    min_bkg_events=self.min_bkg_events,
+                    max_data_unc=self.max_data_unc,
+                    blinding_threshold=blinding_threshold,
+                    skip_flat_rebin=self.skip_flat_rebin,
+                )
             outputs["edges"].dump(rebin_values, formatter="json")
 
             # apply rebinning on all histograms and store resulting hists in a ROOT file
@@ -1386,10 +1487,17 @@ class MultiDatacards(
         significant=False,
     )
 
+    rebin_cards = luigi.BoolParameter(
+        default=False,
+        description="Whether to rebin the datacards before running inference.",
+        significant=False,
+    )
+
     # upstream requirements
     reqs = Requirements(
         # RemoteWorkflow.reqs,
         CreateDatacards=CreateDatacards,
+        ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
     )
 
     @property
@@ -1409,14 +1517,24 @@ class MultiDatacards(
         return params
 
     def requires(self):
+        cards_task = self.reqs.CreateDatacards
         reqs = {
-            "datacards": [self.reqs.CreateDatacards.req_different_branching(
+            "datacards": [cards_task.req_different_branching(
                 self,
                 branch=0,
                 configs=self.configs,
                 inference_model=inference_model,
             ) for inference_model in self.inference_models],
         }
+        if self.rebin_cards:
+            cards_task = self.reqs.ModifyDatacardsFlatRebin
+            reqs = {
+                "datacards": [cards_task.req(
+                    self,
+                    configs=self.configs,
+                    inference_model=inference_model,
+                ) for inference_model in self.inference_models],
+            }
         return reqs
 
     def store_parts(self) -> law.util.InsertableDict:
@@ -1451,23 +1569,37 @@ class MultiDatacards(
         apply_fit_datacards = []
         variables = []
         for _input, inference_model_cls in zip(inputs["datacards"], self.inference_model_clses):
-            for category, target in _input.targets.items():
-                datacards = []
-                cat_name, variable = get_cat_var(inference_model_cls, category)
-                abspath = target["card"].abspath
-                datacards.append(f"{cat_name}={abspath}")
-                variables.append(variable)
-                apply_fit_datacards.append(",".join(datacards))
+            # TODO: would be nice to export the datacard path as env variable and use it in the command,
+            # would be one path per inference_model_cls, e.g. CARDS_{inference_model_cls}
+            if inference_model_cls.multi_variables:
+                for i, target in _input["collection"].targets.items():
+                    datacards = []
+                    abspath = target["card"].abspath
+                    cat_name = abspath.split("/")[-1].replace(".txt", "").split("__cat_")[-1]
+                    cat_name, var_name = inference_model_cls.split_datacard_cat_name(cat_name)
+                    datacards.append(f"{cat_name}={abspath}")
+                    variables.append(var_name)
+                    apply_fit_datacards.append(",".join(datacards))
+            else:
+                for category, target in _input.targets.items():
+                    datacards = []
+                    cat_name, var_name = get_cat_var(inference_model_cls, category)
+                    abspath = target["card"].abspath
+                    datacards.append(f"{cat_name}={abspath}")
+                    variables.append(var_name)
+                    apply_fit_datacards.append(",".join(datacards))
 
         cmd = (
             "law run MergePreAndPostFitShapes "
             "--FitParameters-workflow local "
             "--PreAndPostFitShapes-workflow htcondor --workers 5 --unblinded True --prefit "
-            "--version shapes2 --datacards $CARDS "
+            "--version shapes7 --datacards $CARDS "
             f"--apply-fit-datacards {':'.join(apply_fit_datacards)} "
             f"--fit-datacard-variables {','.join(variables)} "
         )
         print("\n\n" + cmd + "\n\n")
+
+        print(f"script stored at {output['calls'].abspath}")
 
         output["calls"].dump(cmd, formatter="text")
 

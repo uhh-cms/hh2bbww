@@ -68,6 +68,11 @@ class HBWInferenceModelBase(InferenceModel):
 
     skip_ratify_shapes: bool = False
 
+    # global rebinning parameters
+    min_bkg_events: int = 12
+    max_data_unc: float = None
+    skip_flat_rebin: bool = False
+
     #
     # helper functions and properties
     #
