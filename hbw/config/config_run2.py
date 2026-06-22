@@ -118,7 +118,7 @@ def add_config(
 
     # multiple files
     if cfg.has_tag("is_hhh"):
-        # import os   
+        # import os
         import glob
 
         BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"

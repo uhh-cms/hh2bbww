@@ -79,7 +79,7 @@ def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task
     if self.has_dep(gen_hbv_decay):
         events = self[attach_coffea_behavior](events, **kwargs)
         events = self[gen_hbv_decay](events, **kwargs)
-    
+
     # if self.has_dep(nlo_reweighting):
     #     events = self[nlo_reweighting](events, **kwargs)
 

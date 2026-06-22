@@ -41,7 +41,7 @@ def nlo_reweighting(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     if "dy" not in self.dataset_inst.name:
         raise ValueError(f"nlo_reweighting should only run for DY samples, not for {self.dataset_inst.name}.")
-    
+
     log_memory("Start")
     # sampleNumDict = {
     #     "dy_ee_m50toinf_amcatnlo": 181,
