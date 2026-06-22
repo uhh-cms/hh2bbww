@@ -309,7 +309,7 @@ broken_files = {
     },
     "run3_2024_nano_v15": {
         "dy_mumu_m50toinf_2j_amcatnlo": [
-            # not found
+            # not found TODO: should check at some point if these files become available
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/afc52c71-3b68-4def-8534-06f6f4e75ad2.root",  # noqa: E501
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/47abdfc0-9626-4942-82f3-221c6d99531e.root",  # noqa: E501
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/2d62dc57-c119-43f3-98d4-f9de72e094ec.root",  # noqa: E501
@@ -357,6 +357,10 @@ broken_files = {
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/a5373888-9519-4ad8-bedc-d7944db78c3e.root",  # noqa: E501
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/009b3a51-2fb4-454f-9358-0f0975ef3688.root",  # noqa: E501
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/900aae72-766e-45d3-b3fd-8642d26394e3.root",  # noqa: E501
+            "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/a9bae64f-ee16-45ff-9da5-52d1c15cc0d1.root",  # noqa: E501
+            "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/b801fc47-ddf4-4136-80ca-d91299f51b7d.root",  # noqa: E501
+            "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/214f4dd8-62ef-47f7-aa00-60bc04aaf65b.root",  # noqa: E501
+            "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/59e97637-dadb-457f-8012-da232fb1dd42.root",  # noqa: E501
         ],
     },
 }

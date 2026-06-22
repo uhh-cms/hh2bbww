@@ -317,6 +317,14 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "blinding_threshold": 0.008,
             "magnitudes": 8,
         },
+        "more_magnitudes_not_blinded": {
+            "remove_negative": True,
+            # "custom_style_config": "default",  # NOTE: does not work in combination with group
+            "whitespace_fraction": 0.4,
+            "cms_label": f"{cms_label}",
+            "yscale": "log",
+            "magnitudes": 8.5,
+        },
         "data_mc_plots_blind_conservative": {
             "remove_negative": True,
             # "custom_style_config": "default",  # NOTE: does not work in combination with group

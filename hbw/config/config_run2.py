@@ -118,8 +118,8 @@ def add_config(
 
     # multiple files
     if cfg.has_tag("is_hhh"):
+        # import os   
         import glob
-        import os
 
         BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
 
@@ -796,6 +796,11 @@ def add_config(
     cfg.add_shift(name="dy_correction_down", id=14, type="shape")
     add_shift_aliases(cfg, "dy_correction", {"dy_correction_weight": "dy_correction_weight_{direction}"})
 
+    # DY NLO reweighting
+    cfg.add_shift(name="nlo_dy_reweight_up", id=15, type="shape")
+    cfg.add_shift(name="nlo_dy_reweight_down", id=16, type="shape")
+    add_shift_aliases(cfg, "nlo_dy_reweight", {"nlo_dy_reweight_weight": "nlo_dy_reweight_weight_{direction}"})
+
     # electron scale factor uncertainties
     cfg.add_shift(name="e_sf_up", id=40, type="shape")
     cfg.add_shift(name="e_sf_down", id=41, type="shape")
@@ -1128,6 +1133,10 @@ def add_config(
     from hbw.config.trigger import add_triggers
     add_triggers(cfg)
 
+    # files for NLO V+Jets reweighting transformer models
+    model_path = "/data/dust/user/letzerba/public/hh2bbww/models"
+    add_external("nlo_reweight_model", (f"{model_path}/fineTunedEnsemble_64.onnx", "v0"))
+
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
     # ROOT files (eej.root and aj.root) taken from here:
     # https://github.com/UHH2/2HDM/tree/ultra_legacy/data/ScaleFactors/VJetsCorrections
@@ -1261,6 +1270,7 @@ def add_config(
         "pu_weight*", "pdf_weight*",
         "murmuf_envelope_weight*", "mur_weight*", "muf_weight*",
         "btag_weight*",
+        "nlo_dy_reweight_weight*",
         # Gen particle information
         "gen_hbw_decay.*.*",
         # columns for btag reweighting crosschecks

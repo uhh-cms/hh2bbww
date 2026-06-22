@@ -208,6 +208,7 @@ def base_init(self: HistProducer) -> None:
         # remove dependency towards vjets weights
         self.local_weight_columns.pop("dy_correction_weight", None)
         self.local_weight_columns.pop("dy_weight", None)
+        self.local_weight_columns.pop("nlo_dy_reweight_weight", None)
 
     if dataset_inst and not dataset_inst.has_tag("is_dy"):
         # remove dependency towards dy weights

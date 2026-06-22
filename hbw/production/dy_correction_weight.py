@@ -36,7 +36,7 @@ logger = law.logger.get_logger(__name__)
     # produced dy weight column
     produced_column="dy_correction_weight",
     uses_column=None,
-    version=5,
+    version=6,
     n_jet=2,
     derivation_region="with_trigger_weight",
     derivation_configs=None,

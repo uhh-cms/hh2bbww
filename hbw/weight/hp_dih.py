@@ -220,6 +220,43 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
     "dy_correction_weight_producer": "dy_correction_weight",
     "categorizer_cls": mask_fn_lep2_pt15,
 })
+with_dy_corr_and_nloRW = default_hist_producer.derive("with_dy_corr_and_nloRW", cls_dict={
+    "pre_label": "After DY NLO reweight",
+    "nondy_hist_producer": "with_trigger_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+        "nlo_dy_reweight_weight": [],
+    },
+    "dy_correction_weight_producer": "dy_correction_weight",
+    "categorizer_cls": mask_fn_lep2_pt15,
+})
+with_trigger_weight_noDYRW = default_hist_producer.derive("with_trigger_weight_noDYRW", cls_dict={
+    "pre_label": "Before DY NLO reweight",
+    "nondy_hist_producer": "with_trigger_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    "categorizer_cls": mask_fn_lep2_pt15,
+})
+with_trigger_weight_and_DYRW = default_hist_producer.derive("with_trigger_weight_and_DYRW", cls_dict={
+    "pre_label": "After DY NLO reweight",
+    "nondy_hist_producer": "with_trigger_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+        "nlo_dy_reweight_weight": [],
+    },
+    "categorizer_cls": mask_fn_lep2_pt15,
+})
 incl_dy_corr = default_hist_producer.derive("incl_dy_corr", cls_dict={
     "pre_label": "After DY correction",
     "nondy_hist_producer": "with_trigger_weight",
