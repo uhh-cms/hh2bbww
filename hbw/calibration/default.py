@@ -11,6 +11,7 @@ from columnflow.calibration.cms.met import met_phi
 from columnflow.calibration.cms.jets import jec, jer, jer_horn_handling
 from columnflow.production.cms.jet import msoftdrop
 from columnflow.calibration.cms.egamma import electron_scale_smear
+from columnflow.calibration.cms.muon import muon_sr
 from columnflow.production.cms.seeds import (
     deterministic_object_seeds, deterministic_jet_seeds, deterministic_electron_seeds,
     deterministic_event_seeds,
@@ -20,8 +21,6 @@ from columnflow.util import maybe_import, try_float
 from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT
 
 from hbw.util import MET_COLUMN
-
-from hbw.calibration.jet import bjet_regression
 
 
 ak = maybe_import("awkward")
@@ -33,6 +32,15 @@ logger = law.logger.get_logger(__name__)
 
 # customized electron calibrator (also needs deterministic event seeds)
 electron_scale_smear.deterministic_seed_index = 0
+
+# custom muon seeds NOTE: might not need this
+deterministic_muon_seeds = deterministic_object_seeds.derive(
+    "deterministic_muon_seeds",
+    cls_dict={
+        "object_field": "Muon",
+        "prime_offset": 90,
+    }
+)
 
 # custom fatjet seeds
 deterministic_fatjet_seeds = deterministic_object_seeds.derive(
@@ -47,16 +55,16 @@ deterministic_fatjet_seeds = deterministic_object_seeds.derive(
 @calibrator(
     uses={
         deterministic_event_seeds,
-        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds,
+        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds, deterministic_muon_seeds,
     },
     produces={
         deterministic_event_seeds,
-        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds,
+        deterministic_jet_seeds, deterministic_fatjet_seeds, deterministic_electron_seeds, deterministic_muon_seeds,
     },
 )
 def deterministic_seeds_calibrator(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
-    Calibrator that produces deterministic seeds for events and objects (Jet, Electron, and FatJet).
+    Calibrator that produces deterministic seeds for events and objects (Jet, Electron, Muon and FatJet).
     This is defined as a Calibrator such that this can run as separate task before the actual calibration.
     """
     # create the event seeds
@@ -67,6 +75,9 @@ def deterministic_seeds_calibrator(self: Calibrator, events: ak.Array, **kwargs)
 
     # create the electron seeds
     events = self[deterministic_electron_seeds](events, **kwargs)
+
+    # create the muon seeds
+    events = self[deterministic_muon_seeds](events, **kwargs)
 
     # create the fatjet seeds
     events = self[deterministic_fatjet_seeds](events, **kwargs)
@@ -139,6 +150,31 @@ def ele_init(self: Calibrator) -> None:
 
     self.uses |= {self.electron_calib_cls}
     self.produces |= {self.electron_calib_cls}
+
+
+@seeds_user_base.calibrator(
+    version=law.config.get_expanded("analysis", "muon_version", 0),
+    uses={deterministic_muon_seeds.PRODUCES},
+    produces={"Muon.pt"},  # dummy produces to ensure this calibrator is run
+)
+def muo(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Muon calibrator, combining scale and resolution.
+    """
+    # apply the muon calibration
+    events = self[self.muon_calib_cls](events, **kwargs)
+    # NOTE: some nans in pt_scale_up/down raise no finite errors, set to nones
+    events = set_ak_column(events, "Muon.pt_scale_up", ak.nan_to_none(events.Muon.pt_scale_up))
+    events = set_ak_column(events, "Muon.pt_scale_down", ak.nan_to_none(events.Muon.pt_scale_down))
+    return events
+
+
+@muo.init
+def muo_init(self: Calibrator) -> None:
+    self.muon_calib_cls = muon_sr
+
+    self.uses |= {self.muon_calib_cls}
+    self.produces |= {self.muon_calib_cls}
 
 
 @seeds_user_base.calibrator(
@@ -236,7 +272,7 @@ def jec_clamp_2024_data_l2l3residual(calibrator, corrector, variable_map):
         corrector.level == "L2L3Residual"
     ):
         min_eta, max_eta = 2.0, 2.5
-        clamp_pt = np.float32(35.0)
+        clamp_pt = np.float32(30.0)
         clamp_mask = (
             ((abs_eta := abs(variable_map["JetEta"])) > min_eta) &
             (abs_eta < max_eta) &
@@ -305,6 +341,10 @@ def jet_base_init(self: Calibrator) -> None:
             if self.config_inst.campaign.x.year == 2024
             else None
         )
+
+        if self.bjet_regression is False:
+            self.config_inst.x.jec.Jet = self.config_inst.x.jec.Jet_non_regressed
+
         self.config_inst.x.calib_jec_full_cls = jec.derive("jec_full", cls_dict={
             **jec_cls_kwargs,
             "mc_only": True,
@@ -344,10 +384,6 @@ def jet_base_init(self: Calibrator) -> None:
     )
     self.calibrators.append(jec_cls)
 
-    # BJet regression
-    if self.bjet_regression:
-        self.calibrators.append(bjet_regression)
-
     # JER (only for MC)
     jer_cls = self.config_inst.x.calib_deterministic_jer_cls
     if self.dataset_inst.is_mc and not self.skip_jer:
@@ -367,14 +403,14 @@ def jet_base_init(self: Calibrator) -> None:
         self.produces |= set(self.calibrators)
 
 
-jec_only = jet_base.derive("jec_only", cls_dict=dict(bjet_regression=False, skip_jer=True))
-skip_jer = jet_base.derive("skip_jer", cls_dict=dict(bjet_regression=True, skip_jer=True))
+jec_only = jet_base.derive("jec_only", cls_dict=dict(bjet_regression=True, skip_jer=True))
+skip_jer = jet_base.derive("skip_jer", cls_dict=dict(bjet_regression=False, skip_jer=True))
 no_breg = jet_base.derive("no_breg", cls_dict=dict(bjet_regression=False))
 with_b_reg = jet_base.derive("with_b_reg", cls_dict=dict(bjet_regression=True))
 with_b_reg_test = jet_base.derive("with_b_reg_test", cls_dict=dict(bjet_regression=True))
 
 ak4 = jet_base.derive("ak4", cls_dict=dict(
-    bjet_regression=False,
+    bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=True,
 ))

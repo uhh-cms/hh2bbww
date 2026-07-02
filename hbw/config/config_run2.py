@@ -17,6 +17,7 @@ from columnflow.util import DotDict
 from columnflow.config_util import add_shift_aliases
 from columnflow.columnar_util import ColumnCollection, skip_column
 from hbw.config.styling import stylize_processes
+from columnflow.tasks.external import ExternalFile as Ext
 from hbw.config.categories import (
     add_categories_selection,
     add_dih_mll_categories, add_trih_mll_categories,
@@ -37,6 +38,7 @@ from columnflow.production.cms.muon import MuonSFConfig
 from columnflow.production.cms.btag import BTagSFConfig
 
 from columnflow.calibration.cms.egamma import EGammaCorrectionConfig
+from columnflow.calibration.cms.muon import MuonSRConfig
 from columnflow.production.cms.jet import JetIdConfig
 
 from columnflow.cms_util import CATInfo, CATSnapshot  # , CMSDatasetInfo
@@ -274,9 +276,9 @@ def add_config(
             jer_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}_Run{era}"
             jec_campaign = f"Summer{year2}{jerc_postfix}Prompt{year2}"
         elif year == 2024:
-            jer_campaign = "Summer23BPixPrompt23_RunD"
-            # ATM using 2023PostBPix JER, since no 2024 available (see recommendations)
-            # jer_campaign = f"Summer{year2}Prompt{year2}"
+            # jer_campaign = "Summer23BPixPrompt23_RunD"
+            # ATM using 2023PostBPix JER, since no 2024 available (see recommendations) - NOW AVAILABLE
+            jer_campaign = f"Summer{year2}Prompt{year2}"
             jec_campaign = f"Summer{year2}Prompt{year2}"
         jet_type = "AK4PFPuppi"
         fatjet_type = "AK8PFPuppi"
@@ -303,32 +305,48 @@ def add_config(
         # f"Regrouped_HF_{jerc_campaign}",
     ]
 
-    jec_ak4_version = jec_ak8_version = {
+    jec_ak4_version = jec_ak8_version = {  # TODO: update to current versions: https://cms-jerc.web.cern.ch/Recommendations/#2025  # noqa: E501
         2016: "V7",
         2017: "V5",
         2018: "V5",
         2022: "V3",
         2023: "V2" if cfg.x.cpn_tag == "2023preBPix" else "V3",
-        2024: "V2",
+        2024: "V3",
     }[year]
-
+    from columnflow.calibration.cms.jets import BJECConfig
     cfg.x.jec = DotDict.wrap({
         # NOTE: currently, we set the uncertainty_sources in the calibrator itself
         "Jet": {
             "campaign": jec_campaign,
             "version": jec_ak4_version,
             "jet_type": jet_type,
-            "external_file_key": "jet_jerc",
+            "external_file_key": "regjet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
             "data_per_era": False if year != 2022 else True,
+            "bjec_config": BJECConfig(
+                jet_types=("AK4PFPuppiUParTRegressionPlusNeutrino", "AK4PFPuppiUParTRegression"),
+                regr_factors=("UParTAK4RegPtRawCorrNeutrino", "UParTAK4RegPtRawCorr"),
+                bjet_selection=lambda events: events.Jet.btagUParTAK4B > 0.1272,
+                bjet_selection_columns=["btagUParTAK4B"],
+            ),
         },
         "FatJet": {
             "campaign": jec_campaign,
             "version": jec_ak8_version,
             "jet_type": fatjet_type,
             "external_file_key": "fat_jet_jerc",
+            "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
+            "levels_for_type1_met": ["L1FastJet"],
+            "uncertainty_sources": jec_uncertainties,
+            "data_per_era": False if year != 2022 else True,
+        },
+        "Jet_non_regressed": {
+            "campaign": jec_campaign,
+            "version": jec_ak4_version,
+            "jet_type": jet_type,
+            "external_file_key": "regjet_jerc",
             "levels": ["L1FastJet", "L2Relative", "L2L3Residual", "L3Absolute"],
             "levels_for_type1_met": ["L1FastJet"],
             "uncertainty_sources": jec_uncertainties,
@@ -343,13 +361,13 @@ def add_config(
             "campaign": jer_campaign,
             "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],
             "jet_type": jet_type,
-            "external_file_key": "jet_jerc",
+            "external_file_key": "regjet_jerc",
         },
         "FatJet": {
             "campaign": jer_campaign,
             "version": {2016: "JRV3", 2017: "JRV2", 2018: "JRV2", 2022: "JRV1", 2023: "JRV1", 2024: "JRV1"}[year],
             "jet_type": fatjet_type,
-            "external_file_key": "jet_jerc",
+            "external_file_key": "fat_jet_jerc",
         },
     })
 
@@ -750,6 +768,9 @@ def add_config(
             min_pt=5.0,
             max_pt=10.0,
         )
+        cfg.x.muon_sr = MuonSRConfig(
+            systs=["scale_up", "scale_down", "res_up", "res_down"],
+        )
 
         # central trigger SF, only possible for SL
         if cfg.x.lepton_tag == "sl":
@@ -837,6 +858,13 @@ def add_config(
     cfg.add_shift(name="mu_low_pt_id_sf_up", id=58, type="shape")
     cfg.add_shift(name="mu_low_pt_id_sf_down", id=59, type="shape")
     add_shift_aliases(cfg, "mu_low_pt_id_sf", {"muon_low_pt_id_weight": "muon_low_pt_id_weight_{direction}"})
+    # muon scale and resolution
+    cfg.add_shift(name="mu_scale_up", id=62, type="shape", tags={"muoSS"})
+    cfg.add_shift(name="mu_scale_down", id=63, type="shape", tags={"muoSS"})
+    add_shift_aliases(cfg, "mu_scale", {"Muon.pt": "Muon.pt_scale_{direction}"})
+    cfg.add_shift(name="mu_res_up", id=64, type="shape", tags={"muoSS"})
+    cfg.add_shift(name="mu_res_down", id=65, type="shape", tags={"muoSS"})
+    add_shift_aliases(cfg, "mu_res", {"Muon.pt": "Muon.pt_res_{direction}"})
 
     # trigger SFs
     cfg.add_shift(name="trigger_sf_up", id=60, type="shape")
@@ -1059,7 +1087,8 @@ def add_config(
                 pog_directories={"dc": "Collisions24"},
                 # TODO: tau and lum not yet available
                 # snapshot=CATSnapshot(btv="2025-12-03", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", lum="2025-12-02", muo="2025-11-27"),  # noqa: E501
-                snapshot=CATSnapshot(btv="2026-01-30", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", muo="2025-11-27", lum="2025-12-02"),  # noqa: E501
+                # snapshot=CATSnapshot(btv="2026-01-30", dc="2025-07-25", egm="2025-12-15", jme="2025-12-02", muo="2025-11-27", lum="2025-12-02"),  # noqa: E501
+                snapshot=CATSnapshot(btv="2026-03-10", dc="2025-07-25", egm="2025-12-15", jme="2026-06-05", muo="2026-06-18", lum="2026-04-15"),  # noqa: E501
             ),
         }[(year, campaign.x.postfix, vnano)]
     else:
@@ -1096,10 +1125,18 @@ def add_config(
         "AK8PUPPI_Tight": 2,
         "AK8PUPPI_TightLeptonVeto": 3,
     })
+    # jec file for regressed jets
+    add_external("regjet_jerc", ("/data/dust/user/letzerba/public/hh2bbww/jsons/regJet_jerc.json.gz", "v1"))
 
     # muon scale factors
     add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v2"))
     add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
+    add_external("muon_sr", (cat_info.get_file("muo", "muon_scalesmearing.json.gz"), "v1"))
+    add_external("muon_sr_tools", Ext(
+        "/data/dust/user/letzerba/public/hh2bbww/jsons/muonscarekit-1c7426b5.tar.gz",
+        subpaths="muonscarekit-master/scripts/MuonScaRe.py",
+        version="v1",
+    ))
     # met phi correction
     if year != 2024:  # TODO: 2024: not yet available
         add_external("met_phi_corr", (cat_info.get_file("jme", f"met_xyCorrections_{year}_{year}{campaign.x.postfix}.json.gz"), "v1"))  # noqa: E501

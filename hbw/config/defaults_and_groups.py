@@ -11,7 +11,7 @@ def default_calibrator(container):
     if isinstance(default_calibrators, str):
         return default_calibrators.split(",")
     else:
-        return ["ak4", "ak8", "ele"]
+        return ["ak4", "ak8", "ele", "muo"]
 
 
 def default_selector(container):

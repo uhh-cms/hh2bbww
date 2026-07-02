@@ -935,3 +935,17 @@ def add_hh_bjet_variables(config: od.Config) -> None:
         aux={"overflow": True},
         x_title="Jet discrete b-scores",
     )
+    config.add_variable(
+        name="mbb_zoomed",
+        expression="mli_mbb",
+        binning=(100, 0, 200),
+        aux={"overflow": False},
+        x_title=r"$m_{bb}$ (zoomed in)",
+    )
+    config.add_variable(
+        name="mll_zoomed",
+        expression="mli_mll",
+        binning=(50, 40, 140),
+        aux={"overflow": False},
+        x_title=r"$m_{\ell\ell}$ (zoomed in)"
+    )
