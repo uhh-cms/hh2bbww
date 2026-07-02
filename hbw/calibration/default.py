@@ -39,7 +39,7 @@ deterministic_muon_seeds = deterministic_object_seeds.derive(
     cls_dict={
         "object_field": "Muon",
         "prime_offset": 90,
-    }
+    },
 )
 
 # custom fatjet seeds

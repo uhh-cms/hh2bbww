@@ -947,5 +947,5 @@ def add_hh_bjet_variables(config: od.Config) -> None:
         expression="mli_mll",
         binning=(50, 40, 140),
         aux={"overflow": False},
-        x_title=r"$m_{\ell\ell}$ (zoomed in)"
+        x_title=r"$m_{\ell\ell}$ (zoomed in)",
     )
