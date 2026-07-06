@@ -208,7 +208,7 @@ def get_rebin_values(
                     f"{msg}",
                 )
 
-    if skip_flat_rebin and not data_variance_check or not bkg_variance_check:
+    if skip_flat_rebin and (not data_variance_check or not bkg_variance_check):
         # last bin might not fulfill criteria; in that case, just merge the two last bins into one
         logger.warning(
             f"Final bin edge {rebin_values[-1]} before minimum {x_min} is skipped "
