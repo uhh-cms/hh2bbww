@@ -624,9 +624,10 @@ def configure_hbw_datasets(
             "h_vbf_hbb_powheg",
             "wph_htt_powheg",
             "wmh_htt_powheg",
+            # after new merge! 
+            "zh_zqq_hbb_powheg",
+            "zh_gg_zqq_hbb_powheg",
         ):
-            dataset.add_tag("gatja_not_possible")
-        if dataset.name.startswith("data"):
             dataset.add_tag("gatja_not_possible")
         if (
             dataset.name.endswith("_pythia") or

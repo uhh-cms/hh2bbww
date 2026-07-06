@@ -128,17 +128,17 @@ def add_config(
         # import os
         import glob
 
-        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
+    #     BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
 
-        def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
-            files = sorted(
-                glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
-            )
+    #     def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
+    #         files = sorted(
+    #             glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
+    #         )
 
-            # strip the base → relative LFNs
-            return [os.path.basename(f) for f in files]
+    #         # strip the base → relative LFNs
+    #         return [os.path.basename(f) for f in files]
 
-        cfg.x.get_dataset_lfns = get_local_dataset_lfns
+    #     cfg.x.get_dataset_lfns = get_local_dataset_lfns
 
     cfg.x.if_era = if_era
 
@@ -1256,9 +1256,11 @@ def add_config(
     #     ("ResolDown", "recoilres_down")
 
     # # Louvain Transformer Model
-    # add_external("transformer_even", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_even_model/model.onnx", "v1.2.3"))  # noqa: E501
     # add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
-
+    
+    # GATJA Model
+    add_external("gatja_model", ("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5"))  # noqa: E501
+   
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
@@ -1363,7 +1365,13 @@ def add_config(
         # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
         "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
+<<<<<<< HEAD
         "{FatJet,HbbJet}.globalParT3*",
+=======
+        "FatJet.globalParT3_Xbb",
+        "FatJet.globalParT3_massCorrX2p",
+        "FatJet.globalParT3_massCorrGeneric",
+>>>>>>> ab52522 (Refactoring of code regarding GATJA evaluation)
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",
