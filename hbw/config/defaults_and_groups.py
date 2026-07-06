@@ -30,8 +30,8 @@ def ml_inputs_producer(container):
         if container.has_tag("is_hh"):
             ml_inputs = "dl_ml_inputs"
         elif container.has_tag("is_hhh"):
-            ml_inputs = "hhh_dl_ml_inputs"
-            # ml_inputs = "gatja_scores"
+            # ml_inputs = "hhh_dl_ml_inputs"
+            ml_inputs = "gatja_scores"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs

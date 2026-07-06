@@ -18,7 +18,7 @@ from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_ml_variables, a
 from hbw.production.ml_inputs import common_ml_inputs
 from columnflow.production.cms.btag import btag_wp_weights
 from hbw.production.weights import event_weights
-from hbw.util import IF_GATJA
+from hbw.util import IF_GATJA, IF_NOT_GATJA
 
 from hbw.tasks.ml import ProduceColumnsTF
 
@@ -290,7 +290,11 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
     events = self[prepare_hhh_bjets](events, **kwargs)
-    events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_data:
+        events = set_ak_column_f32(events, "weights", ak.ones_like(events.mli_n_jet)) 
+        events = set_ak_column_f32(events, "btag_weight", ak.ones_like(events.mli_n_jet)) 
     #events = self[b_gen_matching](events, **kwargs)
 
     #from IPython import embed
@@ -300,7 +304,11 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[prepare_objects](events, **kwargs)
     #__import__("IPython").embed()
     jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5) #Prüfen, ob die Selection auch bei GATJA angewendet wird
-    events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
+    if self.dataset_inst.is_data:
+        events = set_ak_column_f32(events, "btag_weight", ak.ones_like(events.mli_n_jet)) 
+    
     padded_jets = ak.pad_none(events.Jet, 8)
     padded_lepton = ak.pad_none(events.Lepton, 2)
     #padded_bjets = ak.pad_none(events.BtaggedJet, 8)
@@ -393,10 +401,11 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "metPhi", events.mli_met_phi)
 
     for i in range(8):
-        events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", padded_bjets.b_score[:,i])
+        events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", padded_bjets.btagUParTAK4B[:,i])
         
-    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)   
-    events = set_ak_column_f32(events, "weights", events. stitched_normalization_weight) 
+    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)
+    if self.dataset_inst.is_mc:
+        events = set_ak_column_f32(events, "weights", events.stitched_normalization_weight) 
 
     
     min_3_bjets = ak.num(events.BtaggedJet, axis=1) >= 3
@@ -469,13 +478,14 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     #from IPython import embed
     #embed()
     for i in range(8):
-        btag_score = ak.fill_none(padded_bjets.b_score[:, i], -6.0)
+        btag_score = ak.fill_none(padded_bjets.btagUParTAK4B[:, i], -6.0)
         btag_score_final = ak.where(min_3_bjets, btag_score, -999.0)
         events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", btag_score_final)
         #events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", bjets_btag[:,i])
         
     events = set_ak_column_f32(events, f"btag_weight", events.btag_weight)   
-    events = set_ak_column_f32(events, f"weights", events.stitched_normalization_weight)
+    if self.dataset_inst.is_mc:
+        events = set_ak_column_f32(events, "weights", events.stitched_normalization_weight) 
 
     #from IPython import embed
     #embed()
@@ -513,21 +523,51 @@ def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # add_variable_matching_GATJA2(self.config_inst)
 
 
+from hbw.util import timeit_multiple
+
+
+@producer(
+    produces={
+        f"gatja_output_{i}" for i in range(23)
+        # Here die scores die produced werden
+    },
+    # produced columns set in the init function
+)
+def gatja_padding(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    __import__("IPython").embed()
+    ak.full_like(events.bjetNumber, -10)
+    # if_data: 
+    #     make weight column = 1 
+    
+    # padding
+
+    return events
+
+
+
 @producer(
     uses={
         IF_GATJA(gatja_inputs), 
+        IF_NOT_GATJA(gatja_padding), 
         hhh_dl_ml_inputs,
+        "FatJet.globalParT3_Xbb",
     },
     produces={
         IF_GATJA(gatja_inputs), 
+        IF_NOT_GATJA(gatja_padding), 
         hhh_dl_ml_inputs,
         IF_GATJA(*{f"gatja_output_{i}" for i in range(23)}),
         # Here die scores die produced werden
     },
     # produced columns set in the init function
+    sandbox=dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh"),
     version=law.config.get_expanded("analysis", "gatja_scores_version", 0),
 )
+@timeit_multiple
 def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+    # __import__("IPython").embed()
 
     def create_graphs(df, index, drop_empty=True):
         import tensorflow
@@ -722,7 +762,8 @@ def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
         # logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
         gatja_model = make_model_gatja((27,),5,4,4)
-        gatja_model.load_weights("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5")
+        # TODO load model here
+        gatja_model.load_weights(self.gatja_model_weights.path)
 
         gatja_input_list = [
             'bjetPT1',
@@ -862,10 +903,63 @@ def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             full_arr[mask] = mapping.loc[event_idx[mask]].values
 
             events = set_ak_column_f32(events, col, full_arr)
+    else: 
+        output_cols = [f"gatja_output_{i}" for i in range(23)]
+        for col in output_cols:
+            events = set_ak_column_f32(events, col, ak.full_like(events.mli_n_jet, -10)) 
+        #here apply gatja_padding producer so there are the columns present always! 
 
         # events = set_ak_column_f32(events, f"gatja_score1", events.btag_weight) 
     return events
 
+@gatja_scores.requires
+def gatja_scores_requires(
+    self: Producer,
+    task: law.Task,
+    reqs: dict,
+    **kwargs,
+) -> None:
+    if "external_files" in reqs:
+        return
+
+    from columnflow.tasks.external import BundleExternalFiles
+    reqs["external_files"] = BundleExternalFiles.req(task)
+
+
+@gatja_scores.setup
+def gatja_scores_setup(self: Producer, reqs, **kwargs) -> None:
+    """
+    Initialize the transformer model.
+    """
+
+    self.gatja_model_weights = reqs["external_files"].files.gatja_model
+
+
 @gatja_scores.init
 def gatja_scores_init(self: Producer) -> None:
     add_gatja_scores_variables(self.config_inst)
+
+
+# @producer(
+#     uses={
+#         IF_NOT_GATJA(gatja_inputs), 
+#         hhh_dl_ml_inputs,
+#     },
+#     produces={
+#         IF_NOT_GATJA(gatja_inputs), 
+#         hhh_dl_ml_inputs,
+#         IF_GATJA(*{f"gatja_output_{i}" for i in range(23)}),
+#         # Here die scores die produced werden
+#     },
+#     # produced columns set in the init function
+# )
+# @timeit_multiple
+# def gatja_padding(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+
+#     __import__("IPython").embed()
+#     # if_data: 
+#     #     make weight column = 1 
+    
+#     # padding
+
+#     return events

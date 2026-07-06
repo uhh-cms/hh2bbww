@@ -836,6 +836,15 @@ def add_variables(config: od.Config) -> None:
             aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
             discrete_x=True,
         )
+    config.add_variable(
+        name="FatJet_globalParT3_Xbb",
+        expression="FatJet.globalParT3_Xbb",
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0.0, 1.0),
+        x_title="Number of FatJets (FatJet_globalParT3_Xbb)",
+        # aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
+        discrete_x=True,
+    )
     # hbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_hbb_vs_qcd.medium
     # config.add_variable(
     #     name="n_fatjet_hbb_medium",
