@@ -8,7 +8,7 @@ import law
 
 from columnflow.reduction import Reducer, reducer
 from columnflow.reduction.default import cf_default
-from columnflow.util import maybe_import, dev_sandbox
+from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT
 
 from hbw.util import IF_TOP, IF_VJETS, IF_DY

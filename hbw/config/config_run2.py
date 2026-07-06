@@ -1320,6 +1320,7 @@ def add_config(
         # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
         "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
+        "{FatJet,HbbJet}.globalParT3*",
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",

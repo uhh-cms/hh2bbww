@@ -246,7 +246,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "zzz_amcatnlo",
         ],
         "hhh": [
-            *config.x.if_era(run=3, year=2023, values=[
+            *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
                 "hhh_4b2w_c30_d40_amcatnlo",
                 "hhh_4b2w_c30_d499_amcatnlo",
                 "hhh_4b2w_c30_d4m1_amcatnlo",
@@ -259,7 +259,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hhh_4b2w_c3m1_d4m1_amcatnlo",
                 "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, cfg_tag="is_hhh", year=2024, values=[
                 "hhh_4b2w_2l2nu_c30_d4_custom",
                 "hhh_4b2w_2l2nu_c30_d499_custom",
                 "hhh_4b2w_2l2nu_c319_d419_custom",
