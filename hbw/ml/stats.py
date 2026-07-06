@@ -48,9 +48,12 @@ def del_sub_proc_stats(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low), increment_stats, "process_id", "fold_indices"},
     produces={IF_MC("event_weight")},
     extra_categorizer=None,
+    extra_categorizer_combination="or",
     skip_sr_categorizer=False,
     # HistProducer that produces the event weight, which is needed for the ML stats.
     hist_producer="default",
+    require_producer=None,
+    require_mlmodel=None,
 )
 def prepml(
     self: Producer,
@@ -76,11 +79,16 @@ def prepml(
             events = events[mask]
 
         if self.extra_categorizer:
+            mask = (
+                np.zeros(len(events), dtype=bool) if self.extra_categorizer_combination == "or"
+                else np.ones(len(events), dtype=bool)
+            )
             for cat_cls in self.categorizers_cls:
                 # apply additional categorizer if specified
-                events, mask = self[cat_cls](events, **kwargs)
-                logger.info(f"Select {ak.sum(mask)} from {len(events)} events using {cat_cls.cls_name}")
-                events = events[mask]
+                events, _mask = self[cat_cls](events, **kwargs)
+                mask = mask & _mask if self.extra_categorizer_combination == "and" else mask | _mask
+            logger.info(f"Select {ak.sum(mask)} from {len(events)} events using Categorizer {self.extra_categorizer}")
+            events = events[mask]
 
     weight_map = {
         "num_events": Ellipsis,  # all events
@@ -135,6 +143,31 @@ def prepml(
     return events
 
 
+@prepml.requires
+def prepml_reqs(self: Producer, task: law.Task, reqs: dict):
+    if task.pilot:
+        return
+    if not self.require_producer and not self.require_mlmodel:
+        return
+    from columnflow.tasks.production import ProduceColumns
+    from columnflow.tasks.ml import MLEvaluation
+    if self.require_producer:
+        reqs[self.require_producer] = ProduceColumns.req_other_producer(task, producer=self.require_producer)
+    if self.require_mlmodel:
+        reqs[self.require_mlmodel] = MLEvaluation.req(
+            task,
+            ml_model=self.require_mlmodel,
+            ml_model_inst=None,
+        )
+
+
+@prepml.setup
+def prepml_setup(
+    self: Producer, task: law.Task, reqs: dict, inputs: dict, reader_targets: law.util.InsertableDict,
+) -> None:
+    reader_targets["mlcolumns"] = inputs[self.require_mlmodel]["mlcolumns"]
+
+
 @prepml.init
 def prepml_init(self):
     if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
@@ -167,4 +200,9 @@ prepml_dycr = prepml.derive("prepml_dycr", cls_dict={
     "extra_categorizer": "catid_mll_z",
     "skip_sr_categorizer": True,
     "hist_producer": "with_hbbsf",  # no DY correction here
+})
+
+prepml_hh = prepml.derive("prepml_hh", cls_dict={
+    "extra_categorizer": ["catid_ml_sig_ggf", "catid_ml_sig_vbf"],
+    "require_mlmodel": "multiclassv3",
 })

@@ -991,6 +991,22 @@ hbbsf_v2_flat = dl.derive("hbbsf_v2_flat", cls_dict={
     "skip_data": False,
 })
 
+nn_staged = hbbsf.derive("nn_staged", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggf_hh", "vbf_hh"],
+})
+nn_staged_test = hbbsf.derive("nn_staged_test", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggf_hh", "vbf_hh"],
+    "systematics": systematics.rate,
+})
+nn_staged2 = hbbsf.derive("nn_staged2", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggf_hh_reweight", "vbf_hh_reweight"],
+})
+nn_staged2_test = hbbsf.derive("nn_staged2_test", cls_dict={
+    "ml_model_name": ["multiclassv3", "ggf_hh_reweight", "vbf_hh_reweight"],
+    "systematics": systematics.rate,
+})
+
+
 
 vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={
     "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],

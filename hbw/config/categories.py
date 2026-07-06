@@ -443,12 +443,22 @@ def add_categories_ml(
         label="\n".join([main.label, "boosted", "ml_bkg"]),
         aux={"root_cats": {"main": main_category, "jet": "boosted", "dnn": "ml_bkg"}},
     )
+    # combine the different signal regions into a single category
+    sr__ml_sig_hh = config.add_category(  # noqa: F841
+        name=f"{main_category}__ml_sig_hh",
+        selection="catid_never",  # dummy Categorizer, never selected
+        id=201001,
+        label="\n".join([main.label, "ml_sig_hh"]),
+        aux={"root_cats": {"main": main_category, "dnn": "ml_sig_hh"}},
+    )
     for proc, node_config in ml_model_inst.train_nodes.items():
         # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
         if "sig" in proc or "hh" in proc:
-            continue
-        bkg_cat = config.get_category(f"{main_category}__boosted__ml_{proc}")
-        sr__boosted__ml_bkg.add_category(bkg_cat)
+            sig_cat = config.get_category(f"{main_category}__ml_{proc}")
+            sr__ml_sig_hh.add_category(sig_cat)
+        else:
+            bkg_cat = config.get_category(f"{main_category}__boosted__ml_{proc}")
+            sr__boosted__ml_bkg.add_category(bkg_cat)
 
 
 from functools import partial

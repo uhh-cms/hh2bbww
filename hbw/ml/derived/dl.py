@@ -635,3 +635,51 @@ vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
     "input_features": input_features["v2"],
     "preparation_producer_name": "prepml_met40",
 })
+
+# let's try training binary on NNmult HH categories only
+ggf_hh = ggfv3.derive("ggf_hh", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_hh",
+})
+ggf_hh_reweight = ggfv3.derive("ggf_hh_reweight", cls_dict={
+    "input_features": input_features["v2"],
+    "sub_process_class_factors": {
+        "hh_ggf_hbb_hvv2l2nu_kl0_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl1_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl2p45_kt1": 1,
+        "hh_ggf_hbb_hvv2l2nu_kl5_kt1": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 0.25,  # to compensate for very low statistics
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "preparation_producer_name": "prepml_hh",
+})
+vbf_hh = vbfv3_tag.derive("vbf_hh", cls_dict={
+    "input_features": input_features["v2"],
+    "preparation_producer_name": "prepml_hh",
+})
+vbf_hh_reweight = vbfv3_tag.derive("vbf_hh_reweight", cls_dict={
+    "input_features": input_features["v2"],
+    "sub_process_class_factors": {
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": 1,
+        "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": 1,
+        "tt": 1,
+        "st": 1,
+        "dy_m10to50": 0.25,  # to compensate for very low statistics
+        "dy_m50toinf": 1,
+        "vv": 2,
+        "ttv": 2,
+        "h": 2,
+        "other": 8,
+    },
+    "preparation_producer_name": "prepml_hh",
+})
