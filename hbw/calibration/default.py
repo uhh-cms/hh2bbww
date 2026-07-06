@@ -163,9 +163,11 @@ def muo(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     """
     # apply the muon calibration
     events = self[self.muon_calib_cls](events, **kwargs)
-    # NOTE: some nans in pt_scale_up/down raise no finite errors, set to nones
-    events = set_ak_column(events, "Muon.pt_scale_up", ak.nan_to_none(events.Muon.pt_scale_up))
-    events = set_ak_column(events, "Muon.pt_scale_down", ak.nan_to_none(events.Muon.pt_scale_down))
+    if self.dataset_inst.is_mc:
+        # NOTE: some nans in pt_scale_up/down raise no finite errors, set to nones
+        # TODO: dont set to none put to nominal pt
+        events = set_ak_column(events, "Muon.pt_scale_up", ak.nan_to_none(events.Muon.pt_scale_up))
+        events = set_ak_column(events, "Muon.pt_scale_down", ak.nan_to_none(events.Muon.pt_scale_down))
     return events
 
 
