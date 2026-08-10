@@ -135,7 +135,7 @@ atlas_bbtt_run3 = {
     "key": "bbtt",
     "url": "https://arxiv.org/abs/2607.26879",
     "ref": "arXiv:2607.26879",
-    "label": r"$bb\tau\tau$ Run 3",
+    "label": r"$bb\tau\tau$ Run 2+3",
     "collaboration": "ATLAS",
     "energy_TeV": 13.6,
     "limits": {
@@ -153,7 +153,7 @@ atlas_bbtt_run3 = {
             "observed_excluded": (1.6, 5.5),  # only -3.4,-1.6 and 5.5,10.1 are allowed
             "expected": (-1.7, 8.5),
         },
-        "kappaVV": {
+        "kappa2V": {
             # "best-fit": 1.7,  # approximately from plot
             "observed": (-0.2, 2.4),
             "expected": (0.0, 2.1),
@@ -173,6 +173,15 @@ atlas_bbtt_run3 = {
             "expected": 4.3,
         },
     },
+}
+
+atlas_dummy = {
+    "label": "ATLAS",
+    "limits": {},
+}
+cms_dummy = {
+    "label": "CMS",
+    "limits": {},
 }
 
 bbtt_run2 = {
@@ -725,7 +734,8 @@ def _format_hh_entry_label(entry):
     else:
         second_line = f"{collaboration}"
     if ref:
-        return f"{label}\n{second_line}\n{ref}"
+        return f"{label} [{second_line}|\n{ref}"
+        # return f"{label}\n{second_line}\n{ref}"
     elif ref_idx:
         second_line = f"{second_line} [{ref_idx}]"
     return f"{label}\n{second_line}"
@@ -945,7 +955,8 @@ def make_hh_summary_plot(
             entry["ref_idx"] = None
     ref_to_idx = None
 
-    fig, axes = plt.subplots(ncols=3, figsize=(18, 0.95 * len(entries) + 2), sharey=True)
+    # fig, axes = plt.subplots(ncols=3, figsize=(18, 0.95 * len(entries) + 2), sharey=True)
+    fig, axes = plt.subplots(ncols=3, figsize=(18, 0.75 * len(entries) + 2), sharey=True)
 
     _plot_scalar_limits(
         axes[0],
@@ -1017,6 +1028,15 @@ def make_improvements_table(
     table = []
     for result_dict, key, label in results_dicts:
         limits_dict = result_dict.get(key, {})
+        if key == "DUMMY":
+            table.append({
+                "Analysis": label,
+                "Run 2 result": "",
+                "New result": "",
+                "Luminosity [fb$^{-1}$]": "",
+                "Improvement": "",
+            })
+            continue
         if not label:
             label = result_dict.get("label", "unknown")
         key = limits_dict.get("key", None) or result_dict.get("key", None)
@@ -1064,25 +1084,32 @@ def tabulate_improvements_table(table):
 
 if __name__ == "__main__":
     _table = make_improvements_table(
-        (atlas_bbyy_run3, "limits", None),
-        (atlas_bbyy_run3, "run3", "ATLAS $bb\gamma\gamma$ Run 3"),
-        (atlas_bbyy_run3, "run2", "ATLAS $bb\gamma\gamma$ Run 2 re-analysis"),
-        (bbbb_run3, "limits", None),
-        (bbbb_run3, "run3", "bbbb Run 3"),
-        (bbbb_run3, "resolved", "bbbb resolved"),
-        (bbbb_run3, "boosted", "bbbb boosted"),
-        (bbbb_run3, "run2_resolved", "bbbb resolved re-analysis"),
-        (bbbb_run3, "run2", "bbbb resolved re-analysis (+ boosted)"),
-        (bbtt_run2, "limits", None),  # to be replaced with Run 3
+        (atlas_dummy, "DUMMY", r"ATLAS"),
+        (atlas_bbyy_run3, "limits", r"\bbgg Run 2+3"),
+        (atlas_bbyy_run3, "run3", r"\bbgg Run 3"),
+        (atlas_bbyy_run3, "run2", r"\bbgg Run 2 re-analysis"),
+        (atlas_bbtt_run3, "limits", r"\bbtautau Run 2+3"),
+        (atlas_bbtt_run3, "run3", r"\bbtautau Run 3"),
+        (atlas_bbtt_run3, "run2", r"\bbtautau Run 2 re-analysis"),
+        (cms_dummy, "DUMMY", r"CMS"),
+        (bbbb_run3, "limits", r"\bbbb Run 2+3"),
+        (bbbb_run3, "run3", r"\bbbb Run 3"),
+        (bbbb_run3, "resolved", r"\bbbb resolved Run 3"),
+        (bbbb_run3, "boosted", r"\bbbb boosted Run 3"),
+        (bbbb_run3, "run2_resolved", r"\bbbb resolved re-analysis"),
+        # (bbbb_run3, "run2", r"\bbbb resolved re-analysis (+ boosted)"),
+        # (bbtt_run2, "limits", None),  # to be replaced with Run 3
+        (bbtt_run3, "limits", r"\bbtautau Run 2+3"),
+        (bbtt_run3, "run3", r"\bbtautau Run 3"),
         # (bbyy_run3, "limits", None),
-        (bbyy_run3, "2d strategy", r"$bb\gamma\gamma$"),
-        (bbww_dl_run3, "limits", None),
+        (bbyy_run3, "2d strategy", r"$\bbgg$ Run 3"),
+        (bbww_dl_run3, "limits", r"\bbww Run 3"),
     )
     tabulate_improvements_table(_table)
 
     make_hh_summary_plot(
         bbbb_run3,
-        bbtt_run2,  # to be replaced with Run 3
+        bbtt_run3,
         bbyy_run3,
         bbww_dl_run3,
         bbww_run2,
@@ -1094,7 +1121,7 @@ if __name__ == "__main__":
         atlas_bbyy_run3,
         atlas_bbtt_run3,
         bbbb_run3,
-        bbtt_run2,  # to be replaced with Run 3
+        bbtt_run3,
         bbyy_run3,
         bbww_dl_run3,
         output_path="hh_summary_plot_run3.pdf",
