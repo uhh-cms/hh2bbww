@@ -262,6 +262,14 @@ def create_hbw_analysis(
         return store_parts
 
     def reorganize_parts(task, store_parts):
+        # NOTE: Custom move_to_end function sicne law updated
+        def move_to_end(d, key):
+            value = d.pop(key)
+            if d:
+                last_key = next(reversed(d))
+                d.insert_after(last_key, key, value)
+            else:
+                d[key] = value
         # check for unknown parts
         unknown_parts = set(store_parts.keys()) - set(known_parts)
         if unknown_parts:
@@ -389,8 +397,6 @@ def create_hbw_analysis(
 
     def hbw_parts(task, store_parts):
         name = task.task_family
-        if "hbw.ProduceColumnsTF" in name: 
-            store_parts = gatja_production(task, store_parts)
         if name in software_tasks:
             return software_tasks_parts(task, store_parts)
         if name in shareable_analysis_tasks:
@@ -405,8 +411,6 @@ def create_hbw_analysis(
             store_parts = dataset_version(task, store_parts)
         if "shift" in store_parts:
             store_parts = shift_version(task, store_parts)
-        if "ProduceColumnsTF" in name:
-            store_parts
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

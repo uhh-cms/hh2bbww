@@ -46,6 +46,23 @@ def mask_fn_ar(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     return events, mask
 
 
+# Require Lepton criteria for SR and at least 3b jets
+# (eventually handled bby ML model / inference but for Plots/ yield table)
+# Creates issued with couple of datasets that do not have 3 bjets --> should be handled by dataset collection
+@categorizer(
+    uses={"Jet.pt", BTAG_COLUMN("Jet"), "{Electron,Muon}.{pt,eta,phi,mass}"},
+    n_jet=2,
+)
+def _yield(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
+    mask = (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
+    mask = mask & (n_deepjet >= 3)
+    mask = mask & (events.Lepton[:, 1].pt > 15)
+    return events, mask
+
+
 # ----------------------- Helper masks ----------------------------------------------------------
 # Cut subleadiong lepton pt at 15 GeV (to match the correciton and SF)
 @categorizer(

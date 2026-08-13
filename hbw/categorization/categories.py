@@ -206,7 +206,7 @@ def catid_hhh_sr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (events.mll >= 12) & (events.mll < 80)
     mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
-    mask = mask & (n_deepjet >= 2)
+    mask = mask & (n_deepjet >= 3)
     return events, mask
 
 
@@ -220,7 +220,7 @@ def catid_hhh_cr(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (events.mll >= 80)
     mask = mask & (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
-    mask = mask & (n_deepjet >= 2)
+    mask = mask & (n_deepjet >= 3)
     return events, mask
 
 
@@ -332,6 +332,22 @@ def catid_boosted(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     return events, mask
 
 
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,globalParT3_Xbb,globalParT3_QCD}"})
+def catid_boosted_glo(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the boosted category: presence of at least 1 AK8 jet candidate
+    fulfilling medium WP of GloParT Tagger
+    ! discriminant is globalParT3_Xbb / (globalParT3_Xbb + globalParT3_QCD)
+    wp score is set by efficiency plot to 0.85 for HHH analysis --> to be dicsussed
+    """
+    events = self[prepare_objects](events, **kwargs)
+    globalParT3_discriminant = events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)  # noqa E501
+    hbb_globalParT3_wp_score = self.config_inst.x.hbb_globalParT3_wp_score
+    fj_mask = (events.FatJet["pt"] > 300) & (globalParT3_discriminant > hbb_globalParT3_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) >= 1)
+    return events, mask
+
+
 @categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,particleNetWithMass_HbbvsQCD,msoftdrop}"})
 def catid_boosted_low(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     """
@@ -393,6 +409,20 @@ def catid_resolved(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Ar
     events = self[prepare_objects](events, **kwargs)
     hbb_btag_wp_score = self.config_inst.x.hbb_btag_wp_score
     fj_mask = (events.FatJet["pt"] > 200) & (events.FatJet.particleNetWithMass_HbbvsQCD > hbb_btag_wp_score)
+    mask = (ak.sum(fj_mask, axis=-1) == 0)
+    return events, mask
+
+
+@categorizer(uses={prepare_objects, "Jet.pt", "FatJet.{pt,globalParT3_Xbb,globalParT3_QCD}"})
+def catid_resolved_glo(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    """
+    Categorization of events in the resolved category: Veto presence of no AK8 jet candidate wiht gloParT tagger
+    for the H->bb decay
+    """
+    events = self[prepare_objects](events, **kwargs)
+    globalParT3_discriminant = events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)  # noqa E501
+    hbb_globalParT3_wp_score = self.config_inst.x.hbb_globalParT3_wp_score
+    fj_mask = (events.FatJet["pt"] > 300) & (globalParT3_discriminant > hbb_globalParT3_wp_score)
     mask = (ak.sum(fj_mask, axis=-1) == 0)
     return events, mask
 
@@ -554,6 +584,7 @@ def catid_ml_base(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
         outp_mask = outp_mask & mask
 
     return events, outp_mask
+
 
 #
 # triggers

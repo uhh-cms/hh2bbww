@@ -38,8 +38,17 @@ def normalized_weight_factory(
     def normalized_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         # check existence of requested weights to normalize and run producer if missing
         missing_weights = self.weight_names.difference(events.fields)
+        logger.debug(f"weight_names: {self.weight_names}")
+        logger.debug(f"events.fields: {sorted(events.fields)}")
+        for prod in self.weight_producers:
+            logger.debug(
+                f"{prod}: produced={self[prod].produced_columns}, "
+                f"missing_from_events={self[prod].produced_columns.difference(events.fields)}, "
+                f"used_present={self[prod].used_columns.intersection(events.fields)}",
+            )
 
         if missing_weights:
+            logger.warning(f"Missing weight columns: {missing_weights}")
             # try to produce missing weights
             for prod in self.weight_producers:
                 if (
@@ -51,9 +60,10 @@ def normalized_weight_factory(
 
         # Create normalized weight columns if possible
         if not_reproduced := missing_weights.difference(events.fields):
-            logger.info(f"Weight columns {not_reproduced} could not be reproduced")
+            logger.warning(f"Weight columns {not_reproduced} could not be reproduced")
 
         for weight_name in self.weight_names.intersection(events.fields):
+            logger.debug(f"Creating normalized weight column for {weight_name}")
             # create a weight vector starting with ones
             norm_weight_per_pid = np.ones(len(events), dtype=np.float32)
 
@@ -75,15 +85,18 @@ def normalized_weight_factory(
     def normalized_weight_post_init(self: Producer, task: law.Task) -> None:
         self.weight_producers = weight_producers
 
-        # resolve weight names
         self.weight_names = set()
-        for col in self.used_columns:
-            col = col.string_nano_column
-            if task.shift != "nominal" and (col.endswith("_up") or col.endswith("_down")):
-                # skip the up/down variations
-                continue
-            if "weight" in col and "normalized" not in col and "btag" not in col:
-                self.weight_names.add(col)
+        for prod in self.weight_producers:
+            produced = self[prod].produced_columns
+            # make sure these columns actually get read from the input file
+            self.uses |= produced
+
+            for col in produced:
+                col = col.string_nano_column
+                if task.shift != "nominal" and (col.endswith("_up") or col.endswith("_down")):
+                    continue
+                if "weight" in col and "normalized" not in col and "btag" not in col:
+                    self.weight_names.add(col)
 
         self.produces |= set(f"normalized_{weight_name}" for weight_name in self.weight_names)
 

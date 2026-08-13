@@ -841,9 +841,31 @@ def add_variables(config: od.Config) -> None:
         expression="FatJet.globalParT3_Xbb",
         null_value=EMPTY_FLOAT,
         binning=(40, 0.0, 1.0),
-        x_title="Number of FatJets (FatJet_globalParT3_Xbb)",
-        # aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
-        discrete_x=True,
+        x_title="FatJets discriminant (FatJet_globalParT3_Xbb)",
+    )
+    config.add_variable(
+        name="FatJet_globalParT3_discriminant",
+        expression=lambda events: (events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)),  # noqa: E501
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0.0, 1.0),
+        x_title="globalParT3 discriminant (Xbb vs QCD)",
+        aux={"inputs": {"FatJet.{globalParT3_Xbb,globalParT3_QCD}"}},
+    )
+    config.add_variable(
+        name="FatJet0_globalParT3_discriminant",
+        expression=lambda events: (events.FatJet[:, 0].globalParT3_Xbb / (events.FatJet[:, 0].globalParT3_Xbb + events.FatJet[:, 0].globalParT3_QCD)),  # noqa: E501
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0.0, 1.0),
+        x_title="globalParT3 discriminant (Xbb vs QCD)",
+        aux={"inputs": {"FatJet.{globalParT3_Xbb,globalParT3_QCD}"}},
+    )
+    config.add_variable(
+        name="FatJet_globalParT3_discriminant1",
+        expression=lambda events: (events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)),  # noqa: E501
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0.65, 1.0),
+        x_title="globalParT3 discriminant (Xbb vs QCD)",
+        aux={"inputs": {"FatJet.{globalParT3_Xbb,globalParT3_QCD}"}},
     )
     # hbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_hbb_vs_qcd.medium
     # config.add_variable(

@@ -3,12 +3,13 @@
 from columnflow.util import maybe_import
 from hbw.weight.default import base
 from hbw.categorization.masks_trih import (
-    mask_fn_ar,  # mask_fn_sr,
+    mask_fn_ar, _yield,
 )
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
+# Btag uncertainties for 2022/23
 btag_uncs = [
     "hf", "lf",
     "cferr1", "cferr2",
@@ -16,6 +17,8 @@ btag_uncs = [
     "hfstats2", "lfstats2",
 ]
 
+# Verbose set of btag uncertainties for 2024
+# 12. August: Strong tensions experienced when using bc/light unc only
 btag_uncs_2024 = [
     "fsrdef_bc", "isrdef_bc",
     "hdamp_bc", "jer_bc", "jes_bc",
@@ -32,9 +35,7 @@ default_correction_weights = {
     "muon_id_weight": ["mu_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
-    # "btag_weight": [],
-    # "electron_reco_weight": ["e_reco_sf"],
-    # "normalized_ht_njet_nhf_btag_weight": [f"btag_{unc}" for unc in btag_uncs],
+    "electron_reco_weight": ["e_reco_sf"],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
     "normalized_mur_weight": ["mur"],
     "normalized_muf_weight": ["muf"],
@@ -44,12 +45,6 @@ default_correction_weights = {
     "top_pt_theory_weight": ["top_pt"],
 }
 
-default_weight_columns = {
-    "stitched_normalization_weight": [],
-    # "btag_weight": [],
-    "trigger_weight": ["trigger_sf"],
-    **default_correction_weights,
-}
 no_sel_weight_columns = {
     "stitched_normalization_weight": [],
     "normalized_murmuf_envelope_weight": ["murf_envelope"],
@@ -61,9 +56,6 @@ no_sel_weight_columns = {
     "top_pt_theory_weight": ["top_pt"],
     "electron_weight": ["e_sf"],
     "normalized_pu_weight": ["minbias_xs"],
-    # "dy_correction_weight": [],
-    # "trigger_weight": ["trigger_sf"],
-    # **default_correction_weights,
 }
 unstitched_weight_columns = {
     "dataset_normalization_weight": [],
@@ -80,21 +72,20 @@ hhh_default = base.derive("hhh_default", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
-        "btag_weight": [],
+        "btag_weight": [f"btag_{unc}" for unc in btag_uncs_2024],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
     "categorizer_cls": mask_fn_ar,
 })
 
-hhh_shape = base.derive("hhh_shape", cls_dict={
+_yield = base.derive("_yield", cls_dict={
     "weight_columns": {
         **default_correction_weights,
         "trigger_weight": ["trigger_sf"],
-        "btag_weight": [f"btag_{unc}" for unc in btag_uncs_2024],
-        # "btag_weight": [ "btag_bc", "btag_light"],
+        "btag_weight": [],
         "stitched_normalization_weight": [],
     },
     "nondy_hist_producer": None,
-    "categorizer_cls": mask_fn_ar,
+    "categorizer_cls": _yield,
 })
