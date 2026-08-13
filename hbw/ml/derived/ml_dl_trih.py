@@ -39,18 +39,8 @@ hhh_train_procs = [
 ]
 
 processes = DotDict({
-    "backgrounds_binary": [
-        "tt", "st", "dy_m10to50", "dy_m50toinf",
-        "vv", "ttv", "h", "other",
-    ],
     "backgrounds_v0": [
-        "st", "dy", "h", "tt_custom", "ttbb_custom"  # "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
-    ],
-    "backgrounds_boosted": [
-        "tt_custom", "ttbb_custom", # "st", "dy",  # "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
-    ],
-    "backgrounds_ttbb_merged": [
-        "st", "dy", "h", "tt_custom", "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
+        "st", "dy", "h", "tt_custom", "ttbb_custom", # "tthh"  # "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",  # noqa E501
     ],
     "hhh": [
         "hhh_4b2w_2l2nu_c30_d40",
@@ -144,103 +134,45 @@ configs = DotDict({
 
 # ----------------------- BASELINE BINARY MODELS FOR HHH SIGNAL ------------------------------
 
-hhh_V1 = DenseClassifierDL.derive("hhh_V1", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
-    "processes": [
-        *processes.hhh,
-        *processes.backgrounds_v0,
-    ],
-    "train_nodes": {
-        "sig_hhh_binary": {
-            "ml_id": 0,
-            "label": r"HHH",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.hhh,
-        },
-        "bkg_binary_for_hhh": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_v0,
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "sig_hhh_binary": 1,
-        "bkg_binary_for_hhh": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 1,
-        "ttbb_custom": 1,
-        # "tt_bb_custom": 1,
-        # "ttb_custom": 1,
-        # "tt2b_custom": 1,
-        # "tt_custom": 1,
-        "st": 1,
-        "dy": 1,
-        "ttv": 1,
-        "h": 1,
-    },
-    "epochs": 100,
-})
-
-boosted = DenseClassifierDL.derive("boosted", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
-    "processes": [
-        *processes.hhh,
-        *processes.backgrounds_boosted,
-    ],
-    "train_nodes": {
-        "sig_hhh_binary": {
-            "ml_id": 0,
-            "label": r"HHH",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.hhh,
-        },
-        "bkg_binary_for_hhh": {
-            "ml_id": 1,
-            "label": "Background",
-            "color": "#e76300",  # Spanish Orange
-            "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_boosted,
-        },
-    },
-    # relative class factors between different nodes
-    "class_factors": {
-        "sig_hhh_binary": 1,
-        "bkg_binary_for_hhh": 1,
-    },
-    # relative process weights within one class
-    "sub_process_class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 1,
-        "ttbb_custom": 1,
-        # "tt_bb_custom": 1,
-        # "ttb_custom": 1,
-        # "tt2b_custom": 1,
-        # "tt_custom": 1,
-        "st": 1,
-        "dy": 1,
-        "ttv": 1,
-        "h": 1,
-    },
-    "epochs": 100,
-})
-Bin_V1 = hhh_V1.derive("Bin_V1", cls_dict={
-    "preparation_producer_name": "prepml_geq3b",
-    "input_features": input_features["expanded_hhh_inputs"],
-})
-
-boosted_V2 = boosted.derive("boosted_V2", cls_dict={
-    "preparation_producer_name": "prepml_boosted",
-})
-
-Gatja_Bin_V3 = Bin_V1.derive("Gatja_Bin_V3", cls_dict={
-    "preparation_producer_name": "prepml_geq3b",
+Bin = DenseClassifierDL.derive("Bin", cls_dict={
     "input_features": input_features["gatja_inputs"],
+    "processes": [
+        *processes.hhh,
+        *processes.backgrounds_v0_test_hhh,
+    ],
+    "train_nodes": {
+        "sig_hhh_binary": {
+            "ml_id": 0,
+            "label": r"HHH",
+            "color": "#000000",  # black
+            "class_factor_mode": "equal",
+            "sub_processes": processes.hhh,
+        },
+        "bkg_binary_for_hhh": {
+            "ml_id": 1,
+            "label": "Background",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": processes.backgrounds_v0_test_hhh,
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "sig_hhh_binary": 1,
+        "bkg_binary_for_hhh": 1,
+    },
+    # relative process weights within one class
+    "sub_process_class_factors": {
+        "hhh_4b2w_2l2nu_c30_d40": 1,
+        "ttbb_custom": 1,
+        "tt_custom": 1,
+        "st": 1,
+        "dy": 1,
+        "ttv": 1,
+        "h": 1,
+    },
+    "epochs": 100,
+    "preparation_producer_name": "prepml_geq3b",
 })
 
 # ----------------------- BASELINE BINARY MODELS FOR Boosted HHH SIGNAL ------------------------------
@@ -289,18 +221,16 @@ boosted_V1 = DenseClassifierDL.derive("boosted_V1", cls_dict={
     "preparation_producer_name": "prepml_boosted",
 })
 
-# ----------------------- BASELINE MULTICLASS MODELS SPLIT IN BJET CAT ------------------------------
+# ----------------------- BASELINE MULTICLASS MODELS SPLIT IN BJET CAT with Gatja Scores ------------------------------
 
-multiclass_eq2b = DenseClassifierDL.derive("multiclass_eq2b", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
+Cat_3b = DenseClassifierDL.derive("Cat_3b", cls_dict={
+    "preparation_producer_name": "prepml_eq3b",
     "processes": (
         *processes.hhh,
-        "tthh_4b",
+        "tthh",
         "tth",
         "tt_custom",
         "ttbb_custom",
-        "st",
-        "dy",
     ),
     "train_nodes": {
         "hhh_signal": {
@@ -310,27 +240,26 @@ multiclass_eq2b = DenseClassifierDL.derive("multiclass_eq2b", cls_dict={
             "class_factor_mode": "equal",
             "sub_processes": processes.hhh,
         },
-        "tthh_4b": {"ml_id": 1, "label": r"ttHH"},
+        "tthh": {"ml_id": 1, "label": r"ttHH"},
         "tth": {"ml_id": 2},
-        "tt_ml": {
+        "tt_custom": {
             "ml_id": 3,
             "label": r"tt",
-            "color": "#000000",  # black
-            "class_factor_mode": "xsec",
-            "sub_processes": ["tt_custom", "ttbb_custom"],
         },
-        "st": {"ml_id": 4},
-        "dy": {"ml_id": 5},
+        "ttbb_custom": {
+            "ml_id": 4,
+            "label": r"ttbb",
+        },
     },
+    "input_features": input_features["gatja_inputs"],
 })
 
-multiclass_geq3b = DenseClassifierDL.derive("multiclass_geq3b", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
+Cat_4b = DenseClassifierDL.derive("Cat_4b", cls_dict={
+    "preparation_producer_name": "prepml_ge4b",
     "processes": (
         *processes.hhh,
-        "tthh_4b",
+        "tthh",
         "tth",
-        "tt_custom",
         "ttbb_custom",
     ),
     "train_nodes": {
@@ -341,111 +270,18 @@ multiclass_geq3b = DenseClassifierDL.derive("multiclass_geq3b", cls_dict={
             "class_factor_mode": "equal",
             "sub_processes": processes.hhh,
         },
-        "tthh_4b": {"ml_id": 1, "label": r"ttHH"},
-        "tth": {"ml_id": 2},
-        "tt_ml": {
+        "tth": {"ml_id": 1},
+        "tthh": {"ml_id": 2},
+        "ttbb_custom": {
             "ml_id": 3,
-            "label": r"tt",
-            "color": "#000000",  # black
-            "class_factor_mode": "xsec",
-            "sub_processes": ["tt_custom", "ttbb_custom"],
+            "label": r"ttbb",
         },
     },
     "class_factors": {
         "hhh_4b2w_2l2nu_c30_d40": 1,
-        "tthh_4b": 1,
-        "tt_ml": 1,
-        "tth": 1,
+        "tthh": 1,
+        "ttbb_custom": 2,
+        "tth": 2,
     },
-})
-
-
-Cat_eq2b_V1 = multiclass_eq2b.derive("Cat_eq2b_V1", cls_dict={
-    "preparation_producer_name": "prepml_eq2b",
-})
-test = multiclass_eq2b.derive("test", cls_dict={
-    "preparation_producer_name": "prepml_eq2b",
-})
-Cat_eq3b_V1 = multiclass_geq3b.derive("Cat_eq3b_V1", cls_dict={
-    "preparation_producer_name": "prepml_eq3b",
-})
-Cat_geq4b_V1 = multiclass_geq3b.derive("Cat_geq4b_V1", cls_dict={
-    "preparation_producer_name": "prepml_geq4b",
-})
-
-######################### V2: new categorsiation strategy ####################
-
-Cat_eq3b_V2 = DenseClassifierDL.derive("Cat_eq3b_V2", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
-    "processes": (
-        *processes.hhh,
-        "tthh_4b",
-        "tth",
-        "tt_custom",
-        "ttbb_custom",
-    ),
-    "train_nodes": {
-        "hhh_signal": {
-            "ml_id": 0,
-            "label": r"HHH",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.hhh,
-        },
-        "tthh_4b": {"ml_id": 1, "label": r"ttHH"},
-        "tth": {"ml_id": 2,  "label": r"ttH"},
-        "tt_custom": {"ml_id": 3,  "label": r"tt+c/lf"},
-        "ttbb_custom": {"ml_id": 4,  "label": r"tt+bb"},
-    },
-    "class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 1,
-        "tthh_4b": 1,
-        "tt_custom": 1,
-        "ttbb_custom": 1,
-        "tth": 1,
-    },
-    "preparation_producer_name": "prepml_eq3b",
-})
-
-Cat_geq4b_V2 = DenseClassifierDL.derive("Cat_geq4b_V2", cls_dict={
-    "input_features": input_features["expanded_hhh_inputs"],
-    "processes": (
-        *processes.hhh,
-        "tthh_4b",
-        "tth",
-        "ttbb_custom",
-    ),
-    "train_nodes": {
-        "hhh_signal": {
-            "ml_id": 0,
-            "label": r"HHH",
-            "color": "#000000",  # black
-            "class_factor_mode": "equal",
-            "sub_processes": processes.hhh,
-        },
-        "tthh_4b": {"ml_id": 1, "label": r"ttHH"},
-        "tth": {"ml_id": 2,  "label": r"ttH"},
-        "ttbb_custom": {"ml_id": 3,  "label": r"tt+bb"},
-    },
-    "class_factors": {
-        "hhh_4b2w_2l2nu_c30_d40": 1,
-        "tthh_4b": 1,
-        "ttbb_custom": 1,
-        "tth": 1,
-    },
-    "preparation_producer_name": "prepml_geq4b",
-})
-
-############## Gatja first try ###############################################
-Gatja_Cat_eq3b_V3 = Cat_eq3b_V1.derive("Gatja_Cat_eq3b_V3", cls_dict={
-    "preparation_producer_name": "prepml_eq3b",
-    "input_features": input_features["gatja_inputs"],
-})
-Gatja_Cat_eq3b_V2 = Cat_eq3b_V2.derive("Gatja_Cat_eq3b_V2", cls_dict={
-    "preparation_producer_name": "prepml_eq3b",
-    "input_features": input_features["gatja_inputs"],
-})
-Gatja_Cat_geq4b_V3 = Cat_geq4b_V1.derive("Gatja_Cat_geq4b_V3", cls_dict={
-    "preparation_producer_name": "prepml_geq4b",
     "input_features": input_features["gatja_inputs"],
 })

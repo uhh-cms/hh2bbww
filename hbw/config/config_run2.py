@@ -120,20 +120,23 @@ def add_config(
 
     # multiple files
     if cfg.has_tag("is_hhh"):
-        # import os
+        # This is the custom dataset_get_dataset_lfns for the HHH signal samples,
+        # which are produced in a custom way and not available in DAS
+        # Very hard coded and not maintaianble atm --> Change at some point.
         import glob
 
-    #     BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_19_d4_19/Run3Summer24"
+        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_m1p5_d4_m0p5/Run3Summer24"
 
-    #     def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
-    #         files = sorted(
-    #             glob.glob(os.path.join(BASE, "GF_HHH_c3_19_d4_19_merged*.root")),
-    #         )
+        def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
+            files = sorted(
+                glob.glob(os.path.join(BASE, "GF_HHH_c3_m1p5_d4_m0p5_merged*.root")),
+                # glob.glob(os.path.join(BASE, "GF_HHH_Run3Summer24_merged*.root")),
+            )
 
-    #         # strip the base → relative LFNs
-    #         return [os.path.basename(f) for f in files]
+            # strip the base → relative LFNs
+            return [os.path.basename(f) for f in files]
 
-    #     cfg.x.get_dataset_lfns = get_local_dataset_lfns
+        # cfg.x.get_dataset_lfns = get_local_dataset_lfns
 
     cfg.x.if_era = if_era
 
@@ -599,6 +602,9 @@ def add_config(
     # cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
     cfg.x.hbb_btag_wp_score = 0.92
     if cfg.x.hbb_btag_wp_score == 0.0:
+        raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
+    cfg.x.hbb_globalParT3_wp_score = 0.85
+    if cfg.x.hbb_globalParT3_wp_score == 0.0:
         raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
     # TODO: xbb upart batg WPO and access not sure how this is done etc.
     if not year == 2024:
@@ -1220,10 +1226,10 @@ def add_config(
 
     # # Louvain Transformer Model
     # add_external("transformer_odd", ("/afs/cern.ch/user/m/mfrahm/public/transformer/v1.2.3_odd_model/model.onnx", "v1.2.3"))  # noqa: E501
-    
+
     # GATJA Model
     add_external("gatja_model", ("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5"))  # noqa: E501
-   
+
     # documentation: https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2?rev=167
     if cfg.x.run == 2:
         cfg.x.met_filters = {
@@ -1322,13 +1328,7 @@ def add_config(
         # "FatJet.particleNet*",
         "{FatJet,HbbJet}.particleNet_{XbbVsQCD,massCorr}",
         "{FatJet,HbbJet}.particleNetWithMass_HbbvsQCD",
-<<<<<<< HEAD
         "{FatJet,HbbJet}.globalParT3*",
-=======
-        "FatJet.globalParT3_Xbb",
-        "FatJet.globalParT3_massCorrX2p",
-        "FatJet.globalParT3_massCorrGeneric",
->>>>>>> ab52522 (Refactoring of code regarding GATJA evaluation)
         # Leptons
         "{Electron,Muon}.{pt,eta,phi,mass,charge,pdgId,jetRelIso,is_tight,dxy,dz}",
         "Electron.{deltaEtaSC,r9,seedGain}", "mll",

@@ -83,28 +83,30 @@ def plot_introspection(
     model: MLModel,
     output: law.FileSystemDirectoryTarget,
     inputs,
-    output_node: int = 0,
+    output_node: tuple[int, str] | None = None,
     input_features: list | None = None,
     stats: dict | None = None,
 ):
     from hbw.ml.introspection import sensitivity_analysis, gradient_times_input, shap_ranking
 
+    if output_node is None:
+        output_node = (0, "signal")
     # get only signal events for now
     inputs = inputs.features[inputs.labels == 0]
 
-    shap_ranking_dict, shap_values = shap_ranking(model.trained_model, inputs, output_node, input_features)
+    shap_ranking_dict, shap_values = shap_ranking(model.trained_model, inputs, output_node[0], input_features)
 
     rankings = {
         "SHAP": shap_ranking_dict,
-        "Sensitivity Analysis": sensitivity_analysis(model.trained_model, inputs, output_node, input_features),
-        "Gradient * Input": gradient_times_input(model.trained_model, inputs, output_node, input_features),
+        "Sensitivity Analysis": sensitivity_analysis(model.trained_model, inputs, output_node[0], input_features),
+        "Gradient * Input": gradient_times_input(model.trained_model, inputs, output_node[0], input_features),
     }
     # TODO: dump rankings in stats json (need to convert float32 into str for json compatibility)
     # if stats:
     #     stats["rankings"] = rankings
     fig, ax = barplot_from_multidict(rankings)
 
-    output.child("rankings.pdf", type="f").dump(fig, formatter="mpl")
+    output.child(f"rankings_{output_node[1]}.pdf", type="f").dump(fig, formatter="mpl")
     return fig, ax
 
 
@@ -614,6 +616,123 @@ def plot_input_features(
         mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         try:
             output.child(f"Input_{feature_name}.pdf", type="f").dump(fig, formatter="mpl")
+        except Exception:
+            logger.warning(f"Feature {feature_name} plot does not like to be stored for some reason?")
+
+
+@timeit
+def plot_input_features_detailed(
+        model: MLModel,
+        train: DotDict,
+        validation: DotDict,
+        test: DotDict,
+        output: law.FileSystemDirectoryTarget,
+        process_insts: tuple[od.Process],
+        process_label: int,
+        shape_norm: bool = True,
+        y_log: bool = True,
+):
+    """
+    Function that creates a plot for each ML input feature, displaying all processes per plot.
+    """
+    import hist
+
+    # use CMS plotting style
+    plt.style.use(mplhep.style.CMS)
+
+    n_processes = len(process_insts)
+    input_features = model.input_features_ordered
+
+    for i, feature_name in enumerate(input_features):
+        fig, ax = plt.subplots()
+
+        variable_inst = model.config_inst.get_variable(feature_name, default=None)
+        if not variable_inst:
+            logger.warning(f"Could not get variable instance for {feature_name}, skipping")
+            continue
+
+        h = (
+            hist.Hist.new
+            .StrCat(["train", "validation", "test"], name="type")
+            .IntCat([], name="process", growth=True, label="")
+            .Var(variable_inst.bin_edges, name=feature_name, label=variable_inst.get_full_x_title())
+            .Weight()
+        )
+
+        for input_type, inputs in (("train", train), ("validation", validation), ("test", test)):
+            # for j in range(n_processes):
+            mask = (inputs.labels == process_label)
+            fill_kwargs = {
+                "type": input_type,
+                "process": process_label,
+                feature_name: inputs.features[:, i][mask],
+                "weight": inputs.weights[mask],
+            }
+            h.fill(**fill_kwargs)
+
+        label = [proc_inst.label for proc_inst in process_insts]
+        plot_kwargs = {
+            "ax": ax,
+            "color": [proc_inst.color for proc_inst in process_insts],
+        }
+
+        # dummy legend entries
+        plt.hist([], histtype="step", label="Training", color="black")
+        plt.hist([], histtype="step", label="Validation", linestyle="dotted", color="black")
+        plt.hist([], histtype="step", label="Test", linestyle="dashdot", color="black")
+
+        # get the correct normalization factors
+        if shape_norm:
+            scale_train = np.array([
+                h[{"type": "train", "process": i}].sum().value for i in range(n_processes)
+            ])[:, np.newaxis]
+            scale_val = np.array([
+                h[{"type": "validation", "process": i}].sum().value for i in range(n_processes)
+            ])[:, np.newaxis]
+            scale_test = np.array([
+                h[{"type": "test", "process": i}].sum().value for i in range(n_processes)
+            ])[:, np.newaxis]
+        else:
+            scale_train = 1
+            scale_val = h[{"type": "train"}].sum().value / h[{"type": "validation"}].sum().value
+            scale_test = h[{"type": "train"}].sum().value / h[{"type": "test"}].sum().value
+
+        # plot training scores
+        (h[{"type": "train"}] / scale_train).plot1d(**plot_kwargs, label=label)
+
+        # axis styling
+        ax_kwargs = {
+            "ylabel": r"$\Delta N/N$" if shape_norm else "Entries",
+            "xlim": (variable_inst.x_min, variable_inst.x_max),
+            "yscale": "log" if y_log else "linear",
+        }
+        # set y_lim to appropriate ranges based on the yscale
+        y_max = ax.get_ylim()[1]
+        if y_log:
+            ax_kwargs["ylim"] = (y_max * 1e-4, y_max * 2)
+        else:
+            ax_kwargs["ylim"] = (0.00001, y_max)
+
+        ax.set(**ax_kwargs)
+
+        # plot validation scores, scaled to train dataset
+        (h[{"type": "validation"}] / scale_val).plot1d(
+            **plot_kwargs,
+            linestyle="dotted",
+            label="_nolegend_",
+        )
+        (h[{"type": "test"}] / scale_test).plot1d(
+            **plot_kwargs,
+            linestyle="dashdot",
+            label="_nolegend_",
+        )
+
+        # legend
+        ax.legend(loc="best", title="")
+
+        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        try:
+            output.child(f"Input_{feature_name}_{process_insts[0].name}.pdf", type="f").dump(fig, formatter="mpl")
         except Exception:
             logger.warning(f"Feature {feature_name} plot does not like to be stored for some reason?")
 

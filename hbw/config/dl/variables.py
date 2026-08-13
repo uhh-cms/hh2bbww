@@ -965,3 +965,14 @@ def add_gatja_scores_variables(config: od.Config) -> None:
             unit="score",
             x_title=f"gatja score {i}",
         )
+        config.add_variable(
+            name=f"gatja_output_short{i}",
+            expression=f"gatja_output_{i}",
+            binning=(39, 0.025, 1),
+            aux={
+                "overflow": True,
+                "underflow": False,
+            },
+            unit="score",
+            x_title=f"gatja score {i}",
+        )

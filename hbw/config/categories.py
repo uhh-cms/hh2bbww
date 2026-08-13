@@ -289,6 +289,18 @@ def add_jet_categories(config: od.Config) -> None:
         selection="catid_boosted_loose",
         label="boosted",
     )
+    cat_boosted_glo = config.add_category(  # noqa: F841
+        name="boosted_glo",
+        id=700,
+        selection="catid_boosted_glo",
+        label="boosted",
+    )
+    cat_resolved_glo = config.add_category(  # noqa: F841
+        name="resolved_glo",
+        id=800,
+        selection="catid_resolved_glo",
+        label="boosted",
+    )
 
 
 def add_dih_bjet_categories(config: od.Config) -> None:
@@ -378,8 +390,8 @@ def add_categories_selection(config: od.Config) -> None:
             config.x.bjet_categories = ["1b", "2b"]
         elif config.x.signal_tag == "hhh":
             # add_mll_categories(config, add_trih_mll_categories)
-            config.x.bjet_categories = ["2b", "2b_1l", "1b_1tb", "3b", "4b"]
-            config.x.jet_categories = ["resolved", "boosted", "boosted_loose", "boosted_eq1", "boosted_geq2", "boosted_low"]
+            config.x.bjet_categories = ["3b", "4b"]
+            config.x.jet_categories = ["resolved_glo", "boosted_glo"]
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -475,11 +487,9 @@ def add_categories_ml(config, ml_model_inst):
     #       we can reconfigure our MLModel after having created these categories
     # TODO: config is empty and therefore fails
     ml_categories = []
-    # for i, proc in enumerate(ml_model_inst.processes):
     for proc, node_config in ml_model_inst.train_nodes.items():
         print(proc, node_config["ml_id"])
         _id = (node_config["ml_id"] + 1) * 1000
-        # cat_label = config.get_process(proc).x.ml_label
         ml_categories.append(config.add_category(
             # NOTE: name and ID is unique as long as we don't use
             #       multiple ml_models simutaneously
@@ -487,7 +497,6 @@ def add_categories_ml(config, ml_model_inst):
             # NOTE: the +1 is necessary to avoid reusing ID of non-ml categories
             id=_id,
             selection=f"catid_ml_{proc}",
-            # label=f"{cat_label} category",
             aux={"ml_proc": proc},
         ))
 
@@ -495,6 +504,11 @@ def add_categories_ml(config, ml_model_inst):
     # create combination of categories
     #
 
+    # if config.x.signal_tag == "hhh":
+    #     config.x.bjet_categories = ["3b", "4b"]
+    #     config.x.jet_categories = ["resolved_glo", "boosted_glo"]
+
+    # adds categories based on number of leptons
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
         # NOTE: when building DNN categories, we do not need the control regions
@@ -504,13 +518,6 @@ def add_categories_ml(config, ml_model_inst):
         "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
         "dnn": ml_categories,
     })
-
-    # # NOTE: temporary solution: only build DNN leafs
-    # combined_categories = [cat for cat in config.get_leaf_categories() if len(cat.parent_categories) != 0]
-    # category_blocks = OrderedDict({
-    #     "leafs": combined_categories,
-    #     "dnn": ml_categories,
-    # })
 
     t0 = time()
     # create combination of categories

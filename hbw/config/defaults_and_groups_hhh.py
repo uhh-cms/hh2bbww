@@ -16,7 +16,10 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
         "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
         "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
-        "dl20": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
+        "dl20": ["hhh_4b2w_2l2nu_c30_d40", "tthh", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
+        "dl0": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
+        "dl1": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "hh", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb", "tt"],  # noqa: E501
+        "dl3": ["hhh_4b2w_2l2nu_c30_d40", "hh_vbf_kv1_k2v1_kl1", "hh_ggf_kl1_kt1", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "vvv", "ttvv", "w_lnu", "st", "dy", "ttbb", "tt"],  # noqa: E501
         "dl21": ["tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
         "dl17": ["hhh", "tthh_4b", "vhh_4b", "hh_ggf", "hh_vbf", "other", "h", "tth", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl18": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "other", "h", "tth", "ttv", "vv", "w_lnu", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
@@ -29,16 +32,29 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl20", ):  # noqa: E501
+    for group in ("dl20", "dl0", "dl1", "dl3"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
     config_inst.x.category_groups = {
         "sr_bcats": ["sr__2b", "sr__3b", "sr__4b"],
-        "ml_cats": bracket_expansion(["sr__resolved__{3b,4b}__ml_{hhh_signal,tthh_4b,tt_ml,tth}", "sr__resolved__2b__ml_{hhh_signal,st,dy,tt_ml,tth,tthh_4b}"]),  # noqa: E501
-        "hhh_sr": bracket_expansion(["sr__resolved__{2b,2b_1l,1b_1tb,3b,4b}__ml_{sig_hhh,hhh_signal,hhh_4b2w_2l2nu_c30_d40}", "sr__{2b,3b,4b}__ml_{sig_all,hhh_signal}", "sr__{boosted,boosted_low,boosted_loose}{,__ml_hhh_signal}"]),  # noqa: E501
-        "hhh_bkg": bracket_expansion(["sr__{2b,3b,4b,2b_1l,1b_1tb,}__ml_{tt,st,dy,h,hh,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__{2b,2b_1l,1b_1tb}__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}", "sr__resolved__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tt_custom,ttbb_custom,tt_ml,hh_custom,tth}"]),  # noqa: E501
+        "ml_cats": bracket_expansion([
+            "sr__resolved__{3b,4b}__ml_{hhh_signal,tthh_4b,tt_ml,tth}",
+            "sr__resolved__2b__ml_{hhh_signal,st,dy,tt_ml,tth,tthh_4b}",
+        ]),
+        "hhh_sr": bracket_expansion([
+            "sr__{resolved,resolved_glo}__{2b,2b_1l,1b_1tb,3b,4b}__ml_{sig_hhh,hhh_signal,hhh_4b2w_2l2nu_c30_d40}",
+            "sr__{2b,3b,4b}__ml_{sig_all,hhh_signal}",
+            "sr__{boosted,boosted_low,boosted_loose,boosted_glo}{,__ml_hhh_signal}",
+        ]),
+        "hhh_bkg": bracket_expansion([
+            "sr__{2b,3b,4b,2b_1l,1b_1tb,}__ml_{tt,st,dy,h,hh,hh_bkg,tthh_4b,tthh,ttbb_custom,tt_ml,hh_custom,tth}",
+            "sr__{resolved,resolved_glo}__{2b,2b_1l,1b_1tb}__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tthh,,ttbb_custom,tt_ml,hh_custom,tth}",  # noqa: E501
+            "sr__{resolved,resolved_glo}__3b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tthh,,ttbb_custom,tt_ml,hh_custom,tth}",
+            "sr__{resolved,resolved_glo}__4b__ml_{tt,st,dy,h,hh_bkg,tthh_4b,tthh,,ttbb_custom,tt_ml,hh_custom,tth}",
+        ]),
+        "tt_bkg": bracket_expansion(["sr__3b__ml_tt_custom"]),
     }
 
     # variable groups for conveniently looping over certain variables
@@ -55,7 +71,6 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
 
     # plotting settings groups
     # (used in plotting)
-    # cms_label = "wip"
     cms_label = "pw"
     config_inst.x.general_settings_groups = {
         "test1": {"p1": True, "p2": 5, "p3": "text", "skip_legend": True},
@@ -68,20 +83,16 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
             "hide_signal_errors": True,
             "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
-            # "blinding_threshold": 0.008,
+        },
+        "more_legend": {
+            "whitespace_fraction": 0.45,
         },
         "data_mc_plots": {
             "remove_negative": True,
-            # "custom_style_config": "default",  # NOTE: does not work in combination with group
             "whitespace_fraction": 0.4,
             "cms_label": f"{cms_label}",
             "yscale": "log",
-            "hide_signal_errors": True,
-            # "hide_stat_errors": True,
-            # "blinding_threshold": 0.00006,
-            "blinding_threshold": 0.00003,  # NOTE: good for hhh 2b
-            # "blinding_threshold": 0.00005,  # NOTE: good for 3b I think
-            # "blinding_threshold": 0.0001,  # NOTE: good for 4b with cat strategy
+            "blinding_threshold": 0.0000003,
         },
         "gatja": {
             "hide_stat_errors": True,
@@ -97,6 +108,7 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
     # groups are defined via config.x.category_groups
     config_inst.x.default_bins_per_category = {
         "hhh_bkg": 1,
+        "tt_bkg": 1,
         "hhh_sr": 10,
     }
 
@@ -106,4 +118,5 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
     config_inst.x.inference_category_rebin_processes = {
         "hhh_sr": is_signal_hhh,
         "hhh_bkg": is_background_hhh,
+        "tt_bkg": is_background_hhh,
     }

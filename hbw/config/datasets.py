@@ -112,7 +112,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
             ]),
-            *config.x.if_era(run=3, cfg_tag="is_dl", values=[
+            *config.x.if_era(run=3, cfg_tag="is_hh", values=[
                 # "st_twchannel_t_fh_powheg",  # (almost) empty in DL
                 # "st_twchannel_tbar_fh_powheg",  # (almost) empty in DL
                 "st_twchannel_t_sl_powheg",
@@ -120,7 +120,15 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
                 "st_tchannel_t_had_4f_powheg",
-                # "st_tchannel_tbar_had_4f_powheg",
+                "st_tchannel_tbar_had_4f_powheg",
+                "st_tchannel_t_lep_4f_powheg",
+                "st_tchannel_tbar_lep_4f_powheg",
+            ]),
+            *config.x.if_era(run=3, cfg_tag="is_hhh", values=[
+                "st_twchannel_t_sl_powheg",
+                "st_twchannel_tbar_sl_powheg",
+                "st_twchannel_t_dl_powheg",
+                "st_twchannel_tbar_dl_powheg",
                 "st_tchannel_t_lep_4f_powheg",
                 "st_tchannel_tbar_lep_4f_powheg",
             ]),
@@ -153,6 +161,10 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",
             ]),
+            *config.x.if_era(run=3, year=2024, cfg_tag="is_hh", values=[
+                # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
+                "dy_tautau_m10to50_amcatnlo",  # NOTE: always emtpy in HHH becasue < 3 btagged jets
+            ]),
             *config.x.if_era(run=3, year=2024, values=[
                 # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
                 "dy_ee_m50toinf_amcatnlo",
@@ -160,7 +172,6 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_tautau_m50toinf_amcatnlo",
                 "dy_ee_m10to50_amcatnlo",
                 "dy_mumu_m10to50_amcatnlo",
-                "dy_tautau_m10to50_amcatnlo",
                 "dy_ee_m50toinf_0j_amcatnlo",
                 "dy_mumu_m50toinf_0j_amcatnlo",
                 "dy_tautau_m50toinf_0j_amcatnlo",
@@ -195,10 +206,13 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "w_lnu_1j_amcatnlo",
                 "w_lnu_2j_amcatnlo",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=2024, cfg_tag="is_hh", values=[
+                # NOTE: always empty in HHH because < 3 btagged jets
                 "w_lnu_1j_madgraph",
                 "w_lnu_2j_madgraph",
                 "w_lnu_3j_madgraph",
+            ]),
+            *config.x.if_era(run=3, year=2024, values=[
                 "w_lnu_4j_madgraph",
             ]),
         ],
@@ -302,9 +316,15 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "ttbb_fh_powheg",
             ]),
         ],
-        "tthh_4b": [
+        "tthh": [
             *config.x.if_era(run=3, year=2024, values=[
-                "tthh_4b_madgraph",
+                "tthh_4b_incl_madgraph",
+                "tthh_2b2t_dl_madgraph",
+                "tthh_2b2t_sl_madgraph",
+                "tthh_2b2w_dl_madgraph",
+                "tthh_2b2w_sl_madgraph",
+                "tthh_2b2z_dl_madgraph",
+                "tthh_2b2z_sl_madgraph",
             ]),
             # "tthh_4b_madgraph",
         ],
@@ -325,15 +345,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_ggf_hzz2l2q_powheg",
-                "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
-                "zh_zqq_hbb_powheg",  # TODO
-                "zh_zll_hbb_powheg",  # TODO
+                "zh_zll_hbb_powheg",
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
                 # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
-                "zh_gg_zll_hbb_powheg",  # TODO
-                "zh_gg_zqq_hbb_powheg",
+                "zh_gg_zll_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
@@ -346,23 +363,32 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 # "wmh_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
                 # "wmh_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                "tth_hbb_powheg",
+                "tth_hbb_dl_powheg",
+                "tth_hbb_sl_powheg",
+                "tth_hbb_fh_powheg",
                 "tth_hnonbb_powheg",  # overlap with other samples, so be careful
                 # TODO: preliminary cross sections for ttzh, ttwh
                 "ttzh_madgraph",
                 "ttwh_madgraph",
                 # htt
                 "h_ggf_htt_powheg",
-                "h_vbf_htt_powheg",
                 # "zh_htt_powheg", # TODO: Failing atm, not sure why
-                "wph_htt_powheg",
-                "wmh_htt_powheg",
                 "bbh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
                 # "thw_4f_madgraph",
                 "thw_madgraph",
                 # "thq_madgraph",
+            ]),
+            *config.x.if_era(run=3, cfg_tag="is_hh", values=[
+                "h_vbf_hbb_powheg",
+                "zh_zqq_hbb_powheg",
+                "zh_gg_zll_hbb_powheg",
+                "zh_gg_zqq_hbb_powheg",
+                "tth_hbb_powheg",
+                "h_vbf_htt_powheg",
+                "wph_htt_powheg",
+                "wmh_htt_powheg",
             ]),
         ],
         "hh_ggf": [
@@ -616,14 +642,13 @@ def configure_hbw_datasets(
         if dataset.name in (
             "w_lnu_1j_madgraph",
             "w_lnu_2j_madgraph",
-            "h_vbf_htt_powheg",
-            "dy_ee_m50toinf_1j_amcatnlo",
-            "h_vbf_hbb_powheg",
-            "wph_htt_powheg",
-            "wmh_htt_powheg",
-            # after new merge! 
-            "zh_zqq_hbb_powheg",
-            "zh_gg_zqq_hbb_powheg",
+            # "h_vbf_htt_powheg",
+            # "dy_ee_m50toinf_1j_amcatnlo",
+            # "h_vbf_hbb_powheg",
+            # "wph_htt_powheg",
+            # "wmh_htt_powheg",
+            # "zh_zqq_hbb_powheg",
+            # "zh_gg_zqq_hbb_powheg",
         ):
             dataset.add_tag("gatja_not_possible")
         if (

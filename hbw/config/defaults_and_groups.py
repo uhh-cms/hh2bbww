@@ -31,7 +31,8 @@ def ml_inputs_producer(container):
             ml_inputs = "dl_ml_inputs"
         elif container.has_tag("is_hhh"):
             # ml_inputs = "hhh_dl_ml_inputs"
-            ml_inputs = "gatja_scores"
+            # ml_inputs = "gatja_scores"
+            ml_inputs = "gatja_scores_jet_based_full_gatja"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -75,13 +76,13 @@ def default_ml_model(cls, container, task_params):
     return default_ml_model
 
 
-def default_producers(cls, container, task_params):
+def default_producers(task_cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
     default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
 
-    if hasattr(cls, "ml_model"):
+    if hasattr(task_cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
         default_producers.remove("pre_ml_cats")
         return default_producers
@@ -91,7 +92,7 @@ def default_producers(cls, container, task_params):
 
     # try and get the default ml model if not set
     if ml_model in (None, law.NO_STR, RESOLVE_DEFAULT):
-        ml_model = default_ml_model(cls, container, task_params)
+        ml_model = default_ml_model(task_cls, container, task_params)
 
     # only consider 1 ml_model
     if ml_model and isinstance(ml_model, (list, tuple)):

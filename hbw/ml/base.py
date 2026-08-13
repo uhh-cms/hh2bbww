@@ -358,9 +358,9 @@ class MLClassifierBase(MLModel):
                         },  # automatically rebin to 40 bins for plotting tasks
                     )
                     config_inst.add_variable(
-                        name=f"rebinned_logit2b.{proc}",  # used in histProducer specificially accessing this name to set weight=1  # noqa E501
+                        name=f"rebinned_logitbkg.{proc}",  # used in histProducer specificially accessing this name to set weight=1  # noqa E501
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
-                        binning=[-2.0, -1.112, -0.488, 0.028000000000000025, 0.496, 0.964, 1.48, 2.0920000000000005, 3.088, 10.0],  # noqa E501
+                        binning=[-2.0, 10.0],  # noqa E501
                         x_title="logit score rebinned",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
@@ -369,7 +369,7 @@ class MLClassifierBase(MLModel):
                     config_inst.add_variable(
                         name=f"rebinned_logit3b.{proc}",  # used in histProducer specificially accessing this name to set weight=1   # noqa E501
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
-                        binning=[-2.0, 0.31599999999999984, 0.7840000000000003, 1.12, 1.432, 1.7080000000000002, 2.0200000000000005, 2.3440000000000003, 2.752, 3.232, 10.0],  # noqa E501
+                        binning=[-2.0, 0.496, 0.94, 1.3000000000000003, 1.6360000000000001, 1.996, 2.3920000000000003, 2.824, 3.3520000000000003, 5.0920000000000005, 10.0],  # noqa E501
                         x_title="logit score rebinned",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
@@ -378,7 +378,7 @@ class MLClassifierBase(MLModel):
                     config_inst.add_variable(
                         name=f"rebinned_logit4b.{proc}",  # used in histProducer specificially accessing this name to set weight=1  # noqa E501
                         expression=lambda events, proc=proc: np.log(events.mlscore[proc] / (1 - events.mlscore[proc])),
-                        binning=[-2.0, 1.7320000000000002, 2.1879999999999997, 2.5360000000000005, 2.8360000000000003, 3.1000000000000005, 3.364, 3.652, 4.072, 4.708, 10.0],  # noqa E501
+                        binning=[-2.0, 1.8040000000000003, 2.284, 2.6559999999999997, 2.9800000000000004, 3.3280000000000003, 3.724, 4.144, 4.708, 5.524, 10.0],  # noqa E501
                         x_title="logit score rebinned",
                         aux={
                             "inputs": {f"mlscore.{proc}"},
@@ -665,7 +665,6 @@ class MLClassifierBase(MLModel):
         return
 
     def patch_events(self, events):
-        from columnflow.columnar_util import fill_at
         # TODO: this function is currently copy-pasted from MLPreTraining task
         # change padding value to -1 for btag scores
         # for col in (

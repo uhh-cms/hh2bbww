@@ -465,17 +465,44 @@ class ModifyDatacardsFlatRebin(
 
             # determine all processes required for the category *cat_name* to determine the rebin values
             rebin_processes = self.get_rebin_processes()
-            rebin_inf_proc_names = [proc.name for proc in rebin_processes]
+            background_processes = self.get_background_processes()
 
+            rebin_inf_proc_names = [proc.name for proc in rebin_processes]
+            background_proc_names = [proc.name for proc in background_processes]
+            # background_processes = self.get_background_processes()
+            # __import__("IPython").embed()
             if diff := set(rebin_inf_proc_names).difference(nominal_hists.keys()):
-                raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
-                                "nominal histograms found")
+                for p in diff:
+                    if p not in nominal_hists.keys():
+                        rebin_inf_proc_names.remove(p)
+                    else:
+                        raise Exception(f"Histograms {diff} requested for rebinning but no corresponding"
+                                        "nominal histograms found")
+            if diff := set(background_proc_names).difference(nominal_hists.keys()):
+                for p in diff:
+                    if p not in nominal_hists.keys():
+                        background_proc_names.remove(p)
+                    else:
+                        raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
+                                        "nominal histograms found")
 
             rebin_hists = [nominal_hists[proc_name] for proc_name in rebin_inf_proc_names]
             rebin_hist = sum(rebin_hists[1:], rebin_hists[0])  # sum all histograms to get the total histogram
 
-            background_processes = self.get_background_processes()
-            background_hists = [nominal_hists[proc.name] for proc in background_processes]
+            # background_processes = self.get_background_processes()
+            # bkg_names = [proc.name for proc in background_processes]
+            # for b in background_processes:
+            #     print(b.name)
+            #     if b.name not in nominal_hists.keys():
+            #         print(b.name)
+            #         # logger.warning(f"Background process {b.name} not found in nominal histograms, removing from list")  # noqa E501
+            #         background_processes.remove(b)
+            try:
+                background_hists = [nominal_hists[proc_name] for proc_name in background_proc_names]
+            except KeyError as e:
+                __import__("IPython").embed()
+                logger.error(f"Error occurred while creating background histogram: {e}")
+                raise
             background_hist = sum(background_hists[1:], background_hists[0])
 
             signal_processes = self.get_signal_processes(self.config_insts[0])
@@ -497,11 +524,11 @@ class ModifyDatacardsFlatRebin(
                 elif "3b__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.0005
-                    blinding_threshold = 2.5
+                    blinding_threshold = 1.9
                 elif "4b__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.001
-                    blinding_threshold = 3.5
+                    blinding_threshold = 3.0
                 elif "boosted__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.001
@@ -510,7 +537,8 @@ class ModifyDatacardsFlatRebin(
                     # for all other categories, we do not blind the bins
                     blinding_threshold = 10
             else:
-                blinding_threshold = None
+                # blinding_threshold = None
+                blinding_threshold = 10
             rebin_values = get_rebin_values(
                 rebin_hist,
                 signal_hist,
