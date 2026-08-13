@@ -153,7 +153,7 @@ def ele_init(self: Calibrator) -> None:
 
 
 @seeds_user_base.calibrator(
-    version=law.config.get_expanded("analysis", "muon_version", 0),
+    version=law.config.get_expanded("analysis", "muo_version", 0),
     uses={deterministic_muon_seeds.PRODUCES},
     produces={"Muon.pt"},  # dummy produces to ensure this calibrator is run
 )
@@ -164,10 +164,17 @@ def muo(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # apply the muon calibration
     events = self[self.muon_calib_cls](events, **kwargs)
     if self.dataset_inst.is_mc:
-        # NOTE: some nans in pt_scale_up/down raise no finite errors, set to nones
-        # TODO: dont set to none put to nominal pt
-        events = set_ak_column(events, "Muon.pt_scale_up", ak.nan_to_none(events.Muon.pt_scale_up))
-        events = set_ak_column(events, "Muon.pt_scale_down", ak.nan_to_none(events.Muon.pt_scale_down))
+        # NOTE: some nans in pt_scale_up/down raise no finite errors, set to nominal
+        events = set_ak_column(
+            events,
+            "Muon.pt_scale_up",
+            ak.where(np.isfinite(events.Muon.pt_scale_up), events.Muon.pt_scale_up, events.Muon.pt),
+        )
+        events = set_ak_column(
+            events,
+            "Muon.pt_scale_down",
+            ak.where(np.isfinite(events.Muon.pt_scale_down), events.Muon.pt_scale_down, events.Muon.pt),
+        )
     return events
 
 
@@ -415,6 +422,7 @@ ak4 = jet_base.derive("ak4", cls_dict=dict(
     bjet_regression=True,
     skip_jer=False,
     jer_horn_handling=True,
+    version=1,  # TODO: remove for next calibration run
 ))
 
 ak4uncs = ak4.derive("ak4uncs", cls_dict=dict(

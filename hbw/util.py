@@ -634,7 +634,7 @@ def IF_NANO_V14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any 
 @deferred_column
 def IF_NANO_V15(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
-    Helper to check if the campaign of this particular dataset is nano v14.
+    Helper to check if the campaign of this particular dataset is nano v15.
     """
     cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
     version = int(cpn_name.split("v")[-1])
@@ -654,7 +654,7 @@ def IF_NANO_geV13(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> An
 @deferred_column
 def IF_NANO_geV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
-    Helper to check if the campaign of this particular dataset is nano v13 or higher.
+    Helper to check if the campaign of this particular dataset is nano v14 or higher.
     """
     cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
     version = int(cpn_name.split("v")[-1])
@@ -664,7 +664,7 @@ def IF_NANO_geV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> An
 @deferred_column
 def IF_NANO_leqV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
-    Helper to check if the campaign of this particular dataset is nano v13 or higher.
+    Helper to check if the campaign of this particular dataset is nano v14 or lower.
     """
     cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
     version = int(cpn_name.split("v")[-1])

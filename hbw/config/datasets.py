@@ -37,7 +37,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     elif config.campaign.x.run == 3 and nano_version == 14:
         config.x.data_streams = ["mu", "e", "muoneg"]
     elif config.campaign.x.run == 3:
-        if config.campaign.x.year == 2024:
+        if config.campaign.x.year >= 2024:
             config.x.data_streams = ["mu", "e", "muoneg"]
         else:
             config.x.data_streams = ["mu", "egamma", "muoneg"]
@@ -49,6 +49,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2023preBPix": ["c1", "c2", "c3", "c4"],
         "2023postBPix": ["d1", "d2"],
         "2024": list("cdefghi"),
+        "2025": list("cdefg"),
+        "2026": list("bd"),
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -137,6 +139,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_ht2500toinf_madgraph",
             ]),
             # TODO: atm I am annoyed that i cannot give a list to year, cause 2022 and 2023 use the same samples
+            # NOTE: Should be implemented now
             *config.x.if_era(run=3, year=2022, values=[
                 "dy_m10to50_amcatnlo",
                 "dy_m50toinf_amcatnlo",
@@ -153,7 +156,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
                 "dy_ee_m50toinf_amcatnlo",
                 "dy_mumu_m50toinf_amcatnlo",
@@ -195,7 +198,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "w_lnu_1j_amcatnlo",
                 "w_lnu_2j_amcatnlo",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "w_lnu_1j_madgraph",
                 "w_lnu_2j_madgraph",
                 "w_lnu_3j_madgraph",
@@ -227,7 +230,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "wz_pythia",
                 # "zz_pythia",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "ww_sl_powheg",
                 "ww_dl_powheg",
                 # "ww_fh_powheg",  # TODO: weird pyarrow error
@@ -259,7 +262,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "hhh_4b2w_c3m1_d4m1_amcatnlo",
                 "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
             ]),
-            *config.x.if_era(run=3, cfg_tag="is_hhh", year=2024, values=[
+            *config.x.if_era(run=3, cfg_tag="is_hhh", year=[2024, 2025, 2026], values=[
                 "hhh_4b2w_2l2nu_c30_d4_custom",
                 "hhh_4b2w_2l2nu_c30_d499_custom",
                 "hhh_4b2w_2l2nu_c319_d419_custom",
@@ -296,20 +299,20 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "ttzz_madgraph",
         ],
         "ttbb": [
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "ttbb_dl_powheg",
                 "ttbb_sl_powheg",
                 "ttbb_fh_powheg",
             ]),
         ],
         "tthh_4b": [
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "tthh_4b_madgraph",
             ]),
             # "tthh_4b_madgraph",
         ],
         "vhh_4b": [
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "whh_4b_k2v1p0kl0p0kv1p0_madgraph",
                 "zhh_4b_k2v1p0kl0p0kv1p0_madgraph",
             ]),

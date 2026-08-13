@@ -185,6 +185,16 @@ def create_hbw_analysis(
         "c24v15",
         2400,
     )
+    # 2025
+    add_lazy_config(
+        "c25v15",
+        2500,
+    )
+    # 2026
+    add_lazy_config(
+        "c26v15",
+        2600,
+    )
 
     # add_lazy_config(
     #     "c22prev12_das",
@@ -285,7 +295,9 @@ def create_hbw_analysis(
         store_parts.pop("PLACEHOLDER")
         for part in parts_order_end:
             if part in store_parts:
-                store_parts.move_to_end(part)
+                # store_parts.move_to_end(part)  NOTE for some reason broken after cf update?
+                value = store_parts.pop(part)
+                store_parts[part] = value
 
         task_version_from_cspmw = (
             "cf.CalibrateEvents",

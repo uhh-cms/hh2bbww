@@ -43,6 +43,8 @@ valid_campaigns = {
     "run3_2023_postBPix_nano_uhh_v14",
     "run3_2024_nano_v15",
     "run3_2024_nano_custom_v15",
+    "run3_2025_nano_v15",
+    "run3_2026_nano_v15",
 }
 
 cpn_module = lambda campaign: f"cmsdb.campaigns.{campaign}"
@@ -109,6 +111,12 @@ campaign_map = {
     "c24v15": {
         "run3_2024_nano_v15": {},
         "run3_2024_nano_custom_v15": {"dataset_prio_func": is_hhh_func},
+    },
+    "c25v15": {
+        "run3_2025_nano_v15": {},
+    },
+    "c26v15": {
+        "run3_2026_nano_v15": {},
     },
 }
 

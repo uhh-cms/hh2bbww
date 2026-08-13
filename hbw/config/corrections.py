@@ -15,7 +15,7 @@ def btag_sf_cfg(
     year: int = None,
 ) -> list[tuple, list]:
     # name = ("deepJet_shape") if year != 2024 else ("UParTAK4_kinfit")
-    discr = "btagPNetB" if year != 2024 else "btagUParTAK4B"
+    discr = "btagPNetB" if year < 2024 else "btagUParTAK4B"
     # jec_sources = [
     #     "",  # same as "Total"
     #     "Absolute",
@@ -96,7 +96,7 @@ def btag_sf_cfg(
         "down_uncorrelated_light": "uncorrelated_light_down",
         "up_uncorrelated_light": "uncorrelated_light_up",
     }
-    if year == 2024:
+    if year >= 2024:
         # TODO: use shape based BTagSFConfig when available
         # currently, one fixed WP is available for b tagging SF in 2024
         # implementation from hbt analysis:
