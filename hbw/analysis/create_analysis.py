@@ -361,6 +361,16 @@ def create_hbw_analysis(
         store_parts["shift"] = update_shift_name(task, store_parts["shift"])
         return store_parts
 
+    def gatja_production(task, store_parts):
+        """
+        Add the shift version to the store_parts.
+        This is used to distinguish between different versions of the same shift.
+
+        NOTE: we might want to do the same for shift_source in the future.
+        """
+        store_parts["task_family"] = "cf.ProduceColumns"
+        return store_parts
+
     def dataset_version(task, store_parts):
         """
         Add the dataset version to the store_parts.
@@ -379,6 +389,8 @@ def create_hbw_analysis(
 
     def hbw_parts(task, store_parts):
         name = task.task_family
+        if "hbw.ProduceColumnsTF" in name: 
+            store_parts = gatja_production(task, store_parts)
         if name in software_tasks:
             return software_tasks_parts(task, store_parts)
         if name in shareable_analysis_tasks:
@@ -393,6 +405,8 @@ def create_hbw_analysis(
             store_parts = dataset_version(task, store_parts)
         if "shift" in store_parts:
             store_parts = shift_version(task, store_parts)
+        if "ProduceColumnsTF" in name:
+            store_parts
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

@@ -116,7 +116,7 @@ def modify_cmsdb_processes():
     tt_custom.add_parent_process(tt)
 
     ttbb_custom = create_parent_process(
-        [ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b],
+        [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b, ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b, ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
         name="ttbb_custom",
         id=68899,
         label="TTBB Custom",

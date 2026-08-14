@@ -61,10 +61,38 @@ config_categories = DotDict({
         "sr__resolved__4b__ml_tthh_4b",
         "sr__resolved__4b__ml_hhh_signal",
     ],
+    "test_2b_1l": [
+        "sr__resolved__2b_1l__ml_tt_ml",
+        "sr__resolved__2b_1l__ml_st",
+        "sr__resolved__2b_1l__ml_dy",
+        "sr__resolved__2b_1l__ml_tth",
+        "sr__resolved__2b_1l__ml_tthh_4b",
+        "sr__resolved__2b_1l__ml_hhh_signal",
+    ],
+    "test_1b_1tb": [
+        "sr__resolved__1b_1tb__ml_tt_ml",
+        "sr__resolved__1b_1tb__ml_st",
+        "sr__resolved__1b_1tb__ml_dy",
+        "sr__resolved__1b_1tb__ml_tth",
+        "sr__resolved__1b_1tb__ml_tthh_4b",
+        "sr__resolved__1b_1tb__ml_hhh_signal",
+    ],
     "bcats": [
         "sr__2b",
         "sr__3b",
         "sr__4b",
+    ],
+    "boosted": [
+        "sr__boosted",
+        "sr__boosted__ml_hhh_signal",
+    ],
+    "boosted_low": [
+        "sr__boosted_low",
+        "sr__boosted_low__ml_hhh_signal",
+    ],
+    "boosted_loose": [
+        "sr__boosted_loose",
+        "sr__boosted_loose__ml_hhh_signal",
     ],
 })
 
@@ -232,7 +260,6 @@ systematics["hhh_shape_ffn"] = [
     *systematics.QCDscale,
     *systematics.pdf,
     *systematics.BR,
-    # *systematics.hbb_efficiency,
     *systematics.rates,
     *systematics.murf_envelope,
     *systematics.other,
@@ -276,9 +303,8 @@ processes_dict = {
     "v0": [*backgrounds_v0, *hhhprocs],
 }
 
-# from hbw.ml.derived.ml_dl_trih import input_features
-# mli_inputs = input_features.hhh_v0
-
+from hbw.ml.derived.ml_dl_trih import input_features
+mli_inputs = input_features.expanded_hhh_inputs
 
 def config_variable_hhh(self, config_cat_inst):
     """
@@ -296,7 +322,7 @@ def config_variable_hhh(self, config_cat_inst):
         logger.warning(
             f"Category {config_cat_inst.name} is not a DNN category, using binary classifier score.",
         )
-        return "logit_mlscore.sig_ggf_binary"
+        return "logit_mlscore.sig_hhh_binary"
 
 
 default_cls_dict = {
@@ -315,13 +341,13 @@ dl_trih = HBWInferenceModelBase.derive("dl_trih", cls_dict=default_cls_dict)
 # current inference models
 #
 
-# rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
-#     "systematics": systematics.rate_default,
-#     "config_categories": config_categories.v0,
-#     "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
-#     "config_variable": config_variable_hhh,
-#     "processes": processes_dict["hhh_v0"],
-# })
+rate_only_hhh_v2 = dl_trih.derive("rate_only_hhh_v2", cls_dict={
+    "systematics": systematics.default,
+    "config_categories": config_categories.v0,
+    "ml_model_name": ["multiclass_hhh_v2", "hhh_v2"],
+    "config_variable": config_variable_hhh,
+    "processes": processes_dict["v0"],
+})
 
 # ----------------------- BASELINE INFERENCE MODELS SPLIT IN BJET CAT ------------------------------
 
@@ -336,12 +362,44 @@ Cat_eq2b_Bin_V5_shape_unblind = Cat_eq2b_Bin_V5_shape.derive("Cat_eq2b_Bin_V5_sh
     "unblind": False,
     "skip_data": False,
 })
+Cat_boosted_Bin_V5_shape_unblind = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V5_shape_unblind", cls_dict={
+    "unblind": False,
+    "config_categories": config_categories.boosted,
+    "skip_data": False,
+})
+Cat_boosted_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V5_shape", cls_dict={
+    "config_categories": config_categories.boosted,
+})
+Cat_boosted_Bin_V5_gatja = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_Bin_V5_gatja", cls_dict={
+    "config_categories": config_categories.boosted,
+    "ml_model_name": ["Gatja_Cat_eq3b_V3", "Gatja_Bin_V3"],
+})
+Cat_boosted_low_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_low_Bin_V5_shape", cls_dict={
+    "config_categories": config_categories.boosted_low,
+    "systematics": systematics.default,
+})
+Cat_boosted_loose_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_boosted_loose_Bin_V5_shape", cls_dict={
+    "config_categories": config_categories.boosted_loose,
+    "systematics": systematics.default,
+})
+Cat_2b_1l_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_2b_1l_Bin_V5_shape", cls_dict={
+    "config_categories": config_categories.test_2b_1l,
+    "systematics": systematics.default,
+})
+Cat_1b_1tb_Bin_V5_shape = Cat_eq2b_Bin_V5_shape.derive("Cat_1b_1tb_Bin_V5_shape", cls_dict={
+    "config_categories": config_categories.test_1b_1tb,
+    "systematics": systematics.default,
+})
 Cat_eq3b_Bin_V5_shape = dl_trih.derive("Cat_eq3b_Bin_V5_shape", cls_dict={
     "systematics": systematics.hhh_shape_ffn,
     "config_categories": config_categories.eq3b,
     "ml_model_name": ["Cat_eq3b_V1", "Bin_V1"],
     "config_variable": config_variable_hhh,
     "processes": processes_dict["v0"],
+})
+Cat_eq3b_Bin_V5_gatja = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_gatja", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Gatja_Cat_eq3b_V3", "Gatja_Bin_V3"],
 })
 Cat_eq3b_Bin_V5_shape_unblind = Cat_eq3b_Bin_V5_shape.derive("Cat_eq3b_Bin_V5_shape_unblind", cls_dict={
     "unblind": False,
@@ -353,6 +411,10 @@ Cat_geq4b_Bin_V5_shape = dl_trih.derive("Cat_geq4b_Bin_V5_shape", cls_dict={
     "ml_model_name": ["Cat_geq4b_V1", "Bin_V1"],
     "config_variable": config_variable_hhh,
     "processes": processes_dict["v0"],
+})
+Cat_geq4b_Bin_V5_gatja = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_gatja", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Gatja_Cat_geq4b_V3", "Gatja_Bin_V3"],
 })
 Cat_geq4b_Bin_V5_shape_unblind = Cat_geq4b_Bin_V5_shape.derive("Cat_geq4b_Bin_V5_shape_unblind", cls_dict={
     "unblind": False,

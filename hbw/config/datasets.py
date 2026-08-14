@@ -122,7 +122,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
                 "st_tchannel_t_had_4f_powheg",
-                "st_tchannel_tbar_had_4f_powheg",
+                # "st_tchannel_tbar_had_4f_powheg",
                 "st_tchannel_t_lep_4f_powheg",
                 "st_tchannel_tbar_lep_4f_powheg",
             ]),
@@ -302,7 +302,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "ttbb_dl_powheg",
                 "ttbb_sl_powheg",
-                "ttbb_fh_powheg",
+                "ttbb_fh_powheg",  # TODO commented out for ttbb mdoeliing differnt processes
             ]),
         ],
         "tthh_4b": [
@@ -328,7 +328,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_ggf_hzz2l2q_powheg",
-                "h_vbf_hbb_powheg",
+                "h_vbf_hbb_powheg",  #TODO fails for gatja because zero sized (u geuss due to the selection cuts... not sure how to handle that) 
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zqq_hbb_powheg",  # TODO
@@ -616,6 +616,18 @@ def configure_hbw_datasets(
             "h_vbf_htt_powheg",
         ):
             dataset.add_tag("no_ps_weights")
+        if dataset.name in (
+            "w_lnu_1j_madgraph",
+            "w_lnu_2j_madgraph",
+            "h_vbf_htt_powheg",
+            "dy_ee_m50toinf_1j_amcatnlo",
+            "h_vbf_hbb_powheg",
+            "wph_htt_powheg",
+            "wmh_htt_powheg",
+        ):
+            dataset.add_tag("gatja_not_possible")
+        if dataset.name.startswith("data"):
+            dataset.add_tag("gatja_not_possible")
         if (
             dataset.name.endswith("_pythia") or
             "hh_vbf" in dataset.name or

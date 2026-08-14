@@ -256,7 +256,6 @@ class MLDatasetLoader:
 
         if not self.stats:
             raise Exception("cannot determine train weights without stats")
-
         _, sub_id = get_proc_mask(self._events, self.process, self.ml_model_inst.config_inst)
         sum_weights = np.sum([self.stats[self.process]["sum_pos_weights_per_process"][str(id)] for id in sub_id])
         num_events = np.sum(
