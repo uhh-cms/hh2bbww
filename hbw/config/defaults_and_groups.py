@@ -30,8 +30,7 @@ def ml_inputs_producer(container):
         if container.has_tag("is_hh"):
             ml_inputs = "dl_ml_inputs"
         elif container.has_tag("is_hhh"):
-            # ml_inputs = "hhh_dl_ml_inputs"
-            ml_inputs = "gatja_scores"
+            ml_inputs = "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -78,8 +77,11 @@ def default_ml_model(cls, container, task_params):
 def default_producers(cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
+    if task_params.get("ml_model") in ("GatjaTraining_MLClassifierBase_small_class_weights_05", "gatja_training"):
+        return ["gatja_event_weight", "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"]
+
     # per default, use the ml_inputs and event_weights
-    default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
+    default_producers = ["gatja_event_weight", "event_weights", "pre_ml_cats", ml_inputs_producer(container)]
 
     if hasattr(cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline

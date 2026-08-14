@@ -10,6 +10,7 @@ from functools import partial
 
 import law
 import order as od
+import re
 
 from columnflow.util import maybe_import, DotDict
 from hbw.hist_util import apply_rebinning_edges
@@ -125,3 +126,75 @@ def add_hist_hooks(analysis_inst: od.Analysis) -> None:
         # "blind": blind_bins,
         "blind_bins_above_score": blind_bins_above_score,
     }
+
+
+# Hist Hooks for matched/unmatched lines in GATJA score plots
+def add_matching_hist_hooks(config):
+    line_proc_defs = {
+        "matched": (9911, "Matched", "#ff0000"),
+        "unmatched": (9913, "Unmatched", "#009600"),
+    }
+    def hook(task, hists, category_name=None, variable_name=None, **kwargs):
+        var_name = variable_name or getattr(task.branch_data, "variable", None)
+        # name = re.fullmatch(r"gatja_output_(?:short)?(\d+)", var_name or "")
+        name = re.fullmatch(r"(?:[\w.]+\.)?gatja_output_\D*(\d+)", var_name or "")
+        if not name:
+            return hists
+        n = int(name.group(1))
+        jet = (n // 3) + 1  # Index 0,1,2 correspond to Jet 1, Index 3,4,5 correspond to Jet 2, ...
+        score_type = ("higgs", "top", "others")[n % 3]
+        categories_names = {
+            "higgs": f"matched_higgs_j{jet}",
+            "top": f"matched_top_j{jet}",
+            "others": f"unmatched_j{jet}",
+        }
+        matched_cats = [categories_names[score_type]]
+        unmatched_cats = [c for k, c in categories_names.items() if k != score_type]
+
+        for config_inst, proc_hists in hists.items():
+            mc_hists = [h for p, h in proc_hists.items() if p.is_mc]
+            if not mc_hists:
+                continue
+            h_sum = mc_hists[0].copy()
+            for h in mc_hists[1:]:
+                h_sum = h_sum + h
+
+            plot_cat = config_inst.get_category(
+                category_name or task.branch_data.category,
+            )
+            leaf_cats = plot_cat.get_leaf_categories()
+            if not leaf_cats:
+                leaf_cats = [plot_cat]
+            target_names = {c.name for c in leaf_cats}
+            axis_names = set(h_sum.axes["category"])
+            common_names = target_names & axis_names
+            if not common_names:
+                raise ValueError(
+                    f"no leaf category of '{plot_cat.name}' found in histogram axis",
+                )
+            destination = h_sum.axes["category"].index(sorted(common_names)[0])
+
+            def build_line(source_cat_names):
+                h_line = h_sum.copy()
+                h_line.reset()
+                for cn in source_cat_names:
+                    if cn in axis_names:
+                        source = h_sum.axes["category"].index(cn)
+                        h_line.view(flow=True)[destination, ...] += h_sum.view(flow=True)[source, ...]
+                return h_line
+
+            for proc_name, sources in (("matched", matched_cats), ("unmatched", unmatched_cats)):
+                if config_inst.has_process(proc_name):
+                    proc = config_inst.get_process(proc_name)
+                else:
+                    pid, label, color = line_proc_defs[proc_name]
+                    proc = config_inst.add_process(
+                        name=proc_name, id=pid, label=label,
+                        color=color, is_data=False,
+                    )
+                proc_hists[proc] = build_line(sources)
+
+        return hists
+
+    config.x.hist_hooks = getattr(config.x, "hist_hooks", {})
+    config.x.hist_hooks["matching_lines"] = hook

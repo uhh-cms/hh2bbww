@@ -18,6 +18,7 @@ from hbw.production.jets import njet_for_recoil
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met
 from hbw.production.gen_hbv_decay import gen_hbv_decay
 from columnflow.production.util import attach_coffea_behavior
+from hbw.production.ml_trih_inputs import jet_gen_matching_8
 
 
 ak = maybe_import("awkward")
@@ -277,3 +278,22 @@ def noselection_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
 
 
 test_noselection = noselection.derive("test_noselection")
+
+default_hhh_v8 = default.derive("default_hhh_v8")
+# Reducer that calculates label matching
+
+
+@reducer(
+    uses={
+        default,
+        jet_gen_matching_8,
+    },
+    produces={
+        default,
+        jet_gen_matching_8,
+    },
+)
+def default_hhh_v8(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task, **kwargs) -> ak.Array:
+    events = self[default](events, selection, task, **kwargs)
+    events = self[jet_gen_matching_8](events, **kwargs)
+    return events

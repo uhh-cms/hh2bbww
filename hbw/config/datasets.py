@@ -236,7 +236,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wz_wlnu_zqq_powheg",
                 "zz_zll_zll_powheg",
                 "zz_zqq_zll_powheg",
-                "zz_zll_znunu_powheg",
+                # "zz_zll_znunu_powheg",  # B: Auskommentiert Index Error
             ]),
         ],
         "vvv": [
@@ -325,13 +325,13 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "h_ggf_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 "h_ggf_hww2l2nu_powheg",
                 "h_ggf_hzz2l2q_powheg",
-                # "h_vbf_hbb_powheg",  #TODO fails for gatja because zero sized (u geuss due to the selection cuts... not sure how to handle that) 
+                # "h_vbf_hbb_powheg",  # TODO fails for gatja because zero sized (u geuss due to the selection cuts... not sure how to handle that)
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 # "zh_zqq_hbb_powheg",  # TODO
                 # "zh_zll_hbb_powheg",  # TODO
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
-                "zh_hww2l2nu_powheg",
+                # "zh_hww2l2nu_powheg", # B: auskommentiert wegen fehlend
                 # "zh_gg_zll_hbb_powheg",  # TODO
                 # "zh_gg_zqq_hbb_powheg",
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
@@ -354,9 +354,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # htt
                 "h_ggf_htt_powheg",
                 # "h_vbf_htt_powheg",
-                # "zh_htt_powheg", # TODO: Failing atm, not sure why
-                # "wph_htt_powheg", # TODO commented ut for gatja 
-                # "wmh_htt_powheg", # TODO commented out for gatja
+                # "zh_htt_powheg",  # TODO: Failing atm, not sure why
+                # "wph_htt_powheg",  # TODO commented ut for gatja
+                # "wmh_htt_powheg",  # TODO commented out for gatja
                 # thq, thw
                 "thq_4f_madgraph",
                 "thw_4f_madgraph",
@@ -660,24 +660,24 @@ def configure_hbw_datasets(
             config.x.btag_wp_eff_groups = [
                 # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant
                 # ["*"],
-                ["dy_*", "w_lnu_*"],
-                ["hhh_*"],
-                # ["w_lnu_*"],
-                ["st_*"],
-                ["tt_*", "ttbb_*"],
-                ["ww_*", "wz_*", "zz_*"],
-                ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
-                ["hh_*", "whh_*", "tthh_*", "zhh_*"],
-                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
-            #     ["dy_*",
-            #     "hhh_*",
-            #     "w_lnu_*",
-            #     "st_*",
-            #     "tt_*", "ttbb_*",
-            #     "ww_*", "wz_*", "zz_*",
-            #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
-            #     "hh_*", "whh_*", "tthh_*", "zhh_*",
-            #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                # ["dy_*", "w_lnu_*"],
+                # ["hhh_*"],
+                # # ["w_lnu_*"],
+                # ["st_*"],
+                # ["tt_*", "ttbb_*"],
+                # ["ww_*", "wz_*", "zz_*"],
+                # ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
+                # ["hh_*", "whh_*", "tthh_*", "zhh_*"],
+                # ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+                ["dy_*",
+                "hhh_*",
+                "w_lnu_*",
+                "st_*",
+                "tt_*", "ttbb_*",
+                "ww_*", "wz_*", "zz_*",
+                "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
+                "hh_*", "whh_*", "tthh_*", "zhh_*",
+                "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
             ]
             group_matched = False
             for i, dataset_pattern in enumerate(config.x.btag_wp_eff_groups):

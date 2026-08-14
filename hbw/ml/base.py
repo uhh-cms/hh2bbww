@@ -12,12 +12,16 @@ import yaml
 
 import law
 import order as od
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import pandas as pd
 
 from columnflow.types import Sequence
 from columnflow.ml import MLModel
 from columnflow.util import maybe_import, dev_sandbox, DotDict, DerivableMeta
 from columnflow.columnar_util import Route, set_ak_column
 from columnflow.config_util import get_datasets_from_process
+from hbw.config.dl.variables import add_gatja_scores_variables
 
 from hbw.util import log_memory
 from hbw.ml.data_loader import MLDatasetLoader, MLProcessData, input_features_sanity_checks
@@ -31,6 +35,8 @@ pickle = maybe_import("pickle")
 
 logger = law.logger.get_logger(__name__)
 
+import logging
+logger = logging.getLogger("luigi-interface")
 
 # patch, allowing user to fall back to old versions
 use_old_version = law.config.get_expanded("analysis", "use_old_version", False)
@@ -472,29 +478,6 @@ class MLClassifierBase(MLModel):
         #     )
         # include all variables starting with 'mli_' to enable reusing MergeMLEvents outputs
         columns = {"mli_*"}
-        columns.add("gatja_output_0")
-        columns.add("gatja_output_1")
-        columns.add("gatja_output_2")
-        columns.add("gatja_output_3")
-        columns.add("gatja_output_4")
-        columns.add("gatja_output_5")
-        columns.add("gatja_output_6")
-        columns.add("gatja_output_7")
-        columns.add("gatja_output_8")
-        columns.add("gatja_output_9")
-        columns.add("gatja_output_10")
-        columns.add("gatja_output_11")
-        columns.add("gatja_output_12")
-        columns.add("gatja_output_13")
-        columns.add("gatja_output_14")
-        columns.add("gatja_output_15")
-        columns.add("gatja_output_16")
-        columns.add("gatja_output_17")
-        columns.add("gatja_output_18")
-        columns.add("gatja_output_19")
-        columns.add("gatja_output_20")
-        columns.add("gatja_output_21")
-        columns.add("gatja_output_22")
         # TODO: switch to full event weight
         # TODO: this might not work with data, to be checked
         columns.add("process_id")
@@ -857,3 +840,878 @@ if law.config.has_option("analysis", "ml_modules"):
     for m in law.config.get_expanded("analysis", "ml_modules", [], split_csv=True):
         logger.debug(f"loading ml module '{m}'")
         maybe_import(m.strip())
+
+
+class GatjaTraining_MLClassifierBase_small_class_weights_05(MLClassifierBase):
+    cls_name = "GatjaTraining_MLClassifierBase_small_class_weights_05"
+    ml_inputs_producer_name = "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"
+    preparation_producer_name = "gatja_prepml"
+
+    _default__seed: int = 1
+
+    settings_parameters = MLClassifierBase.settings_parameters | {"seed"}
+    bookkeep_params = MLClassifierBase.bookkeep_params | {"seed"}
+
+    def cast_ml_param_values(self):
+        super().cast_ml_param_values()
+        self.seed = int(self.seed)
+
+    def training_producers(self, analysis_inst, requested_producers):
+        logger.warning(f"GATJA training_producers: {self.cls_name}")
+        return ["gatja_event_weight", self.ml_inputs_producer_name]
+
+    def evaluation_producers(self, analysis_inst, requested_producers: Sequence[str]) -> list[str]:
+        return [self.ml_inputs_producer_name]
+
+    _default__processes = (
+        # "tt", "ttbb_custom",
+        "hhh_4b2w_2l2nu_c30_d40",
+        "tthh_4b",
+        # "ttb_custom",
+        # "tt2b_custom",
+        "ttbb_custom",
+        "tt_custom",
+        "tth",
+        # "ttzz",
+        # "ttzh",
+    )
+
+    train_nodes = {
+        "hhh_4b2w_2l2nu_c30_d40": {"ml_id": 0},
+        "tthh_4b": {"ml_id": 1},
+        "ttbb_custom": {"ml_id": 2},
+        "tt_custom": {"ml_id": 3},
+        "tth": {"ml_id": 4},
+    }
+
+    _default__class_factors = {"hhh_4b2w_2l2nu_c30_d40": 1, "tthh_4b": 1, "ttbb_custom": 1, "tt_custom": 1, "tth": 1}
+    _default__sub_process_class_factors = {
+        "hhh_4b2w_2l2nu_c30_d40": 1, "tthh_4b": 1, "ttbb_custom": 1, "tt_custom": 1, "tth": 1,
+    }
+
+    jet_classes = ("higgs", "top", "other")
+    n_jets = 8
+    padding_value = -6.0
+
+    store_name = "test_v2"
+
+    input_features = [
+        "jetPT1", "jetPT2", "jetPT3", "jetPT4", "jetPT5", "jetPT6", "jetPT7", "jetPT8",
+        "jetEta1", "jetEta2", "jetEta3", "jetEta4", "jetEta5", "jetEta6", "jetEta7", "jetEta8",
+        "jetPhi1", "jetPhi2", "jetPhi3", "jetPhi4", "jetPhi5", "jetPhi6", "jetPhi7", "jetPhi8",
+        "bjetAverageMass", "jetAverageMass",
+        "bjetAverageMassSqr", "jetNumber", "bjetNumber",
+        "minDeltaRbb", "btag_weight", "weights",
+        "jetHT", "bjetHT", "lightjetHT",
+        "leptonPT1", "leptonEta1", "leptonPhi1",
+        "leptonPT2", "leptonEta2", "leptonPhi2",
+        "met", "metPhi",
+        "jetMinChiHiggsIndex1", "jetSecMinChiHiggsIndex1", "jetMinChiHiggsIndex2", "jetSecMinChiHiggsIndex2",
+        "jetMinChiHiggsIndex3", "jetSecMinChiHiggsIndex3", "jetMinChiHiggsIndex4",
+        "jetSecMinChiHiggsIndex4", "jetMinChiHiggsIndex5", "jetSecMinChiHiggsIndex5", "jetMinChiHiggsIndex6",
+        "jetSecMinChiHiggsIndex6", "jetMinChiHiggsIndex7",
+        "jetSecMinChiHiggsIndex7", "jetMinChiHiggsIndex8", "jetSecMinChiHiggsIndex8",
+        "jetBTagDisc1", "jetBTagDisc2", "jetBTagDisc3", "jetBTagDisc4",
+        "jetBTagDisc5", "jetBTagDisc6", "jetBTagDisc7", "jetBTagDisc8",
+        "jetTopMatched1", "jetTopMatched2", "jetTopMatched3", "jetTopMatched4",
+        "jetTopMatched5", "jetTopMatched6", "jetTopMatched7", "jetTopMatched8",
+        "jetHiggsMatched1", "jetHiggsMatched2", "jetHiggsMatched3", "jetHiggsMatched4",
+        "jetHiggsMatched5", "jetHiggsMatched6", "jetHiggsMatched7", "jetHiggsMatched8",
+    ]
+
+    train_val_test_split = (0.75, 0.15, 0.1)
+    folds = 5
+    _default__epochs = 300
+    _default__batchsize = 2048
+    _default__negative_weights = "handle"
+
+    stage_one_index_node: int = 5
+    stage_one_index_neigh1: int = 4
+    stage_one_index_neigh2: int = 4
+    initial_lr = 1e-4
+    warmup_epochs = 2
+    warmup_lr = 1e-9
+
+    model_feature_order = (
+        "btag_weight",
+        "jetPT1", "jetPT2", "jetPT3", "jetPT4", "jetPT5", "jetPT6", "jetPT7", "jetPT8",
+        "jetEta1", "jetEta2", "jetEta3", "jetEta4", "jetEta5", "jetEta6", "jetEta7", "jetEta8",
+        "jetPhi1", "jetPhi2", "jetPhi3", "jetPhi4", "jetPhi5", "jetPhi6", "jetPhi7", "jetPhi8",
+        "jetMinChiHiggsIndex1", "jetMinChiHiggsIndex2", "jetMinChiHiggsIndex3", "jetMinChiHiggsIndex4",
+        "jetMinChiHiggsIndex5", "jetMinChiHiggsIndex6", "jetMinChiHiggsIndex7", "jetMinChiHiggsIndex8",
+        "jetBTagDisc1", "jetBTagDisc2", "jetBTagDisc3", "jetBTagDisc4",
+        "jetBTagDisc5", "jetBTagDisc6", "jetBTagDisc7", "jetBTagDisc8",
+        "jetHT", "bjetHT", "lightjetHT",
+        "jetNumber", "bjetNumber", "jetAverageMass",
+        "leptonPT1", "leptonEta1", "leptonPhi1",
+        "leptonPT2", "leptonEta2", "leptonPhi2",
+        "met", "metPhi",
+        "jetSecMinChiHiggsIndex1", "jetSecMinChiHiggsIndex2", "jetSecMinChiHiggsIndex3", "jetSecMinChiHiggsIndex4",
+        "jetSecMinChiHiggsIndex5", "jetSecMinChiHiggsIndex6", "jetSecMinChiHiggsIndex7", "jetSecMinChiHiggsIndex8",
+    )
+
+    graph_feature_names = (
+        "btag_weight",
+        "node_pt", "node_eta", "node_phi", "node_minChiIdx", "node_btagDisc",
+        "jetHT", "jetNumber", "jetAverageMass",
+        "leptonPT1", "leptonEta1", "leptonPhi1",
+        "leptonPT2", "leptonEta2", "leptonPhi2", "met",
+        "n1_pt", "n1_eta", "n1_phi", "n1_btagDisc",
+        "n2_pt", "n2_eta", "n2_phi", "n2_btagDisc",
+    )
+
+    @property
+    def n_features(self) -> int:
+        return len(self.graph_feature_names) - 1
+
+    def uses(self, config_inst) -> set:
+        columns = set(self.input_features)
+        columns |= {
+            "process_id",
+            "normalization_weight",
+            # "stitched_normalization_weight",
+            "event_weight",
+        }
+        return columns
+
+    def produces(self, config_inst) -> set:
+        return {f"gatja_output_{i}" for i in range(self.n_jets * len(self.jet_classes))}
+
+    def setup(self) -> None:
+        add_gatja_scores_variables(self.config_inst)
+        if self.config_inst.has_tag(f"{self.cls_name}_called"):
+            return
+
+        prepare_ml_processes(self.config_inst, self.train_nodes, self.sub_process_class_factors)
+        self.valid_ml_id_sanity_check()
+
+        for config_inst in self.config_insts:
+            for i in range(self.n_jets * len(self.jet_classes)):
+                name = f"gatja_output_{i}"
+                if name not in config_inst.variables:
+                    jet_slot = i // len(self.jet_classes) + 1
+                    jet_class = self.jet_classes[i % len(self.jet_classes)]
+                    config_inst.add_variable(
+                        name=name,
+                        expression=name,
+                        null_value=-10,
+                        binning=(40, 0., 1.),
+                        x_title=f"GATJA {jet_class} score (jet {jet_slot})",
+                    )
+
+        self.config_inst.add_tag(f"{self.cls_name}_called")
+
+    _downsample = {"tt_custom": 0.1}
+
+    def _proc_data_to_dataframe(self, proc_data, process_name: str) -> "pd.DataFrame":
+        import pandas as pd
+        df = pd.DataFrame(
+            np.asarray(proc_data.features),
+            columns=list(proc_data.input_features),
+        )
+        frac = self._downsample.get(process_name, 1.0)
+        if frac < 1.0:
+            rng = np.random.default_rng(abs(hash(process_name)) % 2**32)
+            df = df.loc[rng.random(len(df)) < frac].reset_index(drop=True)
+
+        df["process"] = process_name
+        return df
+
+    def _safe_lookup(self, frame: "pd.DataFrame", row_labels: Sequence[int], column_names: Sequence[str]) -> np.ndarray:
+        if len(row_labels) == 0:
+            return np.array([], dtype=float)
+        subset = frame.loc[row_labels]
+        column_index = subset.columns.get_indexer(column_names)
+        if np.any(column_index < 0):
+            missing = [column_names[index] for index, value in enumerate(column_index) if value < 0]
+            raise KeyError(f"Missing neighbour columns: {missing}")
+        row_index = np.arange(len(row_labels))
+        return subset.to_numpy()[row_index, column_index]
+
+    def compute_padding_mask(self, working: "pd.DataFrame", index: int) -> np.ndarray:
+        slot = index + 1
+        by_count = (slot > working["jetNumber"].to_numpy())
+        return by_count
+
+    def _create_graphs_core(self, df: "pd.DataFrame", index: int, drop_empty: bool = True):
+        import pandas as pd
+        # working = df.copy()
+        working = df.drop(columns=["process"], errors="ignore").copy()
+
+        low_index_column = f"jetMinChiHiggsIndex{index + 1}"
+        second_index_column = f"jetSecMinChiHiggsIndex{index + 1}"
+
+        working.loc[working[low_index_column] > 7, low_index_column] = index
+        working.loc[working[low_index_column] == -6, low_index_column] = index
+        working.loc[working[second_index_column] > 7, second_index_column] = index
+        working.loc[working[second_index_column] == -6, second_index_column] = index
+
+        node_cols = [
+            "jetPT" + str(index + 1),
+            "jetEta" + str(index + 1),
+            "jetPhi" + str(index + 1),
+            "jetMinChiHiggsIndex" + str(index + 1),
+            "jetBTagDisc" + str(index + 1),
+        ]
+
+        rest_cols = [
+            "jetHT",  # "bjetHT", "lightjetHT",
+            "jetNumber", "jetAverageMass",
+            "leptonPT1", "leptonEta1", "leptonPhi1",
+            "leptonPT2", "leptonEta2", "leptonPhi2",
+            "met",
+        ]
+
+        if drop_empty:
+            working = working.loc[working[f"jetPT{index + 1}"] >= 0].copy()
+
+        btag_weight = working["btag_weight"].to_numpy()
+
+        node_part = working[node_cols].to_numpy()
+        rest_part = working[rest_cols].to_numpy()
+
+        low_partner = (working[low_index_column] + 1).astype(int).astype(str)
+        second_partner = (working[second_index_column] + 1).astype(int).astype(str)
+
+        # print("index is : ", index_main)
+        # print("the dataframe : ", np.sum(("jetPT" + low_partner) == "jetPT0"))
+
+        label_higgs = working[f"jetHiggsMatched{index + 1}"].to_numpy(dtype=bool)  # .drop(empty_index)
+        label_top = working[f"jetTopMatched{index + 1}"].to_numpy(dtype=bool)  # .drop(empty_index)
+        # label_sample = working["sample"].drop(empty_index)
+        label_others = (~ np.logical_or(label_top, label_higgs)).astype(int)
+
+        low_rows = pd.Series("jetPT" + low_partner, index=working.index)
+        neighbour = [
+            self._safe_lookup(working, low_rows.index, low_rows),
+            # .drop(empty_index)) for the following lines is droped -> use instead padding
+            self._safe_lookup(working, low_rows.index, pd.Series("jetEta" + low_partner, index=working.index)),
+            self._safe_lookup(working, low_rows.index, pd.Series("jetPhi" + low_partner, index=working.index)),
+            self._safe_lookup(working, low_rows.index, pd.Series(
+                "jetBTagDisc" + low_partner, index=working.index,
+            )),
+        ]
+
+        second_rows = pd.Series("jetPT" + second_partner, index=working.index)
+        neighbour2 = [
+            self._safe_lookup(working, second_rows.index, second_rows),
+            # .drop(empty_index)) for the following lines is droped -> use instead padding
+            self._safe_lookup(working, second_rows.index, pd.Series("jetEta" + second_partner, index=working.index)),
+            self._safe_lookup(working, second_rows.index, pd.Series("jetPhi" + second_partner, index=working.index)),
+            self._safe_lookup(working, second_rows.index, pd.Series(
+                "jetBTagDisc" + second_partner, index=working.index,
+            )),
+        ]
+        graph_data = np.hstack(
+            (btag_weight[:, None], node_part, rest_part, np.array(neighbour).T, np.array(neighbour2).T),
+        ).astype(np.float32)
+        # graph_data = np.hstack((main.to_numpy(), np.array(neighbour).T, np.array(neighbour2).T))
+        labels = np.vstack(
+            (
+                label_higgs.astype(int),
+                label_top.astype(int),
+                label_others.astype(int),
+            ),
+        )
+        padding_mask = self.compute_padding_mask(working, index)
+        event_weights = working["weights"].to_numpy(dtype=np.float32)
+
+        return graph_data, labels, padding_mask, event_weights
+
+    def create_graphs(
+        self,
+        df: "pd.DataFrame",
+        index: int,
+        drop_empty: bool = False,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        return self._create_graphs_core(df, index=index, drop_empty=drop_empty)
+
+    def prepare_stage_one_graph_tensors(
+        self,
+        df_sample: "pd.DataFrame",
+        max_njets: int = 8,
+    ) -> tuple[
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+    ]:
+        sample_blocks = []
+        label_blocks = []
+        btag_weights_blocks = []
+        process_blocks = []
+        padding_blocks = []
+        event_weights_blocks = []
+
+        for index in range(max_njets):
+            sample_block, label_block, padding_mask, event_weight_block = self.create_graphs(df_sample, index)
+            real = ~padding_mask
+            btag_weights_blocks.append(sample_block[real, 0])
+            sample_blocks.append(sample_block[real, 1:])
+            label_blocks.append(label_block.T[real].astype(np.float32))
+            process_blocks.append(df_sample["process"].to_numpy()[real])
+            padding_blocks.append(padding_mask[real])
+            event_weights_blocks.append(event_weight_block[real])
+
+        sample = np.concatenate(sample_blocks, axis=0)
+        label = np.concatenate(label_blocks, axis=0)
+        btag_weights = np.concatenate(btag_weights_blocks, axis=0)
+        process_names = np.concatenate(process_blocks, axis=0)
+        padded = np.concatenate(padding_blocks, axis=0)
+        event_weights = np.concatenate(event_weights_blocks, axis=0)
+
+        assert label.shape[1] == len(self.jet_classes), f"label shape {label.shape} != (n, 3)"
+        assert len(sample) == len(label) == len(btag_weights) == len(process_names) == len(padded)
+
+        return sample, label, btag_weights, process_names, padded, event_weights
+
+    def _log_class_composition(self, label, process_names, event_weights=None, tag: str = "") -> None:
+        logger.info(f"class composition ({tag}):")
+
+        groups = [("ALL", np.ones(len(label), dtype=bool))]
+        groups += [(str(p), process_names == p) for p in np.unique(process_names)]
+
+        for name, sel in groups:
+            n = int(sel.sum())
+            if n == 0:
+                continue
+            counts = label[sel].sum(axis=0)
+            parts = [
+                f"{cls}={int(c):,} ({c / n:.2%})"
+                for cls, c in zip(self.jet_classes, counts)
+            ]
+            line = f"  {name:<22} n_jets={n:>10,}   " + "   ".join(parts)
+
+            if event_weights is not None:
+                w_counts = (label[sel] * event_weights[sel, None]).sum(axis=0)
+                line += "   | weighted: " + " ".join(
+                    f"{cls}={w:.1f}" for cls, w in zip(self.jet_classes, w_counts)
+                )
+            logger.info(line)
+
+    def make_model_gnn(self, input_shape, index_node: int, index_neigh1: int, index_neigh2: int):
+        import tensorflow
+        from tensorflow import keras
+        layers = tensorflow.keras.layers
+        from tensorflow.keras.layers import BatchNormalization
+
+        inputs = keras.Input(shape=input_shape)
+        input_node_value = inputs[:, :index_node]
+        input_neigh1_value = inputs[:, -(index_neigh1 + index_neigh2):-index_neigh2]
+        input_neigh2_value = inputs[:, -index_neigh2:]
+        input_rest = inputs[:, index_node:-(index_neigh1 + index_neigh2)]
+
+        def dense_layer(values, units: int):
+            values = layers.Dense(units)(values)
+            values = layers.LeakyReLU()(values)
+            return values
+
+        node_value = dense_layer(input_node_value, 256)
+        node_value = layers.Concatenate()([node_value, input_node_value])
+        node_value = dense_layer(node_value, 128)
+
+        neigh1_value = dense_layer(input_neigh1_value, 256)
+        neigh1_value = layers.Concatenate()([neigh1_value, input_neigh1_value])
+        neigh1_value = dense_layer(neigh1_value, 128)
+
+        neigh2_value = dense_layer(input_neigh2_value, 256)
+        neigh2_value = layers.Concatenate()([neigh2_value, input_neigh2_value])
+        neigh2_value = dense_layer(neigh2_value, 128)
+
+        weight_main = layers.Softmax()(keras.ops.matmul(keras.ops.transpose(node_value), node_value))
+        weight_neigh1 = layers.Softmax()(keras.ops.matmul(keras.ops.transpose(node_value), neigh1_value))
+        weight_neigh2 = layers.Softmax()(keras.ops.matmul(keras.ops.transpose(node_value), neigh2_value))
+
+        rest = dense_layer(input_rest, 256)
+        rest = layers.Concatenate()([rest, input_rest])
+        rest = dense_layer(rest, 128)
+
+        node = node_value * weight_main[:, 0]
+        neigh1 = neigh1_value * weight_neigh1[:, 0]
+        neigh2 = neigh2_value * weight_neigh2[:, 0]
+
+        max_embed = layers.Concatenate()([node, layers.Maximum()([neigh1, neigh2])])
+        x_dense = layers.Concatenate()([rest, max_embed])
+        x_dense = layers.Dropout(0.15)(x_dense)
+
+        def dropout_layer(values, units: int):
+            values = layers.Dense(units)(values)
+            values = BatchNormalization()(values)
+            values = layers.LeakyReLU()(values)
+            values = layers.Dropout(0.15)(values)
+            values = layers.Concatenate()([values, x_dense])
+            return values
+
+        x = dropout_layer(x_dense, 2048)
+        x = dropout_layer(x, 2048)
+        x = dropout_layer(x, 2048)
+        x = dropout_layer(x, 2048)
+        x = dropout_layer(x, 1024)
+        x = dropout_layer(x, 512)
+        x = dropout_layer(x, 128)
+        x = dropout_layer(x, 32)
+        outputs = layers.Dense(3, activation="softmax")(x)
+        return keras.Model(inputs, outputs)
+
+    class_weight_power = 0.5
+
+    def compute_class_weights(self, label: np.ndarray) -> np.ndarray:
+        class_sums = label.sum(axis=0).astype(np.float64)
+        w_cls = class_sums ** (-self.class_weight_power)
+        w_cls /= np.average(w_cls, weights=class_sums)
+
+        logger.info(
+            "class weights: " + ", ".join(
+                f"{c}={w:.3f} (n={int(n):,})"
+                for c, w, n in zip(self.jet_classes, w_cls, class_sums)
+            ),
+        )
+        return w_cls.astype(np.float32)
+
+    def make_optimizer(self, train_data_length: int):
+        import tensorflow as tf
+        class WarmupCosineDecay(tf.keras.optimizers.schedules.LearningRateSchedule):
+            def __init__(self, initial_lr, decay_steps, warmup_steps=2, warmup_lr=1e-9, name=None):
+                super().__init__()
+                self.initial_lr = float(initial_lr)
+                self.decay_steps = int(decay_steps)
+                self.warmup_steps = int(warmup_steps)
+                self.warmup_lr = float(warmup_lr)
+                self.name = name
+                self.cosine = tf.keras.optimizers.schedules.CosineDecay(
+                    initial_learning_rate=self.initial_lr,
+                    decay_steps=self.decay_steps,
+                )
+
+            def __call__(self, step):
+                import tensorflow as tf
+                step = tf.cast(step, tf.float32)
+                warmup_steps = tf.cast(self.warmup_steps, tf.float32)
+
+                def warmup():
+                    return self.warmup_lr + (self.initial_lr - self.warmup_lr) * (step / warmup_steps)
+
+                def decay():
+                    return self.cosine(step - warmup_steps)
+
+                return tf.cond(step < warmup_steps, warmup, decay)
+
+            def get_config(self):
+                return {
+                    "initial_lr": self.initial_lr,
+                    "decay_steps": self.decay_steps,
+                    "warmup_steps": self.warmup_steps,
+                    "warmup_lr": self.warmup_lr,
+                    "name": self.name,
+                }
+
+        import math
+        steps_per_epoch = math.ceil(train_data_length / self.batchsize)
+        total_steps = self.epochs * steps_per_epoch
+        warmup_steps = int(self.warmup_epochs * steps_per_epoch)
+
+        lr_schedule = WarmupCosineDecay(
+            initial_lr=self.initial_lr,
+            decay_steps=total_steps,
+            warmup_steps=warmup_steps,
+            warmup_lr=self.warmup_lr,
+        )
+
+        return tf.keras.optimizers.Lamb(learning_rate=lr_schedule)
+
+    def compile_stage_one(self, model, optimizer=None):
+        import tensorflow as tf
+        model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
+            # loss=custom_focal_loss,
+            metrics=[
+                "accuracy",
+                "categorical_crossentropy",
+                tf.keras.metrics.AUC(
+                    name="auc_higgs", multi_label=True, num_labels=len(self.jet_classes),
+                    label_weights=[1.0, 0.0, 0.0], num_thresholds=50,
+                ),
+            ],
+        )
+        return model
+
+    def prepare_ml_model(self, task: Any):
+        import tensorflow as tf
+        tf.keras.utils.set_random_seed(self.seed + task.fold)
+        model = self.make_model_gnn(
+            input_shape=(self.n_features,),
+            index_node=self.stage_one_index_node,
+            index_neigh1=self.stage_one_index_neigh1,
+            index_neigh2=self.stage_one_index_neigh2,
+        )
+        # model = self.compile_stage_one(model, self.make_optimizer())
+        return model
+
+    _jet_downsample = {
+        "tt_custom": (1.0, 0.15, 0.05),
+        "tt_bb_custom": (1.0, 0.2, 0.15),
+        "tth": (1.0, 0.4, 0.15),
+        "tthh_4b": (1.0, 1.0, 1.0),
+        "hhh_4b2w_2l2nu_c30_d40": (1.0, 1.0, 1.0),
+    }
+
+    def _downsample_jets(self, sample, label, btag, process_names, padded, event_weights, tag=""):
+        if not self._jet_downsample:
+            return sample, label, btag, process_names, padded, event_weights
+
+        class_ids = label.argmax(axis=1)
+        rng = np.random.default_rng(self.seed)
+        u = rng.random(len(label))
+        keep = np.ones(len(label), dtype=bool)
+
+        for proc, fracs in self._jet_downsample.items():
+            for cls_idx, frac in enumerate(fracs):
+                if frac >= 1.0:
+                    continue
+                sel = (process_names == proc) & (class_ids == cls_idx)
+                n_before = int(sel.sum())
+                if n_before == 0:
+                    continue
+                keep &= ~(sel & (u >= frac))
+                logger.info(
+                    f"{tag} jet-downsampling {proc}/{self.jet_classes[cls_idx]}: "
+                    f"{n_before} -> {int((sel & keep).sum())} ({frac:.0%})",
+                )
+
+        return (sample[keep], label[keep], btag[keep],
+                process_names[keep], padded[keep], event_weights[keep])
+
+    def fit_ml_model(
+        self,
+        task: Any,
+        model,
+        train: DotDict,
+        validation: DotDict,
+        output,
+    ) -> None:
+        import tensorflow as tf
+        from sklearn.preprocessing import RobustScaler, QuantileTransformer, MinMaxScaler
+        import pandas as pd
+        import gc
+
+        df_train = pd.concat(
+            [self._proc_data_to_dataframe(proc_data, proc_inst.name)
+             for proc_inst, proc_data in train.items()],
+            ignore_index=True,
+        )
+        df_val = pd.concat(
+            [self._proc_data_to_dataframe(proc_data, proc_inst.name)
+             for proc_inst, proc_data in validation.items()],
+            ignore_index=True,
+        )
+        logger.info(
+            f"fold {task.fold}: {len(df_train)} train / {len(df_val)} val events "
+            f"({dict(df_train['process'].value_counts())})",
+        )
+        for proc_data in list(train.values()) + list(validation.values()):
+            proc_data.cleanup()
+
+        gc.collect()
+
+        train_sample, train_label, train_btag_weights, train_process, train_padded, train_event_weights = \
+            self.prepare_stage_one_graph_tensors(df_train, max_njets=self.n_jets)
+
+        train_sample, train_label, train_btag_weights, train_process, train_padded, train_event_weights = \
+            self._downsample_jets(train_sample, train_label, train_btag_weights,
+                                train_process, train_padded, train_event_weights, tag="train")
+
+        val_sample, val_label, val_btag_weights, val_process, val_padded, val_event_weights = \
+            self.prepare_stage_one_graph_tensors(df_val, max_njets=self.n_jets)
+
+        assert train_sample.shape[1] == self.n_features, (
+            f"graph width {train_sample.shape[1]} != n_features {self.n_features}"
+        )
+
+        self._log_class_composition(train_label, train_process, train_event_weights, tag=f"fold{task.fold} train")
+        self._log_class_composition(val_label, val_process, val_event_weights, tag=f"fold{task.fold} val")
+
+        del df_train, df_val
+        gc.collect()
+
+        robust_scaler = RobustScaler()
+        quantile_scaler = QuantileTransformer(random_state=42)
+        minmax_scaler = MinMaxScaler()
+
+        x_train = minmax_scaler.fit_transform(
+            quantile_scaler.fit_transform(
+                robust_scaler.fit_transform(train_sample),
+            ),
+        )
+        x_val = minmax_scaler.transform(
+            quantile_scaler.transform(
+                robust_scaler.transform(val_sample),
+            ),
+        )
+
+        def _as_f32(name, arr):
+            a = np.asarray(arr)
+            if a.dtype != np.float32:
+                logger.info(f"{name}: casting {a.dtype} -> float32")
+                a = a.astype(np.float32)
+            return a
+
+        x_train = _as_f32("x_train", x_train)
+        x_val = _as_f32("x_val", x_val)
+        train_label = _as_f32("train_label", train_label)
+        val_label = _as_f32("val_label", val_label)
+        train_btag_weights = _as_f32("train_btag_weights", train_btag_weights)
+        val_btag_weights = _as_f32("val_btag_weights", val_btag_weights)
+
+        class_weight_vec = self.compute_class_weights(train_label)
+        train_weights = train_btag_weights * class_weight_vec[train_label.argmax(axis=1)]
+        val_weights = val_btag_weights * class_weight_vec[val_label.argmax(axis=1)]
+
+        optimizer = self.make_optimizer(train_data_length=len(x_train))
+        model = self.compile_stage_one(model, optimizer)
+
+        callbacks = [
+            tf.keras.callbacks.ModelCheckpoint(
+                filepath=output["checkpoint"].abspath,
+                monitor="val_loss", mode="min", save_best_only=True,
+            ),
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss", mode="min",
+                min_delta=0, patience=50,
+                restore_best_weights=True, verbose=1,
+            ),
+            # tf.keras.callbacks.EarlyStopping(
+            #     monitor="val_loss", mode="min",
+            #     min_delta=1e-5, patience=50,
+            #     restore_best_weights=True,
+            #     verbose=1,
+            # ),
+            tf.keras.callbacks.CSVLogger(
+                output["mlmodel"].child(f"history_fold{task.fold}.csv", type="f").abspath,
+                append=False,
+            ),
+        ]
+
+        output["mlmodel"].child("robust_scaler.pkl", type="f").dump(robust_scaler, formatter="pickle")
+        output["mlmodel"].child("quantile_scaler.pkl", type="f").dump(quantile_scaler, formatter="pickle")
+        output["mlmodel"].child("minmax_scaler.pkl", type="f").dump(minmax_scaler, formatter="pickle")
+
+        history = model.fit(
+            x=x_train,
+            y=train_label,
+            sample_weight=train_weights,
+            validation_data=(x_val, val_label, val_weights),
+            # sample_weight=train_btag_weights,
+            # validation_data=(x_val, val_label, val_btag_weights),
+            epochs=self.epochs,
+            batch_size=self.batchsize,
+            callbacks=callbacks,
+            verbose=2,
+        )
+
+        val_pred = model.predict(x_val, batch_size=self.batchsize, verbose=0)
+
+        plot_sets = [("all", np.ones(len(val_label), dtype=bool))]
+        plot_sets += [(str(p), val_process == p) for p in np.unique(val_process)]
+
+        for name, sel in plot_sets:
+            if not np.any(sel):
+                continue
+            tag = f"val_fold{task.fold}_{name}"
+            self._plot_confusion(val_label[sel], val_pred[sel], val_event_weights[sel], output, tag)
+            self._plot_roc(val_label[sel], val_pred[sel], val_event_weights[sel], output, tag)
+            self._plot_scores(val_label[sel], val_pred[sel], val_event_weights[sel], output, tag)
+
+        output["mlmodel"].child("history.pkl", type="f").dump(history.history, formatter="pickle")
+
+        del train_sample, val_sample, x_train, x_val
+        gc.collect()
+
+    def open_model(self, target) -> dict[str, Any]:
+        import tensorflow as tf
+
+        models = {}
+
+        models["input_features"] = tuple(
+            target["mlmodel"].child("input_features.pkl", type="f").load(formatter="pickle"),
+        )
+
+        with open(target["mlmodel"].child("parameters.yaml", type="f").fn) as f:
+            models["parameters"] = yaml.load(f.read(), Loader=yaml.Loader)
+
+        models["model"] = tf.keras.models.load_model(
+            target["mlmodel_file"].abspath, compile=False,
+        )
+        models["best_model"] = tf.keras.models.load_model(
+            target["checkpoint"].abspath, compile=False,
+        )
+
+        for scaler in ("robust_scaler", "quantile_scaler", "minmax_scaler"):
+            models[scaler] = target["mlmodel"].child(f"{scaler}.pkl", type="f").load(formatter="pickle")
+
+        return models
+
+    def _plot_confusion(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        sample_weight: np.ndarray,
+        output,
+        tag: str,
+    ) -> None:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import confusion_matrix
+
+        cm = confusion_matrix(
+            y_true.argmax(axis=1),
+            y_pred.argmax(axis=1),
+            labels=range(len(self.jet_classes)),
+            sample_weight=sample_weight,
+            normalize="true",
+        )
+
+        fig, ax = plt.subplots(figsize=(6, 5))
+        im = ax.imshow(cm, vmin=0, vmax=1, cmap="Blues")
+        fig.colorbar(im, ax=ax)
+        ticks = range(len(self.jet_classes))
+        ax.set_xticks(ticks, self.jet_classes)
+        ax.set_yticks(ticks, self.jet_classes)
+        ax.set_xlabel("predicted class")
+        ax.set_ylabel("true class")
+        ax.set_title(f"GATJA confusion ({tag})")
+        for i in ticks:
+            for j in ticks:
+                ax.text(
+                    j, i, f"{cm[i, j]:.2f}",
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > 0.5 else "black",
+                )
+        fig.tight_layout()
+
+        output["plots"].child(f"confusion_{tag}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+
+    def _plot_roc(self, y_true, y_pred, sample_weight, output, tag: str) -> None:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import roc_curve, auc
+
+        fig, ax = plt.subplots(figsize=(6, 5))
+        for i, cls in enumerate(self.jet_classes):
+            # n_pos = int(y_true[:, i].sum())
+            fpr, tpr, _ = roc_curve(y_true[:, i], y_pred[:, i])
+            ax.plot(fpr, tpr, label=f"{cls} (AUC = {auc(fpr, tpr):.3f})")
+
+        ax.plot([0, 1], [0, 1], "k--", lw=1, label="random")
+        ax.set_xlabel("false positive rate")
+        ax.set_ylabel("true positive rate")
+        ax.set_title(f"GATJA ROC ({tag})")
+        ax.grid(alpha=0.3)
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        output["plots"].child(f"roc_{tag}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+
+    def _plot_scores(self, y_true, y_pred, sample_weight, output, tag: str) -> None:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        n = len(self.jet_classes)
+        fig, axes = plt.subplots(1, n, figsize=(5 * n, 4), squeeze=False)
+        for ax, (i, cls) in zip(axes[0], enumerate(self.jet_classes)):
+            matched = y_true[:, i].astype(bool)
+            for sel, label, color in (
+                (~matched, "unmatched", "darkseagreen"),
+                (matched, "matched", "darkred"),
+            ):
+                if not np.any(sel):
+                    continue
+                ax.hist(y_pred[sel, i], bins=40, range=(0, 1), weights=sample_weight[sel],
+                        density=True, histtype="step", lw=2, color=color, label=label)
+            ax.set_yscale("log")
+            ax.set_xlabel(f"{cls} score")
+            ax.set_ylabel("normalized")
+            ax.grid(alpha=0.25)
+            ax.legend(frameon=False)
+
+        fig.suptitle(f"GATJA scores ({tag})")
+        fig.tight_layout()
+        output["plots"].child(f"scores_{tag}.pdf", type="f").dump(fig, formatter="mpl")
+        plt.close(fig)
+
+    def evaluate(
+        self,
+        task,
+        events: ak.Array,
+        models: list,
+        fold_indices: ak.Array,
+        events_used_in_training: bool = True,
+    ) -> ak.Array:
+
+        import pandas as pd
+        from hbw.ml.data_loader import input_features_sanity_checks
+
+        use_best_model = True  # True: Checkpoint (bestes val_loss) statt letzter Epoche
+        n_classes = len(self.jet_classes)
+        n_out = self.n_jets * n_classes
+
+        for model in models:
+            input_features_sanity_checks(self, model["input_features"])
+
+        nets = [model["best_model" if use_best_model else "model"] for model in models]
+        scalers = [
+            (model["robust_scaler"], model["quantile_scaler"], model["minmax_scaler"])
+            for model in models
+        ]
+
+        df_all = pd.DataFrame({
+            col: np.asarray(ak.to_numpy(events[col]))
+            for col in sorted(self.input_features)
+        })
+
+        evt_pos = np.arange(len(events), dtype=np.int64)
+        fold_np = np.asarray(ak.to_numpy(fold_indices), dtype=np.int64)
+
+        allowed = df_all["jetNumber"].to_numpy() >= 3
+        df_f = df_all.loc[allowed].reset_index(drop=True)
+        pos_f = evt_pos[allowed]
+        folds_f = fold_np[allowed]
+
+        outputs = np.full((len(events), n_out), -10.0, dtype=np.float32)
+
+        for jet_idx in range(self.n_jets):
+
+            keep = df_f[f"jetPT{jet_idx + 1}"].to_numpy() != self.padding_value
+            if not np.any(keep):
+                continue
+            df_kept = df_f.loc[keep].reset_index(drop=True)
+            pos_kept = pos_f[keep]
+            folds_kept = folds_f[keep]
+
+            sample_block, _, _, event_weights = self.create_graphs(df_kept, jet_idx, drop_empty=False)
+            x_raw = sample_block[:, 1:]
+
+            for fold in range(self.folds):
+                sel = folds_kept == fold
+                if not np.any(sel):
+                    continue
+
+                robust_scaler, quantile_scaler, minmax_scaler = scalers[fold]
+                x = minmax_scaler.transform(
+                    quantile_scaler.transform(
+                        robust_scaler.transform(x_raw[sel]),
+                    ),
+                )
+                pred = nets[fold].predict(x, batch_size=self.batchsize, verbose=0)
+                outputs[pos_kept[sel], jet_idx * n_classes:(jet_idx + 1) * n_classes] = pred
+
+        for i in range(n_out):
+            events = set_ak_column(
+                events, f"gatja_output_{i}", np.ascontiguousarray(outputs[:, i]),
+            )
+
+        return events
+
+
+gatja_training = GatjaTraining_MLClassifierBase_small_class_weights_05.derive("gatja_training", cls_dict={})

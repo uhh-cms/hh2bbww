@@ -44,10 +44,12 @@ processes = DotDict({
         "vv", "ttv", "h", "other",
     ],
     "backgrounds_v0": [
-        "st", "dy", "h", "tt_custom", "ttbb_custom"  # "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
+        "st", "dy", "h", "tt_custom", "ttbb_custom",
+        # "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
     ],
     "backgrounds_ttbb_merged": [
-        "st", "dy", "h", "tt_custom", "tt_bb_custom", "tt2b_custom", "ttb_custom" # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
+        "st", "dy", "h", "tt_custom", "tt_bb_custom", "tt2b_custom", "ttb_custom",
+        # "ttbb_custom",  # "tthh_4b",   # "vhh_4b",
     ],
     "hhh": [
         "hhh_4b2w_2l2nu_c30_d40",
@@ -125,7 +127,13 @@ input_features = DotDict({
         f"gatja_output_{i}" for i in range(23)
     ],
 })
-input_features["gatja_inputs"] = input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
+
+# input_features["gatja_inputs"] = input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
+input_features[
+    "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"
+] = (
+    input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
+)
 
 configs = DotDict({
     "22post": lambda self, requested_configs: ["c22postv14"],
@@ -190,7 +198,7 @@ Bin_V1 = hhh_V1.derive("Bin_V1", cls_dict={
 
 Gatja_Bin_V3 = Bin_V1.derive("Gatja_Bin_V3", cls_dict={
     "preparation_producer_name": "prepml_geq3b",
-    "input_features": input_features["gatja_inputs"],
+    "input_features": input_features["gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"],
 })
 
 # ----------------------- BASELINE MULTICLASS MODELS SPLIT IN BJET CAT ------------------------------
@@ -284,9 +292,9 @@ Cat_geq4b_V1 = multiclass_geq3b.derive("Cat_geq4b_V1", cls_dict={
 
 Gatja_Cat_eq3b_V3 = Cat_eq3b_V1.derive("Gatja_Cat_eq3b_V3", cls_dict={
     "preparation_producer_name": "prepml_eq3b",
-    "input_features": input_features["gatja_inputs"],
+    "input_features": input_features["gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"],
 })
 Gatja_Cat_geq4b_V3 = Cat_geq4b_V1.derive("Gatja_Cat_geq4b_V3", cls_dict={
     "preparation_producer_name": "prepml_geq4b",
-    "input_features": input_features["gatja_inputs"],
+    "input_features": input_features["gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"],
 })

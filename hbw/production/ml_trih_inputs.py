@@ -18,7 +18,7 @@ from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_ml_variables, a
 from hbw.production.ml_inputs import common_ml_inputs
 from columnflow.production.cms.btag import btag_wp_weights
 from hbw.production.weights import event_weights
-from hbw.util import IF_GATJA
+from hbw.util import IF_GATJA, IF_NOT_GATJA
 
 from hbw.tasks.ml import ProduceColumnsTF
 
@@ -237,7 +237,223 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
     check_variable_existence(self)
 
 
+@producer(
+    uses={"Jet.*", "GenPart.*", "GenJet.*"},  # "genTtbarId", "GenJet.*"} --> can only be used for ttbar processes
+    produces={
+        "GenJet.matchClass", "GenJet.matchDR", "GenJet.matchAmbiguous",
+        "Jet.matchClass", "Jet.matchDR", "Jet.matchAmbiguous",
+    },
+)
+def jet_gen_matching_8(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    # Gen Matching of jets to gen particles (Higgs, Top, Z) and GenJets. These are required for the GATJA training.
+    # The matching is done by the minimum ∆R between the jet and the gen particle or genjet
+    # The matching is only done for jets that have a genJetIdx >= 0 and < n_genjets.
+    # The matching is done for all jets in the event, not just the b-tagged jets
+    gp = events.GenPart
+    absid_all = abs(gp.pdgId)
 
+    # hard = gp.hasFlags("isHardProcess")
+
+    # isH = hard & (absid_all == 25)
+    # isT = hard & (absid_all == 6)
+    # isZ = hard & (absid_all == 23)
+
+    is_b = (absid_all == 5)
+    isParton = is_b & gp.hasFlags("fromHardProcess") & gp.hasFlags("isLastCopy")
+    partons = gp[isParton]
+
+    def gather_flag(flags, idx):
+        safe_idx = ak.where(idx < 0, 0, idx)
+        return ak.where(idx < 0, False, flags[safe_idx])
+
+    def gather_int(vals, idx, fill):
+        safe_idx = ak.where(idx < 0, 0, idx)
+        return ak.where(idx < 0, fill, vals[safe_idx])
+
+    anc = partons.genPartIdxMother
+    origin = ak.values_astype(ak.full_like(anc, -1), np.int8)
+    resolved = ak.zeros_like(anc, dtype=bool)
+
+    max_depth = 50
+    for _ in range(max_depth):
+        if ak.all(ak.flatten(anc) < 0):
+            break
+
+        anc_absid = gather_int(absid_all, anc, -1)
+        is_bcopy = (anc_absid == 5)
+
+        at_H = (anc_absid == 25)  # Higgs
+        at_T = (anc_absid == 6)  # Top
+        at_Z = (anc_absid == 23)  # Z
+
+        decide = (~resolved) & (anc >= 0) & (~is_bcopy)
+        origin = ak.where(decide & at_H, 1, origin)
+        origin = ak.where(decide & at_T, 2, origin)
+        origin = ak.where(decide & at_Z, 3, origin)
+
+        resolved = resolved | decide
+
+        next_anc = gp.genPartIdxMother[ak.where(anc >= 0, anc, 0)]
+        anc = ak.where(anc >= 0, next_anc, -1)
+
+    part_origin = origin
+
+    partH = partons[part_origin == 1]
+    partT = partons[part_origin == 2]
+    partZ = partons[part_origin == 3]
+
+    genjets = events.GenJet
+
+    def min_dr_between(jets, ref_particles):
+        pairs = ak.cartesian({"obj": jets, "ref": ref_particles}, nested=True)
+        dr = pairs["obj"].delta_r(pairs["ref"])
+        return ak.fill_none(ak.min(dr, axis=-1), 999.0)
+
+    dr_stack = ak.concatenate(
+        [
+            min_dr_between(genjets, partH)[..., np.newaxis],
+            min_dr_between(genjets, partT)[..., np.newaxis],
+            min_dr_between(genjets, partZ)[..., np.newaxis],
+        ],
+        axis=-1,
+    )
+
+    best_idx = ak.argmin(dr_stack, axis=-1) + 1
+    dr_sorted = ak.sort(dr_stack, axis=-1)
+    best_dr = dr_sorted[..., 0]
+    second_dr = dr_sorted[..., 1]
+
+    matched = best_dr < 0.4
+    matchClass = ak.values_astype(ak.where(matched, best_idx, -1), np.int8)
+    matchDR = ak.values_astype(ak.where(matched, best_dr, 999.0), np.float32)
+
+    matchAmbiguous = matched & (second_dr < 0.4)
+
+    genjets = ak.with_field(genjets, matchClass, "matchClass")
+    genjets = ak.with_field(genjets, matchDR, "matchDR")
+    genjets = ak.with_field(genjets, matchAmbiguous, "matchAmbiguous")
+    events["GenJet"] = genjets
+
+    jets = events.Jet
+    n_genjets = ak.num(events.GenJet, axis=1)
+
+    valid = (jets.genJetIdx >= 0) & (jets.genJetIdx < n_genjets)
+    safe_idx = ak.where(valid, jets.genJetIdx, 0)
+    matched_genjets = events.GenJet[safe_idx]
+
+    jets = ak.with_field(
+        jets,
+        ak.values_astype(ak.where(valid, matched_genjets.matchClass, -1),
+        np.int8),
+        "matchClass",
+    )
+
+    jets = ak.with_field(
+        jets,
+        ak.values_astype(ak.where(valid, matched_genjets.matchDR, 999.0), np.float32),
+        "matchDR",
+    )
+
+    jets = ak.with_field(
+        jets,
+        ak.where(valid, matched_genjets.matchAmbiguous, False),
+        "matchAmbiguous",
+    )
+
+    events["Jet"] = jets
+
+    print("H:", ak.sum(events.Jet.matchClass == 1),
+        "T:", ak.sum(events.Jet.matchClass == 2),
+        "Z:", ak.sum(events.Jet.matchClass == 3),
+        "Others:", ak.sum(events.Jet.matchClass == -1))
+
+    return events
+
+
+from columnflow.production.normalization import normalization_weights
+
+
+@producer(
+    uses={normalization_weights},
+    produces={normalization_weights, "event_weight"},
+    mc_only=True,
+)
+def gatja_event_weight(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    events = self[normalization_weights](events, **kwargs)
+    events = set_ak_column(events, "event_weight", events.normalization_weight, value_type=np.float32)
+    return events
+
+
+from columnflow.selection.stats import increment_stats
+
+
+@producer(
+    uses={increment_stats, "process_id", "fold_indices", "event_weight", "jetNumber"},
+)
+def gatja_prepml(
+    self: Producer,
+    events: ak.Array,
+    task: law.Task,
+    stats: dict = {},
+    fold_indices: ak.Array | None = None,
+    ml_model_inst=None,
+    **kwargs,
+) -> ak.Array:
+
+    # gatja_prepml is an adapted copy of prepml
+    # Two adaotations: 1) jetNumber >= 3 instead of the signal-region
+    # categorizer because GATJA graph needs a node jet plus its two chi2 neighbours
+    # 2) Weights: reads the pre-computed event_weight column (normalization weight) instead of
+    # calling default_hist_producer (Hist_producer caused an error).
+    # These weights do not enter the GATJA loss since the traning uses btag_weight as sample_weight
+
+    if task.task_family == "cf.PrepareMLEvents":
+        mask = events.jetNumber >= 3  # Select events with at least 3 jets for gatja training
+        events = events[mask]
+
+    weight_map = {
+        "num_events": Ellipsis,
+    }
+    if task.dataset_inst.is_mc:
+        weight = events.event_weight
+        stats["sum_weights"] += float(ak.sum(weight, axis=0))
+        weight_map["sum_weights"] = weight
+        weight_map["sum_pos_weights"] = (weight, weight > 0)
+        weight_map["sum_abs_weights"] = np.abs(weight)
+        weight_map["num_events_pos_weights"] = weight > 0
+
+    group_map = {
+        "process": {
+            "values": events.process_id,
+            "mask_fn": (lambda v: events.process_id == v),
+        },
+        "fold": {
+            "values": events.fold_indices,
+            "mask_fn": (lambda v: events.fold_indices == v),
+            "combinations_only": True,
+        },
+    }
+
+    self[increment_stats](
+        events,
+        None,
+        stats,
+        weight_map=weight_map,
+        group_map=group_map,
+        group_combinations=[("process", "fold")],
+        **kwargs,
+    )
+
+    for key in list(weight_map.keys()):
+        stats.pop(key, None)
+
+    return events
+
+
+# Input features which are required for the GATJA traning.
+# The producer includes all features which are also used in the first version of the tutorial of
+# Oszguar and Gamze (not all are used for the training at the moment)
+# Furhtermore some additonal features are added
 @producer(
     uses={
         # "*", "*.*",
@@ -246,626 +462,583 @@ def hhh_dl_ml_inputs_init(self: Producer) -> None:
         common_ml_inputs,
         prepare_hhh_bjets,
         event_weights,
-        #b_gen_matching,
+        # b_gen_matching,
         "Jet.*",
-        #"GenJet.*", 
-        # "Jet.bjetHiggsMatched", "Jet.bjetTopMatched", "Jet.bjetZMatched",
+        "Jet.matchClass",
+        # "GenJet.*",
     },
-    produces={"bjetPT1", "bjetPT2", "bjetPT3", "bjetPT4", "bjetPT5", "bjetPT6", "bjetPT7", "bjetPT8",
-              "bjetEta1", "bjetEta2", "bjetEta3", "bjetEta4", "bjetEta5", "bjetEta6", "bjetEta7", "bjetEta8",
-              "leptonPT1", "leptonEta1", "leptonPT2", "leptonEta2", "leptonPhi1", "leptonPhi2",
-              "bjetAverageMass", "jetAverageMass", 
-              "bjetAverageMassSqr", "jetHT", "bjetHT", "lightjetHT", "jetNumber", "bjetNumber",
-              "bjetPhi1", "bjetPhi2", "bjetPhi3", "bjetPhi4", "bjetPhi5", "bjetPhi6", "bjetPhi7", "bjetPhi8",
-              "averageDeltaEtabb", "minDeltaRjj", 
-              "minDeltaRbb", 
-              "maxDeltaEtabb", "maxDeltaEtajj", "maxDeltaEtabj",
-              "minDeltaRbj", "averageDeltaEtabj", "averageDeltaRbj", "minDeltaRMassjj", "minDeltaRMassbb", "minDeltaRMassbj",
-              "minDeltaRpTjj", "minDeltaRpTbb", "minDeltaRpTbj", "maxPTmassjjj", "maxPTmassjbb", "met", "metPhi",
-              #bjetSecMinChiHiggsIndex
-              #bjetTopMatched
-              "minDeltaRbb_GATJA",
-              "bjetMinChiHiggsIndex1", "bjetSecMinChiHiggsIndex1", "bjetMinChiHiggsIndex2", "bjetSecMinChiHiggsIndex2", "bjetMinChiHiggsIndex3", "bjetSecMinChiHiggsIndex3", "bjetMinChiHiggsIndex4", "bjetSecMinChiHiggsIndex4",
-              "bjetMinChiHiggsIndex5", "bjetSecMinChiHiggsIndex5", "bjetMinChiHiggsIndex6", "bjetSecMinChiHiggsIndex6", "bjetMinChiHiggsIndex7", "bjetSecMinChiHiggsIndex7", "bjetMinChiHiggsIndex8", "bjetSecMinChiHiggsIndex8",
-              "bjetBTagDisc1", "bjetBTagDisc2", "bjetBTagDisc3", "bjetBTagDisc4", "bjetBTagDisc5", "bjetBTagDisc6", "bjetBTagDisc7", "bjetBTagDisc8", "btag_weight", "weights",
-            #   "bjetTopMatched1", "bjetTopMatched2", "bjetTopMatched3", "bjetTopMatched4", "bjetTopMatched5", "bjetTopMatched6","bjetTopMatched7", "bjetTopMatched8", 
-            #   "bjetHiggsMatched1", "bjetHiggsMatched2", "bjetHiggsMatched3", "bjetHiggsMatched4", "bjetHiggsMatched5", "bjetHiggsMatched6", "bjetHiggsMatched7", "bjetHiggsMatched8",
-            #   "bjetZMatched1", "bjetZMatched2", "bjetZMatched3", "bjetZMatched4", "bjetZMatched5", "bjetZMatched6", "bjetZMatched7", "bjetZMatched8", 
-              "bjetsMass12", "bjetsMass13", "bjetsMass14", "bjetsMass15", "bjetsMass16", "bjetsMass17", "bjetsMass18",
-              "bjetsMass23", "bjetsMass24", "bjetsMass25", "bjetsMass26", "bjetsMass27", "bjetsMass28",
-              "bjetsMass34", "bjetsMass35", "bjetsMass36", "bjetsMass37", "bjetsMass38",
-              "bjetsMass45", "bjetsMass46", "bjetsMass47", "bjetsMass48",
-              "bjetsMass56", "bjetsMass57", "bjetsMass58",
-              "bjetsMass67", "bjetsMass68",
-              "bjetsMass78"
+    produces={
+        "event_id", "jetPT1", "jetPT2", "jetPT3", "jetPT4", "jetPT5", "jetPT6", "jetPT7", "jetPT8",
+        "bjetPT1", "bjetPT2", "bjetPT3", "bjetPT4", "bjetPT5", "bjetPT6", "bjetPT7", "bjetPT8",
+        "jetEta1", "jetEta2", "jetEta3", "jetEta4", "jetEta5", "jetEta6", "jetEta7", "jetEta8",
+        "bjetEta1", "bjetEta2", "bjetEta3", "bjetEta4", "bjetEta5", "bjetEta6", "bjetEta7", "bjetEta8",
+        "leptonPT1", "leptonEta1", "leptonPT2", "leptonEta2", "leptonPhi1", "leptonPhi2",
+        "bjetAverageMass", "jetAverageMass", "jetAverageMassSqr",
+        "bjetAverageMassSqr", "jetHT", "bjetHT", "lightjetHT", "jetNumber", "bjetNumber",
+        "jetPhi1", "jetPhi2", "jetPhi3", "jetPhi4", "jetPhi5", "jetPhi6", "jetPhi7", "jetPhi8",
+        "bjetPhi1", "bjetPhi2", "bjetPhi3", "bjetPhi4", "bjetPhi5", "bjetPhi6", "bjetPhi7", "bjetPhi8",
+        "averageDeltaEtabb", "minDeltaRjj", "minDeltaRbb",
+        "maxDeltaEtabb", "maxDeltaEtajj", "maxDeltaEtabj",
+        "minDeltaRbj", "averageDeltaEtabj", "averageDeltaRbj", "minDeltaRMassjj",
+        "minDeltaRMassbb", "minDeltaRMassbj",
+        "minDeltaRpTjj", "minDeltaRpTbb", "minDeltaRpTbj", "maxPTmassjjj", "maxPTmassjbb", "met", "metPhi",
+        "jetMinChiHiggsIndex1", "jetSecMinChiHiggsIndex1", "jetMinChiHiggsIndex2", "jetSecMinChiHiggsIndex2",
+        "jetMinChiHiggsIndex3", "jetSecMinChiHiggsIndex3", "jetMinChiHiggsIndex4", "jetSecMinChiHiggsIndex4",
+        "jetMinChiHiggsIndex5", "jetSecMinChiHiggsIndex5", "jetMinChiHiggsIndex6", "jetSecMinChiHiggsIndex6",
+        "jetMinChiHiggsIndex7", "jetSecMinChiHiggsIndex7", "jetMinChiHiggsIndex8", "jetSecMinChiHiggsIndex8",
+        "bjetMinChiHiggsIndex1", "bjetSecMinChiHiggsIndex1", "bjetMinChiHiggsIndex2", "bjetSecMinChiHiggsIndex2",
+        "bjetMinChiHiggsIndex3", "bjetSecMinChiHiggsIndex3", "bjetMinChiHiggsIndex4", "bjetSecMinChiHiggsIndex4",
+        "bjetMinChiHiggsIndex5", "bjetSecMinChiHiggsIndex5", "bjetMinChiHiggsIndex6", "bjetSecMinChiHiggsIndex6",
+        "bjetMinChiHiggsIndex7", "bjetSecMinChiHiggsIndex7", "bjetMinChiHiggsIndex8", "bjetSecMinChiHiggsIndex8",
+        "jetBTagDisc1", "jetBTagDisc2", "jetBTagDisc3", "jetBTagDisc4", "jetBTagDisc5",
+        "jetBTagDisc6", "jetBTagDisc7", "jetBTagDisc8",
+        "jetBTagDisDisc1", "jetBTagDisDisc2", "jetBTagDisDisc3", "jetBTagDisDisc4",
+        "jetBTagDisDisc5", "jetBTagDisDisc6", "jetBTagDisDisc7", "jetBTagDisDisc8",
+        "bjetBTagDisc1", "bjetBTagDisc2", "bjetBTagDisc3", "bjetBTagDisc4",
+        "bjetBTagDisc5", "bjetBTagDisc6", "bjetBTagDisc7", "bjetBTagDisc8",
+        "bjetBTagDisDisc1", "bjetBTagDisDisc2", "bjetBTagDisDisc3", "bjetBTagDisDisc4",
+        "bjetBTagDisDisc5", "bjetBTagDisDisc6", "bjetBTagDisDisc7", "bjetBTagDisDisc8",
+        "btag_weight", "weights",
+        "jetTopMatched1", "jetTopMatched2", "jetTopMatched3", "jetTopMatched4",
+        "jetTopMatched5", "jetTopMatched6", "jetTopMatched7", "jetTopMatched8",
+        "bjetTopMatched1", "bjetTopMatched2", "bjetTopMatched3", "bjetTopMatched4",
+        "bjetTopMatched5", "bjetTopMatched6", "bjetTopMatched7", "bjetTopMatched8",
+        "jetHiggsMatched1", "jetHiggsMatched2", "jetHiggsMatched3", "jetHiggsMatched4",
+        "jetHiggsMatched5", "jetHiggsMatched6", "jetHiggsMatched7", "jetHiggsMatched8",
+        "bjetHiggsMatched1", "bjetHiggsMatched2", "bjetHiggsMatched3", "bjetHiggsMatched4",
+        "bjetHiggsMatched5", "bjetHiggsMatched6", "bjetHiggsMatched7", "bjetHiggsMatched8",
+        "jetZMatched1", "jetZMatched2", "jetZMatched3", "jetZMatched4",
+        "jetZMatched5", "jetZMatched6", "jetZMatched7", "jetZMatched8",
+        "bjetZMatched1", "bjetZMatched2", "bjetZMatched3", "bjetZMatched4",
+        "bjetZMatched5", "bjetZMatched6", "bjetZMatched7", "bjetZMatched8",
+        "jetsMass12", "jetsMass13", "jetsMass14", "jetsMass15", "jetsMass16", "jetsMass17", "jetsMass18",
+        "jetsMass23", "jetsMass24", "jetsMass25", "jetsMass26", "jetsMass27", "jetsMass28",
+        "jetsMass34", "jetsMass35", "jetsMass36", "jetsMass37", "jetsMass38",
+        "jetsMass45", "jetsMass46", "jetsMass47", "jetsMass48", "jetsMass56", "jetsMass57", "jetsMass58",
+        "jetsMass67", "jetsMass68", "jetsMass78",
+        "bjetsMass12", "bjetsMass13", "bjetsMass14", "bjetsMass15", "bjetsMass16", "bjetsMass17", "bjetsMass18",
+        "bjetsMass23", "bjetsMass24", "bjetsMass25", "bjetsMass26", "bjetsMass27", "bjetsMass28",
+        "bjetsMass34", "bjetsMass35", "bjetsMass36", "bjetsMass37", "bjetsMass38",
+        "bjetsMass45", "bjetsMass46", "bjetsMass47", "bjetsMass48", "bjetsMass56", "bjetsMass57", "bjetsMass58",
+        "bjetsMass67", "bjetsMass68", "bjetsMass78",
+        "jetMass1", "jetMass2", "jetMass3", "jetMass4", "jetMass5", "jetMass6", "jetMass7", "jetMass8",
+        "bjetMass1", "bjetMass2", "bjetMass3", "bjetMass4", "bjetMass5", "bjetMass6", "bjetMass7", "bjetMass8",
     },
 )
-
-def gatja_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-
+def gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b(
+    self: Producer, events: ak.Array, **kwargs,
+) -> ak.Array:
     mass_higgs = 125.0
-    sigma = 10.0 #PLATZHALTER FÜR DIE MASSENAUFLÖSUNG -> MUSS NOCH BESTIMMT WERDEN
-    
-
+    sigma = 10.0  # PLATZHALTER FÜR DIE MASSENAUFLÖSUNG -> MUSS NOCH BESTIMMT WERDEN
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
     events = self[prepare_hhh_bjets](events, **kwargs)
     events = self[event_weights](events, **kwargs)
-    #events = self[b_gen_matching](events, **kwargs)
-
-    #from IPython import embed
-    #embed()
-
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
-    #__import__("IPython").embed()
-    jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5) #Prüfen, ob die Selection auch bei GATJA angewendet wird
+    jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
     events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
-    padded_jets = ak.pad_none(events.Jet, 8)
+    jets = events.Jet
+    padded_jets = ak.pad_none(jets, 8)
     padded_lepton = ak.pad_none(events.Lepton, 2)
-    #padded_bjets = ak.pad_none(events.BtaggedJet, 8)
-    padded_bjets = ak.pad_none(events.BtaggedJet[:,:8], 8, axis=1)
-    
-    #__import__("IPython").embed()
-
-    j1, j2 = ak.unzip(ak.combinations(events.Jet,2))
+    btag_column = self.config_inst.x.btag_column
+    btag_wp_score = self.config_inst.x.btag_wp_score
+    is_bjet = events.Jet[btag_column] >= btag_wp_score
+    bjets = events.Jet[is_bjet]
+    padded_bjets = ak.pad_none(bjets, 8, axis=1)
+    n_bjets = ak.num(bjets, axis=1)
+    j1, j2 = ak.unzip(ak.combinations(events.Jet, 2))
     d_eta_jet_pairs = (j1.eta - j2.eta)
-    d_phi_jet_pairs = (j1.delta_phi(j2))
-    d_phi_jet_pairs_GATJA = (j1.phi - j2.phi)
+    # d_phi_jet_pairs = (j1.delta_phi(j2))
     deltaR_jj = j1.delta_r(j2)
 
-    b1, b2 = ak.unzip(ak.combinations(events.BtaggedJet, 2))
+    b1, b2 = ak.unzip(ak.combinations(bjets, 2))
     d_eta_bjet_pairs = (b1.eta - b2.eta)
-    d_phi_bjet_pairs = (b1.delta_phi(b2))
-    d_phi_bjet_pairs_GATJA = (b1.phi - b2.phi)  
+    # d_phi_bjet_pairs = (b1.delta_phi(b2))
     deltaR_bb = b1.delta_r(b2)
-    DeltaRbb_GATJA = ((d_eta_bjet_pairs)**2 + (d_phi_bjet_pairs_GATJA)**2)**0.5
 
-   
-
-    b_mix, j_mix = ak.unzip(ak.cartesian([events.BtaggedJet, events.Jet]))
+    b_mix, j_mix = ak.unzip(ak.cartesian([bjets, events.Jet]))
     deltaR_bj = b_mix.delta_r(j_mix)
 
     j1_3, j2_3, j3_3 = ak.unzip(ak.combinations(events.Jet, 3))
-    
-    j_cart, bb_cart = ak.unzip(ak.cartesian([events.Jet,ak.combinations(events.BtaggedJet, 2)]))
+    j_cart, bb_cart = ak.unzip(ak.cartesian([events.Jet, ak.combinations(bjets, 2)]))
     b1_cart, b2_cart = ak.unzip(bb_cart)
-  
-    #__import__("IPython").embed()
+
+    events = set_ak_column_f32(events, "event_id", events.event)
 
     for i in range(8):
-        events = set_ak_column_f32(events, f"bjetPT{i+1}", ak.fill_none(padded_bjets["pt"][:, i], -6))
+        events = set_ak_column_f32(events, f"jetPT{i+1}", ak.fill_none(padded_jets["pt"][:, i], -6.0))
+        events = set_ak_column_f32(events, f"bjetPT{i+1}", ak.fill_none(padded_bjets["pt"][:, i], -6.0))
+
     for i in range(8):
-        events = set_ak_column_f32(events, f"bjetEta{i+1}", ak.fill_none(padded_bjets["eta"][:, i], -6))
-    #bjetBTagDisc
-    #bjetMinChiHiggsIndex
-    #bjetHiggsMatched
+        events = set_ak_column_f32(events, f"jetEta{i+1}", ak.fill_none(padded_jets["eta"][:, i], -6.0))
+        events = set_ak_column_f32(events, f"bjetEta{i+1}", ak.fill_none(padded_bjets["eta"][:, i], -6.0))
+
     for i in range(2):
-        events = set_ak_column_f32(events, f"leptonPT{i+1}", ak.fill_none(padded_lepton["pt"][:,i], -6))
-        events = set_ak_column_f32(events, f"leptonEta{i+1}", ak.fill_none(padded_lepton["eta"][:,i], -6))
+        events = set_ak_column_f32(events, f"leptonPT{i+1}", ak.fill_none(padded_lepton["pt"][:, i], -6.0))
+        events = set_ak_column_f32(events, f"leptonEta{i+1}", ak.fill_none(padded_lepton["eta"][:, i], -6.0))
+
     for i in range(2):
-        events = set_ak_column_f32(events, f"leptonPhi{i+1}", ak.fill_none(padded_lepton["phi"][:,i], -6))
-    bjetaveragemass=ak.mean(events.BtaggedJet.mass, axis=1)
-    events = set_ak_column_f32(events, "bjetAverageMass", ak.fill_none(ak.nan_to_none(bjetaveragemass), -6))
-    events = set_ak_column_f32(events, "jetAverageMass", ak.where(ak.num(events.Jet)>0, ak.sum(events.Jet.mass, axis=1)/ak.num(events.Jet), 0))
-    events = set_ak_column_f32(events, "bjetAverageMassSqr", ak.fill_none(ak.nan_to_none(bjetaveragemass*bjetaveragemass*ak.num(events.BtaggedJet)), -6))
-    events = set_ak_column_f32(events, "jetHT", ak.sum(events.Jet.pt, axis=1))
-    events = set_ak_column_f32(events, "bjetHT", ak.sum(events.BtaggedJet.pt, axis=1))
+        events = set_ak_column_f32(events, f"leptonPhi{i+1}", ak.fill_none(padded_lepton["phi"][:, i], -6.0))
+    bjetaveragemass = ak.mean(bjets.mass, axis=1)
+    events = set_ak_column_f32(events, "bjetAverageMass", ak.fill_none(ak.nan_to_none(bjetaveragemass), -6.0))
+    jetaveragemass = ak.mean(jets.mass, axis=1)
+    events = set_ak_column_f32(
+        events, "jetAverageMass", ak.where(
+            ak.num(events.Jet) > 0, ak.sum(events.Jet.mass, axis=1) / ak.num(events.Jet), 0,
+        ),
+    )
+    events = set_ak_column_f32(
+        events, "bjetAverageMassSqr", ak.fill_none(
+            ak.nan_to_none(bjetaveragemass * bjetaveragemass * ak.num(bjets)), -6.0,
+        ),
+    )
+    events = set_ak_column_f32(
+        events, "jetAverageMassSqr", ak.fill_none(ak.nan_to_none(jetaveragemass * jetaveragemass * ak.num(jets)), -6.0),
+    )
+    events = set_ak_column_f32(events, "jetHT", ak.sum(jets.pt, axis=1))
+    events = set_ak_column_f32(events, "bjetHT", ak.sum(bjets.pt, axis=1))
     events = set_ak_column_f32(events, "lightjetHT", ak.sum(events.Lightjet.pt, axis=1))
     events = ak.with_field(events, ak.num(events.Jet), "jetNumber")
-    events = ak.with_field(events, ak.num(events.BtaggedJet), "bjetNumber")
+    n_bjets = ak.num(bjets, axis=1)
+    events = ak.with_field(events, n_bjets, "bjetNumber")
     for i in range(8):
-        events = set_ak_column_f32(events, f"bjetPhi{i+1}", ak.fill_none(padded_bjets["phi"][:, i], -6))
-    events = set_ak_column_f32(events, "averageDeltaEtabb", ak.fill_none(ak.nan_to_none(ak.mean(abs(d_eta_bjet_pairs), axis=1)), -6))
-    events = set_ak_column_f32(events, "minDeltaRjj", ak.fill_none(ak.nan_to_none(ak.min(deltaR_jj, axis=1)), -6))
-    events = set_ak_column_f32(events, "minDeltaRbb", ak.fill_none(ak.nan_to_none(ak.min(deltaR_bb, axis=1)), -6))
-    events = set_ak_column_f32(events, "minDeltaRbb_GATJA", ak.fill_none(ak.nan_to_none(ak.min(DeltaRbb_GATJA, axis=1)), -6))
+        events = set_ak_column_f32(events, f"jetPhi{i+1}", ak.fill_none(padded_jets["phi"][:, i], -6.0))
+        events = set_ak_column_f32(events, f"bjetPhi{i+1}", ak.fill_none(padded_bjets["phi"][:, i], -6.0))
+    events = set_ak_column_f32(
+        events, "averageDeltaEtabb", ak.fill_none(ak.nan_to_none(ak.mean(abs(d_eta_bjet_pairs), axis=1)), -6.0),
+    )
+    events = set_ak_column_f32(events, "minDeltaRjj", ak.fill_none(ak.nan_to_none(ak.min(deltaR_jj, axis=1)), -6.0))
+    events = set_ak_column_f32(events, "minDeltaRbb", ak.fill_none(ak.nan_to_none(ak.min(deltaR_bb, axis=1)), -6.0))
+    events = set_ak_column_f32(
+        events, "maxDeltaEtabb", ak.fill_none(ak.nan_to_none(ak.max(abs(d_eta_bjet_pairs), axis=1)), -6.0),
+    )
+    events = set_ak_column_f32(
+        events, "maxDeltaEtajj", ak.fill_none(ak.nan_to_none(ak.max(abs(d_eta_jet_pairs), axis=1)), -6.0),
+    )
+    events = set_ak_column_f32(
+        events, "maxDeltaEtabj", ak.fill_none(ak.nan_to_none(ak.max(abs(b_mix.eta - j_mix.eta), axis=1)), -6.0),
+    )
+    events = set_ak_column_f32(events, "minDeltaRbj", ak.fill_none(ak.nan_to_none(ak.min(deltaR_bj, axis=1)), -6.0))
+    events = set_ak_column_f32(
+        events, "averageDeltaEtabj", ak.fill_none(ak.nan_to_none(ak.mean(abs(b_mix.eta - j_mix.eta), axis=1)), -6.0),
+    )
+    events = set_ak_column_f32(
+        events, "averageDeltaRbj", ak.fill_none(ak.nan_to_none(ak.mean(deltaR_bj, axis=1)), -6.0),
+    )
 
-    events = set_ak_column_f32(events, "maxDeltaEtabb", ak.fill_none(ak.nan_to_none(ak.max(abs(d_eta_bjet_pairs), axis=1)), -6))
-    events = set_ak_column_f32(events, "maxDeltaEtajj", ak.fill_none(ak.nan_to_none(ak.max(abs(d_eta_jet_pairs), axis=1)), -6))
-    events = set_ak_column_f32(events, "maxDeltaEtabj", ak.fill_none(ak.nan_to_none(ak.max(abs(b_mix.eta - j_mix.eta), axis=1)), -6))
-    events = set_ak_column_f32(events, "minDeltaRbj", ak.fill_none(ak.nan_to_none(ak.min(deltaR_bj, axis=1)), -6))
-
-    events = set_ak_column_f32(events, "averageDeltaEtabj", ak.fill_none(ak.nan_to_none(ak.mean(abs(b_mix.eta - j_mix.eta), axis=1)), -6))
-    events = set_ak_column_f32(events, "averageDeltaRbj", ak.fill_none(ak.nan_to_none(ak.mean(deltaR_bj, axis=1)), -6))
-
-    
-    
     mask_min_dR_jj = deltaR_jj == ak.min(deltaR_jj, axis=1, keepdims=True)
-    events = set_ak_column_f32(events, "minDeltaRMassjj", ak.fill_none(ak.firsts((j1+j2).mass[mask_min_dR_jj]), -6)) #Invariant mass of jet pair with smallest ΔR
+    # Invariant mass of jet pair with smallest ΔR
+    events = set_ak_column_f32(events, "minDeltaRMassjj", ak.fill_none(ak.firsts((j1 + j2).mass[mask_min_dR_jj]), -6.0))
     mask_min_dR_bb = deltaR_bb == ak.min(deltaR_bb, axis=1, keepdims=True)
-    events = set_ak_column_f32(events, "minDeltaRMassbb", ak.fill_none(ak.firsts((b1+b2).mass[mask_min_dR_bb]), -6)) #Invariant mass of b-jet pair with smallest ΔR
     mask_min_dR_bj = deltaR_bj == ak.min(deltaR_bj, axis=1, keepdims=True)
-    events = set_ak_column_f32(events, "minDeltaRMassbj", ak.fill_none(ak.firsts((b_mix + j_mix).mass[mask_min_dR_bj]), -6)) #Invariant mass of jet+bjet-pair pair with
-
-    events = set_ak_column_f32(events, "minDeltaRpTjj", ak.fill_none(ak.firsts((j1.pt + j2.pt)[mask_min_dR_jj]), -6)) #Combined transverse momentum of jet pair with smallest ΔR
-    events = set_ak_column_f32(events, "minDeltaRpTbb", ak.fill_none(ak.firsts((b1.pt + b2.pt)[mask_min_dR_bb]), -6)) #Combined transverse momentum of b-jet pair with smallest ΔR 
-    events = set_ak_column_f32(events, "minDeltaRpTbj", ak.fill_none(ak.firsts((b_mix.pt + j_mix.pt)[mask_min_dR_bj]), -6)) #Combined transverse momentum of jet+bjet-pair pair with smallest ΔR
-
+    # Invariant mass of b-jet pair with smallest ΔR
+    events = set_ak_column_f32(
+        events, "minDeltaRMassbb", ak.fill_none(ak.firsts((b1 + b2).mass[mask_min_dR_bb]), -6.0),
+    )
+    # Invariant mass of jet+bjet-pair pair with
+    events = set_ak_column_f32(
+        events, "minDeltaRMassbj", ak.fill_none(ak.firsts((b_mix + j_mix).mass[mask_min_dR_bj]), -6.0),
+    )
+    # Combined transverse momentum of jet pair with smallest ΔR
+    events = set_ak_column_f32(events, "minDeltaRpTjj", ak.fill_none(ak.firsts((j1.pt + j2.pt)[mask_min_dR_jj]), -6.0))
+    # Combined transverse momentum of b-jet pair with smallest ΔR
+    events = set_ak_column_f32(events, "minDeltaRpTbb", ak.fill_none(ak.firsts((b1.pt + b2.pt)[mask_min_dR_bb]), -6.0))
+    # Combined transverse momentum of jet+bjet-pair pair with smallest ΔR
+    events = set_ak_column_f32(
+        events, "minDeltaRpTbj", ak.fill_none(ak.firsts((b_mix.pt + j_mix.pt)[mask_min_dR_bj]), -6.0),
+    )
     pt_jjj = j1_3.pt + j2_3.pt + j3_3.pt
     mask_max_pT_jjj = (pt_jjj) == ak.max(pt_jjj, axis=1, keepdims=True)
-    events = set_ak_column_f32(events, "maxPTmassjjj", ak.fill_none(ak.firsts((j1_3+j2_3+j3_3).mass[mask_max_pT_jjj]), -6)) #Mass of 3-jet system with highest total pT (boosted object candidate)
+    # Mass of 3-jet system with highest total pT (boosted object candidate)
+    events = set_ak_column_f32(
+        events, "maxPTmassjjj", ak.fill_none(ak.firsts((j1_3 + j2_3 + j3_3).mass[mask_max_pT_jjj]), -6.0),
+    )
     pt_jbb = j_cart.pt + b1_cart.pt + b2_cart.pt
     mask_max_pT_jbb = (pt_jbb) == ak.max(pt_jbb, axis=1, keepdims=True)
-    events = set_ak_column_f32(events, "maxPTmassjbb", ak.fill_none(ak.firsts((j_cart + b1_cart + b2_cart).mass[mask_max_pT_jbb]), -6)) # Mass of system (1 jet + 2 b-jets) with highest total pT
+    # Mass of system (1 jet + 2 b-jets) with highest total pT
+    events = set_ak_column_f32(
+        events, "maxPTmassjbb", ak.fill_none(ak.firsts((j_cart + b1_cart + b2_cart).mass[mask_max_pT_jbb]), -6.0),
+    )
 
     events = set_ak_column_f32(events, "met", events.mli_met_pt)
     events = set_ak_column_f32(events, "metPhi", events.mli_met_phi)
 
+    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)
+    events = set_ak_column_f32(events, "weights", events.stitched_normalization_weight)
+
+    def chi2_higgs_indices(events, objs, padded_objs, prefix, n_pad=8):
+        n_objs = ak.num(objs, axis=1)
+
+        objs_i = padded_objs[:, :, np.newaxis]
+        objs_j = padded_objs[:, np.newaxis, :]
+
+        dipair_mass = ak.without_parameters((objs_i + objs_j).mass)
+
+        idx = ak.local_index(padded_objs, axis=1)
+        idx_i = idx[:, :, np.newaxis]
+        idx_j = idx[:, np.newaxis, :]
+
+        valid = ~ak.is_none(padded_objs.pt, axis=1)
+        valid_i = valid[:, :, np.newaxis]
+        valid_j = valid[:, np.newaxis, :]
+
+        pair_valid = valid_i & valid_j & (idx_i != idx_j)
+
+        chi2_matrix = ((dipair_mass - mass_higgs) / sigma) ** 2
+        chi2_matrix = ak.where(pair_valid, ak.fill_none(chi2_matrix, np.inf), np.inf)
+
+        min_idx = ak.argmin(chi2_matrix, axis=2)
+        min_idx_filled = ak.fill_none(min_idx, -6.0)
+
+        mask_sec = idx_j != min_idx_filled[:, :, np.newaxis]
+        chi2_matrix_sec = ak.where(mask_sec, chi2_matrix, np.inf)
+        sec_min_idx_filled = ak.fill_none(ak.argmin(chi2_matrix_sec, axis=2), -6.0)
+
+        min_chi = ak.min(chi2_matrix, axis=2)
+        min_idx_final = ak.where(min_chi != np.inf, min_idx_filled, -6)
+
+        sec_chi = ak.min(chi2_matrix_sec, axis=2)
+        sec_min_idx_final = ak.where(sec_chi != np.inf, sec_min_idx_filled, -6.0)
+
+        for i in range(n_pad):
+            obj_exists = n_objs > i
+            mi_out = ak.where(obj_exists, min_idx_final[:, i], -6.0)
+            si_out = ak.where(obj_exists, sec_min_idx_final[:, i], -6.0)
+            events = set_ak_column_f32(events, f"{prefix}MinChiHiggsIndex{i+1}", mi_out)
+            events = set_ak_column_f32(events, f"{prefix}SecMinChiHiggsIndex{i+1}", si_out)
+        return events
+
+    events = chi2_higgs_indices(events, jets, padded_jets, "jet")
+    events = chi2_higgs_indices(events, bjets, padded_bjets, "bjet")
+
     for i in range(8):
-        events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", padded_bjets.b_score[:,i])
-        
-    events = set_ak_column_f32(events, "btag_weight", events.btag_weight)   
-    events = set_ak_column_f32(events, "weights", events. stitched_normalization_weight) 
-
-    
-    min_3_bjets = ak.num(events.BtaggedJet, axis=1) >= 3
-    
-
-    bjets_i = padded_bjets[:, :, np.newaxis] # (Events, Jets, 1) Spaltenvektor
-    bjets_j = padded_bjets[:, np.newaxis, :] # (Events, 1, Jets) Zeilenvektor
-
-    dibjet = (bjets_i + bjets_j)
-    dibjet_mass = ak.without_parameters(dibjet.mass)
-
-    idx = ak.local_index(padded_bjets) #Generate local index for each bjet in each event to aviod later that one bjet is combined with itself
-    idx_i = idx[:, :, np.newaxis]
-    idx_j = idx[:, np.newaxis, :]
-
-    valid_i = ~ak.is_none(bjets_i.pt)
-    valid_j = ~ak.is_none(bjets_j.pt)
-
-    pair_valid = valid_i & valid_j & (idx_i != idx_j)
-
-    chi2_matrix = ((dibjet_mass - mass_higgs) / sigma)**2
-    chi2_matrix = ak.where(pair_valid, chi2_matrix, np.inf)
-
-
-    min_idx = ak.argmin(chi2_matrix, axis=2)
-    min_idx_filled = ak.fill_none(min_idx, -6)
-    
-    
-    mask_sec = idx_j != min_idx_filled[:, :, np.newaxis]
-    chi2_matrix_sec = ak.where(mask_sec, chi2_matrix, np.inf)
-    sec_min_idx = ak.argmin(chi2_matrix_sec, axis=2)
-    sec_min_idx_filled = ak.fill_none(sec_min_idx,-6)
-
-    event_mask_2d = min_3_bjets[:, np.newaxis]
-    min_idx_final = ak.where(event_mask_2d, min_idx_filled, -999)
-    sec_min_idx_final = ak.where(event_mask_2d, sec_min_idx_filled, -999)
-
-    real_jet = ~ak.is_none(padded_bjets.pt)
-    
-    n_bjets = ak.num(events.BtaggedJet, axis=1)
-    min_3_bjets = n_bjets >= 3
-
-   
-
-    for i in range(8):
-        jet_exists = n_bjets > i
-
-        mi = min_idx_final[:,i]
-        si = sec_min_idx_final[:,i]
-
-        #real = n_bjets > i
-
-        mi_out = ak.where(jet_exists, mi, -6)
-        si_out = ak.where(jet_exists, si, -6)
-
-        mi_out = ak.where(min_3_bjets, mi_out, -999)
-        si_out = ak.where(min_3_bjets, si_out, -999)
-
-        #mi_final = ak.where(min_3_bjets, mi_out, -999)
-        #si_final = ak.where(min_3_bjets, si_out, -999)
-
-        events = set_ak_column_f32(events, f"bjetMinChiHiggsIndex{i+1}", mi_out)
-        events = set_ak_column_f32(events, f"bjetSecMinChiHiggsIndex{i+1}", si_out)
-   
+        mass_filled = ak.fill_none(padded_jets.mass[:, i], -6.0)
+        # mass_final = ak.where(min_3_bjets, mass_filled, -999.0)
+        events = set_ak_column_f32(events, f"jetMass{i+1}", mass_filled)
 
     for i in range(8):
         mass_filled = ak.fill_none(padded_bjets.mass[:, i], -6.0)
-        mass_final = ak.where(min_3_bjets, mass_filled, -999.0)
-        events = set_ak_column_f32(events, f"b_jet_mass{i+1}", mass_final)
-    #from IPython import embed
-    #embed()
+        # mass_final = ak.where(min_3_bjets, mass_filled, -999.0)
+        events = set_ak_column_f32(events, f"bjetMass{i+1}", mass_filled)
+
     for i in range(8):
-        btag_score = ak.fill_none(padded_bjets.b_score[:, i], -6.0)
-        btag_score_final = ak.where(min_3_bjets, btag_score, -999.0)
-        events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", btag_score_final)
-        #events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", bjets_btag[:,i])
-        
-    events = set_ak_column_f32(events, f"btag_weight", events.btag_weight)   
-    events = set_ak_column_f32(events, f"weights", events.stitched_normalization_weight)
+        events = set_ak_column_f32(events, f"jetBTagDisc{i+1}", ak.fill_none(padded_jets.b_score[:, i], -6.0))
+        events = set_ak_column_f32(events, f"bjetBTagDisc{i+1}", ak.fill_none(padded_bjets.b_score[:, i], -6.0))
+        events = set_ak_column_f32(
+            events, f"jetBTagDisDisc{i+1}", ak.fill_none(padded_jets.discrete_b_score[:, i], -6.0),
+        )
+        events = set_ak_column_f32(
+            events, f"bjetBTagDisDisc{i+1}", ak.fill_none(padded_bjets.discrete_b_score[:, i], -6.0),
+        )
 
-    #from IPython import embed
-    #embed()
-    # top = ak.fill_none(ak.pad_none(events.BtaggedJet.bjetTopMatched, 8, clip=True), 0)
-    # z = ak.fill_none(ak.pad_none(events.BtaggedJet.bjetZMatched, 8, clip=True), 0)
-    # higgs = ak.fill_none(ak.pad_none(events.BtaggedJet.bjetHiggsMatched, 8, clip=True), 0)
+    match_class = ak.fill_none(ak.pad_none(jets.matchClass, 8, clip=True), -1)
 
-   
+    top = ak.values_astype(match_class == 2, "float32")
+    z = ak.values_astype(match_class == 3, "float32")
+    higgs = ak.values_astype(match_class == 1, "float32")
 
-    # for i in range(8): 
-    #     events = set_ak_column_f32(events, f"bjetTopMatched{i+1}", top[:,i])
-    #     events = set_ak_column_f32(events, f"bjetZMatched{i+1}", z[:,i])
-    #     events = set_ak_column_f32(events, f"bjetHiggsMatched{i+1}", higgs[:,i])
+    for i in range(8):
+        events = set_ak_column_f32(events, f"jetTopMatched{i+1}", top[:, i])
+        events = set_ak_column_f32(events, f"jetZMatched{i+1}", z[:, i])
+        events = set_ak_column_f32(events, f"jetHiggsMatched{i+1}", higgs[:, i])
 
-    
-    pair_mass = (b1+ b2).mass
-    pair_mass = ak.pad_none(pair_mass, 28, axis=1)
-    pair_mass = ak.fill_none(pair_mass, -6)
+    match_class_bjet = ak.fill_none(ak.pad_none(bjets.matchClass, 8, clip=True), -1)
 
-    k = 0
-    
-    for i in range(1,9):
-        for j in range(i+1,9):
-            col_name = (f"bjetsMass{i}{j}")
-            current_masses = pair_mass[:,k]
-            events = set_ak_column_f32(events, col_name, current_masses)
+    top_bjet = ak.values_astype(match_class_bjet == 2, "float32")
+    z_bjet = ak.values_astype(match_class_bjet == 3, "float32")
+    higgs_bjet = ak.values_astype(match_class_bjet == 1, "float32")
 
-            k += 1
+    for i in range(8):
+        events = set_ak_column_f32(events, f"bjetTopMatched{i+1}", top_bjet[:, i])
+        events = set_ak_column_f32(events, f"bjetZMatched{i+1}", z_bjet[:, i])
+        events = set_ak_column_f32(events, f"bjetHiggsMatched{i+1}", higgs_bjet[:, i])
 
-    # __import__("IPython").embed()
+    pair_mass_matrix = ak.without_parameters(
+        (padded_jets[:, :, np.newaxis] + padded_jets[:, np.newaxis, :]).mass,
+    )
+    for i in range(8):
+        for j in range(i + 1, 8):
+            events = set_ak_column_f32(
+                events, f"jetsMass{i+1}{j+1}",
+                ak.fill_none(pair_mass_matrix[:, i, j], -6.0),
+            )
+
+    pair_bmass_matrix = ak.without_parameters(
+        (padded_bjets[:, :, np.newaxis] + padded_bjets[:, np.newaxis, :]).mass,
+    )
+    for i in range(8):
+        for j in range(i + 1, 8):
+            events = set_ak_column_f32(
+                events, f"bjetsMass{i+1}{j+1}",
+                ak.fill_none(pair_bmass_matrix[:, i, j], -6.0),
+            )
+
     return events
-
-# @gatja_inputs.init
-# def gatja_inputs_init(self: Producer) -> None:
-    # add_variable_matching_GATJA2(self.config_inst)
 
 
 @producer(
-    uses={
-        IF_GATJA(gatja_inputs), 
-        hhh_dl_ml_inputs,
-    },
     produces={
-        IF_GATJA(gatja_inputs), 
-        hhh_dl_ml_inputs,
-        IF_GATJA(*{f"gatja_output_{i}" for i in range(23)}),
+        f"gatja_output_{i}" for i in range(24)
         # Here die scores die produced werden
     },
     # produced columns set in the init function
-    version=law.config.get_expanded("analysis", "gatja_scores_version", 0),
 )
-def gatja_scores(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def gatja_padding(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-    def create_graphs(df, index, drop_empty=True):
-        import tensorflow
-        import pandas as pd
-        # Get the column names for the minimum and second minimum Higgs chi2 matching indices
-        col_lp = "bjetMinChiHiggsIndex" + str(index + 1)
-        col_sp = "bjetSecMinChiHiggsIndex" + str(index + 1)
-
-        # If the min and second min do not exist or are not among the first 8 btagged jets,
-        # assign the jet itself as its neighbour.
-        df.loc[df[col_lp] > 7, col_lp] = index
-        df.loc[df[col_lp] == -6, col_lp] = index
-        df.loc[df[col_sp] > 7, col_sp] = index
-        df.loc[df[col_sp] == -6, col_sp] = index
-
-        # Recalculate index series as strings after adjustment
-        index_lp = (df[col_lp] + 1).astype(int).astype(str)
-        index_sp = (df[col_sp] + 1).astype(int).astype(str)
-
-        # Build the main index list with explicit column names
-        index_main = [
-            "bjetPT" + str(index + 1),
-            "bjetEta" + str(index + 1),
-            "bjetPhi" + str(index + 1),
-            "bjetMinChiHiggsIndex" + str(index + 1),
-            "bjetBTagDisc" + str(index + 1),
-            "jetAverageMass", "bjetAverageMassSqr",
-            "jetHT", "bjetHT", "lightjetHT", "jetNumber", "bjetNumber",
-            "leptonPT1", "leptonEta1", "leptonPhi1",
-            "leptonPT2", "leptonEta2", "leptonPhi2",
-            "met",
-        ]
-
-        main = df[index_main].copy()
-        na_index = []
-        if drop_empty:
-            query_str = "-6 == bjetPT" + str(index + 1)
-            na_index = main.query(query_str).index
-        main = main.drop(na_index)
-
-        print("index is : ", index_main)
-        # Replace np.char.add with a list comprehension to ensure consistent string types.
-        combined = np.array(["bjetPT" + s for s in index_lp])
-        print("the dataframe : ", np.sum(combined == "bjetPT0"))
-
-        # # Prepare label series and drop the same indices
-        # label_higgs = df["bjetHiggsMatched" + str(index + 1)].drop(na_index)
-        # label_top = df["bjetTopMatched" + str(index + 1)].drop(na_index)
-        # label_others = ~np.logical_or(label_top, label_higgs)
-
-        # Function to replace df.lookup using index positions.
-        def safe_lookup(df, row_labels, col_series):
-            subset = df.loc[row_labels]
-            col_idx = subset.columns.get_indexer(col_series.values)
-            row_idx = np.arange(len(row_labels))
-            return subset.to_numpy()[row_idx, col_idx]
-
-        # Function to obtain neighbour values given a column prefix and an index series.
-        def get_neighbour_values(prefix, idx_series):
-            # Use simple string concatenation here.
-            col_series = pd.Series(prefix + idx_series, index=df.index).drop(na_index)
-            return safe_lookup(df, col_series.index, col_series)
-
-        # Obtain neighbour values for the min index.
-        neighbour = [
-            get_neighbour_values("bjetPT", index_lp),
-            get_neighbour_values("bjetEta", index_lp),
-            get_neighbour_values("bjetPhi", index_lp),
-            get_neighbour_values("bjetBTagDisc", index_lp)
-        ]
-
-        # Obtain neighbour values for the second min index.
-        neighbour2 = [
-            get_neighbour_values("bjetPT", index_sp),
-            get_neighbour_values("bjetEta", index_sp),
-            get_neighbour_values("bjetPhi", index_sp),
-            get_neighbour_values("bjetBTagDisc", index_sp)
-        ]
-
-        graph_data = np.hstack((main.to_numpy(),
-                                np.array(neighbour).T,
-                                np.array(neighbour2).T))
-        
-
-        return graph_data
-
-
-    def make_model_gatja(input_shape, index_node, index_neigh1, index_neigh2):
-        import tensorflow
-        from tensorflow import keras
-        from tensorflow.keras import layers
-        from tensorflow.keras.models import Sequential, Model
-        from tensorflow.keras.layers import Input, Dense, Dropout
-        inputs = keras.Input(shape=input_shape)
-
-        # Extract node, neighbor1 and neighbor2 values from inputs using Lambda layers
-        input_node_value = layers.Lambda(lambda x: x[:, :index_node])(inputs)
-        input_neigh1_value = layers.Lambda(lambda x: x[:, -(index_neigh1+index_neigh2):-index_neigh2])(inputs)
-        input_neigh2_value = layers.Lambda(lambda x: x[:, -index_neigh2:])(inputs)
-
-        # Define a function to create dense layers with LeakyReLU activation
-        def dense_layer(x, units):
-            x = layers.Dense(units)(x)
-            x = layers.LeakyReLU()(x)
-            return x
-
-        # Process node embedding
-        node_value = dense_layer(input_node_value, 256)
-        node_value = layers.Concatenate()([node_value, input_node_value])
-        node_value = dense_layer(node_value, 128)
-
-        # Process neighbor1 embedding
-        neigh1_value = dense_layer(input_neigh1_value, 256)
-        neigh1_value = layers.Concatenate()([neigh1_value, input_neigh1_value])
-        neigh1_value = dense_layer(neigh1_value, 128)
-
-        # Process neighbor2 embedding
-        neigh2_value = dense_layer(input_neigh2_value, 256)
-        neigh2_value = layers.Concatenate()([neigh2_value, input_neigh2_value])
-        neigh2_value = dense_layer(neigh2_value, 128)
-
-        # Compute attention scores per sample using element-wise dot products
-        # For each sample, compute a scalar score by taking the dot product along the features.
-        node_score = layers.Lambda(
-            lambda x: tensorflow.reduce_sum(x[0] * x[1], axis=-1, keepdims=True),
-            output_shape=(1,)
-        )([node_value, node_value])
-        neigh1_score = layers.Lambda(
-            lambda x: tensorflow.reduce_sum(x[0] * x[1], axis=-1, keepdims=True),
-            output_shape=(1,)
-        )([node_value, neigh1_value])
-        neigh2_score = layers.Lambda(
-            lambda x: tensorflow.reduce_sum(x[0] * x[1], axis=-1, keepdims=True),
-            output_shape=(1,)
-        )([node_value, neigh2_value])
-
-        # Concatenate scores to shape (batch_size, 3) and apply softmax
-        scores = layers.Concatenate(axis=-1)([node_score, neigh1_score, neigh2_score])
-        attention_weights = layers.Softmax()(scores)
-
-        # Extract individual attention weights; each will have shape (batch_size, 1)
-        node_weight = layers.Lambda(lambda x: x[:, 0:1])(attention_weights)
-        neigh1_weight = layers.Lambda(lambda x: x[:, 1:2])(attention_weights)
-        neigh2_weight = layers.Lambda(lambda x: x[:, 2:3])(attention_weights)
-
-        # Apply the attention weights (element-wise multiplication)
-        node = layers.Multiply()([node_value, node_weight])
-        neigh1 = layers.Multiply()([neigh1_value, neigh1_weight])
-        neigh2 = layers.Multiply()([neigh2_value, neigh2_weight])
-
-        # Concatenate node embedding with the maximum of neighbor embeddings
-        max_embed = layers.Concatenate()([node, layers.Maximum()([neigh1, neigh2])])
-
-        # Extract the rest of the input features using a Lambda layer
-        input_rest = layers.Lambda(lambda x: x[:, index_node:-(index_neigh1+index_neigh2)])(inputs)
-        rest = dense_layer(input_rest, 256)
-        rest = layers.Concatenate()([rest, input_rest])
-        rest = dense_layer(rest, 128)
-
-        # Concatenate rest with the attended node and neighbor features
-        x_dense = layers.Concatenate()([rest, max_embed])
-        x_dense = layers.Dropout(0.15)(x_dense)
-
-        # Define a function to create dropout layers with LeakyReLU activation and concatenation
-        def dropout_layer(x, units):
-            x_new = layers.Dense(units)(x)
-            x_new = layers.LeakyReLU()(x_new)
-            x_new = layers.Dropout(0.15)(x_new)
-            # Concatenate with the original x_dense for residual-like connection
-            x_new = layers.Concatenate()([x_new, x_dense])
-            return x_new
-
-        x = dropout_layer(x_dense, 512)
-        x = dropout_layer(x, 128)
-        x = dropout_layer(x, 32)
-
-
-        # Final output layer with softmax activation for 3 classes
-        outputs = layers.Dense(3, activation="softmax")(x)
-
-        return keras.Model(inputs, outputs)
-
-    events = self[hhh_dl_ml_inputs](events, **kwargs)
-    if self.has_dep(gatja_inputs):
-        import tensorflow
-        events = self[gatja_inputs](events, **kwargs)
-
-        zero_padding = ak.full_like(events.bjetNumber, -6)
-        idx = ak.local_index(events.bjetNumber)
-        gatja_idx = ak.where((events.bjetNumber >= 3), idx, zero_padding)
-        events = set_ak_column_f32(events, "gatja_idx", gatja_idx)
-
-        # logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
-        gatja_model = make_model_gatja((27,),5,4,4)
-        gatja_model.load_weights("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5")
-
-        gatja_input_list = [
-            'bjetPT1',
-            'bjetPT2',
-            'bjetPT3',
-            'bjetPT4',
-            'bjetPT5',
-            'bjetPT6',
-            'bjetPT7',
-            'bjetPT8',
-            'bjetEta1',
-            'bjetEta2',
-            'bjetEta3',
-            'bjetEta4',
-            'bjetEta5',
-            'bjetEta6',
-            'bjetEta7',
-            'bjetEta8',
-            'bjetBTagDisc1',
-            'bjetBTagDisc2',
-            'bjetBTagDisc3',
-            'bjetBTagDisc4',
-            'bjetBTagDisc5',
-            'bjetBTagDisc6',
-            'bjetBTagDisc7',
-            'bjetBTagDisc8',
-            'leptonPT1',
-            'leptonEta1',
-            'leptonPT2',
-            'leptonEta2',
-            'leptonPhi1',
-            'leptonPhi2',
-            'bjetAverageMass',
-            'jetAverageMass',
-            'bjetAverageMassSqr',
-            'jetHT',
-            'bjetHT',
-            'lightjetHT',
-            'jetNumber',
-            'bjetNumber',
-            'bjetPhi1',
-            'bjetPhi2',
-            'bjetPhi3',
-            'bjetPhi4',
-            'bjetPhi5',
-            'bjetPhi6',
-            'bjetPhi7',
-            'bjetPhi8',
-            'averageDeltaEtabb',
-            'minDeltaRjj',
-            'minDeltaRbb',
-            'maxDeltaEtabb',
-            'maxDeltaEtajj',
-            'maxDeltaEtabj',
-            'averageDeltaEtabj',
-            'averageDeltaRbj',
-            'minDeltaRMassjj',
-            'minDeltaRMassbb',
-            'minDeltaRMassbj',
-            'minDeltaRpTjj',
-            'minDeltaRpTbb',
-            'minDeltaRpTbj',
-            'maxPTmassjjj',
-            'maxPTmassjbb',
-            'met',
-            'bjetMinChiHiggsIndex1',
-            'bjetMinChiHiggsIndex2',
-            'bjetMinChiHiggsIndex3',
-            'bjetMinChiHiggsIndex4',
-            'bjetMinChiHiggsIndex5',
-            'bjetMinChiHiggsIndex6',
-            'bjetMinChiHiggsIndex7',
-            'bjetMinChiHiggsIndex8',
-            'bjetSecMinChiHiggsIndex1',
-            'bjetSecMinChiHiggsIndex2',
-            'bjetSecMinChiHiggsIndex3',
-            'bjetSecMinChiHiggsIndex4',
-            'bjetSecMinChiHiggsIndex5',
-            'bjetSecMinChiHiggsIndex6',
-            'bjetSecMinChiHiggsIndex7',
-            'bjetSecMinChiHiggsIndex8',
-            'gatja_idx'
-        ]
-
-        df_sample = events[events.bjetNumber >= 3]
-        df_sample = df_sample[gatja_input_list]
-        df_sample = ak.to_dataframe(df_sample)
-        # for df_sample in background_processes + signal_processes:
-        samples = []
-        for i in range(8):
-            s = create_graphs(df_sample, i, drop_empty=False)
-            samples.append(s)
-        
-        sample = np.concatenate(samples)
-        
-        # train_mask = (df_sample['dataset_split'] == 'train').values
-        # train_mask_concat = np.tile(train_mask, 8) # Da sample 8x so lang ist
-        
-        max_sample = np.max(sample, axis=0)
-        min_sample = np.min(sample, axis=0)
-        
-        den = (max_sample - min_sample)
-        den_safe = np.where(den == 0, 1.0, den)
-        
-        sample = (sample - min_sample) / den_safe
-        sample = np.nan_to_num(sample, nan=0.0, posinf=0.0, neginf=0.0)
-
-        sample = sample.astype(np.float32)
-        
-        gatja_output = gatja_model.predict(sample, batch_size=512)
-        
-        # Aufspalten und mergen der 8 Jets
-        jet_sample = np.split(gatja_output, 8, axis=0)
-        gatja_output = np.concatenate(jet_sample, axis=1)
-
-        new_columns = [f'gatja_output_{i}' for i in range(gatja_output.shape[1])]
-        df_sample[new_columns] = gatja_output
-
-        import pandas as pd
-
-        event_idx = ak.to_numpy(events["gatja_idx"]).astype(np.int64)
-        n_events = len(events)
-
-        output_cols = [c for c in df_sample.columns if c.startswith("gatja_output_")]
-
-        for col in output_cols:
-
-            mapping = pd.Series(
-                df_sample[col].values,
-                index=df_sample["gatja_idx"].astype(np.int64)
-            )
-
-            full_arr = np.full(n_events, -10, dtype=np.float32)
-
-            mask = np.isin(event_idx, mapping.index)
-
-            full_arr[mask] = mapping.loc[event_idx[mask]].values
-
-            events = set_ak_column_f32(events, col, full_arr)
-
-        # events = set_ak_column_f32(events, f"gatja_score1", events.btag_weight) 
+    filler = np.full(len(events), -10.0, dtype=np.float32)
+    for i in range(24):
+        events = set_ak_column_f32(events, f"gatja_output_{i}", filler)
     return events
 
-@gatja_scores.init
-def gatja_scores_init(self: Producer) -> None:
+
+# This producer is used to compute the GATJA scores for a network which is trained
+# in a Jupyter Notebook instead of columnflow
+# When using this producer, one needs to take into account that there could be an overlapp between training/testing set
+@producer(
+    uses={
+        IF_GATJA(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b),
+        IF_NOT_GATJA(gatja_padding),
+        hhh_dl_ml_inputs,
+    },
+    produces={
+        IF_GATJA(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b),
+        hhh_dl_ml_inputs,
+        IF_GATJA(*{f"gatja_output_{i}" for i in range(24)}),
+        IF_NOT_GATJA(gatja_padding),
+    },
+    # produced columns set in the init function
+    # version=law.config.get_expanded(
+    #     "analysis", "gatja_scores_version",
+    #     "New_labels_evaluation_von_4_ueberarbeitung_der_Inputs_includieren_von_ttbb_Training_1",
+    # ),
+    version=law.config.get_expanded(
+        "analysis", "gatja_scores_version", "Training_31_Training_24_additional_Top_other_Balance",
+    ),
+    sandbox=dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh"),
+)
+def gatja_scores_jet_based_full_gatja_corrected_Higgs_Index(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    # import tensorflow as tf
+
+    import pickle
+    import joblib
+    import pandas as pd
+    import tensorflow as tf
+
+    # N_JETS = 8
+    # NO_SCORE = -10.0
+    # MAX_JET_INDEX = N_JETS - 1
+
+    # path = "/data/dust/user/weidnerb/Code_setup_after_CMS_week/New_labels/evaluation_von_4_ueberarbeitung_der_Inputs_includieren_von_ttbb/Training_1" # GATJA 2
+    path = "/data/dust/user/weidnerb/New_era/Training_31_Training_24_additional_Top_other_Balance"  # GATJA 3
+    model_file = f"{path}/save_gatja_main_best_v3_jet_based.keras"
+    scaler_files = {name: f"{path}/{name}.joblib" for name in ("robust_scaler", "quantile_scaler", "minmax_scaler")}
+
+    rest_cols = [
+        "jetHT",  # GATJA 3
+        # "jetHT", "bjetHT", "lightjetHT", # GATJA 3
+        "jetNumber", "jetAverageMass",
+        "leptonPT1", "leptonEta1", "leptonPhi1",
+        "leptonPT2", "leptonEta2", "leptonPhi2",
+        "met",
+    ]
+
+    def real_jet_mask(df: pd.DataFrame, slot: int) -> np.ndarray:
+        return df[f"jetPT{slot}"].to_numpy() > 0.0
+
+    def load_gatja_model():
+        return tf.keras.models.load_model(model_file, compile=False)
+
+    def load_scalers():
+        scalers = []
+        for name in ("robust_scaler", "quantile_scaler", "minmax_scaler"):
+            path = scaler_files[name]
+            if path.endswith(".joblib"):
+                scalers.append(joblib.load(path))
+            else:
+                with open(path, "rb") as f:
+                    scalers.append(pickle.load(f))
+        return tuple(scalers)
+
+    def _safe_lookup(frame: pd.DataFrame, row_labels, column_names) -> np.ndarray:
+        if len(row_labels) == 0:
+            return np.array([], dtype=float)
+        subset = frame.loc[row_labels]
+        column_index = subset.columns.get_indexer(column_names)
+        if np.any(column_index < 0):
+            missing = [column_names[i] for i, v in enumerate(column_index) if v < 0]
+            raise KeyError(f"Missing neighbour columns: {missing}")
+        return subset.to_numpy()[np.arange(len(row_labels)), column_index]
+
+    # N_JETS = 8
+    # JET_CLASSES = ("higgs", "top", "other")
+
+    def compute_padding_mask(working, index):
+        slot = index + 1
+        # by_count = slot > working["jetNumber"].to_numpy()
+        by_sentinel = ~real_jet_mask(working, slot)
+        return by_sentinel
+
+    def _create_graphs_core(
+        df: pd.DataFrame, index: int, drop_empty: bool = True,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        working = df.copy()
+
+        if drop_empty:
+            working = working.loc[real_jet_mask(working, index + 1)].copy()
+
+        low_index_column = f"jetMinChiHiggsIndex{index + 1}"
+        second_index_column = f"jetSecMinChiHiggsIndex{index + 1}"
+
+        working.loc[working[low_index_column] > 7, low_index_column] = index
+        working.loc[working[low_index_column] == -6, low_index_column] = index
+        working.loc[working[second_index_column] > 7, second_index_column] = index
+        working.loc[working[second_index_column] == -6, second_index_column] = index
+
+        node_cols = [
+            "jetPT" + str(index + 1),
+            "jetEta" + str(index + 1),
+            "jetPhi" + str(index + 1),
+            "jetMinChiHiggsIndex" + str(index + 1),
+            "jetBTagDisc" + str(index + 1),
+        ]
+
+        btag_weight = working["btag_weight"].to_numpy()
+
+        node_part = working[node_cols].to_numpy()
+        rest_part = working[rest_cols].to_numpy()
+
+        low_partner = (working[low_index_column] + 1).astype(int).astype(str)
+        second_partner = (working[second_index_column] + 1).astype(int).astype(str)
+
+        # print("index is : ", index_main)
+        # print("the dataframe : ", np.sum(("jetPT" + low_partner) == "jetPT0"))
+
+        label_higgs = working[f"jetHiggsMatched{index + 1}"].to_numpy(dtype=bool)  # .drop(empty_index)
+        label_top = working[f"jetTopMatched{index + 1}"].to_numpy(dtype=bool)  # .drop(empty_index)
+        # label_sample = working["sample"].drop(empty_index)
+        label_others = (~np.logical_or(label_top, label_higgs)).astype(int)
+
+        low_rows = pd.Series("jetPT" + low_partner, index=working.index)
+        neighbour = [
+            _safe_lookup(working, low_rows.index, low_rows),
+            _safe_lookup(working, low_rows.index, pd.Series("jetEta" + low_partner, index=working.index)),
+            _safe_lookup(working, low_rows.index, pd.Series("jetPhi" + low_partner, index=working.index)),
+            _safe_lookup(working, low_rows.index, pd.Series("jetBTagDisc" + low_partner, index=working.index)),
+        ]
+
+        second_rows = pd.Series("jetPT" + second_partner, index=working.index)
+        neighbour2 = [
+            _safe_lookup(working, second_rows.index, second_rows),
+            _safe_lookup(working, second_rows.index, pd.Series("jetEta" + second_partner, index=working.index)),
+            _safe_lookup(working, second_rows.index, pd.Series("jetPhi" + second_partner, index=working.index)),
+            _safe_lookup(working, second_rows.index, pd.Series("jetBTagDisc" + second_partner, index=working.index)),
+        ]
+
+        graph_data = np.hstack((
+            btag_weight[:, None], node_part, rest_part, np.array(neighbour).T, np.array(neighbour2).T,
+        ))
+        # graph_data = np.hstack((main.to_numpy(), np.array(neighbour).T, np.array(neighbour2).T))
+        labels = np.vstack(
+            (
+                label_higgs.astype(int),
+                label_top.astype(int),
+                label_others.astype(int),
+                # label_sample.to_numpy(),
+            ),
+        )
+        padding_mask = compute_padding_mask(working, index)
+        return graph_data, labels, padding_mask
+
+    def create_graphs(
+        df: pd.DataFrame, index: int, drop_empty: bool = False,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return _create_graphs_core(df, index=index, drop_empty=drop_empty)
+
+    def predict_all_jets(df_all, model, scalers, evt_pos_filtered, expected_features, n_jets=8):
+        robust_scaler, quantile_scaler, minmax_scaler = scalers
+        jet_pred_dfs = []
+
+        for jet_idx in range(n_jets):
+            mask_np = real_jet_mask(df_all, jet_idx + 1)
+            if not np.any(mask_np):
+                continue
+
+            df_kept = df_all.loc[mask_np].reset_index(drop=True)
+            pos_kept = ak.to_numpy(evt_pos_filtered[mask_np]).astype(np.int64)
+
+            sample_block, _, padding_mask = create_graphs(df_kept, jet_idx, drop_empty=False)
+            x_raw = sample_block[:, 1:]  # btag_weight abtrennen
+            x_scaled = minmax_scaler.transform(
+                quantile_scaler.transform(robust_scaler.transform(x_raw)),
+            )
+            y_pred = model.predict(x_scaled, batch_size=4096, verbose=0)
+
+            jet_pred_dfs.append(pd.DataFrame({
+                "evt_pos": pos_kept,
+                "jet_idx": jet_idx,
+                "prob_higgs": y_pred[:, 0],
+                "prob_top": y_pred[:, 1],
+                "prob_other": y_pred[:, 2],
+            }))
+
+        return pd.concat(jet_pred_dfs, ignore_index=True)
+
+    def attach_outputs(events_in, pred_df, n_jets=8):
+        n_events = len(events_in)
+        out_arrays = {i: np.full(n_events, -10.0, dtype=np.float32) for i in range(n_jets * 3)}
+        jets_allowed = np.asarray(ak.to_numpy(events_in.jetNumber) >= 3, dtype=bool)
+
+        for row in pred_df.itertuples(index=False):
+            ievent = int(row.evt_pos)
+            if ievent < 0 or ievent >= n_events or not jets_allowed[ievent]:
+                continue
+            j = int(row.jet_idx)
+            out_arrays[j * 3 + 0][ievent] = float(row.prob_higgs)
+            out_arrays[j * 3 + 1][ievent] = float(row.prob_top)
+            out_arrays[j * 3 + 2][ievent] = float(row.prob_other)
+
+        events_out = events_in
+        for out_i, arr in out_arrays.items():
+            events_out = set_ak_column_f32(events_out, f"gatja_output_{out_i}", arr)
+        return events_out
+
+    events = self[hhh_dl_ml_inputs](events, **kwargs)
+    if not self.has_dep(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b):
+        output_cols = [f"gatja_output_{i}" for i in range(23)]
+        for col in output_cols:
+            events = set_ak_column_f32(events, col, ak.full_like(events.mli_n_jet, -10))
+        return events
+
+    events = self[gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b](events, **kwargs)
+
+    evt_pos = ak.local_index(events.jetNumber)
+    keep_events = events.jetNumber >= 3
+    events_filtered = events[keep_events]
+    evt_pos_filtered = evt_pos[keep_events]
+
+    gatja_input_list = ["btag_weight", *rest_cols]
+    for i in range(1, 9):
+        gatja_input_list += [
+            f"jetPT{i}", f"jetEta{i}", f"jetPhi{i}", f"jetBTagDisc{i}",
+            f"jetMinChiHiggsIndex{i}", f"jetSecMinChiHiggsIndex{i}", f"jetHiggsMatched{i}", f"jetTopMatched{i}",
+        ]
+
+    df_all = pd.DataFrame({
+        col: ak.to_numpy(events_filtered[col])
+        for col in dict.fromkeys(gatja_input_list)
+    })
+
+    model = load_gatja_model()
+    scalers = load_scalers()
+    expected_features = model.input_shape[-1]
+
+    pred_df = predict_all_jets(df_all, model, scalers, evt_pos_filtered, expected_features)
+    events = attach_outputs(events, pred_df)
+
+    return events
+
+
+@gatja_scores_jet_based_full_gatja_corrected_Higgs_Index.init
+def gatja_scores_jet_based_full_gatja_corrected_Higgs_Index_init(self: Producer) -> None:
     add_gatja_scores_variables(self.config_inst)

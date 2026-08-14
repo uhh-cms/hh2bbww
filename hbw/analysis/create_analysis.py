@@ -203,7 +203,7 @@ def create_hbw_analysis(
     shareable_analysis_tasks = (
         "cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents",
         "cf.MergeSelectionStats", "cf.MergeReducedEvents", "cf.MergeReductionStats", "cf.ProvideReducedEvents",
-        )
+    )
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
     histogram_tasks = ("cf.CreateHistograms", "cf.MergeHistograms", "cf.MergeShiftedHistograms")
     skip_new_version_schema = ()
@@ -377,7 +377,7 @@ def create_hbw_analysis(
 
     def hbw_parts(task, store_parts):
         name = task.task_family
-        if "hbw.ProduceColumnsTF" in name: 
+        if "hbw.ProduceColumnsTF" in name:
             store_parts = gatja_production(task, store_parts)
         if name in software_tasks:
             return software_tasks_parts(task, store_parts)
@@ -406,7 +406,8 @@ def create_hbw_analysis(
         "hbw_parts": hbw_parts,
         "pre_reducer": pre_reducer_parts,
     }
-    from hbw.analysis.hist_hooks import add_hist_hooks
+    from hbw.analysis.hist_hooks import add_hist_hooks, add_matching_hist_hooks
     add_hist_hooks(analysis_inst)
+    add_matching_hist_hooks(analysis_inst)  # Required for matched/unmatched histograms in GATJA score plots
 
     return analysis_inst

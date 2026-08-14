@@ -873,9 +873,10 @@ def add_hhh_ml_variables(config: od.Config) -> None:
         x_title=r"$p_T(\ell) + p_T(b)$",
     )
 
+
 @call_once_on_config()
 def add_gatja_scores_variables(config: od.Config) -> None:
-    for i in range(23):
+    for i in range(24):
         config.add_variable(
             name=f"gatja_output_{i}",
             expression=f"gatja_output_{i}",
@@ -883,6 +884,18 @@ def add_gatja_scores_variables(config: od.Config) -> None:
             aux={
                 "overflow": True,
                 "underflow": True,
+            },
+            unit="score",
+            x_title=f"gatja score {i}",
+        )
+        config.add_variable(
+            name=f"gatja_output_without_padding_{i}",
+            expression=f"gatja_output_{i}",
+            # binning=(39, 0.025, 1),
+            binning=(40, 0, 1),
+            aux={
+                "overflow": True,
+                "underflow": False,
             },
             unit="score",
             x_title=f"gatja score {i}",

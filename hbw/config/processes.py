@@ -103,21 +103,21 @@ def configure_hbw_processes(config: od.Config):
     dataset_inst.add_process(config.x.procs.n.ttbb_custom)
     dataset_inst = config.get_dataset("ttbb_fh_powheg")
     dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-    
+
     dataset_inst = config.get_dataset("ttbb_dl_powheg")
     dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
     dataset_inst = config.get_dataset("ttbb_sl_powheg")
     dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
     dataset_inst = config.get_dataset("ttbb_fh_powheg")
     dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
-    
+
     dataset_inst = config.get_dataset("ttbb_dl_powheg")
     dataset_inst.add_process(config.x.procs.n.ttb_custom)
     dataset_inst = config.get_dataset("ttbb_sl_powheg")
     dataset_inst.add_process(config.x.procs.n.ttb_custom)
     dataset_inst = config.get_dataset("ttbb_fh_powheg")
     dataset_inst.add_process(config.x.procs.n.ttb_custom)
-    
+
     dataset_inst = config.get_dataset("ttbb_dl_powheg")
     dataset_inst.add_process(config.x.procs.n.tt2b_custom)
     dataset_inst = config.get_dataset("ttbb_sl_powheg")
@@ -293,3 +293,10 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
 #             )
 #             apply_proc_settings(proc_inst, process_settings)
 #             set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
+
+
+from order import Process
+
+matched_top = Process(name="matched_top", id=9911, label="Top matched", color=(255, 0, 0))
+matched_higgs = Process(name="matched_higgs", id=9912, label="Higgs matched", color=(255, 140, 0))
+unmatched = Process(name="unmatched", id=9913, label="Unmatched", color=(0, 150, 0))

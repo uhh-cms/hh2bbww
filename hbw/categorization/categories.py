@@ -569,3 +569,56 @@ def require_triggers(events, require_trigger_ids=None, veto_trigger_ids=None):
 def catid_triggers(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = require_triggers(events, self.require_trigger_ids, self.veto_trigger_ids)
     return events, mask
+
+
+# Categorizer for matched top, higgs and unmatched jets
+# The Categorizer is required for the Matched/Unmatched lines in the the GATJA Score Plots
+def _has_score(events, i, padding_value=-6.0):
+    return (events.jetNumber >= 3) & (events[f"jetPT{i}"] != padding_value)
+
+
+for i in range(1, 9):  # For each of the 8 jets, define a categorizer for matched top, higgs and unmatched jets
+    @categorizer(cls_name=f"cat_matched_top_j{i}")
+    def cat_top(self, events, i=i, **kwargs):
+        # i = i saves the current value of i in the loop, so that it is not overwritten in the next iteration
+        if not has_ak_column(events, f"jetTopMatched{i}"):
+            events = self[self.inputs_prod](events, **kwargs)
+        return events, _has_score(events, i) & (events[f"jetTopMatched{i}"] == 1)
+
+    @cat_top.init
+    def cat_top_init(self):
+        from hbw.production.ml_trih_inputs import (
+            gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b,
+        )
+        self.inputs_prod = gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b
+        self.uses.add(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b)
+
+    @categorizer(cls_name=f"cat_matched_higgs_j{i}")
+    def cat_higgs(self, events, i=i, **kwargs):
+        if not has_ak_column(events, f"jetHiggsMatched{i}"):
+            events = self[self.inputs_prod](events, **kwargs)
+        return events, _has_score(events, i) & (events[f"jetHiggsMatched{i}"] == 1)
+
+    @cat_higgs.init
+    def cat_higgs_init(self):
+        from hbw.production.ml_trih_inputs import (
+            gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b,
+        )
+        self.inputs_prod = gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b
+        self.uses.add(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b)
+
+    @categorizer(cls_name=f"cat_unmatched_j{i}")
+    def cat_un(self, events, i=i, **kwargs):
+        if not has_ak_column(events, f"jetTopMatched{i}"):
+            events = self[self.inputs_prod](events, **kwargs)
+        return events, (
+            _has_score(events, i) & (events[f"jetTopMatched{i}"] == 0) & (events[f"jetHiggsMatched{i}"] == 0)
+        )
+
+    @cat_un.init
+    def cat_un_init(self):
+        from hbw.production.ml_trih_inputs import (
+            gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b,
+        )
+        self.inputs_prod = gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b
+        self.uses.add(gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b)
