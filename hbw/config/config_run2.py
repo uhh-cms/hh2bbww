@@ -1397,6 +1397,7 @@ def add_config(
         "RecoilCorrMET.{pt,phi}_{recoilresp,recoilres}_{up,down}",
         # information of tt sample additional bs
         "genTtbarId",
+        "Jet.matchClass",  # required for the GATJA labeling, GEN Matching to mother particles (Higgs, Top, Z)
         # "TrigObj.{pt,eta,phi,mass,filterBits}",  # NOTE: this column is very large (~1/3 of final reduced events)
         # all columns added during selection using a ColumnCollection flag, but skip cutflow ones
         ColumnCollection.ALL_FROM_SELECTOR,

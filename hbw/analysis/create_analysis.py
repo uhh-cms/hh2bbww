@@ -397,6 +397,8 @@ def create_hbw_analysis(
 
     def hbw_parts(task, store_parts):
         name = task.task_family
+        if "hbw.ProduceColumnsTF" in name:
+            store_parts = gatja_production(task, store_parts)
         if name in software_tasks:
             return software_tasks_parts(task, store_parts)
         if name in shareable_analysis_tasks:
@@ -411,6 +413,8 @@ def create_hbw_analysis(
             store_parts = dataset_version(task, store_parts)
         if "shift" in store_parts:
             store_parts = shift_version(task, store_parts)
+        if "ProduceColumnsTF" in name:
+            store_parts
         return store_parts
 
     def pre_reducer_parts(task, store_parts):
@@ -422,7 +426,8 @@ def create_hbw_analysis(
         "hbw_parts": hbw_parts,
         "pre_reducer": pre_reducer_parts,
     }
-    from hbw.analysis.hist_hooks import add_hist_hooks
+    from hbw.analysis.hist_hooks import add_hist_hooks, add_matching_hist_hooks
     add_hist_hooks(analysis_inst)
+    add_matching_hist_hooks(analysis_inst)  # Required for matched/unmatched histograms in GATJA score plots
 
     return analysis_inst

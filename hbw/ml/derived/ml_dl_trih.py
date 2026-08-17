@@ -120,6 +120,13 @@ input_features = DotDict({
 })
 input_features["gatja_inputs"] = input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
 
+# input_features["gatja_inputs"] = input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
+input_features[
+    "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"
+] = (
+    input_features["expanded_hhh_inputs"] + input_features["gatja_scores"]
+)
+
 configs = DotDict({
     "22post": lambda self, requested_configs: ["c22postv14"],
     "23pre": lambda self, requested_configs: ["c23prev14"],
@@ -165,7 +172,10 @@ Bin = DenseClassifierDL.derive("Bin", cls_dict={
     "sub_process_class_factors": {
         "hhh_4b2w_2l2nu_c30_d40": 1,
         "ttbb_custom": 1,
-        "tt_custom": 1,
+        # "tt_bb_custom": 1,
+        # "ttb_custom": 1,
+        # "tt2b_custom": 1,
+        # "tt_custom": 1,
         "st": 1,
         "dy": 1,
         "ttv": 1,
@@ -231,6 +241,9 @@ Cat_3b = DenseClassifierDL.derive("Cat_3b", cls_dict={
         "tth",
         "tt_custom",
         "ttbb_custom",
+        # "tt_bb_custom",
+        # "ttb_custom",
+        # "tt2b_custom",
     ),
     "train_nodes": {
         "hhh_signal": {

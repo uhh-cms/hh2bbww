@@ -414,6 +414,26 @@ def kwargs_fn(root_cats):
 
 
 @call_once_on_config()
+def add_matching_categories(config: od.Config) -> None:
+    """
+    categories for GATJA matching - required to plot the Matched/Unmatched lines in the GATJA score plots
+    """
+    for i in range(1, 9):
+        config.add_category(
+            name=f"matched_top_j{i}", id=8100 + i,
+            selection=f"cat_matched_top_j{i}", label=f"Top matched (Jet {i})",
+        )
+        config.add_category(
+            name=f"matched_higgs_j{i}", id=8200 + i,
+            selection=f"cat_matched_higgs_j{i}", label=f"Higgs matched (Jet {i})",
+        )
+        config.add_category(
+            name=f"unmatched_j{i}", id=8300 + i,
+            selection=f"cat_unmatched_j{i}", label=f"Unmatched (Jet {i})",
+        )
+
+
+@call_once_on_config()
 def add_categories_production(config: od.Config) -> None:
     """
     Adds categories to a *config*, that are typically produced in `ProduceColumns`.
@@ -459,6 +479,7 @@ def add_categories_production(config: od.Config) -> None:
     )
     dycr__nonmixed.add_category(config.get_category("dycr__2e"))
     dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+    add_matching_categories(config)
 
 
 @call_once_on_config()
@@ -529,3 +550,4 @@ def add_categories_ml(config, ml_model_inst):
         skip_existing=True,
     )
     logger.info(f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
+    add_matching_categories(config)

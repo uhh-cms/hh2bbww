@@ -10,6 +10,9 @@ law run hbw.MLOptimizer --version prod1 --ml-models dense_3x64,dense_3x128,dense
 """
 from __future__ import annotations
 
+import itertools
+
+
 from collections import defaultdict
 
 import numpy as np
@@ -19,7 +22,7 @@ from hbw.util import log_memory
 import law
 import luigi
 
-from columnflow.tasks.framework.base import Requirements, DatasetTask
+from columnflow.tasks.framework.base import Requirements, AnalysisTask, DatasetTask, wrapper_factory, RESOLVE_DEFAULT
 from columnflow.tasks.framework.mixins import (
     CalibratorsMixin,
     SelectorMixin,
@@ -37,6 +40,66 @@ from columnflow.tasks.ml import PrepareMLEvents, MergeMLEvents, MergeMLStats, ML
 from hbw.tasks.base import HBWTask
 
 logger = law.logger.get_logger(__name__)
+
+
+from columnflow.tasks.production import ProduceColumns
+
+class ProduceColumnsTF(
+    ProduceColumns,
+    HBWTask,
+):
+
+    sandbox = dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
+
+
+_ProduceColumnsTFWrapperBase = wrapper_factory(
+    base_cls=AnalysisTask,
+    require_cls=ProduceColumnsTF,
+    enable=["configs", "skip_configs", "datasets", "skip_datasets", "shifts", "skip_shifts"],
+)
+_ProduceColumnsTFWrapperBase.exclude_index = True
+delattr(_ProduceColumnsTFWrapperBase, "producer")
+
+
+class ProduceColumnsTFWrapper(_ProduceColumnsTFWrapperBase):
+
+    producers = law.CSVParameter(
+        default=(RESOLVE_DEFAULT,),
+        description="comma-separated names of producers to be applied; default: value of the 'default_producer' "
+        "analysis aux",
+        brace_expand=True,
+        parse_empty=True,
+    )
+
+    @classmethod
+    def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
+        params = super().modify_param_values(params)
+
+        if params.get("analysis_inst"):
+            config_insts = [params["analysis_inst"].get_config(name) for name in params["configs"]]
+            params["producers"] = cls.resolve_config_default_and_groups(
+                param=params.get("producers"),
+                task_params=params,
+                container=config_insts,
+                default_str="default_producer",
+                groups_str="producer_groups",
+                multi_strategy="same",
+            )
+
+        return params
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.producers:
+            # add the producers parameter
+            self.wrapper_fields.append("producer")
+
+            # extend the parameter combinations with producers
+            self.wrapper_parameters = [
+                params + (producer,)
+                for params, producer in itertools.product(self.wrapper_parameters, self.producers)
+            ]
 
 
 class SimpleMergeMLEvents(
@@ -348,6 +411,29 @@ class MLPreTraining(
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
                 stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
+                # if "ttbb_" in dataset:
+                #     # __import__("IPython").embed()
+                #     processes = config_inst.get_dataset(dataset).processes
+                #     for proc_inst in processes:
+                #         process = proc_inst.name
+                #         if process in self.ml_model_inst.processes:
+                #             # proc_inst = config_inst.get_process(process)
+                #             sub_id = [
+                #                 proc_inst.id
+                #                 for proc_inst, _, _ in proc_inst.walk_processes(include_self=True)
+                #             ]
+
+                #             for id in list(stats["num_events_per_process"].keys()):
+                #                 if int(id) not in sub_id:
+                #                     for key in list(stats.keys()):
+                #                         stats[key].pop(id, None)
+
+                #             MergeMLStats.merge_counts(merged_stats[process], stats)
+                #         else: 
+                #             continue
+                # else: 
+                # gather stats per ml process
+                # stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
                 proc_inst = config_inst.get_process(process)
                 sub_id = [
@@ -466,6 +552,221 @@ class MLPreTraining(
     @law.workflow.base.workflow_property
     def workflow_run(self):
         pass
+
+
+class MLEvaluationGATJA(
+    # NOTE: mixins might need fixing, needs to be checked
+    HBWTask,
+    MLModelTrainingMixin,
+    law.LocalWorkflow,
+    RemoteWorkflow,
+):
+    """
+    This task creates evaluation outputs for a single trained MLModel.
+    """
+    resolution_task_cls = SimpleMergeMLEvents
+
+    sandbox = None
+
+    allow_empty_ml_model = False
+
+    # upstream requirements
+    reqs = Requirements(
+        RemoteWorkflow.reqs,
+        # MLPreTraining=MLPreTraining,
+        # MLTraining=MLTraining,
+    )
+
+    # upstream requirements
+    processes = luigi.Parameter(  # Check here what kind of parameter this is?
+        RemoteWorkflow.reqs,
+        # MLPreTraining=MLPreTraining,
+        # MLTraining=MLTraining,
+    )
+
+
+    @property
+    def config_inst(self):
+        return self.config_insts[0]
+
+    def create_branch_map(self):
+        return [
+            DotDict({"process": process})
+            for process in self.processes  # here müssen wir noch schauen wie die processes geladen werden 
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # set the sandbox
+        self.sandbox = self.ml_model_inst.sandbox(self)
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+
+        # reqs["models"] = self.reqs.MLTraining.req(
+        #     self,
+        #     processes=processes  # Sth like that 
+        #     configs=(self.config_inst.name,),
+        # )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+
+        return reqs
+
+    def requires(self):
+        reqs = {}
+        if not self.is_branch():
+            return reqs
+
+        # reqs["training"] = self.reqs.MLTraining.req(
+        #     self,
+        #     configs=(self.config_inst.name,),
+        # )
+        # reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(self, branch=-1)
+        return reqs
+
+    # def output(self):
+    #     k = self.ml_model_inst.folds
+    #     process = self.branch_data["process"]
+
+    #     outputs = {
+    #         evaluation_array: {
+    #             self.data_split: {process: {fold: (
+    #                 self.target(f"{evaluation_array}_{self.data_split}_{process}_fold{fold}of{k}.npy")
+    #             ) for fold in range(self.ml_model_inst.folds)
+    #             }}}
+    #         for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays
+    #     }
+
+    #     return outputs
+
+    def output(self):
+        outputs = {}
+
+        # only declare the output in case the producer actually creates columns
+        # if self.producer_inst.produced_columns:
+        outputs["columns"] = self.target(f"columns_{self.branch}.parquet")
+
+        return outputs
+
+
+    @law.decorator.log
+    @law.decorator.localize
+    @law.decorator.safe_output
+    @law.decorator.timeit()
+    def run(self):
+        from hbw.ml.data_loader import MLProcessData
+
+        # prepare inputs and outputs
+        inputs = self.input()
+        output = self.output()
+        process = self.branch_data["process"]
+
+        logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
+
+        def make_model_gatja(input_shape, index_node, index_neigh1, index_neigh2):
+            inputs = keras.Input(shape=input_shape)
+
+            # Extract node, neighbor1 and neighbor2 values from inputs using Lambda layers
+            input_node_value = layers.Lambda(lambda x: x[:, :index_node])(inputs)
+            input_neigh1_value = layers.Lambda(lambda x: x[:, -(index_neigh1+index_neigh2):-index_neigh2])(inputs)
+            input_neigh2_value = layers.Lambda(lambda x: x[:, -index_neigh2:])(inputs)
+
+            # Define a function to create dense layers with LeakyReLU activation
+            def dense_layer(x, units):
+                x = layers.Dense(units)(x)
+                x = layers.LeakyReLU()(x)
+                return x
+
+            # Process node embedding
+            node_value = dense_layer(input_node_value, 256)
+            node_value = layers.Concatenate()([node_value, input_node_value])
+            node_value = dense_layer(node_value, 128)
+
+            # Process neighbor1 embedding
+            neigh1_value = dense_layer(input_neigh1_value, 256)
+            neigh1_value = layers.Concatenate()([neigh1_value, input_neigh1_value])
+            neigh1_value = dense_layer(neigh1_value, 128)
+
+            # Process neighbor2 embedding
+            neigh2_value = dense_layer(input_neigh2_value, 256)
+            neigh2_value = layers.Concatenate()([neigh2_value, input_neigh2_value])
+            neigh2_value = dense_layer(neigh2_value, 128)
+
+            # Compute attention scores per sample using element-wise dot products
+            # For each sample, compute a scalar score by taking the dot product along the features.
+            node_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, node_value])
+            neigh1_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, neigh1_value])
+            neigh2_score = layers.Lambda(
+                lambda x: tf.reduce_sum(x[0] * x[1], axis=-1, keepdims=True)
+            )([node_value, neigh2_value])
+
+            # Concatenate scores to shape (batch_size, 3) and apply softmax
+            scores = layers.Concatenate(axis=-1)([node_score, neigh1_score, neigh2_score])
+            attention_weights = layers.Softmax()(scores)
+
+            # Extract individual attention weights; each will have shape (batch_size, 1)
+            node_weight = layers.Lambda(lambda x: x[:, 0:1])(attention_weights)
+            neigh1_weight = layers.Lambda(lambda x: x[:, 1:2])(attention_weights)
+            neigh2_weight = layers.Lambda(lambda x: x[:, 2:3])(attention_weights)
+
+            # Apply the attention weights (element-wise multiplication)
+            node = layers.Multiply()([node_value, node_weight])
+            neigh1 = layers.Multiply()([neigh1_value, neigh1_weight])
+            neigh2 = layers.Multiply()([neigh2_value, neigh2_weight])
+
+            # Concatenate node embedding with the maximum of neighbor embeddings
+            max_embed = layers.Concatenate()([node, layers.Maximum()([neigh1, neigh2])])
+
+            # Extract the rest of the input features using a Lambda layer
+            input_rest = layers.Lambda(lambda x: x[:, index_node:-(index_neigh1+index_neigh2)])(inputs)
+            rest = dense_layer(input_rest, 256)
+            rest = layers.Concatenate()([rest, input_rest])
+            rest = dense_layer(rest, 128)
+
+            # Concatenate rest with the attended node and neighbor features
+            x_dense = layers.Concatenate()([rest, max_embed])
+            x_dense = layers.Dropout(0.15)(x_dense)
+
+            # Define a function to create dropout layers with LeakyReLU activation and concatenation
+            def dropout_layer(x, units):
+                x_new = layers.Dense(units)(x)
+                x_new = layers.LeakyReLU()(x_new)
+                x_new = layers.Dropout(0.15)(x_new)
+                # Concatenate with the original x_dense for residual-like connection
+                x_new = layers.Concatenate()([x_new, x_dense])
+                return x_new
+
+            x = dropout_layer(x_dense, 512)
+            x = dropout_layer(x, 128)
+            x = dropout_layer(x, 32)
+
+
+            # Final output layer with softmax activation for 3 classes
+            outputs = layers.Dense(3, activation="softmax")(x)
+
+            return keras.Model(inputs, outputs)
+
+        gatja_model = make_model_gatja((27,),5,4,4)
+        gatja_model.load_weights("/data/dust/user/markusla/analysis/dilepton/hh2bbww/tutorial_onwn_Data_hhh.weights.h5")
+
+        input_files = inputs["preml"]["collection"]
+        input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
+
+        for fold in range(self.ml_model_inst.folds):
+            data = MLProcessData(
+                self.ml_model_inst, input_files, self.data_split, process, fold, fold_modus="evaluation_only",
+            )
+
+            for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays:
+                # store loaded data
+                output[evaluation_array][self.data_split][self.branch_data["process"]][fold].dump(
+                    getattr(data, evaluation_array), formatter="numpy",
+                )
 
 
 class MLEvaluationSingleFold(
@@ -982,204 +1283,3 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
 
         # dump all stats into yaml file
         output["stats"].dump(stats, formatter="json")
-
-
-# class PlotMLResultsSingleFoldDetailed(
-#     # NOTE: mixins might need fixing, needs to be checked
-#     HBWTask,
-#     MLModelTrainingMixin,
-#     law.LocalWorkflow,
-#     RemoteWorkflow,
-# ):
-#     """
-#     This task creates plots for the results of a single trained MLModel.
-#     """
-#     resolution_task_cls = SimpleMergeMLEvents
-
-#     sandbox = None
-
-#     allow_empty_ml_model = False
-
-#     # strategy for handling missing source columns when adding aliases on event chunks
-#     missing_column_alias_strategy = "original"
-
-#     # upstream requirements
-#     reqs = Requirements(
-#         RemoteWorkflow.reqs,
-#         MLPreTraining=MLPreTraining,
-#         MLEvaluationSingleFold=MLEvaluationSingleFold,
-#         MLTraining=MLTraining,
-#     )
-
-#     fold = luigi.IntParameter(
-#         default=0,
-#         description="the fold index of the MLTraining to use; must be compatible with the "
-#         "number of folds defined in the ML model; default: 0",
-#     )
-
-#     view_cmd = luigi.Parameter(
-#         default=law.NO_STR,
-#         significant=False,
-#         description="a command to execute after the task has run to visualize plots right in the "
-#         "terminal; no default",
-#     )
-
-#     data_splits = ("train", "val", "test")
-
-#     @property
-#     def config_inst(self):
-#         return self.config_insts[0]
-
-#     def create_branch_map(self):
-#         return {0: None}
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-
-#         # set the sandbox
-#         self.sandbox = self.ml_model_inst.sandbox(self)
-
-#     def workflow_requires(self):
-#         reqs = super().workflow_requires()
-
-#         reqs["inputs"] = self.requires_from_branch()
-
-#         return reqs
-
-#     def requires(self):
-#         reqs = {
-#             "training": self.reqs.MLTraining.req_different_branching(
-#                 self,
-#                 configs=(self.config_inst.name,),
-#                 branches=(self.fold,),
-#             ),
-#         }
-
-#         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
-#             self,
-#             configs=(self.config_inst.name,),
-#             branch=-1,
-#         )
-#         reqs["mlpred"] = {
-#             data_split:
-#             self.reqs.MLEvaluationSingleFold.req_different_branching(self, data_split=data_split, branch=-1)
-#             for data_split in self.data_splits
-#         }
-
-#         return reqs
-
-#     def output(self):
-#         return {
-#             "plots": self.target("plots", dir=True),
-#             "stats": self.target("stats.json"),
-#         }
-
-#     @law.decorator.log
-#     @law.decorator.timeit()
-#     @view_output_plots
-#     def run(self):
-#         logger.info(f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
-#         log_memory("Start")
-#         # prepare inputs and outputs
-#         inputs = self.input()
-
-#         # this initializes some process information (e.g. proc_inst.x.ml_id), but feels kind of hacky
-#         self.ml_model_inst.datasets(self.config_inst)
-
-#         # open all model files
-#         training_results = self.ml_model_inst.open_model(inputs["training"])
-#         self.ml_model_inst.trained_model = training_results["model"]
-#         self.ml_model_inst.best_model = training_results["best_model"]
-
-#         # Load data lazily and process incrementally to reduce memory usage
-#         input_files_preml = inputs["preml"]["collection"]
-#         input_files_mlpred = {data_split: value["collection"] for data_split, value in inputs["mlpred"].items()}
-#         input_files = law.util.merge_dicts(
-#             *[input_files_preml[key] for key in input_files_preml.keys()],
-#             *[
-#                 input_files_mlpred[data_split][key]
-#                 for data_split in input_files_mlpred.keys()
-#                 for key in input_files_mlpred[data_split].keys()
-#             ],
-#             deep=True,
-#         )
-
-#         # Load all data at once (original approach) but with memory-efficient plotting
-#         from hbw.ml.data_loader import MLProcessData
-#         data = DotDict({
-#             data_split: MLProcessData(
-#                 self.ml_model_inst,
-#                 input_files,
-#                 data_split,
-#                 self.ml_model_inst.processes,
-#                 self.fold,
-#             ) for data_split in self.data_splits
-#         })
-#         self.create_plots(data)
-
-#     def create_plots(self, data):
-#         """Create plots with matplotlib cleanup for memory efficiency"""
-#         import gc
-#         import matplotlib
-#         matplotlib.use("Agg")  # Use non-interactive backend
-#         import matplotlib.pyplot as plt
-
-#         output = self.output()
-#         stats = {}
-#         from hbw.ml.plotting import (
-#             plot_confusion,
-#             plot_roc_ovr,
-#             plot_roc_ovo,
-#             plot_output_nodes,
-#             plot_input_features_detailed,
-#             plot_introspection,
-#         )
-
-#         # create plots
-#         # NOTE: could be more parallelized since input reading is quite fast,
-#         # while producing certain plots takes a long time
-
-#         # NOTE: making plots per sub-process (`self.ml_model_inst.process_insts`) might be nice,
-#         # but at the moment we can only plot per DNN node process (`self.ml_model_inst.train_node_process_insts`)
-
-#         # input features
-#         # log_memory("Before plotting input features")
-#         # for label, proc in enumerate(self.ml_model_inst.train_node_process_insts):
-#         #     # __import__("IPython").embed()
-#         #     plot_input_features_detailed(
-#         #         self.ml_model_inst,
-#         #         data.train,
-#         #         data.val,
-#         #         data.test,
-#         #         output["plots"],
-#         #         [proc],
-#         #         process_label=label,
-#         #     )
-#         # log_memory("After plotting input features")
-#         # data.train.cleanup()
-#         # data.val.cleanup()
-#         # data.test.cleanup()
-#         # plt.close("all")
-#         # gc.collect()
-
-#         # remove the train and val data to save memory
-#         # del data.train
-#         # del data.val
-
-#         # introspection plot for variable importance ranking
-#         log_memory("Before plotting introspection")
-#         for i in enumerate(self.ml_model_inst.train_nodes):
-#             plot_introspection(
-#                 self.ml_model_inst,
-#                 output["plots"],
-#                 data.test,
-#                 output_node=i,
-#                 input_features=self.ml_model_inst.input_features_ordered,
-#                 stats=stats,
-#             )
-#         log_memory("After plotting introspection")
-#         plt.close("all")
-#         gc.collect()
-
-#         # dump all stats into yaml file
-#         output["stats"].dump(stats, formatter="json")

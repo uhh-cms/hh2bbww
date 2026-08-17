@@ -122,7 +122,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
                 "st_tchannel_t_had_4f_powheg",
-                "st_tchannel_tbar_had_4f_powheg",
+                # "st_tchannel_tbar_had_4f_powheg",
                 "st_tchannel_t_lep_4f_powheg",
                 "st_tchannel_tbar_lep_4f_powheg",
             ]),
@@ -178,7 +178,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_ee_m50toinf_0j_amcatnlo",
                 "dy_mumu_m50toinf_0j_amcatnlo",
                 "dy_tautau_m50toinf_0j_amcatnlo",
-                "dy_ee_m50toinf_1j_amcatnlo",
+                # "dy_ee_m50toinf_1j_amcatnlo",
                 "dy_mumu_m50toinf_1j_amcatnlo",
                 "dy_tautau_m50toinf_1j_amcatnlo",
                 "dy_ee_m50toinf_2j_amcatnlo",
@@ -252,7 +252,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wz_wlnu_zqq_powheg",
                 "zz_zll_zll_powheg",
                 "zz_zqq_zll_powheg",
-                "zz_zll_znunu_powheg",
+                # "zz_zll_znunu_powheg",  # B: Auskommentiert Index Error
             ]),
         ],
         "vvv": [
@@ -315,7 +315,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "ttbb_dl_powheg",
                 "ttbb_sl_powheg",
-                "ttbb_fh_powheg",
+                "ttbb_fh_powheg",  # TODO commented out for ttbb mdoeliing differnt processes
             ]),
         ],
         "tthh": [
