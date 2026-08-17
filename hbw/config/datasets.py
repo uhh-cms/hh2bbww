@@ -164,15 +164,11 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",
             ]),
-<<<<<<< HEAD
-            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
-=======
-            *config.x.if_era(run=3, year=2024, cfg_tag="is_hh", values=[
+            *config.x.if_era(run=3, cfg_tag="is_hh", year=[2024, 2025, 2026], values=[
                 # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
                 "dy_tautau_m10to50_amcatnlo",  # NOTE: always emtpy in HHH becasue < 3 btagged jets
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
->>>>>>> 32743288 (Include Gatja, finalze analysis strategy include missing corrections, introduce boosted category with gloParT Tagger)
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
                 "dy_ee_m50toinf_amcatnlo",
                 "dy_mumu_m50toinf_amcatnlo",
@@ -218,7 +214,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "w_lnu_2j_madgraph",
                 "w_lnu_3j_madgraph",
             ]),
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "w_lnu_4j_madgraph",
             ]),
         ],
@@ -322,13 +318,8 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "ttbb_fh_powheg",
             ]),
         ],
-<<<<<<< HEAD
-        "tthh_4b": [
-            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
-                "tthh_4b_madgraph",
-=======
         "tthh": [
-            *config.x.if_era(run=3, year=2024, values=[
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
                 "tthh_4b_incl_madgraph",
                 "tthh_2b2t_dl_madgraph",
                 "tthh_2b2t_sl_madgraph",
@@ -336,7 +327,6 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "tthh_2b2w_sl_madgraph",
                 "tthh_2b2z_dl_madgraph",
                 "tthh_2b2z_sl_madgraph",
->>>>>>> 32743288 (Include Gatja, finalze analysis strategy include missing corrections, introduce boosted category with gloParT Tagger)
             ]),
             # "tthh_4b_madgraph",
         ],

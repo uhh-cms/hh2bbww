@@ -32,7 +32,7 @@ def modify_cmsdb_processes():
         st_twchannel_t_dl, st_twchannel_tbar_dl,
         tt_dl, ttbb,
         tt_dl_nonb, tt_sl_nonb, tt_fh_nonb,
-        ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
+        # ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
         ttbb_dl_b, ttbb_sl_b, ttbb_fh_b,
         ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b,
         ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb,
@@ -111,7 +111,7 @@ def modify_cmsdb_processes():
         [tt_dl_nonb, tt_sl_nonb, tt_fh_nonb],
         name="tt_custom",
         id=21199,
-        label="TT Custom",
+        label="TT + c/lf",
     )
     tt_custom.add_parent_process(tt)
 
@@ -119,7 +119,7 @@ def modify_cmsdb_processes():
         [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b, ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b, ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
         name="ttbb_custom",
         id=68899,
-        label="TTBB Custom",
+        label="TT + b",
     )
     ttbb_custom.add_parent_process(ttbb)
 

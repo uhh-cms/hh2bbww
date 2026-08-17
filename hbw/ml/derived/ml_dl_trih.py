@@ -138,7 +138,7 @@ Bin = DenseClassifierDL.derive("Bin", cls_dict={
     "input_features": input_features["gatja_inputs"],
     "processes": [
         *processes.hhh,
-        *processes.backgrounds_v0_test_hhh,
+        *processes.backgrounds_v0,
     ],
     "train_nodes": {
         "sig_hhh_binary": {
@@ -153,7 +153,7 @@ Bin = DenseClassifierDL.derive("Bin", cls_dict={
             "label": "Background",
             "color": "#e76300",  # Spanish Orange
             "class_factor_mode": "xsec",
-            "sub_processes": processes.backgrounds_v0_test_hhh,
+            "sub_processes": processes.backgrounds_v0,
         },
     },
     # relative class factors between different nodes

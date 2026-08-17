@@ -328,7 +328,7 @@ def config_variable_hhh_wo_bin(self, config_cat_inst):
 default_cls_dict = {
     "ml_model_name": ml_model_name,
     "processes": processes_dict["v0"],
-    "config_categories": config_categories.v0,
+    "config_categories": config_categories.incl_3b,
     "systematics": systematics.default,
     "config_variable": config_variable_hhh,
     "mc_stats": True,

@@ -41,7 +41,7 @@ def mask_fn_ar(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     btag_wp_score = self.config_inst.x.btag_wp_score
     n_deepjet = ak.sum(events.Jet[btag_column] >= btag_wp_score, axis=-1)
     mask = (ak.num(events.Jet["pt"], axis=-1) >= self.n_jet)
-    mask = mask & (n_deepjet >= 2)
+    mask = mask & (n_deepjet >= 3)
     mask = mask & (events.Lepton[:, 1].pt > 15)
     return events, mask
 
