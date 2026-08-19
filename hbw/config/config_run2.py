@@ -130,11 +130,11 @@ def add_config(
         # Very hard coded and not maintaianble atm --> Change at some point.
         import glob
 
-        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_m1p5_d4_m0p5/Run3Summer24"
+        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_0_d4_99/Run3Summer24"
 
         def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
             files = sorted(
-                glob.glob(os.path.join(BASE, "GF_HHH_c3_m1p5_d4_m0p5_merged*.root")),
+                glob.glob(os.path.join(BASE, "GF_HHH_c3_0_d4_99_merged*.root")),
                 # glob.glob(os.path.join(BASE, "GF_HHH_Run3Summer24_merged*.root")),
             )
 
@@ -198,6 +198,7 @@ def add_config(
     configure_hbw_datasets(cfg, limit_dataset_files, add_dataset_extensions)
 
     # whether to validate the number of obtained LFNs in GetDatasetLFNs
+    # cfg.x.validate_dataset_lfns = False
     cfg.x.validate_dataset_lfns = limit_dataset_files is None
 
     ################################################################################################
@@ -1445,7 +1446,7 @@ def add_config(
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
-    if cfg.x.run == 3 and not year == 2024:
+    if cfg.x.run == 3 and not year >= 2024:
         p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
         # if repr(p1) != repr(p2):
         if p1 != p2:

@@ -527,11 +527,16 @@ def gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b(
     # produce common input features
     events = self[common_ml_inputs](events, **kwargs)
     events = self[prepare_hhh_bjets](events, **kwargs)
-    events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[event_weights](events, **kwargs)
+    if self.dataset_inst.is_data:
+        events = set_ak_column_f32(events, "weights", ak.ones_like(events.mli_n_jet))
+        events = set_ak_column_f32(events, "btag_weight", ak.ones_like(events.mli_n_jet))
     # add behavior and define new collections (e.g. Lepton)
     events = self[prepare_objects](events, **kwargs)
     jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
-    events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
     jets = events.Jet
     padded_jets = ak.pad_none(jets, 8)
     padded_lepton = ak.pad_none(events.Lepton, 2)
@@ -539,6 +544,7 @@ def gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b(
     btag_wp_score = self.config_inst.x.btag_wp_score
     is_bjet = events.Jet[btag_column] >= btag_wp_score
     bjets = events.Jet[is_bjet]
+    padded_bjets = ak.pad_none(bjets, 8)
     n_bjets = ak.num(bjets, axis=1)
 
     j1, j2 = ak.unzip(ak.combinations(events.Jet, 2))
@@ -658,7 +664,8 @@ def gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b(
     events = set_ak_column_f32(events, "metPhi", events.mli_met_phi)
 
     events = set_ak_column_f32(events, "btag_weight", events.btag_weight)
-    events = set_ak_column_f32(events, "weights", events.stitched_normalization_weight)
+    if self.dataset_inst.is_mc:
+        events = set_ak_column_f32(events, "weights", events.stitched_normalization_weight)
 
     def chi2_higgs_indices(events, objs, padded_objs, prefix, n_pad=8):
         n_objs = ak.num(objs, axis=1)

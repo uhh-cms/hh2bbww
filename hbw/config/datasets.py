@@ -65,31 +65,31 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     ]
 
     ggf_samples = lambda hhdecay: [
-        f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
+        # f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
         f"hh_ggf_{hhdecay}_kl1_kt1_powheg",
-        f"hh_ggf_{hhdecay}_kl2p45_kt1_powheg",
-        f"hh_ggf_{hhdecay}_kl5_kt1_powheg",
+        # f"hh_ggf_{hhdecay}_kl2p45_kt1_powheg",
+        # f"hh_ggf_{hhdecay}_kl5_kt1_powheg",
     ]
     vbf_samples = lambda hhdecay: [
         f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4_madgraph",
-        f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2_madgraph",
-        f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3_madgraph",
-        f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43_madgraph",
-        f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
-        f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
-        f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
-        f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
+        # f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
+        # f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96_madgraph",
         # f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
     ] if config.x.run == 3 else [
         f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
-        f"hh_vbf_{hhdecay}_kv1_k2v1_kl2_madgraph",
-        f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv1_k2v2_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv0p5_k2v1_kl1_madgraph",
-        f"hh_vbf_{hhdecay}_kv1p5_k2v1_kl1_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1_k2v1_kl2_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1_k2v2_kl1_madgraph",
+        # f"hh_vbf_{hhdecay}_kv0p5_k2v1_kl1_madgraph",
+        # f"hh_vbf_{hhdecay}_kv1p5_k2v1_kl1_madgraph",
     ]
 
     dataset_names = DotDict.wrap({
@@ -262,19 +262,19 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "zzz_amcatnlo",
         ],
         "hhh": [
-            *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
-                "hhh_4b2w_c30_d40_amcatnlo",
-                "hhh_4b2w_c30_d499_amcatnlo",
-                "hhh_4b2w_c30_d4m1_amcatnlo",
-                "hhh_4b2w_c319_d419_amcatnlo",
-                "hhh_4b2w_c31_d40_amcatnlo",
-                "hhh_4b2w_c31_d42_amcatnlo",
-                "hhh_4b2w_c32_d4m1_amcatnlo",
-                "hhh_4b2w_c34_d49_amcatnlo",
-                "hhh_4b2w_c3m1_d40_amcatnlo",
-                "hhh_4b2w_c3m1_d4m1_amcatnlo",
-                "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
-            ]),
+        #     *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
+        #         "hhh_4b2w_c30_d40_amcatnlo",
+        #         "hhh_4b2w_c30_d499_amcatnlo",
+        #         "hhh_4b2w_c30_d4m1_amcatnlo",
+        #         "hhh_4b2w_c319_d419_amcatnlo",
+        #         "hhh_4b2w_c31_d40_amcatnlo",
+        #         "hhh_4b2w_c31_d42_amcatnlo",
+        #         "hhh_4b2w_c32_d4m1_amcatnlo",
+        #         "hhh_4b2w_c34_d49_amcatnlo",
+        #         "hhh_4b2w_c3m1_d40_amcatnlo",
+        #         "hhh_4b2w_c3m1_d4m1_amcatnlo",
+        #         "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
+        #     ]),
             *config.x.if_era(run=3, cfg_tag="is_hhh", year=[2024, 2025, 2026], values=[
                 "hhh_4b2w_2l2nu_c30_d4_custom",
                 "hhh_4b2w_2l2nu_c30_d499_custom",
@@ -393,14 +393,16 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "wmh_htt_powheg",
             ]),
         ],
-        "hh_ggf": [
-            *ggf_samples("hbb_hvvqqlnu"),
-            *ggf_samples("hbb_hvv2l2nu"),
-            *ggf_samples("hbb_htt"),
-            *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
-        ],
+        # hh_ggf_{hhdecay}_kl1_kt1_powheg
+        # "hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph"
+        # "hh_ggf": [
+        #     *ggf_samples("hbb_hvvqqlnu"),
+        #     *ggf_samples("hbb_hvv2l2nu"),
+        #     *ggf_samples("hbb_htt"),
+        #     *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
+        # ],
         "hh_vbf": [
-            *vbf_samples("hbb_hvvqqlnu"),
+            # *vbf_samples("hbb_hvvqqlnu"),
             *vbf_samples("hbb_hvv2l2nu"),
             *vbf_samples("hbb_htt"),
             *config.x.if_era(run=3, values=vbf_samples("hbb_hvv")),

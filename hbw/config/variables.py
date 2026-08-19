@@ -521,7 +521,7 @@ def add_variables(config: od.Config) -> None:
             x_title="Number of deepjets (tight WP)",
             discrete_x=True,
         )
-    if config.x.run == 3 and not config.campaign.x.year == 2024:
+    if config.x.run == 3 and not config.campaign.x.year >= 2024:
         particlenet_wps = config.x.btag_working_points.particlenet
         config.add_variable(
             name="n_particlenet_loose",
@@ -825,7 +825,7 @@ def add_variables(config: od.Config) -> None:
                     x_title=obj + r" %i ParticleNet score" % i,
                 )
 
-    if config.x.run == 3 and not config.campaign.x.year == 2024:
+    if config.x.run == 3 and not config.campaign.x.year >= 2024:
         xbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_xbb_vs_qcd.medium
         config.add_variable(
             name="n_fatjet_xbb_medium",
