@@ -69,6 +69,13 @@ Configs are registered via `add_lazy_config` in [create_analysis.py](hbw/analysi
 | `c22postv14` | `l22postv14` | Run 3, 2022 postEE, nano v14 |
 | `c23prev14` | `l23prev14` | Run 3, 2023 preBPix, nano v14 |
 | `c23postv14` | `l23postv14` | Run 3, 2023 postBPix, nano v14 |
+| `c24v15` | `l24v15` | Run 3, 2024, nano v15 |
+| `c25v15` | `l25v15` | Run 3, 2025, nano v15 |
+| `c26v15` | `l26v15` | Run 3, 2026, nano v15 |
+
+On this branch only `c24v15` is fully usable: `configure_hbw_processes` requires the
+`ttbb_{dl,sl,fh}_powheg` datasets, which only the 2024 campaign provides, and the 2025/2026
+campaigns live on a cmsdb branch that this repo does not pin.
 
 Most tasks can use a `--config` parameter as an input, e.g.
 ```
