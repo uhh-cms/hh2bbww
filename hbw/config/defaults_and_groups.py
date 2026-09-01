@@ -45,7 +45,7 @@ def default_hist_producer(container):
     return hist_producer
 
 
-def default_ml_model(cls, container, task_params):
+def default_ml_model(task_cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
     default_ml_model = law.config.get_expanded("analysis", "default_ml_models", ())
@@ -54,13 +54,13 @@ def default_ml_model(cls, container, task_params):
 
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
-    if hasattr(cls, "ml_model"):
+    if hasattr(task_cls, "ml_model"):
         # TODO: we might want to distinguish between multiple default ML models (sl vs dl)
         default_ml_model = "dense_default"
 
     # check if task is using an inference model
     # if that is the case, use the default ml_model set in the inference model
-    if getattr(cls, "inference_model", None):
+    if getattr(task_cls, "inference_model", None):
         inference_model = task_params.get("inference_model", None)
 
         # if inference model is not set, assume it's the container default
@@ -74,13 +74,13 @@ def default_ml_model(cls, container, task_params):
     return default_ml_model
 
 
-def default_producers(cls, container, task_params):
+def default_producers(task_cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     # per default, use the ml_inputs and event_weights
     default_producers = ["event_weights", "pre_ml_cats", ml_inputs_producer(container)]
 
-    if hasattr(cls, "ml_model"):
+    if hasattr(task_cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
         default_producers.remove("pre_ml_cats")
         return default_producers
@@ -90,7 +90,7 @@ def default_producers(cls, container, task_params):
 
     # try and get the default ml model if not set
     if ml_model in (None, law.NO_STR, RESOLVE_DEFAULT):
-        ml_model = default_ml_model(cls, container, task_params)
+        ml_model = default_ml_model(task_cls, container, task_params)
 
     # only consider 1 ml_model
     if ml_model and isinstance(ml_model, (list, tuple)):
