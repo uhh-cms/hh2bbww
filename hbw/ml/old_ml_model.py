@@ -143,7 +143,7 @@ class SimpleDNN(MLModel):
         if len(requested_configs) == 1:
             return list(requested_configs)
         else:
-            return ["c17"]
+            return ["c17v9"]
 
     def training_calibrators(self, config_inst: od.Config, requested_calibrators: Sequence[str]) -> list[str]:
         # fix MLTraining Phase Space

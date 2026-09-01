@@ -633,7 +633,7 @@ dl_22_procs2 = DenseClassifierDL.derive("dl_22_procs2", cls_dict={
 })
 
 dl_17 = DenseClassifierDL.derive("dl_17", cls_dict={
-    "training_configs": lambda self, requested_configs: ["c17"],
+    "training_configs": lambda self, requested_configs: ["c17v9"],
     "processes": ["sig", "tt", "st", "dy"],
 })
 
