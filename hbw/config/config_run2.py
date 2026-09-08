@@ -1394,7 +1394,11 @@ def add_config(
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     } | {
-        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
+        # NOTE: this comprehension was missing its f prefix, so it added the literal string
+        #       "HLT.{trg.hlt_field}" instead of one entry per registered trigger.
+        #       It is currently masked by hbw_trigger_selection's init, which adds the same
+        #       set correctly, so only selectors that do not use it were affected.
+        f"HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
     }
 
     # Version of required tasks
