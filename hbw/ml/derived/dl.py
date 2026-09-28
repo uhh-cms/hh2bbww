@@ -610,6 +610,7 @@ multiclassv3 = multiclassv1.derive("multiclassv3", cls_dict={"input_features": i
 ggfv3 = ggfv1.derive("ggfv3", cls_dict={"input_features": input_features["v2"]})
 vbfv3 = vbfv1.derive("vbfv3", cls_dict={"input_features": input_features["v2"]})
 
+
 # versions with VBF observables added
 multiclassv3_mqq = multiclassv1.derive("multiclassv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})
 vbfv3_mqq = vbfv1.derive("vbfv3_mqq", cls_dict={"input_features": input_features["vbfmqq"]})

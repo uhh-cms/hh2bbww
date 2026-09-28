@@ -571,6 +571,7 @@ class ComputeTriggerSF(
                 ],
             )
             cset_json = cset.json(exclude_unset=True)
+            add_grid = False
 
             # plot 1D or 2D scalefactors
             if len(sfhist.axes.size) <= 2:
@@ -578,7 +579,7 @@ class ComputeTriggerSF(
                 plt.style.use(mplhep.style.CMS)
 
                 if len(sfhist.axes.size) == 2:
-                    fig, ax = plt.subplots()
+                    fig, ax = plt.subplots(gridspec_kw={"left": 0.12, "right": 0.85, "top": 0.95, "bottom": 0.10})
                 else:
                     fig, axs = plt.subplots(2, 1, gridspec_kw=dict(height_ratios=[10, 7], hspace=0), sharex=True)
                     (ax, rax) = axs
@@ -586,16 +587,17 @@ class ComputeTriggerSF(
 
                 if len(sfhist.axes.size) == 2:
                     logger.info("2d plotting")
-                    # raise Exception("2d plotting - I do not want this ATM")
                     plot2d = True
                     if plot2d:
                         if self.plot_uncertainties:
                             uncertainties[uncertainties == 0.0] = None
                             sfhist_unc = hist.Hist(*hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=uncertainties)  # noqa: E501
-                            sfhist_unc.plot2d(ax=ax, cmap="viridis")
+                            artists = sfhist_unc.plot2d(ax=ax, cmap="viridis")
+                            artists[0].colorbar.set_label("Scale factor uncertainty")
                         else:
                             sfhist.values()[uncertainties == 0.0] = None
                             artists = sfhist.plot2d(ax=ax, cmap="viridis")
+                            artists[0].colorbar.set_label("Scale factor")
                             artists[0].set_clim(0.85, 1.15)
 
                         ax.plot([1, 400], [1, 400], linestyle="dashed", color="gray")
@@ -633,6 +635,7 @@ class ComputeTriggerSF(
                         ax = axs[0]
                 else:
                     logger.info("1d plotting")
+                    add_grid = True
                     # 1d plotting
                     label_dict = {
                         "data_met": r"$\varepsilon_{\text{Data}}^{\text{meas.}}$",
@@ -753,7 +756,7 @@ class ComputeTriggerSF(
 
                     # line at perfect efficiency
 
-                if add_grid := False:  # noqa
+                if add_grid:  # noqa
                     # add grid lines
                     ax.grid(True, which="major", linestyle="--", alpha=0.6)
                     ax.grid(True, which="minor", linestyle=":", alpha=0.3)

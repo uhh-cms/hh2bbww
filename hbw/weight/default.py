@@ -71,6 +71,7 @@ def no_weights(self: HistProducer, events: ak.Array, **kwargs) -> ak.Array:
     dy_correction_weight_producer=None,
     require_hbb_sf_producer=True,
     pre_label="",
+    remove_negative=False,
     version=2,
 )
 def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.Array:
@@ -101,6 +102,9 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
         logger.warning("Applying dummy weight shift (should never be use for real analysis)")
         variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
+
+    if self.remove_negative:
+        weight = ak.where(weight < 0, 0, weight)
 
     # special case: if only "weight_unweighted" is requested, we do not want to apply any weight at all
     if (
@@ -191,12 +195,15 @@ def base_init(self: HistProducer) -> None:
         for cat_inst, _, _ in config_inst.walk_categories():
             cat_inst.label = "\n".join([pre_label, cat_inst.label])
 
-            # hard-coded change for inclusive category label (basically for mll Suppl. figure)
-            if "Inclusive" in cat_inst.label and r"\n" not in cat_inst.label:
-                cat_inst.label = "Baseline selection"
+            if cat_inst.label.endswith("\nInclusive"):
+                cat_inst.label = cat_inst.label.replace("\nInclusive", "")
 
     if self.pre_label:
         update_cat_label(self.config_inst, self.pre_label)
+    else:
+        incl = self.config_inst.get_category("incl")
+        # hard-coded change for inclusive category label (basically for mll Suppl. figure)
+        incl.label = "Baseline selection"
 
     if self.categorizer_cls:
         self.uses.add(self.categorizer_cls)
@@ -210,7 +217,7 @@ def base_init(self: HistProducer) -> None:
     year = self.config_inst.campaign.x.year
     cpn_tag = self.config_inst.x.cpn_tag
 
-    if not self.weight_columns:
+    if self.weight_columns is None:
         raise Exception("weight_columns not set")
     self.local_weight_columns = self.weight_columns.copy()
 
@@ -324,6 +331,9 @@ default_correction_weights = {
     "top_pt_theory_weight": ["top_pt"],
 }
 
+correction_weights_no_pu = default_correction_weights.copy()
+correction_weights_no_pu.pop("normalized_pu_weight")
+
 default_weight_columns = {
     "stitched_normalization_weight": [],
     "dy_correction_weight": [],
@@ -413,6 +423,19 @@ incl_dy_corr_hbbsf = default_hist_producer.derive("incl_dy_corr_hbbsf", cls_dict
     },
     "dy_correction_weight_producer": "dy_incl_corr_weight",
 })
+skipPU_incl_dy_corr_hbbsf = default_hist_producer.derive("skipPU_incl_dy_corr_hbbsf", cls_dict={
+    # "pre_label": "After DY correction",
+    "nondy_hist_producer": None,
+    "weight_columns": {
+        **correction_weights_no_pu,
+        "dy_correction_weight": ["dy_correction"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
+})
 
 #
 # HistProducers with masks via categorization
@@ -420,12 +443,75 @@ incl_dy_corr_hbbsf = default_hist_producer.derive("incl_dy_corr_hbbsf", cls_dict
 
 from hbw.categorization.categories import (
     mask_fn_mbb80, catid_ge2b_loose, catid_njet2, mask_fn_met70,
-    mask_fn_met_geq40,
+    mask_fn_met_geq40, mask_fn_npvs50FIX,
+    mask_fn_met_geq40_skip_emu,
 )
+
+npvs50FIX = with_trigger_weight.derive("npvs50FIX", cls_dict={
+    "categorizer_cls": mask_fn_npvs50FIX,
+})
+skipPU_npvs50FIX = with_trigger_weight.derive("skipPU_npvs50FIX", cls_dict={
+    "categorizer_cls": mask_fn_npvs50FIX,
+    "weight_columns": {
+        **correction_weights_no_pu,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "stitched_normalization_weight": [],
+    },
+})
+
 
 met70 = with_trigger_weight.derive("met70", cls_dict={
     "categorizer_cls": mask_fn_met70,
 })
+
+unstitched_met_geq40_nocorrs = with_dy_corr.derive("unstitched_met_geq40_nocorrs", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join(["Before stitching", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40,
+    "weight_columns": {
+        "dataset_normalization_weight": [],
+    },
+})
+met_geq40_noweights = with_dy_corr.derive("met_geq40_noweights", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join(["MC event counts", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40,
+    "weight_columns": {
+    },
+})
+met_geq40_nocorrs = with_dy_corr.derive("met_geq40_nocorrs", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join(["After stitching", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40,
+    "weight_columns": {
+        "dataset_normalization_weight": [],
+    },
+})
+met_geq40_PUcorr = with_dy_corr.derive("met_geq40_PUcorr", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40,
+    "weight_columns": {
+        "dataset_normalization_weight": [],
+        "normalized_pu_weight": ["minbias_xs"],
+    },
+})
+met_geq40_PUcorr0 = with_dy_corr.derive("met_geq40_PUcorr0", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40,
+    "weight_columns": {
+        "dataset_normalization_weight": [],
+        "pu_weight": ["minbias_xs"],
+    },
+})
+
 
 met_geq40_no_dycorr = default_hist_producer.derive("met_geq40_no_dycorr", cls_dict={
     "weight_columns": {
@@ -476,6 +562,54 @@ met_geq40_with_hbbsf_dy = with_dy_corr.derive("met_geq40_with_hbbsf_dy", cls_dic
         "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
         "msd_nonclosure_weight": ["msd_nonclosure"],
         "stitched_normalization_weight": [],
+    },
+    "version": 3,
+})
+
+# no DY in emu ----> skip MET cut here
+emufix_with_hbbsf_dy = met_geq40_with_hbbsf_dy.derive("emufix_with_hbbsf_dy", cls_dict={
+    "nondy_hist_producer": None,
+    "pre_label": "\n".join([r"$p_{T}^{miss} (ee,\mu\mu) \geq 40$ GeV"]),
+    "categorizer_cls": mask_fn_met_geq40_skip_emu,
+})
+
+skipNegative_met_geq40_with_hbbsf_dy = met_geq40_with_hbbsf_dy.derive(
+    "skipNegative_met_geq40_with_hbbsf_dy",
+    cls_dict={
+        "nondy_hist_producer": None,
+        "remove_negative": True,
+    },
+)
+
+skipPU_met_geq40_with_hbbsf_dy = with_dy_corr.derive("skipPU_met_geq40_with_hbbsf_dy", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
+    "weight_columns": {
+        **correction_weights_no_pu,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "stitched_normalization_weight": [],
+    },
+    "version": 3,
+})
+unstitched_met_geq40_with_hbbsf_dy = with_dy_corr.derive("unstitched_met_geq40_with_hbbsf_dy", cls_dict={
+    # "pre_label": "\n".join(["Hbb SF applied", r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "pre_label": "\n".join([r"$p_{T}^{miss} \geq 40$ GeV"]),
+    "nondy_hist_producer": None,
+    "categorizer_cls": mask_fn_met_geq40,
+    "dy_correction_weight_producer": "dy_incl_corr_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "hbb_sf_weight": ["hbb_sf", "hbb_sf_flat"],
+        "msd_nonclosure_weight": ["msd_nonclosure"],
+        "dataset_normalization_weight": [],
     },
     "version": 3,
 })

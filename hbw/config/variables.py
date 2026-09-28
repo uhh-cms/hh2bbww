@@ -79,6 +79,87 @@ def add_variables(config: od.Config) -> None:
     without calling any producer
     """
 
+    config.add_variable(
+        name="gen_dilepton_pt",
+        binning=(40, 0., 400),
+        x_title=r"$generator-level p_{T}^{\ell\ell}$",
+    )
+
+    def ptll_check(events):
+        ptll = (events.Lepton[:, 0] + events.Lepton[:, 1]).pt
+        ptll_gen = events.gen_dilepton_pt
+        return (ptll - ptll_gen) / np.sqrt(ptll_gen * ptll)
+
+    def recoilmet_check(events):
+        met = events.PuppiMET["pt"]
+        recoilmet = events.RecoilCorrMET["pt"]
+        return (met - recoilmet) / np.sqrt(met * recoilmet)
+
+    config.add_variable(
+        name="recoilmet_check",
+        expression=recoilmet_check,
+        aux={
+            # "inputs": {MET_COLUMN("pt"), IF_DY("RecoilCorrMET.pt")},
+            "inputs": {"PuppiMET.pt", "RecoilCorrMET.pt"},
+        },
+        binning=(80, -2, 2),
+        x_title=r"$(p_{T}^{miss} - p_{T,recoil}^{miss}) / \sqrt{p_{T}^{miss}\times p_{T,recoil}^{miss}}$",
+    )
+    config.add_variable(
+        name="recoilmet_check2",
+        expression=recoilmet_check,
+        aux={
+            # "inputs": {MET_COLUMN("pt"), IF_DY("RecoilCorrMET.pt")},
+            "inputs": {"PuppiMET.pt", "RecoilCorrMET.pt"},
+        },
+        binning=(80, -0.4, 0.4),
+        x_title=r"$(p_{T}^{miss} - p_{T,recoil}^{miss}) / \sqrt{p_{T}^{miss}\times p_{T,recoil}^{miss}}$",
+    )
+    config.add_variable(
+        name="absrecoilmet_check",
+        expression=lambda events: np.abs(recoilmet_check(events)),
+        aux={
+            # "inputs": {MET_COLUMN("pt"), IF_DY("RecoilCorrMET.pt")},
+            "inputs": {"PuppiMET.pt", "RecoilCorrMET.pt"},
+        },
+        binning=(80, 0, 0.4),
+        x_title=r"$|p_{T}^{miss} - p_{T,recoil}^{miss}| / \sqrt{p_{T}^{miss}\times p_{T,recoil}^{miss}}$",
+    )
+
+    config.add_variable(
+        name="ptll_check",
+        expression=ptll_check,
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}", "gen_dilepton_pt"},
+        },
+        binning=(80, -2, 2),
+        x_title=r"$(p_{T}^{\ell\ell} - p_{T,gen}^{\ell\ell}) / \sqrt{p_{T,gen}^{\ell\ell}\times p_{T}^{\ell\ell}}$",
+    )
+    config.add_variable(
+        name="ptll_check2",
+        expression=ptll_check,
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}", "gen_dilepton_pt"},
+            "x_min": -0.2,
+            "x_max": 0.2,
+        },
+        binning=(80, -0.4, 0.4),
+        x_title=r"$(p_{T}^{\ell\ell} - p_{T,gen}^{\ell\ell}) / \sqrt{p_{T,gen}^{\ell\ell}\times p_{T}^{\ell\ell}}$",
+    )
+    config.add_variable(
+        name="ptll_check3",
+        expression=ptll_check,
+        aux={
+            # NOTE: to add electron and muon objects, we need 4-vector components + the charge
+            "inputs": {"{Electron,Muon}.{pt,eta,phi,mass,charge}", "gen_dilepton_pt"},
+            # "overflow": True,
+            # "underflow": True,
+        },
+        binning=(80, -0.1, 0.1),
+        x_title=r"$(p_{T}^{\ell\ell} - p_{T,gen}^{\ell\ell}) / \sqrt{p_{T,gen}^{\ell\ell}\times p_{T}^{\ell\ell}}$",
+    )
     add_debug_variable(config)
     # from columnflow.columnar_util import set_ak_column
 
@@ -135,7 +216,7 @@ def add_variables(config: od.Config) -> None:
         binning=(240, 0., 1200.),
         unit="GeV",
         x_title=r"$p_{T}^{t}$ (generator level)",
-        aux={"x_max": 600, "rebin": 2},
+        aux={"x_max": 600, "rebin": 2, "slice": (0j, 600j), "overflow": True},
     )
     config.add_variable(
         name="gen_top_pt0",
@@ -143,7 +224,7 @@ def add_variables(config: od.Config) -> None:
         binning=(240, 0., 1200.),
         unit="GeV",
         x_title=r"$p_{T}^{t}$ (generator level)",
-        aux={"x_max": 600, "rebin": 2},
+        aux={"x_max": 600, "rebin": 2, "slice": (0j, 600j), "overflow": True},
     )
     config.add_variable(
         name="weight_unweighted",  # used in histProducer specificially accessing this name to set weight=1
@@ -218,6 +299,18 @@ def add_variables(config: od.Config) -> None:
         binning=(51, -.5, 50.5),
         x_title="Number of primary vertices",
         discrete_x=True,
+    )
+    config.add_variable(
+        name="npvs2",
+        expression="PV.npvs",
+        binning=(81, -.5, 80.5),
+        x_title="Number of primary vertices",
+    )
+    config.add_variable(
+        name="npvsGood",
+        expression="PV.npvsGood",
+        binning=(81, -.5, 80.5),
+        x_title="Number of good primary vertices",
     )
 
     # some variables for testing of different axis types
@@ -616,7 +709,10 @@ def add_variables(config: od.Config) -> None:
     config.add_variable(
         name="ht",
         expression=lambda events: ak.sum(events.Jet["pt"], axis=1),
-        aux={"inputs": {"Jet.pt"}},
+        aux={
+            "inputs": {"Jet.pt"},
+            "overflow": True,
+        },
         binning=(40, 0, 1200),
         unit="GeV",
         x_title="HT",
@@ -694,27 +790,28 @@ def add_variables(config: od.Config) -> None:
 
     # Jets (4 pt-leading jets)
     for i in range(4):
+        obj_title = f"Jet {i}" if i > 0 else "Leading jet"
         config.add_variable(
             name=f"jet{i}_pt",
             expression=f"Jet.pt[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, 0., 400.),
             unit="GeV",
-            x_title=r"Jet %i $p_{T}$" % i,
+            x_title=rf"{obj_title} $p_{{T}}$",
         )
         config.add_variable(
             name=f"jet{i}_eta",
             expression=f"Jet.eta[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(50, -2.5, 2.5),
-            x_title=r"Jet %i $\eta$" % i,
+            x_title=rf"{obj_title} $\eta$",
         )
         config.add_variable(
             name=f"jet{i}_phi",
             expression=f"Jet.phi[:,{i}]",
             null_value=EMPTY_FLOAT,
             binning=(40, -3.2, 3.2),
-            x_title=r"Jet %i $\phi$" % i,
+            x_title=rf"{obj_title} $\phi$",
         )
         config.add_variable(
             name=f"jet{i}_mass",
@@ -722,7 +819,7 @@ def add_variables(config: od.Config) -> None:
             null_value=EMPTY_FLOAT,
             binning=(40, 0, 200),
             unit="GeV",
-            x_title=r"Jet %i mass" % i,
+            x_title=rf"{obj_title} mass",
         )
         if config.x.run == 2:
             config.add_variable(
@@ -730,7 +827,7 @@ def add_variables(config: od.Config) -> None:
                 expression=f"Jet.btagDeepFlavB[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 1),
-                x_title=r"Jet %i DeepFlavour b+bb+lepb tag" % i,
+                x_title=rf"{obj_title} DeepFlavour b+bb+lepb tag",
             )
         if config.x.run == 3:
             config.add_variable(
@@ -738,7 +835,7 @@ def add_variables(config: od.Config) -> None:
                 expression=f"Jet.btagPNetB[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 1),
-                x_title=r"Jet %i ParticleNet score" % i,
+                x_title=rf"{obj_title} ParticleNet score",
             )
 
     # Barrel and endcap jets
@@ -859,13 +956,18 @@ def add_variables(config: od.Config) -> None:
     # FatJets (2 pt-leading fatjets)
     for obj in ("FatJet", "FatBjet"):
         for i in range(1):
+            obj_label = {
+                "FatJet": r"$p_{T}$-leading AK8 jet",
+                "FatBjet": r"$H_{bb}$-score-leading AK8 jet",
+            }[obj]
             config.add_variable(
                 name=f"{obj}{i}_pt".lower(),
                 expression=f"{obj}.pt[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, 170., 500.),
                 unit="GeV",
-                x_title=rf"{obj} %i $p_{{T}}$" % i,
+                # x_title=rf"{obj} %i $p_{{T}}$" % i,
+                x_title=rf"$p_{{T}}$ of {obj_label}",
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
@@ -877,7 +979,8 @@ def add_variables(config: od.Config) -> None:
                 null_value=EMPTY_FLOAT,
                 binning=(60, 200., 800.),
                 unit="GeV",
-                x_title=rf"{obj} %i $p_{{T}}$" % i,
+                # x_title=rf"{obj} %i $p_{{T}}$" % i,
+                x_title=rf"$p_{{T}}$ of {obj_label}",
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
@@ -889,7 +992,8 @@ def add_variables(config: od.Config) -> None:
                 null_value=EMPTY_FLOAT,
                 binning=[200, 300, 450, 900],
                 unit="GeV",
-                x_title=rf"{obj} %i $p_{{T}}$" % i,
+                # x_title=rf"{obj} %i $p_{{T}}$" % i,
+                x_title=rf"$p_{{T}}$ of {obj_label}",
                 log_x=True,
                 aux={
                     "overflow": True,
@@ -901,7 +1005,8 @@ def add_variables(config: od.Config) -> None:
                 expression=f"{obj}.eta[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(50, -2.5, 2.5),
-                x_title=rf"{obj} %i $\eta$" % i,
+                # x_title=rf"{obj} %i $\eta$" % i,
+                x_title=rf"$\eta$ of {obj_label}",
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
@@ -912,7 +1017,8 @@ def add_variables(config: od.Config) -> None:
                 expression=f"{obj}.phi[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(40, -3.2, 3.2),
-                x_title=rf"{obj} %i $\phi$" % i,
+                # x_title=rf"{obj} %i $\phi$" % i,
+                x_title=rf"$\phi$ of {obj_label}",
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
@@ -936,7 +1042,8 @@ def add_variables(config: od.Config) -> None:
                 null_value=EMPTY_FLOAT,
                 binning=(40, 0, 250),
                 unit="GeV",
-                x_title=rf"{obj} %i softdrop mass" % i,
+                # x_title=rf"{obj} %i softdrop mass" % i,
+                x_title=rf"softdrop mass of {obj_label}",
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
@@ -948,7 +1055,8 @@ def add_variables(config: od.Config) -> None:
                 null_value=EMPTY_FLOAT,
                 binning=(120, 0, 240),
                 unit="GeV",
-                x_title=rf"{obj} %i softdrop mass" % i,
+                # x_title=rf"{obj} %i softdrop mass" % i,
+                x_title=rf"softdrop mass of {obj_label}",
                 aux={
                     "rebin": 10,
                     "overflow": True,
@@ -1000,16 +1108,32 @@ def add_variables(config: od.Config) -> None:
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
                 },
             )
+            # pnet_title = r"ParticleNet $H\rightarrow bb$ score for %s" % obj_label
+            pnet_title = r"ParticleNet $H_{bb}$ score for %s" % obj_label
             config.add_variable(
                 name=f"{obj}{i}_pnet_hbb".lower(),
                 expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
                 null_value=EMPTY_FLOAT,
                 binning=(100, 0, 1),
-                x_title=rf"{obj} %i PNet Hbb score" % i,
+                # x_title=rf"{obj} %i PNet Hbb score" % i,
+                x_title=pnet_title,
                 aux={
                     "overflow": True,
                     "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
-                    "rebin": 4,
+                    # "rebin": 4,
+                },
+            )
+            config.add_variable(
+                name=f"{obj}{i}_pnet_hbb40".lower(),
+                expression=f"{obj}.particleNetWithMass_HbbvsQCD[:,{i}]",
+                null_value=EMPTY_FLOAT,
+                binning=(40, 0, 1),
+                # x_title=rf"{obj} %i PNet Hbb score" % i,
+                x_title=pnet_title,
+                aux={
+                    "overflow": True,
+                    "inputs": {"FatJet.{pt,eta,phi,mass,particleNetWithMass_HbbvsQCD,msoftdrop}"},
+                    "skip_rebin": True,
                 },
             )
             config.add_variable(
@@ -1157,7 +1281,7 @@ def add_variables(config: od.Config) -> None:
                 inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
             ),
             binning=(50, -2.5, 2.5),
-            unit="GeV",
+            unit=None,
             null_value=EMPTY_FLOAT,
             # x_title=f"Lepton {i} $\\eta$",
             x_title=r"Leading lepton $\eta$" if i == 0 else r"Subleading lepton $\eta$",

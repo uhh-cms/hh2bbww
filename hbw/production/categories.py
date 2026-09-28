@@ -125,6 +125,7 @@ from hbw.ml.base import MLClassifierBase
 ml_model_names = get_subclasses_deep(MLClassifierBase)
 logger.info(f"deriving {len(ml_model_names)} ML categorizer...")
 
+cats_ml_default = cats_ml.derive("cats_ml_default", cls_dict={"ml_model_name": "multiclassv3"})
 
 for ml_model_name in ml_model_names:
     cats_ml.derive(f"cats_ml_{ml_model_name}", cls_dict={"ml_model_name": ml_model_name})

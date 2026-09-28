@@ -513,6 +513,9 @@ class ModelFitMixin(CallbacksBase):
         del tf_validation
         del iterator
 
+        history_target = output["plots"].child("model_history.pkl", type="f")
+        history_target.dump(model.history.history, formatter="pickle")
+
         # create history plots
         for metric, ylabel, yscale in (
             ("loss", "Loss", "log"),

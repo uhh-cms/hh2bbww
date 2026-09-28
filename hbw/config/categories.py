@@ -443,22 +443,34 @@ def add_categories_ml(
         label="\n".join([main.label, "boosted", "ml_bkg"]),
         aux={"root_cats": {"main": main_category, "jet": "boosted", "dnn": "ml_bkg"}},
     )
-    # combine the different signal regions into a single category
-    sr__ml_sig_hh = config.add_category(  # noqa: F841
-        name=f"{main_category}__ml_sig_hh",
-        selection="catid_never",  # dummy Categorizer, never selected
-        id=201001,
-        label="\n".join([main.label, "ml_sig_hh"]),
-        aux={"root_cats": {"main": main_category, "dnn": "ml_sig_hh"}},
-    )
     for proc, node_config in ml_model_inst.train_nodes.items():
         # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
-        if "sig" in proc or "hh" in proc:
-            sig_cat = config.get_category(f"{main_category}__ml_{proc}")
-            sr__ml_sig_hh.add_category(sig_cat)
-        else:
+        if "sig" not in proc and "hh" not in proc:
             bkg_cat = config.get_category(f"{main_category}__boosted__ml_{proc}")
             sr__boosted__ml_bkg.add_category(bkg_cat)
+
+    for i, sub_category_dict in enumerate((
+        {},
+        {"jet": "resolved", "b": "1b"},
+        {"jet": "resolved", "b": "2b"},
+        {"jet": "boosted"},
+    )):
+        sub_category = "__".join(sub_category_dict.values())
+        if sub_category:
+            sub_category = f"__{sub_category}"
+        # combine the different signal regions into a single category
+        cat__ml_sig_hh = config.add_category(  # noqa: F841
+            name=f"{main_category}{sub_category}__ml_sig_hh",
+            selection="catid_never",  # dummy Categorizer, never selected
+            id=201001 + i,
+            label="\n".join([main.label, "ml_sig_hh"]),
+            aux={"root_cats": {"main": main_category, **sub_category_dict, "dnn": "ml_sig_hh"}},
+        )
+        for proc, node_config in ml_model_inst.train_nodes.items():
+            # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
+            if "sig" in proc or "hh" in proc:
+                sig_cat = config.get_category(f"{main_category}{sub_category}__ml_{proc}")
+                cat__ml_sig_hh.add_category(sig_cat)
 
 
 from functools import partial

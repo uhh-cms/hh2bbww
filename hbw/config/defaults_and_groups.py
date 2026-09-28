@@ -334,7 +334,7 @@ def set_config_defaults_and_groups(config_inst):
         "tt_all": ["tt_dl", "tt_sl", "tt_fh"],
         "st_all": ["st_schannel", "st_tchannel", "st_twchannel"],
         "h_all": ["h_ggf", "h_vbf", "zh", "zh_gg", "wh", "tth", "ttzh", "ttwh", "thq", "thw"],
-        # "minor_all": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
+        "minor_all": ["ww", "zz", "wz", "vvv", "tg", "ttg", "ttz", "ttw", "ttvv", "tttt"],
         "hh_sm0": hh_sm,
         "hh_sm1": hh_sm1,
         "hbbhww_sm": hbbhww_sm,
@@ -471,6 +471,7 @@ def set_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
+        "ml_inputs_for_profiles": ml_inputs.v2 + ["mli_lep2_pt_rebinned"],
         "ml_outputs": ["mlscore.*", "rebinlogit_mlscore.sig*binary"],
         "basic_kin": bracket_expansion([
             "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
@@ -669,17 +670,19 @@ def set_config_defaults_and_groups(config_inst):
         },
         "gen_vbf": {
             "remove_negative": True,
-            "whitespace_fraction": 0.3,
+            "whitespace_fraction": 0.36,
             "cms_label": f"sim{cms_label}",
             "magnitudes": 3.5,
             "yscale": "log",
+            "grid": True,
         },
         "gen_ggf": {
             "remove_negative": True,
-            "whitespace_fraction": 0.3,
+            "whitespace_fraction": 0.36,
             "cms_label": f"sim{cms_label}",
             "magnitudes": 3.5,
             "yscale": "log",
+            "grid": True,
             # "cumsum_reverse": False,
         },
         "cutflow": {
@@ -719,6 +722,7 @@ def set_config_defaults_and_groups(config_inst):
     config_inst.x.process_settings_groups = {
         "default": {default_signal_process: {"scale": 2000, "unstack": True}},
         "unstack_all": {proc.name: {"unstack": True} for proc, _, _ in config_inst.walk_processes()},
+        "no_scale": {proc.name: {"scale": None} for proc, _, _ in config_inst.walk_processes()},
         "unstack_signal": {proc.name: {"unstack": True} for proc in config_inst.processes if "HH" in proc.name},
         "scale_signal": {
             proc.name: {"unstack": True, "scale": 10000}
@@ -740,6 +744,27 @@ def set_config_defaults_and_groups(config_inst):
             "hh_ggf_hbb_hvvqqlnu_kl1_kt1": {"scale": 90000, "unstack": True},
             "hh_ggf_hbb_hvvqqlnu_kl2p45_kt1": {"scale": 90000, "unstack": True},
             "hh_ggf_hbb_hvvqqlnu_kl5_kt1": {"scale": 90000, "unstack": True},
+        },
+        # TODO: sadly, process-settings do not properly work with commata in labels,
+        # so these are not working as intended
+        "gen_ggf": {
+            "hh_ggf_hbb_hww_kl1_kt1": {"label": r"ggF, $\kappa_{\lambda}=1$"},
+            "hh_ggf_hbb_hww_kl0_kt1": {"label": r"ggF, $\kappa_{\lambda}=0$"},
+            "hh_ggf_hbb_hww_kl2p45_kt1": {"label": r"ggF, $\kappa_{\lambda}=2.45$"},
+            "hh_ggf_hbb_hww_kl5_kt1": {"label": r"ggF, $\kappa_{\lambda}=5$"},
+            "hh_vbf_hbb_hww_kv1_k2v1_kl1": {"label": r"VBF, $\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1$"},
+        },
+        "gen_vbf": {
+            "hh_vbf_hbb_hww_kv1_k2v1_kl1": {"label": r"$\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1$"},
+            "hh_vbf_hbb_hww_kv1_k2v0_kl1": {"label": r"$\kappa_{V}=1, \kappa_{2V}=0, \kappa_{\lambda}=1$"},
+            "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4": {"label": r"$\kappa_{V}=1.74, \kappa_{2V}=1.37, \kappa_{\lambda}=14.4$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2": {"label": r"$\kappa_{V}=-0.012, \kappa_{2V}=0.03, \kappa_{\lambda}=10.2$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3": {"label": r"$\kappa_{V}=-0.758, \kappa_{2V}=1.44, \kappa_{\lambda}=-19.3$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43": {"label": r"$\kappa_{V}=-0.962, \kappa_{2V}=0.959, \kappa_{\lambda}=-1.43$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94": {"label": r"$\kappa_{V}=-1.21, \kappa_{2V}=1.94, \kappa_{\lambda}=-0.94$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36": {"label": r"$\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39": {"label": r"$\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39$"},  # noqa: E501
+            "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96": {"label": r"$\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96$"},  # noqa: E501
         },
     }
 
@@ -948,6 +973,8 @@ def set_config_defaults_and_groups(config_inst):
             "rax_cfg": {
                 "ylabel_fontsize": 30,
                 "xlabel_fontsize": 30,
+                # "ylim": (0.30, 1.70),
+                "ylim": (0.75, 1.25),
                 "ylabel": "Data / Bkg.",
             },
             "cms_label_cfg": {
@@ -980,6 +1007,34 @@ def set_config_defaults_and_groups(config_inst):
             },
         },
         "dpostfit_nosig": {
+            "legend_cfg": {
+                "ncols": 2,
+                "fontsize": 20,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+                "cf_entries_per_column": [4, 7],
+                "cf_update_handles_labels": reorder_data_first,
+            },
+            "annotate_cfg": {
+                "xy": (0.04, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 21,
+            },
+            "ax_cfg": {
+                "xlabel_fontsize": 30,
+                "ylabel_fontsize": 30,
+            },
+            "rax_cfg": {
+                "ylabel_fontsize": 30,
+                "xlabel_fontsize": 30,
+                "ylabel": "Data / Bkg.",
+                # "ylim": (0.25, 1.75),
+                "ylim": (0.75, 1.25),
+            },
+            "cms_label_cfg": {
+                "fontsize": 24,
+            },
+        },
+        "dpostfit_nosig_before": {
             "legend_cfg": {
                 "ncols": 2,
                 "fontsize": 20,
@@ -1036,17 +1091,12 @@ def set_config_defaults_and_groups(config_inst):
                 "ylim": (0.75, 1.25),
             },
         },
-        "profiles": {
-            "ax_cfg": {
-                # "ylim": (0., 1.5),
-                "ylim": (-10., 12.),
-            },
+        "dyclosure": {
             "gridspec_cfg": {
                 "left": 0.15,
-                "right": 0.85,
+                "right": 0.95,
                 "top": 0.95,
-                # "bottom": 0.05,
-                "bottom": 0.1,
+                "bottom": 0.12,
             },
             "legend_cfg": {
                 "ncols": 1,
@@ -1057,6 +1107,35 @@ def set_config_defaults_and_groups(config_inst):
                 "xy": (0.04, 0.95),
                 "xycoords": "axes fraction",
                 "fontsize": 20,
+            },
+            "rax_cfg": {
+                "ylim": (0.75, 1.25),
+            },
+        },
+        "profiles": {
+            "ax_cfg": {
+                "ylim": (0., 1.5),
+                # "ylim": (-10., 12.),
+            },
+            "subplots_cfg": {
+                "figsize": (10, 8),
+            },
+            "gridspec_cfg": {
+                "left": 0.12,
+                "right": 0.86,
+                "top": 0.93,
+                # "bottom": 0.05,
+                "bottom": 0.12,
+            },
+            "legend_cfg": {
+                "ncols": 1,
+                "fontsize": 22,
+                "bbox_to_anchor": (0., 0., 1., 1.),
+            },
+            "annotate_cfg": {
+                "xy": (0.04, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 22,
             },
         },
         "default_rax40": {
@@ -1109,14 +1188,18 @@ def set_config_defaults_and_groups(config_inst):
         },
         "gen_vbf": {
             "legend_cfg": {
-                "title": r"$HH_{VBF}\rightarrow bbWW$",
+                # "title": r"$HH_{VBF}^{\kappa=(\kappa_{V}, \kappa_{2V}, \kappa_{\lambda})}\rightarrow bbWW$",
+                "title": r"$HH_{VBF}\rightarrow bbWW$, $\kappa=(\kappa_{V}, \kappa_{2V}, \kappa_{\lambda})$",
+                # "title": r"$HH_{VBF}\rightarrow bbWW (\kappa_{V}, \kappa_{2V}, \kappa_{\lambda})$",
                 "ncols": 2,
-                "fontsize": 15,
+                "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "rax_cfg": {
-                "ylim": (0.1, 10.),
+                # "ylim": (0.1, 10.),
+                "ylim": (1 / 20, 20.),
                 "yscale": "log",
+                "yloc": "center",
             },
             "annotate_cfg": {
                 "text": "",
@@ -1125,14 +1208,17 @@ def set_config_defaults_and_groups(config_inst):
         "gen_ggf": {
             "legend_cfg": {
                 "title": r"$HH\rightarrow bbWW$",
+                # "cf_entries_per_column": [1, 4],
                 "cf_entries_per_column": [4, 1],
                 "ncols": 2,
-                "fontsize": 15,
+                "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
             "rax_cfg": {
-                "ylim": (0.1, 10.),
+                # "ylim": (0.1, 10.),
+                "ylim": (1 / 20, 20.),
                 "yscale": "log",
+                "yloc": "center",
             },
             "annotate_cfg": {
                 "text": "",
@@ -1158,6 +1244,14 @@ def set_config_defaults_and_groups(config_inst):
         },
         "legend_single_col": {
             "legend_cfg": {"ncols": 1, "fontsize": 20},
+        },
+        "large_legend_single_col": {
+            "legend_cfg": {"ncols": 1, "fontsize": 22},
+            "annotate_cfg": {
+                "xy": (0.04, 0.95),
+                "xycoords": "axes fraction",
+                "fontsize": 22,
+            },
         },
         "shifted": {
             "legend_cfg": {"ncols": 1, "fontsize": 20},
@@ -1210,6 +1304,46 @@ def set_config_defaults_and_groups(config_inst):
         "sr__boosted__ml_sig_ggf": 3,
         "sr__boosted__ml_sig_vbf": 3,
         "sr__boosted": 3,
+        "sr__resolved__1b__ml_sig_hh": 13,
+        "sr__resolved__2b__ml_sig_hh": 10,
+        "sr__boosted__ml_sig_hh": 4,
+        # reduce by factor 2 or sqrt(2)
+        "sr__2e__resolved__1b__ml_sig_ggf": 5,
+        "sr__2e__resolved__2b__ml_sig_ggf": 3,
+        "sr__2e__resolved__1b__ml_sig_vbf": 4,
+        "sr__2e__resolved__2b__ml_sig_vbf": 3,
+        "sr__2e__boosted__ml_sig_ggf": 2,
+        "sr__2e__boosted__ml_sig_vbf": 2,
+        "sr__2mu__resolved__1b__ml_sig_ggf": 5,
+        "sr__2mu__resolved__2b__ml_sig_ggf": 3,
+        "sr__2mu__resolved__1b__ml_sig_vbf": 4,
+        "sr__2mu__resolved__2b__ml_sig_vbf": 3,
+        "sr__2mu__boosted__ml_sig_ggf": 2,
+        "sr__2mu__boosted__ml_sig_vbf": 2,
+        "sr__emu__resolved__1b__ml_sig_ggf": 7,
+        "sr__emu__resolved__2b__ml_sig_ggf": 4,
+        "sr__emu__resolved__1b__ml_sig_vbf": 6,
+        "sr__emu__resolved__2b__ml_sig_vbf": 4,
+        "sr__emu__boosted__ml_sig_ggf": 2,
+        "sr__emu__boosted__ml_sig_vbf": 2,
+        # "sr__2e__resolved__1b__ml_sig_ggf": 10,
+        # "sr__2e__resolved__2b__ml_sig_ggf": 6,
+        # "sr__2e__resolved__1b__ml_sig_vbf": 8,
+        # "sr__2e__resolved__2b__ml_sig_vbf": 6,
+        # "sr__2e__boosted__ml_sig_ggf": 3,
+        # "sr__2e__boosted__ml_sig_vbf": 3,
+        # "sr__2mu__resolved__1b__ml_sig_ggf": 10,
+        # "sr__2mu__resolved__2b__ml_sig_ggf": 6,
+        # "sr__2mu__resolved__1b__ml_sig_vbf": 8,
+        # "sr__2mu__resolved__2b__ml_sig_vbf": 6,
+        # "sr__2mu__boosted__ml_sig_ggf": 3,
+        # "sr__2mu__boosted__ml_sig_vbf": 3,
+        # "sr__emu__resolved__1b__ml_sig_ggf": 10,
+        # "sr__emu__resolved__2b__ml_sig_ggf": 6,
+        # "sr__emu__resolved__1b__ml_sig_vbf": 8,
+        # "sr__emu__resolved__2b__ml_sig_vbf": 6,
+        # "sr__emu__boosted__ml_sig_ggf": 3,
+        # "sr__emu__boosted__ml_sig_vbf": 3,
 
         "BR_bbzz": 1,
         "dycr__resolved__1b__ml_sig_ggf": 10,
@@ -1228,6 +1362,7 @@ def set_config_defaults_and_groups(config_inst):
     is_signal_sm = lambda proc_name: "kl1_kt1" in proc_name or "kv1_k2v1_kl1" in proc_name
     is_signal_sm_ggf = lambda proc_name: "kl1_kt1" in proc_name
     is_signal_sm_vbf = lambda proc_name: "kv1_k2v1_kl1" in proc_name
+    # is_signal_sm_vbf_k2v0 = lambda proc_name: "kv1_k2v0_kl1" in proc_name
     # is_gghh_sm = lambda proc_name: "kl1_kt1" in proc_name
     # is_qqhh_sm = lambda proc_name: "kv1_k2v1_kl1" in proc_name
     # is_signal_ggf_kl1 = lambda proc_name: "kl1_kt1" in proc_name and "hh_ggf" in proc_name
@@ -1260,6 +1395,9 @@ def set_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
+        "sr__resolved__1b__ml_sig_hh": is_signal_sm,
+        "sr__resolved__2b__ml_sig_hh": is_signal_sm,
+        "sr__boosted__ml_sig_hh": is_signal_sm,
 
         # bbZZ
         "BR_bbzz": is_background,

@@ -405,6 +405,13 @@ def mask_fn_mbb80(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
     return events, (events.mli_mbb > self.mbb)
 
 
+@categorizer(uses={"PV.npvs"}, npvs=30)
+def mask_fn_npvs30FIX(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, (events.PV.npvs >= self.npvs)
+
+
+mask_fn_npvs40FIX = mask_fn_npvs30FIX.derive("mask_fn_npvs40FIX", cls_dict={"npvs": 40})
+mask_fn_npvs50FIX = mask_fn_npvs30FIX.derive("mask_fn_npvs50FIX", cls_dict={"npvs": 50})
 mask_fn_mll15 = mask_fn_mll20.derive("mask_fn_mll15", cls_dict={"mll": 15})
 
 
@@ -439,6 +446,24 @@ def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
         mask = events.RecoilCorrMET.pt >= self.met_req
     else:
         mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+    return events, mask
+
+
+@categorizer(
+    uses={
+        catid_emu,
+        MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
+    },
+    met_req=40,
+)
+def mask_fn_met_geq40_skip_emu(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    if self.dataset_inst.has_tag("is_dy"):
+        mask = events.RecoilCorrMET.pt >= self.met_req
+    else:
+        mask = events[self.config_inst.x.met_name]["pt"] >= self.met_req
+
+    events, emu_mask = self[catid_emu](events, **kwargs)
+    mask = mask | emu_mask
     return events, mask
 
 

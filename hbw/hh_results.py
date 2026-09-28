@@ -35,7 +35,7 @@ run2_expected_limits = {
         "bbbb": 8.1,
         "bbyy": 5.0,
         "bbtt": 3.3,
-    }
+    },
 }
 
 cms_run2_combination = {
@@ -220,7 +220,7 @@ bbtt_run3 = {
     # "url": "https://cms-results.web.cern.ch/cms-results/public-results/preliminary-results/HIG-25-008/",
     "url": "https://cms-alcm.web.cern.ch/analyses/HIG-25-008/HIG-25-008-pas-v4.pdf",
     "ref": "CMS-PAS-HIG-25-008",
-    "label": r"$bb\tau\tau$ Run 3",
+    "label": r"$bb\tau\tau$ Run 2+3",
     "collaboration": "CMS",
     "energy_TeV": 13.6,
     "luminosity_fb": 172 + 138,
@@ -292,13 +292,13 @@ bbyy_run3 = {
         "label": r"$bb\gamma\gamma$ Run 3",
         "luminosity_fb": 62,
         "HH": {
-            "observed": 11.0,
-            "expected": 7.3,
+            "observed": 7.4,
+            "expected": 8.7,
         },
         "kappaL": {
             "best-fit": -1.4,
-            "observed": (-6.1, 12.8),
-            "expected": (-3.6, 10.5),
+            "observed": (-3.9, 10.1),
+            "expected": (-4.5, 11.1),
         },
     },
     "2d strategy": {
@@ -529,7 +529,7 @@ atlas_bbww_dl_run2 = {
         "kappaL": {
             "best-fit-guessed": True,
             # "best-fit": 3.5,  # approximately from plot
-            "observed": (-6.2, 13.2),
+            "observed": (-6.2, 13.3),
             "expected": (-8.1, 15.5),
         },
         "kappa2V": {
@@ -538,7 +538,7 @@ atlas_bbww_dl_run2 = {
             "observed": (-0.17, 2.4),
             "expected": (-0.51, 2.7),
         },
-    }
+    },
 }
 
 bbww_dl_run3 = {
@@ -596,7 +596,8 @@ bbww_run2 = {
     },
     "SL": {
         "label": "bbWW(SL) Run 2",
-        "ref": "D. Noll (PhD thesis)",
+        # "ref": "D. Noll (PhD thesis)",
+        "ref": "PhD thesis (Dennis Noll)",
         "HH": {
             "observed": 28,
             "expected": 27,
@@ -614,7 +615,8 @@ bbww_run2 = {
     },
     "DL": {
         "label": "bbWW(DL) Run 2",
-        "ref": "P. Fackeldey (PhD thesis)",
+        # "ref": "P. Fackeldey (PhD thesis)",
+        "ref": "PhD thesis (Peter Fackeldey)",
         "HH": {
             "observed": 19,
             "expected": 27,
@@ -956,7 +958,7 @@ def make_hh_summary_plot(
     ref_to_idx = None
 
     # fig, axes = plt.subplots(ncols=3, figsize=(18, 0.95 * len(entries) + 2), sharey=True)
-    fig, axes = plt.subplots(ncols=3, figsize=(18, 0.75 * len(entries) + 2), sharey=True)
+    fig, axes = plt.subplots(ncols=3, figsize=(18, 0.65 * len(entries) + 2), sharey=True)
 
     _plot_scalar_limits(
         axes[0],
@@ -1003,7 +1005,7 @@ def make_hh_summary_plot(
         ordered_refs = [ref for ref, idx in sorted(ref_to_idx.items(), key=lambda kv: kv[1])]
         ref_lines = [f"[{i+1}] {ref}" for i, ref in enumerate(ordered_refs)]
         refs_text = "\n".join(ref_lines)
-        fig.text(0.01, 0.02, refs_text, ha='left', va='bottom', fontsize=9)
+        fig.text(0.01, 0.02, refs_text, ha="left", va="bottom", fontsize=9)
     else:
         fig.tight_layout(rect=[0, 0, 1, 0.95])
 
@@ -1015,8 +1017,8 @@ def make_hh_summary_plot(
 
 def make_improvements_table(
         *results_dicts,
-        # improvement_factor = lambda run3, run2, lumi, run2_lumi: 1 - (run3 * math.sqrt(lumi / run2_lumi) / run2),
-        improvement_factor = lambda run3, run2, lumi, run2_lumi: run2 / (run3 * math.sqrt(lumi / run2_lumi)) - 1,
+        # improvement_factor=lambda run3, run2, lumi, run2_lumi: 1 - (run3 * math.sqrt(lumi / run2_lumi) / run2),
+        improvement_factor=lambda run3, run2, lumi, run2_lumi: run2 / (run3 * math.sqrt(lumi / run2_lumi)) - 1,
 ):
     """
     Build a table that compares for each entry of results_dicts the expected limit
@@ -1081,6 +1083,7 @@ def tabulate_improvements_table(table):
     data = [[row[h] for h in headers] for row in table]
     out_table = tabulate.tabulate(data, headers=headers, tablefmt="latex_raw")
     print(out_table)
+
 
 if __name__ == "__main__":
     _table = make_improvements_table(

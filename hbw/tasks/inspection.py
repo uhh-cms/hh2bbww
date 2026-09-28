@@ -393,18 +393,18 @@ class DumpAnalysisSummary(
         }
         sub_processes = {
             "hh_ggf": {
-                "hh_ggf_kl1_kt1": ("1", "", ""),
-                "hh_ggf_kl0_kt1": ("0", "", ""),
-                "hh_ggf_kl2p45_kt1": ("2.45", "", ""),
-                "hh_ggf_kl5_kt1": ("5", "", ""),
+                "hh_ggf_kl1_kt1": ("", "", "1"),
+                "hh_ggf_kl0_kt1": ("", "", "0"),
+                "hh_ggf_kl2p45_kt1": ("", "", "2.45"),
+                "hh_ggf_kl5_kt1": ("", "", "5"),
             },
             "hh_vbf": {
                 "hh_vbf_kv1_k2v1_kl1": ("1", "1", "1"),
                 "hh_vbf_kv1_k2v0_kl1": ("1", "0", "1"),
                 "hh_vbf_kv1p74_k2v1p37_kl14p4": ("1.74", "1.37", "14.4"),
-                "hh_vbf_kvm0p012_k2v0p03_kl10p2": ("0.012", "0.03", "10.2"),
-                "hh_vbf_kvm0p758_k2v1p44_klm19p3": ("0.758", "1.44", "-19.3"),
-                "hh_vbf_kvm0p962_k2v0p959_klm1p43": ("0.962", "0.959", "-1.43"),
+                "hh_vbf_kvm0p012_k2v0p03_kl10p2": ("-0.012", "0.03", "10.2"),
+                "hh_vbf_kvm0p758_k2v1p44_klm19p3": ("-0.758", "1.44", "-19.3"),
+                "hh_vbf_kvm0p962_k2v0p959_klm1p43": ("-0.962", "0.959", "-1.43"),
                 "hh_vbf_kvm1p21_k2v1p94_klm0p94": ("-1.21", "1.94", "-0.94"),
                 "hh_vbf_kvm1p6_k2v2p72_klm1p36": ("-1.6", "2.72", "-1.36"),
                 "hh_vbf_kvm1p83_k2v3p57_klm3p39": ("-1.83", "3.57", "-3.39"),
@@ -414,10 +414,11 @@ class DumpAnalysisSummary(
         tablecommandname = r"\makesignalxstable"
         caption = r"Cross sections of the \HHggf and \HHvbf processes for different coupling parameters."
         label = "tab:signal_xs_table"
-        cols = "llllr"
+        cols = "llllccr"
         lines = [
             r"\hline",
-            r"Process & $\kappa_\lambda$ & $\kappa_V$ & $\kappa_{2V}$ & Cross section [pb] \\",
+            r"Process & $\kappa_V$ & $\kappa_{2V}$ & $\kappa_\lambda$ & \multicolumn{2}{c}{Samples used for} & Cross section [fb] \\",  # noqa: E501
+            r"        &            &               &                  & DNN training & Inference             &                    \\"  # noqa: E501
             r"\hline",
         ]
 
@@ -426,9 +427,9 @@ class DumpAnalysisSummary(
             proc_inst = self.config_inst.get_process(process)
             if not proc_inst:
                 raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
-            xsec = proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
-            if xsec and xsec.nominal == 0.1:
-                xsec = None
+            # xsec = proc_inst.xsecs.get(self.config_inst.campaign.ecm, None) * 1000
+            # if xsec and xsec.nominal == 0.1:
+            #     xsec = None
 
             # Add main process line
             # main_xsec = f"{round_sig(xsec.nominal, 4)}" if xsec else ""
@@ -444,8 +445,8 @@ class DumpAnalysisSummary(
                         raise Exception(f"Sub-process '{sub_proc}' not found in config '{self.config_inst.name}'")
                     sub_xsec = sub_proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
                     if sub_xsec:
-                        sub_xsec_str = f"{round_sig(sub_xsec.nominal, 4)}"
-                        lines.append(f" {latex_name} & {kl} & {kv} & {k2v} & {sub_xsec_str} \\\\")
+                        sub_xsec_str = f"{round_sig(sub_xsec.nominal * 1000, 4)}"
+                        lines.append(rf" {latex_name} & {kl} & {kv} & {k2v} & \checkmark & \checkmark & {sub_xsec_str} \\\\")  # noqa: E501
                     latex_name = ""
 
         table_content = "\n".join(lines)
@@ -461,7 +462,7 @@ class DumpAnalysisSummary(
         output_file.dump(table, formatter="text")
 
     def build_bkg_xs_table(self):
-        root_processes_bkg = {
+        root_processes = {
             # "data": "skip",
             # "hh_ggf": r"\HHggF",
             # "hh_vbf": r"\HHVBF",
@@ -474,7 +475,111 @@ class DumpAnalysisSummary(
             "h": r"\PH",
             "other": r"\other",
         }
-        sub_processes_bkg = {
+        cross_sections_citations = {
+            "hh_ggf": r"~\cite{Grazzini:2018bsd,Karlberg:2024zxx,Baglio:2020wgt}",
+            "hh_vbf": r"~\cite{Grazzini:2018bsd,Karlberg:2024zxx,Baglio:2020wgt}",
+            "tt": r"~\cite{bib:ttbarxs:1,bib:ttbarxs:2,bib:ttbarxs:3,bib:ttbarxs:4,bib:ttbarxs:5,bib:ttbarxs:6,bib:ttbarxs:7}",  # noqa: E501
+            "tt_dl": r"~\cite{bib:ttbarxs:1,bib:ttbarxs:2,bib:ttbarxs:3,bib:ttbarxs:4,bib:ttbarxs:5,bib:ttbarxs:6,bib:ttbarxs:7}",  # noqa: E501
+            "tt_sl": r"~\cite{bib:ttbarxs:1,bib:ttbarxs:2,bib:ttbarxs:3,bib:ttbarxs:4,bib:ttbarxs:5,bib:ttbarxs:6,bib:ttbarxs:7}",  # noqa: E501
+            "tt_fh": r"~\cite{bib:ttbarxs:1,bib:ttbarxs:2,bib:ttbarxs:3,bib:ttbarxs:4,bib:ttbarxs:5,bib:ttbarxs:6,bib:ttbarxs:7}",  # noqa: E501
+            "st_tchannel": r"~\cite{Campbell:2020fhf,PDF4LHCWorkingGroup:2022cjn}",
+            "st_schannel": r"~\cite{Liu:2018gxa}",
+            "st_twchannel": r"~\cite{Kidonakis:2021vob}",
+            # "st_tchannel": r"~\cite{bib:singletxs:t:1,bib:singletxs:t:2}",
+            # "st_schannel": r"~\cite{bib:singletxs:t:1,bib:singletxs:t:2}",
+            # "st_twchannel": r"~\cite{bib:singletxs:tw:1}",
+            "ttv": r"~\cite{Kulesza_2020}",
+            "ttw": r"~\cite{Kulesza_2020}",
+            "ttz": r"~\cite{Kulesza_2020}",
+            "tttt": r"~\cite{vanbeekveld2025thresholdresummationproductionquarks}",
+            "w_lnu": r"~\cite{bib:TWiki:SMXS13TeV}",  # check for non-internal ref.
+            "dy_m10to50": r"~\cite{bib:TWiki:SMXS13TeV}",  # check for non-internal ref.
+            "dy_m50toinf": r"~\cite{bib:TWiki:SMXS13TeV}",  # check for non-internal ref.
+            "vv": r"~\cite{bib:xsDiboson13TeV}",
+            "ww": r"~\cite{bib:xsDiboson13TeV}",
+            "zz": r"~\cite{bib:xsDiboson13TeV}",
+            "wz": r"~\cite{bib:xsDiboson13TeV}",
+            "h": r"~\cite{bib:xsHiggs13p6TeV}",
+            "h_ggf": r"~\cite{bib:xsHiggs13p6TeV}",
+            "h_vbf": r"~\cite{bib:xsHiggs13p6TeV}",
+            "zh": r"~\cite{bib:xsHiggs13p6TeV}",
+            "zh_gg": r"~\cite{bib:xsHiggs13p6TeV}",
+            "wh": r"~\cite{bib:xsHiggs13p6TeV}",
+            "tth": r"~\cite{bib:xsHiggs13p6TeV}",
+            "ttvh": r"~\cite{bib:xsHiggs13p6TeV}",
+            "thq": r"~\cite{bib:xsHiggs13p6TeV}",
+            "thw": r"~\cite{bib:xsHiggs13p6TeV}",
+        }
+        simulated_order = {
+            "hh_ggf": "NLO",
+            "hh_vbf": "LO",
+            "thq": "LO",
+            "thw": "LO",
+        }
+        cross_section_order = {
+            "hh_ggf": "NNLO",
+            "hh_vbf": "???",
+            "tt": "NNLO",
+            "dy_m10to50": "NNLO",
+            "dy_m50toinf": "NNLO",
+            "w_lnu": "NNLO",
+            "vv": "NLO",
+            "ww": "NLO",
+            "zz": "NLO",
+            "wz": "NLO",
+            "st": "NNLO",  # referenced as NLO in HIG-25-018?
+            "st_tchannel": "NNLO",  # referenced as NLO in HIG-25-018?
+            "st_schannel": "NNLO",  # referenced as NLO in HIG-25-018?
+            "st_twchannel": "NNLO",
+            "ttw": "NLO+NNLL",
+            "ttz": "NLO+NNLL",
+            "tttt": "NLO(QCD+EW)+NLL\'",
+            "ttvv": "GenXSecAnalyzer",
+            "vvv": "GenXSecAnalyzer",
+            "h_ggf": "N3LO QCD + NLO EW",
+            "h_vbf": "NNLO QCD + NLO EW",
+            "zh": "NNLO QCD + NLO EW",
+            "zh_gg": "???",
+            "wh": "NNLO QCD + NLO EW",
+            "tth": "NLO QCD+EW",
+            "ttvh": "???",
+            "thq": "NLO QCD",
+            "thw": "NLO QCD",
+        }
+        generator_dict = {
+            "hh_ggf": r"\POWHEG~\cite{Bagnaschi:2011tu,Heinrich:2017kxx}",
+            "hh_vbf": r"\MGvATNLO",
+            # "tt": r"\POWHEG~\cite{Frixione:2007nw}",
+            "tt_dl": r"\POWHEG~\cite{Frixione:2007nw}",
+            "tt_sl": r"\POWHEG~\cite{Frixione:2007nw}",
+            "tt_fh": r"\POWHEG~\cite{Frixione:2007nw}",
+            "st_tchannel": r"\POWHEG~\cite{powheg:singlet:st}",
+            "st_schannel": r"\MGvATNLO",
+            "st_twchannel": r"\POWHEG~\cite{powheg:singlet:tW}",
+            "dy_m10to50": r"\MGvATNLO",
+            "dy_m50toinf": r"\MGvATNLO",
+            "h_ggf": r"\POWHEG~\cite{Alioli:2008tz}",
+            "h_vbf": r"\POWHEG~\cite{Nason:2009ai}",
+            "zh": r"\POWHEG~\cite{Mimasu:2015nqa}",
+            "wh": r"\POWHEG~\cite{Mimasu:2015nqa}",
+            "zh_gg": r"\POWHEG~\cite{Jones:2018hbb}",
+            "tth": r"\POWHEG~\cite{Hartanto:2015uka}",
+            "ttvh": r"\MGvATNLO",
+            "thq": r"\MGvATNLO",
+            "thw": r"\MGvATNLO",
+            # "vv": r"\POWHEG~\cite{Nason:2013ydw}",
+            "ww": r"\POWHEG~\cite{Nason:2013ydw}",
+            "zz": r"\POWHEG~\cite{Nason:2013ydw}",
+            "wz": r"\POWHEG~\cite{Nason:2013ydw}",
+            "vvv": r"\POWHEG~\cite{Nason:2013ydw}",
+            "w_lnu": r"\MGvATNLO",
+            "tttt": r"\MGvATNLO",
+            # "ttv": r"\MGvATNLO",
+            "ttw": r"\MGvATNLO",
+            "ttz": r"\MGvATNLO",
+            "ttvv": r"\MGvATNLO",
+        }
+        sub_processes = {
             "tt": {
                 "tt_dl": r"\ttdl",
                 "tt_sl": r"\ttsl",
@@ -515,43 +620,77 @@ class DumpAnalysisSummary(
                 "vvv": r"\triboson",
             },
         }
-        self.build_xs_table_subprocs(root_processes_bkg, sub_processes_bkg)
 
-    def build_xs_table_subprocs(self, root_processes, sub_processes):
         tablecommandname = r"\makexstable"
-        caption = "Cross sections of the main processes and their sub-processes."
+        caption = r"""
+    Cross sections of the main processes and their sub-processes.
+    Here, only the central values used to normalise the samples are presented.
+    The uncertainties on the cross section calculations
+    are discussed in \cref{tab:systematics:inclxs:pdf,tab:systematics:inclxs:scales}.
+        """
         label = "tab:xs_table"
-        cols = "llr"
+        cols = "lllllr"
         lines = [
             r"\hline",
-            r"Process & Sub-process & Cross section [pb] \\",
+            # r"Process & Sub-process & Generator & Cross section [pb] \\",
+            r"Process & Sub-process & \multicolumn{2}{c}{Simulation} & \multicolumn{2}{c}{Cross section prediction} \\",
+            r"        &             & Generator & ME order           & Value [pb] & Precision                       \\",
             r"\hline",
         ]
 
-        for process, latex_name in root_processes.items():
-            lines.append(r"\hline")
-            proc_inst = self.config_inst.get_process(process)
-            if not proc_inst:
-                raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
+        def get_xsec(process):
+            if isinstance(process, str):
+                proc_inst = self.config_inst.get_process(process)
+                if not proc_inst:
+                    raise Exception(f"Process '{process}' not found in config '{self.config_inst.name}'")
+            else:
+                proc_inst = process
             xsec = proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
             if xsec and xsec.nominal == 0.1:
                 xsec = None
 
+            xsec = f"{round_sig(xsec.nominal, 4)}" if xsec else ""
+            if not xsec:
+                return ""
+            # for key in list(xsec.uncertainties.keys()):
+            #     print(key)
+            #     if key not in ("scale", "pdf", "mtop", "total", "tot"):
+            #         xsec.uncertainties.pop(key)
+            # try:
+            #     xsec = xsec.str(
+            #         format="pdg",
+            #         style="latex",
+            #         combine_uncs="all",
+            #     )
+            # except Exception as e:
+            #     from hbw.util import debugger; debugger()
+            xsec = f"${xsec}$"
+            if process in cross_sections_citations:
+                xsec += cross_sections_citations[process]
+            return xsec
+
+        for process, latex_name in root_processes.items():
+            lines.append(r"\hline")
+
             # Add main process line
-            main_xsec = f"{round_sig(xsec.nominal, 4)}" if xsec else ""
-            lines.append(f"  {latex_name} &  & {main_xsec} \\\\")
+            main_xsec = get_xsec(process)
+            generator = generator_dict.get(process, "")
+            xs_order = cross_section_order.get(process, "")
+            sim_order = simulated_order.get(process, "NLO")
+            # lines.append(f"  {latex_name} &  & {generator} & {main_xsec} \\\\")
+            lines.append(f"  {latex_name} &  & {generator} & {sim_order} & {main_xsec} & {xs_order} \\\\")
 
             # Add sub-process lines if they exist
             if process in sub_processes:
                 # lines.append(r"\hline")
                 for sub_proc, sub_latex_name in sub_processes[process].items():
-                    sub_proc_inst = self.config_inst.get_process(sub_proc)
-                    if not sub_proc_inst:
-                        raise Exception(f"Sub-process '{sub_proc}' not found in config '{self.config_inst.name}'")
-                    sub_xsec = sub_proc_inst.xsecs.get(self.config_inst.campaign.ecm, None)
+                    sub_xsec = get_xsec(sub_proc)
+                    sub_generator = generator_dict.get(sub_proc, generator)
+                    sub_xs_order = cross_section_order.get(sub_proc, xs_order)
+                    sub_sim_order = simulated_order.get(sub_proc, "NLO")
                     if sub_xsec:
-                        sub_xsec_str = f"{round_sig(sub_xsec.nominal, 4)}"
-                        lines.append(f"    &  {sub_latex_name} & {sub_xsec_str} \\\\")
+                        # lines.append(f"    &  {sub_latex_name} & {sub_generator} & {sub_xsec} \\\\")
+                        lines.append(f"    &  {sub_latex_name} & {sub_generator} & {sub_sim_order} & {sub_xsec} & {sub_xs_order} \\\\")  # noqa: E501
 
         table_content = "\n".join(lines)
         table = make_table_func(

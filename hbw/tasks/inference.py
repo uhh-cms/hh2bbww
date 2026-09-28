@@ -1114,12 +1114,16 @@ class PrepareInferenceTaskCalls(
         multi_sig_card_names = ",".join([
             cat_name for cat_name in cat_names if is_signal_region(cat_name)
         ])
-        # cards_vbf = ",".join([
-        #     f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "ggf" not in cat_name  # noqa: E501
-        # ])
-        # cards_ggf = ",".join([
-        #     f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "vbf" not in cat_name  # noqa: E501
-        # ])
+        cards_vbf = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "ggf" not in cat_name  # noqa: E501
+        ])
+        cards_ggf = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "vbf" not in cat_name  # noqa: E501
+        ])
+        cards_bkg = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)
+            if "hh" not in cat_name and "sig" not in cat_name
+        ])
         cards_1b = ",".join([
             f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "1b" in cat_name
         ])
@@ -1130,6 +1134,15 @@ class PrepareInferenceTaskCalls(
             f"{cat_name}=$CARDS_PATH/{card_fn}"
             for cat_name, card_fn in zip(cat_names, card_fns) if "boosted" in cat_name
         ])
+        cards_2e = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2e" in cat_name
+        ])
+        cards_2mu = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "2mu" in cat_name
+        ])
+        cards_emu = ",".join([
+            f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns) if "emu" in cat_name
+        ])
 
         # NOTE: we could replace e.g. {datacards} with $CARDS in the commands below
         cards_dict = {
@@ -1137,7 +1150,14 @@ class PrepareInferenceTaskCalls(
             "CARDSB": cards_1b,
             "CARDSBB": cards_2b,
             "CARDSBoost": cards_boosted,
+            "CARDSVBF": cards_vbf,
+            "CARDSGGF": cards_ggf,
+            "CARDSBKG": cards_bkg,
+            "CARDSEE": cards_2e,
+            "CARDSMUMU": cards_2mu,
+            "CARDSEMU": cards_emu,
         }
+
         export_cards_combinations = "\n".join(f"export {key}={value}" for key, value in cards_dict.items())
         cmd_dict["export"] = "\n".join([base_cmd, export_cards_combinations])
 
@@ -1180,7 +1200,7 @@ class PrepareInferenceTaskCalls(
 
         # fetch card combination
         cmd = (
-            f"law run CombineDatacards --version {identifier} --datacards {datacards} "
+            f"law run CombineDatacards --version {identifier} --datacards $CARDS "
         )
         cmd_dict["combine_cards"] = cmd
 
@@ -1202,8 +1222,8 @@ class PrepareInferenceTaskCalls(
         # creating upper limits for kl=1 with clean signal regions only
         cmd = (
             f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
-            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
-            f"--datacard-names 1b,2b,Boosted,Combined "
+            f"--multi-datacards $CARDSB:$CARDSBB:$CARDSBoost:$CARDS "
+            f"--datacard-names 1b,2b,Boosted,Combined --h-lines 1 "
             # f"--UpperLimits-workflow htcondor "
             f"--workers 10 "
             f"--show-theory False "
@@ -1215,12 +1235,28 @@ class PrepareInferenceTaskCalls(
             cmd_dict["pointlimits"] = cmd
             cmd_dict["qqhh_pointlimits"] = cmd + "--pois r_qqhh "
 
+        # creating upper limits for kl=1 with clean signal regions only
+        cmd = (
+            f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
+            f"--multi-datacards $CARDSB:$CARDSBB:$CARDSBoost:$CARDSGGF,$CARDSBKG:$CARDSVBF,$CARDSBKG:$CARDS "
+            f"--datacard-names '1b,2b,Boosted,HH ggF,HH VBF,Combined' --h-lines 1,3 "
+            # f"--UpperLimits-workflow htcondor "
+            f"--workers 10 "
+            f"--show-theory False "
+        )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            cmd_dict["pointlimits_sigs"] = cmd
+            cmd_dict["qqhh_pointlimits_sigs"] = cmd + "--pois r_qqhh "
+
         # datacards per config group
         if len(self.config_groups) > 1:
             cmd = (
                 f"law run PlotUpperLimitsAtPoint --version {identifier} --campaign {campaign} "
                 f"--multi-datacards {datacards_per_year}:{datacards} "
-                f"--datacard-names {','.join(self.config_groups_str)},combined "
+                f"--datacard-names {','.join(self.config_groups_str)},Combined "
                 # f"--UpperLimits-workflow htcondor "
                 f"--workers 10 "
             )
@@ -1249,9 +1285,10 @@ class PrepareInferenceTaskCalls(
         scan_r = "r,-30,30,61"
 
         cmd = (
-            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"law run PlotUpperLimits --version {identifier} --campaign {campaign} --datacards $CARDS "
             f"--xsec fb --y-log --scan-parameters {scan_kl} --UpperLimits-workflow htcondor "
             f"--frozen-parameters {self.frozen_for_scans} "
+            f"--show-parameters kl,C2V,kt,CV "
         )
         if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded True "
@@ -1264,11 +1301,12 @@ class PrepareInferenceTaskCalls(
 
         cmd = (
             f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
-            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+            f"--multi-datacards $CARDSB:$CARDSBB:$CARDSBoost:$CARDS "
             f"--datacard-names 1b,2b,Boosted,Combined "
             f"--xsec fb --y-log --scan-parameters {scan_c2v} --UpperLimits-workflow htcondor "
             f"--workers 4 "
             f"--frozen-parameters {self.frozen_for_scans} "
+            f"--show-parameters kl,C2V,kt,CV "
         )
         if self.partially_unblinded or self.fully_unblinded:
             cmd += "--unblinded True "
@@ -1278,6 +1316,25 @@ class PrepareInferenceTaskCalls(
             cmd_dict["qqhh_multilimits_c2v"] = cmd + "--pois r_qqhh "
             cmd_dict["multilimits_kl"] = cmd.replace(scan_c2v, scan_kl)
             cmd_dict["qqhh_multilimits_kl"] = cmd.replace(scan_c2v, scan_kl) + "--pois r_qqhh "
+
+        cmd = (
+            f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
+            f"--multi-datacards $CARDSGGF,$CARDSBKG:$CARDSVBF,$CARDSBKG:$CARDS "
+            # f"--datacard-names '$HH_\{{ggF\}}$,$HH_\{{VBF\}}$,Combined' "
+            f"--datacard-names '$HH ggF$,$HH VBF$,Combined' "
+            f"--xsec fb --y-log --scan-parameters {scan_c2v} --UpperLimits-workflow htcondor "
+            f"--workers 4 "
+            f"--frozen-parameters {self.frozen_for_scans} "
+            f"--show-parameters kl,C2V,kt,CV "
+        )
+        if self.partially_unblinded or self.fully_unblinded:
+            cmd += "--unblinded True "
+        if not self.partially_unblinded:
+            print(base_cmd + cmd, "\n\n")
+            cmd_dict["multilimits_sigs_c2v"] = cmd
+            cmd_dict["qqhh_multilimits_sigs_c2v"] = cmd + "--pois r_qqhh "
+            cmd_dict["multilimits_sigs_kl"] = cmd.replace(scan_c2v, scan_kl)
+            cmd_dict["qqhh_multilimits_sigs_kl"] = cmd.replace(scan_c2v, scan_kl) + "--pois r_qqhh "
 
         # Likelihood scans
         cmd = (
@@ -1296,7 +1353,7 @@ class PrepareInferenceTaskCalls(
 
         # running FitDiagnostics for Pre+Postfit plots
         cmd = (
-            f"law run FitDiagnostics --version {identifier} --datacards {datacards} "
+            f"law run FitDiagnostics --version {identifier} --datacards $CARDS "
             f"--skip-b-only"
         )
         cmd_dict["FitDiagnostics"] = cmd
@@ -1305,7 +1362,7 @@ class PrepareInferenceTaskCalls(
         # impacts_order = "--order-by-impacts"
         impacts_order = ""
         cmd = (
-            f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards {datacards} "
+            f"law run PlotPullsAndImpacts --version {identifier} --campaign {campaign} --datacards $CARDS "
             f"--parameters-per-page 80 --mc-stats --retry-no-analytic "
             f"{impacts_order} "
         )
@@ -1337,7 +1394,7 @@ class PrepareInferenceTaskCalls(
         # MultiplePullsAndImpact
         cmd = (
             f"law run PlotMultiplePullsAndImpacts --version {identifier} --campaign {campaign} "
-            f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+            f"--multi-datacards $CARDSB:$CARDSBB:$CARDSBoost:$CARDS "
             f"--datacard-names 1b,2b,Boosted,Combined "
             # f"--parameters-per-page 80 --mc-stats "
             "--retry-no-analytic "
@@ -1357,7 +1414,7 @@ class PrepareInferenceTaskCalls(
             #     snapshot_custom_args = " ".join([custom_args, freeze_signal])
             cmd = (
                 f"law run PlotMultipleGoodnessOfFits --version {identifier} --campaign {campaign} "
-                f"--multi-datacards {cards_1b}:{cards_2b}:{cards_boosted}:{datacards} "
+                f"--multi-datacards $CARDSB:$CARDSBB:$CARDSBoost:$CARDS "
                 f"--datacard-names 1b,2b,Boosted,Combined "
                 f"--toys 1000 --toys-per-branch 20 --frequentist-toys --use-snapshot "
             )
@@ -1375,7 +1432,7 @@ class PrepareInferenceTaskCalls(
         # running PreAndPostfitShapes for Pre+Postfit plots
         cmd = (
             f"law run MergePreAndPostFitShapes --version {identifier} "
-            f"--datacards {datacards} "
+            f"--datacards $CARDS "
             f"--apply-fit-datacards {datacards.replace(',', ':')} "
             "--PreAndPostFitShapes-workflow htcondor --workers 5 "
         )

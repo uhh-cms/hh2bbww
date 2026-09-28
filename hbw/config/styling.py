@@ -144,12 +144,12 @@ default_labels = {
     "dy_hf": "DY+HF",
     "dy_lf": "DY+LF",
     "tt": r"$t\bar{t}$",
-    "dy_m50toinf": "DY ($M > 50$)",
-    "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
-    "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
-    "dy_m50toinf_2j": "DY ($M > 50$, 2 jets)",
-    "dy_m10to50": "DY ($10 < M < 50$)",
-    "dy_m4to10": "DY ($4 < M < 10$)",
+    "dy_m50toinf": r"DY ($M > 50\,GeV$)",
+    "dy_m50toinf_0j": r"DY ($M > 50\,GeV$, 0 jets)",
+    "dy_m50toinf_1j": r"DY ($M > 50\,GeV$, 1 jets)",
+    "dy_m50toinf_2j": r"DY ($M > 50\,GeV$, 2 jets)",
+    "dy_m10to50": r"DY ($10 < M < 50\,GeV$)",
+    "dy_m4to10": r"DY ($4 < M < 10\,GeV$)",
     "st_tchannel_t": "st (t-channel, t)",
     "st_tchannel_tbar": r"st (t-channel, $\bar{t}$)",
     "st_twchannel_t_sl": "tW (t, sl)",
@@ -168,13 +168,23 @@ default_labels = {
     "hh_vbf_hbb_hww_kv1_k2v1_kl1": r"$HH_{VBF}\rightarrow bbWW$",
     "hh_ggf_hbb_hzz_kl1_kt1": r"$HH_{ggF}\rightarrow bbZZ$",
     "hh_vbf_hbb_hzz_kv1_k2v1_kl1": r"$HH_{VBF}\rightarrow bbZZ$",
-    # # for HHggF plots
+    # # # for HHggF plots
     # "hh_ggf_hbb_hww_kl1_kt1": r"ggF, $\kappa_{\lambda}=1$",
     # "hh_ggf_hbb_hww_kl0_kt1": r"ggF, $\kappa_{\lambda}=0$",
     # "hh_ggf_hbb_hww_kl2p45_kt1": r"ggF, $\kappa_{\lambda}=2.45$",
     # "hh_ggf_hbb_hww_kl5_kt1": r"ggF, $\kappa_{\lambda}=5$",
-    # # "hh_vbf_hbb_hww_kv1_k2v1_kl1": r"VBF, $\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1$",
-    # # for HHvbf plots
+    # "hh_vbf_hbb_hww_kv1_k2v1_kl1": r"VBF, $\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1$",
+    # # # for HHvbf plots
+    # "hh_vbf_hbb_hww_kv1_k2v1_kl1": r"$\kappa=(1, 1, 1)$",
+    # "hh_vbf_hbb_hww_kv1_k2v0_kl1": r"$\kappa=(1, 0, 1)$",
+    # "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4": r"$\kappa=(1.74, 1.37, 14.4)$",
+    # "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2": r"$\kappa=(-0.012, 0.03, 10.2)$",
+    # "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3": r"$\kappa=(-0.758, 1.44, -19.3)$",
+    # "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43": r"$\kappa=(-0.962, 0.959, -1.43)$",
+    # "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94": r"$\kappa=(-1.21, 1.94, -0.94)$",
+    # "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36": r"$\kappa=(-1.6, 2.72, -1.36)$",
+    # "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39": r"$\kappa=(-1.83, 3.57, -3.39)$",
+    # "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96": r"$\kappa=(2.12, 3.87, -5.96)$",
     # "hh_vbf_hbb_hww_kv1_k2v1_kl1": r"$\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1$",
     # "hh_vbf_hbb_hww_kv1_k2v0_kl1": r"$\kappa_{V}=1, \kappa_{2V}=0, \kappa_{\lambda}=1$",
     # "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4": r"$\kappa_{V}=1.74, \kappa_{2V}=1.37, \kappa_{\lambda}=14.4$",
@@ -185,16 +195,16 @@ default_labels = {
     # "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36": r"$\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36$",
     # "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39": r"$\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39$",
     # "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96": r"$\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96$",
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=0, \kappa_{\lambda}=1}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4": r"$HH_{VBF}^{\kappa_{V}=1.74, \kappa_{2V}=1.37, \kappa_{\lambda}=14.4}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2": r"$HH_{VBF}^{\kappa_{V}=-0.012, \kappa_{2V}=0.03, \kappa_{\lambda}=10.2}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": r"$HH_{VBF}^{\kappa_{V}=-0.758, \kappa_{2V}=1.44, \kappa_{\lambda}=-19.3}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": r"$HH_{VBF}^{\kappa_{V}=-0.962, \kappa_{2V}=0.959, \kappa_{\lambda}=-1.43}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": r"$HH_{VBF}^{\kappa_{V}=-1.21, \kappa_{2V}=1.94, \kappa_{\lambda}=-0.94}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": r"$HH_{VBF}^{\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": r"$HH_{VBF}^{\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39}$",  # noqa: E501
-    "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": r"$HH_{VBF}^{\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v1_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=1, \kappa_{\lambda}=1}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kv1_k2v0_kl1": r"$HH_{VBF}^{\kappa_{V}=1, \kappa_{2V}=0, \kappa_{\lambda}=1}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kv1p74_k2v1p37_kl14p4": r"$HH_{VBF}^{\kappa_{V}=1.74, \kappa_{2V}=1.37, \kappa_{\lambda}=14.4}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm0p012_k2v0p03_kl10p2": r"$HH_{VBF}^{\kappa_{V}=-0.012, \kappa_{2V}=0.03, \kappa_{\lambda}=10.2}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm0p758_k2v1p44_klm19p3": r"$HH_{VBF}^{\kappa_{V}=-0.758, \kappa_{2V}=1.44, \kappa_{\lambda}=-19.3}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43": r"$HH_{VBF}^{\kappa_{V}=-0.962, \kappa_{2V}=0.959, \kappa_{\lambda}=-1.43}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm1p21_k2v1p94_klm0p94": r"$HH_{VBF}^{\kappa_{V}=-1.21, \kappa_{2V}=1.94, \kappa_{\lambda}=-0.94}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm1p6_k2v2p72_klm1p36": r"$HH_{VBF}^{\kappa_{V}=-1.6, \kappa_{2V}=2.72, \kappa_{\lambda}=-1.36}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kvm1p83_k2v3p57_klm3p39": r"$HH_{VBF}^{\kappa_{V}=-1.83, \kappa_{2V}=3.57, \kappa_{\lambda}=-3.39}$",  # noqa: E501
+    # "hh_vbf_hbb_hvv2l2nu_kv2p12_k2v3p87_klm5p96": r"$HH_{VBF}^{\kappa_{V}=2.12, \kappa_{2V}=3.87, \kappa_{\lambda}=-5.96}$",  # noqa: E501
 }
 
 ml_labels = {

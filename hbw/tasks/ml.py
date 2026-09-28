@@ -918,6 +918,7 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
             plot_output_nodes,
             # plot_introspection_old,
             plot_introspection,
+            # plot_loss, plot_accuracy,
         )
 
         # output nodes
@@ -1007,6 +1008,35 @@ class PlotMLResultsSingleFoldTest(PlotMLResultsSingleFold):
         )
         plt.close("all")
         gc.collect()
+
+        plot_introspection(
+            self.ml_model_inst,
+            output["plots"],
+            data.test,
+            input_features=self.ml_model_inst.input_features_ordered,
+            stats=stats,
+            store_shap_values=True,
+        )
+
+        # dump all stats into yaml file
+        output["stats"].dump(stats, formatter="json")
+
+
+class PlotMLIntrospection(PlotMLResultsSingleFold):
+    data_splits = ("test",)
+
+    def create_plots(self, data):
+        """Memory-efficient plotting for test-only data"""
+        # import gc
+        import matplotlib
+        matplotlib.use("Agg")  # Use non-interactive backend
+        # import matplotlib.pyplot as plt
+
+        output = self.output()
+        stats = {}
+        from hbw.ml.plotting import (
+            plot_introspection,
+        )
 
         plot_introspection(
             self.ml_model_inst,

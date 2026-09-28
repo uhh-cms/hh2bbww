@@ -166,7 +166,7 @@ def gen_hbv_decay_init(self: Producer) -> None:
         "gen_hbw.{b1,b2,lep1,lep2,w1,w2,higgs,h1,h2,sec1,sec2}.{pt,eta,phi,mass,abseta,pdgId}",
         "gen_hbw.{hh,hbb,hww,wlep1,wlep2,bbll,dilep,invis,llnn,vbfpair}.{pt,eta,phi,mass,dr,deta,dphi,ptdiff,abseta,summass,pt_asym}",  # noqa: E501
     },
-    version=12,
+    version=14,
 )
 def gen_hbw_decay_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     for field in events.gen_hbw_decay.fields:
@@ -365,20 +365,24 @@ bins_dict = {
         "gen_hbw.dilep": (120, 0., 120.),
         "gen_hbw.invis": (120, 0., 120.),
         "gen_hbw.w1": (120, 0., 120.),
-        "gen_hbw.w2": (120, 0., 120.),
+        "gen_hbw.w2": (120, 0., 80.),
         "gen_hbw.wlep1": (120, 0., 120.),
-        "gen_hbw.wlep2": (120, 0., 120.),
+        "gen_hbw.wlep2": (120, 0., 80.),
     },
     "abseta": {
         "default": (120, 0., 5.),
     },
     "dr": {
-        "default": (120, 0., 10.),
+        "default": (120, 0., 6.),
         "gen_hbw.vbfpair": (120, 0., 14.),
+        "gen_hbw.hh": (120, 0., 8.),
+        "gen_hbw.bbll": (120, 0., 8.),
     },
     "deta": {
-        "default": (120, 0., 10.),
+        "default": (120, 0., 6.),
         "gen_hbw.vbfpair": (120, 0., 12.),
+        "gen_hbw.hh": (120, 0., 8.),
+        "gen_hbw.bbll": (120, 0., 8.),
     },
     "dphi": {
         "default": (96, 0., 3.2),
@@ -470,30 +474,31 @@ def make_pair_variables(
 def gen_hbw_decay_features_init(self: Producer) -> None:
     @call_once_on_config
     def add_gen_hbw_decay_variables(config):
-        make_pair_variables(config, "gen_hbw.hh", ["h", "h"], "Gen")
-        make_pair_variables(config, "gen_hbw.hbb", ["b", "b"], "Gen")
-        make_pair_variables(config, "gen_hbw.hww", ["W", "W"], "Gen")
-        make_pair_variables(config, "gen_hbw.wlep1", [r"\ell 1", r"\nu 1"], "Gen")
-        make_pair_variables(config, "gen_hbw.wlep2", [r"\ell 2", r"\nu 2"], "Gen")
+        x_title_prefix = "Generator-level"
+        make_pair_variables(config, "gen_hbw.hh", ["H", "H"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.hbb", ["b", "b"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.hww", ["W", "W"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.wlep1", [r"\ell 1", r"\nu 1"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.wlep2", [r"\ell 2", r"\nu 2"], x_title_prefix)
 
-        make_pair_variables(config, "gen_hbw.bbll", ["bb", r"\ell\ell"], "Gen")
-        make_pair_variables(config, "gen_hbw.dilep", [r"\ell", r"\ell"], "Gen")
-        make_pair_variables(config, "gen_hbw.invis", [r"\nu", r"\nu"], "Gen")
-        make_pair_variables(config, "gen_hbw.llnn", [r"\ell\ell", r"\nu\nu"], "Gen")
+        make_pair_variables(config, "gen_hbw.bbll", ["bb", r"\ell\ell"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.dilep", [r"\ell", r"\ell"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.invis", [r"\nu", r"\nu"], x_title_prefix)
+        make_pair_variables(config, "gen_hbw.llnn", [r"\ell\ell", r"\nu\nu"], x_title_prefix)
 
-        make_pair_variables(config, "gen_hbw.vbfpair", ["j", "j"], "Gen")
+        make_pair_variables(config, "gen_hbw.vbfpair", ["j", "j"], x_title_prefix)
 
-        make_pair_variables(config, "gen_hbw.higgs", "Higgs", "Gen", additional_features=[])
-        make_pair_variables(config, "gen_hbw.h1", "H1", "Gen", additional_features=[])
-        make_pair_variables(config, "gen_hbw.h2", "H2", "Gen", additional_features=[])
-        make_pair_variables(config, "gen_hbw.w1", "W1", "Gen", additional_features=[])
-        make_pair_variables(config, "gen_hbw.w2", "W2", "Gen", additional_features=[])
-        make_pair_variables(config, "gen_hbw.b1", "b1", "Gen", base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
-        make_pair_variables(config, "gen_hbw.b2", "b2", "Gen", base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
-        make_pair_variables(config, "gen_hbw.lep1", r"\ell 1", "Gen", base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
-        make_pair_variables(config, "gen_hbw.lep2", r"\ell 2", "Gen", base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
-        make_pair_variables(config, "gen_hbw.sec1", "isp 1", "Gen", base_features=["p", "pt", "eta", "phi"], additional_features=[])  # noqa: E501
-        make_pair_variables(config, "gen_hbw.sec2", "isp 2", "Gen", base_features=["p", "pt", "eta", "phi"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.higgs", "Higgs", x_title_prefix, additional_features=[])
+        make_pair_variables(config, "gen_hbw.h1", "H1", x_title_prefix, additional_features=[])
+        make_pair_variables(config, "gen_hbw.h2", "H2", x_title_prefix, additional_features=[])
+        make_pair_variables(config, "gen_hbw.w1", "W1", x_title_prefix, additional_features=[])
+        make_pair_variables(config, "gen_hbw.w2", "W2", x_title_prefix, additional_features=[])
+        make_pair_variables(config, "gen_hbw.b1", "b1", x_title_prefix, base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.b2", "b2", x_title_prefix, base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.lep1", r"\ell 1", x_title_prefix, base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.lep2", r"\ell 2", x_title_prefix, base_features=["p", "pt", "eta", "phi", "abseta"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.sec1", "isp 1", x_title_prefix, base_features=["p", "pt", "eta", "phi"], additional_features=[])  # noqa: E501
+        make_pair_variables(config, "gen_hbw.sec2", "isp 2", x_title_prefix, base_features=["p", "pt", "eta", "phi"], additional_features=[])  # noqa: E501
 
         config.add_variable(
             name="GENHBW_mw_sum",
@@ -502,7 +507,7 @@ def gen_hbw_decay_features_init(self: Producer) -> None:
             ),
             binning=(80, 0., 160.),
             unit="GeV",
-            x_title=r"Gen $m_{W1} + m_{W2}$",
+            x_title=r"%s $m_{W1} + m_{W2}$" % x_title_prefix,
             aux={
                 "inputs": {"gen_hbw.w1.mass", "gen_hbw.w2.mass"},
                 "overflow": True,
@@ -517,7 +522,7 @@ def gen_hbw_decay_features_init(self: Producer) -> None:
             ),
             binning=(80, 0., 160.),
             unit="GeV",
-            x_title=r"Gen $m_{\ell\ell} + m_{\nu\nu}$",
+            x_title=r"%s $m_{\ell\ell} + m_{\nu\nu}$" % x_title_prefix,
             aux={
                 "inputs": {"gen_hbw.dilep.mass", "gen_hbw.invis.mass"},
                 "overflow": True,

@@ -177,6 +177,9 @@ def add_config(
     # https://twiki.cern.ch/twiki/bin/view/CMS/PdmVRun3Analysis?rev=182 (after update)
     # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=26
     # uncertainties from: https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3?rev=36
+    # 2026: 28.06
+    # 2024: 109.95
+    # 2025: 110.84
     elif year == 2022:
         if campaign.has_tag("preEE"):
             cfg.x.luminosity = Number(5010.4 + 2970.0, {
@@ -696,8 +699,8 @@ def add_config(
             "hbb_sf_weight": "hbb_sf_weight_flat_{direction}",
         },
     )
-    cfg.add_shift(name="msd_nonclosure_up", id=194, type="shape")
-    cfg.add_shift(name="msd_nonclosure_down", id=195, type="shape")
+    cfg.add_shift(name="msd_nonclosure_up", id=194, type="shape", label=r"$m_{SD}$ non-closure up")
+    cfg.add_shift(name="msd_nonclosure_down", id=195, type="shape", label=r"$m_{SD}$ non-closure down")
     add_shift_aliases(
         cfg,
         "msd_nonclosure",

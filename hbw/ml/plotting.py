@@ -8,6 +8,7 @@ import functools
 import gc
 import law
 import order as od
+from matplotlib.colors import ListedColormap
 
 from hbw.util import round_sig, timeit
 from columnflow.ml import MLModel
@@ -58,14 +59,15 @@ def barplot_from_multidict(
 
     num_dicts = len(dict_of_rankings.keys())
     num_labels = len(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())
-    labels = list(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())[::-1]
+    keys = list(dict_of_rankings[list(dict_of_rankings.keys())[0]].keys())[::-1]
+    labels = [label.replace(" [GeV]", "") for label in keys]
 
     bar_width = 0.9 / num_dicts
     index = np.arange(num_labels)
 
     for idx, (d_label, d) in enumerate(dict_of_rankings.items()):
         # always get labels in the same order
-        weights = [d[label] for label in labels]
+        weights = [d[label] for label in keys]
         if normalize_weights:
             weights = weights / np.sum(weights)
 
@@ -76,9 +78,10 @@ def barplot_from_multidict(
 
     xlabel = f"Contribution to {title}" if title else "Contribution"
     ax.set_xlabel(xlabel, fontsize=20)
-    ax.set_ylabel("Input feature", fontsize=20)
+    # ax.set_ylabel("Input feature", fontsize=20)
     ax.set_yticks(index - (bar_width * (num_dicts - 1)) / 2)
-    ax.set_yticklabels(labels)  # fontsize = 14?
+    ax.set_yticklabels(labels, fontsize=18)  # fontsize = 14?
+    ax.tick_params(axis="x", which="minor", labelsize=16)
     ax.legend(fontsize=18, loc="lower right")
     # ax.legend(title=title, fontsize=18, title_fontsize=20, loc="lower right")
 
@@ -194,6 +197,26 @@ def _plot_shap_scatter_plots(
     cmap: str | None = None,
     input_features: list | None = None,  # HOTFIX: used only to set output file name
 ) -> None:
+    from hbw.config.styling import cms_color_palette_2
+
+    colors = [
+        # HOTFIX: cmap with 10 colors always messed up the last entry;
+        # used different colorbar and for scatterpoints
+        # and using cmap with 6 colors messed up the colorbar, only displaying 4 instead of 6 colors
+        # solution: just build custom Colormap with 10 colors with repeated entries
+        cms_color_palette_2["black"],
+        cms_color_palette_2["blue"],
+        cms_color_palette_2["red"],
+        cms_color_palette_2["red"],
+        cms_color_palette_2["orange"],
+        cms_color_palette_2["yellow"],
+        cms_color_palette_2["yellow"],
+        cms_color_palette_2["purple"],
+        cms_color_palette_2["purple"],
+        cms_color_palette_2["purple"],
+    ]
+    cmap = ListedColormap(colors)  # for now, overwrite any custom cmap
+    plt.style.use(mplhep.style.CMS)
     plt.style.use("seaborn-v0_8")
     feature_labels = list(shap_values.feature_names)
     if input_features and len(input_features) != len(feature_labels):
@@ -203,8 +226,8 @@ def _plot_shap_scatter_plots(
             len(feature_labels),
         )
         input_features = None
-    cmap = plt.get_cmap("tab10")  # for now, overwrite any custom cmap
     class_ids = [int(cls) for cls in np.unique(explain_labels)]
+
     output_class = class_label_map.get(output_node, str(output_node))
     logger.info(
         "Creating SHAP scatter plots for class %s with %d features across classes %s",
@@ -228,6 +251,10 @@ def _plot_shap_scatter_plots(
             process_labels = shap.Explanation(values=sub_shap_values.values, data=explain_labels)
             process_labels.display_data = explain_class_labels
 
+            # cmap = ListedColormap(plt.get_cmap("tab10").colors[: max(1, len(class_ids))])
+            # cmap = plt.get_cmap("Dark2")
+            # cmap = plt.get_cmap("tab10")
+            cmap = ListedColormap(colors)
             shap.plots.scatter(
                 sub_shap_values,
                 show=False,
@@ -237,7 +264,7 @@ def _plot_shap_scatter_plots(
                 dot_size=8,
                 alpha=1.0,
                 # TODO: for some reason the last color legend does not match the scatter points,
-                # to be investigated (maybe a bug in shap.plots.scatter with categorical coloring?
+                # to be investigated (maybe a bug in shap.plots.scatter with categorical coloring?)
                 cmap=cmap,
             )
 
@@ -363,7 +390,9 @@ def plot_introspection(
     input_labels = None
     if input_features:
         input_labels = [
-            model.config_inst.get_variable(feature).x_title if isinstance(feature, str) else feature.x_title
+            # model.config_inst.get_variable(feature).x_title if isinstance(feature, str) else feature.x_title
+            model.config_inst.get_variable(feature).get_full_x_title(unit_format="{title} [{unit}]")
+            if isinstance(feature, str) else feature.get_full_x_title(unit_format="{title} [{unit}]")
             for feature in input_features
         ]
 
@@ -1068,7 +1097,11 @@ def plot_input_features(
             hist.Hist.new
             .StrCat(["train", "validation"], name="type")
             .IntCat([], name="process", growth=True, label="")
-            .Var(variable_inst.bin_edges, name=feature_name, label=variable_inst.get_full_x_title())
+            .Var(
+                variable_inst.bin_edges,
+                name=feature_name,
+                label=variable_inst.get_full_x_title(unit_formt="{title} [{unit}]"),
+            )
             .Weight()
         )
 

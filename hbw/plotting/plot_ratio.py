@@ -127,7 +127,7 @@ def plot_ratio(
     )
     # additional, plot function specific changes
     if shape_norm:
-        default_style_config["ax_cfg"]["ylabel"] = "Normalized entries"
+        default_style_config["ax_cfg"]["ylabel"] = "Normalised entries"
     style_config = law.util.merge_dicts(
         default_style_config,
         process_style_config,

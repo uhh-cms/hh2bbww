@@ -54,6 +54,11 @@ config_categories = DotDict({
         "sr__resolved__2b__ml_sig_vbf",
         "sr__boosted__ml_sig_vbf",
     ],
+    "sr_no_signal_split": [
+        "sr__resolved__1b__ml_sig_hh",
+        "sr__resolved__2b__ml_sig_hh",
+        "sr__boosted__ml_sig_hh",
+    ],
     "sr_boosted": [
         "sr__boosted__ml_sig_ggf",
         "sr__boosted__ml_sig_vbf",
@@ -63,6 +68,28 @@ config_categories = DotDict({
         "sr__resolved__1b__ml_sig_vbf",
         "sr__resolved__2b__ml_sig_ggf",
         "sr__resolved__2b__ml_sig_vbf",
+    ],
+    "sr_boosted_lep": [
+        "sr__2e__boosted__ml_sig_ggf",
+        "sr__2e__boosted__ml_sig_vbf",
+        "sr__2mu__boosted__ml_sig_ggf",
+        "sr__2mu__boosted__ml_sig_vbf",
+        "sr__emu__boosted__ml_sig_ggf",
+        "sr__emu__boosted__ml_sig_vbf",
+    ],
+    "sr_resolved_lep": [
+        "sr__2e__resolved__1b__ml_sig_ggf",
+        "sr__2e__resolved__1b__ml_sig_vbf",
+        "sr__2e__resolved__2b__ml_sig_ggf",
+        "sr__2e__resolved__2b__ml_sig_vbf",
+        "sr__2mu__resolved__1b__ml_sig_ggf",
+        "sr__2mu__resolved__1b__ml_sig_vbf",
+        "sr__2mu__resolved__2b__ml_sig_ggf",
+        "sr__2mu__resolved__2b__ml_sig_vbf",
+        "sr__emu__resolved__1b__ml_sig_ggf",
+        "sr__emu__resolved__1b__ml_sig_vbf",
+        "sr__emu__resolved__2b__ml_sig_ggf",
+        "sr__emu__resolved__2b__ml_sig_vbf",
     ],
     "background": [
         "sr__1b__ml_tt",
@@ -121,6 +148,14 @@ config_categories.default_boosted_mergedbkg = (
 )
 config_categories.default_boosted_bkg = (
     config_categories.sr_resolved + config_categories.sr_boosted + config_categories.background_resolved +
+    ["sr__boosted__ml_bkg"]
+)
+config_categories.default_boosted_bkg_no_signal_split = (
+    config_categories.sr_no_signal_split + config_categories.background_resolved +
+    ["sr__boosted__ml_bkg"]
+)
+config_categories.default_boosted_bkg_split_sr_lep = (
+    config_categories.sr_resolved_lep + config_categories.sr_boosted_lep + config_categories.background_resolved +
     ["sr__boosted__ml_bkg"]
 )
 
@@ -651,6 +686,60 @@ default_unblind = dl.derive("default_unblind", cls_dict={
     "skip_data": False,
 })
 
+# most notably, I need met_pt without the MET cut
+data_mc_plots = default_unblind.derive("data_mc_plots", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "npvs2",
+        "mli_n_btag",
+        "mli_met_pt",
+        "mli_lep_eta",
+        "mli_lep2_eta",
+        "jet0_pt",
+        "jet1_pt",
+        "jet0_eta",
+        "jet1_eta",
+        "jet0_btagpnetb",
+        "jet1_btagpnetb",
+        "fatbjet0_pnet_hbb",
+        "fatbjet0_pnet_hbb40",
+    ],
+    "multi_variables": True,
+    "config_categories": [
+        "sr", "ttcr", "dycr", "incl",
+    ],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+    "min_bkg_events": 12,  # 8.3% relative uncertainty
+    "max_data_unc": 0.03,  # relative uncertainty
+    "skip_flat_rebin": True,  # rebinning only to constrain data and bkg uncertainties
+})
+data_mc_plots = default_unblind.derive("data_mc_plots", cls_dict={
+    "config_variable": lambda self, config_cat_inst: [
+        "npvs2",
+        "mli_n_btag",
+        "mli_met_pt",
+        "mli_lep_eta",
+        "mli_lep2_eta",
+        "jet0_pt",
+        "jet1_pt",
+        "jet0_eta",
+        "jet1_eta",
+        "jet0_btagpnetb",
+        "jet1_btagpnetb",
+        "fatbjet0_pnet_hbb",
+        "fatbjet0_pnet_hbb40",
+    ],
+    "multi_variables": True,
+    "config_categories": [
+        "sr", "sr__boosted",
+    ],
+    "ml_model_name": ["multiclassv3", "ggfv3", "vbfv3_tag"],
+    "flow_strategy": "remove",
+    "min_bkg_events": 12,  # 8.3% relative uncertainty
+    "max_data_unc": 0.15,  # relative uncertainty
+    "skip_flat_rebin": True,  # rebinning only to constrain data and bkg uncertainties
+})
+
 from hbw.ml.derived.dl import input_features as ml_inputs
 nn_input_variables = default_unblind.derive("nn_input_variables", cls_dict={
     "config_variable": lambda self, config_cat_inst: ml_inputs.v2 + [
@@ -685,6 +774,7 @@ nn_inputs_lep = nn_input_variables.derive("nn_inputs_lep", cls_dict={
     "config_categories": ["sr__2e", "sr__2mu", "sr__emu"],
     "max_data_unc": 0.03,  # relative uncertainty
 })
+# TODO: I think some specific input variables did not properly work at some step (mli_mll_rebinned)
 nn_inputs_vr = nn_input_variables.derive("nn_inputs_vr", cls_dict={
     "config_categories": ["ttcr", "dycr"],
     "max_data_unc": 0.03,  # relative uncertainty
@@ -944,6 +1034,23 @@ hbbsf = dl.derive("hbbsf", cls_dict={
     "unblind": True,
     "skip_data": False,
 })
+hbbsf_no_boosted = hbbsf.derive("hbbsf_no_boosted", cls_dict={
+    # "systematics": systematics.default,
+    "config_categories": config_categories.sr + config_categories.background,
+    "unblind": True,
+    "skip_data": False,
+})
+hbbsf_no_signal_split = hbbsf.derive("hbbsf_no_signal_split", cls_dict={
+    "config_categories": config_categories.default_boosted_bkg_no_signal_split,
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_ggf_binary",
+})
+hbbsf_no_signal_split_vbf = hbbsf.derive("hbbsf_no_signal_split_vbf", cls_dict={
+    "config_categories": config_categories.default_boosted_bkg_no_signal_split,
+    "config_variable": lambda self, config_cat_inst: "logit_mlscore.sig_vbf_binary",
+})
+hbbsf_lep = hbbsf.derive("hbbsf_lep", cls_dict={
+    "config_categories": config_categories.default_boosted_bkg_split_sr_lep,
+})
 hbbsf_no_dycorr = hbbsf.derive("hbbsf_no_dycorr", cls_dict={
     "systematics": list(set(systematics.hbbsf_full) - {"dy_correction"}),
 })
@@ -1005,7 +1112,6 @@ nn_staged2_test = hbbsf.derive("nn_staged2_test", cls_dict={
     "ml_model_name": ["multiclassv3", "ggf_hh_reweight", "vbf_hh_reweight"],
     "systematics": systematics.rate,
 })
-
 
 
 vbftag1_noboosted_unblind = no_boosted.derive("vbftag1_noboosted_unblind", cls_dict={

@@ -36,7 +36,8 @@ def add_common_ml_variables(config: od.Config) -> None:
             name=f"mli_n_jet{postfix}",
             expression=f"mli_n_jet{postfix}",
             binning=(11, -0.5, 10.5),
-            x_title=f"Number of {object_label if object_label else 'jets'}",
+            # x_title=f"Number of {object_label if object_label else 'jets'}",
+            x_title=f"$N_{{jets}} {object_label}$",
             aux={
                 # "overflow": True,
                 "x_min": 0.5,
@@ -58,13 +59,18 @@ def add_common_ml_variables(config: od.Config) -> None:
         expression="mli_n_btag",
         binning=(11, -0.5, 10.5),
         x_title="Number of b-tagged jets",
-        aux={"overflow": True},
+        aux={
+            "overflow": False,
+            "x_max": 4.5,
+            "skip_rebin": True,
+        },
     )
     config.add_variable(
         name="mli_b_score_sum",
         expression="mli_b_score_sum",
         binning=(40, 0, 4),
-        x_title="sum of btag scores",
+        # x_title="sum of btag scores",
+        x_title=r"$\sum_{j} P_{j}(b)$",
         aux={"overflow": True},
     )
     config.add_variable(
@@ -198,7 +204,8 @@ def add_common_ml_variables(config: od.Config) -> None:
             expression=f"mli_{prefix}vbf_tag",
             binning=(2, -0.5, 1.5),
             # x_title=rf"VBF pair tag ($|\eta| < {eta_range}|$)",
-            x_title="VBF pair tag" if eta_range == "4.7" else "VBF pair tag (central jets)",
+            # x_title="VBF pair tag" if eta_range == "4.7" else "VBF pair tag (central jets)",
+            x_title="VBF tag" if eta_range == "4.7" else "VBF tag (central jets)",
             aux={"overflow": True, "skip_rebin": True},
         )
 

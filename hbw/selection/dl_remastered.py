@@ -181,7 +181,8 @@ def dl_lepton_selection_init(self: Selector) -> None:
         "Lep_mue": r"Leading $\mu$, subleading e",
         "Fake": r"$N_{lepton}^{tight} \leq 1$",
         "SR": r"$N_{lepton}^{tight} = 2$",
-        "TriggerAndLep": "Trigger+Lep",
+        # "TriggerAndLep": "Trigger+Lep",
+        "TriggerAndLep": "TRG(ch)",
     })
 
     self.produces.add("mll")

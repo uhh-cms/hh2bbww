@@ -79,8 +79,9 @@ def plot_multi_hist_producer(
     plot_config = OrderedDict()
 
     # add hists
+    base_norm = hists[list(hists.keys())[0]].values().sum() if shape_norm else 1
     for hist_producer, h in hists.items():
-        norm = sum(h.values()) if shape_norm else 1
+        norm = h.values().sum() if shape_norm else 1
         plot_config[hist_producer] = plot_cfg = {
             "method": "draw_hist",
             "hist": h,
@@ -89,7 +90,7 @@ def plot_multi_hist_producer(
                 "label": hist_producer,
             },
             "ratio_kwargs": {
-                "norm": hists[list(hists.keys())[0]].values(),
+                "norm": hists[list(hists.keys())[0]].values() / base_norm * norm,
                 "yerr": None,
             },
         }

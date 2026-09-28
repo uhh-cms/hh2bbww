@@ -55,14 +55,19 @@ br_w_full.tau_had = br_wlep.tau * br_tau.had
 br_w_full.lep_no_tau = br_wlep.e + br_wlep.mu
 br_w_lep_no_tau_had = br_wlep.e + br_wlep.mu + br_wlep.tau * br_tau.lep
 
-
-br_bbww_dl_no_tau_had = br_hh.bbww * br_w_lep_no_tau_had ** 2
-
 br_z_full = br_z.copy()
 br_z_full.tau_leplep = br_zlep.tau * br_tau.lep ** 2
 br_z_full.tau_hadhad = br_zlep.tau * br_tau.had ** 2
 br_z_full.tau_hadlep = br_zlep.tau * br_tau.had * br_tau.lep * 2
 br_z_full.no_tau = br_zlep.e + br_zlep.mu
+
+br_bbww_dl = br_hh.bbww * br_w.lep ** 2
+# bbWW DL channel
+br_bbww_dl_no_tau_had = br_hh.bbww * br_w_lep_no_tau_had ** 2
+br_bbww_dl_yes_had_tau = br_bbww_dl - br_bbww_dl_no_tau_had
+
+br_bbww_sl = br_hh.bbww * (br_w.lep * br_w.had * 2)
+br_bbww_sl_no_tau_had = br_hh.bbww * (br_w_lep_no_tau_had * br_w.had * 2)
 
 br_tau_labels = {
     "had": r"$\tau\rightarrow qq$",

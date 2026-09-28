@@ -419,6 +419,8 @@ def get_fit_str(
     from scipy import optimize, special
     import hist
     import matplotlib.pyplot as plt
+    import mplhep
+    mplhep.style.use("CMS")
 
     # Check if number of jets are valid
     total_n_jet = np.arange(1, 12)
@@ -451,12 +453,26 @@ def get_fit_str(
         )
         ax.legend(loc="upper right")
         ax.set_xscale("log")
-        ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
+        # ax.set_xlabel(r"$p_{T,ll}\;[\mathrm{GeV}]$")
+        ax.set_xlabel(r"$p_{T,\mu\mu}\;[\mathrm{GeV}]$")
         ax.set_ylabel("Ratio")
         if mode != "bin":
-            ax.set_ylim(0.4, 1.5)
-        ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
+            ax.set_ylim(0.65, 1.29)
+        # ax.set_title(f"Fit function for NLO {era}, N(jets) =  {njet}")
         ax.grid(True)
+        ax.annotate(
+            # r"$N_{jets} = %d$" % njet,
+            # NOTE: should be changed to be dependent on the njet_overflow value, but for now we keep it simple
+            r"$N_{jets} = 1$" if njet == 1 else r"$N_{jets} \geq %d$" % njet,
+            xy=(0.05, 0.90),
+            xycoords="axes fraction",
+            fontsize=24,
+        )
+        ax.yaxis.label.set_size(30)
+        ax.xaxis.label.set_size(30)
+        lumi = 62 if era == "2022_2022EE_2023_2023BPix" else era
+        mplhep.cms.label(ax=ax, llabel="Private work (CMS simulation)", exp="", lumi=lumi, com=13.6, fontsize=24)
+        plt.tight_layout()
         outputs.child(f"Fit_function_{era}_njet_{mode}_{njet}.pdf", type="f").dump(fig, formatter="mpl")
 
     # --------------------------------- Helper function for systematic uncertainty derivation ------------------------
