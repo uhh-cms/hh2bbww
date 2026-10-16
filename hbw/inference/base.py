@@ -174,7 +174,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_processes()
         self.remove_inference_processes()
         self.add_inference_parameters()
-        self.ratify_shape_parameters()
+        # self.ratify_shape_parameters()
         # self.print_model()
         #
         # post-processing
@@ -654,10 +654,11 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        single_bin_cats = [cat_name for cat_name in self.cat_names if any(
-            bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
-        )]
-        shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        # single_bin_cats = [cat_name for cat_name in self.cat_names if any(
+        #     bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
+        # )]
+        # shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        shape_cats = [cat_name for cat_name in self.cat_names]
 
         for shape_uncertainty, shape_processes in self.processes_per_shape.items():
             combine_uncertainty_name = const.rename_systematics.get(
@@ -681,7 +682,7 @@ class HBWInferenceModelBase(InferenceModel):
             #         param_kwargs["category"] = f"*_{bjet_cat}_*"
             #         param_kwargs["category_match_mode"] = "all"
             #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
-            for year in (2022, 2023, 2024):
+            for year in (2022, 2023, 2024, 2025, 2026):
                 if shape_uncertainty.endswith(str(year)):
                     shift_source = shift_source.replace(f"_{year}", "")
                     config_insts = [
@@ -711,15 +712,15 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.shape,
                     **param_kwargs,
                 )
-            if single_bin_cats:
-                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
-                self.add_parameter(
-                    combine_uncertainty_name,
-                    category=single_bin_cats,
-                    type=ParameterType.rate_gauss,
-                    transformations=transformations,
-                    **param_kwargs,
-                )
+            # if single_bin_cats:
+            #     transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
+            #     self.add_parameter(
+            #         combine_uncertainty_name,
+            #         category=single_bin_cats,
+            #         type=ParameterType.rate_gauss,
+            #         transformations=transformations,
+            #         **param_kwargs,
+            #     )
 
             # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
             # if is_theory:
@@ -733,13 +734,13 @@ class HBWInferenceModelBase(InferenceModel):
             return
         # TODO: might be a good idea to transform all minor processes to lnN
         # (or not even consider them from the beginning)
-        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)
+        # rate_two_sideds = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
         transformations_dict = {
-            "dy_hf": {None: rate_two_sided},
-            "dy_lf": {None: rate_two_sided},
-            "ttw": {None: rate_two_sided},
-            "ttz": {None: rate_two_sided},
-            "vv": {None: rate_two_sided},
+            # "dy_hf": {None: rate_two_sided},
+            # "dy_lf": {None: rate_two_sided},
+            # "ttw": {None: rate_two_sided},
+            # "ttz": {None: rate_two_sided},
+            # "vv": {None: rate_two_sided},
         }
         for process, parameter_dict in transformations_dict.items():
             for parameter, transformations in parameter_dict.items():

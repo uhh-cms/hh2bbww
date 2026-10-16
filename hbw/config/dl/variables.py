@@ -314,6 +314,14 @@ def add_dl_ml_variables(config: od.Config) -> None:
         x_title="Mixed channel tag",
     )
 
+    config.add_variable(
+        name="mli_boosted_cand_exists",
+        expression="mli_boosted_cand_exists",
+        binning=(2, -0.5, 1.5),
+        aux={"overflow": True},
+        x_title="Boosted candidate exists",
+    )
+
     # Additional variables for hhh_dl_ml_inputs
     # 4b system
     config.add_variable(
@@ -682,39 +690,39 @@ def add_hhh_bjet_variables(config: od.Config) -> None:
     )
     for i in range(0, 2):
         config.add_variable(
-            name=f"mli_bjet{i+1}_pt",
-            expression=f"btag_jet{i+1}.pt",
+            name=f"mli_bjet{i + 1}_pt",
+            expression=f"btag_jet{i + 1}.pt",
             binning=(40, 0, 400),
             aux={"overflow": True},
-            x_title=f"p_T(b{i+1})",
+            x_title=f"p_T(b{i + 1})",
         )
         config.add_variable(
-            name=f"mli_bjet{i+1}_eta",
-            expression=f"btag_jet{i+1}.eta",
+            name=f"mli_bjet{i + 1}_eta",
+            expression=f"btag_jet{i + 1}.eta",
             binning=(40, -4, 4),
             aux={"overflow": True},
-            x_title=f"eta(b{i+1})",
+            x_title=f"eta(b{i + 1})",
         )
         config.add_variable(
-            name=f"mli_bjet{i+1}_phi",
-            expression=f"btag_jet{i+1}.phi",
+            name=f"mli_bjet{i + 1}_phi",
+            expression=f"btag_jet{i + 1}.phi",
             binning=(40, -4, 4),
             aux={"overflow": True},
-            x_title=f"phi(b{i+1})",
+            x_title=f"phi(b{i + 1})",
         )
         config.add_variable(
-            name=f"mli_bjet{i+1}_btagUParTAK4B",
-            expression=f"btag_jet{i+1}.btagUParTAK4B",
+            name=f"mli_bjet{i + 1}_btagUParTAK4B",
+            expression=f"btag_jet{i + 1}.btagUParTAK4B",
             binning=(40, 0, 1),
             aux={"overflow": True},
-            x_title=f"$b{i+1} btagUParTAK4B$",
+            x_title=f"$b{i + 1} btagUParTAK4B$",
         )
         config.add_variable(
-            name=f"mli_bjet{i+1}_discrete_b_score",
-            expression=f"btag_jet{i+1}.discrete_b_score",
+            name=f"mli_bjet{i + 1}_discrete_b_score",
+            expression=f"btag_jet{i + 1}.discrete_b_score",
             binning=[0.0, 0.0246, 0.1272, 0.4648, 0.6298, 0.9739, 1.0],
             aux={"overflow": True},
-            x_title=f"$b{i+1} b score$",
+            x_title=f"$b{i + 1} b score$",
         )
 
 
@@ -904,12 +912,12 @@ def add_hh_bjet_variables(config: od.Config) -> None:
     )
     for i in range(4):
         config.add_variable(
-            name=f"mli_jet{i+1}_discrete_b_score",
+            name=f"mli_jet{i + 1}_discrete_b_score",
             expression=f"Jet.discrete_b_score[:, {i}]",
             null_value=-9999,
             binning=(6, -0.5, 5.5),
             aux={"overflow": True},
-            x_title=f"Jet{i+1} b-score",
+            x_title=f"Jet{i + 1} b-score",
         )
     config.add_variable(
         name="btag_weights",

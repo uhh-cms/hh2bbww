@@ -195,7 +195,9 @@ processes_per_shape = {
     "btag_statistic_bc": ["all"],
     "btag_tune_bc": ["all"],
     "btag_correlated_light": ["all"],
-    "btag_uncorrelated_light": ["all"],
+    "btag_uncorrelated_light_{year}": ["all"],
+    "btag_correlated_bc": ["all"],
+    "btag_uncorrelated_bc_{year}": ["all"],
     "btag_hf": ["all"],
     "btag_lf": ["all"],
     "btag_hfstats1": ["all"],
@@ -245,6 +247,7 @@ processes_per_shape = {
     # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     "top_pt": ["tt"],
     "dy_correction": ["dy", "dy_lf", "dy_hf"],
+    "dy_correction_{year}": ["dy", "dy_lf", "dy_hf"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
     "pdf_shape_ttbar": ["tt", "tt_custom"],
@@ -311,10 +314,12 @@ campaign_format = {
     "2022postEE": "2022EE",
     "2023preBPix": "2023",
     "2023postBPix": "2023BPix",
+    "c24v15": "2024",
+    "c25v15": "2025",
 }
 
 # naming scheme for different systematics
-custom_uncertainty_format = lambda s: f"CMS_HIG25018_{s}"
+custom_uncertainty_format = lambda s: f"CMS_{s}"
 rename_systematics = {
     "minbias_xs": "CMS_pileup",
     # "ele_ss": "CMS_res_e_13p6TeV",
@@ -340,7 +345,7 @@ for campaign, campaign_fmt in campaign_format.items():
         f"jec_Total_{campaign}": f"CMS_scale_j_{campaign_fmt}",
         f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
         # analysis-specific
-        f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+        f"trigger_sf_{campaign}": f"CMS_Custom_trigger_sf_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:

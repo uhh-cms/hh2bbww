@@ -521,7 +521,7 @@ def add_variables(config: od.Config) -> None:
             x_title="Number of deepjets (tight WP)",
             discrete_x=True,
         )
-    if config.x.run == 3 and not config.campaign.x.year == 2024:
+    if config.x.run == 3 and not config.campaign.x.year >= 2024:
         particlenet_wps = config.x.btag_working_points.particlenet
         config.add_variable(
             name="n_particlenet_loose",
@@ -825,7 +825,7 @@ def add_variables(config: od.Config) -> None:
                     x_title=obj + r" %i ParticleNet score" % i,
                 )
 
-    if config.x.run == 3 and not config.campaign.x.year == 2024:
+    if config.x.run == 3 and not config.campaign.x.year >= 2024:
         xbb_btag_wp_score_medium = config.x.btag_working_points.particlenet_xbb_vs_qcd.medium
         config.add_variable(
             name="n_fatjet_xbb_medium",
@@ -848,6 +848,66 @@ def add_variables(config: od.Config) -> None:
     #     aux={"inputs": {"FatJet.{pt,eta,phi,mass,particleNet_XbbVsQCD,particleNetWithMass_HbbvsQCD}"}},
     #     discrete_x=True,
     # )
+    if config.campaign.x.year >= 2024:
+        config.add_variable(
+            name="FatJet_globalParT3_Xbb",
+            expression="FatJet.globalParT3_Xbb",
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.0, 1.0),
+            x_title="FatJets discriminant (FatJet_globalParT3_Xbb)",
+        )
+        config.add_variable(
+            name="FatJet_globalParT3_discriminant",
+            expression=lambda events: (events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)),  # noqa: E501
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.0, 1.0),
+            x_title="globalParT3 discriminant (Xbb vs QCD)",
+            aux={"inputs": {"FatJet.{globalParT3_Xbb,globalParT3_QCD}"}},
+        )
+        config.add_variable(
+            name="FatJet0_globalParT3_discriminant",
+            expression=lambda events: (ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb / (ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb + ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_QCD)),  # noqa: E501
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.0, 1.0),
+            x_title="globalParT3 discriminant (Xbb vs QCD)",
+            aux={"inputs": {"FatJet.{pt,eta,phi,mass,globalParT3_Xbb,globalParT3_QCD,msoftdrop}"}},
+        )
+        config.add_variable(
+            name="FatJet0_globalParT3_discriminant_wide",
+            expression=lambda events: (ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb / (ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb + ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_QCD)),  # noqa: E501
+            null_value=EMPTY_FLOAT,
+            binning=(80, 0.0, 2.0),
+            x_title="globalParT3 discriminant (Xbb vs QCD)",
+            aux={"inputs": {"FatJet.{pt,eta,phi,mass,globalParT3_Xbb,globalParT3_QCD,msoftdrop}"}},
+        )
+        config.add_variable(
+            name="FatJet_globalParT3_discriminant1",
+            expression=lambda events: (events.FatJet.globalParT3_Xbb / (events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD)),  # noqa: E501
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.65, 1.0),
+            x_title="globalParT3 discriminant (Xbb vs QCD)",
+            aux={"inputs": {"FatJet.{pt,eta,phi,mass,globalParT3_Xbb,globalParT3_QCD,msoftdrop}"}},
+        )
+        def discriminant_expression(events):
+            return (
+                ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb / (
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_QCD +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_TopbWev +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_TopbWmv +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_TopbWq +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_TopbWqq +
+                    ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_TopbWtauhv
+                )
+            )
+        config.add_variable(
+            name="FatJet0_globalParT3_topdiscriminant",
+            expression=discriminant_expression,
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.0, 1.0),
+            x_title="globalParT3 discriminant (Xbb vs QCD + Top)",
+            aux={"inputs": {"FatJet.{pt,eta,phi,mass,globalParT3_Xbb,globalParT3_QCD,globalParT3_TopbWev,globalParT3_TopbWmv,globalParT3_TopbWq,globalParT3_TopbWqq,globalParT3_TopbWtauhv}"}},  # noqa: E501
+        )
 
     # FatJets (2 pt-leading fatjets)
     for obj in ("FatJet", "FatBjet"):

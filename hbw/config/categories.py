@@ -256,15 +256,33 @@ def add_jet_categories(config: od.Config) -> None:
     cat_resolved = config.add_category(  # noqa: F841
         name="resolved",
         id=100,
-        selection="catid_resolved",
+        selection="catid_resolved_glo",
         label="resolved",
     )
     cat_boosted = config.add_category(  # noqa: F841
         name="boosted",
         id=200,
-        selection="catid_boosted",
+        selection="catid_boosted_glo",
         label="boosted",
-    )
+    )  # NOTE: this might cause trouble when merging with triH later on, sryyyy
+    # cat_boosted_glo = config.add_category(  # noqa: F841
+    #     name="boosted_glo",
+    #     id=300,
+    #     selection="catid_boosted_glo",
+    #     label="boosted",
+    # )
+    # cat_resolved_glo = config.add_category(  # noqa: F841
+    #     name="resolved_glo",
+    #     id=400,
+    #     selection="catid_resolved_glo",
+    #     label="resolved",
+    # )
+    # cat_fatjet = config.add_category(  # noqa: F841
+    #     name="fatjet",
+    #     id=500,
+    #     selection="catid_fatjet",
+    #     label="N FatJet >= 1",
+    # )
 
 
 def add_dih_bjet_categories(config: od.Config) -> None:
@@ -340,6 +358,7 @@ def add_categories_selection(config: od.Config) -> None:
         if config.x.signal_tag == "hh":
             # add_mll_categories(config, add_dih_mll_categories)
             config.x.bjet_categories = ["1b", "2b"]
+            # config.x.jet_categories = ["resolved_glo", "boosted_glo"]
         elif config.x.signal_tag == "hhh":
             # add_mll_categories(config, add_trih_mll_categories)
             config.x.bjet_categories = ["2b", "3b", "4b"]
@@ -390,6 +409,7 @@ def add_categories_production(config: od.Config) -> None:
         "main": [config.get_category(cat) for cat in config.x.main_categories],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
+        # "jet": [config.get_category(mode) for mode in config.x.jet_categories],
         "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
     })
     t0 = time()
@@ -483,3 +503,21 @@ def add_categories_ml(config, ml_model_inst):
         skip_existing=True,
     )
     logger.info(f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
+
+    sr = config.get_category("sr")
+    # add boosted ml bkg category by hand, combining all boosted ml signal categories
+    sr__boosted__ml_bkg = config.add_category(  # noqa: F841
+        name="sr__boosted__ml_bkg",
+        selection="catid_never",  # dummy Categorizer, never selected
+        id=201000,
+        label="\n".join([sr.label, "boosted", "ml_bkg"]),
+        aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
+    )
+
+    for proc, node_config in ml_model_inst.train_nodes.items():
+        # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
+        if "sig" in proc or "hh" in proc:
+            continue
+        else:
+            bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
+            sr__boosted__ml_bkg.add_category(bkg_cat)

@@ -139,6 +139,10 @@ systematics = DotDict({
     "lumi24": [
         "lumi_13p6TeV_2024",
     ],
+    "lumi24_25": [
+        "lumi_13p6TeV_2024",
+        "lumi_13p6TeV_2025",
+    ],
     "QCDscale": [
         "QCDscale_ttbar",
         "QCDscale_V",
@@ -289,6 +293,14 @@ systematics = DotDict({
         "btag_bc",
         "btag_light",
     ],
+    "btag_2425_uncorr": [
+        "btag_uncorrelated_bc_{year}",
+        "btag_uncorrelated_light_{year}",
+    ],
+    "btag_2425_corr": [
+        "btag_correlated_bc",
+        "btag_correlated_light",
+    ],
     "experiment": [
         "mu_id_sf",
         "mu_iso_sf",
@@ -297,6 +309,15 @@ systematics = DotDict({
         "trigger_sf",
         "minbias_xs",
         "dy_correction",
+    ],
+    "experiment_2425": [
+        "mu_id_sf",
+        "mu_iso_sf",
+        "e_sf",
+        "e_reco_sf",
+        "trigger_sf_{year}",
+        "minbias_xs",
+        "dy_correction_{year}",
     ],
     "experiment_cpn_uncorr": [
         "mu_id_sf_{campaign}",
@@ -357,6 +378,25 @@ systematics["rate_24_4"] = [
     *systematics.pdf,
     *systematics.BR,
     *systematics.rate_unconstrained4,
+]
+systematics["rate_24_25"] = [
+    *systematics.lumi24_25,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    *systematics.rate_unconstrained4,
+]
+systematics["shape_24_25"] = [
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_2425_uncorr,
+    *systematics.btag_2425_corr,
+    *systematics.experiment_2425,
+    *systematics.other,
+]
+systematics["full_24_25"] = [
+    *systematics.rate_24_25,
+    *systematics.shape_24_25,
 ]
 systematics["shape_24"] = [
     *systematics.murf_envelope,
@@ -509,7 +549,7 @@ backgrounds = [
     "w_lnu",
     "vv",
     "vvv",
-    "h_ggf", "h_vbf", "wh", "tth", "zh", "zh_gg",
+    "h_ggf", "h_vbf", "wh", "tth", "zh",  # "zh_gg",
     "ttvh", "thq", "thw",
     "tttt",
     "ttvv",
@@ -617,6 +657,36 @@ rate24_v3_l2pt15 = dl.derive("rate24_v3_lep2pt15", cls_dict={
     "ml_model_name": ["multiclass24_v3l2pt15", "ggf24_v3l2pt15", "vbf24_v3l2pt15"],
     "config_categories": config_categories.default_boosted,
     "systematics": systematics.rate_24,
+})
+rate24_251 = dl.derive("rate24_251", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24_25,
+})
+rate24_0 = dl.derive("rate24_0", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24,
+})
+rate_boostedbkg = dl.derive("rate_boostedbkg", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+rate_boostedbkg32 = dl.derive("rate_boostedbkg32", cls_dict={
+    "ml_model_name": ["multiclass_2425_v32l2pt15", "ggf_2425_v32l2pt15", "vbf_2425_v32l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+rate_boostedbkg321 = dl.derive("rate_boostedbkg321", cls_dict={
+    "ml_model_name": ["multiclass_2425_v32l2pt15", "ggf_2425_v32l2pt15", "vbf_2425_v32l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+full_2425 = dl.derive("full_2425", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.full_24_25,
 })
 rate24 = dl.derive("rate24", cls_dict={
     "ml_model_name": ["multiclass24", "ggf24", "vbf24"],

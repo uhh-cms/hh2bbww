@@ -9,6 +9,7 @@ from __future__ import annotations
 from columnflow.util import maybe_import
 from columnflow.categorization import Categorizer, categorizer
 from hbw.util import MET_COLUMN, IF_DY
+from hbw.production.prepare_objects import prepare_objects
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -87,6 +88,33 @@ def mask_fn_met_geq40(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
 )
 def mask_fn_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = (events.Lepton[:, 1].pt > 15)
+    return events, mask
+
+
+@categorizer(
+    uses={
+        prepare_objects,
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+        "FatJet.{pt,globalParT3_Xbb,globalParT3_QCD}",
+    },
+)
+def mask_fn_lep2_pt15_fj85(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    events = self[prepare_objects](events, **kwargs)
+    globalParT3_discriminant = ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb / (ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_Xbb + ak.pad_none(events.FatJet, 1)[:, 0].globalParT3_QCD)  # noqa E501
+    mask = (events.Lepton[:, 1].pt > 15) & (globalParT3_discriminant > 0.85)
+    return events, mask
+
+
+@categorizer(
+    uses={
+        prepare_objects,
+        "{Electron,Muon}.{pt,eta,phi,mass}",
+        "FatJet.{pt,globalParT3_Xbb,globalParT3_QCD}",
+    },
+)
+def mask_fn_lep2_pt15_fj300(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    events = self[prepare_objects](events, **kwargs)
+    mask = (events.Lepton[:, 1].pt > 15) & (ak.pad_none(events.FatJet, 1)[:, 0].pt > 300)
     return events, mask
 
 
