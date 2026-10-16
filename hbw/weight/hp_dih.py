@@ -18,7 +18,7 @@ default_correction_weights = {
     # "dummy_weight": ["dummy_{cpn_tag}"],
     "normalized_pu_weight": ["minbias_xs"],
     "muon_id_weight": ["mu_id_sf"],
-    "muon_low_pt_id_weight": ["mu_low_pt_id_sf"],
+    # "muon_low_pt_id_weight": ["mu_low_pt_id_sf"],
     "muon_iso_weight": ["mu_iso_sf"],
     "electron_weight": ["e_sf"],
     "electron_reco_weight": ["e_reco_sf"],
@@ -53,6 +53,7 @@ default_weight_columns = {
     "stitched_normalization_weight": [],
     "dy_correction_weight": [],
     "trigger_weight": ["trigger_sf"],
+    "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],
     **default_correction_weights,
 }
 unstitched_weight_columns = {
@@ -89,7 +90,7 @@ with_vjets_weight = default_hist_producer.derive("with_vjets_weight", cls_dict={
 from hbw.categorization.masks_dih import (
     mask_fn_mbb80, mask_fn_met70,
     mask_fn_met_geq40,
-    mask_fn_lep2_pt15, mask_fn_met_geq40_lep2_pt15, mask_fn_lep2_pt10,
+    mask_fn_lep2_pt15, mask_fn_met_geq40_lep2_pt15, mask_fn_lep2_pt10, mask_fn_lep2_pt15_fj85, mask_fn_lep2_pt15_fj300,
 )
 with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_dict={
     "pre_label": "Before DY correction",
@@ -97,7 +98,7 @@ with_trigger_weight = default_hist_producer.derive("with_trigger_weight", cls_di
         **default_correction_weights,
         # "vjets_weight": [],  # TODO: corrections/shift missing
         "trigger_weight": ["trigger_sf"],
-        "btag_weight": ["btag_bc", "btag_light"],
+        "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],  # noqa: E501
         "stitched_normalization_weight": [],
     },
     "categorizer_cls": mask_fn_lep2_pt15,
@@ -203,6 +204,54 @@ with_dy_corr_lep2pt10 = default_hist_producer.derive("with_dy_corr_lep2pt10", cl
     "dy_correction_weight_producer": "dy_correction_weight",
     "categorizer_cls": mask_fn_lep2_pt10,
 })
+with_trigger_weight_fj85 = default_hist_producer.derive("with_trigger_weight_fj85", cls_dict={
+    "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    "categorizer_cls": mask_fn_lep2_pt15_fj85,
+})
+with_dy_corr_fj85 = default_hist_producer.derive("with_dy_corr_fj85", cls_dict={
+    "pre_label": "After DY correction",
+    "nondy_hist_producer": "with_trigger_weight_fj85",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    "dy_correction_weight_producer": "dy_correction_weight",
+    "categorizer_cls": mask_fn_lep2_pt15_fj85,
+})
+with_trigger_weight_fj300 = default_hist_producer.derive("with_trigger_weight_fj300", cls_dict={
+    "pre_label": "Before DY correction",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    "categorizer_cls": mask_fn_lep2_pt15_fj300,
+})
+with_dy_corr_fj300 = default_hist_producer.derive("with_dy_corr_fj300", cls_dict={
+    "pre_label": "After DY correction",
+    "nondy_hist_producer": "with_trigger_weight_fj300",
+    "weight_columns": {
+        **default_correction_weights,
+        "dy_correction_weight": ["dy_correction"],
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_bc", "btag_light"],
+        "stitched_normalization_weight": [],
+    },
+    "dy_correction_weight_producer": "dy_correction_weight",
+    "categorizer_cls": mask_fn_lep2_pt15_fj300,
+})
 
 # NOTE: we added a fix that automatically uses the "with_trigger_weight" outputs for all non-DY datasets
 # because the dy_correction_weight is only relevant for DY processes. This is implemented in
@@ -214,7 +263,7 @@ with_dy_corr = default_hist_producer.derive("with_dy_corr", cls_dict={
         **default_correction_weights,
         "dy_correction_weight": ["dy_correction"],
         "trigger_weight": ["trigger_sf"],
-        "btag_weight": ["btag_bc", "btag_light"],
+        "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],  # noqa: E501
         "stitched_normalization_weight": [],
     },
     "dy_correction_weight_producer": "dy_correction_weight",
@@ -303,6 +352,35 @@ with_dy_corr_metlep = default_hist_producer.derive("with_dy_corr_metlep", cls_di
     },
     "dy_correction_weight_producer": "dy_correction_weight",
     "categorizer_cls": mask_fn_met_geq40_lep2_pt15,
+})
+
+with_trigger_weight_25dctr = default_hist_producer.derive("with_trigger_weight_25dctr", cls_dict={
+    "pre_label": "After DCTR correction",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],  # noqa: E501
+        "stitched_normalization_weight": [],
+        "dctr_25_reweight_rate": [],
+    },
+    "categorizer_cls": mask_fn_lep2_pt15,
+    "version": 2,
+})
+with_24DYdctr = default_hist_producer.derive("with_24DYdctr", cls_dict={
+    "pre_label": "After DCTR DY corr.",
+    "nondy_hist_producer": "with_trigger_weight",
+    "weight_columns": {
+        **default_correction_weights,
+        # "vjets_weight": [],  # TODO: corrections/shift missing
+        "trigger_weight": ["trigger_sf"],
+        "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],  # noqa: E501
+        "stitched_normalization_weight": [],
+        "dy_correction_weight": [],
+    },
+    "dy_correction_weight_producer": "dctr_24_dy_reweighter",
+    "categorizer_cls": mask_fn_lep2_pt15,
+    "version": 2,
 })
 #
 # HistProducers with masks via categorization
@@ -502,9 +580,9 @@ with_trigger_weight.derive("met70", cls_dict={"categorizer_cls": mask_fn_met70})
 with_trigger_weight.derive("dyvr_derivation_region", cls_dict={"categorizer_cls": mask_fn_dyvr})
 
 # additional hist producers for scale factors
-from hbw.trigger.trigger_cats import mask_fn_dl_orth2_with_l1_seeds
+from hbw.trigger.trigger_cats import mask_fn_dl_orth2_with_l1_seeds, mask_fn_dl_orth2_l1_and_lep
 no_trig_sf = default_hist_producer.derive("no_trig_sf", cls_dict={
-    "pre_label": "Before trigger SF",
+    # "pre_label": "Before trigger SF",
     "weight_columns": {
         **default_correction_weights,
         "stitched_normalization_weight": [],
@@ -516,6 +594,9 @@ dl_orth2_with_l1_seeds = no_trig_sf.derive("dl_orth2_with_l1_seeds", cls_dict={
 })
 no_trig_sf_lep2cut = no_trig_sf.derive("no_trig_sf_lep2cut", cls_dict={
     "categorizer_cls": mask_fn_lep2_pt15,
+})
+dl_orth2_lep2cut = no_trig_sf.derive("dl_orth2_lep2cut", cls_dict={
+    "categorizer_cls": mask_fn_dl_orth2_l1_and_lep,
 })
 with_dy_corr_notrig = default_hist_producer.derive("with_dy_corr_notrig", cls_dict={
     "pre_label": "After DY correction",

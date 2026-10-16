@@ -99,7 +99,7 @@ def mask_fn_dl_orth2_l1_and_lep(self: Categorizer, events: ak.Array, **kwargs) -
 
     orth_mask = trigger_fired & l1_seeds_fired
 
-    mask = (events.Lepton.pt[:, 0] > 25) & orth_mask
+    mask = (events.Lepton.pt[:, 1] > 15) & orth_mask
 
     return events, mask
 

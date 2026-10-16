@@ -85,7 +85,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "dl41": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
         "dl42": [*hbbhww_sm, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_m4to10", "dy_m10to50", "dy_m50toinf", "tt"],  # noqa: E501
         "dl6": [*hh_sm1, "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
-        # "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
+        "dl7": ["other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl9": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "ttbb_custom", "tt_custom"],  # noqa: E501
         "dl91": [*hbbhww_sm, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_lf", "dy_hf", "tt"],  # noqa: E501
         "dl92": [*hh_sm1, "hh_other", "other", "h", "ttv", "vv", "w_lnu", "st", "dy_tautau_m10to50", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_tautau_m50toinf", "dy_ee_m50toinf", "dy_mumu_m50toinf", "tt"],  # noqa: E501
@@ -94,7 +94,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
         config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl9", "dl91", "dl92", "dl6", "dl4", "dl3", "dl2", "dl1", "dl"):  # noqa: E501
+    for group in ("dl9", "dl91", "dl92", "dl7", "dl6", "dl4", "dl3", "dl2", "dl1", "dl"):  # noqa: E501
         config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
 
     # category groups for conveniently looping over certain categories
@@ -200,7 +200,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "sl_resolved": ["n_*", "electron_*", "muon_*", "met_*", "jet*", "bjet*", "ht"],
         "sl_boosted": ["n_*", "electron_*", "muon_*", "met_*", "fatjet_*"],
         "ml_inputs": ml_inputs.v2,  # should correspond to our currently used ML input features
-        "ml_inputs_discrete": ml_inputs.v2_discrete + bracket_expansion([
+        "ml_inputs_discrete": ml_inputs.v3_discrete + bracket_expansion([
             "mli_{b1,b2,j1,j2}_{pt,eta,discrete_b_score,b_score}",
             "mli_n_btag",
             "mli_{b,l}_discrete_b_score_sum",
@@ -260,7 +260,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "220.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             "magnitudes": 5.5,
             # "blinding_threshold": 0.008,
         },
@@ -270,8 +270,8 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            # "lumi": "109",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
-            "magnitudes": 5.5,
+            "lumi": "220.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "magnitudes": 12.5,
             # "blinding_threshold": 0.008,
         },
         "dpostfit": {
@@ -281,7 +281,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "220.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "postfit": {
@@ -290,7 +290,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
             "cms_label": f"sim{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            # "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "220.4",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
             # "blinding_threshold": 0.008,
         },
         "data_mc_plots": {
@@ -421,7 +421,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         # "vbfSR_sl_boosted": 3,
         # Dilepton
         "BR_dl": 1,
-        "sr_boosted_bkg": 1,
+        "sr__boosted__ml_bkg": 1,
         "sr__resolved__1b__ml_sig_ggf": 12,
         "sr__resolved__2b__ml_sig_ggf": 8,
         "sr__resolved__1b__ml_sig_vbf": 10,
@@ -474,7 +474,7 @@ def set_dl_hh_config_defaults_and_groups(config_inst):
         "sr__1b": is_signal_sm_ggf,
         "sr__2b": is_signal_sm_ggf,
         "sr__boosted": is_signal_sm_vbf,
-        "sr_boosted_bkg": is_background,
+        "sr__boosted__ml_bkg": is_background,
         "hhh_sr": is_signal_hhh,
         "hhh_bkg": is_background_hhh,
     }

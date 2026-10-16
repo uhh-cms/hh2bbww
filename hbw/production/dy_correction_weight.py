@@ -37,7 +37,7 @@ logger = law.logger.get_logger(__name__)
     produced_column="dy_correction_weight",
     uses_column=None,
     version=0,
-    n_jet=2,
+    n_jet=4,
     derivation_region="with_trigger_weight",
     derivation_configs=None,
     # derivation_configs=("c22prev14", "c22postv14", "c23prev14", "c23postv14"),
@@ -67,6 +67,8 @@ def dy_correction_weight(
         "c23prev14": "2023",
         "c23postv14": "2023BPix",
         "c24v15": "2024",
+        "c25v15": "2025",
+        "c26v15": "2026",
     }
     if self.derivation_configs:
         era = "_".join([era_map[cfg] for cfg in self.derivation_configs])
@@ -154,7 +156,7 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
         categories=("dycr__2mu",),
         variables=("n_jet-ptll_for_dy_corr_V3",),
         njet_overflow=self.n_jet,
-        rate_factor_overflow=5,
+        rate_factor_overflow=7,
     )
 
 

@@ -166,7 +166,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_tautau_m10to50_amcatnlo",
                 "dy_ee_m50toinf_0j_amcatnlo",
                 "dy_mumu_m50toinf_0j_amcatnlo",
-                "dy_tautau_m50toinf_0j_amcatnlo",
+                "dy_tautau_m50toinf_0j_amcatnlo",  # NOTE comment out for triggerSF on split MC
                 "dy_ee_m50toinf_1j_amcatnlo",
                 "dy_mumu_m50toinf_1j_amcatnlo",
                 "dy_tautau_m50toinf_1j_amcatnlo",
@@ -336,7 +336,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
                 # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
                 "zh_gg_zll_hbb_powheg",  # TODO
-                "zh_gg_zqq_hbb_powheg",
+                # "zh_gg_zqq_hbb_powheg",  # NOTE: only 4 events in 2025
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
@@ -646,7 +646,7 @@ def configure_hbw_datasets(
                 dataset.x.jec_era = "RunCD"
 
         # NOTE copied from Johanna for btagging stuff
-        if config.campaign.x.year == 2024:
+        if config.campaign.x.year >= 2024:
             # TODO figure out which datasets should be grouped together;
             # for now, don't group any datasets together and treat each type of dataset separately
             config.x.btag_wp_eff_groups = [

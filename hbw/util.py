@@ -680,6 +680,14 @@ def IF_NOT_2024(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any 
 
 
 @deferred_column
+def IF_2024(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign is 2024 or not
+    """
+    return self.get() if func.config_inst.campaign.x.year == 2024 else None
+
+
+@deferred_column
 def IF_RUN_2(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     return self.get() if func.config_inst.campaign.x.run == 2 else None
 

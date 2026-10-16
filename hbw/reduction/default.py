@@ -199,7 +199,7 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 10., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],  # noqa: E501
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Leading lepton $p_{{T}}$",
@@ -210,7 +210,7 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 10., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Subleading lepton $p_{{T}}$",

@@ -87,6 +87,45 @@ def get_fit2_args(*params, return_str=False):
 fit_function2.get_fit_args = get_fit2_args
 
 
+# Fit funciton: Gaussian * constant connected by erf windows
+def fit_function12(x, c, n, mu, sigma, a, r1, r2, s1, s2):
+
+    """
+    A fit function.
+    x: dependent variable (i.g., dilep_pt)
+    c: Gaussian offset
+    n: Gaussian normalization
+    mu and sigma: Gaussian parameters
+    a and b: slope parameters
+    r: regime boundary between Guassian and linear fits
+    """
+
+    gauss = c + (n * (1 / sigma) * np.exp(-0.5 * ((x - mu) / sigma) ** 2))
+    pol = a
+
+    return window(x, r1, s1) * gauss + window(x, r2, s2) * pol
+
+
+def get_fit12_args(*params, return_str=False):
+    if return_str:
+        # build string representation
+        c2, n2, mu2, sigma2, a, r1, r2, s1, s2 = params
+        gauss2 = f"(({c2})+(({n2})*(1/{sigma2})*exp(-0.5*((x-{mu2})/{sigma2})^2)))"
+        pol = f"({a})"
+        w1 = f"(0.5*(erf({s1}*0.1*(x-{r1}))+1))"
+        w2 = f"(0.5*(erf({s2}*0.1*(x-{r2}))+1))"
+        return f"({w1}*{gauss2} + {w2}*{pol})"
+    else:
+        start_values = [1, 1, 10, 3, 1, 40, 80, -1, 1]
+        lower_bounds = [0.5, 0, 0, 0, 0, 0, 0, -10, 0.1]
+        upper_bounds = [1.5, 10, 50, 20, 2, 90, 110, -0.1, 20]
+        return start_values, lower_bounds, upper_bounds
+
+
+# Attach it
+fit_function12.get_fit_args = get_fit12_args
+
+
 # Fit function: Gaussian * Gaussian * linear connected by erf windows
 def fit_function3(x, c1, n1, mu1, sigma1,  # Gaussian 1
                 c2, n2, mu2, sigma2,  # Gaussian 2
@@ -133,7 +172,7 @@ def get_fit3_args(*params, return_str=False):
     else:
         start_values = [1, 1, 3, 10, 1, 1, 30, 30, 1, 0, 15, 50]
         lower_bounds = [0.6, 0, 0, 0, 0.8, 0, 10, 3, 0, -1, 0, 15]
-        upper_bounds = [1.2, 10, 10, 20, 1.2, 10, 70, 50, 2, 2, 20, 60]
+        upper_bounds = [1.2, 10, 10, 20, 1.2, 10, 70, 50, 2, 2, 20, 120]
         return start_values, lower_bounds, upper_bounds
 
 
@@ -173,7 +212,7 @@ def get_fit4_args(*params, return_str=False):
     else:
         start_values = [1, 1, 0.5, 10, 1, 1, 30, 30, 1, 15, 50]
         lower_bounds = [0.6, 0, 0, 0, 0.8, 0, 10, 3, 0, -1, 15]
-        upper_bounds = [1.2, 1, 1, 20, 1.2, 10, 70, 50, 2, 20, 60]  # mu1 fixed to supress first Gaussian
+        upper_bounds = [1.2, 1, 1, 20, 1.2, 10, 70, 50, 2, 20, 110]  # mu1 fixed to supress first Gaussian
         return start_values, lower_bounds, upper_bounds
 
 
@@ -896,7 +935,7 @@ def compute_weight_data(task: ComputeDYWeights, h: hist.Hist) -> dict:
             rate_factor = rate_factor_lst[task.rate_factor_overflow]
         print(f"Rate factor for njet={njet}: {rate_factor}")
         fit_str, param_cov, ptll_bins = get_fit_str(
-            njet, task.njet_overflow, rate_factor, h, fit_function9, era, outputs,
+            njet, task.njet_overflow, rate_factor, h, fit_function12, era, outputs,
         )
         fit_dict[era]["nominal"][(njet, njet + 1)] = [(0.0, inf, fit_str)]
 
@@ -915,13 +954,13 @@ class DYCorrBase(
     # TODO: enable MultiConfig in HistogramsUserSingleShiftBase
     single_config = False
     njet_overflow = luigi.IntParameter(
-        default=2,
+        default=4,
         description="Overflow bin for the n_jet variable in the fits",
         significant=True,
     )
 
     rate_factor_overflow = luigi.IntParameter(
-        default=5,
+        default=7,
         description="Overflow bin for rate factor in the fits",
         significant=True,
     )

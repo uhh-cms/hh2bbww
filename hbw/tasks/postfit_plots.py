@@ -77,6 +77,12 @@ def get_hists_from_fit_diagnostics(tfile):
 
 def get_hists_from_merged_multidimfit(tfile):
     """ Helper function to load histograms from root file created by MultiDimFit """
+
+    # setup to rescale signal to prefit
+    import numpy as np
+    is_signal = lambda proc: proc.startswith("ggHH_kl_1_kt_1") or proc.startswith("qqHH_CV_1_C2V_1_kl_1")
+    sum_sig_prefit, sum_sig_postfit = defaultdict(np.float64), defaultdict(np.float64)
+
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
@@ -90,6 +96,8 @@ def get_hists_from_merged_multidimfit(tfile):
 
         # unpack key
         variable, fit_and_channel, process = key
+        if ";2" in process:
+            continue
         variables.add(variable)
 
         fit = fit_and_channel.split("_")[-1]
@@ -97,7 +105,18 @@ def get_hists_from_merged_multidimfit(tfile):
         channel = fit_and_channel.replace(f"_{fit}", "")
         process = process.split(";")[0]
 
+        # get sum of signal processes
+        if is_signal(process):
+            if fit == "prefit":
+                sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+            elif fit == "postfit":
+                sum_sig_postfit[variable] += h_in.to_hist().values().sum()
         if "Total" in process and process != "TotalBkg":
+            if process == "TotalSig":
+                if fit == "prefit":
+                    sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+                elif fit == "postfit":
+                    sum_sig_postfit[variable] += h_in.to_hist().values().sum()
             continue
         else:
             h_in = h_in.to_hist()
@@ -109,6 +128,22 @@ def get_hists_from_merged_multidimfit(tfile):
             deep=True,
         )
 
+    # rescale the postfit signal histograms to match the prefit signal yield if requested.
+    rescale_postfit_signal: bool = True
+    if rescale_postfit_signal and sum_sig_postfit and sum_sig_prefit:
+        for variable in variables:
+            signal_scale = np.float64(sum_sig_prefit[variable]) / np.float64(sum_sig_postfit[variable])
+            logger.warning(f"Prefit signal yield {sum_sig_prefit[variable]:.3f}, postfit signal yield {sum_sig_postfit[variable]:.3f}")  # noqa: E501
+            logger.info(f"Rescaling postfit signal histograms for variable {variable} by factor {signal_scale:.3f}")
+            for channel in hists.postfit[variable].keys():
+                for process in hists.postfit[variable][channel].keys():
+                    if is_signal(process):
+                        hists.postfit[variable][channel][process] *= signal_scale
+    elif rescale_postfit_signal:
+        logger.warning(
+            "Signal yields are zero in prefit or postfit, cannot rescale "
+            "postfit signal histograms to match prefit yield.",
+        )
     return hists
 
 
@@ -169,16 +204,35 @@ def plot_postfit_shapes(
     yscale: str | None = "",
     hide_errors: bool | None = None,
     hide_signal_errors: bool | None = False,
-    lumi: float | None = None,
+    lumi: float = 220.4,  # | None = None,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     total_bkg: hist.Hist | None = None,
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
+    logger.info(f"Processing variable: {variable_inst.name} in category {category_inst.name}")
     hists, process_style_config = apply_process_settings(hists, process_settings)
     # process scaling
     hists = apply_process_scaling(hists)
+
+    # hotfix: make padded bins really zero
+    # padded value seems to be 1e-9 per process listed in datacard
+    total_bkg_view = total_bkg.view()
+    if any(padded := total_bkg_view.value < 1e-7):
+        logger.warning(
+            f"Found {padded.sum()} bins in total_bkg with value < 1e-7, setting them to zero.",
+        )
+        total_bkg_view.value[padded] = 0
+        for proc_inst, h in hists.items():
+            if proc_inst.is_mc and not proc_inst.has_tag("is_signal"):
+                h.view().value[padded] = 0
+            elif proc_inst.has_tag("is_signal") and any(sig_zero := h.view().value < 1e-7):
+                # mark signal bins as empty if both signal and bkg is zero
+                h.view().value[sig_zero & padded] = 0
+            elif proc_inst.is_data and any(data_zero := h.view().value < 1e-7):
+                # mark data bins as empty (negative value) if both data and bkg is zero
+                h.view().value[data_zero & padded] = -1
 
     # density scaling per bin
     if density:
@@ -206,11 +260,11 @@ def plot_postfit_shapes(
         **kwargs,
     )
     if total_bkg:
-        # if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
-        #     raise ValueError(
-        #         "The provided total_bkg histogram (used for variances) "
-        #         f"does not match the sum of the background histograms. Difference: {diff}",
-        #     )
+        if any((diff := abs(1 - plot_config["mc_stat_unc"]["hist"].values() / total_bkg.values())) > 1e-5):
+            raise ValueError(
+                "The provided total_bkg histogram (used for variances) "
+                f"does not match the sum of the background histograms. Difference: {diff}",
+            )
         plot_config["mc_stat_unc"]["hist"] = total_bkg
         plot_config["mc_stat_unc"]["ratio_kwargs"]["norm"] = total_bkg.values()
     try:
@@ -220,7 +274,12 @@ def plot_postfit_shapes(
         logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
 
     default_style_config = prepare_style_config(
-        config_inst, category_inst, variable_inst, density, shape_norm, yscale,
+        config_inst=config_inst,
+        category_inst=category_inst,
+        variable_inst=variable_inst,
+        density=density,
+        shape_norm=shape_norm,
+        yscale=yscale,
     )
     if hide_signal_errors:
         for key in plot_config.keys():
@@ -295,6 +354,10 @@ class PlotPostfitShapes(
     merged_only = luigi.BoolParameter(
         default=True,
         description="Whether to only plot the merged category; defaults to True",
+    )
+    skip_merged = luigi.BoolParameter(
+        default=False,
+        description="Whether to skip plotting the merged category; defaults to False",
     )
 
     @property
@@ -407,182 +470,72 @@ class PlotPostfitShapes(
     def create_merged_hist(self, all_hists) -> None:
         """
         Helper function to merge all categories per process into a single hist object
-
-        Additionally:
-        - remove bins where the 'data' process is empty
-        - apply the same bin removal to all processes
-        - update bins_dict accordingly
         """
         import boost_histogram
         import numpy as np
         import hist
-        from collections import defaultdict
+        dummy_view = boost_histogram.view.WeightedSumView(0, dtype=[("value", "<f8"), ("variance", "<f8")])
 
-        dummy_view = boost_histogram.view.WeightedSumView(
-            0,
-            dtype=[("value", "<f8"), ("variance", "<f8")],
-        )
-
+        # TODO: at the moment we only consider processes that are present in all cards
+        # all_processes = set.intersection(*[set(hists.keys()) for hists in all_hists.values()])
         all_processes = set.union(*[set(hists.keys()) for hists in all_hists.values()])
 
         bins_dict = {}
         categories_sorted = self.sort_categories(all_hists.keys())
         logger.info(f"Categories sorted for merging: {categories_sorted}")
-
-        # store original binning info
         for category in categories_sorted:
             hist_dict = all_hists[category]
             axis = list(hist_dict.values())[0].axes[0]
-
             bins_dict[category] = {
                 "count": len(axis),
                 "edges": axis.edges,
             }
 
-        # ------------------------------------------------------------------
-        # Build merged views first
-        # ------------------------------------------------------------------
-
-        view_dict = {process: dummy_view.copy() for process in all_processes}
-
-        # keep track of category bin ranges in merged histogram
-        cat_bin_ranges = {}
-
-        current_bin = 0
-
-        for category in categories_sorted:
-
-            n_bins_cat = bins_dict[category]["count"]
-            hist_dict = all_hists[category]
-
-            cat_bin_ranges[category] = (current_bin, current_bin + n_bins_cat)
-
-            for process in all_processes:
-
-                if process in hist_dict.keys():
-                    arr = hist_dict[process].view(flow=False)
-
-                else:
-                    arr = np.array(
-                        [(0, 0)] * n_bins_cat,
-                        dtype=[("value", "<f8"), ("variance", "<f8")],
-                    )
-
-                view_dict[process] = np.concatenate(
-                    (view_dict[process], arr),
-                )
-
-            current_bin += n_bins_cat
-
-        # remove dummy first element
-        for process in all_processes:
-            view_dict[process] = view_dict[process][1:]
-
-        # ------------------------------------------------------------------
-        # Remove bins empty in DATA
-        # ------------------------------------------------------------------
-        # __import__("IPython").embed()
-        if "data_obs" not in view_dict:
-            raise ValueError("'data_obs' process not found")
-
-        data_view = view_dict["data_obs"]
-
-        # keep bins where data != 0
-        keep_mask = data_view["value"] != 0
-
-        logger.info(
-            f"Removing {np.sum(~keep_mask)} bins empty in data process",
-        )
-
-        # apply mask to ALL processes
-        for process in all_processes:
-            view_dict[process] = view_dict[process][keep_mask]
-
-        # ------------------------------------------------------------------
-        # Update bins_dict
-        # ------------------------------------------------------------------
-
-        new_bins_dict = {}
-
-        for category in categories_sorted:
-
-            start, stop = cat_bin_ranges[category]
-
-            cat_mask = keep_mask[start:stop]
-
-            old_edges = bins_dict[category]["edges"]
-
-            # edges corresponding to surviving bins
-            kept_indices = np.where(cat_mask)[0]
-
-            if len(kept_indices) == 0:
-                logger.info(f"Skipping category {category}: all bins removed")
-                continue
-
-            # construct reduced edges
-            new_edges = [old_edges[kept_indices[0]]]
-
-            for idx in kept_indices:
-                new_edges.append(old_edges[idx + 1])
-
-            new_bins_dict[category] = {
-                "count": len(kept_indices),
-                "edges": np.array(new_edges),
-            }
-
-        bins_dict = new_bins_dict
-
-        # ------------------------------------------------------------------
-        # Create output histograms
-        # ------------------------------------------------------------------
-
-        n_bins_final = len(view_dict["data_obs"])
-
+        # initialize histogram
+        n_bins = sum([b["count"] for b in bins_dict.values()])
         h_out = {
-            process: hist.Hist.new.Integer(
-                0,
-                n_bins_final,
-                name="xaxis",
-            ).Weight()
+            # process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            process: hist.Hist.new.Var(list(n + 0.5 for n in range(n_bins + 1)), name="xaxis", flow=False).Weight()
             for process in all_processes
         }
+        view_dict = {process: dummy_view.copy() for process in all_processes}
+
+        # merge histograms over categories per process
+        for category in categories_sorted:
+            n_bins_cat = bins_dict[category]["count"]
+            hist_dict = all_hists[category]
+            for process in all_processes:
+                if process in hist_dict.keys():
+                    view_dict[process] = np.concatenate(
+                        (view_dict[process], hist_dict[process].view(flow=False)),
+                    )
+                else:
+                    empty_view = np.array([(0, 0)] * n_bins_cat, dtype=[("value", "<f8"), ("variance", "<f8")])
+                    view_dict[process] = np.concatenate(
+                        (view_dict[process], empty_view),
+                    )
 
         for process, h in h_out.items():
-            h[...] = view_dict[process]
+            h_out[process][...] = view_dict[process]
 
         all_hists["merged"] = h_out
 
-        # ------------------------------------------------------------------
-        # extend bins_dict with plotting info
-        # ------------------------------------------------------------------
-
+        # extend bins_dict with some additional info for plotting
         ml_proc_bins = defaultdict(int)
-
         for cat_name, bins_info in bins_dict.items():
-
-            ml_proc = (
-                cat_name.split("ml_")[-1]
-                .split("__")[0]
-                .replace("sig_", "HH")
-                .replace("dy_m10toinf", "DY")
-                .replace("h", "H")
-                .replace("bkg", "")
-            )
-
+            ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
             ml_proc = {
-                "HHggf": "gluon-gluon fusion (HH ggF)",
-                "HHvbf": "vector boson fusion (HH VBF)",
+                "HHggf": r"$HH_{ggF}$",
+                "HHvbf": r"$HH_{VBF}$",
+                # "HHggf": "gluon-gluon fusion (HH ggF)",
+                # "HHvbf": "vector boson fusion (HH VBF)",
                 "tt": r"$t\bar{t}$",
                 "st": "t",
             }.get(ml_proc, ml_proc)
-
             bins_dict[cat_name]["ml_proc"] = ml_proc
-
             ml_proc_bins[ml_proc] += bins_info["count"]
-
         for cat_name, bins_info in bins_dict.items():
             bins_info["ml_proc_count"] = ml_proc_bins[bins_info["ml_proc"]]
-
         return bins_dict
 
     @view_output_plots
@@ -608,13 +561,15 @@ class PlotPostfitShapes(
         processes_map = self.prepare_processes_map(hist_processes, process_insts)
 
         # make a combined histogram of all categories
-        bins_dict = self.create_merged_hist(all_hists)
+        if not self.skip_merged:
+            bins_dict = self.create_merged_hist(all_hists)
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
             if self.merged_only and "merged" not in channel:
                 continue
             channel = channel.replace("__2022_2023", "")
+            channel = channel.replace("__c24v15_c25v15", "")
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
 
@@ -651,7 +606,8 @@ class PlotPostfitShapes(
                     variable,
                     default=od.Variable("dummy", aux={"x_min": None, "x_max": None}),
                 )
-            if self.fit_type not in config_category.label.lower():
+            if self.fit_type not in config_category.label.lower() and "merged" in channel:
+                # "prefit" or "postfit" labels, only in merged plot
                 config_category.label = self.fit_type + "\n" + config_category.label
 
             # sort histograms
@@ -676,7 +632,8 @@ class PlotPostfitShapes(
             # some adjustments for the merged plot
             if channel == "cat_merged" or channel == "merged":
                 line_pos = 0.71
-                bins_count = 0
+                line_pos = 0.70
+                bins_count = 0.5
                 axs[0].axhline(
                     get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
                     color="grey", linewidth=2.5,
@@ -688,10 +645,6 @@ class PlotPostfitShapes(
                         bjet_cat = "1b"
                     elif "2b" in cat_name:
                         bjet_cat = "2b"
-                    elif "3b" in cat_name:
-                        bjet_cat = "3b"
-                    elif "4b" in cat_name:
-                        bjet_cat = "4b"
                     elif "boosted" in cat_name:
                         bjet_cat = "Boost"
                         # bjet_cat = "boosted"
@@ -703,7 +656,7 @@ class PlotPostfitShapes(
                             get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         ),
                         xycoords="data",
-                        fontsize=22,
+                        fontsize=20,
                         horizontalalignment="center",
                         verticalalignment="top",
                         color="black",
@@ -746,7 +699,7 @@ class PlotPostfitShapes(
                                 get_position(*axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
                             ),
                             xycoords="data",
-                            fontsize=24,
+                            fontsize=22,
                             horizontalalignment="center",
                             verticalalignment="top",
                             color="black",

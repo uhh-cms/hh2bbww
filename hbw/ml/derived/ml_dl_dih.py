@@ -47,6 +47,10 @@ processes = DotDict({
         "tt", "st", "dy_m10to50", "dy_m50toinf",
         "vv", "ttv", "h", "other",
     ],
+    "backgrounds_binary_nondy": [
+        "tt", "st",
+        "vv", "ttv", "h", "other",
+    ],
     "backgrounds_multiclass": [
         "tt", "st", "dy_ee_m10to50", "dy_mumu_m10to50", "dy_m50toinf",
         "h",  # "vv",
@@ -247,7 +251,7 @@ input_features = DotDict({
         "mli_n_jet",
         "mli_j1_pt",
     ],
-    "v2_discrete": [
+    "v32_discrete": [
         # new input features:
         "mli_dr_ll_bb",  # used instead of mli_dr_bb_llMET
         # v1 sorted from GGF SHAP
@@ -266,7 +270,7 @@ input_features = DotDict({
         "mli_dr_ll",
         "mli_met_pt",
         "mli_min_dr_llbb",
-        "mli_discrete_b_score_sum",
+        # "mli_discrete_b_score_sum",
         "mli_ll_pt",
         "mli_ht",
         # "mli_mindr_lb",  # removed: correlated with mli_min_dr_llbb
@@ -274,6 +278,11 @@ input_features = DotDict({
         "mli_j1_eta",
         "mli_n_jet",
         "mli_j1_pt",
+        "mli_b1_discrete_b_score",
+        "mli_b2_discrete_b_score",
+        "mli_j1_discrete_b_score",
+        "mli_j2_discrete_b_score",
+        "mli_boosted_cand_exists",
     ],
     "v3_discrete": [
         # new input features:
@@ -370,6 +379,8 @@ configs = DotDict({
     "23": lambda self, requested_configs: ["c23prev14", "c23postv14"],
     "full": lambda self, requested_configs: ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
     "twentyfour": lambda self, requested_configs: ["c24v15"],
+    "twentyfive": lambda self, requested_configs: ["c25v15"],
+    "run3_2425": lambda self, requested_configs: ["c24v15", "c25v15"],
 })
 
 #
@@ -544,59 +555,218 @@ vbf_met40 = vbfv1.derive("vbf_met40", cls_dict={
 
 
 # 2024 models with all datasets
-multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
-    "training_configs": configs.twentyfour,
+# multiclass24 = multiclassv1.derive("multiclass24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+# })
+# ggf24 = ggfv1.derive("ggf24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+# })
+# vbf24 = vbfv1.derive("vbf24", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+# })
+# multiclass24_closure = multiclassv1.derive("multiclass24_closure", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# ggf24_closure = ggfv1.derive("ggf24_closure", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# vbf24_closure = vbfv1.derive("vbf24_closure", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# multiclass24_v3l2pt15 = multiclassv1.derive("multiclass24_v3l2pt15", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# ggf24_v3l2pt15 = ggfv1.derive("ggf24_v3l2pt15", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# vbf24_v3l2pt15 = vbfv1.derive("vbf24_v3l2pt15", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v3_discrete"],
+#     "preparation_producer_name": "prepml_lep2pt15",
+# })
+# multiclass24_l2pt57 = multiclassv1.derive("multiclass24_l2pt57", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+# })
+# ggf24_l2pt57 = ggfv1.derive("ggf24_l2pt57", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+# })
+# vbf24_l2pt57 = vbfv1.derive("vbf24_l2pt57", cls_dict={
+#     "training_configs": configs.twentyfour,
+#     "input_features": input_features["v2_discrete"],
+# })
+
+# 24/25
+multiclass_2425_v3l2pt15 = multiclassv1.derive("multiclass_2425_v3l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
     "input_features": input_features["v3_discrete"],
-})
-ggf24 = ggfv1.derive("ggf24", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v3_discrete"],
-})
-vbf24 = vbfv1.derive("vbf24", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v3_discrete"],
-})
-multiclass24_closure = multiclassv1.derive("multiclass24_closure", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-ggf24_closure = ggfv1.derive("ggf24_closure", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt15",
-})
-vbf24_closure = vbfv1.derive("vbf24_closure", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
-    "preparation_producer_name": "prepml_lep2pt15",
-})
-multiclass24_v3l2pt15 = multiclassv1.derive("multiclass24_v3l2pt15", cls_dict={
-    "training_configs": configs.twentyfour,
+ggf_2425_v3l2pt15 = ggfv1.derive("ggf_2425_v3l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-ggf24_v3l2pt15 = ggfv1.derive("ggf24_v3l2pt15", cls_dict={
-    "training_configs": configs.twentyfour,
+vbf_2425_v3l2pt15 = vbfv1.derive("vbf_2425_v3l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-vbf24_v3l2pt15 = vbfv1.derive("vbf24_v3l2pt15", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v3_discrete"],
+
+# # 24/25
+multiclass_2425_v32l2pt15 = multiclassv1.derive("multiclass_2425_v32l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
+    "input_features": input_features["v32_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-multiclass24_l2pt57 = multiclassv1.derive("multiclass24_l2pt57", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
+ggf_2425_v32l2pt15 = ggfv1.derive("ggf_2425_v32l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
+    "input_features": input_features["v32_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
 })
-ggf24_l2pt57 = ggfv1.derive("ggf24_l2pt57", cls_dict={
-    "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
+vbf_2425_v32l2pt15 = vbfv1.derive("vbf_2425_v32l2pt15", cls_dict={
+    "training_configs": configs.run3_2425,
+    "input_features": input_features["v32_discrete"],
+    "preparation_producer_name": "prepml_lep2pt15",
 })
-vbf24_l2pt57 = vbfv1.derive("vbf24_l2pt57", cls_dict={
+
+# DCTR
+dctr_24to25 = DenseClassifierDL.derive("dctr_24to25", cls_dict={
+    "training_configs": configs.run3_2425,
+    "input_features": input_features["v3_discrete"],
+    "processes": [
+        "data_2024", "data_2025",
+    ],
+    "train_nodes": {
+        "2024": {
+            "ml_id": 0,
+            "label": "2024",
+            "color": "#000000",
+            "class_factor_mode": "equal",
+            "sub_processes": ["data_2024"],
+        },
+        "2025": {
+            "ml_id": 1,
+            "label": "2025",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "equal",
+            "sub_processes": ["data_2025"],
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "2024": 1,
+        "2025": 1,
+    },
+    "sub_process_class_factors": {
+        "data_2024": 1,
+        "data_2025": 1,
+    },
+    "epochs": 100,
+    "preparation_producer_name": "prepml_dyvr_mumu",
+})
+
+dctr_24to25_rate = DenseClassifierDL.derive("dctr_24to25_rate", cls_dict={
+    "training_configs": configs.run3_2425,
+    "input_features": input_features["v3_discrete"],
+    "processes": [
+        "data_2024", "data_2025",
+    ],
+    "train_nodes": {
+        "2024": {
+            "ml_id": 0,
+            "label": "2024",
+            "color": "#000000",
+            "class_factor_mode": "xsec",
+            "sub_processes": ["data_2024"],
+        },
+        "2025": {
+            "ml_id": 1,
+            "label": "2025",
+            "color": "#e76300",  # Spanish Orange
+            "class_factor_mode": "xsec",
+            "sub_processes": ["data_2025"],
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "2024": 1,
+        "2025": 1,
+    },
+    "sub_process_class_factors": {
+        "data_2024": 1,
+        "data_2025": 1,
+    },
+    "epochs": 100,
+    "preparation_producer_name": "prepml_dyvr_mumu",
+})
+
+dctr_dy_24_v6 = DenseClassifierDL.derive("dctr_dy_24_v6", cls_dict={
     "training_configs": configs.twentyfour,
-    "input_features": input_features["v2_discrete"],
+    "input_features": input_features["v3_discrete"],
+    "processes": [
+        "data", "dy_m50toinf",
+        *processes.backgrounds_binary_nondy,
+    ],
+    "train_nodes": {
+        "dy_data": {
+            "ml_id": 0,
+            "label": "DY data",
+            "color": "#000000",
+            "class_factor_mode": "xsec",
+            "sub_processes": ["data", *processes.backgrounds_binary_nondy],
+        },
+        "dy_m50toinf": {
+            "ml_id": 1,
+            "label": "DY",
+            "color": color_palette["yellow"],
+            "class_factor_mode": "xsec",
+        },
+    },
+    # relative class factors between different nodes
+    "class_factors": {
+        "dy_data": 1,
+        "dy_m50toinf": 1,
+    },
+    "sub_process_class_factors": {
+        "data": 1,
+        "tt": 1,  # NOTE: not sure whether one wants to weight the MC processes differently
+        "st": 1,
+        "dy_m50toinf": 1,
+        "vv": 1,
+        "ttv": 1,
+        "h": 1,
+        "other": 1,
+    },
+    "loss_signs": {
+        "dy_data": 1,
+        "data": 1,
+        "dy_m50toinf": 1,
+        "tt": -1,
+        "st": -1,
+        "vv": -1,
+        "ttv": -1,
+        "h": -1,
+        "other": -1,
+    },
+    "negative_weights": "nothing",  # allow for negative weights
+    "normalize_weights": True,  # normalize weights to sum to 1
+    "epochs": 100,
+    "preparation_producer_name": "prepml_dyvr_mumuV1",
 })
 
 

@@ -111,7 +111,7 @@ def hh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         for col in ("pt", "eta", "phi", "mass", "discrete_b_score", "btagUParTAK4B"):
 
             events = set_ak_column_f32(
-                events, f"btag_jet{i+1}.{col}",
+                events, f"btag_jet{i + 1}.{col}",
                 ak.fill_none(ak.nan_to_none(btag_jets[:, i][col]), ZERO_PADDING_VALUE),
             )
 
@@ -138,7 +138,7 @@ def hh_bjets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
-    uses={common_ml_inputs, prepare_bjets},
+    uses={common_ml_inputs, prepare_bjets, "FatJet.{pt,globalParT3_Xbb,globalParT3_QCD}"},
     produces={common_ml_inputs, prepare_bjets},
     # produced columns set in the init function
     version=law.config.get_expanded("analysis", "dl_ml_inputs_version", 2),
@@ -222,6 +222,15 @@ def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
     events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(hll + events[met_name][:]))
 
+    # boosted features, curretly just one-hot encoding of the globalParT3 discriminant
+    globalParT3_discriminant = events.FatJet.globalParT3_Xbb / (
+        events.FatJet.globalParT3_Xbb + events.FatJet.globalParT3_QCD
+    )
+    hbb_globalParT3_wp_score = self.config_inst.x.hbb_globalParT3_wp_score
+    fj_mask = (events.FatJet["pt"] > 300) & (globalParT3_discriminant > hbb_globalParT3_wp_score)
+    boosted_cand_exists = (ak.sum(fj_mask, axis=-1) >= 1)
+    events = set_ak_column_f32(events, "mli_boosted_cand_exists", boosted_cand_exists)
+
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
         events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
@@ -237,7 +246,7 @@ def dl_ml_inputs_init(self: Producer) -> None:
         "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
         "mli_discrete_b_score_sum", "mli_b_discrete_b_score_sum", "mli_l_discrete_b_score_sum",
         # hbb system
-        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb",
+        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb", "mli_boosted_cand_exists",
         # lb lj system
         "mli_mindr_lb", "mli_mindr_lj",
         # ll system

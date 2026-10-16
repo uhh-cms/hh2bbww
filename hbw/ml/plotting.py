@@ -136,7 +136,7 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, **cms_label_kwargs, com=13.6)
+    mplhep.cms.label(ax=ax, fontsize=22, **cms_label_kwargs, com=13.6)
 
     plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -312,7 +312,7 @@ def plot_roc_ovr(
         title="ROC (process vs rest)",
         loc="lower right",
     )
-    mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+    mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
     plt.close(fig)
@@ -399,7 +399,7 @@ def plot_roc_ovo(
             title=f"ROC OvO, {input_type} set",
             loc="lower right",
         )
-        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
 
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
         plt.close(fig)
@@ -509,7 +509,7 @@ def plot_output_nodes(
         # legend
         ax.legend(loc="best", ncols=2, title="")
 
-        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -611,7 +611,7 @@ def plot_input_features(
         # legend
         ax.legend(loc="best", title="")
 
-        mplhep.cms.label(ax=ax, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
         try:
             output.child(f"Input_{feature_name}.pdf", type="f").dump(fig, formatter="mpl")
         except Exception:

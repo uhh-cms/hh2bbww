@@ -545,8 +545,9 @@ def add_config(
             #     "tune",
             # ]
             btag_uncs_bc = [
-                "bfragmentation", "pileup",
-                "type3", "statistic",
+                # "bfragmentation", "pileup",
+                # "type3", "statistic",
+                "correlated", "uncorrelated",
             ]
             btag_uncs_light = [
                 "correlated", "uncorrelated",
@@ -623,6 +624,7 @@ def add_config(
         raise ValueError(f"Unknown b-tag working point '{cfg.x.btag_wp}' for campaign {cfg.x.cpn_tag}")
     # cfg.x.hbb_btag_wp_score = cfg.x.btag_working_points["particlenet_hbb_vs_qcd"]["medium"]
     cfg.x.hbb_btag_wp_score = 0.92
+    cfg.x.hbb_globalParT3_wp_score = 0.85
     if cfg.x.hbb_btag_wp_score == 0.0:
         raise ValueError(f"Unknown hbb b-tag working point 'medium' for campaign {cfg.x.cpn_tag}")
     # TODO: xbb upart batg WPO and access not sure how this is done etc.
@@ -744,17 +746,30 @@ def add_config(
             # campaign="2024",
             working_point="Tight",
         )
-        cfg.x.electron_reco_sf_names = ElectronSFConfig(
-            correction="Electron-ID-SF",
-            campaign=electron_sf_campaign,
-            # campaign="2024",
-            # working_point=ele_reco_wp_func,
-            working_point={
-                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
-                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
-                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
-            },
-        )
+        if year <= 2024:
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
+        if year == 2025:
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    # "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,  not available in 2025 atm. ...
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
         # else:
         #     cfg.x.electron_sf_names = ElectronSFConfig(
         #         correction="Electron-ID-SF",
@@ -789,12 +804,13 @@ def add_config(
             min_pt=10.0,
             max_pt=1000.0,
         )
-        cfg.x.low_pt_muon_id_sf_names = MuonSFConfig(
-            correction="NUM_TightID_DEN_TrackerMuons",
-            campaign=f"{cfg.x.cpn_tag}",
-            min_pt=5.0,
-            max_pt=10.0,
-        )
+        if year == 2024:
+            cfg.x.low_pt_muon_id_sf_names = MuonSFConfig(
+                correction="NUM_TightID_DEN_TrackerMuons",
+                campaign=f"{cfg.x.cpn_tag}",
+                min_pt=5.0,
+                max_pt=10.0,
+            )
         cfg.x.muon_sr = MuonSRConfig(
             systs=["scale_up", "scale_down", "res_up", "res_down"],
         )
@@ -1149,7 +1165,7 @@ def add_config(
     else:
         # add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
         # add_external("btag_wp_sf_corr", ("/data/dust/user/matthiej/mttbar/mtt/config/run3/btagging_preliminary_merged.json.gz", "v1"))  # noqa: E501
-        add_external("btag_wp_sf_corr", (f"/data/dust/user/letzerba/public/hh2bbww/jsons/merged_btagging{year2}.json.gz", "v2"))  # noqa: E501
+        add_external("btag_wp_sf_corr", (f"/data/dust/user/letzerba/public/hh2bbww/jsons/merged_btagging{year2}.json.gz", "v3"))  # noqa: E501
 
     # updated jet id
     add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))
@@ -1167,7 +1183,8 @@ def add_config(
 
     # muon scale factors
     add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v2"))
-    add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
+    if year == 2024:
+        add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
     add_external("muon_sr", (cat_info.get_file("muo", "muon_scalesmearing.json.gz"), "v1"))
     add_external("muon_sr_tools", Ext(
         "/data/dust/user/letzerba/public/hh2bbww/jsons/muonscarekit-1c7426b5.tar.gz",
@@ -1194,12 +1211,12 @@ def add_config(
         add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
         add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
         add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
-    elif year >= 2024:
+    elif year == 2024 or year == 2025:
         trigger_sf_path = "/data/dust/user/letzerba/public/hh2bbww/triggersf"
 
-        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
-        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
-        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
+        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
     else:
         raise NotImplementedError(f"Trigger SFs not yet implemented for year {year}")
 
@@ -1210,6 +1227,12 @@ def add_config(
     # files for NLO V+Jets reweighting transformer models
     model_path = "/data/dust/user/letzerba/public/hh2bbww/models"
     add_external("nlo_reweight_model", (f"{model_path}/fineTunedEnsemble_64.onnx", "v0"))
+
+    # files for DCTR reweighting with external models
+    # dctr_25_path = "/data/dust/user/bonanomm/HH_C2ST_DCTR/c2st_artifacts/data25_over_data24_2mu_yield_condor_v0/2mu/inference"  # noqa: E501
+    # add_external("dctr_25_model", (f"{dctr_25_path}/model.keras", "v0"))
+    # add_external("dctr_25_scaler", (f"{dctr_25_path}/scaler.joblib", "v0"))
+    # add_external("dctr_25_meta", (f"{dctr_25_path}/metadata.json", "v0"))
 
     # V+jets reweighting (derived for 13 TeV, custom json converted from ROOT, not centrally produced)
     # ROOT files (eej.root and aj.root) taken from here:
@@ -1243,7 +1266,7 @@ def add_config(
         )
     else:
         cfg.x.dy_recoil_config = DrellYanConfig(
-            era=cfg.x.cpn_tag,
+            era="2024",  # cfg.x.cpn_tag,  # TODO: Setup for 2025
             order="NLO",  # only when using v2
             correction="Recoil_correction_QuantileMapHist",
             unc_correction="Recoil_correction_Uncertainty",
@@ -1436,7 +1459,7 @@ def add_config(
 
     # sanity check: sometimes the process is not the same as the one in the dataset
     p1 = cfg.get_process("dy_m50toinf")
-    if cfg.x.run == 3 and not year == 2024:
+    if cfg.x.run == 3 and not year >= 2024:
         p2 = campaign.get_dataset("dy_m50toinf_amcatnlo").processes.get_first()
         # if repr(p1) != repr(p2):
         if p1 != p2:

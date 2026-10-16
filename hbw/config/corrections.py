@@ -61,9 +61,17 @@ def btag_sf_cfg(
         # uncertainties to b/c jets
         "down_bc": "bc_down",
         "up_bc": "bc_up",
+        "down_correlated_bc": "correlated_bc_down",
+        "up_correlated_bc": "correlated_bc_up",
+        "down_uncorrelated_bc": "uncorrelated_bc_down",
+        "up_uncorrelated_bc": "uncorrelated_bc_up",
         # uncertainties to light jets
         "down_light": "light_down",
         "up_light": "light_up",
+        "down_correlated_light": "correlated_light_down",
+        "up_correlated_light": "correlated_light_up",
+        "down_uncorrelated_light": "uncorrelated_light_down",
+        "up_uncorrelated_light": "uncorrelated_light_up",
         # split uncertainties(?) (all needed?)
         # uncertainties to b/c jets
         # "up_fsrdef_bc": "fsrdef_bc_up",
@@ -82,19 +90,19 @@ def btag_sf_cfg(
         # "down_mass_bc": "mass_bc_down",
         # "down_statistic_bc": "statistic_bc_down",
         # "down_tune_bc": "tune_bc_down",
-        "up_bfragmentation_bc": "bfragmentation_bc_up",
-        "up_pileup_bc": "pileup_bc_up",
-        "up_type3_bc": "type3_bc_up",
-        "up_statistic_bc": "statistic_bc_up",
-        "down_bfragmentation_bc": "bfragmentation_bc_down",
-        "down_pileup_bc": "pileup_bc_down",
-        "down_type3_bc": "type3_bc_down",
-        "down_statistic_bc": "statistic_bc_down",
-        # uncertainties to light jets
-        "down_correlated_light": "correlated_light_down",
-        "up_correlated_light": "correlated_light_up",
-        "down_uncorrelated_light": "uncorrelated_light_down",
-        "up_uncorrelated_light": "uncorrelated_light_up",
+        # "up_bfragmentation_bc": "bfragmentation_bc_up", # not all available in 2025
+        # "up_pileup_bc": "pileup_bc_up",
+        # "up_type3_bc": "type3_bc_up",
+        # "up_statistic_bc": "statistic_bc_up",
+        # "down_bfragmentation_bc": "bfragmentation_bc_down",
+        # "down_pileup_bc": "pileup_bc_down",
+        # "down_type3_bc": "type3_bc_down",
+        # "down_statistic_bc": "statistic_bc_down",
+        # # uncertainties to light jets
+        # "down_correlated_light": "correlated_light_down",
+        # "up_correlated_light": "correlated_light_up",
+        # "down_uncorrelated_light": "uncorrelated_light_down",
+        # "up_uncorrelated_light": "uncorrelated_light_up",
     }
     if year >= 2024:
         # TODO: use shape based BTagSFConfig when available

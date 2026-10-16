@@ -30,7 +30,7 @@ from hbw.production.normalized_weights import normalized_weight_factory
 from hbw.production.normalized_btag import normalized_btag_weights
 from hbw.production.dataset_normalization import dataset_normalization_weight
 from hbw.production.trigger import sl_trigger_weights, dl_trigger_weights
-from hbw.util import has_tag  # , IF_NOT_2024
+from hbw.util import has_tag, IF_2024
 
 
 np = maybe_import("numpy")
@@ -102,7 +102,7 @@ def event_weights_to_normalize_init(self) -> None:
     # if self.config_inst.campaign.x.year != 2024:
     #     self.uses |= {pu_weight}
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year != 2024:
+        if self.config_inst.campaign.x.year < 2024:
             self.uses |= {btag_weights}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
@@ -120,10 +120,10 @@ def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
     for _cls in self.uses:
         if _cls == btag_weights and task.shift == "nominal":
-            if self.config_inst.campaign.x.year != 2024:
+            if self.config_inst.campaign.x.year < 2024:
                 self.produces |= {btag_weights}
         elif _cls == btag_weights:
-            if self.config_inst.campaign.x.year != 2024:
+            if self.config_inst.campaign.x.year < 2024:
                 self.produces |= self.deps[btag_weights].produced_columns
         if task.shift == "nominal":
             self.produces |= self.deps[_cls].produced_columns
@@ -175,8 +175,8 @@ electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dic
 
 
 @producer(
-    uses={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
-    produces={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
+    uses={muon_id_weights, muon_iso_weights, IF_2024(low_pt_muon_id_weights)},
+    produces={muon_id_weights, muon_iso_weights, IF_2024(low_pt_muon_id_weights)},
     mc_only=True,
 )
 def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -185,7 +185,8 @@ def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     events = self[muon_id_weights](events, **kwargs)
     events = self[muon_iso_weights](events, **kwargs)
-    events = self[low_pt_muon_id_weights](events, **kwargs)
+    if self.config_inst.campaign.x.year == 2024:
+        events = self[low_pt_muon_id_weights](events, **kwargs)
 
     return events
 
@@ -315,13 +316,13 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                 **kwargs,
             )
             events = self[normalized_btag_weights](events, **kwargs)
-        elif self.config_inst.campaign.x.year == 2024:
+        elif self.config_inst.campaign.x.year >= 2024:
             jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
             events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
 
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year == 2024:
+        if self.config_inst.campaign.x.year >= 2024:
             electron_mask = ((events.Electron["pt"] >= 10.0) & (events.Electron["pt"] < 1000.0))
             SCeta = (abs(events.Electron["eta"] + events.Electron["deltaEtaSC"]))
             # NOTE: atm we allow some penalty range if SCeta is slightly above 2.5
@@ -384,7 +385,7 @@ def event_weights_init(self: Producer) -> None:
         self.produces |= {self.trigger_weights_producer}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year == 2024:
+        if self.config_inst.campaign.x.year >= 2024:
             self.uses |= {btag_wp_weights}
             self.produces |= {btag_wp_weights}
         else:
