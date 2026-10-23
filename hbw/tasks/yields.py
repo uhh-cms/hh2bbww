@@ -36,7 +36,8 @@ class CustomCreateYieldTable(
     """
     Custom task to create yield tables.
     Example task call for category summary plot:
-    claw run hbw.CustomCreateYieldTable --processes tt,dy,st,w_lnu,vv,ttv,h,other --normalize-yields per_category --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_{sig_ggf,sig_vbf,tt,st,dy_m10toinf,h}"
+    claw run hbw.CustomCreateYieldTable --processes tt,dy,st,w_lnu,vv,ttv,h,other --normalize-yields per_category \
+      --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_{sig_ggf,sig_vbf,tt,st,dy_m10toinf,h}"
     """
     # TODO: order of categories is not always maintained, see: https://github.com/columnflow/columnflow/issues/717
     # flag that does not yet exist :)
