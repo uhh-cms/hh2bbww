@@ -14,9 +14,7 @@ import order as od
 from scinum import Number
 
 from columnflow.tasks.framework.base import Requirements
-# from columnflow.tasks.yields import _CreateYieldTable
-# from columnflow.tasks.framework.mixins import MLModelsMixin
-from hbw.tasks.histograms import HistogramsUserSingleShiftBase
+from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.util import dev_sandbox, try_int
