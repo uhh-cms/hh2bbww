@@ -19,37 +19,67 @@ source setup.sh dev
 # index existing tasks once to enable auto-completion for "law run"
 law index --verbose
 
+# build the campaign summary once per config
+# (configs are created lazily from this output, so every other task fails without it;
+#  building the full config "c22postv14" also unlocks its limited twin "l22postv14")
+law run hbw.BuildCampaignSummary \
+    --config c22postv14 \
+    --remove-output 0,a,y
+
 # run your first task
 # (they are all shipped with columnflow and thus have the "cf." prefix)
+# "l22postv14" is the limited version of "c22postv14" and only reads 2 files per dataset
 law run cf.ReduceEvents \
     --version v1 \
+    --config l22postv14 \
     --dataset st_tchannel_t_powheg \
     --branch 0
 
 # create some plots
 law run cf.PlotVariables1D \
     --version v1 \
+    --config l22postv14 \
     --datasets st_tchannel_t_powheg \
-    --producers features \
     --variables jet1_pt,jet2_pt \
     --categories 1e
 
 # create a (test) datacard (CMS-style)
 law run cf.CreateDatacards \
     --version v1 \
+    --config c22postv14 \
     --inference-model default \
     --workers 3
 ```
+
+Which defaults are used when `--config`, `--analysis` or `--dataset` are omitted is decided by
+the law config file selected during `source setup.sh`, see [Law config](#law-config) below.
 
 ## Most important files
 (Note: please tell me, if a link or task does not work. I did not test all of them)
 
 
 ### Config
-Files relevant for the configuration of an analysis are mainly to be found in [this](hbw/config) folder. The main analysis object is defined [here](hbw/config/analysis_hbw.py). The analysis object contains multiple configs (at least one config per campaign). Most of the configuration takes place [here](hbw/config/config_run2.py) and defines meta-data like the used datasets, processes, shifts, categories, variables and much more.
-At the moment, there are only two configs, the default config `config_2017` and a config with reduced event statistics (for test purposes) named `config_2017_limited`. Most tasks can use a `--config` parameter as an input, e.g.
+Files relevant for the configuration of an analysis are mainly to be found in [this](hbw/config) folder. The main analysis object is defined [here](hbw/analysis/create_analysis.py). The analysis object contains multiple configs (at least one config per campaign). Most of the configuration takes place [here](hbw/config/config_run2.py) and defines meta-data like the used datasets, processes, shifts, categories, variables and much more.
+Configs are registered via `add_lazy_config` in [create_analysis.py](hbw/analysis/create_analysis.py). Each call adds *two* configs: the full one and a limited one (2 files per dataset, for testing) whose name starts with `l` instead of `c`:
+
+| full | limited | campaign |
+| --- | --- | --- |
+| `c17v9` | `l17v9` | Run 2, 2017, nano v9 |
+| `c22prev14` | `l22prev14` | Run 3, 2022 preEE, nano v14 |
+| `c22postv14` | `l22postv14` | Run 3, 2022 postEE, nano v14 |
+| `c23prev14` | `l23prev14` | Run 3, 2023 preBPix, nano v14 |
+| `c23postv14` | `l23postv14` | Run 3, 2023 postBPix, nano v14 |
+| `c24v15` | `l24v15` | Run 3, 2024, nano v15 |
+| `c25v15` | `l25v15` | Run 3, 2025, nano v15 |
+| `c26v15` | `l26v15` | Run 3, 2026, nano v15 |
+
+On this branch only `c24v15` is fully usable: `configure_hbw_processes` requires the
+`ttbb_{dl,sl,fh}_powheg` datasets, which only the 2024 campaign provides, and the 2025/2026
+campaigns live on a cmsdb branch that this repo does not pin.
+
+Most tasks can use a `--config` parameter as an input, e.g.
 ```
-law run cf.SelectEvents --version v1 --config config_2017
+law run cf.SelectEvents --version v1 --config c22postv14
 ```
 
 

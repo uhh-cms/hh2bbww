@@ -3,7 +3,7 @@
 #
 
 export test_version="test2"
-export test_config="l17"
+export test_config="l17v9"
 
 export test_dataset="tt_sl_powheg"
 export test_datasets="hh_ggf_kl1_*,tt_sl_powheg,data_mu_b"
