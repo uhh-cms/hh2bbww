@@ -16,8 +16,7 @@ import luigi
 from collections import defaultdict
 
 from columnflow.tasks.framework.base import Requirements
-from hbw.tasks.histograms import HistogramsUserSingleShiftBase
-# from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
+from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.tasks.framework.mixins import (
     # CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin, HistProducerClassMixin,

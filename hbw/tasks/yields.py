@@ -14,12 +14,12 @@ import order as od
 from scinum import Number
 
 from columnflow.tasks.framework.base import Requirements
-# from columnflow.tasks.yields import _CreateYieldTable
-# from columnflow.tasks.framework.mixins import MLModelsMixin
-from hbw.tasks.histograms import HistogramsUserSingleShiftBase
+from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.tasks.framework.remote import RemoteWorkflow
 from columnflow.tasks.histograms import MergeHistograms
 from columnflow.util import dev_sandbox, try_int
+from columnflow.tasks.framework.decorators import view_output_plots
+from columnflow.tasks.framework.plotting import PlotBase
 
 
 from hbw.tasks.base import HBWTask
@@ -33,6 +33,12 @@ class CustomCreateYieldTable(
     law.LocalWorkflow,
     RemoteWorkflow,
 ):
+    """
+    Custom task to create yield tables.
+    Example task call for category summary plot:
+    claw run hbw.CustomCreateYieldTable --processes tt,dy,st,w_lnu,vv,ttv,h,other --normalize-yields per_category \
+      --categories "sr__{resolved__1b,resolved__2b,boosted}__ml_{sig_ggf,sig_vbf,tt,st,dy_m10toinf,h}"
+    """
     # TODO: order of categories is not always maintained, see: https://github.com/columnflow/columnflow/issues/717
     # flag that does not yet exist :)
     categories_order_sensitive = True
@@ -80,6 +86,7 @@ class CustomCreateYieldTable(
     )
     ratio = law.CSVParameter(
         default=("data", "background"),
+        # default=(),
         significant=False,
         description="Ratio of two processes to be calculated and added to the table",
     )
@@ -92,8 +99,13 @@ class CustomCreateYieldTable(
         "if 'subtract', (p[0] - p[1] + p[2]) / p[2] is calculated, ",
     )
 
-    # simple flag to indicate that the yield tables are created for the analysis note
-    for_analysis_note: bool = False
+    for_analysis_note = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="simple flag to indicate that the yield tables are created for the analysis note",
+    )
+
+    view_cmd = PlotBase.view_cmd.copy()
 
     # upstream requirements
     reqs = Requirements(
@@ -151,6 +163,7 @@ class CustomCreateYieldTable(
             "table": self.target(f"table__proc_{self.processes_repr}__cat_{self.categories_repr}{suffix}.txt"),
             "csv": self.target(f"table__proc_{self.processes_repr}__cat_{self.categories_repr}{suffix}.csv"),
             "yields": self.target(f"yields__proc_{self.processes_repr}__cat_{self.categories_repr}{suffix}.json"),
+            "plot": self.target(f"plot__proc_{self.processes_repr}__cat_{self.categories_repr}{suffix}.pdf"),
         }
 
     @property
@@ -205,7 +218,9 @@ class CustomCreateYieldTable(
                 config_inst=config_inst,
                 processes=sub_processes,
                 categories=self.categories,
-                shifts=self.shift,
+                # NOTE: this could lead to double-counting if (for some reason) one event is assigned to both nominal
+                # and varied shift; should not happen in practice though
+                shifts={self.shift, "nominal"},
             )
             hist_per_config = hist_per_config[{"shift": sum, self.yields_variable: sum}]
 
@@ -246,7 +261,8 @@ class CustomCreateYieldTable(
                         math.sqrt(h_cat.variance),
                     )
                 yields[category_inst].append(value)
-        return yields, processes
+
+        return yields, processes, yields_hist
 
     def apply_ratio(self, yields, processes):
         """
@@ -260,7 +276,7 @@ class CustomCreateYieldTable(
         if self.ratio:
             missing_for_ratio = set(self.ratio[:2]) - set(p.name for p in processes)
             if missing_for_ratio:
-                logger.warning(f"Cannot do ratio, missing requested processes: {', '.join(missing_for_ratio)}")
+                logger.warning(f"Cannot derive ratio, missing requested processes: {', '.join(missing_for_ratio)}")
                 return yields, processes
 
             # default ratio
@@ -271,6 +287,25 @@ class CustomCreateYieldTable(
                     num = yields[category_inst][num_idx]
                     den = yields[category_inst][den_idxs]
                     yields[category_inst].append(num / den)
+
+            if "s_over_sqrt_b" in self.ratio_modes or "s_over_b" in self.ratio_modes:
+                num_idxs = [i for i, p in enumerate(processes) if p.has_tag("is_signal")]
+                den_idx = [i for i, p in enumerate(processes) if p.name == "background"]
+                if not num_idxs:
+                    logger.warning("Cannot calculate S/sqrt(B), no signal process found.")
+                elif not den_idx:
+                    logger.warning("Cannot calculate S/sqrt(B), no background process found.")
+                else:
+                    den_idx = den_idx[0]
+                    for category_inst in self.category_insts:
+                        s = sum(yields[category_inst][i] for i in num_idxs)
+                        b = yields[category_inst][den_idx]
+                        if "s_over_b" in self.ratio_modes:
+                            processes.append(od.Process("S_over_B", id=-9872, label="S / B"))
+                            yields[category_inst].append(s / b)
+                        if "s_over_sqrt_b" in self.ratio_modes:
+                            processes.append(od.Process("S_over_sqrt_B", id=-9873, label="S / sqrt(B)"))
+                            yields[category_inst].append(s / math.sqrt(b))
 
             if len(self.ratio) >= 3 and "subtract" in self.ratio_modes:
                 num_idx = processes.index(config_inst.get_process(self.ratio[0]))
@@ -347,6 +382,7 @@ class CustomCreateYieldTable(
                 cat_label = category.label.replace("\n", ", ")
                 if self.for_analysis_note:
                     cat_label = f"\\labelfunc{{{category.name}}}"
+                    # cat_label = category.name
                 yields_str[cat_label].append(yield_str)
 
         return raw_yields, yields_str
@@ -379,11 +415,163 @@ class CustomCreateYieldTable(
             writer = csv.writer(csvfile)
             writer.writerows(data)
 
+    def sort_categories(self, categories_set):
+        """
+        Sort categories based on:
+        1. Primary: existence of substrings ggf, vbf, tt, st, dy, h
+        2. Secondary: existence of substrings 1b, 2b, boosted
+
+        Copied over from postfit_plots.py
+        """
+        primary_order = ["_sig_ggf", "_sig_vbf", "_tt", "_st", "_dy", "_h", "_bkg"]
+        secondary_order = ["1b", "2b", "boosted"]
+
+        def sort_key(item):
+            if not isinstance(item, str):
+                item = item.name  # use the name attribute if item is not a string
+            # Primary sort: find first matching substring from primary_order
+            primary_idx = len(primary_order)  # default to end if no match
+            for i, substring in enumerate(primary_order):
+                if substring in item.lower():
+                    primary_idx = i
+                    break
+
+            # Secondary sort: find first matching substring from secondary_order
+            secondary_idx = len(secondary_order)  # default to end if no match
+            for i, substring in enumerate(secondary_order):
+                if substring in item.lower():
+                    secondary_idx = i
+                    break
+
+            # Return tuple for multi-level sorting
+            return (primary_idx, secondary_idx, item)  # item as tiebreaker for alphabetical
+
+        return sorted(list(categories_set), key=sort_key)
+
+    def make_yields_plot(self, raw_yields, processes):
+        """
+        Creates a horizontal bar plot of the yields per category for each process.
+
+        :param raw_yields: Dictionary containing the raw yields for each category and process. e.g.
+            {"category1": {"process1": 0.5, "process2": 0.3}, "category2": {"process1": 0.4, "process2": 0.6}}
+        :param processes: List of process instances corresponding to the yields.
+        """
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import mplhep
+        plt.style.use(mplhep.style.CMS)
+        from columnflow.plotting.plot_util import get_cms_label
+
+        # fig, ax = plt.subplots(figsize=(10, 6))
+        # fig, ax = plt.subplots(figsize=(15, 10))
+        fig, ax = plt.subplots(figsize=(9, 6))
+
+        skip_labels = True
+
+        cat_labels_dict = {
+            "sr__resolved__1b__ml_sig_ggf": r"1b $HH_{ggF}$",
+            "sr__resolved__1b__ml_sig_vbf": r"1b $HH_{VBF}$",
+            "sr__resolved__2b__ml_sig_ggf": r"2b $HH_{ggF}$",
+            "sr__resolved__2b__ml_sig_vbf": r"2b $HH_{VBF}$",
+            "sr__boosted__ml_sig_ggf": r"boosted $HH_{ggF}$",
+            "sr__boosted__ml_sig_vbf": r"boosted $HH_{VBF}$",
+            "sr__resolved__1b__ml_tt": r"1b $t\bar{t}$",
+            "sr__resolved__1b__ml_st": r"1b $t$",
+            "sr__resolved__1b__ml_dy_m10toinf": r"1b $DY$",
+            "sr__resolved__1b__ml_h": r"1b $H$",
+            "sr__resolved__2b__ml_tt": r"2b $t\bar{t}$",
+            "sr__resolved__2b__ml_st": r"2b $t$",
+            "sr__resolved__2b__ml_dy_m10toinf": r"2b $DY$",
+            "sr__resolved__2b__ml_h": r"2b $H$",
+            "sr__boosted__ml_bkg": r"boosted CR",
+        }
+
+        # reverse order of categories
+        category_insts = self.sort_categories(self.category_insts)
+        category_insts = category_insts[::-1]
+
+        yields_integrals = {
+            cat.name: sum(raw_yields[cat.name][proc.name] for proc in processes) for cat in category_insts
+        }
+        threshold = 0.05 * max(yields_integrals.values())  # set threshold for labeling bars
+        if skip_labels:
+            threshold = 0.05 * max(yields_integrals.values())  # lower threshold if skipping labels
+        # create stacked bar plot with one bar per category, different colors for different processes
+        for i, proc in enumerate(processes):
+            lefts = np.zeros(len(category_insts))
+
+            for prev_proc in processes[:i]:
+                lefts += np.array([
+                    raw_yields[cat.name][prev_proc.name]
+                    for cat in category_insts
+                ])
+
+            yields = [
+                raw_yields[cat.name][proc.name]
+                for cat in category_insts
+            ]
+
+            cat_labels = [
+                cat_labels_dict.get(cat.name, cat.label)
+                for cat in category_insts
+            ]
+
+            bars = ax.barh(
+                cat_labels,
+                yields,
+                left=lefts,
+                color=proc.color,
+                label=proc.label,
+            )
+
+            labels = [f"{y:.2f}" if y > threshold else "" for y in yields]
+            if self.normalize_yields in ("per_category", "all"):  # as percentage
+                labels = [f"{y*100:.0f}%" if y > threshold else "" for y in yields]
+            ax.bar_label(
+                bars,
+                labels=labels,
+                label_type="center",
+                fontsize=12,
+            )
+
+        if not skip_labels:
+            ax.set_xlabel("Yield")
+            ax.set_ylabel("Category")
+        ax.tick_params(axis="y", labelsize=14)
+        # ax.set_title("Yields per Category")
+
+        # set x-max to 1.2 times the maximum yield for better visualization
+        # ax.set_xlim(0, 1.2 * max(yields_integrals.values()))
+
+        # legend in canvas with reversed order to match the stacking order
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(
+            handles[::-1],
+            labels[::-1],
+            framealpha=0.8,
+            fontsize=14 if skip_labels else 13,
+            loc="upper right",
+            frameon=True,
+        )
+
+        cms_label_kwargs = get_cms_label(ax, "Private work (CMS simulation)")
+        cms_label_kwargs.update({"com": 13.6, "lumi": 62, "fontsize": 18})
+        mplhep.cms.label(**cms_label_kwargs)
+        plt.tight_layout()
+
+        # save the plot
+        outputs = self.output()
+        outputs["plot"].dump(fig, formatter="mpl")
+
     @law.decorator.notify
     @law.decorator.log
+    @view_output_plots
     def run(self):
         with self.publish_step(f"Creating yields for processes {self.processes}, categories {self.categories}"):
-            yields, processes = self.prepare_yields()
+            yields, processes, yields_hist = self.prepare_yields()
             yields, processes = self.apply_ratio(yields, processes)
             raw_yields, yields_str = self.prepare_yields_str(yields, processes)
             self.make_table(raw_yields, yields_str)
+
+            self.make_yields_plot(raw_yields, processes)
