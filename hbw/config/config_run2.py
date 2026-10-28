@@ -1417,7 +1417,7 @@ def add_config(
         ColumnCollection.ALL_FROM_SELECTOR,
         skip_column("cutflow.*"),
     } | {
-        "HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
+        f"HLT.{trg.hlt_field}" for trg in cfg.get_aux("triggers", [])
     }
 
     # Version of required tasks
