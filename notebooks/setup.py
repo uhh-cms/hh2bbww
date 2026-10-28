@@ -21,6 +21,6 @@ def setup():
     # setup the law config such that hbw can be imported
     law.config.add_section("analysis")
     law.config.set("analysis", "default_analysis", "hbw.analysis.hbw_sl.hbw_sl")
-    law.config.set("analysis", "default_config", "c17")
+    law.config.set("analysis", "default_config", "c17v9")
     law.config.set("analysis", "default_dataset", "hh_ggf_hbb_hvvqqlnu_kl1_kt1_powheg")
     law.config.set("analysis", "default_columnar_sandbox", "bash::$CF_BASE/sandboxes/venv_columnar.sh")
