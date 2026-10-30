@@ -245,7 +245,7 @@ def add_njet_categories(config: od.Config) -> None:
     )
     config.add_category(
         name="njet2",
-        id=100003,
+        id=100002,
         selection="catid_njet2",
         label=r"$N_{jet} >= 2$",
     )
@@ -303,19 +303,19 @@ def add_dih_bjet_categories(config: od.Config) -> None:
 def add_trih_bjet_categories(config: od.Config) -> None:
     cat_eq2b = config.add_category(  # noqa: F841
         name="2b",
-        id=19000,
+        id=20000,
         selection="catid_eq2b",
         label=r"$2 btag$",
     )
     cat_3b = config.add_category(  # noqa: F841
         name="3b",
-        id=9000,
+        id=30000,
         selection="catid_eq3b",
         label=r"$3 btag$",
     )
     cat_4b = config.add_category(  # noqa: F841
         name="4b",
-        id=15050,
+        id=40000,
         selection="catid_geq4b",
         label=r"$\geq 4 btag$",
     )
