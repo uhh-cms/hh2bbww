@@ -63,28 +63,29 @@ def modify_cmsdb_processes():
 
     # top-level disambiguation
     # NOTE: this is needed since 2024 we have the additional lep verbosity
-    dy.aux = {}
-    dy_m4to10.aux = {}
-    dy_m10to50.aux = {}
-    dy_m50toinf.aux = {}
-    dy_ee.aux = {"production_mode_parent": ["dy"]}
-    dy_mumu.aux = {"production_mode_parent": ["dy"]}
-    dy_tautau.aux = {"production_mode_parent": ["dy"]}
-    dy_ee_m10to50.aux = {"production_mode_parent": ["dy_ee"]}
-    dy_ee_m50toinf.aux = {"production_mode_parent": ["dy_ee"]}
-    dy_ee_m50toinf_0j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
-    dy_ee_m50toinf_1j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
-    dy_ee_m50toinf_2j.aux = {"production_mode_parent": ["dy_ee_m50toinf"]}
-    dy_mumu_m10to50.aux = {"production_mode_parent": ["dy_mumu"]}
-    dy_mumu_m50toinf.aux = {"production_mode_parent": ["dy_mumu"]}
-    dy_mumu_m50toinf_0j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
-    dy_mumu_m50toinf_1j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
-    dy_mumu_m50toinf_2j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
-    dy_tautau_m10to50.aux = {"production_mode_parent": ["dy_tautau"]}
-    dy_tautau_m50toinf.aux = {"production_mode_parent": ["dy_tautau"]}
-    dy_tautau_m50toinf_0j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
-    dy_tautau_m50toinf_1j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
-    dy_tautau_m50toinf_2j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_ee.x.production_mode_parent = ["dy"]
+    dy_mumu.x.production_mode_parent = ["dy"]
+    dy_tautau.x.production_mode_parent = ["dy"]
+    # NOTE: "dy_m50toinf" does not have "dy_0j" as parent process, it is therefore not covered here
+    dy_m50toinf_0j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_m50toinf_1j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_m50toinf_2j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_ee_m10to50.x.production_mode_parent = ["dy_ee", "dy_m10to50"]
+    dy_ee_m50toinf.x.production_mode_parent = ["dy_ee", "dy_m50toinf"]
+    # NOTE: "dy_ee_0j" etc. processes are not present in the CMSDB, and are therefore not covered here
+    dy_ee_m50toinf_0j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_0j"]
+    dy_ee_m50toinf_1j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_1j"]
+    dy_ee_m50toinf_2j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_2j"]
+    dy_mumu_m10to50.x.production_mode_parent = ["dy_mumu", "dy_m10to50"]
+    dy_mumu_m50toinf.x.production_mode_parent = ["dy_mumu", "dy_m50toinf"]
+    dy_mumu_m50toinf_0j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_0j"]
+    dy_mumu_m50toinf_1j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_1j"]
+    dy_mumu_m50toinf_2j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_2j"]
+    dy_tautau_m10to50.x.production_mode_parent = ["dy_tautau", "dy_m10to50"]
+    dy_tautau_m50toinf.x.production_mode_parent = ["dy_tautau", "dy_m50toinf"]
+    dy_tautau_m50toinf_0j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_0j"]
+    dy_tautau_m50toinf_1j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_1j"]
+    dy_tautau_m50toinf_2j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_2j"]
 
     for dy_proc_inst in (
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
