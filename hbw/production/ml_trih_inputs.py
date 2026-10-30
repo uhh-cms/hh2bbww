@@ -13,7 +13,7 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import set_ak_column
 
-from hbw.production.prepare_objects import prepare_objects, prepare_hhh_bjets
+from hbw.production.prepare_objects import prepare_hhh_bjets
 from hbw.config.dl.variables import add_dl_ml_variables, add_hhh_ml_variables
 from hbw.production.ml_inputs import common_ml_inputs
 

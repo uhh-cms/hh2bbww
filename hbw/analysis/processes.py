@@ -95,10 +95,11 @@ def modify_cmsdb_processes():
     ):
         for flavour in ("hf", "lf"):
             aux = {"flavour": flavour}
-            # inherit auxiliary entires except the `production_mode_parent`, which is set automatically in `add_decay_process`
+            # inherit auxiliary entries except `production_mode_parent`
+            # which is set automatically in `add_decay_process`
             aux.update(dy_proc_inst.aux)
             aux.pop("production_mode_parent", None)
-            
+
             # resolve parent processes for all processes except the top-level DY process
             add_production_mode_parent = (dy_proc_inst != dy)
             add_decay_process(
