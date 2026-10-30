@@ -88,22 +88,6 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.tt2b_custom)
     config.add_process(config.x.procs.n.tt_bb_custom)
     minor = config.add_process(config.x.procs.n.minor)
-
-    # NOTE: I think this is unnecessary, but atm i like to keep it,
-    # as I am not sure how the whole od.Process jungle behaves otehrwise
-    dataset_inst = config.get_dataset("tt_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("tt_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("tt_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("ttbb_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-    dataset_inst = config.get_dataset("ttbb_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-    dataset_inst = config.get_dataset("ttbb_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-
     minor.label = "minor"
 
     color, sub_id = {
