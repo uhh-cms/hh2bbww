@@ -121,7 +121,7 @@ def vbf_jets_init(self: Producer) -> None:
         "{Electron,Muon}.{pdgId}",
         MET_COLUMN("pt"), MET_COLUMN("phi"), IF_DY("RecoilCorrMET.{pt,phi}"),
     },
-    produces={prepare_objects},
+    # produced columns set in the init function
 )
 def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """

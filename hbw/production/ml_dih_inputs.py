@@ -28,36 +28,7 @@ set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 ZERO_PADDING_VALUE = -10
 
 
-@producer(uses={prepare_objects, "*"}, produces={"dummy"})
-def check_columns(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Check that all columns are present in the events.
-    """
-    # apply behavior (for variable reconstruction)
-    events = self[prepare_objects](events, **kwargs)
-
-    from hbw.util import debugger
-    debugger()
-    return events
-
-
-def check_variable_existence(self: Producer) -> None:
-    """
-    Helper to check that all requested columns define a variable in the config
-    """
-    # check that all variables are defined in the config
-    for column in self.ml_input_columns:
-        if not self.config_inst.has_variable(column):
-            raise ValueError(f"Variable {column} is not defined in the config.")
-
-
-def check_column_bookkeeping(self: Producer, events: ak.Array) -> None:
-    """
-    Helper to check that all produced "mli" columns are bookkept in the config.
-    """
-    mli_fields = {field for field in events.fields if "mli_" in field}
-    if diff := mli_fields - self.config_inst.x.ml_input_columns:
-        raise ValueError(f"Extra fields in events: {diff}")
+from hbw.production.ml_inputs import check_variable_existence, check_column_bookkeeping
 
 
 @producer(

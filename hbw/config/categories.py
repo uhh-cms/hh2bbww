@@ -296,7 +296,7 @@ def add_dih_bjet_categories(config: od.Config) -> None:
         name="2b",
         id=20000,
         selection="catid_2b",
-        label=r"$2 btag$",
+        label=r"$\geq 2 btag$",
     )
 
 
