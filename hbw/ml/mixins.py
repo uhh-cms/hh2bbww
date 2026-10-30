@@ -407,6 +407,7 @@ class ModelFitMixin(CallbacksBase):
             raise ValueError(f"Unknown round option {round}")
 
         batch_sizes = {proc_inst: int(batch_size * batch_scaler) for proc_inst, batch_size in batch_sizes.items()}
+
         return batch_sizes
 
     def set_validation_weights(self, validation, batch_sizes, train_steps_per_epoch):

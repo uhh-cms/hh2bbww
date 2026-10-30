@@ -77,12 +77,16 @@ def configure_hbw_processes(config: od.Config):
     """
     # add main HH process
     # config.add_process(config.x.procs.n.hh_ggf)
-
     config.add_process(config.x.procs.n.t_bkg)
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
     config.add_process(config.x.procs.n.other)
     config.add_process(config.x.procs.n.hh_other)
+    config.add_process(config.x.procs.n.tt_custom)
+    config.add_process(config.x.procs.n.ttbb_custom)
+    config.add_process(config.x.procs.n.ttb_custom)
+    config.add_process(config.x.procs.n.tt2b_custom)
+    config.add_process(config.x.procs.n.tt_bb_custom)
     minor = config.add_process(config.x.procs.n.minor)
     minor.label = "minor"
 
@@ -91,6 +95,8 @@ def configure_hbw_processes(config: od.Config):
         "2022postEE": (color_palette["yellow"], 2),
         "2023preBPix": (color_palette["red"], 3),
         "2023postBPix": (color_palette["grey"], 4),
+        "2024": (color_palette["black"], 5),
+        "2025": (color_palette["green"], 6),
     }[config.x.cpn_tag]
 
     config.x.procs.n.background.add_process(
@@ -101,14 +107,47 @@ def configure_hbw_processes(config: od.Config):
         processes=config.x.procs.n.background.processes,
         aux={"unstack": True},
     )
-    config.x.procs.n.data.add_process(
-        name=f"data_{config.x.cpn_tag}",
-        id=900010 + sub_id,
-        label=f"Data {config.x.cpn_tag}",
-        color=color,
-        processes=config.x.procs.n.data.processes,
-        aux={"unstack": True},
-    )
+    if config.x.cpn_tag == "2024":
+        config.x.procs.n.data.add_process(
+            name="data_2024",
+            id=900010 + 5,
+            label="Data 2024",
+            color=color_palette["black"],
+            processes=config.x.procs.n.data.processes,
+            aux={"unstack": True},
+        )
+        config.x.procs.n.data.add_process(
+            name="data_2025",
+            id=900010 + 6,
+            label="Data 2025",
+            color=color_palette["green"],
+            aux={"unstack": True},
+        )
+    elif config.x.cpn_tag == "2025":
+        config.x.procs.n.data.add_process(
+            name="data_2025",
+            id=900010 + 6,
+            label="Data 2025",
+            color=color_palette["green"],
+            processes=config.x.procs.n.data.processes,
+            aux={"unstack": True},
+        )
+        config.x.procs.n.data.add_process(
+            name="data_2024",
+            id=900010 + 5,
+            label="Data 2024",
+            color=color_palette["black"],
+            aux={"unstack": True},
+        )
+    else:
+        config.x.procs.n.data.add_process(
+            name=f"data_{config.x.cpn_tag}",
+            id=900010 + sub_id,
+            label=f"Data {config.x.cpn_tag}",
+            color=color,
+            processes=config.x.procs.n.data.processes,
+            aux={"unstack": True},
+        )
 
     # Set dummy xsec for all processes if missing
     add_dummy_xsecs(config)
@@ -163,25 +202,22 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
         "weighting": None,
         "ml_id": -1,
     }
-
     for proc_name, process_settings in train_nodes.items():
         process_settings = law.util.merge_dicts(default_process_settings, process_settings)
 
         if process_settings["ml_id"] == -1:
-            logger.warning("ml_id for process {proc_name} set to '-1'; will not be used in training")
-
+            logger.warning(f"ml_id for process {proc_name} set to '-1'; will not be used in training")
         sub_processes = process_settings.pop("sub_processes", None)
-
         if config_inst.has_process(proc_name):
             logger.debug(f"update process {proc_name}")
             if sub_processes:
-                raise NotImplementedError("Cannot re-assign sub-processes to already existing Process {proc_name}")
+                raise NotImplementedError(f"Cannot re-assign sub-processes to already existing Process {proc_name}")
             proc_inst = config_inst.get_process(proc_name)
             apply_proc_settings(proc_inst, process_settings)
             set_proc_attr(proc_inst, "sub_process_class_factor", sub_process_class_factors.get(proc_name, 1))
         else:
             logger.debug(f"create new process {proc_name}")
-            proc_id = process_settings.pop("id", int(1e7) + law.util.create_hash(proc_name, l=6, to_int=True))
+            proc_id = process_settings.pop("id", int(1e7) + law.util.create_hash(proc_name, length=6, to_int=True))
             sub_process_insts = []
             for proc in sub_processes:
                 if not config_inst.has_process(proc):

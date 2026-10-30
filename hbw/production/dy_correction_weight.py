@@ -36,8 +36,8 @@ logger = law.logger.get_logger(__name__)
     # produced dy weight column
     produced_column="dy_correction_weight",
     uses_column=None,
-    version=4,
-    n_jet=2,
+    version=0,
+    n_jet=4,
     derivation_region="with_trigger_weight",
     derivation_configs=None,
     # derivation_configs=("c22prev14", "c22postv14", "c23prev14", "c23postv14"),
@@ -66,6 +66,9 @@ def dy_correction_weight(
         "c22postv14": "2022EE",
         "c23prev14": "2023",
         "c23postv14": "2023BPix",
+        "c24v15": "2024",
+        "c25v15": "2025",
+        "c26v15": "2026",
     }
     if self.derivation_configs:
         era = "_".join([era_map[cfg] for cfg in self.derivation_configs])
@@ -129,6 +132,11 @@ def dy_correction_weight_init(self: Producer) -> None:
 
 @dy_correction_weight.requires
 def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) -> None:
+
+    # TODO: the here required categories don't exist in some workflows leading to errors here.
+    # In that case this can be commented out, but we should probably find a less hacky solution
+    # return None
+
     from hbw.tasks.dy_corrections import ExportDYWeights
 
     reqs["dy_correction_weight"] = ExportDYWeights.req(
@@ -148,7 +156,7 @@ def dy_correction_weight_requires(self: Producer, task: law.Task, reqs: dict) ->
         categories=("dycr__2mu",),
         variables=("n_jet-ptll_for_dy_corr_V3",),
         njet_overflow=self.n_jet,
-        rate_factor_overflow=5,
+        rate_factor_overflow=7,
     )
 
 

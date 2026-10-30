@@ -71,6 +71,12 @@ def hbw_process_ids_init(self: Producer) -> None:
     elif self.dataset_inst.name.startswith("w_lnu") and self.dataset_inst.name.endswith("_amcatnlo"):
         # stitching of DY NLO samples
         self.process_producer = w_lnu_nlo_process_producer
+    elif self.dataset_inst.name.startswith("tt_") and self.dataset_inst.name.endswith("_powheg"):
+        # stitching of ttbb Powheg samples
+        self.process_producer = tt_process_producer
+    elif self.dataset_inst.name.startswith("ttbb_") and self.dataset_inst.name.endswith("_powheg"):
+        # stitching of ttbb Powheg samples
+        self.process_producer = tt_process_producer
     elif len(self.dataset_inst.processes) == 1:
         self.process_producer = process_ids
     else:
@@ -257,9 +263,12 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     # hf_genjets = hf_genjets[ak.num(hf_genjets, axis=1) >= 1]
 
     # identify base process as "dy_{mass-window}"
-    base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
+    if self.config_inst.campaign.x.year >= 2024:
+        base_proc_name = "_".join(self.dataset_inst.name.split("_")[:3])
+    else:
+        base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
     print(base_proc_name)
-    if base_proc_name == "dy_m50toinf":
+    if "dy" in base_proc_name and "m50toinf" in base_proc_name:
         # separate into njet and hf/lf
         process_masks = {
             f"{base_proc_name}_0j_hf": (n_partons == 0) & is_hf,
@@ -275,7 +284,7 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
             # f"{base_proc_name}_2j": n_partons == 2,
             # f"{base_proc_name}_3j": n_partons == 3,  # should not be assigned
         }
-    elif base_proc_name == "dy_m4to10" or base_proc_name == "dy_m10to50":
+    elif ("dy" in base_proc_name and "m10to50" in base_proc_name) or ("dy" in base_proc_name and "m4to10" in base_proc_name):  # noqa E501
         # separate into hf/lf
         process_masks = {
             f"{base_proc_name}_hf": is_hf,
@@ -289,4 +298,47 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)
     events = set_ak_column(events, "process_id", process_id, value_type=np.int32)
 
+    return events
+
+
+@producer(
+    uses={"genTtbarId"},
+    produces={"process_id"},
+)
+def tt_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    This function calculates the process ID for the given tt dataset based on the
+    number and flavour of additional jets, in order to create new
+
+    :raises NotImplementedError: If the dataset cannot be assigned to the correct DY base process
+    """
+
+    top_id = events.genTtbarId % 100
+    is_ttb = (top_id == 51)  # & (top_id == 52)
+    is_tt2b = top_id == 52  # Onde additional bjet (gluon psliiting taht is so close we only see one)
+    is_tt_bb = (top_id >= 53) & (top_id <= 55)
+    is_ttcc = (top_id >= 41) & (top_id <= 45)
+    is_ttlf = (top_id == 0)
+    is_ttbb = (is_ttb | is_tt2b | is_tt_bb)  # noqa
+    is_tt = (is_ttcc | is_ttlf)
+
+    base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])
+    print(base_proc_name)
+    if base_proc_name.startswith("tt"):
+        process_masks = {
+            # f"{base_proc_name}_1b": (is_ttbb),
+            f"{base_proc_name}_nonb": (is_tt),
+            f"{base_proc_name}_b": is_ttb,
+            f"{base_proc_name}_2b": is_tt2b,
+            f"{base_proc_name}_bb": is_tt_bb,
+            # f"{base_proc_name}_cc": is_ttcc,
+            # f"{base_proc_name}_lf": is_ttlf,
+        }
+    else:
+        raise NotImplementedError(
+            f"Process Producer {self.cls_name} for dataset {self.dataset_inst.name} not implemented",
+        )
+
+    process_id = get_process_id_from_masks(events, process_masks, self.dataset_inst)
+    events = set_ak_column(events, "process_id", process_id, value_type=np.int32)
     return events

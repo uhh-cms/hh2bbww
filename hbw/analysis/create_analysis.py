@@ -53,7 +53,7 @@ def create_hbw_analysis(
         "$CF_BASE/sandboxes/venv_columnar.sh",
         # "$CF_BASE/sandboxes/venv_ml_tf.sh",
         "$HBW_BASE/sandboxes/venv_ml_plotting.sh",
-        # "$HBW_BASE/sandboxes/venv_onnx.sh",
+        "$HBW_BASE/sandboxes/venv_onnx.sh",
     ]
 
     # cmssw sandboxes that should be bundled for remote jobs in case they are needed
@@ -68,7 +68,7 @@ def create_hbw_analysis(
     # config groups for conveniently looping over certain configs
     # (used in wrapper_factory)
     analysis_inst.set_aux("config_groups", {  # NOTE: not resolved by ConfigTask
-        "run3": ["c22prev14", "c22postv14", "c23prev14", "c23postv14"],
+        "run3": ["c22prev14", "c22postv14", "c23prev14", "c23postv14", "c24v15"],
     })
 
     # used by our MLModel (also set in config_inst, so be careful)
@@ -180,6 +180,21 @@ def create_hbw_analysis(
         "c23postv14",
         2311,
     )
+    # 2024
+    add_lazy_config(
+        "c24v15",
+        2400,
+    )
+    # 2025
+    add_lazy_config(
+        "c25v15",
+        2500,
+    )
+    # 2026
+    add_lazy_config(
+        "c26v15",
+        2600,
+    )
 
     # add_lazy_config(
     #     "c22prev12_das",
@@ -195,7 +210,10 @@ def create_hbw_analysis(
     #
 
     software_tasks = ("cf.BundleBashSandbox", "cf.BundleCMSSWSandbox", "cf.BundleSoftware")
-    shareable_analysis_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs")
+    shareable_analysis_tasks = (
+        "cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents",
+        "cf.MergeSelectionStats", "cf.MergeReducedEvents", "cf.MergeReductionStats", "cf.ProvideReducedEvents",
+    )
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
     histogram_tasks = ("cf.CreateHistograms", "cf.MergeHistograms", "cf.MergeShiftedHistograms")
     skip_new_version_schema = ()
@@ -277,7 +295,9 @@ def create_hbw_analysis(
         store_parts.pop("PLACEHOLDER")
         for part in parts_order_end:
             if part in store_parts:
-                store_parts.move_to_end(part)
+                # store_parts.move_to_end(part)  NOTE for some reason broken after cf update?
+                value = store_parts.pop(part)
+                store_parts[part] = value
 
         task_version_from_cspmw = (
             "cf.CalibrateEvents",

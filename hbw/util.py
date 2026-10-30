@@ -632,6 +632,16 @@ def IF_NANO_V14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any 
 
 
 @deferred_column
+def IF_NANO_V15(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v15.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version == 15 else None
+
+
+@deferred_column
 def IF_NANO_geV13(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     """
     Helper to check if the campaign of this particular dataset is nano v13 or higher.
@@ -639,6 +649,42 @@ def IF_NANO_geV13(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> An
     cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
     version = int(cpn_name.split("v")[-1])
     return self.get() if version >= 13 else None
+
+
+@deferred_column
+def IF_NANO_geV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v14 or higher.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version >= 14 else None
+
+
+@deferred_column
+def IF_NANO_leqV14(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign of this particular dataset is nano v14 or lower.
+    """
+    cpn_name = func.dataset_inst.x("campaign", func.config_inst.campaign.name)
+    version = int(cpn_name.split("v")[-1])
+    return self.get() if version <= 14 else None
+
+
+@deferred_column
+def IF_NOT_2024(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign is 2024 or not
+    """
+    return self.get() if func.config_inst.campaign.x.year != 2024 else None
+
+
+@deferred_column
+def IF_2024(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    """
+    Helper to check if the campaign is 2024 or not
+    """
+    return self.get() if func.config_inst.campaign.x.year == 2024 else None
 
 
 @deferred_column
@@ -660,6 +706,18 @@ def IF_SL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[
 @deferred_column
 def IF_DL(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
     return self.get() if func.config_inst.has_tag("is_dl") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
+def IF_HHH(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_hhh") else None
+    # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
+
+
+@deferred_column
+def IF_HH(self: ArrayFunction.DeferredColumn, func: ArrayFunction) -> Any | set[Any]:
+    return self.get() if func.config_inst.has_tag("is_hh") else None
     # return self.get() if func.config_inst.x.lepton_tag == "dl" else None
 
 

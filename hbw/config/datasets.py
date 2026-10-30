@@ -1,3 +1,4 @@
+# NOTE: This is for 2024
 # coding: utf-8
 
 """
@@ -5,6 +6,8 @@ Configuration of the Run 2 HH -> bbWW datasets.
 """
 
 from __future__ import annotations
+
+from hbw.util import timeit_multiple
 
 import itertools
 
@@ -34,7 +37,10 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
     elif config.campaign.x.run == 3 and nano_version == 14:
         config.x.data_streams = ["mu", "e", "muoneg"]
     elif config.campaign.x.run == 3:
-        config.x.data_streams = ["mu", "egamma", "muoneg"]
+        if config.campaign.x.year >= 2024:
+            config.x.data_streams = ["mu", "e", "muoneg"]
+        else:
+            config.x.data_streams = ["mu", "egamma", "muoneg"]
 
     data_eras = {
         "2017": list("cdef"),
@@ -42,6 +48,9 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         "2022postEE": list("efg"),
         "2023preBPix": ["c1", "c2", "c3", "c4"],
         "2023postBPix": ["d1", "d2"],
+        "2024": list("cdefghi"),
+        "2025": list("cdefg"),
+        "2026": list("bd"),
     }[config.x.cpn_tag]
 
     data_datasets = [
@@ -112,6 +121,10 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "st_twchannel_tbar_sl_powheg",
                 "st_twchannel_t_dl_powheg",
                 "st_twchannel_tbar_dl_powheg",
+                "st_tchannel_t_had_4f_powheg",
+                "st_tchannel_tbar_had_4f_powheg",
+                "st_tchannel_t_lep_4f_powheg",
+                "st_tchannel_tbar_lep_4f_powheg",
             ]),
         ],
         "dy": [
@@ -125,14 +138,41 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_m50toinf_ht1200to2500_madgraph",
                 "dy_m50toinf_ht2500toinf_madgraph",
             ]),
-            *config.x.if_era(run=3, values=[
-                # NLO samples
+            # TODO: atm I am annoyed that i cannot give a list to year, cause 2022 and 2023 use the same samples
+            # NOTE: Should be implemented now
+            *config.x.if_era(run=3, year=2022, values=[
                 "dy_m10to50_amcatnlo",
                 "dy_m50toinf_amcatnlo",
                 # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
                 "dy_m50toinf_0j_amcatnlo",
                 "dy_m50toinf_1j_amcatnlo",
                 "dy_m50toinf_2j_amcatnlo",
+            ]),
+            *config.x.if_era(run=3, year=2023, values=[
+                "dy_m10to50_amcatnlo",
+                "dy_m50toinf_amcatnlo",
+                # "dy_m4to10_amcatnlo",  # removed by mll>20 cut
+                "dy_m50toinf_0j_amcatnlo",
+                "dy_m50toinf_1j_amcatnlo",
+                "dy_m50toinf_2j_amcatnlo",
+            ]),
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                # NLO samples NOTE: In 2024 we only have them split into pt, therefore I am using those
+                "dy_ee_m50toinf_amcatnlo",
+                "dy_mumu_m50toinf_amcatnlo",
+                "dy_tautau_m50toinf_amcatnlo",
+                "dy_ee_m10to50_amcatnlo",
+                "dy_mumu_m10to50_amcatnlo",
+                "dy_tautau_m10to50_amcatnlo",
+                "dy_ee_m50toinf_0j_amcatnlo",
+                "dy_mumu_m50toinf_0j_amcatnlo",
+                "dy_tautau_m50toinf_0j_amcatnlo",  # NOTE comment out for triggerSF on split MC
+                "dy_ee_m50toinf_1j_amcatnlo",
+                "dy_mumu_m50toinf_1j_amcatnlo",
+                "dy_tautau_m50toinf_1j_amcatnlo",
+                "dy_ee_m50toinf_2j_amcatnlo",
+                "dy_mumu_m50toinf_2j_amcatnlo",
+                "dy_tautau_m50toinf_2j_amcatnlo",
             ]),
         ],
         "w_lnu": [
@@ -146,15 +186,27 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "w_lnu_ht1200to2500_madgraph",
                 "w_lnu_ht2500toinf_madgraph",
             ]),
-            *config.x.if_era(run=3, values=[
+            *config.x.if_era(run=3, year=2022, values=[
                 "w_lnu_amcatnlo",
                 "w_lnu_0j_amcatnlo",
                 "w_lnu_1j_amcatnlo",
                 "w_lnu_2j_amcatnlo",
             ]),
+            *config.x.if_era(run=3, year=2023, values=[
+                "w_lnu_amcatnlo",
+                "w_lnu_0j_amcatnlo",
+                "w_lnu_1j_amcatnlo",
+                "w_lnu_2j_amcatnlo",
+            ]),
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                "w_lnu_1j_madgraph",
+                "w_lnu_2j_madgraph",
+                "w_lnu_3j_madgraph",
+                "w_lnu_4j_madgraph",
+            ]),
         ],
         "vv": [
-            *config.x.if_era(run=3, values=[
+            *config.x.if_era(run=3, year=2022, values=[
                 "ww_2l2nu_powheg",
                 "ww_lnu2q_powheg",
                 "wz_3lnu_powheg",
@@ -166,12 +218,62 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "wz_pythia",
                 # "zz_pythia",
             ]),
+            *config.x.if_era(run=3, year=2023, values=[
+                "ww_2l2nu_powheg",
+                "ww_lnu2q_powheg",
+                "wz_3lnu_powheg",
+                "wz_2l2q_powheg",
+                "wz_lnu2q_powheg",
+                "zz_2l2nu_powheg",
+                "zz_2l2q_powheg",
+                # "ww_pythia",
+                # "wz_pythia",
+                # "zz_pythia",
+            ]),
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                "ww_sl_powheg",
+                "ww_dl_powheg",
+                # "ww_fh_powheg",  # TODO: weird pyarrow error
+                "wz_wlnu_zll_powheg",
+                "wz_wqq_zll_powheg",
+                "wz_wlnu_zqq_powheg",
+                "zz_zll_zll_powheg",
+                "zz_zqq_zll_powheg",
+                "zz_zll_znunu_powheg",
+            ]),
         ],
         "vvv": [
             "www_4f_amcatnlo",
             "wwz_4f_amcatnlo",
             "wzz_amcatnlo",
             "zzz_amcatnlo",
+        ],
+        "hhh": [
+            *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
+                "hhh_4b2w_c30_d40_amcatnlo",
+                "hhh_4b2w_c30_d499_amcatnlo",
+                "hhh_4b2w_c30_d4m1_amcatnlo",
+                "hhh_4b2w_c319_d419_amcatnlo",
+                "hhh_4b2w_c31_d40_amcatnlo",
+                "hhh_4b2w_c31_d42_amcatnlo",
+                "hhh_4b2w_c32_d4m1_amcatnlo",
+                "hhh_4b2w_c34_d49_amcatnlo",
+                "hhh_4b2w_c3m1_d40_amcatnlo",
+                "hhh_4b2w_c3m1_d4m1_amcatnlo",
+                "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
+            ]),
+            *config.x.if_era(run=3, cfg_tag="is_hhh", year=[2024, 2025, 2026], values=[
+                "hhh_4b2w_2l2nu_c30_d4_custom",
+                "hhh_4b2w_2l2nu_c30_d499_custom",
+                "hhh_4b2w_2l2nu_c319_d419_custom",
+                "hhh_4b2w_2l2nu_c31_d40_custom",
+                "hhh_4b2w_2l2nu_c31_d42_custom",
+                "hhh_4b2w_2l2nu_c32_d4m1_custom",
+                "hhh_4b2w_2l2nu_c34_d49_custom",
+                "hhh_4b2w_2l2nu_c3m1_d40_custom",
+                "hhh_4b2w_2l2nu_c3m1_d4m1_custom",
+                "hhh_4b2w_2l2nu_c3m1p5_d4m0p5_custom",
+            ]),
         ],
         "ttv": [
             # missing pdf weights in 2022postEE uhh samples
@@ -196,6 +298,29 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "ttwz_madgraph",
             "ttzz_madgraph",
         ],
+        "ttbb": [
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                "ttbb_dl_powheg",
+                "ttbb_sl_powheg",
+                "ttbb_fh_powheg",
+            ]),
+        ],
+        "tthh_4b": [
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                "tthh_4b_madgraph",
+            ]),
+            # "tthh_4b_madgraph",
+        ],
+        "vhh_4b": [
+            *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
+                "whh_4b_k2v1p0kl0p0kv1p0_madgraph",
+                "zhh_4b_k2v1p0kl0p0kv1p0_madgraph",
+            ]),
+            *config.x.if_era(run=3, year=2022, values=[
+                "whh_4b_k2v1p0kl0p0kv1p0_madgraph",
+                "zhh_4b_k2v1p0kl0p0kv1p0_madgraph",
+            ]),
+        ],
         "tttt": ["tttt_amcatnlo"],
         "h": [
             *config.x.if_era(run=3, values=[
@@ -206,12 +331,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_vbf_hbb_powheg",
                 "h_vbf_hww2l2nu_powheg",
                 # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
-                "zh_zqq_hbb_powheg",
-                "zh_zll_hbb_powheg",
+                "zh_zqq_hbb_powheg",  # TODO
+                "zh_zll_hbb_powheg",  # TODO
                 # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
-                "zh_hww2l2nu_powheg",
-                "zh_gg_zll_hbb_powheg",
-                "zh_gg_zqq_hbb_powheg",
+                # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
+                "zh_gg_zll_hbb_powheg",  # TODO
+                # "zh_gg_zqq_hbb_powheg",  # NOTE: only 4 events in 2025
                 # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
                 # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
                 # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
@@ -232,12 +357,15 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # htt
                 "h_ggf_htt_powheg",
                 "h_vbf_htt_powheg",
-                "zh_htt_powheg",
+                # "zh_htt_powheg", # TODO: Failing atm, not sure why
                 "wph_htt_powheg",
                 "wmh_htt_powheg",
+                "bbh_htt_powheg",
                 # thq, thw
                 "thq_4f_madgraph",
+                # "thw_4f_madgraph",
                 "thw_madgraph",
+                # "thq_madgraph",
             ]),
         ],
         "hh_ggf": [
@@ -393,7 +521,6 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     # for signal_proc in ("hh_ggf_hbb_hvvqqlnu", "hh_ggf_hbb_hvv2l2nu", "hh_vbf_hbb_hvvqqlnu", "hh_vbf_hbb_hvv2l2nu"):
     #     for dataset_name in dataset_names[signal_proc]:
     #         config.add_process(procs.n(dataset_name.replace("_powheg", "").replace("_madgraph", "")))
-
     # loop over all dataset names and add them to the config
     missing_datasets = set()
     for dataset_name in list(itertools.chain(*dataset_names.values())):
@@ -425,10 +552,12 @@ def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
         dataset.info.pop("extension")
 
 
+@timeit_multiple
 def configure_hbw_datasets(
     config: od.Config,
     limit_dataset_files: int | None = None,
     add_dataset_extensions: bool = False,
+    split_data_in_era: bool = False,
 ):
     # allow usage of UHH campaign
     enable_uhh_campaign_usage(config)
@@ -515,6 +644,97 @@ def configure_hbw_datasets(
         if dataset.is_data:
             if config.x.cpn_tag == "2022preEE":
                 dataset.x.jec_era = "RunCD"
+
+        # NOTE copied from Johanna for btagging stuff
+        if config.campaign.x.year >= 2024:
+            # TODO figure out which datasets should be grouped together;
+            # for now, don't group any datasets together and treat each type of dataset separately
+            config.x.btag_wp_eff_groups = [
+                # ["tt_*", "st_*", "hh_*", "hhh_*", "ww_*", "dy_*", "w_lnu_*", "wz_*", "zz_*"],  # TODO: Look what we have all there, I am not sure also this is statistics relevant # noqa: E501
+                # ["*"],
+                ["dy_*", "w_lnu_*"],
+                ["hhh_*"],
+                # ["w_lnu_*"],
+                ["st_*"],
+                ["tt_*", "ttbb_*"],
+                ["ww_*", "wz_*", "zz_*"],
+                ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
+                ["hh_*", "whh_*", "tthh_*", "zhh_*"],
+                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*", "bbh_*"],
+                #     ["dy_*",
+                #     "hhh_*",
+                #     "w_lnu_*",
+                #     "st_*",
+                #     "tt_*", "ttbb_*",
+                #     "ww_*", "wz_*", "zz_*",
+                #     "wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*",
+                #     "hh_*", "whh_*", "tthh_*", "zhh_*",
+                #     "h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*"],
+            ]
+            group_matched = False
+            for i, dataset_pattern in enumerate(config.x.btag_wp_eff_groups):
+                if law.util.multi_match(dataset.name, dataset_pattern):
+                    if group_matched:
+                        raise ValueError(
+                            f"dataset '{dataset.name}' already has a btag WP group assigned! Cannot assign it to more "
+                            "than one group",
+                        )
+                    group_matched = True
+                    dataset.add_tag(f"btag_wp_eff_group_{i}")
+            if not group_matched and dataset.is_mc:
+                raise ValueError(f"no btag_wp_eff_group_* assigned to dataset '{dataset.name}'")
+            if group_matched and dataset.is_data:
+                raise ValueError(f"must not assign btag_wp_eff_group_* to dataset '{dataset.name}'")
+
+    if split_data_in_era:
+        for dataset in config.datasets:
+            if not dataset.name.startswith("data_"):
+                continue
+            remove_proc = list(dataset.processes)[0]
+            if dataset.name.endswith("c"):
+                try:
+                    dataset.add_process(config.x.procs.n.data_2024_c)
+                except Exception as e:  # noqa
+                    from hbw.util import debugger; debugger()  # noqa
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("d"):
+                dataset.add_process(config.x.procs.n.data_2024_d)
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("e"):
+                dataset.add_process(config.x.procs.n.data_2024_e)
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("f"):
+                dataset.add_process(config.x.procs.n.data_2024_f)
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("g"):
+                dataset.add_process(config.x.procs.n.data_2024_g)
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("h"):
+                dataset.add_process(config.x.procs.n.data_2024_h)
+                dataset.remove_process(remove_proc)
+
+            elif dataset.name.endswith("i"):
+                dataset.add_process(config.x.procs.n.data_2024_i)
+                dataset.remove_process(remove_proc)
+
+        #     data_2024_eras = ("c", "d", "e", "f", "g", "h", "i")
+
+        #     for dataset in config.datasets:
+        #         if not dataset.name.startswith("data_"):
+        #             continue
+
+        #         for era in data_2024_eras:
+        #             if dataset.name.endswith(era):
+        #                 old_proc = list(dataset.processes)[0]
+        #                 new_proc = getattr(config.x.procs.n, f"data_era_{era}")
+        #                 dataset.add_process(new_proc)
+        #                 dataset.remove_process(old_proc)
+        #                 break   # <- important: stop after matching the correct era
 
 
 def get_custom_hh_2017_datasets(

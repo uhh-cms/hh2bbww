@@ -82,7 +82,8 @@ class HBWInferenceModelBase(InferenceModel):
         This classmethod defines, which datasets are used from the inference model
         and is used to declare for which datasets to run TAF init functions.
         """
-        used_datasets = {"hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg"}
+        # used_datasets = {"hh_ggf_hbb_hvv2l2nu_kl1_kt1_powheg"}
+        used_datasets = {"tt_dl_powheg"}
         # used_datasets = set().union(*[
         #     get_datasets_from_process(config_inst, proc, strategy="all")
         #     for proc in cls.processes
@@ -104,6 +105,20 @@ class HBWInferenceModelBase(InferenceModel):
             pattern = r"hh_vbf_([a-zA-Z\d]+)_([a-zA-Z\d]+)_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)"
             replacement = r"qqHH_CV_\3_C2V_\4_kl_\5_\1\2"
             return re.sub(pattern, replacement, proc)
+        elif proc.startswith("hhh_4b2w"):
+            pattern = r"^hhh_4b2w_2l2nu(.*)$"
+            replacement = r"hhh_4b2w2l2nu\1"
+            return re.sub(pattern, replacement, proc)
+        elif proc.startswith("tt_custom"):
+            return "ttbar"
+        elif proc.startswith("ttbb_custom"):
+            return "ttbb"
+        elif proc.startswith("ttb_custom"):
+            return "ttbar_b"
+        elif proc.startswith("tt2b_custom"):
+            return "ttbar_2b"
+        elif proc.startswith("tt_bb_custom"):
+            return "ttbar_bb"
         else:
             return proc
 
@@ -159,7 +174,7 @@ class HBWInferenceModelBase(InferenceModel):
         self.add_inference_processes()
         self.remove_inference_processes()
         self.add_inference_parameters()
-        self.ratify_shape_parameters()
+        # self.ratify_shape_parameters()
         # self.print_model()
         #
         # post-processing
@@ -402,7 +417,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     for config_inst in self.config_insts
                 },
-                "is_signal": ("hh_" in proc.lower()),
+                "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower()),  # noqa E501
             }
             if self.scale_signal and kwargs["is_signal"]:
                 logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")
@@ -532,6 +547,9 @@ class HBWInferenceModelBase(InferenceModel):
             for proc in procs:
                 if proc not in self.processes:
                     continue
+                # NOTE: Done this for HHH there is some tsuff I have to sort out
+                # elif "dy" in proc:
+                #     continue
                 elif proc in proc_handled_by_unconstrained_rate:
                     logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
@@ -543,6 +561,8 @@ class HBWInferenceModelBase(InferenceModel):
                 ecm = config_inst.campaign.ecm
                 if "scale" in process_inst.xsecs[ecm]:
                     scale_key = "scale"
+                elif "dy" in process_inst.name:
+                    continue
                 elif "scale" in process_inst.xsecs[13]:
                     scale_key = "scale"
                     ecm = 13
@@ -573,6 +593,9 @@ class HBWInferenceModelBase(InferenceModel):
             for proc in procs:
                 if proc not in self.processes:
                     continue
+                # NOTE: Done this for HHH there is some tsuff I have to sort out
+                # elif "dy" in proc:
+                #     continue
                 elif proc in proc_handled_by_unconstrained_rate:
                     logger.info(
                         f"Process {proc} is already handled by rate_unconstrained. Skipping "
@@ -582,6 +605,8 @@ class HBWInferenceModelBase(InferenceModel):
                 ecm = config_inst.campaign.ecm
                 if "pdf" in process_inst.xsecs[ecm]:
                     pdf_key = "pdf"
+                elif "dy" in process_inst.name:
+                    continue
                 elif "pdf" in process_inst.xsecs[13]:
                     pdf_key = "pdf"
                     ecm = 13
@@ -629,10 +654,11 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        single_bin_cats = [cat_name for cat_name in self.cat_names if any(
-            bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
-        )]
-        shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        # single_bin_cats = [cat_name for cat_name in self.cat_names if any(
+        #     bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
+        # )]
+        # shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        shape_cats = [cat_name for cat_name in self.cat_names]
 
         for shape_uncertainty, shape_processes in self.processes_per_shape.items():
             combine_uncertainty_name = const.rename_systematics.get(
@@ -656,7 +682,7 @@ class HBWInferenceModelBase(InferenceModel):
             #         param_kwargs["category"] = f"*_{bjet_cat}_*"
             #         param_kwargs["category_match_mode"] = "all"
             #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
-            for year in (2022, 2023):
+            for year in (2022, 2023, 2024, 2025, 2026):
                 if shape_uncertainty.endswith(str(year)):
                     shift_source = shift_source.replace(f"_{year}", "")
                     config_insts = [
@@ -686,15 +712,15 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.shape,
                     **param_kwargs,
                 )
-            if single_bin_cats:
-                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
-                self.add_parameter(
-                    combine_uncertainty_name,
-                    category=single_bin_cats,
-                    type=ParameterType.rate_gauss,
-                    transformations=transformations,
-                    **param_kwargs,
-                )
+            # if single_bin_cats:
+            #     transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
+            #     self.add_parameter(
+            #         combine_uncertainty_name,
+            #         category=single_bin_cats,
+            #         type=ParameterType.rate_gauss,
+            #         transformations=transformations,
+            #         **param_kwargs,
+            #     )
 
             # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
             # if is_theory:
@@ -708,13 +734,13 @@ class HBWInferenceModelBase(InferenceModel):
             return
         # TODO: might be a good idea to transform all minor processes to lnN
         # (or not even consider them from the beginning)
-        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)
+        # rate_two_sideds = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
         transformations_dict = {
-            "dy_hf": {None: rate_two_sided},
-            "dy_lf": {None: rate_two_sided},
-            "ttw": {None: rate_two_sided},
-            "ttz": {None: rate_two_sided},
-            "vv": {None: rate_two_sided},
+            # "dy_hf": {None: rate_two_sided},
+            # "dy_lf": {None: rate_two_sided},
+            # "ttw": {None: rate_two_sided},
+            # "ttz": {None: rate_two_sided},
+            # "vv": {None: rate_two_sided},
         }
         for process, parameter_dict in transformations_dict.items():
             for parameter, transformations in parameter_dict.items():

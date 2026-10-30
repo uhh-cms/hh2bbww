@@ -13,10 +13,10 @@ from columnflow.production import Producer, producer
 from columnflow.util import maybe_import
 from columnflow.columnar_util import remove_ak_column, set_ak_column
 
+from hbw.selection.common import masked_sorted_indices
 from hbw.production.prepare_objects import prepare_objects
 from hbw.production.jets import vbf_candidates
 from hbw.config.ml_variables import add_common_ml_variables, add_sl_ml_variables
-from hbw.config.dl.variables import add_dl_ml_variables
 from columnflow.production.cms.dy import recoil_corrected_met
 
 from hbw.util import MET_COLUMN, IF_DY, call_once_on_config
@@ -138,7 +138,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     _clear_cache = kwargs.pop("_clear_cache", False)
     kwargs["_clear_cache"] = True
     for jet_collection, dst_basename in (
-        ("Lightjet", "mli_vbf"),
+        ("Lightjet", "mli_vbf"),  # TODO need to update the lightjet collection before this, although for HH is should actually be fine? # noqa: E501
         ("VBFCandidateJet", "mli_full_vbf"),
     ):
         print(jet_collection, dst_basename)
@@ -156,8 +156,8 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     kwargs["_clear_cache"] = _clear_cache
 
     # object padding
-    events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
-    events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
+    # events = set_ak_column(events, "Lightjet", ak.pad_none(events.Lightjet, 2))
+    # events = set_ak_column(events, "Bjet", ak.pad_none(events.Bjet, 2))
     events = set_ak_column(events, "ForwardJet", ak.pad_none(events.ForwardJet, 2))
     events = set_ak_column(events, "InclJet", ak.pad_none(events.InclJet, 2))
     events = set_ak_column(events, "VBFCandidateJet", ak.pad_none(events.VBFCandidateJet, 2))
@@ -167,9 +167,9 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     btag_wp_score = self.config_inst.x.btag_wp_score
     btag_column = self.config_inst.x.btag_column
 
-    events = set_ak_column_f32(events, "Jet.b_score", events.Jet[btag_column])
-    events = set_ak_column_f32(events, "Bjet.b_score", events.Bjet[btag_column])
-    events = set_ak_column_f32(events, "Lightjet.b_score", events.Lightjet[btag_column])
+    # events = set_ak_column_f32(events, "Jet.b_score", events.Jet[btag_column])
+    # events = set_ak_column_f32(events, "Bjet.b_score", events.Bjet[btag_column])
+    # events = set_ak_column_f32(events, "Lightjet.b_score", events.Lightjet[btag_column])
 
     # H->bb FatJet
     for var in [
@@ -180,11 +180,11 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # low-level features
     for var in ["pt", "eta", "b_score"]:
-        events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
-        events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
+        # events = set_ak_column_f32(events, f"mli_b1_{var}", events.Bjet[:, 0][var])
+        # events = set_ak_column_f32(events, f"mli_b2_{var}", events.Bjet[:, 1][var])
         # even in DL, ~10% of events contain 4 jets, so it might be worth keeping this
-        events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
-        events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
+        # events = set_ak_column_f32(events, f"mli_j1_{var}", events.Lightjet[:, 0][var])
+        # events = set_ak_column_f32(events, f"mli_j2_{var}", events.Lightjet[:, 1][var])
         # observables for full VBF jets
         if var == "b_score":
             continue
@@ -209,11 +209,11 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # bjets in general
     events = set_ak_column_f32(
-        events, "mli_n_btag", ak.num(events.Jet[events.Jet.b_score > btag_wp_score], axis=1),
+        events, "mli_n_btag", ak.num(events.Jet[events.Jet[btag_column] > btag_wp_score], axis=1),
     )
-    events = set_ak_column_f32(events, "mli_b_score_sum", ak.sum(events.Jet.b_score, axis=1))
-    events = set_ak_column_f32(events, "mli_b_b_score_sum", ak.sum(events.Bjet.b_score, axis=1))
-    events = set_ak_column_f32(events, "mli_l_b_score_sum", ak.sum(events.Lightjet.b_score, axis=1))
+    # events = set_ak_column_f32(events, "mli_b_score_sum", ak.sum(events.Jet.b_score, axis=1))
+    # events = set_ak_column_f32(events, "mli_b_b_score_sum", ak.sum(events.Bjet.b_score, axis=1))
+    # events = set_ak_column_f32(events, "mli_l_b_score_sum", ak.sum(events.Lightjet.b_score, axis=1))
 
     # all possible jet pairs
     jet_pairs = ak.combinations(events.Jet, 2)
@@ -227,20 +227,20 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column_f32(events, "mli_maxdr_jj_alljets", ak.max(dr, axis=1))
 
     # hbb features
-    hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
-    events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
-    events = set_ak_column_f32(events, "mli_mbb", hbb.mass)
+    # hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
+    # events = set_ak_column_f32(events, "mli_bb_pt", hbb.pt)
+    # events = set_ak_column_f32(events, "mli_mbb", hbb.mass)
 
-    events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
-    events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
-    events = set_ak_column_f32(events, "mli_deta_bb", abs(events.Bjet[:, 0].eta - (events.Bjet[:, 1]).eta))
+    # events = set_ak_column_f32(events, "mli_dr_bb", events.Bjet[:, 0].delta_r(events.Bjet[:, 1]))
+    # events = set_ak_column_f32(events, "mli_dphi_bb", abs(events.Bjet[:, 0].delta_phi(events.Bjet[:, 1])))
+    # events = set_ak_column_f32(events, "mli_deta_bb", abs(events.Bjet[:, 0].eta - (events.Bjet[:, 1]).eta))
 
     # angles to lepton
-    mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
-    events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
+    # mindr_lb = ak.min(events.Bjet.delta_r(events.Lepton[:, 0]), axis=-1)
+    # events = set_ak_column_f32(events, "mli_mindr_lb", mindr_lb)
 
-    mindr_lj = ak.min(events.Lightjet.delta_r(events.Lepton[:, 0]), axis=-1)
-    events = set_ak_column_f32(events, "mli_mindr_lj", mindr_lj)
+    # mindr_lj = ak.min(events.Lightjet.delta_r(events.Lepton[:, 0]), axis=-1)
+    # events = set_ak_column_f32(events, "mli_mindr_lj", mindr_lj)
 
     # fill nan/none values of all produced columns
     for col in self.ml_input_columns:
@@ -254,7 +254,7 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 @common_ml_inputs.init
 def common_ml_inputs_init(self: Producer) -> None:
     btag_column = self.config_inst.x.btag_column
-    self.uses |= {f"Jet.{btag_column}", f"Bjet.{btag_column}", f"Lightjet.{btag_column}"}
+    self.uses |= {f"Jet.{btag_column}"}  # , f"Bjet.{btag_column}", f"Lightjet.{btag_column}"}
 
     # define ML input separately to self.produces
     self.ml_input_columns = {
@@ -262,11 +262,12 @@ def common_ml_inputs_init(self: Producer) -> None:
         "mli_ht", "mli_lt", "mli_n_jet",
         "mli_ht_alljets", "mli_n_jet_alljets",
         "mli_ht_fwjets", "mli_n_jet_fwjets",
-        "mli_n_btag", "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
+        "mli_n_btag",  # "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",
         # bb system
-        "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb",
+        # "mli_mbb", "mli_bb_pt", "mli_dr_bb", "mli_dphi_bb", "mli_deta_bb",
         # minimum angles
-        "mli_mindr_lb", "mli_mindr_lj", "mli_mindr_jj", "mli_maxdr_jj",
+        # "mli_mindr_lb", "mli_mindr_lj",
+        "mli_mindr_jj", "mli_maxdr_jj",
         "mli_mindr_jj_alljets", "mli_maxdr_jj_alljets",
         # VBF features
         # "mli_vbf_deta", "mli_vbf_invmass", "mli_vbf_tag",
@@ -277,10 +278,10 @@ def common_ml_inputs_init(self: Producer) -> None:
         f"mli_{obj}_{var}"
         for obj in ["vbf", "full_vbf"]
         for var in ["pt", "eta", "phi", "mass", "deta", "tag"]
-    ) | set(
-        f"mli_{obj}_{var}"
-        for obj in ["b1", "b2", "j1", "j2"]
-        for var in ["b_score", "pt", "eta"]
+        # ) | set(
+        #     f"mli_{obj}_{var}"
+        #     for obj in ["b1", "b2", "j1", "j2"]
+        #     for var in ["b_score", "pt", "eta"]
     ) | set(
         f"mli_{obj}_{var}"
         for obj in ["vbfcand1", "vbfcand2"]
@@ -405,90 +406,6 @@ def sl_ml_inputs_init(self: Producer) -> None:
 
 
 @producer(
-    uses={common_ml_inputs},
-    produces={common_ml_inputs},
-    # produced columns set in the init function
-    version=law.config.get_expanded("analysis", "dl_ml_inputs_version", 2),
-)
-def dl_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    """
-    Producer used for ML Training in the DL analysis.
-    """
-    met_name = self.config_inst.x.met_name
-    if self.dataset_inst.has_tag("is_dy"):
-        met_name = "RecoilCorrMET"
-
-    # produce common input features
-    events = self[common_ml_inputs](events, **kwargs)
-
-    # object padding
-    events = set_ak_column(events, "Lepton", ak.pad_none(events.Lepton, 2))
-
-    for var in ["pt", "eta"]:
-        events = set_ak_column_f32(events, f"mli_lep2_{var}".lower(), events.Lepton[:, 1][var])
-
-    events = set_ak_column_f32(events, "mli_lep_tag", abs(events.Lepton[:, 0]["pdgId"]) == 13)
-    events = set_ak_column_f32(events, "mli_lep2_tag", abs(events.Lepton[:, 1]["pdgId"]) == 13)
-    events = set_ak_column_f32(events, "mli_mixed_channel", events.mli_lep_tag != events.mli_lep2_tag)
-
-    # create ll object and ll variables
-    hll = (events.Lepton[:, 0] + events.Lepton[:, 1])
-    events = set_ak_column_f32(events, "mli_ll_pt", hll.pt)
-    events = set_ak_column_f32(events, "mli_mll", hll.mass)
-    events = set_ak_column_f32(events, "mli_mllMET", (hll + events[met_name][:]).mass)
-    events = set_ak_column_f32(events, "mli_dr_ll", events.Lepton[:, 0].delta_r(events.Lepton[:, 1]))
-    events = set_ak_column_f32(events, "mli_dphi_ll", abs(events.Lepton[:, 0].delta_phi(events.Lepton[:, 1])))
-    events = set_ak_column_f32(events, "mli_deta_ll", abs(events.Lepton[:, 0].eta - (events.Lepton[:, 1]).eta))
-
-    # minimum deltaR between lep and jet
-    hbb = (events.Bjet[:, 0] + events.Bjet[:, 1]) * 1  # NOTE: *1 so it is a Lorentzvector not a candidate vector
-
-    llbb_pairs = ak.cartesian([events.Lepton, events.Bjet], axis=1)
-    lep, jet = ak.unzip(llbb_pairs)
-    min_dr_llbb = (ak.min(lep.delta_r(jet), axis=-1))
-    events = set_ak_column_f32(events, "mli_min_dr_llbb", min_dr_llbb)
-
-    events = set_ak_column_f32(events, "mli_dr_ll_bb", hll.delta_r(hbb))
-
-    # hh system
-    events = set_ak_column_f32(events, "mli_mbbllMET", (hll + hbb + events[met_name][:]).mass)
-    events = set_ak_column_f32(events, "mli_dr_bb_llMET", hbb.delta_r(hll + events[met_name][:]))
-    events = set_ak_column_f32(events, "mli_dphi_bb_nu", abs(hbb.delta_phi(events[met_name])))
-    events = set_ak_column_f32(events, "mli_dphi_bb_llMET", hbb.delta_phi(hll + events[met_name][:]))
-
-    # fill nan/none values of all produced columns
-    for col in self.ml_input_columns:
-        events = set_ak_column_f32(events, col, ak.fill_none(ak.nan_to_none(events[col]), ZERO_PADDING_VALUE))
-    check_column_bookkeeping(self, events)
-    return events
-
-
-@dl_ml_inputs.init
-def dl_ml_inputs_init(self: Producer) -> None:
-    # define ML input separately to self.produces
-    self.ml_input_columns = {
-        # ll system
-        "mli_mll", "mli_dr_ll", "mli_dphi_ll", "mli_deta_ll", "mli_ll_pt",
-        "mli_min_dr_llbb",
-        # hh system
-        "mli_dr_ll_bb",
-        "mli_dphi_bb_nu", "mli_dphi_bb_llMET", "mli_mllMET",
-        "mli_mbbllMET", "mli_dr_bb_llMET",
-        # low-level features
-        "mli_lep2_pt", "mli_lep2_eta",
-        "mli_lep_tag", "mli_lep2_tag", "mli_mixed_channel",
-    }
-    self.produces |= self.ml_input_columns
-
-    # bookkeep used ml_input_columns over multiple Producers
-    self.config_inst.x.ml_input_columns = self.config_inst.x("ml_input_columns", set()) | self.ml_input_columns
-
-    # add variable instances to config
-    add_dl_ml_variables(self.config_inst)
-    check_variable_existence(self)
-
-
-@producer(
     uses={MET_COLUMN("{pt,phi}"), IF_DY(recoil_corrected_met)},
     produces={"met_pt_corr", "met_phi_corr"},
 )
@@ -513,4 +430,59 @@ def METCorr(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     return events
 
 
-test_dl_ml_inputs = dl_ml_inputs.derive("test_dl_ml_inputs")
+@producer(
+    uses={
+        "Jet.{pt,eta,phi,mass}",
+    },
+    produces={
+        "Jet.{b_score,discrete_b_score}", "discrete_sum_b_score",
+    },
+)
+def prepare_bjets(
+    self: Producer,
+    events: ak.Array,
+    n_btags: int,
+    **kwargs,
+) -> ak.Array:
+    """
+    Producer to prepapre the b-tagging based jet collections for the ML inputs.
+    Needs the number of required b-tagged jets as input.
+    """
+
+    btag_column = self.config_inst.x.btag_column
+
+    # get discrete  b-tagging scores
+    discrete_btag_scores = ak.zeros_like(events.Jet[btag_column])
+    # TODO: should be set in config, need to clean up the WP definitions in there
+    for wp, b_score in [(0.0246, 1), (0.1272, 2), (0.4648, 3), (0.6298, 4), (0.9739, 5)]:  # loose, medium, tight, etc.
+        discrete_btag_scores = ak.where(
+            events.Jet[btag_column] >= wp,
+            ak.full_like(events.Jet[btag_column], b_score, dtype=int),
+            discrete_btag_scores,
+        )
+    events = set_ak_column(events, "Jet.b_score", events.Jet[btag_column])
+    events = set_ak_column(events, "Jet.discrete_b_score", discrete_btag_scores)
+    events = set_ak_column_f32(events, "discrete_sum_b_score", ak.sum(events.Jet.discrete_b_score, axis=1))
+
+    # build BJet and LightJet collections
+    btag_mask = events.Jet.pt > 0  # as events.Jet is pt sorted, this should be as well
+    # sorting by btag score
+    btag_mask = masked_sorted_indices(btag_mask, events.Jet.discrete_b_score)
+
+    b_idx = btag_mask[:, :n_btags]
+
+    # Define BtaggedJet collection and save it with all corresponding fields
+    events = set_ak_column(events, "BJet", events.Jet[b_idx])
+
+    # define remaining Jets as LightJet collection and sort by pt
+    light_jets = events.Jet[~btag_mask]
+    light_jets = light_jets[ak.argsort(light_jets.pt, axis=1)]
+    events = set_ak_column(events, "LightJet", light_jets)
+
+    return events
+
+
+@prepare_bjets.init
+def prepare_bjets_init(self: Producer) -> None:
+    btag_column = self.config_inst.x.btag_column
+    self.uses |= {f"Jet.{btag_column}"}

@@ -15,6 +15,7 @@ from hbw.util import IF_TOP, IF_VJETS, IF_DY
 from hbw.production.top_pt_theory import gen_parton_top
 from hbw.production.gen_v import gen_v_boson
 from hbw.production.jets import njet_for_recoil
+from hbw.production.nlo_reweighting import nlo_reweighting
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met
 from hbw.production.gen_hbv_decay import gen_hbv_decay
 from columnflow.production.util import attach_coffea_behavior
@@ -34,7 +35,7 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil, nlo_reweighting),
         gen_hbv_decay,
     },
     produces={
@@ -42,7 +43,7 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil),
+        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil, nlo_reweighting),
         gen_hbv_decay,
     },
 )
@@ -79,6 +80,9 @@ def default(self: Reducer, events: ak.Array, selection: ak.Array, task: law.Task
         events = self[attach_coffea_behavior](events, **kwargs)
         events = self[gen_hbv_decay](events, **kwargs)
 
+    # if self.has_dep(nlo_reweighting):
+    #     events = self[nlo_reweighting](events, **kwargs)
+
     return events
 
 
@@ -97,6 +101,7 @@ def default_init(self: Reducer) -> None:
 
 test_default = default.derive("test_default")
 triggersf = default.derive("triggersf")
+noselection = default.derive("noselection")
 
 
 @triggersf.init
@@ -194,7 +199,7 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 10., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],  # noqa: E501
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Leading lepton $p_{{T}}$",
@@ -205,7 +210,7 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 10., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Subleading lepton $p_{{T}}$",
@@ -261,3 +266,18 @@ def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
 
 
 test_triggersf = triggersf.derive("test_triggersf")
+
+
+@noselection.post_init
+def noselection_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception("Selector steps are not supported in noselection reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("no_sel_mask",)
+
+
+test_noselection = noselection.derive("test_noselection")

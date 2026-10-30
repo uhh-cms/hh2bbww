@@ -77,6 +77,12 @@ def get_hists_from_fit_diagnostics(tfile):
 
 def get_hists_from_merged_multidimfit(tfile):
     """ Helper function to load histograms from root file created by MultiDimFit """
+
+    # setup to rescale signal to prefit
+    import numpy as np
+    is_signal = lambda proc: proc.startswith("ggHH_kl_1_kt_1") or proc.startswith("qqHH_CV_1_C2V_1_kl_1")
+    sum_sig_prefit, sum_sig_postfit = defaultdict(np.float64), defaultdict(np.float64)
+
     # prepare output dict
     hists = DotDict()
     keys = [key.split("/") for key in tfile.keys()]
@@ -90,6 +96,8 @@ def get_hists_from_merged_multidimfit(tfile):
 
         # unpack key
         variable, fit_and_channel, process = key
+        if ";2" in process:
+            continue
         variables.add(variable)
 
         fit = fit_and_channel.split("_")[-1]
@@ -97,7 +105,18 @@ def get_hists_from_merged_multidimfit(tfile):
         channel = fit_and_channel.replace(f"_{fit}", "")
         process = process.split(";")[0]
 
+        # get sum of signal processes
+        if is_signal(process):
+            if fit == "prefit":
+                sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+            elif fit == "postfit":
+                sum_sig_postfit[variable] += h_in.to_hist().values().sum()
         if "Total" in process and process != "TotalBkg":
+            if process == "TotalSig":
+                if fit == "prefit":
+                    sum_sig_prefit[variable] += h_in.to_hist().values().sum()
+                elif fit == "postfit":
+                    sum_sig_postfit[variable] += h_in.to_hist().values().sum()
             continue
         else:
             h_in = h_in.to_hist()
@@ -109,6 +128,22 @@ def get_hists_from_merged_multidimfit(tfile):
             deep=True,
         )
 
+    # rescale the postfit signal histograms to match the prefit signal yield if requested.
+    rescale_postfit_signal: bool = True
+    if rescale_postfit_signal and sum_sig_postfit and sum_sig_prefit:
+        for variable in variables:
+            signal_scale = np.float64(sum_sig_prefit[variable]) / np.float64(sum_sig_postfit[variable])
+            logger.warning(f"Prefit signal yield {sum_sig_prefit[variable]:.3f}, postfit signal yield {sum_sig_postfit[variable]:.3f}")  # noqa: E501
+            logger.info(f"Rescaling postfit signal histograms for variable {variable} by factor {signal_scale:.3f}")
+            for channel in hists.postfit[variable].keys():
+                for process in hists.postfit[variable][channel].keys():
+                    if is_signal(process):
+                        hists.postfit[variable][channel][process] *= signal_scale
+    elif rescale_postfit_signal:
+        logger.warning(
+            "Signal yields are zero in prefit or postfit, cannot rescale "
+            "postfit signal histograms to match prefit yield.",
+        )
     return hists
 
 
@@ -169,16 +204,35 @@ def plot_postfit_shapes(
     yscale: str | None = "",
     hide_errors: bool | None = None,
     hide_signal_errors: bool | None = False,
-    lumi: float | None = None,
+    lumi: float = 220.4,  # | None = None,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     total_bkg: hist.Hist | None = None,
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
+    logger.info(f"Processing variable: {variable_inst.name} in category {category_inst.name}")
     hists, process_style_config = apply_process_settings(hists, process_settings)
     # process scaling
     hists = apply_process_scaling(hists)
+
+    # hotfix: make padded bins really zero
+    # padded value seems to be 1e-9 per process listed in datacard
+    total_bkg_view = total_bkg.view()
+    if any(padded := total_bkg_view.value < 1e-7):
+        logger.warning(
+            f"Found {padded.sum()} bins in total_bkg with value < 1e-7, setting them to zero.",
+        )
+        total_bkg_view.value[padded] = 0
+        for proc_inst, h in hists.items():
+            if proc_inst.is_mc and not proc_inst.has_tag("is_signal"):
+                h.view().value[padded] = 0
+            elif proc_inst.has_tag("is_signal") and any(sig_zero := h.view().value < 1e-7):
+                # mark signal bins as empty if both signal and bkg is zero
+                h.view().value[sig_zero & padded] = 0
+            elif proc_inst.is_data and any(data_zero := h.view().value < 1e-7):
+                # mark data bins as empty (negative value) if both data and bkg is zero
+                h.view().value[data_zero & padded] = -1
 
     # density scaling per bin
     if density:
@@ -220,7 +274,12 @@ def plot_postfit_shapes(
         logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
 
     default_style_config = prepare_style_config(
-        config_inst, category_inst, variable_inst, density, shape_norm, yscale,
+        config_inst=config_inst,
+        category_inst=category_inst,
+        variable_inst=variable_inst,
+        density=density,
+        shape_norm=shape_norm,
+        yscale=yscale,
     )
     if hide_signal_errors:
         for key in plot_config.keys():
@@ -295,6 +354,10 @@ class PlotPostfitShapes(
     merged_only = luigi.BoolParameter(
         default=True,
         description="Whether to only plot the merged category; defaults to True",
+    )
+    skip_merged = luigi.BoolParameter(
+        default=False,
+        description="Whether to skip plotting the merged category; defaults to False",
     )
 
     @property
@@ -431,7 +494,8 @@ class PlotPostfitShapes(
         # initialize histogram
         n_bins = sum([b["count"] for b in bins_dict.values()])
         h_out = {
-            process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            # process: hist.Hist.new.Integer(0, n_bins, name="xaxis").Weight()
+            process: hist.Hist.new.Var(list(n + 0.5 for n in range(n_bins + 1)), name="xaxis", flow=False).Weight()
             for process in all_processes
         }
         view_dict = {process: dummy_view.copy() for process in all_processes}
@@ -461,8 +525,10 @@ class PlotPostfitShapes(
         for cat_name, bins_info in bins_dict.items():
             ml_proc = cat_name.split("ml_")[-1].split("__")[0].replace("sig_", "HH").replace("dy_m10toinf", "DY").replace("h", "H").replace("bkg", "")  # noqa: E501
             ml_proc = {
-                "HHggf": "gluon-gluon fusion (HH ggF)",
-                "HHvbf": "vector boson fusion (HH VBF)",
+                "HHggf": r"$HH_{ggF}$",
+                "HHvbf": r"$HH_{VBF}$",
+                # "HHggf": "gluon-gluon fusion (HH ggF)",
+                # "HHvbf": "vector boson fusion (HH VBF)",
                 "tt": r"$t\bar{t}$",
                 "st": "t",
             }.get(ml_proc, ml_proc)
@@ -470,7 +536,6 @@ class PlotPostfitShapes(
             ml_proc_bins[ml_proc] += bins_info["count"]
         for cat_name, bins_info in bins_dict.items():
             bins_info["ml_proc_count"] = ml_proc_bins[bins_info["ml_proc"]]
-
         return bins_dict
 
     @view_output_plots
@@ -496,13 +561,15 @@ class PlotPostfitShapes(
         processes_map = self.prepare_processes_map(hist_processes, process_insts)
 
         # make a combined histogram of all categories
-        bins_dict = self.create_merged_hist(all_hists)
+        if not self.skip_merged:
+            bins_dict = self.create_merged_hist(all_hists)
 
         # Plot Pre/Postfit plot for each channel
         for channel, h_in in all_hists.items():
             if self.merged_only and "merged" not in channel:
                 continue
             channel = channel.replace("__2022_2023", "")
+            channel = channel.replace("__c24v15_c25v15", "")
             # Check for coherence between inference and pre/postfit categories
             has_category = self.inference_model_inst.has_category(channel)
 
@@ -539,7 +606,8 @@ class PlotPostfitShapes(
                     variable,
                     default=od.Variable("dummy", aux={"x_min": None, "x_max": None}),
                 )
-            if self.fit_type not in config_category.label.lower():
+            if self.fit_type not in config_category.label.lower() and "merged" in channel:
+                # "prefit" or "postfit" labels, only in merged plot
                 config_category.label = self.fit_type + "\n" + config_category.label
 
             # sort histograms
@@ -564,7 +632,8 @@ class PlotPostfitShapes(
             # some adjustments for the merged plot
             if channel == "cat_merged" or channel == "merged":
                 line_pos = 0.71
-                bins_count = 0
+                line_pos = 0.70
+                bins_count = 0.5
                 axs[0].axhline(
                     get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
                     color="grey", linewidth=2.5,
@@ -587,7 +656,7 @@ class PlotPostfitShapes(
                             get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         ),
                         xycoords="data",
-                        fontsize=22,
+                        fontsize=20,
                         horizontalalignment="center",
                         verticalalignment="top",
                         color="black",
@@ -630,7 +699,7 @@ class PlotPostfitShapes(
                                 get_position(*axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
                             ),
                             xycoords="data",
-                            fontsize=24,
+                            fontsize=22,
                             horizontalalignment="center",
                             verticalalignment="top",
                             color="black",

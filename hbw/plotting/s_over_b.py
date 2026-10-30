@@ -64,9 +64,9 @@ def plot_s_over_b(
     shape_norm: bool | None = False,
     yscale: str | None = "",
     hide_errors: bool | None = None,
-    sqrt_b: bool | None = None,
+    sqrt_b: bool = True,  # | None = None,
     cumsum: bool = False,
-    reversed_cumsum: bool = False,
+    reversed_cumsum: bool = True,
     process_settings: dict | None = None,
     variable_settings: dict | None = None,
     **kwargs,
@@ -135,7 +135,12 @@ def plot_s_over_b(
     }
 
     default_style_config = prepare_style_config(
-        config_inst, category_inst, variable_inst, density, shape_norm, yscale,
+        config_inst=config_inst,
+        category_inst=category_inst,
+        variable_inst=variable_inst,
+        density=density,
+        shape_norm=shape_norm,
+        yscale=yscale,
     )
     # disable autmatic setting of ylim
     default_style_config["ax_cfg"]["ylim"] = None

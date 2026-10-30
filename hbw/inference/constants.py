@@ -47,6 +47,9 @@ signals = {*signals_hh_ggf, *signals_hh_vbf}
 inference_procnames = {
     # main backgrounds ( optional name conventions)
     "tt": "ttbar",
+    "ttb_custom": "ttbar_b",
+    "tt2b_custom": "ttbar_2b",
+    "tt_bb_custom": "ttbar_bb",
     # "st_tchannel": "ST",  # TODO: add st_schannel to ST
     # "st_twchannel": "TW",
     "w_lnu": "W",
@@ -80,7 +83,7 @@ higgs_br_uncertainties = {
 # TODO: some uncertainties (e.g. ttz) might still be missing in cmsdb for 13.6 TeV
 processes_per_QCDscale = {
     "ttbar": [
-        "tt", "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz",
+        "st_tchannel", "st_schannel", "st_twchannel", "ttw", "ttz",
         "tttt",
     ],
     "V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
@@ -100,7 +103,7 @@ processes_per_QCDscale = {
 # mapping, which processes are used for which pdf (rate) uncertainty
 processes_per_pdf_rate = {
     "gg": [
-        "tt", "ttz", "ggZZ",
+        "ttz", "ggZZ",
         "tttt",
     ],
     "qqbar": [
@@ -120,9 +123,12 @@ processes_per_pdf_rate = {
 }
 
 processes_per_rate_unconstrained = {
-    "ttbar_{bjet_cat}": ["tt"],
+    "ttbar_{bjet_cat}": ["tt", "tt_custom"],
+    "ttbar": ["tt", "tt_custom"],
+    "ttbar_b": ["ttb_custom", "tt2b_custom"],
+    "ttbar_2b": ["tt2b_custom"],
+    "ttbar_bb": ["tt_bb_custom"],
     "dy_{bjet_cat}": ["dy", "dy_lf", "dy_hf"],
-    "ttbar": ["tt"],
     "ttbar_boosted": ["tt"],
     "dy": ["dy", "dy_lf", "dy_hf"],
     "dy_lf": ["dy_lf"],
@@ -130,6 +136,9 @@ processes_per_rate_unconstrained = {
     "st": ["st_schannel", "st_tchannel", "st_twchannel"],
 }
 
+# TODO: maybe we should change this at some point to have HH and HHH signal,
+#  but since we are not doing those hbb_efficiency atm anyway,
+# and in HHH i am not sure what i will be doing I will just leave it as is
 is_signal = lambda process: process.startswith("hh_")
 is_bkg = lambda process: not is_signal(process)
 is_boosted_ggf = lambda category: "boosted" in category and "sig_ggf" in category
@@ -155,6 +164,8 @@ processes_per_shape = {
     "jer_{campaign}": ["all"],
     "jec_Total_{year}": ["all"],
     "jer_{year}": ["all"],
+    "btag_bc": ["all"],
+    "btag_light": ["all"],
     "btag_hf_{bjet_cat}": ["all"],
     "btag_lf_{bjet_cat}": ["all"],
     "btag_hfstats1_{bjet_cat}": ["all"],
@@ -175,6 +186,18 @@ processes_per_shape = {
     "btag_hfstats2_{campaign}": ["all"],
     "btag_lfstats1_{campaign}": ["all"],
     "btag_lfstats2_{campaign}": ["all"],
+    "btag_fsrdef_bc": ["all"],
+    "btag_isrdef_bc": ["all"],
+    "btag_hdamp_bc": ["all"],
+    "btag_jer_bc": ["all"],
+    "btag_jes_bc": ["all"],
+    "btag_mass_bc": ["all"],
+    "btag_statistic_bc": ["all"],
+    "btag_tune_bc": ["all"],
+    "btag_correlated_light": ["all"],
+    "btag_uncorrelated_light_{year}": ["all"],
+    "btag_correlated_bc": ["all"],
+    "btag_uncorrelated_bc_{year}": ["all"],
     "btag_hf": ["all"],
     "btag_lf": ["all"],
     "btag_hfstats1": ["all"],
@@ -204,7 +227,7 @@ processes_per_shape = {
     # NOTE: "!" did not work to exclude processes
     "isr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
     # "fsr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
-    "fsr_ttbar": ["tt"],
+    "fsr_ttbar": ["tt", "tt_custom"],
     "fsr_st": ["st_schannel", "st_twchannel"],
     # "fsr_dy": ["dy", "dy_lf", "dy_hf"],
     # "fsr_w": ["w_lnu"],
@@ -212,12 +235,23 @@ processes_per_shape = {
     "fsr_VV": ["vv", "ww", "zz", "wz"],
     "fsr_ttV": ["ttw", "ttz"],
     "fsr_H": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
+    "isr_ttbar": ["tt_custom", "tt"],
+    "isr_ttbb": ["ttbb_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"],
+    "isr_st": ["st_schannel", "st_twchannel"],
+    # "isr_dy": ["dy", "dy_lf", "dy_hf"],
+    # "isr_w": ["w_lnu"],
+    "isr_V": ["dy", "dy_lf", "dy_hf", "w_lnu"],
+    "isr_VV": ["vv", "ww", "zz", "wz"],
+    "isr_ttV": ["ttw", "ttz"],
+    "isr_H": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
     # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
     "top_pt": ["tt"],
     "dy_correction": ["dy", "dy_lf", "dy_hf"],
+    "dy_correction_{year}": ["dy", "dy_lf", "dy_hf"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
-    "pdf_shape_ttbar": ["tt"],
+    "pdf_shape_ttbar": ["tt", "tt_custom"],
+    "pdf_shape_ttbb": ["ttbb_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"],
     "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
     "pdf_shape_dy": ["dy", "dy_lf", "dy_hf"],
     "pdf_shape_w": ["w_lnu"],
@@ -234,7 +268,8 @@ processes_per_shape = {
     # "pdf_shape_hh_vbf_hbb_hww": sorted(signals_hh_vbf_hhdecay("hbb_hww")),
     # "pdf_shape_hh_vbf_hbb_hzz": sorted(signals_hh_vbf_hhdecay("hbb_hzz")),
     # "pdf_shape_hh_vbf_hbb_htt": sorted(signals_hh_vbf_hhdecay("hbb_htt")),
-    "murf_envelope_ttbar": ["tt"],
+    "murf_envelope_ttbar": ["tt", "tt_custom"],
+    "murf_envelope_ttbb": ["ttbb_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"],
     "murf_envelope_st": ["st_schannel", "st_tchannel", "st_twchannel"],
     "murf_envelope_dy": ["dy", "dy_lf", "dy_hf"],
     "murf_envelope_w": ["w_lnu"],
@@ -279,10 +314,12 @@ campaign_format = {
     "2022postEE": "2022EE",
     "2023preBPix": "2023",
     "2023postBPix": "2023BPix",
+    "c24v15": "2024",
+    "c25v15": "2025",
 }
 
 # naming scheme for different systematics
-custom_uncertainty_format = lambda s: f"CMS_HIG25018_{s}"
+custom_uncertainty_format = lambda s: f"CMS_{s}"
 rename_systematics = {
     "minbias_xs": "CMS_pileup",
     # "ele_ss": "CMS_res_e_13p6TeV",
@@ -308,7 +345,7 @@ for campaign, campaign_fmt in campaign_format.items():
         f"jec_Total_{campaign}": f"CMS_scale_j_{campaign_fmt}",
         f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
         # analysis-specific
-        f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+        f"trigger_sf_{campaign}": f"CMS_Custom_trigger_sf_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:

@@ -22,6 +22,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.categories import category_ids
 from hbw.production.process_ids import hbw_process_ids
 from columnflow.production.cms.seeds import deterministic_seeds
+from columnflow.production.cms.jet import jet_id
 
 from hbw.selection.gen import hard_gen_particles
 from hbw.production.weights import event_weights_to_normalize, large_weights_killer
@@ -31,6 +32,9 @@ from hbw.selection.stats import hbw_selection_step_stats, hbw_increment_stats
 from hbw.selection.hists import hbw_selection_hists
 from hbw.selection.bad_events import extend_bad_events, get_outlier_scale_weights
 from hbw.util import IF_MC
+from hbw.production.jets import jetId_v12
+
+from hbw.util import IF_NANO_V12, IF_NANO_geV13
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -84,6 +88,8 @@ hbw_met_filters = met_filters.derive("hbw_met_filters", cls_dict=dict(get_met_fi
 
 @selector(
     uses={
+        IF_NANO_V12(jetId_v12),
+        IF_NANO_geV13(jet_id),
         jet_veto_map,
         hbw_met_filters, json_filter, "PV.npvsGood",
         hbw_process_ids, attach_coffea_behavior,
@@ -118,6 +124,15 @@ def pre_selection(
     if not task.calibrators:
         events = self[deterministic_seeds](events, **kwargs)
 
+    # produce custom jetID, since it is used in jet_veto_map
+    if self.has_dep(jetId_v12):
+        raise NotImplementedError("jetId_v12 is not implemented consistently, should be updated to really translate in the ID column.")  # noqa E501
+        events = self[jet_id](events, **kwargs)
+    elif self.has_dep(jet_id):
+        events = self[jet_id](events, **kwargs)
+    else:
+        logger.warning("No Producer found to fix the Jet.jetId, using default Jet.jetId")
+
     # mc weight
     if self.dataset_inst.is_mc:
         events = self[mc_weight](events, **kwargs)
@@ -151,7 +166,6 @@ def pre_selection(
     else:
         results.steps["json"] = ak.Array(np.ones(len(events), dtype=bool))
 
-    # apply jet veto map
     events, jet_veto_results = self[jet_veto_map](events, **kwargs)
     results += jet_veto_results
 

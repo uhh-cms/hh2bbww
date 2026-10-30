@@ -20,6 +20,15 @@ power of 10 | category block
 5: gen-level leptons (not combined with other categories)
 """
 
+# @call_once_on_config()
+# def add_categories_ml(config, ml_model_inst,
+#     add_jet_categories_func=None,
+# ):
+#     if config.has_tag("add_categories_production_called"):
+#         raise Exception("We should not call *add_categories_production* when also building ML categories")
+#     if not add_jet_categories_func:
+#         add_jet_categories_func = config.x.add_jet_categories_func
+
 from collections import OrderedDict
 
 import law
@@ -101,8 +110,7 @@ def add_abcd_categories(config: od.Config) -> None:
     )
 
 
-@call_once_on_config()
-def add_mll_categories(config: od.Config) -> None:
+def add_dih_mll_categories(config: od.Config) -> None:
     """
     Adds categories based on mll.
     NOTE: this should never be used in combination with the *add_abcd_categories* function
@@ -110,7 +118,7 @@ def add_mll_categories(config: od.Config) -> None:
     config.add_category(
         name="sr",
         id=1,
-        selection="catid_mll_low",
+        selection="catid_mll_low_narrow",
         label=r"$20 \leq m_{\ell\ell} < 70$",
     )
     cr = config.add_category(
@@ -122,15 +130,53 @@ def add_mll_categories(config: od.Config) -> None:
     cr.add_category(
         name="dycr",
         id=3,
-        selection="catid_mll_z",
+        selection="catid_mll_z_wide",
         label=r"$70 \leq m_{\ell\ell} < 110$",
     )
     cr.add_category(
         name="ttcr",
         id=4,
-        selection="catid_mll_high",
+        selection="catid_mll_very_high",
         label=r"$m_{\ell\ell} \geq 110$",
     )
+
+
+def add_trih_mll_categories(config: od.Config) -> None:
+    """
+    Adds categories based on mll.
+    NOTE: this should never be used in combination with the *add_abcd_categories* function
+    """
+    config.add_category(
+        name="sr",
+        id=5,
+        selection="catid_hhh_sr",
+        label=r"$12 \leq m_{\ell\ell} < 80, \geq 2 N_{jets}$",
+    )
+    cr = config.add_category(
+        name="cr",
+        id=6,
+        selection="catid_hhh_cr",
+        label=r"$12 \leq m_{\ell\ell} \geq 80$",
+    )
+    cr.add_category(
+        name="dycr",
+        id=7,
+        selection="catid_hhh_dycr",
+        label=r"$80 \leq m_{\ell\ell} < 100$",
+    )
+    cr.add_category(
+        name="ttcr",
+        id=8,
+        selection="catid_hhh_ttcr",
+        label=r"$m_{\ell\ell} \geq 100$",
+    )
+
+
+@call_once_on_config()
+def add_mll_categories(config, add_mll_categories_func=None):
+    if not add_mll_categories_func:
+        add_mll_categories_func = config.x.add_mll_categories_func
+    add_mll_categories_func(config)
 
 
 @call_once_on_config()
@@ -197,6 +243,12 @@ def add_njet_categories(config: od.Config) -> None:
         selection="catid_njet3",
         label=r"$N_{jet} >= 3$",
     )
+    config.add_category(
+        name="njet2",
+        id=100002,
+        selection="catid_njet2",
+        label=r"$N_{jet} >= 2$",
+    )
 
 
 @call_once_on_config()
@@ -204,28 +256,77 @@ def add_jet_categories(config: od.Config) -> None:
     cat_resolved = config.add_category(  # noqa: F841
         name="resolved",
         id=100,
-        selection="catid_resolved",
+        selection="catid_resolved_glo",
         label="resolved",
     )
     cat_boosted = config.add_category(  # noqa: F841
         name="boosted",
         id=200,
-        selection="catid_boosted",
+        selection="catid_boosted_glo",
         label="boosted",
-    )
+    )  # NOTE: this might cause trouble when merging with triH later on, sryyyy
+    # cat_boosted_glo = config.add_category(  # noqa: F841
+    #     name="boosted_glo",
+    #     id=300,
+    #     selection="catid_boosted_glo",
+    #     label="boosted",
+    # )
+    # cat_resolved_glo = config.add_category(  # noqa: F841
+    #     name="resolved_glo",
+    #     id=400,
+    #     selection="catid_resolved_glo",
+    #     label="resolved",
+    # )
+    # cat_fatjet = config.add_category(  # noqa: F841
+    #     name="fatjet",
+    #     id=500,
+    #     selection="catid_fatjet",
+    #     label="N FatJet >= 1",
+    # )
 
+
+def add_dih_bjet_categories(config: od.Config) -> None:
     cat_1b = config.add_category(  # noqa: F841
         name="1b",
-        id=300,
+        id=10000,
         selection="catid_1b",
         label=r"$\leq 1 btag$",
     )
     cat_2b = config.add_category(  # noqa: F841
         name="2b",
-        id=600,
+        id=20000,
         selection="catid_2b",
         label=r"$\geq 2 btag$",
     )
+
+
+def add_trih_bjet_categories(config: od.Config) -> None:
+    cat_eq2b = config.add_category(  # noqa: F841
+        name="2b",
+        id=20000,
+        selection="catid_eq2b",
+        label=r"$2 btag$",
+    )
+    cat_3b = config.add_category(  # noqa: F841
+        name="3b",
+        id=30000,
+        selection="catid_eq3b",
+        label=r"$3 btag$",
+    )
+    cat_4b = config.add_category(  # noqa: F841
+        name="4b",
+        id=40000,
+        selection="catid_geq4b",
+        label=r"$\geq 4 btag$",
+    )
+
+
+@call_once_on_config()
+def add_bjet_categories(config, add_bjet_categories_func=None):
+    if not add_bjet_categories_func:
+        add_bjet_categories_func = config.x.add_bjet_categories_func
+
+    add_bjet_categories_func(config)
 
 
 @call_once_on_config()
@@ -245,7 +346,6 @@ def add_categories_selection(config: od.Config) -> None:
     # adds categories based on the existence of gen particles
     # NOTE: commented out because we did not use it anyways
     # add_gen_categories(config)
-
     if config.x.lepton_tag == "sl":
         # adds categories for ABCD background estimation
         add_abcd_categories(config)
@@ -254,6 +354,14 @@ def add_categories_selection(config: od.Config) -> None:
         # adds categories based on mll
         add_mll_categories(config)
         config.x.main_categories = ["sr", "dycr", "ttcr"]
+        # adds categories based on bjets
+        if config.x.signal_tag == "hh":
+            # add_mll_categories(config, add_dih_mll_categories)
+            config.x.bjet_categories = ["1b", "2b"]
+            # config.x.jet_categories = ["resolved_glo", "boosted_glo"]
+        elif config.x.signal_tag == "hhh":
+            # add_mll_categories(config, add_trih_mll_categories)
+            config.x.bjet_categories = ["2b", "3b", "4b"]
 
     # adds categories based on number of leptons
     add_lepton_categories(config)
@@ -288,7 +396,10 @@ def add_categories_production(config: od.Config) -> None:
         # when ML categories already exist, don't do anything
         return
 
+    # jet categories conatin resolved an boosted, should be same for everything
     add_jet_categories(config)
+    # bjet categories are defined in config, but also can be given directly in function
+    add_bjet_categories(config)
 
     #
     # define all combinations of categories
@@ -296,11 +407,10 @@ def add_categories_production(config: od.Config) -> None:
 
     category_blocks = OrderedDict({
         "main": [config.get_category(cat) for cat in config.x.main_categories],
-        # "lepid": [config.get_category("sr"), config.get_category("fake")],
-        # "met": [config.get_category("highmet"), config.get_category("lowmet")],
         "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
-        "b": [config.get_category("1b"), config.get_category("2b")],
+        # "jet": [config.get_category(mode) for mode in config.x.jet_categories],
+        "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
     })
     t0 = time()
     n_cats = create_category_combinations(
@@ -323,6 +433,7 @@ def add_categories_production(config: od.Config) -> None:
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
+    print("test.", ml_model_inst)
     if config.has_tag("add_categories_production_called"):
         raise Exception("We should not call *add_categories_production* when also building ML categories")
 
@@ -331,6 +442,7 @@ def add_categories_ml(config, ml_model_inst):
     #
 
     add_jet_categories(config)
+    add_bjet_categories(config)
 
     #
     # add parent ml model categories
@@ -365,17 +477,12 @@ def add_categories_ml(config, ml_model_inst):
     # create combination of categories
     #
 
-    sr = config.get_category("sr")
     # NOTE: building this many categories takes forever: has to be improved...
     category_blocks = OrderedDict({
         # NOTE: when building DNN categories, we do not need the control regions
-        "main": [sr],
-        # "main": [config.get_category(cat) for cat in config.x.main_categories],
-        # "lepid": [config.get_category("sr"), config.get_category("fake")],
-        # "met": [config.get_category("highmet"), config.get_category("lowmet")],
-        "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
+        "main": [config.get_category("sr")],
         "jet": [config.get_category("resolved"), config.get_category("boosted")],
-        "b": [config.get_category("1b"), config.get_category("2b")],
+        "b": [config.get_category(bjet) for bjet in config.x.bjet_categories],
         "dnn": ml_categories,
     })
 
@@ -397,15 +504,7 @@ def add_categories_ml(config, ml_model_inst):
     )
     logger.info(f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
 
-    # NOTE: needed for downstream tasks that use the non-mixed dycr categories, but
-    # category_ids Producer would not produce the corresponding categories as it is right now
-    dycr__2mu = config.add_category(  # noqa: F841
-        name="dycr__2mu",
-        selection="catid_never",  # dummy Categorizer, never selected
-        id=2349237509,
-        label="dycr (2mu)",
-    )
-
+    sr = config.get_category("sr")
     # add boosted ml bkg category by hand, combining all boosted ml signal categories
     sr__boosted__ml_bkg = config.add_category(  # noqa: F841
         name="sr__boosted__ml_bkg",
@@ -414,31 +513,11 @@ def add_categories_ml(config, ml_model_inst):
         label="\n".join([sr.label, "boosted", "ml_bkg"]),
         aux={"root_cats": {"main": "sr", "jet": "boosted", "dnn": "ml_bkg"}},
     )
+
     for proc, node_config in ml_model_inst.train_nodes.items():
         # NOTE: we might want to add an "is_signal_region" flag to the train_nodes config
         if "sig" in proc or "hh" in proc:
             continue
-        bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
-        sr__boosted__ml_bkg.add_category(bkg_cat)
-
-    # # NOTE: we could also produce the non-mixed dycr even when having MLCategories -
-    # # to be discussed and included in future versions.
-    # category_blocks_bkg = OrderedDict({
-    #     "main": [config.get_category("ttcr"), config.get_category("dycr")],
-    #     "lep": [config.get_category(lep_ch) for lep_ch in config.x.lepton_channels],
-    #     # "jet": [config.get_category("resolved"), config.get_category("boosted")],
-    #     # "b": [config.get_category("1b"), config.get_category("2b")],
-    #     # "dnn": ml_categories,
-    # })
-    # # create combination of categories
-    # n_cats_vr = create_category_combinations(
-    #     config,
-    #     category_blocks_bkg,
-    #     name_fn=name_fn,
-    #     kwargs_fn=kwargs_fn,
-    #     skip_existing=True,
-    # )
-    # logger.info(f"Number of produced VR category insts: {n_cats_vr} (took {(time() - t0):.3f}s)")
-
-    # dycr__nonmixed.add_category(config.get_category("dycr__2e"))
-    # dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+        else:
+            bkg_cat = config.get_category(f"sr__boosted__ml_{proc}")
+            sr__boosted__ml_bkg.add_category(bkg_cat)

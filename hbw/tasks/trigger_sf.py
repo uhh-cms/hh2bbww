@@ -27,7 +27,7 @@ import luigi
 from collections import defaultdict
 
 from columnflow.tasks.framework.base import Requirements
-from hbw.tasks.histograms import HistogramsUserSingleShiftBase
+from columnflow.tasks.framework.histograms import HistogramsUserSingleShiftBase
 from columnflow.util import maybe_import, dev_sandbox, DotDict
 from columnflow.tasks.framework.mixins import (
     DatasetsProcessesMixin,
@@ -60,6 +60,7 @@ class ComputeTriggerSF(
     HistogramsUserSingleShiftBase,
     DatasetsProcessesMixin,
     law.LocalWorkflow,
+    RemoteWorkflow,
 ):
     """
     Base task to calculate trigger scale factors.
@@ -179,16 +180,16 @@ class ComputeTriggerSF(
 
     pre_edges = {
         "2e": {
-            "lepton0_pt": [0., 25., 32., 38., 45., 50., 55., 65., 75., 85., 95., 120., 200., 400.],
-            "lepton1_pt": [0., 15., 23., 32., 38., 55.] + [95., 120., 400.],
+            "lepton0_pt": [0., 25., 28., 32., 35., 38., 45., 50., 55., 65., 75., 85., 95., 120., 200., 400.],
+            "lepton1_pt": [0., 7., 8., 9., 10., 11., 12., 13., 14., 15., 19., 23., 32., 38., 55.] + [95., 120., 400.],
         },
         "2mu": {
-            "lepton0_pt": [0., 25., 29., 35., 40.] + [40. + (i * 5.) for i in range(1, 7)] + [77., 90., 120., 400.],
-            "lepton1_pt": [0., 15., 22., 29., 35., 45.] + [90., 120., 400.],
+            "lepton0_pt": [0., 25., 27., 29., 32., 35., 40.] + [40. + (i * 5.) for i in range(1, 7)] + [77., 90., 120., 400.],  # noqa: E501
+            "lepton1_pt": [0., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 19., 22., 29., 35., 45.] + [90., 120., 400.],  # noqa: E501
         },
         "emu": {
-            "lepton0_pt": [0., 25., 30., 35., 40.] + [40. + (i * 5.) for i in range(1, 9)] + [90., 100., 120., 150., 180., 400.],  # noqa: E501
-            "lepton1_pt": [0., 15., 20., 25., 30., 35., 45., 60., 80., 100., 120., 400.],
+            "lepton0_pt": [0., 25., 27., 30., 32., 35., 40.] + [40. + (i * 5.) for i in range(1, 9)] + [90., 100., 120., 150., 180., 400.],  # noqa: E501
+            "lepton1_pt": [0., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 17., 20., 25., 30., 35., 45., 60., 80., 100., 120., 400.],  # noqa: E501
         },
     }
 
@@ -589,11 +590,12 @@ class ComputeTriggerSF(
                         if self.plot_uncertainties:
                             uncertainties[uncertainties == 0.0] = None
                             sfhist_unc = hist.Hist(*hists[self.hist_producers[0]][processes[0]][..., 0].axes, data=uncertainties)  # noqa: E501
-                            sfhist_unc.plot2d(ax=ax, cmap="viridis")
+                            artists = sfhist_unc.plot2d(ax=ax, cmap="viridis")
+                            artists[0].set_clim(0.0, 0.08)
                         else:
                             sfhist.values()[uncertainties == 0.0] = None
                             artists = sfhist.plot2d(ax=ax, cmap="viridis")
-                            artists[0].set_clim(0.85, 1.15)
+                            artists[0].set_clim(0.90, 1.10)
 
                         ax.plot([1, 400], [1, 400], linestyle="dashed", color="gray")
                         ax.set_xscale("log")
@@ -721,11 +723,11 @@ class ComputeTriggerSF(
                         }
                         if "_pt" in self.branch_data.variable:
                             logger.info("Applying log scale for pt variable")
-                            rax_kwargs["xlim"] = (25, 400)
+                            rax_kwargs["xlim"] = (15, 400)
                             rax_kwargs["xscale"] = "log"
                             # Set custom tick locations for log scale
                             rax.set(**rax_kwargs)
-                            rax.set_xticks([25, 50, 100, 200, 400])
+                            rax.set_xticks([15, 25, 50, 100, 200, 400])
                             rax.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
                             rax.get_xaxis().set_minor_formatter(mpl.ticker.NullFormatter())
                         else:
@@ -743,10 +745,10 @@ class ComputeTriggerSF(
 
                 cms_label_kwargs = {
                     "ax": ax,
-                    "llabel": "Work in progress",
+                    "llabel": "Private Work (CMS data/simulation)",  # "Work in progress",
                     "fontsize": 22,
                     "data": False,
-                    # "exp": "",
+                    "exp": "",
                     "com": self.config_inst.campaign.ecm,
                     "lumi": round(0.001 * sum([
                         config_inst.x.luminosity.get("nominal")
@@ -833,10 +835,10 @@ class ComputeTriggerSF(
 
             cms_label_kwargs = {
                 "ax": ax,
-                "llabel": "Work in progress",
+                "llabel": "Private Work (CMS data/simulation)",
                 "fontsize": 22,
                 "data": False,
-                # "exp": "",
+                "exp": "",
                 "com": self.config_inst.campaign.ecm,
                 "lumi": round(0.001 * sum([
                     config_inst.x.luminosity.get("nominal")

@@ -8,6 +8,9 @@ the changes will not be reflected in the campaign and there will be inconsistenc
 
 # import order as od
 
+import law
+logger = law.logger.get_logger(__name__)
+
 
 from hbw.config.processes import create_parent_process
 from hbw.config.styling import color_palette
@@ -20,38 +23,85 @@ def modify_cmsdb_processes():
         qcd_mu, qcd_em, qcd_bctoe,
         tt, ttv, st, w_lnu, vv, h,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+        dy_ee, dy_ee_m10to50, dy_ee_m50toinf, dy_ee_m50toinf_0j, dy_ee_m50toinf_1j, dy_ee_m50toinf_2j,
+        dy_mumu, dy_mumu_m10to50, dy_mumu_m50toinf, dy_mumu_m50toinf_0j, dy_mumu_m50toinf_1j, dy_mumu_m50toinf_2j,
+        dy_tautau, dy_tautau_m10to50, dy_tautau_m50toinf, dy_tautau_m50toinf_0j, dy_tautau_m50toinf_1j, dy_tautau_m50toinf_2j,  # noqa E501
         ttvv, tttt, vvv,
         h_ggf, h_vbf, vh,
         tth, thq, thw,
         st_twchannel_t_dl, st_twchannel_tbar_dl,
-        tt_dl,
+        tt_dl, ttbb,
+        tt_dl_nonb, tt_sl_nonb, tt_fh_nonb,
+        ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b,
+        ttbb_dl_b, ttbb_sl_b, ttbb_fh_b,
+        ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b,
+        ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb,
         hh_ggf_hbb_hzz_kl1_kt1, hh_vbf_hbb_hzz_kv1_k2v1_kl1,
         hh_ggf_hbb_htt_kl1_kt1, hh_vbf_hbb_htt_kv1_k2v1_kl1,
     )
 
     data.remove_process(data_met)
 
+    # NOTE: This can be commented out in order to plot data split in era
+    # !!! The process_ids have to be touched though in the hist producer base
+    # configure_data_split_in_eras()
+
     decay_map = {
         "lf": {
             "name": "lf",
-            "id": 50,
+            "id": 50050,
             "label": "(lf)",
             "br": -1,
         },
         "hf": {
             "name": "hf",
-            "id": 70,
+            "id": 70070,
             "label": "(hf)",
             "br": -1,
         },
     }
 
+    # top-level disambiguation
+    # NOTE: this is needed since 2024 we have the additional lep verbosity
+    dy_ee.x.production_mode_parent = ["dy"]
+    dy_mumu.x.production_mode_parent = ["dy"]
+    dy_tautau.x.production_mode_parent = ["dy"]
+    # NOTE: "dy_m50toinf" does not have "dy_0j" as parent process, it is therefore not covered here
+    dy_m50toinf_0j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_m50toinf_1j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_m50toinf_2j.x.production_mode_parent = ["dy_m50toinf"]
+    dy_ee_m10to50.x.production_mode_parent = ["dy_ee", "dy_m10to50"]
+    dy_ee_m50toinf.x.production_mode_parent = ["dy_ee", "dy_m50toinf"]
+    # NOTE: "dy_ee_0j" etc. processes are not present in the CMSDB, and are therefore not covered here
+    dy_ee_m50toinf_0j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_0j"]
+    dy_ee_m50toinf_1j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_1j"]
+    dy_ee_m50toinf_2j.x.production_mode_parent = ["dy_ee_m50toinf", "dy_m50toinf_2j"]
+    dy_mumu_m10to50.x.production_mode_parent = ["dy_mumu", "dy_m10to50"]
+    dy_mumu_m50toinf.x.production_mode_parent = ["dy_mumu", "dy_m50toinf"]
+    dy_mumu_m50toinf_0j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_0j"]
+    dy_mumu_m50toinf_1j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_1j"]
+    dy_mumu_m50toinf_2j.x.production_mode_parent = ["dy_mumu_m50toinf", "dy_m50toinf_2j"]
+    dy_tautau_m10to50.x.production_mode_parent = ["dy_tautau", "dy_m10to50"]
+    dy_tautau_m50toinf.x.production_mode_parent = ["dy_tautau", "dy_m50toinf"]
+    dy_tautau_m50toinf_0j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_0j"]
+    dy_tautau_m50toinf_1j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_1j"]
+    dy_tautau_m50toinf_2j.x.production_mode_parent = ["dy_tautau_m50toinf", "dy_m50toinf_2j"]
+
     for dy_proc_inst in (
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
+        dy_ee, dy_ee_m10to50, dy_ee_m50toinf, dy_ee_m50toinf_0j, dy_ee_m50toinf_1j, dy_ee_m50toinf_2j,
+        dy_mumu, dy_mumu_m10to50, dy_mumu_m50toinf, dy_mumu_m50toinf_0j, dy_mumu_m50toinf_1j, dy_mumu_m50toinf_2j,
+        dy_tautau, dy_tautau_m10to50, dy_tautau_m50toinf, dy_tautau_m50toinf_0j, dy_tautau_m50toinf_1j, dy_tautau_m50toinf_2j,  # noqa E501
     ):
-        add_production_mode_parent = dy_proc_inst.name != "dy"
         for flavour in ("hf", "lf"):
-            # the 'add_decay_process' function helps us to create all parent-daughter relationships
+            aux = {"flavour": flavour}
+            # inherit auxiliary entries except `production_mode_parent`
+            # which is set automatically in `add_decay_process`
+            aux.update(dy_proc_inst.aux)
+            aux.pop("production_mode_parent", None)
+
+            # resolve parent processes for all processes except the top-level DY process
+            add_production_mode_parent = (dy_proc_inst != dy)
             add_decay_process(
                 dy_proc_inst,
                 decay_map[flavour],
@@ -59,8 +109,48 @@ def modify_cmsdb_processes():
                 name_func=lambda parent_name, decay_name: f"{parent_name}_{decay_name}",
                 label_func=lambda parent_label, decay_label: f"{parent_label} {decay_label}",
                 xsecs=None,
-                aux={"flavour": flavour},
+                aux=aux,
             )
+
+    tt_custom = create_parent_process(
+        [tt_dl_nonb, tt_sl_nonb, tt_fh_nonb],
+        name="tt_custom",
+        id=21199,
+        label="TT Custom",
+    )
+    tt_custom.add_parent_process(tt)
+
+    ttbb_custom = create_parent_process(
+        [ttbb_dl_1b, ttbb_sl_1b, ttbb_fh_1b],
+        name="ttbb_custom",
+        id=68899,
+        label="TTBB Custom",
+    )
+    ttbb_custom.add_parent_process(ttbb)
+
+    ttb_custom = create_parent_process(
+        [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b],
+        name="ttb_custom",
+        id=6827365,
+        label="TT (+b)",
+    )
+    ttb_custom.add_parent_process(ttbb)
+
+    tt2b_custom = create_parent_process(
+        [ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b],
+        name="tt2b_custom",
+        id=913856,
+        label="TT (+b) (from gluon)",
+    )
+    tt2b_custom.add_parent_process(ttbb)
+
+    tt_bb_custom = create_parent_process(
+        [ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
+        name="tt_bb_custom",
+        id=192350,
+        label="TT (+ bb)",
+    )
+    tt_bb_custom.add_parent_process(ttbb)
 
     qcd_mu.label = "QCD Muon enriched"
     qcd_ele = create_parent_process(
@@ -163,3 +253,30 @@ def modify_cmsdb_processes():
         label="MC background",
         color=color_palette["green"],
     )
+
+
+def configure_data_split_in_eras():
+    from cmsdb.processes import data
+
+    data_era_map = {
+        "data_2024_c": {"color": "#1f77b4", "label": "Data c 2024", "id": 893685478},
+        "data_2024_d": {"color": "#ff7f0e", "label": "Data d 2024", "id": 893685479},
+        "data_2024_e": {"color": "#2ca02c", "label": "Data e 2024", "id": 893685480},
+        "data_2024_f": {"color": "#d62728", "label": "Data f 2024", "id": 893685481},
+        "data_2024_g": {"color": "#9467bd", "label": "Data g 2024", "id": 893685482},
+        "data_2024_h": {"color": "#8c564b", "label": "Data h 2024", "id": 893685483},
+        "data_2024_i": {"color": "#e377c2", "label": "Data i 2024", "id": 893685484},
+    }
+
+    for name, info in data_era_map.items():
+        data.add_process(
+            name=name,
+            id=info["id"],
+            is_data=False,
+            label=info["label"],
+            color=info["color"],
+            aux={
+                "scale": 1.0,
+                "stack": False,
+            },
+        )

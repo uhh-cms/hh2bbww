@@ -40,6 +40,14 @@ cms_color_palette_2 = {
     "black": "#000000",                                         # data, hh sm
 }
 
+red_shades = {
+    "red_crimson": "#DC143C",   # Crimson
+    "red_firebrick": "#B22222",  # Firebrick
+    "red_indian": "#CD5C5C",  # Indian Red
+    "red_tomato": "#FF6347",  # Tomato
+    "red_ruby": "#9B111E",  # Ruby Red
+}
+
 color_palette_1 = {
     "black": "#000000",
     "red": "#e41a1c",
@@ -66,6 +74,11 @@ color_palette = cms_color_palette_2
 default_process_colors = {
     "data": color_palette["black"],
     "tt": color_palette["red"],
+    "ttbb_custom": red_shades["red_indian"],
+    "ttb_custom": red_shades["red_crimson"],
+    "tt2b_custom": red_shades["red_tomato"],
+    "tt_bb_custom": red_shades["red_ruby"],
+    "tt_custom": red_shades["red_firebrick"],
     "qcd": color_palette["blue"],
     "qcd_mu": color_palette["blue"],
     "qcd_ele": color_palette["blue"],
@@ -137,11 +150,20 @@ default_labels = {
     "dy_hf": "DY+HF",
     "dy_lf": "DY+LF",
     "tt": r"$t\bar{t}$",
+    "tt_custom": r"$t\bar{t}$ (custom)",
+    "ttbb_custom": r"$t\bar{t} + \geq 1b$ (custom)",
     "dy_m50toinf": "DY ($M > 50$)",
     "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
     "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
     "dy_m50toinf_2j": "DY ($M > 50$, 2 jets)",
     "dy_m10to50": "DY ($10 < M < 50$)",
+    "dy_m10to50": "DY ($10 < M < 50$)",
+    "dy_ee_m10to50": "DY ($10 < M < 50$) (2e)",
+    "dy_mumu_m10to50": r"DY ($10 < M < 50$) ($2\mu$)",
+    "dy_tautau_m10to50": r"DY ($10 < M < 50$) ($2\tau$)",
+    "dy_ee_m50toinf": "DY ($M > 50$) (2e)",
+    "dy_mumu_m50toinf": r"DY ($M > 50$) ($2\mu$)",
+    "dy_tautau_m50toinf": r"DY ($M > 50$) ($2\tau$)",
     "dy_m4to10": "DY ($4 < M < 10$)",
     "st_tchannel_t": "st (t-channel, t)",
     "st_tchannel_tbar": r"st (t-channel, $\bar{t}$)",
@@ -154,6 +176,7 @@ default_labels = {
     "ttv": r"$t\bar{t}V$",
     # paper request: no couplings in labels for SM signals
     "hh_ggf_kl1_kt1": r"$HH_{ggF}$",
+    "hhh_4b2w_2l2nu_c30_d40": r"$HHH_{SM}$",
     "hh_vbf_kv1_k2v1_kl1": r"$HH_{VBF}$",
     "hh_ggf_hbb_htt_kl1_kt1": r"$HH_{ggF}\rightarrow bb\tau\tau$",
     "hh_vbf_hbb_htt_kv1_k2v1_kl1": r"$HH_{VBF}\rightarrow bb\tau\tau$",
@@ -243,10 +266,16 @@ def stylize_processes(config: od.Config) -> None:
             proc.short_label = short_label
 
         # unstack signal in plotting
-        if "hh_" in proc.name.lower():
-            proc.add_tag("is_signal")
-            proc.unstack = True
-            proc.scale = "stack"
+        if config.has_tag("is_hh"):
+            if "hh_" in proc.name.lower():
+                proc.add_tag("is_signal")
+                proc.unstack = True
+                proc.scale = "stack"
+        elif config.has_tag("is_hhh"):
+            if "hhh_" in proc.name.lower():
+                proc.add_tag("is_signal")
+                proc.unstack = True
+                proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)

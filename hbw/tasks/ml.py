@@ -262,7 +262,6 @@ class MLPreTraining(
             return reqs
 
         process = self.branch_data["process"]
-
         # load events
         reqs["events"] = {
             config_inst.name: {

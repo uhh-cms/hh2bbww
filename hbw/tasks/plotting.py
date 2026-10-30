@@ -12,7 +12,8 @@ import order as od
 
 from columnflow.tasks.framework.base import Requirements, ShiftTask, TaskShifts
 from columnflow.tasks.framework.mixins import (
-    CalibratorClassesMixin, SelectorClassMixin, ProducerClassesMixin,
+    CalibratorClassesMixin, SelectorClassMixin, ReducerClassMixin, ProducerClassesMixin,
+    HistProducerClassMixin,
     # CalibratorsMixin, SelectorMixin, ProducersMixin,
     MLModelsMixin,
     CategoriesMixin,
@@ -73,7 +74,7 @@ def plot_multi_hist_producer(
         hists[hist_producer] = sum(w_hists.values())
 
     remove_residual_axis(hists, "shift")
-    hists = apply_variable_settings(hists, variable_insts, variable_settings)
+    hists = apply_variable_settings(hists, variable_insts, variable_settings)[0]
 
     plot_config = OrderedDict()
 
@@ -85,11 +86,12 @@ def plot_multi_hist_producer(
             "hist": h,
             "kwargs": {
                 "norm": norm,
-                "label": hist_producer,
+                "label": "Before DY NLO reweighting" if "no" in hist_producer else "After DY NLO reweighting",
             },
             "ratio_kwargs": {
                 "norm": hists[list(hists.keys())[0]].values(),
                 "yerr": None,
+                "legend": None,
             },
         }
         if hide_errors:
@@ -100,7 +102,7 @@ def plot_multi_hist_producer(
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    default_style_config["rax_cfg"]["ylabel"] = f"Ratio to {list(hists.keys())[0]}"
+    default_style_config["rax_cfg"]["ylabel"] = "Ratio"  # f"Ratio to {list(hists.keys())[0]}"
 
     # set process label as legend title
     process_label = processes[0].label if len(processes) == 1 else "Processes"
@@ -113,8 +115,10 @@ class PlotVariablesMultiHistProducer(
     HBWTask,
     CalibratorClassesMixin,
     SelectorClassMixin,
+    ReducerClassMixin,
     ProducerClassesMixin,
     MLModelsMixin,
+    HistProducerClassMixin,
     CategoriesMixin,
     ProcessPlotSettingMixin,
     VariablePlotSettingMixin,
@@ -209,7 +213,7 @@ class PlotVariablesMultiHistProducer(
     def store_parts(self):
         parts = super().store_parts()
         parts.insert_before("version", "plot", f"datasets_{self.datasets_repr}")
-        parts.insert_before("version", "weights", f"weights_{self.hist_producers_repr}")
+        parts.insert_before("version", "hist_producer", f"hist_producer_{self.hist_producers_repr}")
         return parts
 
     def create_branch_map(self):
@@ -271,9 +275,9 @@ class PlotVariablesMultiHistProducer(
                         # axis selections
                         h = h[{
                             "process": [
-                                hist.loc(p.id)
+                                hist.loc(p.name)
                                 for p in sub_process_insts[process_inst]
-                                if p.id in h.axes["process"]
+                                if p.name in h.axes["process"]
                             ],
                             "category": [
                                 hist.loc(c.name)

@@ -89,10 +89,12 @@ config_categories = DotDict({
         "sr__resolved__1b__ml_tt",
         "sr__resolved__1b__ml_st",
         "sr__resolved__1b__ml_dy_m10toinf",
+        # "sr__resolved__1b__ml_dy",
         "sr__resolved__1b__ml_h",
         "sr__resolved__2b__ml_tt",
         "sr__resolved__2b__ml_st",
         "sr__resolved__2b__ml_dy_m10toinf",
+        # "sr__resolved__2b__ml_dy",
         "sr__resolved__2b__ml_h",
     ],
     "no_nn_cats": [
@@ -133,6 +135,13 @@ systematics = DotDict({
         # "lumi_13TeV_correlated",
         "lumi_13p6TeV_2022",
         "lumi_13p6TeV_2023",
+    ],
+    "lumi24": [
+        "lumi_13p6TeV_2024",
+    ],
+    "lumi24_25": [
+        "lumi_13p6TeV_2024",
+        "lumi_13p6TeV_2025",
     ],
     "QCDscale": [
         "QCDscale_ttbar",
@@ -180,12 +189,18 @@ systematics = DotDict({
         "rate_dy_hf",
     ],
     "rate_unconstrained2": [
-        "rate_ttbar"
+        "rate_ttbar",
         "rate_st",
         "rate_dy_lf",
         "rate_dy_hf",
     ],
     "rate_unconstrained3": [
+        "rate_ttbar",
+        "rate_ttbar_boosted",
+        "rate_dy_lf",
+        "rate_dy_hf",
+    ],
+    "rate_unconstrained4": [
         "rate_ttbar",
         "rate_ttbar_boosted",
         "rate_dy_lf",
@@ -274,6 +289,18 @@ systematics = DotDict({
         "btag_cferr1_{campaign}",
         "btag_cferr2_{campaign}",
     ],
+    "btag_24": [
+        "btag_bc",
+        "btag_light",
+    ],
+    "btag_2425_uncorr": [
+        "btag_uncorrelated_bc_{year}",
+        "btag_uncorrelated_light_{year}",
+    ],
+    "btag_2425_corr": [
+        "btag_correlated_bc",
+        "btag_correlated_light",
+    ],
     "experiment": [
         "mu_id_sf",
         "mu_iso_sf",
@@ -282,6 +309,15 @@ systematics = DotDict({
         "trigger_sf",
         "minbias_xs",
         "dy_correction",
+    ],
+    "experiment_2425": [
+        "mu_id_sf",
+        "mu_iso_sf",
+        "e_sf",
+        "e_reco_sf",
+        "trigger_sf_{year}",
+        "minbias_xs",
+        "dy_correction_{year}",
     ],
     "experiment_cpn_uncorr": [
         "mu_id_sf_{campaign}",
@@ -326,8 +362,52 @@ systematics["rate_default"] = [
     *systematics.QCDscale,
     *systematics.pdf,
     *systematics.BR,
-    *systematics.hbb_efficiency,
+    # *systematics.hbb_efficiency,
     *systematics.rate_unconstrained3,
+]
+systematics["rate_24"] = [
+    *systematics.lumi24,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    *systematics.rate_unconstrained3,
+]
+systematics["rate_24_4"] = [
+    *systematics.lumi24,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    *systematics.rate_unconstrained4,
+]
+systematics["rate_24_25"] = [
+    *systematics.lumi24_25,
+    *systematics.QCDscale,
+    *systematics.pdf,
+    *systematics.BR,
+    *systematics.rate_unconstrained4,
+]
+systematics["shape_24_25"] = [
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_2425_uncorr,
+    *systematics.btag_2425_corr,
+    *systematics.experiment_2425,
+    *systematics.other,
+]
+systematics["full_24_25"] = [
+    *systematics.rate_24_25,
+    *systematics.shape_24_25,
+]
+systematics["shape_24"] = [
+    *systematics.murf_envelope,
+    *systematics.pdf_shape,
+    *systematics.btag_24,
+    *systematics.experiment,
+    *systematics.other,
+]
+systematics["full_24"] = [
+    *systematics.rate_24,
+    *systematics.shape_24,
 ]
 systematics["rate"] = [
     *systematics.lumi,
@@ -469,8 +549,8 @@ backgrounds = [
     "w_lnu",
     "vv",
     "vvv",
-    "h_ggf", "h_vbf", "zh", "wh", "zh_gg", "tth",
-    "thq", "thw", "ttvh",
+    "h_ggf", "h_vbf", "wh", "tth", "zh",  # "zh_gg",
+    "ttvh", "thq", "thw",
     "tttt",
     "ttvv",
     # TODO: add bbh
@@ -491,6 +571,29 @@ backgrounds_skip_dy = [
     "tttt",
     "ttvv",
 ]
+backgrounds_split_dy = [
+    # "st_tchannel",
+    "st_twchannel",
+    "st_schannel",
+    "tt",
+    "ttw",
+    "ttz",
+    "dy_ee_m10to50",
+    "dy_ee_m50toinf",
+    "dy_mumu_m10to50",
+    "dy_mumu_m50toinf",
+    "dy_tautau_m10to50",
+    "dy_tautau_m50toinf",
+    "w_lnu",
+    "vv",
+    "vvv",
+    "h_ggf", "h_vbf", "wh", "tth",  # ,"zh","zh_gg",
+    "ttvh",  # "thq","thw",
+    # "tttt",
+    "ttvv",
+    # TODO: add bbh
+    # "qcd",  # probably not needed
+]
 
 processes_dict = {
     "test": ["tt", *hhprocs("hbb_hww2l2nu")],
@@ -500,9 +603,6 @@ processes_dict = {
     "hwwzztt_skip_dy": [*backgrounds_skip_dy, *hhprocs("hbb_hww"), *hhprocs("hbb_hzz"), *hhprocs("hbb_htt")],
     "hwwzztt_ggf": [*backgrounds, *hhprocs_ggf("hbb_hww"), *hhprocs_ggf("hbb_hzz"), *hhprocs_ggf("hbb_htt")],
 }
-
-from hbw.ml.derived.dl import input_features
-mli_inputs = input_features.v2
 
 
 def config_variable_binary_ggf_and_vbf(self, config_cat_inst):
@@ -543,6 +643,206 @@ dl = HBWInferenceModelBase.derive("dl", cls_dict=default_cls_dict)
 #
 # currently "final" inference models
 #
+full24_closure = dl.derive("full24_closure", cls_dict={
+    "ml_model_name": ["multiclass24_closure", "ggf24_closure", "vbf24_closure"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.full_24,
+})
+rate24_closure = dl.derive("rate24_closure", cls_dict={
+    "ml_model_name": ["multiclass24_closure", "ggf24_closure", "vbf24_closure"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24,
+})
+rate24_v3_l2pt15 = dl.derive("rate24_v3_lep2pt15", cls_dict={
+    "ml_model_name": ["multiclass24_v3l2pt15", "ggf24_v3l2pt15", "vbf24_v3l2pt15"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24,
+})
+rate24_251 = dl.derive("rate24_251", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24_25,
+})
+rate24_0 = dl.derive("rate24_0", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24,
+})
+rate_boostedbkg = dl.derive("rate_boostedbkg", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+rate_boostedbkg32 = dl.derive("rate_boostedbkg32", cls_dict={
+    "ml_model_name": ["multiclass_2425_v32l2pt15", "ggf_2425_v32l2pt15", "vbf_2425_v32l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+rate_boostedbkg321 = dl.derive("rate_boostedbkg321", cls_dict={
+    "ml_model_name": ["multiclass_2425_v32l2pt15", "ggf_2425_v32l2pt15", "vbf_2425_v32l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.rate_24_25,
+})
+full_2425 = dl.derive("full_2425", cls_dict={
+    "ml_model_name": ["multiclass_2425_v3l2pt15", "ggf_2425_v3l2pt15", "vbf_2425_v3l2pt15"],
+    "config_categories": config_categories.default_boosted_bkg,
+    "systematics": systematics.full_24_25,
+})
+rate24 = dl.derive("rate24", cls_dict={
+    "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.rate_24,
+})
+full24 = dl.derive("full24", cls_dict={
+    "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+    "config_categories": config_categories.default_boosted,
+    "systematics": systematics.full_24,
+})
+
+# rateonly24v1 = dl.derive("rateonly24v1", cls_dict={
+#     "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+#     "config_categories": config_categories.default_boosted,
+#     "processes": [
+#         "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hww2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_hzz2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hzz2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hzz2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hzz2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_htt_kl1_kt1",
+#         "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+#         *backgrounds,
+#     ],
+#     "systematics": systematics.rate_24,
+# })
+# rate24_v2 = rateonly24v1.derive("rate24_v2")
+# full24 = dl.derive("full24", cls_dict={
+#     "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+#     "config_categories": config_categories.default_boosted,
+#     "processes": [
+#         "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hww2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_hzz2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hzz2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hzz2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hzz2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_htt_kl1_kt1",
+#         "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+#         *backgrounds,
+#     ],
+#     "systematics": systematics.full_24,
+# })
+# rateonly24_dysplit = dl.derive("rateonly24_dysplit", cls_dict={
+#     "ml_model_name": ["multiclass24", "ggf24", "vbf24"],
+#     "config_categories": config_categories.default_boosted,
+#     "processes": [
+#         "hh_ggf_hbb_hww2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hww2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hww2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hww2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hww2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hww2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_hzz2l2nu_kl1_kt1",
+#         "hh_ggf_hbb_hzz2l2nu_kl2p45_kt1",
+#         "hh_vbf_hbb_hzz2l2nu_kv1_k2v1_kl1",
+#         "hh_vbf_hbb_hzz2l2nu_kv2p12_k2v3p87_klm5p96",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p962_k2v0p959_klm1p43",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p6_k2v2p72_klm1p36",
+#         "hh_vbf_hbb_hzz2l2nu_kvm1p83_k2v3p57_klm3p39",
+#         "hh_vbf_hbb_hzz2l2nu_kvm0p758_k2v1p44_klm19p3",
+#         "hh_ggf_hbb_htt_kl1_kt1",
+#         "hh_vbf_hbb_htt_kv1_k2v1_kl1",
+#         *backgrounds_split_dy,
+#     ],
+#     "systematics": systematics.rate_24,
+# })
+# rate24_lep2pt15 = rateonly24v1.derive("rate24_lep2pt15", cls_dict={
+#     "ml_model_name": ["multiclass24_lep2pt15", "ggf24_lep2pt15", "vbf24_lep2pt15"],
+# })
+# rate24_lep2pt10 = rateonly24v1.derive("rate24_lep2pt10", cls_dict={
+#     "ml_model_name": ["multiclass24_lep2pt10", "ggf24_lep2pt10", "vbf24_lep2pt10"],
+# })
+# rate24_v3 = rateonly24v1.derive("rate24_v3", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+# })
+# full24_v3 = rateonly24v1.derive("full24_v3", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+# })
+# full24_v4 = rateonly24v1.derive("full24_v4", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+# })
+# full24_v5 = rateonly24v1.derive("full24_v5", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+# })
+# full24_v5_noMCstats = rateonly24v1.derive("full24_v5_noMCstats", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+#     "mc_stats": False,
+# })
+# full24_v3_partial = rateonly24v1.derive("full24_v3_partial", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+#     "unblind": False,
+#     "skip_data": False,
+# })
+# full24_v5_partial = rateonly24v1.derive("full24_v5_partial", cls_dict={
+#     "ml_model_name": ["multiclass24_v3", "ggf24_v3", "vbf24_v3"],
+#     "systematics": systematics.full_24,
+#     "unblind": False,
+#     "skip_data": False,
+# })
+# rate24_v0 = rateonly24v1.derive("rate24_v0", cls_dict={
+#     "ml_model_name": ["multiclass24_v0", "ggf24_v0", "vbf24_v0"],
+# })
+# rate24_v0_r4 = rateonly24v1.derive("rate24_v0_r4", cls_dict={
+#     "ml_model_name": ["multiclass24_v0", "ggf24_v0", "vbf24_v0"],
+#     "systematics": systematics.rate_24_4,
+# })
+# rate24_partialunblind = rateonly24v1.derive("rate24_partialunblind", cls_dict={
+#     "unblind": False,
+#     "skip_data": False,
+# })
+# rate24_simplified_partialunblind = rateonly24v1.derive("rate24_simplified_partialunblind", cls_dict={
+#     "unblind": False,
+#     "skip_data": False,
+#     "systematics": systematics.rate_unconstrained3,
+# })
+# rate24_mini_partialunblind2 = rateonly24v1.derive("rate24_mini_partialunblind2", cls_dict={
+#     "unblind": False,
+#     "skip_data": False,
+#     "systematics": systematics.rate_unconstrained3,
+#     "mc_stats": False,
+# })
+# shape24_partialunblind = rateonly24v1.derive("shape24_partialunblind", cls_dict={
+#     "unblind": False,
+#     "skip_data": False,
+#     "systematics": systematics.default,
+# })
 
 rate_only = dl.derive("rate_only", cls_dict={
     "systematics": systematics.rate_default,
@@ -733,13 +1033,13 @@ mli_n_jet = default_data.derive("mli_n_jet", cls_dict={
     "config_categories": config_categories.no_nn_cats_with_boosted,
     "config_variable": lambda self, config_cat_inst: "mli_n_jet",
 })
-mli = default_data.derive("mli", cls_dict={
-    "processes": processes_dict["hww"],
-    # "ml_model_name": [],
-    "multi_variables": True,
-    "config_categories": config_categories.no_nn_cats_with_boosted,
-    "config_variable": lambda self, config_cat_inst: mli_inputs,
-})
+# mli = default_data.derive("mli", cls_dict={
+#     "processes": processes_dict["hww"],
+#     # "ml_model_name": [],
+#     "multi_variables": True,
+#     "config_categories": config_categories.no_nn_cats_with_boosted,
+#     "config_variable": lambda self, config_cat_inst: mli_inputs,
+# })
 
 
 #
@@ -879,25 +1179,25 @@ test_jec = dl.derive("test_jec", cls_dict={
     "processes": processes_dict["test"],
     "systematics": systematics.rate + ["jec_Total"],
 })
-only_sig = dl_jerc1_boosted_data.derive("only_sig", cls_dict={
-    "processes": processes_dict["hww2l2nu"],
-    "ml_model_name": [],
-    "multi_variables": True,
-    "config_categories": config_categories.no_nn_cats,
-    "config_variable": lambda self, config_cat_inst: mli_inputs,
-})
-test = dl_jerc1_boosted_data.derive("test", cls_dict={
-    "processes": processes_dict["hww2l2nu"],
-    "ml_model_name": [],
-    "multi_variables": True,
-    "config_categories": config_categories.no_nn_cats,
-    "config_variable": lambda self, config_cat_inst: mli_inputs,
-    "systematics": [],
-})
-dl_mli_inputs = dl_jerc1_boosted_data.derive("dl_mli_inputs", cls_dict={
-    "processes": processes_dict["hww2l2nu"],
-    "ml_model_name": [],
-    "multi_variables": True,
-    "config_categories": config_categories.no_nn_cats,
-    "config_variable": lambda self, config_cat_inst: mli_inputs,
-})
+# only_sig = dl_jerc1_boosted_data.derive("only_sig", cls_dict={
+#     "processes": processes_dict["hww2l2nu"],
+#     "ml_model_name": [],
+#     "multi_variables": True,
+#     "config_categories": config_categories.no_nn_cats,
+#     "config_variable": lambda self, config_cat_inst: mli_inputs,
+# })
+# test = dl_jerc1_boosted_data.derive("test", cls_dict={
+#     "processes": processes_dict["hww2l2nu"],
+#     "ml_model_name": [],
+#     "multi_variables": True,
+#     "config_categories": config_categories.no_nn_cats,
+#     "config_variable": lambda self, config_cat_inst: mli_inputs,
+#     "systematics": [],
+# })
+# dl_mli_inputs = dl_jerc1_boosted_data.derive("dl_mli_inputs", cls_dict={
+#     "processes": processes_dict["hww2l2nu"],
+#     "ml_model_name": [],
+#     "multi_variables": True,
+#     "config_categories": config_categories.no_nn_cats,
+#     "config_variable": lambda self, config_cat_inst: mli_inputs,
+# })

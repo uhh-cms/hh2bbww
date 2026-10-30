@@ -27,7 +27,7 @@ def normalized_weight_factory(
 
     @producer(
         # TODO: w.produces does not work as intended anymore, so we have to initialize the Producers here
-        uses=set(weight_producers) | set().union(*[w().produced_columns for w in weight_producers]) | {"process_id"},
+        # uses=set(weight_producers) | set().union(*[w().produced_columns for w in weight_producers]) | {"process_id"},
         cls_name=producer_name,
         mc_only=True,
         # skip the checking existence of used/produced columns because not all columns are there
@@ -94,6 +94,13 @@ def normalized_weight_factory(
             task,
             branch=-1,
         )
+
+    @normalized_weight.init
+    def normalized_weight_init(self: Producer) -> None:
+        self.uses |= {"process_id", *weight_producers}
+        for w in weight_producers:
+            inst = self.instantiate_dependency(w)
+            self.uses |= inst.produced_columns
 
     @normalized_weight.setup
     def normalized_weight_setup(
