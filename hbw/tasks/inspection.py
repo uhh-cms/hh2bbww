@@ -613,6 +613,15 @@ class CheckColumns(
     """
     Task to inspect columns after Reduction, Production and MLEvaluation.
     """
+    skip_debugger = luigi.BoolParameter(
+        default=False,
+        description="Whether to start a ipython debugger session or not; default: False",
+    )
+
+    def output(self):
+        # never written, so that the task always runs
+        return {"always_incomplete_dummy": self.target(f"dummy_{self.branch}.txt")}
+
     def run(self):
         import awkward as ak
         inputs = self.input()
@@ -625,9 +634,10 @@ class CheckColumns(
             f"{self.ml_models} using config '{config.name}' with dataset '{dataset.name}' and "
             f"shift '{self.shift}', calibrators {self.calibrators}, and selector '{self.selector}'\n",
         )
-
-        files = {"events": [inputs["events"]["collection"][0]["events"]][0]}
-        for i, producer in enumerate(self.producers):
+        files = {"events": [inputs["events"]["events"]]}
+        # only producers with produced columns are required (see ColumnsBaseTask.requires)
+        producers = [producer_inst.cls_name for producer_inst in self.producer_insts if producer_inst.produced_columns]
+        for i, producer in enumerate(producers):
             files[producer] = inputs["producers"][i]["columns"]
         for i, ml_model in enumerate(self.ml_models):
             files[ml_model] = inputs["ml"][i]["mlcolumns"]
@@ -636,7 +646,7 @@ class CheckColumns(
         # NOTE: we could use the Chunked Reader here aswell, but since we do not do any data processing,
         #       it should be fine to shortly load the complete files into memory
         for key, fname in files.items():
-            columns = ak.from_parquet(fname.path)
+            columns = ak.from_parquet(fname)
             fields = [route.string_column for route in get_ak_routes(columns)]
             self.publish_message(f"{'=' * 10} {key} fields:\n{fields} \n")
 
