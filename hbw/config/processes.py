@@ -83,10 +83,10 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.other)
     config.add_process(config.x.procs.n.hh_other)
     config.add_process(config.x.procs.n.tt_custom)
-    config.add_process(config.x.procs.n.ttbb_custom)
-    config.add_process(config.x.procs.n.ttb_custom)
-    config.add_process(config.x.procs.n.tt2b_custom)
-    config.add_process(config.x.procs.n.tt_bb_custom)
+    # the custom tt+b processes are only known when the campaign has ttbb datasets (2024 and later)
+    for proc_name in ("ttbb_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"):
+        if config.x.procs.has(proc_name):
+            config.add_process(config.x.procs.get(proc_name))
     minor = config.add_process(config.x.procs.n.minor)
     minor.label = "minor"
 
@@ -97,7 +97,8 @@ def configure_hbw_processes(config: od.Config):
         "2023postBPix": (color_palette["grey"], 4),
         "2024": (color_palette["black"], 5),
         "2025": (color_palette["green"], 6),
-    }[config.x.cpn_tag]
+        "2026": (color_palette["purple"], 7),
+    }.get(config.x.cpn_tag, (color_palette["grey"], 0))
 
     config.x.procs.n.background.add_process(
         name=f"bkg_{config.x.cpn_tag}",
