@@ -12,7 +12,7 @@
 # - cf.MLTraining --ml-model ggfv1
 # - cf.MLTraining --ml-model vbfv1
 # - cf.MLEvaluationWrapper for all three models
-# - cf.CreateDatacards with nominal shift
+# - cf.cms.CreateDatacards with nominal shift
 # - add shape systematics and jerc shifts
 
 # Types of plots that we typically produce:
@@ -24,15 +24,15 @@
 
 
 # Default values
-default_configs="c22postv14"
-all_configs="c22prev14,c22postv14,c23prev14,c23postv14"
-configs_sep="c22prev14 c22postv14 c23prev14 c23postv14"
+default_configs="c24v15"
+all_configs="c24v15"
+configs_sep="c24v15"
 default_shifts="nominal"
-dnn_multiclass="multiclassv3"
-dnn_ggf="ggfv3"
-dnn_vbf="vbfv3_tag"
+dnn_multiclass="multiclass_2425_v3l2pt15"
+dnn_ggf="ggf_2425_v3l2pt15"
+dnn_vbf="vbf_2425_v3l2pt15"
 all_models="$dnn_multiclass,$dnn_ggf,$dnn_vbf"
-inference_model="dl"
+inference_model="full_2425"
 ml_inputs="ml_inputs"
 ml_scores="logit_mlscore.sig_ggf_binary,logit_mlscore.sig_vbf_binary"
 all_ml_scores="mlscore.*,rebinlogit_mlscore.sig*binary,logit_mlscore.sig*binary"
@@ -686,7 +686,7 @@ run_and_fetch_gen_plots() {
 
 calls() {
     # mbb, bb_pt, b1_pt, mbbllmet prefit shapes
-    claw run cf.CreateDatacards --inference-model mbbllmet --configs $all_configs  --workers 6 --remove-output 0,a,y
+    claw run cf.cms.CreateDatacards --inference-model mbbllmet --configs $all_configs  --workers 6 --remove-output 0,a,y
 
     law run hbw.PlotPostfitShapes --version 2022_2023__mbbV15_noflow1 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_aeaeb5cef4/m125.0/poi_r/2022_2023__mbbV15_noflow1/shapes_merged_23b6c2ab9a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model mbb --processes ddl4 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --remove-output 0,a,y
     law run hbw.PlotPostfitShapes --version 2022_2023__b1_ptV15_noflow1 --fit-diagnostics-file /afs/desy.de/user/f/frahmmat/Projects/inference/data/store/MergePreAndPostFitShapes/hh_model_NNLOFix_13p6__model_default/datacards_aeaeb5cef4/m125.0/poi_r/2022_2023__b1_ptV15_noflow1/shapes_merged_75e43eea1a__unblinded__poi_r__params_r1.0_r_gghh1.0_r_qqhh1.0_kl1.0_kt1.0_CV1.0_C2V1.0__merged_prefit.root --inference-model b1_pt --processes ddl4 --general-settings dpostfit --custom-style-config dpostfit --prefit --merged-only False --remove-output 0,a,y
@@ -831,30 +831,30 @@ run_triggersf_production() {
 }
 
 # run_and_fetch_all_plots() {
-# 
+#
 #     # run_and_fetch_mcsyst_plots "$all_configs" "sr" "ml_inputs,mli_full_vbf_tag"
-# 
+#
 #     # run_and_fetch_gen_plots
 #     # run_and_fetch_all_mcsyst_plots
 #     # run_and_fetch_mcsyst_plots "$all_configs" "incl" "mli_mll"
 #     # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
 #     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
-# 
+#
 #     # run_and_fetch_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
 #     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "sr__boosted" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
 #     # run_and_fetch_all_mcsyst_plots "$all_configs" "sr,sr__resolved__1b,sr__resolved__2b" "mli_full_vbf_tag,mli_full_vbf_mass,mli_full_vbf_pt,mli_full_vbf_eta,mli_full_vbf_phi,mli_full_vbf_deta,mli_vbfcand1_pt,mli_vbfcand2_pt,mli_vbfcand1_eta,mli_vbfcand2_eta"
-# 
+#
 #     # run_and_fetch_mcsyst_plots "$all_configs" "$inf_categories_sig_resolved" "$ml_inputs"
 #     # run_and_fetch_mcsyst_plots_boosted "$all_configs" "$inf_categories_sig_boosted" "$ml_inputs"
-# 
+#
 #     # run_and_fetch_all_mlscore_plots
 #     # run_and_fetch_all_yield_tables
 #     # run_and_fetch_btag_norm_sf
 #     # run_and_fetch_mlplots
 #     # fetch_ml_metrics
-# 
+#
 #     # run_and_fetch_kinematics
-# 
+#
 #     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb"
 #     # run_and_fetch_mcstat_plots "$all_configs" "incl,sr,ttcr,dycr" "fatbjet0_pnet_hbb,fatjet0_particlenet_xbbvsqcd_pass_fail,fatjet0_particlenetwithmass_hbbvsqcd_pass_fail,fatbjet0_particlenet_xbbvsqcd_pass_fail,fatbjet0_particlenetwithmass_hbbvsqcd_pass_fail"
 #     # run_and_fetch_efficiency_plots "$all_configs" "sr,sr__ml_bkg,sr__ml_sig_ggf,sr__ml_sig_vbf" "fatbjet0_pnet_hbb"

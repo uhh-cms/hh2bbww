@@ -26,9 +26,9 @@ class HBWTask(BaseTask):
 
 class ColumnsBaseTask(
     HBWTask,
-    MLModelsMixin,
-    ProducersMixin,
     ReducedEventsUser,
+    ProducersMixin,
+    MLModelsMixin,
     law.LocalWorkflow,
 ):
     """
@@ -54,7 +54,7 @@ class ColumnsBaseTask(
         reqs = super().workflow_requires()
 
         # require the full merge forest
-        reqs["events"] = self.reqs.MergeReducedEvents.req(self, tree_index=-1)
+        reqs["events"] = self.reqs.MergeReducedEvents.req(self)
 
         if not self.pilot:
             if self.producers:
@@ -77,7 +77,7 @@ class ColumnsBaseTask(
 
     def requires(self):
         reqs = {
-            "events": self.reqs.MergeReducedEvents.req(self, tree_index=self.branch, _exclude={"branch"}),
+            "events": self.reqs.MergeReducedEvents.req(self),
         }
 
         if self.producers:

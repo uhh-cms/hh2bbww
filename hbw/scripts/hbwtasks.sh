@@ -104,7 +104,7 @@ hbw_ml_training(){
 }
 
 hbw_plot_ml_training(){
-	law run hbw.PlotMLEvaluationSingleFold --version $version --workers 100 \
+	law run hbw.PlotMLResultsSingleFold --version $version --workers 100 \
 	--fold 0 \
 	--workflow htcondor \
 	--htcondor-memory 10000 \
@@ -121,7 +121,7 @@ hbw_plot_ml_training(){
 
 
 hbw_datacards(){
-    law run cf.CreateDatacards --version $version --workers 100 \
+    law run cf.cms.CreateDatacards --version $version --workers 100 \
 	--pilot --workflow htcondor \
 	--cf.MLTraining-htcondor-gpus 1 \
 	--cf.MLTraining-htcondor-memory 40000 \

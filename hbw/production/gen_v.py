@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Producers for L1 prefiring weights.
+Producers for gen-level V bosons and V+jets K-factor weights.
 """
 
 from __future__ import annotations
