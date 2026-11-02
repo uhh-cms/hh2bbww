@@ -8,8 +8,7 @@ from hbw.util import bracket_expansion
 
 
 def default_calibrator(container):
-    # return ["with_b_reg", "fatjet"]
-    return ["ak4", "fatjet", "ele"]
+    return ["ak4", "ak8", "ele", "muo"]
 
 
 def default_selector(container):
@@ -39,8 +38,7 @@ def default_ml_model(task_cls, container, task_params):
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
     if hasattr(task_cls, "ml_model"):
-        # TODO: we might want to distinguish between multiple default ML models (sl vs dl)
-        default_ml_model = "dense_default"
+        default_ml_model = "sl_22post"
 
     # check if task is using an inference model
     # if that is the case, use the default ml_model set in the inference model

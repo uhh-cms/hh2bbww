@@ -38,8 +38,6 @@ action() {
         cecho 32 "done"
     fi
 
-    return "$ret_global"
-
     # tests
     cecho 35 "check tests ..."
     bash "${this_dir}/run_tests"
@@ -53,5 +51,7 @@ action() {
     fi
 
     echo
+
+    return "$ret_global"
 }
 action "$@"

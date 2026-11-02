@@ -20,6 +20,7 @@ logger = law.logger.get_logger(__name__)
 
 from hbw.config.defaults_and_groups import (
     ml_inputs_producer,
+    default_ml_model,
 )
 
 from hbw.tasks.campaigns import BuildCampaignSummary
@@ -73,6 +74,7 @@ def create_hbw_analysis(
 
     # used by our MLModel (also set in config_inst, so be careful)
     analysis_inst.x.ml_inputs_producer = ml_inputs_producer(analysis_inst)
+    analysis_inst.x.default_ml_model = default_ml_model
     #
     # define configs
     #

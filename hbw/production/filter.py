@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Production modules related to electrons.
+Producers for event filters (e.g. the ECAL bad calibration filter).
 """
 
 from __future__ import annotations

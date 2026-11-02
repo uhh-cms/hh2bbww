@@ -36,3 +36,5 @@ data
 .setups
 *~
 *.ipynb*
+.claude
+CLAUDE.md

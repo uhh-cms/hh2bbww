@@ -45,7 +45,17 @@ def default_hist_producer(container):
     return hist_producer
 
 
-def default_ml_model(task_cls, container, task_params):
+def fallback_ml_model(container):
+    if container.has_tag("is_hh"):
+        ml_model = "multiclass_2425_v32l2pt15"
+    elif container.has_tag("is_hhh"):
+        ml_model = "multiclass_eq2b"
+    else:
+        ml_model = "none"
+    return ml_model
+
+
+def default_ml_model(task_cls, container, task_params, **kwargs):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
     default_ml_model = law.config.get_expanded("analysis", "default_ml_models", ())
@@ -55,8 +65,8 @@ def default_ml_model(task_cls, container, task_params):
     # set default ml_model when task is part of the MLTraining pipeline
     # NOTE: default_ml_model does not work for the MLTraining task
     if hasattr(task_cls, "ml_model"):
-        # TODO: we might want to distinguish between multiple default ML models (sl vs dl)
-        default_ml_model = "dense_default"
+        # use the first of the "default_ml_models" from the law config if set
+        default_ml_model = default_ml_model[0] if default_ml_model else fallback_ml_model(container)
 
     # check if task is using an inference model
     # if that is the case, use the default ml_model set in the inference model
