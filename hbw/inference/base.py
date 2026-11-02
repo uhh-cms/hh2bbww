@@ -128,6 +128,13 @@ class HBWInferenceModelBase(InferenceModel):
     def inf_processes(self):
         return [self.inf_proc(proc) for proc in self.processes]
 
+    def is_signal(self, proc: str) -> bool:
+        """
+        Whether the config process *proc* (not the renamed inference process) is a signal process
+        """
+        signal_tag = "hhh_" if self.config_insts[0].has_tag("is_hhh") else "hh_"
+        return signal_tag in proc.lower()
+
     def cat_name(self: InferenceModel, config_cat_inst: od.Category):
         """ Function to determine inference category name from config category """
         # NOTE: the name of the inference category cannot start with a Number
@@ -354,9 +361,10 @@ class HBWInferenceModelBase(InferenceModel):
             )
             # TODO: check that data datasets are requested as expected
             if self.skip_data:
+                # NOTE: check the config process names, since signals are renamed (e.g. to ggHH_*) by inf_proc
                 cat_kwargs["data_from_processes"] = [
-                    proc for proc in self.inf_processes
-                    if not proc.startswith("hh_")
+                    self.inf_proc(proc) for proc in self.processes
+                    if not self.is_signal(proc)
                 ]
 
             # add the category to the inference model
@@ -417,7 +425,7 @@ class HBWInferenceModelBase(InferenceModel):
                     )
                     for config_inst in self.config_insts
                 },
-                "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower()),  # noqa E501
+                "is_signal": self.is_signal(proc),
             }
             if self.scale_signal and kwargs["is_signal"]:
                 logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")
