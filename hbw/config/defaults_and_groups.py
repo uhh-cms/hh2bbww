@@ -66,7 +66,7 @@ def default_ml_model(task_cls, container, task_params, **kwargs):
     # NOTE: default_ml_model does not work for the MLTraining task
     if hasattr(task_cls, "ml_model"):
         # use the first of the "default_ml_models" from the law config if set
-        default_ml_model = default_ml_model[0] if default_ml_model else "multiclass_2425_v32l2pt15"
+        default_ml_model = default_ml_model[0] if default_ml_model else fallback_ml_model(container)
 
     # check if task is using an inference model
     # if that is the case, use the default ml_model set in the inference model
