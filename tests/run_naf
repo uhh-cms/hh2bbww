@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Script that runs the tests that require DESY NAF resources (cvmfs, /pnfs, the real output store).
+# Further arguments are forwarded to pytest.
+
+action() {
+    local shell_is_zsh=$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )
+    local this_file="$( ${shell_is_zsh} && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
+    local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
+
+    bash "${this_dir}/run_tests" -m naf "$@"
+}
+action "$@"

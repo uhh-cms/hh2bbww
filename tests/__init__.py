@@ -1,20 +1,13 @@
 # coding: utf-8
-# flake8: noqa
 
 """
-Entry point for all tests.
+Test suite of the hbw analysis, run via pytest (see tests/README.md).
 """
 
-__all__ = []
-
-
-# adjust the path to import the package
 import os
 import sys
-base = os.path.normpath(os.path.join(os.path.abspath(__file__), "../.."))
-sys.path.append(base)
-import hbw  # noqa
 
-# import all tests
-from .test_util import *
-from .test_workflow import *
+# adjust the path to import the package
+base = os.path.normpath(os.path.join(os.path.abspath(__file__), "../.."))
+if base not in sys.path:
+    sys.path.insert(0, base)

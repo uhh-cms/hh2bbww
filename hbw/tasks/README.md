@@ -270,11 +270,12 @@ CI ([lint_and_test.yaml](../../.github/workflows/lint_and_test.yaml)) runs on Py
 Run the same checks locally before pushing:
 
 ```shell
-./tests/run_linting            # flake8 hbw tests (config: .flake8, max line length 120, double quotes)
-./tests/run_tests              # unit tests in the venv_columnar sandbox (venv_columnar_dev if CF_DEV=1)
-bash tests/run_test test_util  # one test module, optionally with a sandbox as 2nd argument
-./tests/run_all [force]        # linting + tests; "force" continues after a failure
+./tests/run_linting                 # flake8 hbw tests (config: .flake8, max line length 120, double quotes)
+./tests/run_tests [pytest args]     # pytest in the venv_columnar_dev sandbox, skips NAF-only tests
+bash tests/run_test unit/test_util.py
+./tests/run_naf                     # NAF-only tests (external files, law CLI)
+./tests/run_all [force]             # linting + tests; "force" continues after a failure
 ```
 
-[test_util.py](../../tests/test_util.py) covers `build_param_product`, `round_sig`, `dict_diff`, `four_vec` and `call_once_on_config` from [util.py](../util.py).
-There are no tests for tasks, so test a task change on the limited config (`l24v15`) with `--branch 0` before submitting jobs.
+The tests cover helpers, categorizers and selectors on synthetic events, config building and defaults, the ML and inference model registries, and the resolution of the main tasks (without running them); see [tests/README.md](../../tests/README.md).
+They do not process real events, so still test a task change on the limited config (`l24v15`) with `--branch 0` before submitting jobs.

@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 
-# Script that runs all unit tests.
+# Script that runs the test suite with pytest inside the columnar dev sandbox (which ships pytest).
+# All arguments are forwarded to pytest, e.g. "-m naf", "-k lepton" or "tests/unit".
+#
+# Environment variables:
+#   HBW_TEST_LAW_CONFIG: law config used for the tests, defaults to the tracked $HBW_BASE/law.cfg
+#   HBW_TEST_STORE: replaces CF_STORE_LOCAL during the tests (see tests/conftest.py)
 
 action() {
     local shell_is_zsh=$( [ -z "${ZSH_VERSION}" ] && echo "false" || echo "true" )
     local this_file="$( ${shell_is_zsh} && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]}" )"
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
-    local cf_dir="${this_dir}/../modules/columnflow"
+    local hbw_dir="$( dirname "${this_dir}" )"
+    local sandbox="${hbw_dir}/modules/columnflow/sandboxes/venv_columnar_dev.sh"
 
-    # dev flag for sandboxes
-    local dev="$( [ "${CF_DEV}" = "1" ] && echo "_dev" || echo "" )"
+    # quote arguments so that they survive the sandbox command string
+    local pytest_args="$( printf "%q " "$@" )"
 
-    # start tests and keep track of immediate and global return values
-    local gret="0"
-    local ret
-    echo $cf_dir
-
-    # test_util
-    echo
-    bash "${this_dir}/run_test" test_util "${cf_dir}/sandboxes/venv_columnar${dev}.sh"
-    ret="$?"
-    [ "${gret}" = "0" ] && gret="${ret}"
-
-    return "${gret}"
+    (
+        cd "${hbw_dir}" && \
+        LAW_CONFIG_FILE="${HBW_TEST_LAW_CONFIG:-${hbw_dir}/law.cfg}" \
+        cf_sandbox "${sandbox}" "python -m pytest ${pytest_args}"
+    )
 }
 action "$@"
