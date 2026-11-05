@@ -18,7 +18,7 @@ from columnflow.plotting import supports_multi_variable, supports_multi_category
 from columnflow.plotting.plot_all import plot_all
 from columnflow.plotting.plot_functions_1d import plot_variable_stack
 from columnflow.plotting.plot_util import (
-    prepare_style_config, remove_residual_axis, use_flow_bins, apply_variable_settings,
+    prepare_style_config, remove_residual_axis, use_flow_bins, apply_variable_settings, get_position,
 )
 from columnflow.util import maybe_import
 from columnflow.types import TYPE_CHECKING, Any, Hashable, Sequence
@@ -265,11 +265,12 @@ def multi_cat_unrolled_plot(
     general_settings_groups entry), falling back to the config auxiliaries default_unroll_level_order and
     default_unroll_category_order.
 
-    The labels are placed in the whitespace above the histograms, so their position follows the
-    *whitespace_fraction* (default here: 0.45), which can be changed via
-    --general-settings whitespace_fraction=0.5
-    The legend gets as many columns as needed for at most 4 entries per column, and the figure width defaults to
-    10 inches plus 3 inches per additional category (height 10, at most 25 inches wide); both can be overwritten
+    The labels are placed in the whitespace above the histograms, below the legend. The *whitespace_fraction*
+    (at least 0.45 by default, can be raised via --general-settings whitespace_fraction=0.5) is increased
+    automatically until the labels fit between the histograms and the legend (and other texts at the top of the
+    plot), unless the y-range is fixed via the ax_cfg of the style config.
+    The legend gets as many columns as needed for at most 3 entries per column, and the figure width defaults to
+    10 inches plus 3 inches per additional category (height 10, at most 40 inches wide); both can be overwritten
     via the style config (legend_cfg, subplots_cfg).
     """
     # emulate multi-category input
@@ -354,9 +355,72 @@ def multi_cat_unrolled_plot(
 
     if auto_legend_cols:
         set_legend_ncols(axs[0], style_config["legend_cfg"], max_entries_per_col=3)
-    draw_unroll_labels(axs, blocks, y_line=1 - kwargs["whitespace_fraction"] + 0.02)
+
+    # draw the labels right above the histograms (the height of the label rows only depends on the x-axis)
+    whitespace_fraction = kwargs["whitespace_fraction"]
+    header_bottom = get_header_bottom(axs[0])
+    children = [set(ax.get_children()) for ax in axs]
+    labels_top = draw_unroll_labels(axs, blocks, y_line=1 - whitespace_fraction + 0.02)
+
+    # when the labels reach into the legend, increase the whitespace and draw them again
+    required_fraction = whitespace_fraction + labels_top + 0.02 - header_bottom
+    if required_fraction > whitespace_fraction and "ylim" not in style_config.get("ax_cfg", {}):
+        for ax, ax_children in zip(axs, children):
+            for artist in set(ax.get_children()) - ax_children:
+                artist.remove()
+        set_whitespace_fraction(axs[0], whitespace_fraction, required_fraction)
+        draw_unroll_labels(axs, blocks, y_line=1 - required_fraction + 0.02)
 
     return fig, axs
+
+
+def get_header_bottom(ax: plt.Axes) -> float:
+    """
+    Return the lower edge, as a fraction of the height of *ax*, of the legend and the texts (e.g. the category
+    annotation) in the upper half of *ax*, or 1 if there are none.
+    """
+    renderer = ax.figure.canvas.get_renderer()
+    artists = [text for text in ax.texts if text.get_visible() and text.get_text()]
+    if ax.get_legend():
+        artists.append(ax.get_legend())
+    bottoms = [
+        ax.transAxes.inverted().transform((0, artist.get_window_extent(renderer).y0))[1]
+        for artist in artists
+    ]
+    return min([bottom for bottom in bottoms if 0.5 < bottom < 1], default=1.0)
+
+
+def set_whitespace_fraction(ax: plt.Axes, old_fraction: float, new_fraction: float) -> None:
+    """
+    Change the upper y-limit of *ax*, set by plot_all for a whitespace fraction of *old_fraction*, to leave a
+    fraction of *new_fraction* above the histograms instead. Annotations positioned in data coordinates keep their
+    position relative to the axis.
+    """
+    log_y = ax.get_yscale() == "log"
+    y_min, y_max = ax.get_ylim()
+    content_max = get_position(y_min, y_max, factor=1 - old_fraction, logscale=log_y)
+
+    # remember the relative positions of annotations given in data coordinates (both the annotated point and the
+    # text, which plot_all places at the same position)
+    to_axes = lambda y: ax.transAxes.inverted().transform(ax.transData.transform((0, y)))[1]
+    from_axes = lambda y: ax.transData.inverted().transform(ax.transAxes.transform((0, y)))[1]
+    annotations = [
+        (
+            text,
+            to_axes(text.xy[1]) if text.xycoords == "data" else None,
+            to_axes(text.get_position()[1]) if text.anncoords == "data" else None,
+        )
+        for text in ax.texts
+        if hasattr(text, "xycoords")
+    ]
+
+    ax.set_ylim(y_min, get_position(y_min, content_max, factor=1 / (1 - new_fraction), logscale=log_y))
+
+    for text, y_xy, y_text in annotations:
+        if y_xy is not None:
+            text.xy = (text.xy[0], from_axes(y_xy))
+        if y_text is not None:
+            text.set_y(from_axes(y_text))
 
 
 def set_legend_ncols(ax: plt.Axes, legend_cfg: dict, max_entries_per_col: int = 3) -> None:
@@ -566,13 +630,14 @@ def draw_unroll_labels(
     axs: tuple[plt.Axes, ...],
     blocks: list[DotDict],
     y_line: float,
-) -> None:
+) -> float:
     """
     Draw separators and labels of the unrolled category *blocks* (see build_unroll_labels). Vertical positions
     are given as fractions of the main axis height, so they are independent of the y-scale: one row of labels per
     level is placed above a horizontal line at *y_line*, with the innermost level at the bottom. Separators are
     solid, dashed and dotted from the outermost to the innermost level and reach up to the row of their level
     (the innermost ones up to *y_line*). Labels are shrunk (and as a last resort rotated) to fit their width.
+    Returns the top of the uppermost row of labels as a fraction of the main axis height.
     """
     ax = axs[0]
     trafo = ax.get_xaxis_transform()
@@ -614,6 +679,8 @@ def draw_unroll_labels(
         ax.axvline(block.start, ymax=y_line if level == n_levels - 1 else row_tops[level], **sep_kwargs)
         for rax in axs[1:]:
             rax.axvline(block.start, **sep_kwargs)
+
+    return max(row_tops)
 
 
 # helper to move flow bins into first/last ones
