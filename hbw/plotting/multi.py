@@ -236,6 +236,7 @@ def multi_cat_unrolled_plot(
     variable_settings: dict[str, Any] | None = None,
     unroll_category_order: Sequence[str] | str | None = None,
     unroll_level_order: Sequence[Hashable] | Hashable | None = None,
+    unroll_x_labels: bool | None = None,
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     """
@@ -269,6 +270,12 @@ def multi_cat_unrolled_plot(
     (at least 0.45 by default, can be raised via --general-settings whitespace_fraction=0.5) is increased
     automatically until the labels fit between the histograms and the legend (and other texts at the top of the
     plot), unless the y-range is fixed via the ax_cfg of the style config.
+    By default, the x-axis shows the bin numbers of the unrolled histogram. With *unroll_x_labels*
+    (--general-settings unroll_x_labels=True, falling back to the config auxiliary default_unroll_x_labels), it
+    shows the original binning of each category instead (bin edges, or bin centers for discrete variables), with
+    labels thinned out when they would overlap; between two categories, the lower edge of the next one is shown.
+    All bins are drawn with the same width, so non-uniform binnings are shown with equal-width bins labeled with
+    their true edges (note that density=True therefore normalizes per bin, not per unit of the variable).
     The legend gets as many columns as needed for at most 3 entries per column, and the figure width defaults to
     10 inches plus 3 inches per additional category (height 10, at most 40 inches wide); both can be overwritten
     via the style config (legend_cfg, subplots_cfg).
@@ -307,6 +314,9 @@ def multi_cat_unrolled_plot(
         }
         for cat_name, proc_hists in hists.items()
     }
+
+    # original bin edges per category, shown as x tick labels of the unrolled axis
+    edges = [next(iter(proc_hists.values())).axes[variable_inst.name].edges for proc_hists in hists.values()]
 
     # unroll into a single axis with integer edges
     unrolled_name = f"{variable_inst.name}_unrolled"
@@ -356,6 +366,19 @@ def multi_cat_unrolled_plot(
     if auto_legend_cols:
         set_legend_ncols(axs[0], style_config["legend_cfg"], max_entries_per_col=3)
 
+    # optionally show the original binning on the x-axis, unless ticks are configured in the style config
+    if unroll_x_labels is None:
+        unroll_x_labels = config_inst.x("default_unroll_x_labels", False)
+    tick_keys = {"xmajorticks", "xmajorticklabels"}
+    if unroll_x_labels and not tick_keys & (set(style_config.get("ax_cfg", {})) | set(style_config.get("rax_cfg", {}))):
+        set_unrolled_xticks(
+            axs[-1],
+            [block.start for block in blocks],
+            edges,
+            discrete_x=variable_inst.discrete_x or "int" in variable_inst.x("axis_type", "variable"),
+            x_labels=variable_inst.x_labels,
+        )
+
     # draw the labels right above the histograms (the height of the label rows only depends on the x-axis)
     whitespace_fraction = kwargs["whitespace_fraction"]
     header_bottom = get_header_bottom(axs[0])
@@ -372,6 +395,62 @@ def multi_cat_unrolled_plot(
         draw_unroll_labels(axs, blocks, y_line=1 - required_fraction + 0.02)
 
     return fig, axs
+
+
+def get_unrolled_xticks(
+    block_starts: Sequence[int],
+    edges: Sequence[Sequence[float]],
+    discrete_x: bool = False,
+    x_labels: Sequence[str] | None = None,
+    step: int = 1,
+) -> tuple[list[float], list[str]]:
+    """
+    Return positions and labels of x ticks on the unrolled axis that show the original binning *edges* of each
+    category, whose bins start at the unrolled bin *block_starts*. Ticks are placed at all bin edges, or at the bin
+    centers for *discrete_x* variables (labeled with *x_labels* when given for each bin). Only every *step*-th tick
+    of each category is labeled, starting with the first one, and no label is closer than *step* ticks to the next
+    category. Between two categories, the lower edge of the next category is shown, and the upper edge is only shown
+    for the last category.
+    """
+    positions, labels = [], []
+    for i, (start, block_edges) in enumerate(zip(block_starts, edges)):
+        block_edges = np.asarray(block_edges, dtype=float)
+        if discrete_x:
+            values = 0.5 * (block_edges[:-1] + block_edges[1:])
+            offset = 0.5
+        else:
+            values = block_edges if i == len(edges) - 1 else block_edges[:-1]
+            offset = 0.0
+        if discrete_x and x_labels is not None and len(x_labels) == len(values):
+            block_labels = list(x_labels)
+        else:
+            block_labels = [f"{value:g}" for value in values]
+        positions.extend(start + offset + j for j in range(len(values)))
+        # skip labels closer than *step* ticks to the first (labeled) tick of the next category
+        is_last = i == len(edges) - 1
+        labels.extend(
+            label if j % step == 0 and (is_last or len(values) - j >= step) else ""
+            for j, label in enumerate(block_labels)
+        )
+    return positions, labels
+
+
+def set_unrolled_xticks(ax: plt.Axes, block_starts: Sequence[int], edges: Sequence[Sequence[float]], **kwargs) -> None:
+    """
+    Set the x ticks of *ax* to the original binning of the unrolled categories (see get_unrolled_xticks, which
+    receives all *kwargs*). Only every n-th tick is labeled, with n chosen such that the labels do not overlap.
+    """
+    positions, labels = get_unrolled_xticks(block_starts, edges, **kwargs)
+    ax.set_xticks(positions, labels)
+
+    # widest label compared to the distance between two ticks (one bin)
+    renderer = ax.figure.canvas.get_renderer()
+    max_width = max((label.get_window_extent(renderer).width for label in ax.get_xticklabels()), default=0)
+    bin_width = np.diff(ax.transData.transform([(0, 0), (1, 0)])[:, 0])[0]
+    step = max(math.ceil(1.2 * max_width / bin_width), 1)
+    if step > 1:
+        _, labels = get_unrolled_xticks(block_starts, edges, step=step, **kwargs)
+        ax.set_xticklabels(labels)
 
 
 def get_header_bottom(ax: plt.Axes) -> float:
