@@ -645,6 +645,12 @@ class PlotMLResultsSingleFold(
         "terminal; no default",
     )
 
+    weighting = luigi.Parameter(
+        default="equal_weights",
+        description="which weights to use for the evaluation plots; default: 'equal_weights'; "
+        "options: 'equal_weights', 'weights', 'train_weights' or in general those produced by the MLPreTraining task",
+    )
+
     data_splits = ("train", "val", "test")
 
     @property
@@ -803,6 +809,7 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
                 stats,
+                weighting=self.weighting,
             )
             log_memory("After plotting confusion matrix")
             plt.close("all")
@@ -817,6 +824,7 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
                 stats,
+                weighting=self.weighting,
             )
             log_memory("After plotting ROC curves")
             plt.close("all")
@@ -830,6 +838,7 @@ class PlotMLResultsSingleFold(
                 output["plots"],
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
+                weighting=self.weighting,
             )
             log_memory("After plotting ROC OVO curves")
             plt.close("all")
