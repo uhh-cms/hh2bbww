@@ -220,9 +220,9 @@ class MLClassifierBase(MLModel):
         self.folds = int(self.folds)
 
         # checks
-        if self.negative_weights not in ("ignore", "abs", "handle"):
+        if self.negative_weights not in ("ignore", "abs", "handle", "nothing"):
             raise Exception(
-                f"negative_weights {self.negative_weights} not in ('ignore', 'abs', 'handle')",
+                f"negative_weights {self.negative_weights} not in ('ignore', 'abs', 'handle', 'nothing')",
             )
 
     @property

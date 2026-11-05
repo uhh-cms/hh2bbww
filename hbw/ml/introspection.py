@@ -25,7 +25,7 @@ def get_input_post_batchnorm(model: tf.keras.models.Model, inputs: np.array) -> 
     :raises Exception: If the first layer of the model is not a BatchNormalization layer, an exception is raised.
     """
     batch_norm = model.layers[0]
-    if batch_norm.__class__.__name__ != "BatchNormalization":
+    if batch_norm.__class__.__name__ not in ("BatchNormalization", "Normalization"):
         raise Exception(f"First layer is expected to be BatchNormalization but is {batch_norm.__class__.__name__}")
     inp = batch_norm(tf.convert_to_tensor(inputs, dtype=tf.float32))
     return inp

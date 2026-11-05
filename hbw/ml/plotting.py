@@ -181,6 +181,7 @@ def plot_confusion(
         stats: dict | None = None,
         normalize: str = "columns",
         with_title: bool = False,
+        weighting: str = "equal_weights",
 ) -> None:
     """
     Simple function to create and store a confusion matrix plot
@@ -197,7 +198,7 @@ def plot_confusion(
     confusion = confusion_matrix(
         y_true=inputs.labels,
         y_pred=np.argmax(inputs.prediction, axis=1),
-        sample_weight=inputs.equal_weights,
+        sample_weight=inputs[weighting],
     )
     if isinstance(stats, dict):
         gather_confusion_stats(confusion, process_insts, input_type, stats)

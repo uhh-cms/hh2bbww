@@ -125,11 +125,11 @@ class MLDatasetLoader:
         self._stats = stats
         # NOTE: the skip_mask is currently used both for skipping process mask and for removing negative weights.
         # we might want to separate the negative weights handling into some other flag.
-        if skip_mask:
+        if skip_mask or "data" in process:
             self._events = events
         else:
             self._events = events[proc_mask]
-            self._events = events[events.event_weight >= 0.0]
+            self._events = self._events[self._events.event_weight >= 0.0]
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.ml_model_inst.cls_name}, {self.process})"
@@ -188,8 +188,10 @@ class MLDatasetLoader:
     @property
     def weights(self) -> np.ndarray:
         if not hasattr(self, "_weights"):
-            self._weights = ak.to_numpy(self._events.event_weight, allow_missing=False).astype(np.float32)
-
+            if "event_weight" in self._events.fields:
+                self._weights = ak.to_numpy(self._events.event_weight, allow_missing=False).astype(np.float32)
+            else:  # NOTE: also setting event weights for data now, so this should not be needed anymore
+                raise Exception(f"Event weights not found in events for process {self.process}.")
         return self._weights
 
     @property
@@ -326,6 +328,19 @@ class MLDatasetLoader:
 
         return equal_train_weights
 
+    def get_c2st_physical_weights(self) -> np.ndarray:
+        """
+        Return physical event weights for C2ST training.
+
+        Negative MC weights are excluded from the classifier training.
+        """
+        weights = np.asarray(self.weights, dtype=np.float32)
+
+        if "data" in self.process:
+            return np.ones(len(weights), dtype=np.float32)
+
+        return np.maximum(weights, 0.0)
+
     @property
     def train_weights(self) -> np.ndarray:
         """
@@ -338,12 +353,16 @@ class MLDatasetLoader:
             raise Exception("cannot determine train weights without stats")
 
         # TODO: hier muss np.float gemacht werden
-        proc = self.process
-        proc_inst = self.ml_model_inst.config_inst.get_process(proc)
-        if proc_inst.x("ml_config", None) and proc_inst.x.ml_config.weighting == "equal":
+        weighting = getattr(self.ml_model_inst, "weighting", "xsec")
+
+        if weighting == "equal":
             train_weights = self.get_equal_train_weights()
-        else:
+        elif weighting == "c2st":
+            train_weights = self.get_c2st_physical_weights()
+        elif weighting == "xsec":
             train_weights = self.get_xsec_train_weights()
+        else:
+            raise ValueError(f"Unknown weighting mode: {weighting}")
 
         self._train_weights = ak.to_numpy(train_weights, allow_missing=False).astype(np.float32)
 
