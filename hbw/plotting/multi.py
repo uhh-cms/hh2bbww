@@ -240,9 +240,8 @@ def multi_cat_unrolled_plot(
     Create a stack plot with the bins of all categories unrolled next to each other on a single x-axis. Example:
     claw run cf.PlotVariables1D --multi-category \
         --plot-function hbw.plotting.multi.multi_cat_unrolled_plot \
-        --variables mll --processes ... \
-        --categories sr__2e__resolved__1b,sr__2e__resolved__2b,sr__2mu__resolved__1b,sr__2mu__resolved__2b,\
-sr__emu__resolved__1b,sr__emu__resolved__2b
+        --variables mli_mll,mli_n_jet --processes ddl4 \
+        --categories "{sr,dycr,ttcr}__{2e,2mu,emu}__{resolved__1b,resolved__2b,boosted}"
 
     The categories are unrolled in the order in which the task passes them, which is alphabetical since
     PlotVariables1D sorts the --categories (CategoriesMixin.sort_categories). Variable settings (rebinning, flow
@@ -251,10 +250,12 @@ sr__emu__resolved__1b,sr__emu__resolved__2b
     refers to the unrolled bins with unit width.
 
     Categories are split into their root categories (``root_cats`` aux, or the name split at "__"). Root
-    categories shared by all categories form the category label in the top left (sr and resolved above). Among
-    the remaining ones, the one changing least often between consecutive categories defines groups (the lepton
-    channel above), the others label each category block (the b-tag category above). Labels are taken from the
-    root categories' *label_short*.
+    categories shared by all categories form the category label in the top left (sr and resolved above). The
+    remaining ones are ordered into levels, from the one changing least often between consecutive categories
+    (outermost, e.g. the lepton channel) to the one changing most often (innermost, e.g. the b-tag category).
+    Each level gets a row of labels, merged over consecutive categories, and separators that are solid, dashed
+    and dotted from the outermost to the innermost level. Labels are taken from the root categories'
+    *label_short*.
 
     The labels are placed in the whitespace above the histograms, so their position follows the
     *whitespace_fraction* (default here: 0.45), which can be changed via
@@ -336,13 +337,13 @@ sr__emu__resolved__1b,sr__emu__resolved__2b
     )
 
     if auto_legend_cols:
-        set_legend_ncols(axs[0], style_config["legend_cfg"], max_entries_per_col=4)
+        set_legend_ncols(axs[0], style_config["legend_cfg"], max_entries_per_col=3)
     draw_unroll_labels(axs, blocks, y_line=1 - kwargs["whitespace_fraction"] + 0.02)
 
     return fig, axs
 
 
-def set_legend_ncols(ax: plt.Axes, legend_cfg: dict, max_entries_per_col: int = 4) -> None:
+def set_legend_ncols(ax: plt.Axes, legend_cfg: dict, max_entries_per_col: int = 3) -> None:
     """
     Recreate the legend drawn by plot_all on *ax* with as many columns as needed for at most
     *max_entries_per_col* entries per column, keeping its entries and the other *legend_cfg* settings.
@@ -449,8 +450,10 @@ def build_unroll_labels(
 ) -> tuple[str, list[DotDict]]:
     """
     Build the labels of the unrolled plot from the root categories of *category_insts* (see
-    get_category_tokens). Returns the label common to all categories and one block per category with its first
-    bin, number of bins, label and group label (None when there are no groups).
+    get_category_tokens). Root categories that differ between categories are ordered into levels, from the one
+    changing least often between consecutive categories (outermost) to the one changing most often (innermost).
+    Returns the label common to all categories and one block per category with its first bin, number of bins,
+    and per level (outermost first) its root category name (*path*) and label (*labels*).
     """
     def get_label(token: str | None) -> str:
         if token is None:
@@ -467,12 +470,9 @@ def build_unroll_labels(
         if key not in varying_keys and tokens[0][key] is not None
     )
 
-    # the root category changing least often between consecutive categories defines the groups
-    group_key = None
-    if len(varying_keys) > 1:
-        n_changes = lambda key: sum(t1[key] != t2[key] for t1, t2 in zip(tokens[:-1], tokens[1:]))
-        group_key = min(varying_keys, key=n_changes)
-    label_keys = [key for key in varying_keys if key != group_key]
+    # levels from the outermost to the innermost root category (stable, so ties keep the name order)
+    n_changes = lambda key: sum(t1[key] != t2[key] for t1, t2 in zip(tokens[:-1], tokens[1:]))
+    level_keys = sorted(varying_keys, key=n_changes)
 
     blocks = []
     start = 0
@@ -480,13 +480,28 @@ def build_unroll_labels(
         blocks.append(DotDict(
             start=start,
             n_bins=n,
-            # one line per root category (empty if missing), so that lines are aligned between blocks
-            label="\n".join(get_label(_tokens[key]) for key in label_keys),
-            group=get_label(_tokens[group_key]) if group_key is not None else None,
+            path=tuple(_tokens[key] for key in level_keys),
+            # empty label if the root category is missing
+            labels=[get_label(_tokens[key]) for key in level_keys],
         ))
         start += n
 
     return common_label, blocks
+
+
+def get_level_spans(blocks: list[DotDict], level: int) -> list[tuple[int, int, str]]:
+    """
+    Merge consecutive *blocks* (see build_unroll_labels) that agree in all levels up to and including *level*.
+    Returns the first bin, end bin and label of each merged span.
+    """
+    spans = []
+    for block in blocks:
+        end = block.start + block.n_bins
+        if spans and spans[-1][3] == block.path[:level + 1]:
+            spans[-1][1] = end
+        else:
+            spans.append([block.start, end, block.labels[level], block.path[:level + 1]])
+    return [(start, end, label) for start, end, label, _ in spans]
 
 
 def draw_unroll_labels(
@@ -496,15 +511,17 @@ def draw_unroll_labels(
 ) -> None:
     """
     Draw separators and labels of the unrolled category *blocks* (see build_unroll_labels). Vertical positions
-    are given as fractions of the main axis height, so they are independent of the y-scale: block labels are
-    placed above a horizontal line at *y_line*, group labels above them. Labels are shrunk (and as a last resort
-    rotated) to fit the width of their block or group.
+    are given as fractions of the main axis height, so they are independent of the y-scale: one row of labels per
+    level is placed above a horizontal line at *y_line*, with the innermost level at the bottom. Separators are
+    solid, dashed and dotted from the outermost to the innermost level and reach up to the row of their level
+    (the innermost ones up to *y_line*). Labels are shrunk (and as a last resort rotated) to fit their width.
     """
     ax = axs[0]
     trafo = ax.get_xaxis_transform()
     renderer = ax.figure.canvas.get_renderer()
     line_kwargs = {"color": "grey", "linewidth": 2.5}
-    has_groups = blocks[0].group is not None
+    n_levels = len(blocks[0].labels)
+    linestyles = ["--"] if n_levels == 1 else ["-", "--", ":"]
 
     # helper to draw a label centered between bins *start* and *end* that fits their width, returns its top
     def draw_label(start: float, end: float, y: float, text: str, fontsize: int) -> float:
@@ -516,30 +533,27 @@ def draw_unroll_labels(
             label.set_rotation(90)
         return ax.transAxes.inverted().transform((0, label.get_window_extent(renderer).y1))[1]
 
-    # block labels above a horizontal line
+    # rows of labels above a horizontal line, from the innermost level up to the outermost one
     n_total = blocks[-1].start + blocks[-1].n_bins
     ax.plot([0, n_total], [y_line, y_line], transform=trafo, **line_kwargs)
-    y_group = max(
-        draw_label(block.start, block.start + block.n_bins, y_line + 0.01, block.label, 16)
-        for block in blocks
-    ) + 0.02
+    row_tops = [y_line] * n_levels
+    y = y_line + 0.01
+    for level in reversed(range(n_levels)):
+        fontsize = 20 if level == 0 and n_levels > 1 else 16
+        row_tops[level] = max(
+            [y] + [
+                draw_label(start, end, y, label, fontsize)
+                for start, end, label in get_level_spans(blocks, level)
+                if label
+            ],
+        )
+        y = row_tops[level] + 0.02
 
-    # group labels centered on consecutive blocks of the same group
-    y_group_top = y_group
-    if has_groups:
-        group_start = 0
-        for i, block in enumerate(blocks):
-            if i + 1 < len(blocks) and blocks[i + 1].group == block.group:
-                continue
-            group_end = block.start + block.n_bins
-            y_group_top = max(y_group_top, draw_label(group_start, group_end, y_group, block.group, 20))
-            group_start = group_end
-
-    # separators, solid between groups and dashed within groups
+    # separators, styled by the outermost level that changes between two blocks
     for prev_block, block in zip(blocks[:-1], blocks[1:]):
-        new_group = has_groups and block.group != prev_block.group
-        sep_kwargs = line_kwargs if new_group else {**line_kwargs, "linestyle": "--"}
-        ax.axvline(block.start, ymax=y_group_top if new_group else y_line, **sep_kwargs)
+        level = next(i for i, (p1, p2) in enumerate(zip(prev_block.path, block.path)) if p1 != p2)
+        sep_kwargs = {**line_kwargs, "linestyle": linestyles[min(level, len(linestyles) - 1)]}
+        ax.axvline(block.start, ymax=y_line if level == n_levels - 1 else row_tops[level], **sep_kwargs)
         for rax in axs[1:]:
             rax.axvline(block.start, **sep_kwargs)
 
