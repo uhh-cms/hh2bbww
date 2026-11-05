@@ -15,8 +15,8 @@ from columnflow.ml import MLModel
 from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr, catid_geq3b, catid_geq4b, catid_eq2b, catid_eq3b  # noqa
-from hbw.util import IF_SL, IF_DL, IF_MC
-from hbw.weight.hp_dih import default_hist_producer
+from hbw.util import IF_SL, IF_DL  # , IF_MC
+from hbw.weight.hp_dih import default_hist_producer, with_trigger_weight, with_dy_corr
 from hbw.weight.hp_trih import hhh_default
 from hbw.production.prepare_objects import prepare_objects
 
@@ -48,8 +48,10 @@ def del_sub_proc_stats(
 
 @producer(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), IF_DL(catid_hhh_sr), increment_stats, prepare_objects, "process_id", "fold_indices"},  # noqa E501
-    produces={IF_MC("event_weight")},
+    produces={"event_weight"},
     extra_categorizer=None,
+    h_prod=None,
+    skip_sr_categorizer=False,
 )
 def prepml(
     self: Producer,
@@ -71,7 +73,12 @@ def prepml(
     elif self.config_inst.has_tag("is_dl"):
         if self.config_inst.has_tag("is_hh"):
             sr_categorizer = catid_mll_low_narrow
-            default_hp = default_hist_producer
+            if self.h_prod == "with_trigger_weight":
+                default_hp = with_trigger_weight
+            elif self.h_prod == "with_dy_corr":
+                default_hp = with_dy_corr
+            else:
+                default_hp = default_hist_producer
         elif self.config_inst.has_tag("is_hhh"):
             sr_categorizer = catid_hhh_sr
             default_hp = hhh_default
@@ -84,9 +91,15 @@ def prepml(
         # pass category mask to only use events that belong to the main "signal region"
         # NOTE: we could also just require the pre_ml_cats Producer here
 
-        events, mask = self[sr_categorizer](events, **kwargs)
-        logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")
-        events = events[mask]
+        if self.skip_sr_categorizer:
+            if self.extra_categorizer:
+                logger.info(f"Skipping SR categorization for MLTraining, instead only using {self.extra_categorizer}")
+            else:
+                logger.warning("Skipping SR categorization for MLTraining, but no extra categorizer specified")
+        else:
+            events, mask = self[sr_categorizer](events, **kwargs)
+            logger.info(f"Select {ak.sum(mask)} from {len(events)} events for MLTraining using {sr_categorizer.cls_name}")  # noqa: E501
+            events = events[mask]
 
         if self.extra_categorizer:
             for cat_cls in self.categorizers_cls:
@@ -102,19 +115,23 @@ def prepml(
     if task.dataset_inst.is_mc:
         # full event weight
         events, weight = self[default_hp](events, task, **kwargs)
-        events = set_ak_column_f32(events, "event_weight", weight)
-        stats["sum_weights"] += float(ak.sum(weight, axis=0))
-        weight_map["sum_weights"] = weight
-        weight_map["sum_pos_weights"] = (weight, weight > 0)
-        weight_map["sum_abs_weights"] = np.abs(weight)
-        weight_map["num_events_pos_weights"] = weight > 0
-
-        # normalization weight only
         norm_weight = events["stitched_normalization_weight"]
-        stats["sum_norm_weights"] += float(ak.sum(norm_weight, axis=0))
-        weight_map["sum_norm_weights"] = norm_weight
-        weight_map["sum_pos_norm_weights"] = (norm_weight, norm_weight > 0)
-        weight_map["sum_abs_norm_weights"] = np.abs(norm_weight)
+    elif task.dataset_inst.is_data:
+        weight = np.ones(len(events), dtype=np.float32)
+        norm_weight = np.ones(len(events), dtype=np.float32)
+
+    events = set_ak_column_f32(events, "event_weight", weight)
+    stats["sum_weights"] += float(ak.sum(weight, axis=0))
+    weight_map["sum_weights"] = weight
+    weight_map["sum_pos_weights"] = (weight, weight > 0)
+    weight_map["sum_abs_weights"] = np.abs(weight)
+    weight_map["num_events_pos_weights"] = weight > 0
+
+    # normalization weight only
+    stats["sum_norm_weights"] += float(ak.sum(norm_weight, axis=0))
+    weight_map["sum_norm_weights"] = norm_weight
+    weight_map["sum_pos_norm_weights"] = (norm_weight, norm_weight > 0)
+    weight_map["sum_abs_norm_weights"] = np.abs(norm_weight)
 
     group_map = {
         "process": {
@@ -150,21 +167,23 @@ def prepml(
 
 @prepml.init
 def prepml_init(self):
-    if not getattr(self, "dataset_inst", None) or self.dataset_inst.is_data:
+    if not getattr(self, "dataset_inst", None):  # or self.dataset_inst.is_data:
         return
 
     if self.config_inst.has_tag("is_dl"):
         if self.config_inst.has_tag("is_hh"):
-            default_hp = default_hist_producer
+            if self.h_prod == "with_trigger_weight":
+                default_hp = with_trigger_weight
+            elif self.h_prod == "with_dy_corr":
+                default_hp = with_dy_corr
+            else:
+                default_hp = default_hist_producer
         elif self.config_inst.has_tag("is_hhh"):
             default_hp = hhh_default
         else:
             raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
     else:
         raise Exception(f"config {self.config_inst.name} needs 'is_dl' tag")
-
-    self.uses.add("stitched_normalization_weight")
-    self.uses.add(default_hp)
 
     if self.extra_categorizer:
         self.categorizers_cls = []
@@ -178,6 +197,10 @@ def prepml_init(self):
             self.categorizers_cls.append(cat_cls)
             self.uses.add(cat_cls)
 
+    if self.dataset_inst.is_mc:
+        self.uses.add("stitched_normalization_weight")
+        self.uses.add(default_hp)
+
 
 prepml_eq2b = prepml.derive("prepml_eq2b", cls_dict={"extra_categorizer": "catid_eq2b"})
 prepml_eq3b = prepml.derive("prepml_eq3b", cls_dict={"extra_categorizer": "catid_eq3b"})
@@ -190,3 +213,28 @@ prepml_2j = prepml.derive("prepml_2j", cls_dict={"extra_categorizer": "catid_2nj
 prepml_sr = prepml.derive("prepml_hhh_sr", cls_dict={"extra_categorizer": "mask_fn_hhh_sr"})
 prepml_lep2pt15 = prepml.derive("prepml_lep2pt15", cls_dict={"extra_categorizer": "mask_fn_lep2_pt15"})
 prepml_lep2pt10 = prepml.derive("prepml_lep2pt10", cls_dict={"extra_categorizer": "mask_fn_lep2_pt10"})
+prepml_dyvr_mumuV02 = prepml.derive("prepml_dyvr_mumuV02", cls_dict={
+    "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide"],
+    "skip_sr_categorizer": True,
+    "h_prod": "with_trigger_weight",
+})
+prepml_dyvr_mumuV1_njlq3 = prepml.derive("prepml_dyvr_mumuV1_njlq3", cls_dict={
+    "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide", "mask_fn_njet_lq3"],
+    "skip_sr_categorizer": True,
+    "h_prod": "with_trigger_weight",
+})
+prepml_dyvr_mumu_corr = prepml.derive("prepml_dyvr_mumu_corr", cls_dict={
+    "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide"],
+    "skip_sr_categorizer": True,
+    "h_prod": "with_dy_corr",
+})
+prepml_incl_with_trigger_weight = prepml.derive("prepml_incl_with_trigger_weight", cls_dict={
+    "extra_categorizer": "mask_fn_lep2_pt15",
+    "skip_sr_categorizer": True,
+    "h_prod": "with_trigger_weight",
+})
+prepml_incl_with_dy_corr = prepml.derive("prepml_incl_with_dy_corr", cls_dict={
+    "extra_categorizer": "mask_fn_lep2_pt15",
+    "skip_sr_categorizer": True,
+    "h_prod": "with_dy_corr",
+})

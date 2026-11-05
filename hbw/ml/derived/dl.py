@@ -124,8 +124,11 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
     # overwriting DenseModelMixin parameters
     _default__activation: str = "relu"
     _default__layers: tuple = (512, 512, 512)
+    _default__batchnorm: bool = False
+    _default__l2regularization: float = 0.0
     _default__dropout: float = 0.20
     _default__learningrate: float = 0.00050
+    _default__weighting: str = "xsec"
 
     # overwriting ModelFitMixin parameters
     _default__callbacks: set = {
@@ -144,9 +147,9 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         # base params
         "data_loader", "input_features", "train_val_test_split",
         "processes", "sub_process_class_factors", "class_factors", "train_nodes",
-        "negative_weights", "folds",
+        "negative_weights", "folds", "weighting",
         # DenseModelMixin
-        "activation", "layers", "dropout", "learningrate",
+        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization",
         # ModelFitMixin
         "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
@@ -157,7 +160,7 @@ class DenseClassifierDL(DenseModelMixin, ModelFitMixin, MLClassifierBase):
         # base params
         "processes", "class_factors", "sub_process_class_factors",
         # DenseModelMixin
-        "activation", "layers", "dropout", "learningrate",
+        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization",
         # ModelFitMixin
         "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
