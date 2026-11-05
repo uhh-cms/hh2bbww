@@ -267,7 +267,7 @@ def multi_cat_unrolled_plot(
     default_unroll_category_order.
 
     The labels are placed in the whitespace above the histograms, below the legend. The *whitespace_fraction*
-    (at least 0.45 by default, can be raised via --general-settings whitespace_fraction=0.5) is increased
+    (at least 0.3 by default, can be raised via --general-settings whitespace_fraction=0.5) is increased
     automatically until the labels fit between the histograms and the legend (and other texts at the top of the
     plot), unless the y-range is fixed via the ax_cfg of the style config.
     By default, the x-axis shows the bin numbers of the unrolled histogram. With *unroll_x_labels*
@@ -301,45 +301,185 @@ def multi_cat_unrolled_plot(
     hists = {cat_inst.name: hists[cat_inst.name] for cat_inst in category_insts}
 
     # variable settings (rebinning, flow bins, ...) need to be applied per category before unrolling
-    flat_hists = {
-        (cat_name, proc_inst): h
-        for cat_name, proc_hists in hists.items()
-        for proc_inst, h in proc_hists.items()
-    }
-    flat_hists, _ = apply_variable_settings(flat_hists, variable_insts, variable_settings)
     hists = {
-        cat_name: {
-            proc_inst: flat_hists[(cat_name, proc_inst)]
-            for proc_inst in proc_hists
-        }
+        cat_name: apply_variable_settings(dict(proc_hists), variable_insts, variable_settings)[0]
         for cat_name, proc_hists in hists.items()
     }
 
-    # original bin edges per category, shown as x tick labels of the unrolled axis
-    edges = [next(iter(proc_hists.values())).axes[variable_inst.name].edges for proc_hists in hists.values()]
+    # labels of the categories, common to all of them or per category and level
+    n_bins = [len(edges) - 1 for edges in get_block_edges(hists, [variable_inst] * len(hists))]
+    common_label, blocks = build_unroll_labels(config_inst, category_insts, n_bins, level_keys=level_keys)
+
+    return plot_unrolled_stack(
+        hists,
+        config_inst,
+        # dummy category describing the unrolled histograms
+        od.Category(name="unrolled", id="+", label=common_label),
+        [variable_inst] * len(hists),
+        blocks,
+        shift_insts,
+        unrolled_variable_inst=od.Variable(
+            name=f"{variable_inst.name}_unrolled",
+            x_title=variable_inst.x_title,
+            y_title=variable_inst.y_title,
+            log_y=variable_inst.log_y,
+        ),
+        style_config=style_config,
+        unroll_x_labels=unroll_x_labels,
+        **kwargs,
+    )
+
+
+@supports_multi_variable
+def multi_var_unrolled_plot(
+    hists: dict[od.Process, hist.Hist] | dict[str, dict[od.Process, hist.Hist]],
+    config_inst: od.Config,
+    category_inst: od.Category,
+    variable_insts: list[od.Variable] | dict[str, list[od.Variable]],
+    shift_insts: list[od.Shift],
+    style_config: dict | None = None,
+    variable_settings: dict[str, Any] | None = None,
+    unroll_x_labels: bool | None = None,
+    **kwargs,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    """
+    Create a stack plot with the bins of all variables unrolled next to each other on a single x-axis. Example:
+    claw run cf.PlotVariables1D --multi-variable \
+        --plot-function hbw.plotting.multi.multi_var_unrolled_plot \
+        --variables mli_mll,mli_n_jet,mli_lep_pt --processes ddl4 --categories sr
+
+    This is the multi-variable counterpart of multi_cat_unrolled_plot, see there for details on the styling
+    (whitespace, legend columns, figure width, *unroll_x_labels*). Variable settings are applied per variable
+    before unrolling. The variables are shown in the order of the task, separated by dashed lines and labeled with
+    their *x_title_short*; the category is shown as usual in the top left. Unlike in multi_cat_unrolled_plot, the
+    x-axis shows the original binning of each variable by default (without an x-axis title, as the variables are
+    labeled above the histograms); with --general-settings unroll_x_labels=False, it shows the bin numbers of the
+    unrolled histogram with the x-axis title "Bin" instead. The y-axis title and log scale are taken from the first
+    variable.
+    """
+    # emulate multi-variable input
+    if isinstance(list(hists)[0], od.Process):
+        assert isinstance(variable_insts, list)
+        assert len(variable_insts) == 1
+        hists = {variable_insts[0].name: hists}
+        variable_insts = {variable_insts[0].name: variable_insts}
+
+    # make sure all variable lists are 1D
+    assert list(variable_insts) == list(hists)
+    for var_name, var_insts in variable_insts.items():
+        if len(var_insts) != 1:
+            raise NotImplementedError(
+                f"multi_var_unrolled_plot only supports 1D histograms, but got variables {var_insts}",
+            )
+    variable_insts = [var_insts[0] for var_insts in variable_insts.values()]
+
+    # variable settings (rebinning, flow bins, ...) need to be applied per variable before unrolling
+    hists = {
+        var_inst.name: apply_variable_settings(dict(hists[var_inst.name]), [var_inst], variable_settings)[0]
+        for var_inst in variable_insts
+    }
+
+    # show the original binning of the variables by default, the bin numbers of the unrolled axis are not meaningful
+    if unroll_x_labels is None:
+        unroll_x_labels = True
+
+    # one block and level of labels per variable
+    n_bins = [len(edges) - 1 for edges in get_block_edges(hists, variable_insts)]
+    blocks = make_unroll_blocks(
+        paths=[(var_inst.name,) for var_inst in variable_insts],
+        labels=[[var_inst.x_title_short] for var_inst in variable_insts],
+        n_bins=n_bins,
+    )
+
+    return plot_unrolled_stack(
+        hists,
+        config_inst,
+        category_inst,
+        variable_insts,
+        blocks,
+        shift_insts,
+        unrolled_variable_inst=od.Variable(
+            name="variables_unrolled",
+            x_title="" if unroll_x_labels else "Bin",
+            y_title=variable_insts[0].y_title,
+            log_y=variable_insts[0].log_y,
+        ),
+        style_config=style_config,
+        unroll_x_labels=unroll_x_labels,
+        **kwargs,
+    )
+
+
+def multi_cat_var_unrolled_plot(
+    hists: dict[tuple[str, str], dict[od.Process, hist.Hist]],
+    config_inst: od.Config,
+    category_inst: list[od.Category],
+    variable_insts: dict[str, list[od.Variable]],
+    shift_insts: list[od.Shift],
+    style_config: dict | None = None,
+    variable_settings: dict[str, Any] | None = None,
+    unroll_category_order: Sequence[str] | str | None = None,
+    unroll_level_order: Sequence[Hashable] | Hashable | None = None,
+    unroll_x_labels: bool | None = None,
+    **kwargs,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    """
+    Placeholder for a stack plot with the bins of several (category, variable) combinations unrolled next to each
+    other on a single x-axis, e.g. to show a different variable per category. Not usable yet.
+
+    Planned behavior: *hists* maps (category name, variable name) pairs to process histograms. Each pair becomes
+    one block of plot_unrolled_stack, with the variable settings applied per variable, the categories ordered and
+    labeled as in multi_cat_unrolled_plot, and the variable added as the innermost label level.
+
+    This requires upstream changes in columnflow (columnflow/tasks/plotting.py): PlotBase currently rejects
+    --multi-variable together with --multi-category (_check_multi_flags) and only passes hists nested by either
+    category or variable, so a combined mode passing ``{(cat_name, var_name): proc_hists}`` (and a matching
+    plot function decorator) is needed first.
+    """
+    raise NotImplementedError(
+        "multi_cat_var_unrolled_plot is not implemented yet, as it requires columnflow to support combined "
+        "multi-category and multi-variable plotting",
+    )
+
+
+def plot_unrolled_stack(
+    hists: dict[str, dict[od.Process, hist.Hist]],
+    config_inst: od.Config,
+    category_inst: od.Category,
+    variable_insts: list[od.Variable],
+    blocks: list[DotDict],
+    shift_insts: list[od.Shift],
+    unrolled_variable_inst: od.Variable,
+    style_config: dict | None = None,
+    unroll_x_labels: bool | None = None,
+    **kwargs,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    """
+    Shared implementation of the unrolled plots (multi_cat_unrolled_plot, multi_var_unrolled_plot): unroll the
+    histograms of all blocks in *hists* (``{block_name: {proc_inst: h}}``, variable settings already applied, the
+    variable of each block given by *variable_insts*) into a single axis, draw them as a stack plot via columnflow's
+    plot_variable_stack, and draw the labels and separators of the *blocks* (see make_unroll_blocks).
+    *category_inst* is used for the category label in the top left, and *unrolled_variable_inst* defines the name,
+    titles and y-scale of the unrolled variable (its binning is set here). See multi_cat_unrolled_plot for the
+    styling options.
+    """
+    # original bin edges per block, shown as x tick labels of the unrolled axis
+    edges = get_block_edges(hists, variable_insts)
 
     # unroll into a single axis with integer edges
-    unrolled_name = f"{variable_inst.name}_unrolled"
-    hists, n_bins = unroll_hists(hists, variable_inst.name, axis_name=unrolled_name)
+    unrolled_name = unrolled_variable_inst.name
+    hists, n_bins = unroll_hists(hists, [var_inst.name for var_inst in variable_insts], axis_name=unrolled_name)
+    if n_bins != [block.n_bins for block in blocks]:
+        raise ValueError(f"number of bins per block {[block.n_bins for block in blocks]} do not match {n_bins}")
+    unrolled_variable_inst.binning = list(range(sum(n_bins) + 1))
+    unrolled_variable_inst.discrete_x = True
 
-    # dummy variable and category describing the unrolled histograms
-    unrolled_variable_inst = od.Variable(
-        name=unrolled_name,
-        binning=list(range(sum(n_bins) + 1)),
-        x_title=variable_inst.x_title,
-        y_title=variable_inst.y_title,
-        log_y=variable_inst.log_y,
-        discrete_x=True,
-    )
-    common_label, blocks = build_unroll_labels(config_inst, category_insts, n_bins, level_keys=level_keys)
-    unrolled_category_inst = od.Category(name="unrolled", id="+", label=common_label)
-
-    # make room for the category labels and widen the figure with the number of categories (default CMS style: 10x10)
-    kwargs["whitespace_fraction"] = float(kwargs.get("whitespace_fraction", 0.45))
+    # make room for the block labels and widen the figure with the number of blocks (default CMS style: 10x10)
+    kwargs["whitespace_fraction"] = float(kwargs.get("whitespace_fraction", 0.3))
     style_config = law.util.merge_dicts(
         {
             "legend_cfg": {"fontsize": 16},
-            "subplots_cfg": {"figsize": (min(10.0 + 3.0 * (len(category_insts) - 1), 40.0), 10.0)},
+            "subplots_cfg": {"figsize": (min(10.0 + 3.0 * (len(blocks) - 1), 40.0), 10.0)},
         },
         (style_config or {}),
         deep=True,
@@ -355,7 +495,7 @@ def multi_cat_unrolled_plot(
     fig, axs = plot_variable_stack(
         hists,
         config_inst,
-        unrolled_category_inst,
+        category_inst,
         [unrolled_variable_inst],
         shift_insts,
         style_config=style_config,
@@ -375,8 +515,8 @@ def multi_cat_unrolled_plot(
             axs[-1],
             [block.start for block in blocks],
             edges,
-            discrete_x=variable_inst.discrete_x or "int" in variable_inst.x("axis_type", "variable"),
-            x_labels=variable_inst.x_labels,
+            discrete_x=[is_discrete_x(var_inst) for var_inst in variable_insts],
+            x_labels=[var_inst.x_labels for var_inst in variable_insts],
         )
 
     # draw the labels right above the histograms (the height of the label rows only depends on the x-axis)
@@ -397,23 +537,44 @@ def multi_cat_unrolled_plot(
     return fig, axs
 
 
+def get_block_edges(
+    hists: dict[str, dict[od.Process, hist.Hist]],
+    variable_insts: Sequence[od.Variable],
+) -> list[np.ndarray]:
+    """
+    Return the bin edges of the variable axis of each block in *hists* (``{block_name: {proc_inst: h}}``), with
+    the variable of each block given by *variable_insts*.
+    """
+    return [
+        next(iter(proc_hists.values())).axes[var_inst.name].edges
+        for proc_hists, var_inst in zip(hists.values(), variable_insts)
+    ]
+
+
 def get_unrolled_xticks(
     block_starts: Sequence[int],
     edges: Sequence[Sequence[float]],
-    discrete_x: bool = False,
-    x_labels: Sequence[str] | None = None,
+    discrete_x: bool | Sequence[bool] = False,
+    x_labels: Sequence[Sequence[str] | None] | None = None,
     step: int = 1,
 ) -> tuple[list[float], list[str]]:
     """
     Return positions and labels of x ticks on the unrolled axis that show the original binning *edges* of each
-    category, whose bins start at the unrolled bin *block_starts*. Ticks are placed at all bin edges, or at the bin
-    centers for *discrete_x* variables (labeled with *x_labels* when given for each bin). Only every *step*-th tick
-    of each category is labeled, starting with the first one, and no label is closer than *step* ticks to the next
-    category. Between two categories, the lower edge of the next category is shown, and the upper edge is only shown
-    for the last category.
+    block (category or variable), whose bins start at the unrolled bin *block_starts*. Ticks are placed at all bin
+    edges, or at the bin centers for *discrete_x* variables (a single flag or one per block). *x_labels* can give
+    the bin labels per block (or None), which are used for discrete variables when given for each bin. Only every
+    *step*-th tick of each block is labeled, starting with the first one, and no label is closer than *step* ticks
+    to the next block. Between two blocks, the lower edge of the next block is shown, and the upper edge is only
+    shown for the last block.
     """
+    n_blocks = len(edges)
+    discrete_xs = [discrete_x] * n_blocks if isinstance(discrete_x, bool) else list(discrete_x)
+    x_labels = [None] * n_blocks if x_labels is None else list(x_labels)
+
     positions, labels = [], []
-    for i, (start, block_edges) in enumerate(zip(block_starts, edges)):
+    for i, (start, block_edges, discrete_x, block_x_labels) in enumerate(
+        zip(block_starts, edges, discrete_xs, x_labels),
+    ):
         block_edges = np.asarray(block_edges, dtype=float)
         if discrete_x:
             values = 0.5 * (block_edges[:-1] + block_edges[1:])
@@ -421,8 +582,8 @@ def get_unrolled_xticks(
         else:
             values = block_edges if i == len(edges) - 1 else block_edges[:-1]
             offset = 0.0
-        if discrete_x and x_labels is not None and len(x_labels) == len(values):
-            block_labels = list(x_labels)
+        if discrete_x and block_x_labels is not None and len(block_x_labels) == len(values):
+            block_labels = list(block_x_labels)
         else:
             block_labels = [f"{value:g}" for value in values]
         positions.extend(start + offset + j for j in range(len(values)))
@@ -437,7 +598,7 @@ def get_unrolled_xticks(
 
 def set_unrolled_xticks(ax: plt.Axes, block_starts: Sequence[int], edges: Sequence[Sequence[float]], **kwargs) -> None:
     """
-    Set the x ticks of *ax* to the original binning of the unrolled categories (see get_unrolled_xticks, which
+    Set the x ticks of *ax* to the original binning of the unrolled blocks (see get_unrolled_xticks, which
     receives all *kwargs*). Only every n-th tick is labeled, with n chosen such that the labels do not overlap.
     """
     positions, labels = get_unrolled_xticks(block_starts, edges, **kwargs)
@@ -524,42 +685,54 @@ def set_legend_ncols(ax: plt.Axes, legend_cfg: dict, max_entries_per_col: int = 
 
 def unroll_hists(
     hists: dict[str, dict[od.Process, hist.Hist]],
-    var_name: str,
+    var_name: str | Sequence[str],
     axis_name: str | None = None,
 ) -> tuple[dict[od.Process, hist.Hist], list[int]]:
     """
-    Concatenate the *var_name* axis of the histograms in *hists* (``{cat_name: {proc_inst: h}}``) per process,
-    in the order of the categories. All other axes (e.g. "shift") are kept and must be identical between categories.
-    Processes missing in a category are filled with zeros there. The unrolled axis has integer edges and no flow
-    bins, and is named *axis_name* (default: *var_name*). Returns the unrolled histograms and the number of bins
-    per category.
+    Concatenate the variable axis of the histograms in *hists* (``{block_name: {proc_inst: h}}``, e.g. one block
+    per category or per variable) per process, in the order of the blocks. *var_name* is the name of the variable
+    axis, either shared by all blocks or given per block. All other axes (e.g. "shift") are kept and must be
+    identical between blocks, with the variable axis at the same position. Processes missing in a block are filled
+    with zeros there. The unrolled axis has integer edges and no flow bins, and is named *axis_name* (default: the
+    first variable name). Returns the unrolled histograms and the number of bins per block.
     """
     import hist
 
-    # number of bins per category
+    var_names = [var_name] * len(hists) if isinstance(var_name, str) else list(var_name)
+    if len(var_names) != len(hists):
+        raise ValueError(f"got {len(var_names)} variable names for {len(hists)} blocks to unroll")
+
+    # number of bins per block
     n_bins = []
-    for cat_name, proc_hists in hists.items():
+    for (block_name, proc_hists), _var_name in zip(hists.items(), var_names):
         if not proc_hists:
-            raise ValueError(f"no histograms to unroll in category '{cat_name}'")
-        n_bins.append(len(list(proc_hists.values())[0].axes[var_name]))
+            raise ValueError(f"no histograms to unroll in block '{block_name}'")
+        n_bins.append(len(list(proc_hists.values())[0].axes[_var_name]))
 
     unrolled_axis = hist.axis.Variable(
         list(range(sum(n_bins) + 1)),
-        name=axis_name or var_name,
+        name=axis_name or var_names[0],
         underflow=False,
         overflow=False,
     )
+
+    # helper to get the axis names with the variable axis replaced by a placeholder
+    get_axis_names = lambda h, _var_name: tuple(None if name == _var_name else name for name in h.axes.name)
 
     # unique processes in order of first appearance
     proc_insts = list(dict.fromkeys(proc_inst for proc_hists in hists.values() for proc_inst in proc_hists))
 
     unrolled_hists = {}
     for proc_inst in proc_insts:
-        h_ref = next(proc_hists[proc_inst] for proc_hists in hists.values() if proc_inst in proc_hists)
-        var_index = h_ref.axes.name.index(var_name)
+        h_ref, var_name_ref = next(
+            (proc_hists[proc_inst], _var_name)
+            for proc_hists, _var_name in zip(hists.values(), var_names)
+            if proc_inst in proc_hists
+        )
+        var_index = h_ref.axes.name.index(var_name_ref)
 
         views = []
-        for (cat_name, proc_hists), n in zip(hists.items(), n_bins):
+        for (block_name, proc_hists), _var_name, n in zip(hists.items(), var_names, n_bins):
             if proc_inst not in proc_hists:
                 shape = list(h_ref.view().shape)
                 shape[var_index] = n
@@ -567,19 +740,19 @@ def unroll_hists(
                 continue
 
             h = proc_hists[proc_inst]
-            if h.axes.name != h_ref.axes.name or any(
+            if get_axis_names(h, _var_name) != get_axis_names(h_ref, var_name_ref) or any(
                 ax != ax_ref
                 for ax, ax_ref in zip(h.axes, h_ref.axes)
-                if ax.name != var_name
+                if ax.name != _var_name
             ):
                 raise ValueError(
-                    f"cannot unroll histograms of process '{proc_inst.name}': axes in category '{cat_name}' "
-                    f"differ from the ones in other categories",
+                    f"cannot unroll histograms of process '{proc_inst.name}': axes in block '{block_name}' "
+                    f"differ from the ones in other blocks",
                 )
             views.append(h.view())
 
         h_out = hist.Hist(
-            *[unrolled_axis if ax.name == var_name else ax for ax in h_ref.axes],
+            *[unrolled_axis if ax.name == var_name_ref else ax for ax in h_ref.axes],
             storage=h_ref.storage_type(),
         )
         h_out.view()[...] = np.concatenate(views, axis=var_index)
@@ -675,19 +848,33 @@ def build_unroll_labels(
     if level_keys is None:
         level_keys = varying_keys
 
-    blocks = []
-    start = 0
-    for _tokens, n in zip(tokens, n_bins):
-        blocks.append(DotDict(
-            start=start,
-            n_bins=n,
-            path=tuple(_tokens[key] for key in level_keys),
-            # empty label if the root category is missing
-            labels=[get_label(_tokens[key]) for key in level_keys],
-        ))
-        start += n
+    blocks = make_unroll_blocks(
+        paths=[tuple(_tokens[key] for key in level_keys) for _tokens in tokens],
+        # empty label if the root category is missing
+        labels=[[get_label(_tokens[key]) for key in level_keys] for _tokens in tokens],
+        n_bins=n_bins,
+    )
 
     return common_label, blocks
+
+
+def make_unroll_blocks(
+    paths: Sequence[tuple[Hashable, ...]],
+    labels: Sequence[Sequence[str]],
+    n_bins: Sequence[int],
+) -> list[DotDict]:
+    """
+    Create one block per unrolled histogram part (e.g. category or variable) with its first bin (*start*), its
+    number of bins (*n_bins*), and per level (outermost first) the name identifying it (*path*) and its label
+    (*labels*). Consecutive blocks agreeing in the path up to a level share a label on that level (see
+    get_level_spans).
+    """
+    blocks = []
+    start = 0
+    for path, _labels, n in zip(paths, labels, n_bins):
+        blocks.append(DotDict(start=start, n_bins=n, path=tuple(path), labels=list(_labels)))
+        start += n
+    return blocks
 
 
 def get_level_spans(blocks: list[DotDict], level: int) -> list[tuple[int, int, str]]:
@@ -760,6 +947,13 @@ def draw_unroll_labels(
             rax.axvline(block.start, **sep_kwargs)
 
     return max(row_tops)
+
+
+def is_discrete_x(variable_inst: od.Variable) -> bool:
+    """
+    Return whether *variable_inst* has discrete values, i.e. ticks should be placed at the bin centers.
+    """
+    return bool(variable_inst.discrete_x or "int" in variable_inst.x("axis_type", "variable"))
 
 
 # helper to move flow bins into first/last ones
