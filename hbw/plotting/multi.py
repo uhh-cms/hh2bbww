@@ -21,7 +21,7 @@ from columnflow.plotting.plot_util import (
     prepare_style_config, remove_residual_axis, use_flow_bins, apply_variable_settings,
 )
 from columnflow.util import maybe_import
-from columnflow.types import TYPE_CHECKING, Any, Hashable
+from columnflow.types import TYPE_CHECKING, Any, Hashable, Sequence
 
 np = maybe_import("numpy")
 if TYPE_CHECKING:
@@ -234,6 +234,8 @@ def multi_cat_unrolled_plot(
     shift_insts: list[od.Shift],
     style_config: dict | None = None,
     variable_settings: dict[str, Any] | None = None,
+    unroll_category_order: Sequence[str] | str | None = None,
+    unroll_level_order: Sequence[Hashable] | Hashable | None = None,
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     """
@@ -243,19 +245,25 @@ def multi_cat_unrolled_plot(
         --variables mli_mll,mli_n_jet --processes ddl4 \
         --categories "{sr,dycr,ttcr}__{2e,2mu,emu}__{resolved__1b,resolved__2b,boosted}"
 
-    The categories are unrolled in the order in which the task passes them, which is alphabetical since
-    PlotVariables1D sorts the --categories (CategoriesMixin.sort_categories). Variable settings (rebinning, flow
-    bins, ...) are applied per category before unrolling; everything else (process settings, blinding, ratio, ...)
-    is handled by columnflow's plot_variable_stack on the unrolled histograms. Note that density scaling therefore
-    refers to the unrolled bins with unit width.
+    Variable settings (rebinning, flow bins, ...) are applied per category before unrolling; everything else
+    (process settings, blinding, ratio, ...) is handled by columnflow's plot_variable_stack on the unrolled
+    histograms. Note that density scaling therefore refers to the unrolled bins with unit width.
 
     Categories are split into their root categories (``root_cats`` aux, or the name split at "__"). Root
-    categories shared by all categories form the category label in the top left (sr and resolved above). The
-    remaining ones are ordered into levels, from the one changing least often between consecutive categories
-    (outermost, e.g. the lepton channel) to the one changing most often (innermost, e.g. the b-tag category).
-    Each level gets a row of labels, merged over consecutive categories, and separators that are solid, dashed
-    and dotted from the outermost to the innermost level. Labels are taken from the root categories'
-    *label_short*.
+    categories shared by all categories form the category label in the top left. The others define levels, from
+    the outermost to the innermost one; each level gets a row of labels, merged over consecutive categories, and
+    separators that are solid, dashed and dotted from the outermost to the innermost level. Labels are taken from
+    the root categories' *label_short*.
+
+    The categories are re-sorted (instead of the alphabetical order of the task) level by level, configured by:
+    - *unroll_level_order*: keys of the root categories (e.g. "main", "lep", "jet", "b") from the outermost to
+      the innermost level; keys not listed follow in the order of the category names (the default)
+    - *unroll_category_order*: preferred order of root category names on each level, e.g.
+      (sr, dycr, ttcr, resolved, boosted); names not listed follow in the order of the task, missing root
+      categories (e.g. the b-tag category of boosted categories) come last
+    Both are taken from the general settings (e.g. --general-settings "unroll_level_order=jet;lep" or a
+    general_settings_groups entry), falling back to the config auxiliaries default_unroll_level_order and
+    default_unroll_category_order.
 
     The labels are placed in the whitespace above the histograms, so their position follows the
     *whitespace_fraction* (default here: 0.45), which can be changed via
@@ -275,6 +283,14 @@ def multi_cat_unrolled_plot(
     if len(variable_insts) != 1:
         raise NotImplementedError(f"multi_cat_unrolled_plot only supports 1D histograms, but got {variable_insts}")
     variable_inst = variable_insts[0]
+
+    # re-sort the categories level by level (general settings first, then config defaults)
+    category_insts, level_keys = order_categories(
+        category_insts,
+        category_order=unroll_category_order or config_inst.x("default_unroll_category_order", ()),
+        level_order=unroll_level_order or config_inst.x("default_unroll_level_order", ()),
+    )
+    hists = {cat_inst.name: hists[cat_inst.name] for cat_inst in category_insts}
 
     # variable settings (rebinning, flow bins, ...) need to be applied per category before unrolling
     flat_hists = {
@@ -304,7 +320,7 @@ def multi_cat_unrolled_plot(
         log_y=variable_inst.log_y,
         discrete_x=True,
     )
-    common_label, blocks = build_unroll_labels(config_inst, category_insts, n_bins)
+    common_label, blocks = build_unroll_labels(config_inst, category_insts, n_bins, level_keys=level_keys)
     unrolled_category_inst = od.Category(name="unrolled", id="+", label=common_label)
 
     # make room for the category labels and widen the figure with the number of categories (default CMS style: 10x10)
@@ -443,17 +459,62 @@ def get_category_tokens(category_insts: list[od.Category]) -> list[dict[Hashable
     return [{key: _tokens.get(key) for key in keys} for _tokens in tokens]
 
 
+def get_varying_keys(tokens: list[dict[Hashable, str | None]]) -> list[Hashable]:
+    """
+    Return the keys of the root categories in *tokens* (see get_category_tokens) that differ between categories.
+    """
+    return [key for key in tokens[0] if len({_tokens[key] for _tokens in tokens}) > 1]
+
+
+def order_categories(
+    category_insts: list[od.Category],
+    category_order: Sequence[str] | str = (),
+    level_order: Sequence[Hashable] | Hashable = (),
+) -> tuple[list[od.Category], list[Hashable]]:
+    """
+    Sort *category_insts* level by level, with the levels being the root category keys that differ between
+    categories (see get_category_tokens). *level_order* lists keys from the outermost to the innermost level;
+    keys not listed follow in their order in the category names. On each level, root category names are ordered
+    as in *category_order*, followed by names not listed in their order of appearance, and categories missing the
+    root category last. Returns the sorted categories and the level keys.
+    """
+    tokens = get_category_tokens(category_insts)
+    varying_keys = get_varying_keys(tokens)
+    level_order = [key for key in law.util.make_list(level_order) if key in varying_keys]
+    level_keys = level_order + [key for key in varying_keys if key not in level_order]
+
+    category_order = list(law.util.make_list(category_order))
+    appearance = {
+        key: list(dict.fromkeys(_tokens[key] for _tokens in tokens if _tokens[key] is not None))
+        for key in level_keys
+    }
+
+    def rank(key: Hashable, token: str | None) -> tuple[int, int]:
+        if token is None:
+            return (2, 0)
+        if token in category_order:
+            return (0, category_order.index(token))
+        return (1, appearance[key].index(token))
+
+    indices = sorted(
+        range(len(category_insts)),
+        key=lambda i: tuple(rank(key, tokens[i][key]) for key in level_keys),
+    )
+    return [category_insts[i] for i in indices], level_keys
+
+
 def build_unroll_labels(
     config_inst: od.Config,
     category_insts: list[od.Category],
     n_bins: list[int],
+    level_keys: list[Hashable] | None = None,
 ) -> tuple[str, list[DotDict]]:
     """
     Build the labels of the unrolled plot from the root categories of *category_insts* (see
-    get_category_tokens). Root categories that differ between categories are ordered into levels, from the one
-    changing least often between consecutive categories (outermost) to the one changing most often (innermost).
-    Returns the label common to all categories and one block per category with its first bin, number of bins,
-    and per level (outermost first) its root category name (*path*) and label (*labels*).
+    get_category_tokens). Root categories that differ between categories define the levels, ordered by
+    *level_keys* (see order_categories) and otherwise as in the category names. Returns the label common to all
+    categories and one block per category with its first bin, number of bins, and per level (outermost first) its
+    root category name (*path*) and label (*labels*).
     """
     def get_label(token: str | None) -> str:
         if token is None:
@@ -462,17 +523,14 @@ def build_unroll_labels(
         return (cat_inst.label_short if cat_inst else token).replace("\n", " ")
 
     tokens = get_category_tokens(category_insts)
-    keys = list(tokens[0])
-    varying_keys = [key for key in keys if len({_tokens[key] for _tokens in tokens}) > 1]
+    varying_keys = get_varying_keys(tokens)
     common_label = "\n".join(
         get_label(tokens[0][key])
-        for key in keys
+        for key in tokens[0]
         if key not in varying_keys and tokens[0][key] is not None
     )
-
-    # levels from the outermost to the innermost root category (stable, so ties keep the name order)
-    n_changes = lambda key: sum(t1[key] != t2[key] for t1, t2 in zip(tokens[:-1], tokens[1:]))
-    level_keys = sorted(varying_keys, key=n_changes)
+    if level_keys is None:
+        level_keys = varying_keys
 
     blocks = []
     start = 0
