@@ -101,8 +101,8 @@ def multi_var_plot(
                 "hist": move_flow(h, variable_insts[var_name]),
                 "kwargs": dict(
                     label=create_legend_label(proc_inst, variable_insts[var_name]),
-                    color=config_inst.x.get_color_from_sequence(i),
-                    linestyle=config_inst.x.get_line_style_from_sequence(j),
+                    color=get_color_from_sequence(i),
+                    linestyle=get_line_style_from_sequence(j),
                     error_type="variance",
                     linewidth=1.5,
                 ),
