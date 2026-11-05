@@ -146,7 +146,9 @@ def multi_var_unrolled_plot(
     Create a stack plot with the bins of all variables unrolled next to each other on a single x-axis. Example:
     claw run cf.PlotVariables1D --multi-variable \
         --plot-function hbw.plotting.unrolled.multi_var_unrolled_plot \
-        --variables mli_mll,mli_n_jet,mli_lep_pt --processes ddl4 --categories sr
+        --processes ddl4 --categories sr \
+        --variables \
+            "mli_{mbb,mll,mllMET,mbbllMET,n_jet,ht,ptll,b1_pt,b2_pt,b1_discrete_b_score,b2_discrete_b_score,j1_pt,j1_eta,bb_pt,lep_pt,lep2_pt,ll_pt,maxdr_jj,dr_bb,dr_ll,dr_ll_bb,min_dr_llbb,met_pt,vbf_tag,mixed_channel}"
 
     This is the multi-variable counterpart of multi_cat_unrolled_plot, see there for details on the styling
     (whitespace, legend columns, figure width, *unroll_x_labels*). Variable settings are applied per variable
@@ -632,6 +634,32 @@ def build_unroll_labels(
     categories and one block per category with its first bin, number of bins, and per level (outermost first) its
     root category name (*path*) and label (*labels*).
     """
+    tokens = get_category_tokens(category_insts)
+    if level_keys is None:
+        level_keys = get_varying_keys(tokens)
+    common_label, labels = get_category_labels(config_inst, category_insts, level_keys=level_keys)
+
+    blocks = make_unroll_blocks(
+        paths=[tuple(_tokens[key] for key in level_keys) for _tokens in tokens],
+        labels=labels,
+        n_bins=n_bins,
+    )
+
+    return common_label, blocks
+
+
+def get_category_labels(
+    config_inst: od.Config,
+    category_insts: list[od.Category],
+    level_keys: list[Hashable] | None = None,
+) -> tuple[str, list[list[str]]]:
+    """
+    Split the labels of *category_insts* into their root categories (see get_category_tokens). Returns the label
+    of the root categories common to all categories (one line each) and, per category, the labels of the root
+    categories given by *level_keys* (defaults to those that differ between categories). Labels are taken from the
+    root categories' *label_short* (the name if the root category is unknown), and are empty if a category misses
+    the root category.
+    """
     def get_label(token: str | None) -> str:
         if token is None:
             return ""
@@ -648,14 +676,9 @@ def build_unroll_labels(
     if level_keys is None:
         level_keys = varying_keys
 
-    blocks = make_unroll_blocks(
-        paths=[tuple(_tokens[key] for key in level_keys) for _tokens in tokens],
-        # empty label if the root category is missing
-        labels=[[get_label(_tokens[key]) for key in level_keys] for _tokens in tokens],
-        n_bins=n_bins,
-    )
+    labels = [[get_label(_tokens[key]) for key in level_keys] for _tokens in tokens]
 
-    return common_label, blocks
+    return common_label, labels
 
 
 def make_unroll_blocks(
