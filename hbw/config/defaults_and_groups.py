@@ -127,6 +127,9 @@ def set_dl_config_defaults_and_groups(config_inst):
     config_inst.x.default_general_settings = ("data_mc_plots_not_blinded",)
     config_inst.x.default_custom_style_config = "default"
 
+    # order of root categories in unrolled multi-category plots (hbw.plotting.unrolled.multi_cat_unrolled_plot)
+    config_inst.x.default_unroll_category_order = ("sr", "dycr", "ttcr", "resolved", "boosted")
+
     #
     # Groups
     #
