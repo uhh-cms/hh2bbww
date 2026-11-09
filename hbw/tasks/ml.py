@@ -646,8 +646,8 @@ class PlotMLResultsSingleFold(
     )
 
     weighting = luigi.Parameter(
-        default="equal_weights",
-        description="which weights to use for the evaluation plots; default: 'equal_weights'; "
+        default="weights",
+        description="which weights to use for the evaluation plots; default: 'weights'; "
         "options: 'equal_weights', 'weights', 'train_weights' or in general those produced by the MLPreTraining task",
     )
 

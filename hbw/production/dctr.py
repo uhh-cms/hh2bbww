@@ -98,11 +98,11 @@ def dctr_reweighter_init(self: Producer, **kwargs) -> None:
 
 # Derived DCTR reweighters #############################################################################################
 dctr_24_dy_reweighter = dctr_reweighter.derive("dctr_24_dy_reweighter", cls_dict={
-    "ml_model_name": "dctr_dy_24_v5",
+    "ml_model_name": "dctr_24_dy_2d",
     "weight_name": "dy_correction_weight",
     "ml_node": "dy_data",
     "cap": 0.995,
-    "version": 4,
+    "version": 8,
 })
 c2st_24incl_reweighter = dctr_reweighter.derive("c2st_24incl_reweighter", cls_dict={
     "ml_model_name": "c2st_24_incl_nocorr",

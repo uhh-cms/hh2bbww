@@ -67,13 +67,15 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
     folds: int = 5
     negative_weights: str = "ignore"
 
+    _default__loss_signs: dict | None = None
+
     # overwriting DenseModelMixin parameters
     _default__activation: str = "relu"
     _default__layers: tuple = (64,)
     _default__batchnorm: bool = False
     _default__l2regularization: float = 0.0
     _default__dropout: float = 0.0
-    _default__learningrate: float = 0.00050
+    _default__learningrate: float = 0.0050
     _default__weighting: str = "c2st"
     _default__optimizer: str = "sgd"
 
@@ -93,7 +95,7 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
     bookkeep_params: set[str] = {
         # base params
         "data_loader", "input_features", "train_val_test_split",
-        "processes", "sub_process_class_factors", "class_factors", "train_nodes",
+        "processes", "sub_process_class_factors", "class_factors", "train_nodes", "loss_signs",
         "negative_weights", "folds", "weighting",
         # DenseModelMixin
         "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization", "optimizer",
@@ -105,9 +107,9 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
     # parameters that can be overwritten via command line
     settings_parameters: set[str] = {
         # base params
-        "processes", "class_factors", "sub_process_class_factors",
+        "processes", "class_factors", "sub_process_class_factors", "loss_signs", "weighting",
         # DenseModelMixin
-        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization",
+        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization", "optimizer",
         # ModelFitMixin
         "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
