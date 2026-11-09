@@ -73,7 +73,7 @@ def dctr_reweighter_setup(
     reqs: dict,
     inputs: dict,
     reader_targets: law.util.InsertableDict,
-    **kwargs
+    **kwargs,
 ) -> None:
     """
     Setup function for the DCTR producer, load the model scores

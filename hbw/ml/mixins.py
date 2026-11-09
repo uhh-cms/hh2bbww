@@ -673,7 +673,7 @@ class ModelFitMixin(CallbacksBase):
         n_inputs = len(set(self.input_features))
         tf_adapt_dataset = tf.data.Dataset.from_generator(
             lambda: input_iterator,
-            output_signature=tf.TensorSpec(shape=(None, n_inputs), dtype=tf.float32)
+            output_signature=tf.TensorSpec(shape=(None, n_inputs), dtype=tf.float32),
         )
         model.layers[0].adapt(tf_adapt_dataset)
 
