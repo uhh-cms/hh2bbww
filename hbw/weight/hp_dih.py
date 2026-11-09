@@ -362,7 +362,6 @@ with_trigger_weight_25dctr = default_hist_producer.derive("with_trigger_weight_2
         "trigger_weight": ["trigger_sf"],
         "btag_weight": ["btag_correlated_bc", "btag_correlated_light", "btag_uncorrelated_bc", "btag_uncorrelated_light"],  # noqa: E501
         "stitched_normalization_weight": [],
-        "dctr_25_reweight_rate": [],
     },
     "categorizer_cls": mask_fn_lep2_pt15,
     "version": 2,
@@ -380,7 +379,7 @@ with_24DYdctr = default_hist_producer.derive("with_24DYdctr", cls_dict={
     },
     "dy_correction_weight_producer": "dctr_24_dy_reweighter",
     "categorizer_cls": mask_fn_lep2_pt15,
-    "version": 2,
+    "version": 6,
 })
 with_24incl_c2st = default_hist_producer.derive("with_24incl_c2st", cls_dict={
     "pre_label": "After C2ST incl. corr.",

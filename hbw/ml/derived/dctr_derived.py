@@ -219,3 +219,69 @@ c2st_24_min_njlq32 = c2st_24_closure.derive("c2st_24_min_njlq32", cls_dict={
     "learningrate": 0.005,
     "preparation_producer_name": "prepml_dyvr_mumuV1_njlq3",
 })
+
+# # dctr / process specific networks
+dctr_24_dy = DenseClassifierDCTR.derive("dctr_24_dy", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features.c2st_reduced,
+    "processes": [
+        "dy_m50toinf",
+        "data",
+        *processes.backgrounds_nondy,
+    ],
+    "train_nodes": {
+        "dy_only": {
+            "ml_id": 0,
+            "label": "DY",
+            "color": "#e76300",
+            "sub_processes": ["dy_m50toinf"],
+        },
+        "dy_data": {
+            "ml_id": 1,
+            "label": "DY Data",
+            "color": "#000000",
+            "sub_processes": ["data", *processes.backgrounds_nondy],
+        },
+    },
+    "loss_signs": {
+        "dy_m50toinf": 1,
+        "data": 1,
+        "tt": -1, "st": -1, "vv": -1, "ttv": -1, "h": -1, "other": -1,
+    },
+    "negative_weights": "ignore",
+    "preparation_producer_name": "prepml_dyvr_mumuV02",
+})
+dctr_24_dy_reduced = DenseClassifierDCTR.derive("dctr_24_dy_reduced", cls_dict={
+    "training_configs": configs.twentyfour,
+    "input_features": input_features.c2st_reduced,
+    "processes": [
+        "dy_m50toinf",
+        "data",
+        "tt", "st", "vv", "ttv", "h",
+    ],
+    "train_nodes": {
+        "dy_only": {
+            "ml_id": 0,
+            "label": "DY",
+            "color": "#e76300",
+            "sub_processes": ["dy_m50toinf"],
+        },
+        "dy_data": {
+            "ml_id": 1,
+            "label": "DY Data",
+            "color": "#000000",
+            "sub_processes": ["data", "tt", "st", "vv", "ttv", "h"],
+        },
+    },
+    "loss_signs": {
+        "dy_m50toinf": 1,
+        "data": 1,
+        "tt": -1, "st": -1, "vv": -1, "ttv": -1, "h": -1, "other": -1,
+    },
+    "negative_weights": "ignore",
+    "preparation_producer_name": "prepml_dyvr_mumuV02",
+})
+dctr_24_2d = dctr_24_dy_reduced.derive("dctr_24_2d", cls_dict={
+    "input_features": input_features.minimal,
+})
+dctr_24_dy_2d = dctr_24_2d.derive("dctr_24_dy_2d")

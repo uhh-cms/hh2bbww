@@ -301,6 +301,7 @@ class ClassicModelFitMixin(CallbacksBase):
         if not data_arrays or not mc_arrays:
             raise ValueError("C2ST weighting requires Data and MC processes")
 
+        # C2ST weighting
         n_data = sum(len(arrays.weights) for arrays in data_arrays)
         n_mc = sum(len(arrays.weights) for arrays in mc_arrays)
 
@@ -330,9 +331,50 @@ class ClassicModelFitMixin(CallbacksBase):
                     np.maximum(arrays.weights, 0.0) * c_mc * c_global
                 ).astype(np.float32)
 
+        # Signed DCTR weighting
+        loss_signs = getattr(self, "loss_signs", None)
+        if loss_signs is not None:
+            for proc_inst in weights:
+                if proc_inst.name not in loss_signs:
+                    raise ValueError(
+                        f"No loss sign configured for process '{proc_inst.name}'",
+                    )
+
+                sign = loss_signs[proc_inst.name]
+                if sign not in (-1, 1):
+                    raise ValueError(
+                        f"Loss sign for '{proc_inst.name}' must be +1 or -1, "
+                        f"got {sign}",
+                    )
+
+                weights[proc_inst] *= sign
+
+            # 3. One common normalization: mean(abs(weight)) = 1
+            all_weights = np.concatenate(list(weights.values()))
+            sum_abs = np.sum(np.abs(all_weights), dtype=np.float64)
+
+            if not np.isfinite(sum_abs) or sum_abs <= 0:
+                raise ValueError(
+                    "Signed C2ST weights have zero/non-finite absolute weight sum",
+                )
+
+            normalization = len(all_weights) / sum_abs
+
+            for proc_inst in weights:
+                weights[proc_inst] *= normalization
+
+        for proc_inst in weights:
+            if np.any(~np.isfinite(weights[proc_inst])):
+                raise ValueError(
+                    f"Non-finite C2ST weights for process '{proc_inst.name}'",
+                )
+
+            weights[proc_inst] = weights[proc_inst].astype(np.float32)
+
         logger.info(
             f"C2ST weighting: c_mc={c_mc:.6g}, "
-            f"c_global={c_global:.6g}",
+            f"c_global={c_global:.6g}, "
+            f"signed={loss_signs is not None}",
         )
 
         return weights
