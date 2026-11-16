@@ -223,7 +223,7 @@ prepml_dyvr_mumuV1_njlq3 = prepml.derive("prepml_dyvr_mumuV1_njlq3", cls_dict={
     "skip_sr_categorizer": True,
     "h_prod": "with_trigger_weight",
 })
-prepml_dyvr_mumu_corr = prepml.derive("prepml_dyvr_mumu_corr", cls_dict={
+prepml_dyvr_mumu_corrV01 = prepml.derive("prepml_dyvr_mumu_corrV01", cls_dict={
     "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide"],
     "skip_sr_categorizer": True,
     "h_prod": "with_dy_corr",

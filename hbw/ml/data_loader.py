@@ -754,10 +754,16 @@ class MLProcessData:
             self._prediction = self.load_data("prediction")
         else:
             # calcluate prediction if needed
-            if not hasattr(self._ml_model_inst, "best_model"):
-                # if not hasattr(self._ml_model_inst, "trained_model"):
+            if hasattr(self._ml_model_inst, "trained_models"):
+                models = self._ml_model_inst.trained_models
+            else:
                 raise Exception("No trained model found in the MLModel instance. Cannot calculate prediction.")
-            # self._prediction = predict_numpy_on_batch(self._ml_model_inst.trained_model, self.features)
-            self._prediction = predict_numpy_on_batch(self._ml_model_inst.best_model, self.features)
 
-        return self._prediction  # TODO ML best model
+            predictions = [predict_numpy_on_batch(model, self.features) for model in models]
+
+            if len(predictions) == 1:
+                self._prediction = predictions[0]
+            else:
+                self._prediction = np.stack(predictions, axis=-1)
+
+        return self._prediction

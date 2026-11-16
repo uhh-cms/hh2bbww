@@ -40,7 +40,7 @@ class DenseModelMixin(object):
     _default__layers: tuple[int] = (64, 64, 64)
     _default__dropout: float = 0.50
     _default__learningrate: float = 0.00050
-    _default__batchnorm: bool = True
+    _default__batchnorm: bool = False
     _default__l2regularization: float = 0.0
     _default__weighting: str = "xsec"  # "xsec", "equal", "c2st"
     _default__optimizer: str = "adam"  # "adam", "sgd"
@@ -59,11 +59,13 @@ class DenseModelMixin(object):
         self.dropout = float(self.dropout)
         self.learningrate = float(self.learningrate)
         self.batchnorm = bool(self.batchnorm)
+        self.ensemble_size = int(self.ensemble_size)
         self.l2regularization = float(self.l2regularization)
         self.weighting = str(self.weighting)
         self.loss = str(self.loss)
         self.focal_loss_alpha = float(self.focal_loss_alpha)
         self.focal_loss_gamma = float(self.focal_loss_gamma)
+        self.optimizer = str(self.optimizer)
 
     def prepare_ml_model(
         self,
@@ -275,8 +277,8 @@ class ClassicModelFitMixin(CallbacksBase):
         self.epochs = int(self.epochs)
         self.batchsize = int(self.batchsize)
 
-    def concatenate_data(self, data, weights):
-        return DotDict({
+    def concatenate_data(self, data, weights, shuffle: bool = True):
+        concatenated = DotDict({
             "inputs": np.concatenate([
                 arrays.features for arrays in data.values()
             ]),
@@ -287,6 +289,14 @@ class ClassicModelFitMixin(CallbacksBase):
                 weights[proc_inst] for proc_inst in data.keys()
             ]),
         })
+
+        if shuffle:
+            n_events = len(concatenated["inputs"])
+            shuffle_indices = np.random.permutation(n_events)
+            for key in concatenated.keys():
+                concatenated[key] = concatenated[key][shuffle_indices]
+
+        return concatenated
 
     def get_c2st_weights(self, data):
         data_arrays = []
@@ -407,6 +417,7 @@ class ClassicModelFitMixin(CallbacksBase):
                 for proc_inst, arrays in validation.items()
             }
 
+        # NOTE: currently hardcoded to shuffle the entire dataset, could be a TODO to make configurable per model
         train = self.concatenate_data(train, train_weights)
         validation = self.concatenate_data(validation, validation_weights)
 
@@ -417,7 +428,7 @@ class ClassicModelFitMixin(CallbacksBase):
             (validation["inputs"], validation["target"], validation["weights"]),
         )
 
-        tf_train = tf_train.shuffle(buffer_size=len(train["inputs"]))
+        tf_train = tf_train.shuffle(buffer_size=100_000)
 
         tf_train = tf_train.batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
         tf_validation = tf_validation.batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
@@ -461,6 +472,7 @@ class ClassicModelFitMixin(CallbacksBase):
                 metric=metric,
                 ylabel=ylabel,
                 yscale=yscale,
+                config_insts=self.config_insts,
             )
 
 
@@ -710,6 +722,7 @@ class ModelFitMixin(CallbacksBase):
                 metric=metric,
                 ylabel=ylabel,
                 yscale=yscale,
+                config_insts=self.config_insts,
             )
 
         # Force garbage collection
