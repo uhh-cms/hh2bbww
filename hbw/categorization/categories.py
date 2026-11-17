@@ -101,6 +101,7 @@ catid_geq_2_gen_leptons = catid_n_gen_particles.derive(
     uses={"{Muon,Electron}.pt"},
     n_muon=0,
     n_electron=0,
+    same_flavor=False,
 )
 def catid_lep(
     self: Categorizer, events: ak.Array, results: SelectionResult | None = None, **kwargs,
@@ -112,10 +113,16 @@ def catid_lep(
         electron = events.Electron
         muon = events.Muon
 
-    mask = (
-        (ak.sum(electron["pt"] > 0, axis=-1) == self.n_electron) &
-        (ak.sum(muon["pt"] > 0, axis=-1) == self.n_muon)
-    )
+    if self.same_flavor:
+        mask = (
+            (ak.sum(electron["pt"] > 0, axis=-1) == self.n_electron) |
+            (ak.sum(muon["pt"] > 0, axis=-1) == self.n_muon)
+        )
+    else:
+        mask = (
+            (ak.sum(electron["pt"] > 0, axis=-1) == self.n_electron) &
+            (ak.sum(muon["pt"] > 0, axis=-1) == self.n_muon)
+        )
     return events, mask
 
 
@@ -124,6 +131,7 @@ catid_1mu = catid_lep.derive("catid_1mu", cls_dict={"n_electron": 0, "n_muon": 1
 catid_2e = catid_lep.derive("catid_2e", cls_dict={"n_electron": 2, "n_muon": 0})
 catid_2mu = catid_lep.derive("catid_2mu", cls_dict={"n_electron": 0, "n_muon": 2})
 catid_emu = catid_lep.derive("catid_emu", cls_dict={"n_electron": 1, "n_muon": 1})
+catid_2l = catid_lep.derive("catid_2l", cls_dict={"n_electron": 2, "n_muon": 2, "same_flavor": True})
 
 
 @categorizer(
