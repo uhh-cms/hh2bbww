@@ -616,8 +616,8 @@ multiclass_2425_v3l2pt15 = multiclassv1.derive("multiclass_2425_v3l2pt15", cls_d
     "input_features": input_features["v3_discrete"],
     "preparation_producer_name": "prepml_lep2pt15",
 })
-multiclass_24_test = multiclass_2425_v3l2pt15.derive("multiclass_24_test", cls_dict={
-    "training_configs": configs.twentyfour,
+multiclass_2425_ensemble = multiclass_2425_v3l2pt15.derive("multiclass_2425_ensemble", cls_dict={
+    "ensemble_size": 10,
 })
 ggf_2425_v3l2pt15 = ggfv1.derive("ggf_2425_v3l2pt15", cls_dict={
     "training_configs": configs.run3_2425,

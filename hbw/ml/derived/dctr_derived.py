@@ -187,37 +187,8 @@ c2st_24_closure = DenseClassifierDCTR.derive("c2st_24_closure", cls_dict={
     "l2regularization": 0.0,
     "weighting": "c2st",
     "optimizer": "sgd",
-})
-c2st_24_plots = c2st_24_closure.derive("c2st_24_plots")
-c2st_24_learn = c2st_24_closure.derive("c2st_24_learn", cls_dict={
-    "learningrate": 0.005,
-})
-c2st_24_switched = c2st_24_closure.derive("c2st_24_switched", cls_dict={
-    "train_nodes": {
-        "mc_bkg": {
-            "ml_id": 0,
-            "label": "MC Background",
-            "color": "#e76300",
-            "class_factor_mode": "equal",
-            "sub_processes": processes.backgrounds_binary_highdy,
-        },
-        "data": {
-            "ml_id": 1,
-            "label": "Data",
-            "color": "#000000",
-            "class_factor_mode": "equal",
-        },
-    },
-    "learningrate": 0.005,
-})
-c2st_24_minimal = c2st_24_closure.derive("c2st_24_minimal", cls_dict={
-    "input_features": input_features.minimal,
-    "learningrate": 0.005,
-})
-c2st_24_min_njlq32 = c2st_24_closure.derive("c2st_24_min_njlq32", cls_dict={
-    "input_features": input_features.minimal,
-    "learningrate": 0.005,
-    "preparation_producer_name": "prepml_dyvr_mumuV1_njlq3",
+    "ensemble_size": 10,
+    "folds": 1,
 })
 
 # # dctr / process specific networks
@@ -250,6 +221,8 @@ dctr_24_dy = DenseClassifierDCTR.derive("dctr_24_dy", cls_dict={
     },
     "negative_weights": "ignore",
     "preparation_producer_name": "prepml_dyvr_mumuV02",
+    "ensemble_size": 1,
+    "epochs": 50,
 })
 dctr_24_dy_reduced = DenseClassifierDCTR.derive("dctr_24_dy_reduced", cls_dict={
     "training_configs": configs.twentyfour,
@@ -285,3 +258,6 @@ dctr_24_2d = dctr_24_dy_reduced.derive("dctr_24_2d", cls_dict={
     "input_features": input_features.minimal,
 })
 dctr_24_dy_2d = dctr_24_2d.derive("dctr_24_dy_2d")
+dctr_24_dy_2d_ensemble = dctr_24_dy_2d.derive("dctr_24_dy_2d_ensemble", cls_dict={
+    "ensemble_size": 10,
+})
