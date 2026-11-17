@@ -232,7 +232,7 @@ def add_lepton_categories(config: od.Config) -> None:
         name="2l",
         id=70,
         selection="catid_2l",
-        label=r"$2 SF leptons$",
+        label="2 SF leptons",
     )
 
 
