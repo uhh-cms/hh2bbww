@@ -38,6 +38,18 @@ if "CMS" in cms_label_kwargs["llabel"]:
     cms_label_kwargs["exp"] = ""
 
 
+def get_cms_label_kwargs(model: MLModel) -> dict:
+    label_kwargs = cms_label_kwargs.copy()
+    label_kwargs["lumi"] = round(
+        0.001 * sum(
+            config_inst.x.luminosity.get("nominal")
+            for config_inst in model.config_insts
+        ),
+        1,
+    )
+    return label_kwargs
+
+
 def barplot_from_multidict(dict_of_rankings: dict[str, dict], normalize_weights: bool = True):
     """
     :param dict_of_rankings: dictionary of multiple dictionaries of rankings of variables. The keys of this
@@ -92,12 +104,12 @@ def plot_introspection(
     # get only signal events for now
     inputs = inputs.features[inputs.labels == 0]
 
-    shap_ranking_dict, shap_values = shap_ranking(model.trained_model, inputs, output_node, input_features)
+    shap_ranking_dict, shap_values = shap_ranking(model.trained_models[0], inputs, output_node, input_features)
 
     rankings = {
         "SHAP": shap_ranking_dict,
-        "Sensitivity Analysis": sensitivity_analysis(model.trained_model, inputs, output_node, input_features),
-        "Gradient * Input": gradient_times_input(model.trained_model, inputs, output_node, input_features),
+        "Sensitivity Analysis": sensitivity_analysis(model.trained_models[0], inputs, output_node, input_features),
+        "Gradient * Input": gradient_times_input(model.trained_models[0], inputs, output_node, input_features),
     }
     # TODO: dump rankings in stats json (need to convert float32 into str for json compatibility)
     # if stats:
@@ -116,6 +128,7 @@ def plot_history(
     ylabel: str | None = None,
     yscale: str = "linear",
     output_name: str | None = None,
+    config_insts=None,
 ):
     """
     Simple function to create and store a plot from history data
@@ -136,7 +149,13 @@ def plot_history(
         "xlabel": "Epoch",
     })
     ax.legend(["train", "validation"], loc="best")
-    mplhep.cms.label(ax=ax, fontsize=22, **cms_label_kwargs, com=13.6)
+    label_kwargs = cms_label_kwargs.copy()
+    if config_insts is not None:
+        label_kwargs["lumi"] = round(
+            0.001 * sum(config_inst.x.luminosity.get("nominal") for config_inst in config_insts),
+            1,
+        )
+    mplhep.cms.label(ax=ax, fontsize=22, **label_kwargs, com=13.6)
 
     plt.tight_layout()
     output.child(f"{output_name}.pdf", type="f").dump(fig, formatter="mpl")
@@ -181,6 +200,7 @@ def plot_confusion(
         stats: dict | None = None,
         normalize: str = "columns",
         with_title: bool = False,
+        weighting: str = "equal_weights",
 ) -> None:
     """
     Simple function to create and store a confusion matrix plot
@@ -194,27 +214,58 @@ def plot_confusion(
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
     # Create confusion matrix and normalizes it over predicted (columns)
-    confusion = confusion_matrix(
-        y_true=inputs.labels,
-        y_pred=np.argmax(inputs.prediction, axis=1),
-        sample_weight=inputs.equal_weights,
-    )
-    if isinstance(stats, dict):
-        gather_confusion_stats(confusion, process_insts, input_type, stats)
-
-    # normalize confusion matrix (axis=1: over columns (predicted), axis=0: over rows (truth))
-    if normalize == "columns":
-        # normalize over columns (predicted)
-        confusion = confusion / confusion.sum(axis=1, keepdims=True)
-    elif normalize == "rows":
-        # normalize over rows (truth)
-        confusion = confusion / confusion.sum(axis=0, keepdims=True)
-    elif normalize == "total":
-        # normalize over all entries
-        confusion = confusion / confusion.sum()
+    if weighting == "equal_weights":
+        weigths = inputs.equal_weights
+    elif weighting == "weights":
+        weigths = inputs.weights
+    elif weighting == "cross_check_weights":
+        weigths = inputs.cross_check_weights
+    elif weighting == "train_weights":
+        weigths = inputs.train_weights
+    elif weighting == "c2st_weights":
+        weigths = inputs.c2st_weights
     else:
-        logger.info(f"Confusion will not be normalized with normalize={normalize}")
+        raise ValueError(f"Unknown weighting option: {weighting}")
 
+    predictions = inputs.prediction
+    if predictions.ndim == 2:
+        predictions_by_member = predictions[:, :, np.newaxis]
+    else:
+        predictions_by_member = predictions
+
+    n_members = predictions_by_member.shape[-1]
+    confusion_matrices = []
+
+    for member in range(n_members):
+        confusion = confusion_matrix(
+            y_true=inputs.labels,
+            y_pred=np.argmax(predictions_by_member[:, :, member], axis=1),
+            sample_weight=weigths,
+        )
+        if member == 0:
+            if isinstance(stats, dict):
+                gather_confusion_stats(confusion, process_insts, input_type, stats)
+
+        # normalize confusion matrix (axis=1: over columns (predicted), axis=0: over rows (truth))
+        if normalize == "columns":
+            # normalize over columns (predicted)
+            confusion = confusion / confusion.sum(axis=1, keepdims=True)
+        elif normalize == "rows":
+            # normalize over rows (truth)
+            confusion = confusion / confusion.sum(axis=0, keepdims=True)
+        elif normalize == "total":
+            # normalize over all entries
+            confusion = confusion / confusion.sum()
+        else:
+            logger.info(f"Confusion will not be normalized with normalize={normalize}")
+
+        confusion_matrices.append(confusion)
+
+    confusion_mean = np.mean(confusion_matrices, axis=0)
+    if len(confusion_matrices) > 1:
+        confusion_std = np.std(confusion_matrices, axis=0)
+    else:
+        confusion_std = None
     # gather process labels
     labels = (
         [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
@@ -223,8 +274,15 @@ def plot_confusion(
 
     # Create a plot of the confusion matrix
     fig, ax = plt.subplots()
-    disp = ConfusionMatrixDisplay(confusion, display_labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_mean, display_labels=labels)
     disp.plot(ax=ax)
+
+    if confusion_std is not None:
+        for index, text in np.ndenumerate(disp.text_):
+            mean_value = confusion_mean[index]
+            std_value = confusion_std[index]
+            text.set_text(f"{mean_value:.2f}\n$\\pm$ {std_value:.2f}")
+
     ax.set_yticklabels(
         ax.get_yticklabels(),
         rotation=90,
@@ -234,7 +292,7 @@ def plot_confusion(
     # Add title and CMS label
     if with_title:
         ax.set_title(f"Confusion matrix for {input_type} set, rows normalized", fontsize=24, pad=+24 * 2)
-    mplhep.cms.label(ax=ax, fontsize=24, loc=0, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+    mplhep.cms.label(ax=ax, fontsize=24, loc=0, **get_cms_label_kwargs(model), com=model.config_inst.campaign.ecm)
 
     plt.tight_layout()
     output.child(f"Confusion_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
@@ -262,41 +320,80 @@ def plot_roc_ovr(
     from sklearn.metrics import roc_curve, roc_auc_score
 
     auc_scores = []
+    auc_stds = []
     n_classes = len(inputs.target[0])
+
+    # Shape:
+    # normal:   (n_events, n_classes)
+    # ensemble: (n_events, n_classes, n_members)
+    predictions = inputs.prediction
+    if predictions.ndim == 2:
+        predictions = predictions[:, :, np.newaxis]
+
+    n_members = predictions.shape[-1]
 
     # load weights and remove negative values
     weights = np.copy(getattr(inputs, weighting))
     weights[weights < 0] = 0
 
     fig, ax = plt.subplots()
+    fpr_grid = np.linspace(0.0, 1.0, 1001)
+
     for i in range(n_classes):
         y_true = (inputs.labels == i)
-        fpr, tpr, thresholds = roc_curve(
-            y_true=y_true,
-            y_score=inputs.prediction[:, i],
-            sample_weight=weights,
-        )
+        member_tprs = []
+        member_aucs = []
 
-        # to calculate the AUC score, we reduce the problem of multi-classification to a binary classification
-        auc_scores.append(roc_auc_score(
-            y_true=y_true,
-            y_score=inputs.prediction[:, i],
-            average="macro",
-            multi_class="ovo",
-            sample_weight=weights,
-        ))
+        for member in range(n_members):
+            member_predictions = predictions[:, i, member]
 
-        # we could also switch to "ovr" (one versus rest) strategy, as shown in the block below
-        # auc_scores.append(roc_auc_score(
-        #     y_true=inputs.target,
-        #     y_score=inputs.prediction,
-        #     average="micro",
-        #     multi_class="ovr",
-        #     sample_weight=weights,
-        # ))
+            fpr, tpr, thresholds = roc_curve(
+                y_true=y_true,
+                y_score=member_predictions,
+                sample_weight=weights,
+            )
+            member_aucs.append(roc_auc_score(
+                y_true=y_true,
+                y_score=member_predictions,
+                average="macro",
+                multi_class="ovo",
+                sample_weight=weights,
+            ))
+            # we could also switch to "ovr" (one versus rest) strategy, as shown in the block below
+            # auc_scores.append(roc_auc_score(
+            #     y_true=inputs.target,
+            #     y_score=inputs.prediction,
+            #     average="micro",
+            #     multi_class="ovr",
+            #     sample_weight=weights,
+            # ))
+
+            # Interpolate this member's ROC curve on the common FPR grid.
+            interpolated_tpr = np.interp(fpr_grid, fpr, tpr)
+            interpolated_tpr[0] = 0.0
+            interpolated_tpr[-1] = 1.0
+            member_tprs.append(interpolated_tpr)
+
+        member_tprs = np.asarray(member_tprs)
+        member_aucs = np.asarray(member_aucs)
+
+        mean_tpr = np.mean(member_tprs, axis=0)
+        mean_auc = float(np.mean(member_aucs))
+
+        if n_members > 1:
+            std_tpr = np.std(member_tprs, axis=0)
+            std_auc = float(np.std(member_aucs, ddof=0))
+        else:
+            std_tpr = None
+            std_auc = 0.0
+
+        auc_scores.append(mean_auc)
+        auc_stds.append(std_auc)
 
         # create the plot
-        ax.plot(fpr, tpr)
+        ax.plot(fpr_grid, mean_tpr)
+        if n_members > 1:
+            ax.fill_between(fpr_grid, mean_tpr - std_tpr, mean_tpr + std_tpr, alpha=0.2, label="_nolegend_")
 
     ax.set_xlabel("Background selection efficiency")
     ax.set_ylabel("Signal selection efficiency")
@@ -306,13 +403,24 @@ def plot_roc_ovr(
         [proc_inst.x("ml_label", proc_inst.label) for proc_inst in process_insts]
         if process_insts else range(n_classes)
     )
-    ax.legend(
-        [f"{labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
-        # title=f"ROC (process vs rest), {input_type} set",
-        title="ROC (process vs rest)",
-        loc="lower right",
-    )
-    mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+    if n_members == 1:
+        ax.legend(
+            [f"{labels[i]} (AUC: {auc_score:.4f})" for i, auc_score in enumerate(auc_scores)],
+            # title=f"ROC (process vs rest), {input_type} set",
+            title="ROC (process vs rest)",
+            loc="lower right",
+        )
+    else:
+        ax.legend(
+            [
+                f"{labels[i]} (AUC: {auc_score:.4f} ± {auc_std:.4f})"
+                for i, (auc_score, auc_std) in enumerate(zip(auc_scores, auc_stds))
+            ],
+            # title=f"ROC (process vs rest), {input_type} set",
+            title="ROC (process vs rest)",
+            loc="lower right",
+        )
+    mplhep.cms.label(ax=ax, loc=0, fontsize=22, **get_cms_label_kwargs(model), com=model.config_inst.campaign.ecm)
 
     output.child(f"ROC_ovr_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
     plt.close(fig)
@@ -352,13 +460,23 @@ def plot_roc_ovo(
         for proc_inst in process_insts
     }
 
+    predictions = inputs.prediction
+    if predictions.ndim == 2:
+        predictions = predictions[:, :, np.newaxis]
+
+    n_members = predictions.shape[-1]
+
     # load weights and remove negative values
     weights = np.copy(getattr(inputs, weighting))
     weights[weights < 0] = 0
 
+    fpr_grid = np.linspace(0.0, 1.0, 1001)
+
     # loop over all classes, considering each as signal for one OvO ROC curve
     for i in range(n_classes):
         auc_scores = {}
+        auc_stds = {}
+
         fig, ax = plt.subplots()
 
         for j in range(n_classes):
@@ -367,22 +485,50 @@ def plot_roc_ovo(
 
             event_mask = (inputs.labels == i) | (inputs.labels == j)
             y_true = (inputs.labels[event_mask] == i)
-            y_score = inputs.prediction[event_mask, i]
+            member_tprs = []
+            member_aucs = []
 
-            fpr, tpr, thresholds = roc_curve(
-                y_true=y_true,
-                y_score=y_score,
-                sample_weight=weights[event_mask],
-            )
+            for member in range(n_members):
+                y_score = predictions[event_mask, i, member]
 
-            auc_scores[j] = roc_auc_score(
-                y_true, y_score,
-                average="macro", multi_class="ovo",
-                sample_weight=weights[event_mask],
-            )
+                fpr, tpr, thresholds = roc_curve(
+                    y_true=y_true,
+                    y_score=y_score,
+                    sample_weight=weights[event_mask],
+                )
+
+                member_aucs.append(roc_auc_score(
+                    y_true, y_score,
+                    average="macro", multi_class="ovo",
+                    sample_weight=weights[event_mask],
+                ))
+
+                interpolated_tpr = np.interp(
+                    fpr_grid,
+                    fpr,
+                    tpr,
+                )
+                interpolated_tpr[0] = 0.0
+                interpolated_tpr[-1] = 1.0
+                member_tprs.append(interpolated_tpr)
+
+            member_tprs = np.asarray(member_tprs)
+            member_aucs = np.asarray(member_aucs)
+
+            mean_tpr = np.mean(member_tprs, axis=0)
+            mean_auc = float(np.mean(member_aucs))
+
+            if n_members > 1:
+                std_tpr = np.std(member_tprs, axis=0)
+                std_auc = float(np.std(member_aucs))
+
+            auc_scores[j] = mean_auc
+            auc_stds[j] = std_auc
 
             # create the plot
-            ax.plot(fpr, tpr)
+            ax.plot(fpr_grid, mean_tpr)
+            if n_members > 1:
+                ax.fill_between(fpr_grid, mean_tpr - std_tpr, mean_tpr + std_tpr, alpha=0.2, label="_nolegend_")
 
         if isinstance(stats, dict):
             # append AUC scores to stats dict
@@ -394,12 +540,22 @@ def plot_roc_ovo(
         ax.set_ylabel(f"{labels[i]} selection efficiency (TPR)")
 
         # legend
-        ax.legend(
-            [f"Background: {labels[j]} (AUC: {auc_score:.4f})" for j, auc_score in auc_scores.items()],
-            title=f"ROC OvO, {input_type} set",
-            loc="lower right",
-        )
-        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        if n_members == 1:
+            ax.legend(
+                [f"Background: {labels[j]} (AUC: {auc_score:.4f})" for j, auc_score in auc_scores.items()],
+                title=f"ROC OvO, {input_type} set",
+                loc="lower right",
+            )
+        else:
+            ax.legend(
+                [
+                    f"Background: {labels[j]} (AUC: {auc_scores[j]:.4f} ± {auc_stds[j]:.4f})"
+                    for j, auc_score in auc_scores.items()
+                ],
+                title=f"ROC OvO, {input_type} set",
+                loc="lower right",
+            )
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **get_cms_label_kwargs(model), com=model.config_inst.campaign.ecm)
 
         output.child(f"ROC_ovo_{process_insts[i].name}_{input_type}.pdf", type="f").dump(fig, formatter="mpl")
         plt.close(fig)
@@ -439,13 +595,14 @@ def plot_output_nodes(
         )
 
         for input_type, inputs in data.items():
+            predictions = inputs.prediction if inputs.prediction.ndim == 2 else inputs.prediction[:, :, 0]
             for j in range(n_classes):
                 mask = (inputs.labels == j)
                 # mask = (np.argmax(inputs.target, axis=1) == j)
                 fill_kwargs = {
                     "type": input_type,
                     "process": j,
-                    var_title: inputs.prediction[:, i][mask],
+                    var_title: predictions[:, i][mask],
                     "weight": inputs.weights[mask],
                 }
                 h.fill(**fill_kwargs)
@@ -509,7 +666,7 @@ def plot_output_nodes(
         # legend
         ax.legend(loc="best", ncols=2, title="")
 
-        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **get_cms_label_kwargs(model), com=model.config_inst.campaign.ecm)
         output.child(f"Node_{process_insts[i].name}.pdf", type="f").dump(fig, formatter="mpl")
 
 
@@ -611,11 +768,12 @@ def plot_input_features(
         # legend
         ax.legend(loc="best", title="")
 
-        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **cms_label_kwargs, com=model.config_inst.campaign.ecm)
+        mplhep.cms.label(ax=ax, loc=0, fontsize=22, **get_cms_label_kwargs(model), com=model.config_inst.campaign.ecm)
         try:
             output.child(f"Input_{feature_name}.pdf", type="f").dump(fig, formatter="mpl")
         except Exception:
             logger.warning(f"Feature {feature_name} plot does not like to be stored for some reason?")
+        plt.close(fig)
 
 
 def get_input_weights(model, output, input_features: list | None = None):

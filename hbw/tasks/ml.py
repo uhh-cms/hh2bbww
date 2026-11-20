@@ -508,6 +508,10 @@ class MLEvaluationSingleFold(
     def config_inst(self):
         return self.config_insts[0]
 
+    @property
+    def ensemble_size(self):
+        return int(getattr(self.ml_model_inst, "ensemble_size", 1))
+
     def create_branch_map(self):
         return [
             DotDict({"process": process})
@@ -523,9 +527,14 @@ class MLEvaluationSingleFold(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
+        if self.ensemble_size == 1:
+            branches = (self.fold,)
+        else:
+            branches = tuple(self.fold * self.ensemble_size + i for i in range(self.ensemble_size))
+
         reqs["models"] = self.reqs.MLTraining.req_different_branching(
             self,
-            branches=(self.fold,),
+            branches=branches,
             configs=(self.config_inst.name,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
@@ -542,10 +551,15 @@ class MLEvaluationSingleFold(
         if not self.is_branch():
             return reqs
 
+        if self.ensemble_size == 1:
+            branches = (self.fold,)
+        else:
+            branches = tuple(self.fold * self.ensemble_size + i for i in range(self.ensemble_size))
+
         reqs["training"] = self.reqs.MLTraining.req_different_branching(
             self,
-            branches=(self.fold,),
-            branch=self.fold,
+            branches=branches,
+            branch=-1,
             configs=(self.config_inst.name,),
         )
         reqs["preml"] = self.reqs.MLPreTraining.req_different_branching(
@@ -586,9 +600,19 @@ class MLEvaluationSingleFold(
         logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
 
         # open trained model and assign to ml_model_inst
-        training_results = self.ml_model_inst.open_model(inputs["training"])
-        self.ml_model_inst.trained_model = training_results["model"]
-        self.ml_model_inst.best_model = training_results["best_model"]
+        if self.ensemble_size == 1:
+            model_inputs = [inputs["training"]]
+        else:
+            training_collection = inputs["training"].get("collection")
+            if training_collection is None:
+                raise ValueError(
+                    "Expected a model collection for ensemble evaluation",
+                )
+            model_inputs = list(training_collection.targets.values())
+
+        training_results = [self.ml_model_inst.open_model(model_input) for model_input in model_inputs]
+        self.ml_model_inst.trained_models = [result["model"] for result in training_results]
+        self.ml_model_inst.best_models = [result["best_model"] for result in training_results]
 
         input_files = inputs["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
@@ -645,6 +669,13 @@ class PlotMLResultsSingleFold(
         "terminal; no default",
     )
 
+    weighting = luigi.Parameter(
+        default="weights",
+        description="which weights to use for the evaluation plots; default: 'weights'; "
+        "options: 'equal_weights', 'weights', 'train_weights' or in general those produced by the MLPreTraining task"
+        "only for c2st or dctr style training: 'c2st_weights'",
+    )
+
     data_splits = ("train", "val", "test")
 
     @property
@@ -668,11 +699,16 @@ class PlotMLResultsSingleFold(
         return reqs
 
     def requires(self):
+        ensemble_size = getattr(self.ml_model_inst, "ensemble_size", 1)
+        if ensemble_size == 1:
+            branches = (self.fold,)
+        else:
+            branches = tuple(self.fold * ensemble_size + i for i in range(ensemble_size))
         reqs = {
             "training": self.reqs.MLTraining.req_different_branching(
                 self,
                 configs=(self.config_inst.name,),
-                branches=(self.fold,),
+                branches=branches,
             ),
         }
 
@@ -708,9 +744,11 @@ class PlotMLResultsSingleFold(
         self.ml_model_inst.datasets(self.config_inst)
 
         # open all model files
-        training_results = self.ml_model_inst.open_model(inputs["training"])
-        self.ml_model_inst.trained_model = training_results["model"]
-        self.ml_model_inst.best_model = training_results["best_model"]
+        model_inputs = [inputs["training"]]
+
+        training_results = [self.ml_model_inst.open_model(model_input) for model_input in model_inputs]
+        self.ml_model_inst.trained_models = [result["model"] for result in training_results]
+        self.ml_model_inst.best_models = [result["best_model"] for result in training_results]
 
         # Load data lazily and process incrementally to reduce memory usage
         input_files_preml = inputs["preml"]["collection"]
@@ -727,6 +765,7 @@ class PlotMLResultsSingleFold(
 
         # Load all data at once (original approach) but with memory-efficient plotting
         from hbw.ml.data_loader import MLProcessData
+        fold_modus = "all" if self.ml_model_inst.folds == 1 else "all_except_evaluation_fold"
         data = DotDict({
             data_split: MLProcessData(
                 self.ml_model_inst,
@@ -734,8 +773,33 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.processes,
                 self.fold,
+                fold_modus=fold_modus,
             ) for data_split in self.data_splits
         })
+        if self.weighting == "c2st_weights":
+            if getattr(self.ml_model_inst, "weighting", None) != "c2st":
+                raise ValueError("C2ST weights requested for model that was not trained with c2st weighting")
+
+            logger.info("Using c2st_weights for plotting")
+            for data_split in self.data_splits:
+                process_data = DotDict({
+                    proc_inst: MLProcessData(
+                        self.ml_model_inst,
+                        input_files,
+                        data_split,
+                        [proc_inst.name],
+                        self.fold,
+                        fold_modus=fold_modus,
+                    )
+                    for proc_inst in self.ml_model_inst.process_insts
+                })
+
+                c2st_weights_by_process = (self.ml_model_inst.get_c2st_weights(process_data))
+
+                data[data_split].c2st_weights = np.concatenate([
+                    c2st_weights_by_process[proc_inst]
+                    for proc_inst in self.ml_model_inst.process_insts
+                ])
         self.create_plots(data)
 
     def create_plots(self, data):
@@ -803,6 +867,7 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
                 stats,
+                weighting=self.weighting,
             )
             log_memory("After plotting confusion matrix")
             plt.close("all")
@@ -817,6 +882,7 @@ class PlotMLResultsSingleFold(
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
                 stats,
+                weighting=self.weighting,
             )
             log_memory("After plotting ROC curves")
             plt.close("all")
@@ -830,6 +896,7 @@ class PlotMLResultsSingleFold(
                 output["plots"],
                 data_split,
                 self.ml_model_inst.train_node_process_insts,
+                weighting=self.weighting,
             )
             log_memory("After plotting ROC OVO curves")
             plt.close("all")

@@ -152,3 +152,29 @@ def mask_fn_met_geq40_lep2_pt15(self: Categorizer, events: ak.Array, **kwargs) -
 def mask_fn_single_lep_triggers(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     mask = ak.any(events.trigger_ids == 101, axis=-1) | ak.any(events.trigger_ids == 201, axis=-1)
     return events, mask
+
+
+@categorizer(
+    uses={"Jet.pt"},
+    n_jet=3,
+)
+def mask_fn_njet_lq3(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    mask = ak.num(events.Jet["pt"], axis=-1) <= self.n_jet
+    return events, mask
+
+
+# @categorizer(
+#     uses={"{Muon,Electron}.pt"},
+# )
+# def mask_fn_dilep_sf(
+#     self: Categorizer, events: ak.Array, **kwargs,
+# ) -> tuple[ak.Array, ak.Array]:
+
+#     electron = events.Electron
+#     muon = events.Muon
+
+#     mask = (
+#         (ak.sum(electron["pt"] > 0, axis=-1) == 2) |
+#         (ak.sum(muon["pt"] > 0, axis=-1) == 2)
+#     )
+#     return events, mask

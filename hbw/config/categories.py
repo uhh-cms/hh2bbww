@@ -125,7 +125,7 @@ def add_dih_mll_categories(config: od.Config) -> None:
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$20 \leq m_{\ell\ell} \geq 70$",
+        label=r"$m_{\ell\ell} \geq 70$",
     )
     cr.add_category(
         name="dycr",
@@ -183,7 +183,7 @@ def add_mll_categories(config, add_mll_categories_func=None):
 def add_lepton_categories(config: od.Config) -> None:
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
-        "dl": ("2e", "2mu", "emu", "ge3lep"),
+        "dl": ("2e", "2mu", "emu", "ge3lep", "2l"),
     }[config.x.lepton_tag]
 
     cat_1e = config.add_category(  # noqa: F841
@@ -226,6 +226,13 @@ def add_lepton_categories(config: od.Config) -> None:
         id=60,
         selection="catid_ge3lep",
         label=r"$N_{lep} \geq 3$",
+    )
+
+    cat_2l = config.add_category(  # noqa: F841
+        name="2l",
+        id=70,
+        selection="catid_2l",
+        label="2 SF leptons",
     )
 
 
@@ -353,7 +360,7 @@ def add_categories_selection(config: od.Config) -> None:
     elif config.x.lepton_tag == "dl":
         # adds categories based on mll
         add_mll_categories(config)
-        config.x.main_categories = ["sr", "dycr", "ttcr"]
+        config.x.main_categories = ["sr", "cr", "dycr", "ttcr"]
         # adds categories based on bjets
         if config.x.signal_tag == "hh":
             # add_mll_categories(config, add_dih_mll_categories)
