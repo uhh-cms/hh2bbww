@@ -952,8 +952,8 @@ def add_hh_bjet_variables(config: od.Config) -> None:
 
 
 @call_once_on_config()
-def add_gatja_scores_variables(config: od.Config) -> None:
-    for i in range(24):
+def add_gatja_scores_variables(config: od.Config, n_scores: int) -> None:
+    for i in range(n_scores):
         config.add_variable(
             name=f"gatja_output_{i}",
             expression=f"gatja_output_{i}",

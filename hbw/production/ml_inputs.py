@@ -198,6 +198,8 @@ def common_ml_inputs(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # general
     events = set_ak_column_f32(events, "mli_ht", ak.sum(events.Jet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_ht_hf", ak.sum(events.Bjet.pt, axis=1))
+    events = set_ak_column_f32(events, "mli_ht_lf", ak.sum(events.Lightjet.pt, axis=1))
     events = set_ak_column_f32(events, "mli_lt", ak.sum(events.Lepton.pt, axis=1) + events[met_name].pt)
     events = set_ak_column_f32(events, "mli_n_jet", ak.sum(events.Jet.pt > 0, axis=1))
 
@@ -259,7 +261,7 @@ def common_ml_inputs_init(self: Producer) -> None:
     # define ML input separately to self.produces
     self.ml_input_columns = {
         # event features
-        "mli_ht", "mli_lt", "mli_n_jet",
+        "mli_ht", "mli_ht_hf", "mli_ht_lf", "mli_lt", "mli_n_jet",
         "mli_ht_alljets", "mli_n_jet_alljets",
         "mli_ht_fwjets", "mli_n_jet_fwjets",
         "mli_n_btag",  # "mli_b_score_sum", "mli_b_b_score_sum", "mli_l_b_score_sum",

@@ -93,6 +93,7 @@ def jet_selection(
 
     # add jet steps
     events = set_ak_column(events, "cutflow.n_jet", ak.sum(jet_mask, axis=1))
+    # steps["nJet0"] = events.cutflow.n_jet >= 0
     steps["nJet1"] = events.cutflow.n_jet >= 1
     steps["nJet2"] = events.cutflow.n_jet >= 2
     steps["nJet3"] = events.cutflow.n_jet >= 3
@@ -110,8 +111,10 @@ def jet_selection(
 
     # add btag steps
     events = set_ak_column(events, "cutflow.n_btag", ak.sum(btag_mask, axis=1))
+    # steps["nBjet1"] = events.cutflow.n_btag >= 0
     steps["nBjet1"] = events.cutflow.n_btag >= 1
     steps["nBjet2"] = events.cutflow.n_btag >= 2
+    steps["nBjet3"] = events.cutflow.n_btag >= 3
     if self.config_inst.x("n_btag", 0) > 2:
         steps[f"nBjet{self.config_inst.x.n_btag}"] = events.cutflow.n_btag >= self.config_inst.x.n_btag
 

@@ -51,6 +51,22 @@ def add_common_ml_variables(config: od.Config) -> None:
         aux={"overflow": True},
     )
     config.add_variable(
+        name="mli_ht_lf",
+        expression="mli_ht_lf",
+        binning=(40, 0, 1000),
+        unit="GeV",
+        x_title="HT (light jets)",
+        aux={"overflow": True},
+    )
+    config.add_variable(
+        name="mli_ht_hf",
+        expression="mli_ht_hf",
+        binning=(40, 0, 1000),
+        unit="GeV",
+        x_title="HT (bjets)",
+        aux={"overflow": True},
+    )
+    config.add_variable(
         name="mli_n_btag",
         expression="mli_n_btag",
         binning=(11, -0.5, 10.5),

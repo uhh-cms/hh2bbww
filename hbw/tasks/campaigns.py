@@ -47,13 +47,30 @@ valid_campaigns = {
     "run3_2026_nano_v15",
 }
 
-cpn_module = lambda campaign: f"cmsdb.campaigns.{campaign}"
-cpn_local_name = lambda campaign: f"campaign_{campaign}"
 
-is_data_func = lambda dataset_name: dataset_name.startswith("data_")
-is_hhh_func = lambda dataset_name: dataset_name.startswith("hhh_")
-is_xhh_func = lambda dataset_name: (dataset_name.startswith("tthh_") | dataset_name.startswith("vhh_"))
-is_mc_func = lambda dataset_name: not dataset_name.startswith("data_")
+def cpn_module(campaign):
+    return f"cmsdb.campaigns.{campaign}"
+
+
+def cpn_local_name(campaign):
+    return f"campaign_{campaign}"
+
+
+def is_data_func(dataset_name):
+    return dataset_name.startswith("data_")
+
+
+def is_hhh_func(dataset_name):
+    return dataset_name.startswith("hhh_")
+
+
+def is_xhh_func(dataset_name):
+    return (
+        dataset_name.startswith("tthh_") | dataset_name.startswith("vhh_"))
+
+
+def is_mc_func(dataset_name):
+    return not dataset_name.startswith("data_")
 
 
 campaign_map = {
@@ -427,6 +444,25 @@ broken_files = {
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/214f4dd8-62ef-47f7-aa00-60bc04aaf65b.root",  # noqa: E501
             "/store/mc/RunIII2024Summer24NanoAODv15/DYto2Mu-2Jets_Bin-2J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/140000/59e97637-dadb-457f-8012-da232fb1dd42.root",  # noqa: E501
         ],
+        "data_muoneg_c": [
+            "/store/data/Run2025C/MuonEG/NANOAOD/PromptReco-v1/000/392/674/00000/a67210fc-f344-40b6-a391-41b9ce40e92c.root",  # noqa: E501
+            "/store/data/Run2025C/MuonEG/NANOAOD/PromptReco-v1/000/392/992/00000/0bc110c2-fa13-4a5d-8ba1-7d383dc05613.root",  # noqa: E501
+        ],
+        "data_muoneg_d": [
+            "/store/data/Run2025D/MuonEG/NANOAOD/PromptReco-v1/000/395/187/00000/f9ddbea8-810f-4995-aa10-3c0dede035dc.root",  # noqa: E501
+            "/store/data/Run2025D/MuonEG/NANOAOD/PromptReco-v1/000/395/188/00000/7e5cc229-ede7-4a4a-88ef-d10b41f3ec5a.root",  # noqa: E501
+            "/store/data/Run2025D/MuonEG/NANOAOD/PromptReco-v1/000/395/640/00000/bee90dfb-e61e-4874-8427-220aacc6cd63.root",  # noqa: E501
+            "/store/data/Run2025D/MuonEG/NANOAOD/PromptReco-v1/000/395/518/00000/391d1b46-ab1a-4214-b22f-b2ff2e53bcc1.root",  # noqa: E501
+        ],
+        "data_muoneg_e": [
+            "/store/data/Run2025E/MuonEG/NANOAOD/PromptReco-v1/000/396/155/00000/4d2a409c-e578-4392-96b4-4b664009d9dd.root",  # noqa: E501
+        ],
+        "data_muoneg_f": [
+            "/store/data/Run2025F/MuonEG/NANOAOD/PromptReco-v1/000/396/818/00000/094de818-ac6b-4f7e-a57f-b4faf734b006.root",  # noqa: E501
+        ],
+        "data_muoneg_g": [
+            "/store/data/Run2025G/MuonEG/NANOAOD/PromptReco-v1/000/398/649/00000/7ffad70c-d9f4-43e6-a858-1b8824b53fff.root",  # noqa: E501
+        ],
     },
 }
 
@@ -464,7 +500,8 @@ class BuildCampaignSummary(
 
         for campaign, cpn_config in campaigns.items():
             mod = cpn_module(campaign)
-            campaign_inst = getattr(importlib.import_module(mod), cpn_local_name(campaign)).copy()
+            campaign_inst = getattr(importlib.import_module(
+                mod), cpn_local_name(campaign)).copy()
             self.modify_campaign(campaign_inst)
             cpn_config["inst"] = campaign_inst
 
@@ -478,13 +515,16 @@ class BuildCampaignSummary(
             return
 
         for dataset_name, broken_files_list in broken_files[campaign_inst.name].items():
-            dataset_inst_nominal = campaign_inst.get_dataset(dataset_name).info["nominal"]
+            dataset_inst_nominal = campaign_inst.get_dataset(
+                dataset_name).info["nominal"]
 
             if len(set(broken_files_list)) != len(broken_files_list):
                 raise ValueError(f"Duplicate broken files in {dataset_name}")
 
-            dataset_inst_nominal.x.broken_files = dataset_inst_nominal.x("broken_files", []) + broken_files_list
-            dataset_inst_nominal.n_files = dataset_inst_nominal.n_files - len(broken_files_list)
+            dataset_inst_nominal.x.broken_files = dataset_inst_nominal.x(
+                "broken_files", []) + broken_files_list
+            dataset_inst_nominal.n_files = dataset_inst_nominal.n_files - \
+                len(broken_files_list)
             # n_events not known for all broken files, but is not used anyways
             dataset_inst_nominal.n_events = -1
 
@@ -587,10 +627,12 @@ class BuildCampaignSummary(
             backup_target.dump(self.dataset_summary, formatter="yaml")
 
         output["dataset_summary"].dump(self.dataset_summary, formatter="yaml")
-        output["campaign_summary"].dump(self.campaign_summary, formatter="yaml")
+        output["campaign_summary"].dump(
+            self.campaign_summary, formatter="yaml")
 
         import sys
         orig_rec_limit = sys.getrecursionlimit()
         sys.setrecursionlimit(max(orig_rec_limit, 100000))
-        output["hbw_campaign_inst"].dump(self.get_custom_campaign(), formatter="pickle")
+        output["hbw_campaign_inst"].dump(
+            self.get_custom_campaign(), formatter="pickle")
         sys.setrecursionlimit(orig_rec_limit)

@@ -9,24 +9,29 @@ Collection of configurations that stay constant for the analysis
 # collection of all signal processes
 
 
-signals_hh_ggf_hhdecay = lambda hhdecay: [
-    f"hh_ggf_{hhdecay}_kl0_kt1",
-    f"hh_ggf_{hhdecay}_kl1_kt1",
-    f"hh_ggf_{hhdecay}_kl2p45_kt1",
-    f"hh_ggf_{hhdecay}_kl5_kt1",
-]
-signals_hh_vbf_hhdecay = lambda hhdecay: [
-    f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
-    f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
-    f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
-    f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
-    f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
-    f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
-    f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
-    f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
-    f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
-    f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
-]
+def signals_hh_ggf_hhdecay(hhdecay):
+    return [
+        f"hh_ggf_{hhdecay}_kl0_kt1",
+        f"hh_ggf_{hhdecay}_kl1_kt1",
+        f"hh_ggf_{hhdecay}_kl2p45_kt1",
+        f"hh_ggf_{hhdecay}_kl5_kt1",
+    ]
+
+
+def signals_hh_vbf_hhdecay(hhdecay):
+    return [
+        f"hh_vbf_{hhdecay}_kv1_k2v1_kl1",
+        f"hh_vbf_{hhdecay}_kv1_k2v0_kl1",
+        f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4",
+        f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2",
+        f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3",
+        f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43",
+        f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94",
+        f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36",
+        f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39",
+        f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96",
+    ]
+
 
 signals_hh_ggf = {
     *signals_hh_ggf_hhdecay("hbb_hww"),
@@ -141,11 +146,28 @@ processes_per_rate_unconstrained = {
 # TODO: maybe we should change this at some point to have HH and HHH signal,
 #  but since we are not doing those hbb_efficiency atm anyway,
 # and in HHH i am not sure what i will be doing I will just leave it as is
-is_signal = lambda process: process.startswith("hh_")
-is_bkg = lambda process: not is_signal(process)
-is_boosted_ggf = lambda category: "boosted" in category and "sig_ggf" in category
-is_boosted_vbf = lambda category: "boosted" in category and "sig_vbf" in category
-is_boosted_bkg = lambda category: "boosted" in category and "bkg" in category
+
+
+def is_signal(process):
+    return process.startswith("hh_")
+
+
+def is_bkg(process):
+    return not is_signal(process)
+
+
+def is_boosted_ggf(category):
+    return "boosted" in category and "sig_ggf" in category
+
+
+def is_boosted_vbf(category):
+    return "boosted" in category and "sig_vbf" in category
+
+
+def is_boosted_bkg(category):
+    return "boosted" in category and "bkg" in category
+
+
 hbb_efficiency_params = {
     "eff_hbb_signal_ggf": (is_signal, is_boosted_ggf),
     "eff_hbb_signal_vbf": (is_signal, is_boosted_vbf),
@@ -166,6 +188,8 @@ processes_per_shape = {
     "jer_{campaign}": ["all"],
     "jec_Total_{year}": ["all"],
     "jer_{year}": ["all"],
+    "btag_statistic_bc_{campaign}": ["all"],
+    "btag_uncorrelated_{campaign}": ["all"],
     "btag_bc": ["all"],
     "btag_light_{bjet_cat}": ["all"],
     "btag_bc_{bjet_cat}": ["all"],
@@ -196,7 +220,7 @@ processes_per_shape = {
     "btag_jer_bc": ["all"],
     "btag_jes_bc": ["all"],
     "btag_mass_bc": ["all"],
-    "btag_statistic_bc": ["all"],
+    "btag_statistic_bc": ["all", "!st"],
     "btag_tune_bc": ["all"],
     "btag_correlated_light": ["all"],
     "btag_uncorrelated_light": ["all"],
@@ -227,7 +251,8 @@ processes_per_shape = {
     # "isr": ["all"],
     # "fsr": ["all"],
     # NOTE: "!" did not work to exclude processes
-    "isr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
+    # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
+    "isr": ["all", "!h_ggf", "!h_vbf"],
     # "fsr": ["all", "!h_ggf", "!h_vbf"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau
     "fsr_ttbar": ["tt", "tt_custom"],
     "fsr_st": ["st_schannel", "st_twchannel"],
@@ -247,13 +272,14 @@ processes_per_shape = {
     "isr_ttV": ["ttw", "ttz"],
     "isr_H": ["h", "vh", "wh", "zh", "tth", "bbh"],  # NOTE: skip h_ggf and h_vbf because PSWeights missing in H->tautau  # noqa: E501
     # "fsr_h": ["h", "h_ggf", "h_vbf", "vh", "wh", "zh", "tth", "bbh"],
-    "top_pt": ["tt"],
+    "top_pt": ["tt", "tt_custom", "ttbb_custom"],
     "dy_correction": ["dy", "dy_lf", "dy_hf"],
     # "pdf_shape_{proc}": ["{proc}"],
     # "murf_envelope_{proc}": ["{proc}"],
-    "pdf_shape_ttbar": ["tt", "tt_custom"],
+    "pdf_shape_ttbar": ["tt", "tt_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"],
     "pdf_shape_ttbb": ["ttbb_custom", "ttb_custom", "tt2b_custom", "tt_bb_custom"],
-    "pdf_shape_st": ["st_schannel", "st_twchannel"],  # TODO: there was some bug with "st_tchannel"
+    # TODO: there was some bug with "st_tchannel"
+    "pdf_shape_st": ["st_schannel", "st_twchannel"],
     "pdf_shape_dy": ["dy", "dy_lf", "dy_hf"],
     "pdf_shape_w": ["w_lnu"],
     "pdf_shape_VV": ["vv", "ww", "zz", "wz"],
@@ -318,12 +344,19 @@ campaign_format = {
 }
 
 # naming scheme for different systematics
-custom_uncertainty_format = lambda s: f"CMS_HIG25018_{s}"
+
+
+def custom_uncertainty_format(s):
+    return f"CMS_{s}"
+
+
 rename_systematics = {
     "minbias_xs": "CMS_pileup",
+    "btag_correlated_bc": "CMS_btag_corr_bc",
+    "btag_correlated_light": "CMS_btag_corr_lf",
     # "ele_ss": "CMS_res_e_13p6TeV",
     "isr": "ps_isr",
-    "top_pt": "top_pt_reweighting",
+    # "top_pt": "top_pt_reweighting",
 }
 for campaign, campaign_fmt in campaign_format.items():
     year = campaign_fmt[:4]
@@ -333,6 +366,8 @@ for campaign, campaign_fmt in campaign_format.items():
         f"mu_id_sf_{campaign}": f"CMS_eff_m_id_{campaign_fmt}",
         f"mu_iso_sf_{campaign}": f"CMS_eff_m_iso_{campaign_fmt}",
         # f"trigger_sf_{campaign}": f"CMS_eff_trigger_{campaign_fmt}",
+        "btag_uncorrleated_light": f"CMS_btag_uncorr_lf_{campaign_fmt}",
+        "btag_statistic_bc": f"CMS_btag_stat_bc_{campaign_fmt}",
         f"btag_hf_{campaign}": f"CMS_btag_fullShape_hf_{campaign_fmt}",
         f"btag_lf_{campaign}": f"CMS_btag_fullShape_lf_{campaign_fmt}",
         f"btag_hfstats1_{campaign}": f"CMS_btag_fullShape_hfstats1_{campaign_fmt}",
@@ -344,7 +379,7 @@ for campaign, campaign_fmt in campaign_format.items():
         f"jec_Total_{campaign}": f"CMS_scale_j_{campaign_fmt}",
         f"jer_{campaign}": f"CMS_res_j_{campaign_fmt}",
         # analysis-specific
-        f"trigger_sf_{campaign}": f"CMS_HIG25018_trigger_sf_{campaign_fmt}",
+        f"trigger_sf_{campaign}": f"CMS_trigger_sf_{campaign_fmt}",
     })
 
 for process in ["ttbar", "st", "dy", "V", "VV", "ttV", "VVV", "H"]:

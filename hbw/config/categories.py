@@ -150,24 +150,24 @@ def add_trih_mll_categories(config: od.Config) -> None:
         name="sr",
         id=5,
         selection="catid_hhh_sr",
-        label=r"$12 \leq m_{\ell\ell} < 80, \geq 2 N_{jets}$",
+        label=r"$12 \leq m_{\ell\ell} < 80, \geq 3 N_{bjets}$",
     )
     cr = config.add_category(
         name="cr",
         id=6,
-        selection="catid_hhh_cr",
+        selection="catid_cr_wide",
         label=r"$12 \leq m_{\ell\ell} \geq 80$",
     )
     cr.add_category(
         name="dycr",
         id=7,
-        selection="catid_hhh_dycr",
+        selection="catid_mll_z_narrow",
         label=r"$80 \leq m_{\ell\ell} < 100$",
     )
     cr.add_category(
         name="ttcr",
         id=8,
-        selection="catid_hhh_ttcr",
+        selection="catid_mll_high",
         label=r"$m_{\ell\ell} \geq 100$",
     )
 
@@ -390,7 +390,7 @@ def add_categories_selection(config: od.Config) -> None:
             config.x.bjet_categories = ["1b", "2b"]
         elif config.x.signal_tag == "hhh":
             # add_mll_categories(config, add_trih_mll_categories)
-            config.x.bjet_categories = ["3b", "4b"]
+            config.x.bjet_categories = ["2b", "3b", "4b"]
             config.x.jet_categories = ["resolved_glo", "boosted_glo"]
 
     # adds categories based on number of leptons
@@ -470,7 +470,8 @@ def add_categories_production(config: od.Config) -> None:
         kwargs_fn=kwargs_fn,
         skip_existing=False,  # there should be no existing sub-categories
     )
-    logger.info(f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
+    logger.info(
+        f"Number of produced category insts: {n_cats} (took {(time() - t0):.3f}s)")
 
     dycr__nonmixed = config.add_category(
         name="dycr__nonmixed",
@@ -479,14 +480,15 @@ def add_categories_production(config: od.Config) -> None:
     )
     dycr__nonmixed.add_category(config.get_category("dycr__2e"))
     dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
-    add_matching_categories(config)
+    # add_matching_categories(config)
 
 
 @call_once_on_config()
 def add_categories_ml(config, ml_model_inst):
     print("test.", ml_model_inst)
     if config.has_tag("add_categories_production_called"):
-        raise Exception("We should not call *add_categories_production* when also building ML categories")
+        raise Exception(
+            "We should not call *add_categories_production* when also building ML categories")
 
     #
     # prepare non-ml categories
@@ -549,5 +551,8 @@ def add_categories_ml(config, ml_model_inst):
         kwargs_fn=kwargs_fn,
         skip_existing=True,
     )
-    logger.info(f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
-    add_matching_categories(config)
+
+    logger.info(
+        f"Number of produced ml category insts: {n_cats} (took {(time() - t0):.3f}s)")
+
+    # add_matching_categories(config)

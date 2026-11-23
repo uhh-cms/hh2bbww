@@ -64,33 +64,45 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         for era in data_eras
     ]
 
-    ggf_samples = lambda hhdecay: [
-        # f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
-        f"hh_ggf_{hhdecay}_kl1_kt1_powheg",
-        # f"hh_ggf_{hhdecay}_kl2p45_kt1_powheg",
-        # f"hh_ggf_{hhdecay}_kl5_kt1_powheg",
-    ]
-    vbf_samples = lambda hhdecay: [
-        f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
-        # f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96_madgraph",
-        # f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
-    ] if config.x.run == 3 else [
-        f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1_k2v1_kl2_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1_k2v2_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv0p5_k2v1_kl1_madgraph",
-        # f"hh_vbf_{hhdecay}_kv1p5_k2v1_kl1_madgraph",
-    ]
+    def ggf_samples(hhdecay):
+        sm = [f"hh_ggf_{hhdecay}_kl1_kt1_powheg"]
+        if config.x.run == 3 and config.has_tag("is_hhh"):
+            return sm
+        return [
+            f"hh_ggf_{hhdecay}_kl0_kt1_powheg",
+            *sm,
+            f"hh_ggf_{hhdecay}_kl2p45_kt1_powheg",
+            f"hh_ggf_{hhdecay}_kl5_kt1_powheg",
+        ]
+
+    def vbf_samples(hhdecay):
+        sm = [f"hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph"]
+        if config.x.run == 3:
+            if config.has_tag("is_hhh"):
+                return sm
+            return [
+                *sm,
+                f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+                f"hh_vbf_{hhdecay}_kv1p74_k2v1p37_kl14p4_madgraph",
+                f"hh_vbf_{hhdecay}_kvm0p012_k2v0p03_kl10p2_madgraph",
+                f"hh_vbf_{hhdecay}_kvm0p758_k2v1p44_klm19p3_madgraph",
+                f"hh_vbf_{hhdecay}_kvm0p962_k2v0p959_klm1p43_madgraph",
+                f"hh_vbf_{hhdecay}_kvm1p21_k2v1p94_klm0p94_madgraph",
+                f"hh_vbf_{hhdecay}_kvm1p6_k2v2p72_klm1p36_madgraph",
+                f"hh_vbf_{hhdecay}_kvm1p83_k2v3p57_klm3p39_madgraph",
+                f"hh_vbf_{hhdecay}_kv2p12_k2v3p87_klm5p96_madgraph",
+                f"hh_vbf_{hhdecay}_kvm2p12_k2v3p87_klm5p96_madgraph",
+            ]
+        # Run 2
+        return [
+            *sm,
+            f"hh_vbf_{hhdecay}_kv1_k2v1_kl0_madgraph",
+            f"hh_vbf_{hhdecay}_kv1_k2v1_kl2_madgraph",
+            f"hh_vbf_{hhdecay}_kv1_k2v0_kl1_madgraph",
+            f"hh_vbf_{hhdecay}_kv1_k2v2_kl1_madgraph",
+            f"hh_vbf_{hhdecay}_kv0p5_k2v1_kl1_madgraph",
+            f"hh_vbf_{hhdecay}_kv1p5_k2v1_kl1_madgraph",
+        ]
 
     dataset_names = DotDict.wrap({
         # **data_datasets,
@@ -178,7 +190,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "dy_ee_m50toinf_0j_amcatnlo",
                 "dy_mumu_m50toinf_0j_amcatnlo",
                 "dy_tautau_m50toinf_0j_amcatnlo",
-                # "dy_ee_m50toinf_1j_amcatnlo",
+                "dy_ee_m50toinf_1j_amcatnlo",
                 "dy_mumu_m50toinf_1j_amcatnlo",
                 "dy_tautau_m50toinf_1j_amcatnlo",
                 "dy_ee_m50toinf_2j_amcatnlo",
@@ -244,7 +256,7 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 # "zz_pythia",
             ]),
             *config.x.if_era(run=3, year=[2024, 2025, 2026], values=[
-                "ww_sl_powheg",
+                # "ww_sl_powheg",
                 "ww_dl_powheg",
                 # "ww_fh_powheg",  # TODO: weird pyarrow error
                 "wz_wlnu_zll_powheg",
@@ -262,19 +274,19 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
             "zzz_amcatnlo",
         ],
         "hhh": [
-        #     *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
-        #         "hhh_4b2w_c30_d40_amcatnlo",
-        #         "hhh_4b2w_c30_d499_amcatnlo",
-        #         "hhh_4b2w_c30_d4m1_amcatnlo",
-        #         "hhh_4b2w_c319_d419_amcatnlo",
-        #         "hhh_4b2w_c31_d40_amcatnlo",
-        #         "hhh_4b2w_c31_d42_amcatnlo",
-        #         "hhh_4b2w_c32_d4m1_amcatnlo",
-        #         "hhh_4b2w_c34_d49_amcatnlo",
-        #         "hhh_4b2w_c3m1_d40_amcatnlo",
-        #         "hhh_4b2w_c3m1_d4m1_amcatnlo",
-        #         "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
-        #     ]),
+            #     *config.x.if_era(run=3, cfg_tag="is_hhh", year=2023, values=[
+            #         "hhh_4b2w_c30_d40_amcatnlo",
+            #         "hhh_4b2w_c30_d499_amcatnlo",
+            #         "hhh_4b2w_c30_d4m1_amcatnlo",
+            #         "hhh_4b2w_c319_d419_amcatnlo",
+            #         "hhh_4b2w_c31_d40_amcatnlo",
+            #         "hhh_4b2w_c31_d42_amcatnlo",
+            #         "hhh_4b2w_c32_d4m1_amcatnlo",
+            #         "hhh_4b2w_c34_d49_amcatnlo",
+            #         "hhh_4b2w_c3m1_d40_amcatnlo",
+            #         "hhh_4b2w_c3m1_d4m1_amcatnlo",
+            #         "hhh_4b2w_c3m1p5_d4m0p5_amcatnlo",
+            #     ]),
             *config.x.if_era(run=3, cfg_tag="is_hhh", year=[2024, 2025, 2026], values=[
                 "hhh_4b2w_2l2nu_c30_d4_custom",
                 "hhh_4b2w_2l2nu_c30_d499_custom",
@@ -348,23 +360,32 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
                 "h_ggf_hww2l2nu_powheg",
                 "h_ggf_hzz2l2q_powheg",
                 "h_vbf_hww2l2nu_powheg",
-                # "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
+                "h_ggf_hzg_zll_powheg",  # probably empty in DL SR
                 "zh_zll_hbb_powheg",
-                # "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
-                # "zh_hww2l2nu_powheg", # NOTE: commented out for 2024
+                "zh_zll_hcc_powheg",  # 0.18 events in DL postEE analysis region
+                "zh_hww2l2nu_powheg",  # NOTE: commented out for 2024
                 "zh_gg_zll_hbb_powheg",
-                # "zh_gg_znunu_hbb_powheg",  # empty in DL (< 0.01 events in postEE)
-                # "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
-                # "wph_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # empty in DL (< 0.01 events in postEE)
+                "zh_gg_znunu_hbb_powheg",
+                "zh_gg_zll_hcc_powheg",  # 0.05 events in DL postEE analysis region
+                # basically empty in DL (< 0.01 events in postEE)
+                "wph_wqq_hbb_powheg",
                 "wph_wlnu_hbb_powheg",
-                # "wph_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                # "wph_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                # "wph_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                # "wmh_wqq_hbb_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # basically empty in DL (< 0.01 events in postEE)
+                "wph_wqq_hcc_powheg",
+                # basically empty in DL (< 0.01 events in postEE)
+                "wph_wlnu_hcc_powheg",
+                # basically empty in DL (< 0.01 events in postEE)
+                "wph_hzg_zll_powheg",
+                # basically empty in DL (< 0.01 events in postEE)
+                "wmh_wqq_hbb_powheg",
                 "wmh_wlnu_hbb_powheg",
-                # "wmh_wqq_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                # "wmh_wlnu_hcc_powheg",  # basically empty in DL (< 0.01 events in postEE)
-                # "wmh_hzg_zll_powheg",  # basically empty in DL (< 0.01 events in postEE)
+                # basically empty in DL (< 0.01 events in postEE)
+                "wmh_wqq_hcc_powheg",
+                # basically empty in DL (< 0.01 events in postEE)
+                "wmh_wlnu_hcc_powheg",
+                # basically empty in DL (< 0.01 events in postEE)
+                "wmh_hzg_zll_powheg",
                 "tth_hbb_dl_powheg",
                 "tth_hbb_sl_powheg",
                 "tth_hbb_fh_powheg",
@@ -395,12 +416,12 @@ def hbw_dataset_names(config: od.Config, as_list: bool = False) -> DotDict[str: 
         ],
         # hh_ggf_{hhdecay}_kl1_kt1_powheg
         # "hh_vbf_{hhdecay}_kv1_k2v1_kl1_madgraph"
-        # "hh_ggf": [
-        #     *ggf_samples("hbb_hvvqqlnu"),
-        #     *ggf_samples("hbb_hvv2l2nu"),
-        #     *ggf_samples("hbb_htt"),
-        #     *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
-        # ],
+        "hh_ggf": [
+            *ggf_samples("hbb_hvvqqlnu"),
+            *ggf_samples("hbb_hvv2l2nu"),
+            *ggf_samples("hbb_htt"),
+            *config.x.if_era(run=3, values=ggf_samples("hbb_hvv")),
+        ],
         "hh_vbf": [
             # *vbf_samples("hbb_hvvqqlnu"),
             *vbf_samples("hbb_hvv2l2nu"),
@@ -482,7 +503,8 @@ def get_dataset_names_for_config(config: od.Config, as_list: bool = False):
 
     # optionally switch to custom signal processes (only implemented for hh_ggf_sl)
     if config.has_tag("custom_signals"):
-        dataset_names.hh_ggf_hbb_hvvqqlnu = [dataset_name.replace("powheg", "custom") for dataset_name in dataset_names]
+        dataset_names.hh_ggf_hbb_hvvqqlnu = [dataset_name.replace(
+            "powheg", "custom") for dataset_name in dataset_names]
 
     if not config.has_tag("is_resonant"):
         # remove all resonant signal processes/datasets
@@ -536,7 +558,8 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
     dataset_names = get_dataset_names_for_config(config)
 
     # get all process names with corresponding datasets
-    process_names = [proc_name for proc_name, _dataset_names in dataset_names.items() if _dataset_names]
+    process_names = [proc_name for proc_name,
+                     _dataset_names in dataset_names.items() if _dataset_names]
 
     # get all root processes
     config.x.procs = procs = get_root_processes_from_campaign(campaign)
@@ -560,7 +583,8 @@ def add_hbw_processes_and_datasets(config: od.Config, campaign: od.Campaign):
             )
             missing_datasets.add(dataset_name)
     if missing_datasets:
-        print(f"Missing datasets in config {config.name}:\n" + "\n".join(sorted(missing_datasets)))
+        print(
+            f"Missing datasets in config {config.name}:\n" + "\n".join(sorted(missing_datasets)))
 
 
 def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
@@ -571,9 +595,12 @@ def add_dataset_extension_to_nominal(dataset: od.Dataset) -> None:
         dataset_info_ext = dataset.info["extension"]
 
         # add info from extension dataset to the nominal one
-        dataset.info["nominal"].keys = dataset.info["nominal"].keys + dataset_info_ext.keys
-        dataset.info["nominal"].n_files = dataset.info["nominal"].n_files + dataset_info_ext.n_files
-        dataset.info["nominal"].n_events = dataset.info["nominal"].n_events + dataset_info_ext.n_events
+        dataset.info["nominal"].keys = dataset.info["nominal"].keys + \
+            dataset_info_ext.keys
+        dataset.info["nominal"].n_files = dataset.info["nominal"].n_files + \
+            dataset_info_ext.n_files
+        dataset.info["nominal"].n_events = dataset.info["nominal"].n_events + \
+            dataset_info_ext.n_events
 
         # remove the extension dataset info, since it is now included in "nominal"
         dataset.info.pop("extension")
@@ -584,6 +611,7 @@ def configure_hbw_datasets(
     config: od.Config,
     limit_dataset_files: int | None = None,
     add_dataset_extensions: bool = False,
+    # split_data_in_era: bool = True,
     split_data_in_era: bool = False,
 ):
     # allow usage of UHH campaign
@@ -611,6 +639,9 @@ def configure_hbw_datasets(
 
         if dataset.name.startswith("tt_"):
             dataset.add_tag("is_ttbar")
+
+        if dataset.name.startswith("ttbb_"):
+            dataset.add_tag("is_ttbar_bb")
 
         if dataset.name.startswith("dy_"):
             dataset.add_tag("is_v_jets")
@@ -685,7 +716,7 @@ def configure_hbw_datasets(
                 dataset.x.jec_era = "RunCD"
 
         # NOTE copied from Johanna for btagging stuff
-        if config.campaign.x.year == 2024:
+        if config.campaign.x.year >= 2024:
             # TODO figure out which datasets should be grouped together;
             # for now, don't group any datasets together and treat each type of dataset separately
             config.x.btag_wp_eff_groups = [
@@ -697,9 +728,11 @@ def configure_hbw_datasets(
                 ["st_*"],
                 ["tt_*", "ttbb_*"],
                 ["ww_*", "wz_*", "zz_*"],
-                ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*", "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
+                ["wwz_*", "wzz_*", "zzz_*", "www_*", "ttww_*",
+                    "ttwz_*", "ttzz_*", "ttw_*", "ttz_*", "tttt_*"],
                 ["hh_*", "whh_*", "tthh_*", "zhh_*"],
-                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*", "thq_*", "thw_*", "ttzh_*", "ttwh_*", "bbh_*"],
+                ["h_*", "zh_*", "wph_*", "wmh_*", "tth_*",
+                    "thq_*", "thw_*", "ttzh_*", "ttwh_*", "bbh_*"],
                 #     ["dy_*",
                 #     "hhh_*",
                 #     "w_lnu_*",
@@ -721,59 +754,60 @@ def configure_hbw_datasets(
                     group_matched = True
                     dataset.add_tag(f"btag_wp_eff_group_{i}")
             if not group_matched and dataset.is_mc:
-                raise ValueError(f"no btag_wp_eff_group_* assigned to dataset '{dataset.name}'")
+                raise ValueError(
+                    f"no btag_wp_eff_group_* assigned to dataset '{dataset.name}'")
             if group_matched and dataset.is_data:
-                raise ValueError(f"must not assign btag_wp_eff_group_* to dataset '{dataset.name}'")
+                raise ValueError(
+                    f"must not assign btag_wp_eff_group_* to dataset '{dataset.name}'")
 
     if split_data_in_era:
         for dataset in config.datasets:
             if not dataset.name.startswith("data_"):
                 continue
-            remove_proc = list(dataset.processes)[0]
             if dataset.name.endswith("c"):
                 try:
                     dataset.add_process(config.x.procs.n.data_2024_c)
                 except Exception as e:  # noqa
-                    from hbw.util import debugger; debugger()  # noqa
-                dataset.remove_process(remove_proc)
+                    from hbw.util import debugger
+                    debugger()  # noqa
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("d"):
                 dataset.add_process(config.x.procs.n.data_2024_d)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("e"):
                 dataset.add_process(config.x.procs.n.data_2024_e)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("f"):
                 dataset.add_process(config.x.procs.n.data_2024_f)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("g"):
                 dataset.add_process(config.x.procs.n.data_2024_g)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("h"):
                 dataset.add_process(config.x.procs.n.data_2024_h)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
             elif dataset.name.endswith("i"):
                 dataset.add_process(config.x.procs.n.data_2024_i)
-                dataset.remove_process(remove_proc)
+                # dataset.remove_process(remove_proc)
 
-        #     data_2024_eras = ("c", "d", "e", "f", "g", "h", "i")
+            data_2024_eras = ("c", "d", "e", "f", "g", "h", "i")
 
-        #     for dataset in config.datasets:
-        #         if not dataset.name.startswith("data_"):
-        #             continue
-
-        #         for era in data_2024_eras:
-        #             if dataset.name.endswith(era):
-        #                 old_proc = list(dataset.processes)[0]
-        #                 new_proc = getattr(config.x.procs.n, f"data_era_{era}")
-        #                 dataset.add_process(new_proc)
-        #                 dataset.remove_process(old_proc)
-        #                 break   # <- important: stop after matching the correct era
+            for dataset in config.datasets:
+                if not dataset.name.startswith("data_"):
+                    continue
+                for era in data_2024_eras:
+                    if dataset.name.endswith(era):
+                        old_proc = list(dataset.processes)[0]
+                        new_proc = getattr(config.x.procs.n, f"data_era_{era}")
+                        dataset.add_process(new_proc)
+                        dataset.remove_process(old_proc)
+                        break   # <- important: stop after matching the correct era
 
 
 def get_custom_hh_2017_datasets(
@@ -883,7 +917,8 @@ def enable_uhh_campaign_usage(cfg: od.Config) -> None:
             fs=f"wlcg_fs_{cpn_name}",
         )
 
-        broken_files = dataset_inst[shift_inst.name].get_aux("broken_files", [])
+        broken_files = dataset_inst[shift_inst.name].get_aux(
+            "broken_files", [])
 
         # loop though files and interpret paths as lfns
         lfns = [

@@ -4,6 +4,7 @@
 hbw(dl) inference model.
 """
 
+from hbw.ml.derived.ml_dl_trih import input_features
 import law
 from columnflow.util import DotDict
 import hbw.inference.constants as const  # noqa
@@ -34,6 +35,12 @@ config_categories = DotDict({
         "sr__3b__ml_tthh",
         "sr__3b__ml_hhh_signal",
     ],
+    "bkg_3b": [
+        "sr__3b__ml_tt_custom",
+        "sr__3b__ml_ttbb_custom",
+        "sr__3b__ml_tth",
+        "sr__3b__ml_tthh",
+    ],
     "resolved_3b": [
         "sr__resolved_glo__3b__ml_tt_custom",
         "sr__resolved_glo__3b__ml_ttbb_custom",
@@ -47,6 +54,22 @@ config_categories = DotDict({
         "sr__4b__ml_tthh",
         "sr__4b__ml_hhh_signal",
     ],
+    "bkg_4b": [
+        "sr__4b__ml_ttbb_custom",
+        "sr__4b__ml_tth",
+        "sr__4b__ml_tthh",
+    ],
+    "incl": [
+        "sr__4b__ml_ttbb_custom",
+        "sr__4b__ml_tth",
+        "sr__4b__ml_tthh",
+        "sr__4b__ml_hhh_signal",
+        "sr__3b__ml_tt_custom",
+        "sr__3b__ml_ttbb_custom",
+        "sr__3b__ml_tth",
+        "sr__3b__ml_tthh",
+        "sr__3b__ml_hhh_signal",
+    ],
     "boosted": [
         "sr__boosted_glo",
     ],
@@ -55,6 +78,8 @@ config_categories = DotDict({
 systematics = DotDict({
     "lumi": [
         "lumi_13p6TeV_2024",
+        "lumi_13p6TeV_2025",
+        "lumi_13p6TeV_correlated",
     ],
     "QCDscale": [
         "QCDscale_ttbar",
@@ -167,13 +192,17 @@ systematics = DotDict({
         "trigger_sf",
     ],
     "experiment_cpn_uncorr": [
+        "btag_uncorrelated_light_{campaign}",
+        "btag_statistic_bc_{campaign}",
+        "btag_uncorrelated_light",
+        "btag_uncorrelated_bc",
         "mu_id_sf_{campaign}",
         "mu_iso_sf_{campaign}",
         "e_sf_{campaign}",
         "e_reco_sf_{campaign}",
         "trigger_sf_{campaign}",
         "minbias_xs",  # do not decorrelate PU between campaigns
-        "dy_correction",
+        # TODO add scale and smearing
     ],
     "other": [
         "isr_ttbar",
@@ -219,14 +248,14 @@ systematics["default"] = [
 ]
 systematics["hhh_shape_ffn_full"] = [
     *systematics.lumi,
-    *systematics.experiment,
+    *systematics.experiment_cpn_uncorr,
     *systematics.QCDscale,
     *systematics.pdf,
+    *systematics.pdf_shape,
     *systematics.BR,
     *systematics.rates,
     *systematics.murf_envelope,
     *systematics.other,
-    *systematics.btag_24,
 ]
 hhhprocs = [
     "hhh_4b2w_2l2nu_c30_d40",
@@ -246,40 +275,48 @@ backgrounds_v0 = [
     "st_schannel",
     "tt_custom",
     "ttb_custom", "tt_bb_custom", "tt2b_custom",
-    "ttw",
-    "ttz",
+    # "ttw",
+    # "ttz",
     "w_lnu",
     "dy",
     "vv",
     "vvv",
-    "h_ggf", "h_vbf", "wh", "tth", "zh_gg", "zh",
+    "h_ggf", "h_vbf", "tth", "zh_gg", "zh", "wh",
     "ttvh", "thq", "thw", "bbh",
     "tttt",
     "ttvv",
     "hh_ggf", "hh_vbf",
     "vhh_4b", "tthh",
-    "hh_ggf_hbb_hww_kl0_kt1",
     "hh_ggf_hbb_hww_kl1_kt1",
-    "hh_ggf_hbb_hww_kl2p45_kt1",
-    "hh_ggf_hbb_hww_kl5_kt1",
-    "hh_vbf_hbb_hww_kv1p74_k2v1p37_kl14p4",
-    "hh_vbf_hbb_hww_kvm0p758_k2v1p44_klm19p3",
-    "hh_vbf_hbb_hww_kvm0p012_k2v0p03_kl10p2",
-    "hh_vbf_hbb_hww_kv2p12_k2v3p87_klm5p96",
     "hh_vbf_hbb_hww_kv1_k2v1_kl1",
-    "hh_vbf_hbb_hww_kv1_k2v0_kl1",  # missing bbtt sample
-    "hh_vbf_hbb_hww_kvm0p962_k2v0p959_klm1p43",
-    "hh_vbf_hbb_hww_kvm1p21_k2v1p94_klm0p94",
-    "hh_vbf_hbb_hww_kvm1p6_k2v2p72_klm1p36",
-    "hh_vbf_hbb_hww_kvm1p83_k2v3p57_klm3p39",  # missing bbtt sample
+]
+backgrounds_v1 = [
+    # "st_tchannel",  # I have a problem with this one
+    "st_twchannel",
+    "st_schannel",
+    "tt_custom",
+    "ttb_custom", "tt_bb_custom", "tt2b_custom",
+    # "ttw",
+    # "ttz",
+    "dy",
+    "vv",
+    "vvv",
+    "h_ggf", "h_vbf", "tth", "zh_gg", "zh", "wh",
+    "ttvh", "thq", "thw", "bbh",
+    "tttt",
+    "ttvv",
+    "hh_ggf", "hh_vbf",
+    "vhh_4b", "tthh",
+    "hh_ggf_hbb_hww_kl1_kt1",
+    "hh_vbf_hbb_hww_kv1_k2v1_kl1",
 ]
 
 processes_dict = {
     "hhh_SM": [*backgrounds_v0, "hhh_4b2w_2l2nu_c30_d40"],
     "v0": [*backgrounds_v0, *hhhprocs],
+    "v1": [*backgrounds_v1, *hhhprocs],
 }
 
-from hbw.ml.derived.ml_dl_trih import input_features
 mli_inputs = input_features.expanded_hhh_inputs
 
 
@@ -309,13 +346,13 @@ def config_variable_hhh_wo_bin(self, config_cat_inst):
     # Super unnötig atm... well
     if "hhh_signal" in config_cat_inst.name:
         return "logit_mlscore.hhh_signal"
-    elif config_cat_inst.x.root_cats.get("tthh"):
+    elif "tthh" in config_cat_inst.name:
         return "logit_mlscore.tthh"
-    elif config_cat_inst.x.root_cats.get("tth"):
+    elif "tth" in config_cat_inst.name:
         return "logit_mlscore.tth"
-    elif config_cat_inst.x.root_cats.get("tt_custom"):
+    elif "tt_custom" in config_cat_inst.name:
         return "logit_mlscore.tt_custom"
-    elif config_cat_inst.x.root_cats.get("ttbb_custom"):
+    elif "ttbb_custom" in config_cat_inst.name:
         return "logit_mlscore.ttbb_custom"
     else:
         # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
@@ -323,6 +360,30 @@ def config_variable_hhh_wo_bin(self, config_cat_inst):
             f"Category {config_cat_inst.name} is not a DNN category, using binary classifier score.",
         )
         return "logit_mlscore.hhh_signal"
+
+
+def config_variable_cat_by_gatja(self, config_cat_inst):
+    """
+    Function to set the config variable for the binary model.
+    """
+    # Super unnötig atm... well
+    if "hhh_signal" in config_cat_inst.name:
+        return "mlscore.sig_hhh_binary"
+    # elif config_cat_inst.x.root_cats.get("tthh"):
+    elif "tthh" in config_cat_inst.name:
+        return "mlscore.tthh"
+    elif "tth" in config_cat_inst.name:
+        return "mlscore.tth"
+    elif "tt_custom" in config_cat_inst.name:
+        return "mlscore.tt_custom"
+    elif "ttbb_custom" in config_cat_inst.name:
+        return "mlscore.ttbb_custom"
+    else:
+        # raise ValueError(f"Category {config_cat_inst.name} is not a DNN category.")
+        logger.warning(
+            f"Category {config_cat_inst.name} is not a DNN category, using binary classifier score.",
+        )
+        return "mlscore.sig_hhh_binary"
 
 
 default_cls_dict = {
@@ -340,6 +401,26 @@ hhh = HBWInferenceModelBase.derive("hhh", cls_dict=default_cls_dict)
 # ----------------------- BASELINE INFERENCE MODELS ------------------------------------------------------------
 
 # ####################### Baseline Rate unc only / Asimov fits ##################################################
+incl = hhh.derive("incl", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_incl_best", "Bin_V2"],
+    "config_categories": config_categories.incl,
+})
+incl_Bin_V3 = hhh.derive("incl_Bin_V3", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_incl_best", "Bin_V3"],
+    "config_categories": config_categories.incl,
+})
+incl_part_unblind = hhh.derive("incl_part_unblind", cls_dict={
+    "systematics": systematics.hhh_shape_ffn_full,
+    "ml_model_name": ["Cat_incl_best", "Bin_V3"],
+    "config_categories": config_categories.incl,
+})
+incl_bin_best = hhh.derive("incl_bin_best", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_incl_best", "Bin_V2_best"],
+    "config_categories": config_categories.incl,
+})
 gatja2_3b = hhh.derive("gatja2_3b", cls_dict={
     "systematics": systematics.default,
     "ml_model_name": ["Cat_3b", "Bin"],
@@ -347,6 +428,88 @@ gatja2_3b = hhh.derive("gatja2_3b", cls_dict={
 })
 gatja2_4b = gatja2_3b.derive("gatja2_4b", cls_dict={
     "ml_model_name": ["Cat_4b", "Bin"],
+    "config_categories": config_categories.incl_4b,
+})
+Bin_V3_3b = hhh.derive("Bin_V3_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b", "Bin_V3"],
+    "config_categories": config_categories.incl_3b,
+})
+test_3b = hhh.derive("test_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b", "Bin_V3"],
+    "config_categories": config_categories.incl_3b,
+})
+test_rate_tt_3b = hhh.derive("test_rate_tt_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_test_tt_rate", "Bin_V3_test_tt_rate"],
+    "config_categories": config_categories.incl_3b,
+})
+opt_3b = hhh.derive("opt_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_opt_gatja", "Bin_V2_opt_gatja"],
+    "config_categories": config_categories.incl_3b,
+})
+Bin_V3_4b = Bin_V3_3b.derive("Bin_V3_4b", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
+    "config_categories": config_categories.incl_4b,
+})
+test_4b = test_3b.derive("test_4b", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
+    "config_categories": config_categories.incl_4b,
+})
+test_rate_tt_4b = test_3b.derive("test_rate_tt_4b", cls_dict={
+    "ml_model_name": ["Cat_4b_test_tt_rate", "Bin_V3_test_tt_rate"],
+    "config_categories": config_categories.incl_4b,
+})
+opt_4b = opt_3b.derive("opt_4b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_4b_opt_gatja", "Bin_V2_opt_gatja"],
+    "config_categories": config_categories.incl_4b,
+})
+without_gatja_3b = hhh.derive("without_gatja_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_without_gatja", "Bin_V2_without_gatja"],
+    "config_categories": config_categories.incl_3b,
+})
+without_gatja_4b = without_gatja_3b.derive("without_gatja_4b", cls_dict={
+    "ml_model_name": ["Cat_4b_without_gatja", "Bin_V2_without_gatja"],
+    "config_categories": config_categories.incl_4b,
+})
+gatjacf_3b = hhh.derive("gatjacf_3b", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_weighted_V2", "Bin_V2"],
+    "config_categories": config_categories.incl_3b,
+})
+gatja_3b_best = hhh.derive("gatja_3b_best", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_best", "Bin_V2"],
+    "config_categories": config_categories.incl_3b,
+})
+Bin_V3_3b_best = hhh.derive("Bin_V3_3b_best", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_best", "Bin_V3"],
+    "config_categories": config_categories.incl_3b,
+})
+bin_3b_best = hhh.derive("bin_3b_best", cls_dict={
+    "systematics": systematics.default,
+    "ml_model_name": ["Cat_3b_best", "Bin_V2_best"],
+    "config_categories": config_categories.incl_3b,
+})
+gatjacf_4b = gatjacf_3b.derive("gatjacf_4b", cls_dict={
+    "ml_model_name": ["Cat_4b_weighted_V2", "Bin_V2"],
+    "config_categories": config_categories.incl_4b,
+})
+gatjacf_4b_best = gatjacf_3b.derive("gatjacf_4b_best", cls_dict={
+    "ml_model_name": ["Cat_4b_best", "Bin_V2"],
+    "config_categories": config_categories.incl_4b,
+})
+bin_4b_best = gatjacf_3b.derive("bin_4b_best", cls_dict={
+    "ml_model_name": ["Cat_4b_best", "Bin_V2_best"],
+    "config_categories": config_categories.incl_4b,
+})
+Bin_V3_4b_best = gatjacf_3b.derive("Bin_V3_4b_best", cls_dict={
+    "ml_model_name": ["Cat_4b_best", "Bin_V3"],
     "config_categories": config_categories.incl_4b,
 })
 gatja2_boosted = gatja2_3b.derive("gatja2_boosted", cls_dict={
@@ -359,21 +522,189 @@ gatja2_resolved_3b = gatja2_3b.derive("gatja2_resolved_3b", cls_dict={
 })
 
 # ####################### Baseline with shape unc (excluding JEC/JER) - Asimov fits #################################
-gatja2_3b_shape = hhh.derive("gatja2_3b_shape", cls_dict={
+gatja_3b_shape = hhh.derive("gatja_3b_shape", cls_dict={
     "systematics": systematics.hhh_shape_ffn_full,
-    "ml_model_name": ["Cat_3b", "Bin"],
+    "ml_model_name": ["Cat_3b", "Bin_V3"],
     "config_categories": config_categories.incl_3b,
 })
-gatja2_4b_shape = gatja2_3b_shape.derive("gatja2_4b_shape", cls_dict={
-    "ml_model_name": ["Cat_4b", "Bin"],
+gatja_4b_shape = gatja_3b_shape.derive("gatja_4b_shape", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
     "config_categories": config_categories.incl_4b,
 })
 # ####################### Baseline with shape unc (excluding JEC/JER) - partially unblinded fits ####################
-gatja2_part_unblind = gatja2_3b_shape.derive("gatja2_part_unblind", cls_dict={
+gatja2_part_unblind_3b = gatja_3b_shape.derive("gatja2_part_unblind_3b", cls_dict={
     "unblind": False,
     "skip_data": False,
 })
-gatja2_unblind4 = gatja2_3b_shape.derive("gatja2_unblind4", cls_dict={
-    "ml_model_name": ["Cat_4b", "Bin"],
+gatja2_part_unblind_4b = gatja_3b_shape.derive("gatja2_part_unblind_4b", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
     "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+})
+
+part_unblind_3b = gatja_3b_shape.derive("part_unblind_3b", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+})
+part_unblind_4b = gatja_3b_shape.derive("part_unblind_4b", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
+    "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+})
+
+part_unblind_3b_test_rate_tt = test_rate_tt_3b.derive("part_unblind_3b_test_rate_tt", cls_dict={
+    "systematics": systematics.hhh_shape_ffn_full,
+    "unblind": False,
+    "skip_data": False,
+})
+part_unblind_4b_test_rate_tt = test_rate_tt_4b.derive("part_unblind_4b_test_rate_tt", cls_dict={
+    "systematics": systematics.hhh_shape_ffn_full,
+    "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+})
+
+part_unblind_3b_ratify = gatja_3b_shape.derive("part_unblind_3b_ratify", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "skip_ratify_shapes": False,
+})
+part_unblind_4b_ratify = gatja_3b_shape.derive("part_unblind_4b_ratify", cls_dict={
+    "ml_model_name": ["Cat_4b", "Bin_V3"],
+    "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+    "skip_ratify_shapes": False,
+})
+
+part_unblind_3b_without_gatja = gatja_3b_shape.derive("part_unblind_3b_without_gatja", cls_dict={
+    "ml_model_name": ["Cat_3b_without_gatja", "Bin_V2_without_gatja"],
+    "unblind": False,
+    "skip_data": False,
+})
+part_unblind_4b_without_gatja = gatja_3b_shape.derive("part_unblind_4b_without_gatja", cls_dict={
+    "ml_model_name": ["Cat_4b_without_gatja", "Bin_V2_without_gatja"],
+    "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+})
+part_unblind_3b_reduced_gatja = gatja_3b_shape.derive("part_unblind_3b_reduced_gatja", cls_dict={
+    "ml_model_name": ["Cat_3b_opt_gatja", "Bin_V2_opt_gatja"],
+    "unblind": False,
+    "skip_data": False,
+})
+part_unblind_4b_reduced_gatja = gatja_3b_shape.derive("part_unblind_4b_reduced_gatja", cls_dict={
+    "ml_model_name": ["Cat_4b_opt_gatja", "Bin_V2_opt_gatja"],
+    "config_categories": config_categories.incl_4b,
+    "unblind": False,
+    "skip_data": False,
+})
+
+
+# ---------------------- Inference models for testing the NN startegy --------------------------------------------------
+
+baseline_hh = hhh.derive("baseline_hh", cls_dict={
+    "ml_model_name": ["baseline_hh", "baseline_hh_bin"],
+    "config_categories": config_categories.incl,
+    "systematics": systematics.default,
+})
+
+baseline_hhh_incl = hhh.derive("baseline_hhh_incl", cls_dict={
+    "ml_model_name": ["baseline_hhh_incl", "Bin"],
+    "config_categories": config_categories.incl,
+    "systematics": systematics.default,
+})
+
+baseline_hh_3b = hhh.derive("baseline_hh_3b", cls_dict={
+    "ml_model_name": ["baseline_cat3b", "baseline_hh_bin"],
+    "config_categories": config_categories.incl_3b,
+    "systematics": systematics.default,
+})
+baseline_hh_4b = hhh.derive("baseline_hh_4b", cls_dict={
+    "ml_model_name": ["baseline_cat4b", "baseline_hh_bin"],
+    "config_categories": config_categories.incl_4b,
+    "systematics": systematics.default,
+})
+
+staged = hhh.derive("staged", cls_dict={
+    "ml_model_name": ["staged_cat", "staged_bin"],
+    "config_categories": config_categories.incl,
+    "systematics": systematics.default,
+})
+
+hhh_wo_bin_3b = Bin_V3_3b.derive("hhh_wo_bin_3b", cls_dict={
+    "config_variable": config_variable_hhh_wo_bin,
+})
+hhh_wo_bin_4b = Bin_V3_4b.derive("hhh_wo_bin_4b", cls_dict={
+    "config_variable": config_variable_hhh_wo_bin,
+})
+
+cat_by_gatja_3b = hhh.derive("cat_by_gatja_3b", cls_dict={
+    "ml_model_name": ["cat_by_gatja_3b"],
+    "config_categories": config_categories.bkg_3b,
+    "systematics": systematics.default,
+    "config_variable": config_variable_cat_by_gatja,
+})
+cat_by_gatja_4b = hhh.derive("cat_by_gatja_4b", cls_dict={
+    "ml_model_name": ["cat_by_gatja_4b"],
+    "config_categories": config_categories.bkg_4b,
+    "systematics": systematics.default,
+    "config_variable": config_variable_cat_by_gatja,
+})
+cat_by_gatja_bin = hhh.derive("cat_by_gatja_bin", cls_dict={
+    "ml_model_name": ["cat_by_gatja_bin"],
+    "config_categories": ["sr"],
+    "systematics": systematics.default,
+    "config_variable": config_variable_cat_by_gatja,
+})
+
+# ---------------------- Inference models for testing rate param freely floating --------------------------------------------------  # noqa: E501
+
+discrete_b_score_sum_V2 = gatja_3b_shape.derive("discrete_b_score_sum_V2", cls_dict={
+    "systematics": systematics.default,
+    "unblind": False,
+    "skip_data": False,
+    "config_categories": ["sr"],
+    "config_variable": lambda self, config_cat_inst: "mli_discrete_b_score_sum",
+})
+discrete_b_score_sum_cr = gatja_3b_shape.derive("discrete_b_score_sum_cr", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "config_categories": ["ttvr"],
+    "config_variable": lambda self, config_cat_inst: "mli_discrete_b_score_sum",
+})
+
+ttcr_emu_2b = gatja_3b_shape.derive("ttcr_emu_2b", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "ml_model_name": None,
+    "config_categories": ["ttcr__emu__2b"],
+    "config_variable": lambda self, config_cat_inst: "n_btag",
+})
+
+n_btag = gatja_3b_shape.derive("n_btag", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "ml_model_name": None,
+    "config_categories": ["sr"],
+    "config_variable": lambda self, config_cat_inst: "n_btag",
+})
+
+n_btag_ttcr_emu = gatja_3b_shape.derive("n_btag_ttcr_emu", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "ml_model_name": None,
+    "config_categories": ["ttcr__emu"],
+    "config_variable": lambda self, config_cat_inst: "n_btag",
+})
+n_btag_ttcr_emu_rate = gatja_3b_shape.derive("n_btag_ttcr_emu_rate", cls_dict={
+    "unblind": False,
+    "skip_data": False,
+    "ml_model_name": None,
+    "config_categories": ["ttcr__emu"],
+    "config_variable": lambda self, config_cat_inst: "n_btag",
+    "systematics": systematics.default,
+    "processes": processes_dict["v1"],
 })

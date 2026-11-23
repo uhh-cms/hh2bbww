@@ -263,7 +263,7 @@ def dy_nlo_process_producer(self: Producer, events: ak.Array, **kwargs) -> ak.Ar
     # hf_genjets = hf_genjets[ak.num(hf_genjets, axis=1) >= 1]
 
     # identify base process as "dy_{mass-window}"
-    if self.config_inst.campaign.x.year == 2024:
+    if self.config_inst.campaign.x.year >= 2024:
         base_proc_name = "_".join(self.dataset_inst.name.split("_")[:3])
     else:
         base_proc_name = "_".join(self.dataset_inst.name.split("_")[:2])

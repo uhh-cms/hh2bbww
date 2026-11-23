@@ -155,6 +155,18 @@ def add_variables(config: od.Config) -> None:
         binning=(100, -0.1, 0.1),
         x_title="Event weight per MC event",
     )
+    config.add_variable(
+        name="ttbb_correction_weight",  # used in histProducer specificially accessing this name to set weight=1
+        expression="ttbb_correction_weight",
+        binning=(100, -1, 1),
+        x_title="Event weight per MC event",
+    )
+    config.add_variable(
+        name="ttbb_correction_weight2",  # used in histProducer specificially accessing this name to set weight=1
+        expression="ttbb_correction_weight",
+        binning=(100, 0, 10),
+        x_title="Event weight per MC event",
+    )
 
     #
     # Weights
@@ -491,7 +503,7 @@ def add_variables(config: od.Config) -> None:
         name="n_btag",
         expression=lambda events: ak.sum(events.Jet[btag_column] > config.x.btag_wp_score, axis=1),
         aux={"inputs": {f"Jet.{btag_column}"}},
-        binning=(7, -0.5, 6.5),
+        binning=(12, -0.5, 11.5),
         x_title=f"Number of b-tagged jets ({btag_column})",
         discrete_x=True,
     )
@@ -501,7 +513,7 @@ def add_variables(config: od.Config) -> None:
             name="n_deepjet_loose",
             expression=lambda events: ak.sum(events.Jet.btagDeepFlavB > deepjet_wps.loose, axis=1),
             aux={"inputs": {"Jet.btagDeepFlavB"}},
-            binning=(7, -0.5, 6.5),
+            binning=(12, -0.5, 11.5),
             x_title="Number of deepjets (loose WP)",
             discrete_x=True,
         )

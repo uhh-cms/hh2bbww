@@ -56,10 +56,11 @@ class HBWInferenceModelBase(InferenceModel):
     # 9: add shape->rate trafos for bkg categories
     # 13: trafors flip_larger --> flip_smaller
     # 14: increase min eff. MC entries from 3 to 12 (rerunning cards just for clearer versioning)
-    version: int = 15
+    version: int = 0
 
     bjet_cats: set = {"1b", "2b", "boosted"}
-    campaign_tags: set = {"2022postEE", "2022preEE", "2023postBPix", "2023preBPix"}
+    campaign_tags: set = {"2022postEE",
+                          "2022preEE", "2023postBPix", "2023preBPix"}
     multi_variables: bool = False
 
     scale_signal = None
@@ -105,10 +106,14 @@ class HBWInferenceModelBase(InferenceModel):
             pattern = r"hh_vbf_([a-zA-Z\d]+)_([a-zA-Z\d]+)_kv([mp\d]+)_k2v([mp\d]+)_kl([mp\d]+)"
             replacement = r"qqHH_CV_\3_C2V_\4_kl_\5_\1\2"
             return re.sub(pattern, replacement, proc)
-        elif proc.startswith("hhh_4b2w"):
-            pattern = r"^hhh_4b2w_2l2nu(.*)$"
-            replacement = r"hhh_4b2w2l2nu\1"
-            return re.sub(pattern, replacement, proc)
+        elif proc == "hhh_4b2w2l2nu_c30_d40":
+            return "ggHHH_kl_1_kt_1_k4_1_13p6TeV_hbbhbbhww"
+        elif proc.startswith("tthh"):
+            return "ttHH_kl_1_kt_1_c2_0_13p6TeV_hbbhbb"
+        # elif proc.startswith("hhh_4b2w"):
+        #     pattern = r"^hhh_4b2w_2l2nu(.*)$"
+        #     replacement = r"hhh_4b2w2l2nu\1"
+        #     return re.sub(pattern, replacement, proc)
         elif proc.startswith("tt_custom"):
             return "ttbar"
         elif proc.startswith("ttbb_custom"):
@@ -184,18 +189,22 @@ class HBWInferenceModelBase(InferenceModel):
     def print_model(self):
         """ Helper to print categories, processes and parameters of the InferenceModel """
         for cat in self.categories:
-            variable = set(cat.config_data[cfg.name].variable for cfg in self.config_insts)
-            config_cat = set(cat.config_data[cfg.name].category for cfg in self.config_insts)
+            variable = set(
+                cat.config_data[cfg.name].variable for cfg in self.config_insts)
+            config_cat = set(
+                cat.config_data[cfg.name].category for cfg in self.config_insts)
             print(f"{'=' * 20} {cat.name}")
             print(f"Variable {variable} \nCategory {config_cat}")
             print(f"Processes {[p.name for p in cat.processes]}")
-            print(f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
+            print(
+                f"Parameters {set().union(*[[param.name for param in proc.parameters] for proc in cat.processes])}")
 
     def format_systematics(self):
         """ Function to format the systematics and prepare the processes_per_* dictionaries
         """
         years = {config_inst.campaign.x.year for config_inst in self.config_insts}
-        campaigns = {config_inst.x.cpn_tag for config_inst in self.config_insts}
+        campaigns = {
+            config_inst.x.cpn_tag for config_inst in self.config_insts}
 
         systematics_formatted = sorted({
             syst.format(year=year, campaign=campaign, bjet_cat=bjet_cat)
@@ -213,7 +222,8 @@ class HBWInferenceModelBase(InferenceModel):
             if (
                 (unc_formatted := f"QCDscale_{unc}")
                 in self.systematics and
-                any(available_procs := [proc for proc in procs if proc in self.processes])
+                any(available_procs := [
+                    proc for proc in procs if proc in self.processes])
             )
         }
         self.processes_per_pdf_rate = {
@@ -222,7 +232,8 @@ class HBWInferenceModelBase(InferenceModel):
             if (
                 (unc_formatted := f"pdf_{unc}")
                 in self.systematics and
-                any(available_procs := [proc for proc in procs if proc in self.processes])
+                any(available_procs := [
+                    proc for proc in procs if proc in self.processes])
             )
         }
         self.processes_per_rate_unconstrained = {
@@ -232,9 +243,11 @@ class HBWInferenceModelBase(InferenceModel):
             for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_rate_unconstrained.items()
             if (
-                (unc_formatted := "rate_" + unc.format(year=year, campaign=campaign, bjet_cat=bjet_cat))
+                (unc_formatted := "rate_" + unc.format(year=year,
+                 campaign=campaign, bjet_cat=bjet_cat))
                 in systematics_formatted and
-                any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
+                any(available_procs := [
+                    proc for proc in procs if proc in ["all", *self.processes]])
             )
         }
         self.processes_per_shape = {
@@ -244,9 +257,11 @@ class HBWInferenceModelBase(InferenceModel):
             for bjet_cat in self.bjet_cats
             for unc, procs in const.processes_per_shape.items()
             if (
-                (unc_formatted := unc.format(year=year, campaign=campaign, bjet_cat=bjet_cat))
+                (unc_formatted := unc.format(year=year,
+                 campaign=campaign, bjet_cat=bjet_cat))
                 in systematics_formatted and
-                any(available_procs := [proc for proc in procs if proc in ["all", *self.processes]])
+                any(available_procs := [
+                    proc for proc in procs if proc in ["all", *self.processes]])
             )
         }
 
@@ -283,17 +298,21 @@ class HBWInferenceModelBase(InferenceModel):
         # ml_model_inst = MLModel.get_cls(self.ml_model_name)(self.config_inst)
         for config_category in self.config_categories:
             # TODO: loop over configs here
-
-            cat_insts = [config_inst.get_category(config_category) for config_inst in self.config_insts]
+            cat_insts = [config_inst.get_category(
+                config_category) for config_inst in self.config_insts]
 
             if self.multi_variables:
                 if len(self.config_insts) > 1:
-                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
-                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts][0]
+                    var_sets = {frozenset(self.config_variable(cat_inst))
+                                for cat_inst in cat_insts}
+                    var_names = [self.config_variable(
+                        cat_inst) for cat_inst in cat_insts][0]
                     var_names = [var_names]
                 else:
-                    var_sets = {frozenset(self.config_variable(cat_inst)) for cat_inst in cat_insts}
-                    var_names = [self.config_variable(cat_inst) for cat_inst in cat_insts]
+                    var_sets = {frozenset(self.config_variable(cat_inst))
+                                for cat_inst in cat_insts}
+                    var_names = [self.config_variable(
+                        cat_inst) for cat_inst in cat_insts]
 
                 if len(var_sets) > 1:
                     raise ValueError(
@@ -301,7 +320,8 @@ class HBWInferenceModelBase(InferenceModel):
                         "Please ensure that all config categories use the same variable.",
                     )
             else:
-                var_names = {self.config_variable(cat_inst) for cat_inst in cat_insts}
+                var_names = {self.config_variable(
+                    cat_inst) for cat_inst in cat_insts}
                 if len(var_names) > 1:
                     raise ValueError(
                         f"Multiple variables found for category {config_category}: {var_names}. "
@@ -343,7 +363,8 @@ class HBWInferenceModelBase(InferenceModel):
                         variable=var_name,
                         data_datasets=[
                             dataset_inst.name for dataset_inst in
-                            get_datasets_from_process(config_inst, "data", strategy="all", only_first=False)
+                            get_datasets_from_process(
+                                config_inst, "data", strategy="all", only_first=False)
                         ],
                     )
                     for config_inst in self.config_insts
@@ -371,8 +392,10 @@ class HBWInferenceModelBase(InferenceModel):
         """
         # sanity checks
         if "dy" in self.processes and any(proc.startswith("dy_") for proc in self.processes):
-            dy_procs = [proc for proc in self.processes if proc.startswith("dy")]
-            raise Exception(f"Overlapping DY processes detected: {', '.join(dy_procs)}. ")
+            dy_procs = [
+                proc for proc in self.processes if proc.startswith("dy")]
+            raise Exception(
+                f"Overlapping DY processes detected: {', '.join(dy_procs)}. ")
         used_datasets = defaultdict(set)
         for proc in self.processes:
             if any(missing_proc := [not config.has_process(proc) for config in self.config_insts]):
@@ -380,12 +403,14 @@ class HBWInferenceModelBase(InferenceModel):
                     config_inst.name for config_inst, missing in zip(self.config_insts, missing_proc)
                     if missing
                 ]
-                raise Exception(f"Process {proc} is not defined in configs {', '.join(config_missing)}.")
+                raise Exception(
+                    f"Process {proc} is not defined in configs {', '.join(config_missing)}.")
 
             # get datasets corresponding to this process
             datasets = {config_inst.name: [
                 d.name for d in
-                get_datasets_from_process(config_inst, proc, strategy="all", check_deep=True, only_first=False)
+                get_datasets_from_process(
+                    config_inst, proc, strategy="all", check_deep=True, only_first=False)
                 if d.name not in self.skip_datasets.get(proc, [])
             ] for config_inst in self.config_insts}
 
@@ -395,7 +420,8 @@ class HBWInferenceModelBase(InferenceModel):
                         f"No datasets found for process {proc} in config {config}. "
                         "Please check your configuration.",
                     )
-                logger.debug(f"Process {proc} in config {config} was assigned datasets: {datasets}")
+                logger.debug(
+                    f"Process {proc} in config {config} was assigned datasets: {datasets}")
 
                 # check that no dataset is used multiple times (except for some well-defined processes where we know
                 # that multiple processes share the same datasets)
@@ -420,7 +446,8 @@ class HBWInferenceModelBase(InferenceModel):
                 "is_signal": ("hhh_" in proc.lower()) if self.config_insts[0].has_tag("is_hhh") else ("hh_" in proc.lower()),  # noqa E501
             }
             if self.scale_signal and kwargs["is_signal"]:
-                logger.info(f"Scaling signal process {proc} by factor {self.scale_signal}.")
+                logger.info(
+                    f"Scaling signal process {proc} by factor {self.scale_signal}.")
                 kwargs["scale"] = self.scale_signal
 
             self.add_process(
@@ -434,7 +461,8 @@ class HBWInferenceModelBase(InferenceModel):
                 self.remove_process(proc, **remove_kwargs)
                 logger.warning(f"Removed process {proc} from inference model.")
             else:
-                logger.warning(f"Process {proc} not found in inference model. Skipping removal.")
+                logger.warning(
+                    f"Process {proc} not found in inference model. Skipping removal.")
 
     def add_inference_parameters(self: InferenceModel):
         """
@@ -461,8 +489,10 @@ class HBWInferenceModelBase(InferenceModel):
             if param not in self.systematics:
                 continue
 
-            categories = [cat_name for cat_name in self.cat_names if category_criterium(cat_name)]
-            processes = [self.inf_proc(proc) for proc in self.processes if proc_criterium(proc)]
+            categories = [
+                cat_name for cat_name in self.cat_names if category_criterium(cat_name)]
+            processes = [self.inf_proc(
+                proc) for proc in self.processes if proc_criterium(proc)]
             if not categories or not processes:
                 logger.warning(
                     f"No categories or processes found for Hbb efficiency parameter {param}. "
@@ -488,7 +518,8 @@ class HBWInferenceModelBase(InferenceModel):
         """
         # lumi
         lumi_uncertainties = {
-            lumi_unc: config_inst.x.luminosity.get(names=lumi_unc, direction=("down", "up"), factor=True)
+            lumi_unc: config_inst.x.luminosity.get(
+                names=lumi_unc, direction=("down", "up"), factor=True)
             for config_inst in self.config_insts
             for lumi_unc in config_inst.x.luminosity.uncertainties
         }
@@ -566,12 +597,15 @@ class HBWInferenceModelBase(InferenceModel):
                 elif "scale" in process_inst.xsecs[13]:
                     scale_key = "scale"
                     ecm = 13
-                    logger.info(f"Using 13 TeV scale uncertainty for process {proc}, systematic {syst_name}.")
+                    logger.info(
+                        f"Using 13 TeV scale uncertainty for process {proc}, systematic {syst_name}.")
                 elif "th" in process_inst.xsecs[ecm]:
-                    logger.info(f"Using 'th' key for process {proc}, systematic {syst_name}.")
+                    logger.info(
+                        f"Using 'th' key for process {proc}, systematic {syst_name}.")
                     scale_key = "th"
                 else:
-                    logger.warning(f"No scale uncertainty found for process {proc}. Skipping {syst_name}.")
+                    logger.warning(
+                        f"No scale uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
                 self.add_parameter(
                     syst_name,
@@ -579,7 +613,8 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 4),
-                        process_inst.xsecs[ecm].get(names=(scale_key,), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(
+                            names=(scale_key,), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
@@ -610,9 +645,11 @@ class HBWInferenceModelBase(InferenceModel):
                 elif "pdf" in process_inst.xsecs[13]:
                     pdf_key = "pdf"
                     ecm = 13
-                    logger.info(f"Using 13 TeV pdf uncertainty for process {proc}, systematic {syst_name}.")
+                    logger.info(
+                        f"Using 13 TeV pdf uncertainty for process {proc}, systematic {syst_name}.")
                 else:
-                    logger.warning(f"No pdf uncertainty found for process {proc}. Skipping {syst_name}.")
+                    logger.warning(
+                        f"No pdf uncertainty found for process {proc}. Skipping {syst_name}.")
                     continue
 
                 self.add_parameter(
@@ -621,7 +658,8 @@ class HBWInferenceModelBase(InferenceModel):
                     type=ParameterType.rate_gauss,
                     effect=tuple(map(
                         lambda f: round(f, 4),
-                        process_inst.xsecs[ecm].get(names=(pdf_key), direction=("down", "up"), factor=True),
+                        process_inst.xsecs[ecm].get(
+                            names=(pdf_key), direction=("down", "up"), factor=True),
                     )),
                 )
             # self.add_parameter_to_group(syst_name, "theory")
@@ -637,7 +675,8 @@ class HBWInferenceModelBase(InferenceModel):
             param_name = f"BR_{key}"
             if param_name not in self.systematics:
                 continue
-            inf_processes = [inf_proc for inf_proc in self.inf_processes if key in inf_proc]
+            inf_processes = [
+                inf_proc for inf_proc in self.inf_processes if key in inf_proc]
             logger.info(
                 f"Adding Higgs BR rate parameter {param_name} for processes: {inf_processes}",
             )
@@ -654,10 +693,11 @@ class HBWInferenceModelBase(InferenceModel):
         """
         Function that adds all rate parameters to the inference model
         """
-        single_bin_cats = [cat_name for cat_name in self.cat_names if any(
-            bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
-        )]
-        shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        # single_bin_cats = [cat_name for cat_name in self.cat_names if any(
+        #     bkg_str in cat_name for bkg_str in ["ml_tt", "ml_dy", "ml_h", "ml_st"]
+        # )]
+        # shape_cats = [cat_name for cat_name in self.cat_names if cat_name not in single_bin_cats]
+        shape_cats = [cat_name for cat_name in self.cat_names]
 
         for shape_uncertainty, shape_processes in self.processes_per_shape.items():
             combine_uncertainty_name = const.rename_systematics.get(
@@ -667,21 +707,23 @@ class HBWInferenceModelBase(InferenceModel):
 
             # If "all" is included, takes all processes except for the ones specified (starting with !)
             if "all" in shape_processes:
-                _remove_processes = {proc[:1] for proc in shape_processes if proc.startswith("!")}
+                _remove_processes = {
+                    proc[:1] for proc in shape_processes if proc.startswith("!")}
                 shape_processes = set(self.processes) - _remove_processes
 
             param_kwargs = {
                 "process": [self.inf_proc(proc) for proc in shape_processes],
                 # "transformations": [ParameterTransformation.envelope_if_one_sided],
             }
-            shift_source = const.source_per_shape.get(shape_uncertainty, shape_uncertainty)
+            shift_source = const.source_per_shape.get(
+                shape_uncertainty, shape_uncertainty)
             config_insts = self.config_insts
             # for bjet_cat in self.bjet_cats:
             #     if shape_uncertainty.endswith(bjet_cat):
             #         param_kwargs["category"] = f"*_{bjet_cat}_*"
             #         param_kwargs["category_match_mode"] = "all"
             #         shift_source = shift_source.replace(f"_{bjet_cat}", "")
-            for year in (2022, 2023, 2024):
+            for year in (2022, 2023, 2024, 2025, 2026):
                 if shape_uncertainty.endswith(str(year)):
                     shift_source = shift_source.replace(f"_{year}", "")
                     config_insts = [
@@ -703,23 +745,24 @@ class HBWInferenceModelBase(InferenceModel):
                 for config_inst in config_insts
                 if config_inst.has_shift(f"{shift_source}_up")
             }
-
             if shape_cats:
                 self.add_parameter(
                     combine_uncertainty_name,
+                    # type=ParameterType.rate_gauss,
                     category=shape_cats,
                     type=ParameterType.shape,
                     **param_kwargs,
                 )
-            if single_bin_cats:
-                transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
-                self.add_parameter(
-                    combine_uncertainty_name,
-                    category=single_bin_cats,
-                    type=ParameterType.rate_gauss,
-                    transformations=transformations,
-                    **param_kwargs,
-                )
+            # if single_bin_cats:
+            #     transformations = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)  # noqa: E501
+            #     self.add_parameter(
+            #         combine_uncertainty_name,
+            #         # type=ParameterType.rate_gauss,
+            #         category=single_bin_cats,
+            #         type=ParameterType.rate_gauss,
+            #         transformations=transformations,
+            #         **param_kwargs,
+            #     )
 
             # is_theory = "pdf" in shape_uncertainty or "murf" in shape_uncertainty
             # if is_theory:
@@ -733,8 +776,14 @@ class HBWInferenceModelBase(InferenceModel):
             return
         # TODO: might be a good idea to transform all minor processes to lnN
         # (or not even consider them from the beginning)
-        rate_two_sided = (ParameterTransformation.effect_from_shape, ParameterTransformation.flip_smaller_if_one_sided)
+        rate_two_sided = (ParameterTransformation.effect_from_shape,
+                          ParameterTransformation.flip_smaller_if_one_sided)
         transformations_dict = {
+            "DY": {
+                "CMS_murf_envelope_dy": rate_two_sided,
+                "ps_fsr_V": rate_two_sided,
+                "CMS_pileup": rate_two_sided,
+            },
             "dy_hf": {None: rate_two_sided},
             "dy_lf": {None: rate_two_sided},
             "ttw": {None: rate_two_sided},
@@ -754,8 +803,10 @@ class HBWInferenceModelBase(InferenceModel):
                         continue
                     params = proc_dict[process]
                     for param in params:
-                        param = self.get_parameter(parameter=param, process=process, category=category)
+                        param = self.get_parameter(
+                            parameter=param, process=process, category=category)
                         if param.type == ParameterType.shape:
-                            param.transformations = ParameterTransformations(law.util.make_tuple(transformations))
-                            if param.transformations.any_from_shape:
-                                param.type = ParameterType.rate_gauss
+                            param.transformations = ParameterTransformations(
+                                law.util.make_tuple(transformations))
+                            # if param.transformations.any_from_shape:
+                            # param.type = ParameterType.rate_gauss

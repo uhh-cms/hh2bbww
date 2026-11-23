@@ -26,6 +26,7 @@ class MultiDataset(object):
         kind: str = "train",
         seed: int | None = None,
         buffersize: int = 0,  # buffersize=0 means no shuffle
+        min_steps: int = 65,  # min_steps=0 means no shuffle
     ):
         super().__init__()
 
@@ -104,7 +105,14 @@ class MultiDataset(object):
             print(f"total_batch_size is {sum(self.batch_sizes)} but should be {batch_size}")
 
         self.max_iter_valid = math.ceil(max([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
-        self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
+        # self.iter_smallest_process = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
+        natural_steps = math.ceil(min([c / bs for c, bs in zip(self.counts, self.batch_sizes)]))
+        self.iter_smallest_process = max(natural_steps, min_steps)
+        if natural_steps < min_steps:
+            logger.warning(
+                f"Natural steps per epoch ({natural_steps}) is below min_steps; "
+                f"using {min_steps}. Smallest process will be repeated ~{min_steps / natural_steps:.1f}x per epoch.",
+            )
         gc.collect()
 
         for proc_inst, batch_size, count, weight in zip(

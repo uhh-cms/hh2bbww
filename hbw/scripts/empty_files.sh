@@ -86,7 +86,7 @@ echo "================================"
 case "$ERA" in
     2024full)
         echo "Running find_empty_files.zsh for era 2024full"
-        config_name="c24v15"
+        config_name="c25v15"
         ;;
     2025full)
         echo "Running find_empty_files.zsh for era 2025full"
@@ -106,37 +106,37 @@ FAILED=()
 for dataset in "${DATASETS[@]}"; do
     echo "$dataset"
     # do something with "$dataset" here
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c24v15/cf.CalibrateEvents/calib__ak4V1/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c25v15/cf.CalibrateEvents/calib__ak4V1/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c24v15/cf.CalibrateEvents/calib__ak8V0/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c25v15/cf.CalibrateEvents/calib__ak8V0/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c24v15/cf.CalibrateEvents/calib__deterministic_seeds_calibrator/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c25v15/cf.CalibrateEvents/calib__deterministic_seeds_calibrator/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c24v15/cf.CalibrateEvents/calib__eleV0/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c25v15/cf.CalibrateEvents/calib__eleV0/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c24v15/cf.CalibrateEvents/calib__muoV0/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/c25v15/cf.CalibrateEvents/calib__muoV0/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/calib__ak4V1__ak8V0__eleV0__c3633df749/sel__dl1V0/c24v15/cf.SelectEvents/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/calib__ak4V1__ak8V0__eleV0__c3633df749/sel__dl1V0/c25v15/cf.SelectEvents/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi
     echo "--------------------------------"
-    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/calib__ak4V1__ak8V0__eleV0__c3633df749/sel__dl1V0/red__default/c24v15/cf.ReduceEvents/nominal/${dataset}/" --delete --gfal ; then
+    if ! ./find_empty_files.zsh "/pnfs/desy.de/cms/tier2/store/user/bletzer/hbw_store_v1/hbw_merged/calib__ak4V1__ak8V0__eleV0__c3633df749/sel__dl1V0/red__default/c25v15/cf.ReduceEvents/nominal/${dataset}/" --delete --gfal ; then
         echo "Warning: find_empty_files.zsh failed for ${dataset}" >&2
         FAILED+=("$dataset")
     fi

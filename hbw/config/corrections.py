@@ -123,7 +123,8 @@ def btag_sf_cfg(
                         for _dataset_inst in config.datasets
                         if _dataset_inst.has_tag(group_tag)
                     ]
-            raise NotImplementedError(f"btag WP efficiency group not implemented for dataset {dataset_inst.name}")
+            raise NotImplementedError(
+                f"btag WP efficiency group not implemented for dataset {dataset_inst.name}")
 
         btag_wp_sf_config = BTagWPSFConfig(
             jet_name="Jet",
@@ -153,7 +154,8 @@ def btag_sf_cfg(
             },
         )
     else:
-        raise NotImplementedError("B-tagging SFs for 2022 and 2023 not implemented yet.")
+        raise NotImplementedError(
+            "B-tagging SFs for 2022 and 2023 not implemented yet.")
 
     configs = {
         "btag_wp_count_config": btag_wp_count_config,

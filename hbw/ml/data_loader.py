@@ -72,7 +72,6 @@ def input_features_sanity_checks(ml_model_inst: MLModel, input_features: list[st
     else:
         # if not already set, bookkeep input features in the ml_model_inst aswell
         ml_model_inst.input_features_ordered = input_features
-
     # check that the input features contain exactly what was requested by the MLModel
     if set(input_features) != set(ml_model_inst.input_features):
         raise Exception(
@@ -199,7 +198,6 @@ class MLDatasetLoader:
 
         # work with a copy of the events
         features = self._events
-
         # remove columns that are not used as training features
         for var in features.fields:
             if var not in self.ml_model_inst.input_features:

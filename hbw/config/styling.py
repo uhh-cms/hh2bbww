@@ -79,11 +79,13 @@ default_process_colors = {
     "tt2b_custom": red_shades["red_tomato"],
     "tt_bb_custom": red_shades["red_ruby"],
     "tt_custom": red_shades["red_firebrick"],
+    "h_other": color_palette["brown"],
     "qcd": color_palette["blue"],
     "qcd_mu": color_palette["blue"],
     "qcd_ele": color_palette["blue"],
     "w_lnu": color_palette["green"],
     "v_lep": color_palette["green"],
+    "tth": color_palette["purple"],
     "h": color_palette["purple"],
     "st": color_palette["orange"],
     "t_bkg": color_palette["orange"],
@@ -127,21 +129,31 @@ for decay in ("", "qqlnu", "2l2nu"):
     default_process_colors[f"hh_ggf_hbb_hvv{decay}"] = "#000000"  # black
     default_process_colors[f"signal_ggf2{decay}"] = "#000000"  # black
     default_process_colors[f"signal_vbf2{decay}"] = "#999999"  # black
-    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"  # black
-    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"  # green2
-    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"  # orange2
-    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"  # pink2
+    # black
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl1_kt1"] = "#000000"
+    # green2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl0_kt1"] = "#1b9e77"
+    # orange2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl2p45_kt1"] = "#d95f02"
+    # pink2
+    default_process_colors[f"hh_ggf_hbb_hvv{decay}_kl5_kt1"] = "#e7298a"
 
     default_process_colors[f"hh_vbf_hbb_hvv{decay}"] = "#999999"  # grey
     default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["darkgrey"]
     # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = color_palette["brown"]
     # default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl1"] = "#999999"  # grey
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"  # blue
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"  # green
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v0_kl1"] = "#984ea3"  # purple
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v2_kl1"] = "#ff7f00"  # orange
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv0p5_k2v1_kl1"] = "#a65628"  # brown
-    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1p5_k2v1_kl1"] = "#f781bf"  # pink
+    # blue
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl0"] = "#377eb8"
+    # green
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v1_kl2"] = "#4daf4a"
+    # purple
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v0_kl1"] = "#984ea3"
+    # orange
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1_k2v2_kl1"] = "#ff7f00"
+    # brown
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv0p5_k2v1_kl1"] = "#a65628"
+    # pink
+    default_process_colors[f"hh_vbf_hbb_hvv{decay}_kv1p5_k2v1_kl1"] = "#f781bf"
 
 
 default_labels = {
@@ -153,8 +165,8 @@ default_labels = {
     "tt_custom": r"$t\bar{t}$ + c/lf",
     "ttbb_custom": r"$t\bar{t} + \geq 1b$",
     "tt_bb_custom": r"$t\bar{t} + 2b$",
-    "tt2b_custom": r"$t\bar{t} + b (gluon)$",
-    "ttb_custom": r"$t\bar{t} + b (remaining)$",
+    "tt2b_custom": r"$t\bar{t} + b \,\, (gluon)$",
+    "ttb_custom": r"$t\bar{t} + b \,\, (remaining)$",
     "dy_m50toinf": "DY ($M > 50$)",
     "dy_m50toinf_0j": "DY ($M > 50$, 0 jets)",
     "dy_m50toinf_1j": "DY ($M > 50$, 1 jets)",
@@ -176,6 +188,7 @@ default_labels = {
     "st_twchannel_tbar_dl": r"tW ($\bar{t}$, dl)",
     # "w_lnu": r"$W \rightarrow \ell\nu$",
     "w_lnu": r"$W$",
+    "h_other": r"$H \, (remaining)$",
     "ttv": r"$t\bar{t}V$",
     # paper request: no couplings in labels for SM signals
     "hh_ggf_kl1_kt1": r"$HH_{ggF}$",
@@ -279,6 +292,10 @@ def stylize_processes(config: od.Config) -> None:
                 proc.add_tag("is_signal")
                 proc.unstack = True
                 proc.scale = "stack"
+            elif "tthh" in proc.name.lower():
+                # proc.add_tag("is_signal")
+                proc.unstack = True
+                proc.scale = "stack"
 
         # labels used for ML categories
         proc.x.ml_label = ml_labels.get(proc.name, proc.name)
@@ -377,5 +394,6 @@ def quick_addvar(config: od.Config, obj: str, i: int, var: str):
         null_value=EMPTY_FLOAT,
         binning=default_var_binning[var],
         unit=default_var_unit.get(var, "1"),
-        x_title=x_title_base.format(obj=obj, i=i) + default_var_title_format.get(var, var),
+        x_title=x_title_base.format(
+            obj=obj, i=i) + default_var_title_format.get(var, var),
     )

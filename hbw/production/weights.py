@@ -90,7 +90,8 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
             outlier_threshold=0.99,
             outlier_action="remove",
             outlier_log_mode="debug",
-            invalid_weights_action="ignore" if self.dataset_inst.has_tag("partial_lhe_weights") else "raise",
+            invalid_weights_action="ignore" if self.dataset_inst.has_tag(
+                "partial_lhe_weights") else "raise",
             **kwargs,
         )
 
@@ -99,10 +100,10 @@ def event_weights_to_normalize(self: Producer, events: ak.Array, results: Select
 
 @event_weights_to_normalize.init
 def event_weights_to_normalize_init(self) -> None:
-    # if self.config_inst.campaign.x.year != 2024:
+    # if self.config_inst.campaign.x.year < 2024:
     #     self.uses |= {pu_weight}
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year != 2024:
+        if self.config_inst.campaign.x.year < 2024:
             self.uses |= {btag_weights}
 
     if not has_tag("skip_scale", self.config_inst, self.dataset_inst, operator=any):
@@ -120,10 +121,10 @@ def event_weights_to_normalize_post_init(self, task: law.Task) -> None:
     # produced columns can be set in post_init to choose stored columns based on the shift
     for _cls in self.uses:
         if _cls == btag_weights and task.shift == "nominal":
-            if self.config_inst.campaign.x.year != 2024:
+            if self.config_inst.campaign.x.year < 2024:
                 self.produces |= {btag_weights}
         elif _cls == btag_weights:
-            if self.config_inst.campaign.x.year != 2024:
+            if self.config_inst.campaign.x.year < 2024:
                 self.produces |= self.deps[btag_weights].produced_columns
         if task.shift == "nominal":
             self.produces |= self.deps[_cls].produced_columns
@@ -161,11 +162,11 @@ muon_iso_weights = muon_weights.derive("muon_iso_weights", cls_dict={
     "weight_name": "muon_iso_weight",
     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.muon_id_sf_names)),
 })
-low_pt_muon_id_weights = muon_weights.derive("low_pt_muon_id_weights", cls_dict={
-    "weight_name": "muon_low_pt_id_weight",
-    "get_muon_file": (lambda self, external_files: external_files.muon_low_pt_sf),
-    "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.low_pt_muon_id_sf_names)),
-})
+# low_pt_muon_id_weights = muon_weights.derive("low_pt_muon_id_weights", cls_dict={
+#     "weight_name": "muon_low_pt_id_weight",
+#     "get_muon_file": (lambda self, external_files: external_files.muon_low_pt_sf),
+#     "get_muon_config": (lambda self: MuonSFConfig.new(self.config_inst.x.low_pt_muon_id_sf_names)),
+# })
 
 # electron weights
 electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dict={
@@ -175,8 +176,8 @@ electron_reco_weights = electron_weights.derive("electron_reco_weights", cls_dic
 
 
 @producer(
-    uses={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
-    produces={muon_id_weights, muon_iso_weights, low_pt_muon_id_weights},
+    uses={muon_id_weights, muon_iso_weights},  # low_pt_muon_id_weights},
+    produces={muon_id_weights, muon_iso_weights},  # low_pt_muon_id_weights},
     mc_only=True,
 )
 def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -185,7 +186,7 @@ def muon_id_iso_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     """
     events = self[muon_id_weights](events, **kwargs)
     events = self[muon_iso_weights](events, **kwargs)
-    events = self[low_pt_muon_id_weights](events, **kwargs)
+    # events = self[low_pt_muon_id_weights](events, **kwargs)
 
     return events
 
@@ -209,7 +210,8 @@ def all_normalization_weights(self: Producer, events: ak.Array, **kwargs) -> ak.
     """
     events = self[normalization_weights](events, **kwargs)
     events = self[stitched_normalization_weights](events, **kwargs)
-    events = self[stitched_normalization_weights_brs_from_processes](events, **kwargs)
+    events = self[stitched_normalization_weights_brs_from_processes](
+        events, **kwargs)
 
     return events
 
@@ -238,7 +240,8 @@ def combined_normalization_weights(self: Producer, events: ak.Array, **kwargs) -
     # because we assign sub-processes that have no valid cross section registered in the CMSDB
     # if self.dataset_inst.name == "dy_m10to50_amcatnlo":
     if (("dy_" in self.dataset_inst.name) and ("_m10to50" in self.dataset_inst.name)):
-        events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
+        events = set_ak_column_f32(
+            events, "stitched_normalization_weight", events.dataset_normalization_weight)
     # if self.dataset_inst.name.startswith("dy_"):
     #     events = set_ak_column_f32(events, "stitched_normalization_weight", events.dataset_normalization_weight)
 
@@ -315,20 +318,26 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                 **kwargs,
             )
             events = self[normalized_btag_weights](events, **kwargs)
-        elif self.config_inst.campaign.x.year == 2024:
-            jet_mask = (events.Jet["pt"] < 10_000) & (abs(events.Jet["eta"]) < 2.5)
+        elif self.config_inst.campaign.x.year >= 2024:
+            jet_mask = (events.Jet["pt"] < 10_000) & (
+                abs(events.Jet["eta"]) < 2.5)
             events = self[btag_wp_weights](events, jet_mask=jet_mask, **kwargs)
 
     # compute electron and muon SF weights
     if not has_tag("skip_electron_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year == 2024:
-            electron_mask = ((events.Electron["pt"] >= 10.0) & (events.Electron["pt"] < 1000.0))
-            SCeta = (abs(events.Electron["eta"] + events.Electron["deltaEtaSC"]))
+        if self.config_inst.campaign.x.year >= 2024:
+            electron_mask = ((events.Electron["pt"] >= 10.0) & (
+                events.Electron["pt"] < 1000.0))
+            SCeta = (abs(events.Electron["eta"] +
+                     events.Electron["deltaEtaSC"]))
             # NOTE: atm we allow some penalty range if SCeta is slightly above 2.5
             # due to numerical precision also it has to be < 2.5 not <= 2.5
-            SCeta = ak.where(((SCeta >= 2.5) & (SCeta < 2.505)), 2.49999, SCeta)
-            SCeta = ak.where(((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
-            events = set_ak_column_f32(events, "Electron.superclusterEta", SCeta)
+            SCeta = ak.where(
+                ((SCeta >= 2.5) & (SCeta < 2.505)), 2.49999, SCeta)
+            SCeta = ak.where(
+                ((SCeta <= -2.5) & (SCeta > -2.505)), -2.49999, SCeta)
+            events = set_ak_column_f32(
+                events, "Electron.superclusterEta", SCeta)
             # events = self[electron_weights](events, **kwargs)
             events = self[electron_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt  # noqa: E501
             events = self[electron_reco_weights](events, electron_mask=electron_mask, **kwargs)  # TODO: This is only a quick fix, since we lowered the threshold for the elctron pt  # noqa: E501
@@ -339,7 +348,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     if not has_tag("skip_muon_weights", self.config_inst, self.dataset_inst, operator=any):
         # mu_mask = ((events.Muon["pt"] >= 10.0) & (events.Muon["pt"] < 1000.0))  NOTE: handled in MuonSFConfig
-        events = self[muon_id_iso_weights](events, **kwargs)  # muon_mask=mu_mask, **kwargs)
+        # muon_mask=mu_mask, **kwargs)
+        events = self[muon_id_iso_weights](events, **kwargs)
 
     if not has_tag("skip_trigger_weights", self.config_inst, self.dataset_inst, operator=any):
         events = self[self.trigger_weights_producer](events, **kwargs)
@@ -362,7 +372,8 @@ def event_weights(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @event_weights.init
 def event_weights_init(self: Producer) -> None:
-    logger.debug(f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
+    logger.debug(
+        f"checking selector tag: {self.config_inst.has_tag('selector_init')}")
 
     if not getattr(self, "dataset_inst", None):
         return
@@ -384,7 +395,7 @@ def event_weights_init(self: Producer) -> None:
         self.produces |= {self.trigger_weights_producer}
 
     if not has_tag("skip_btag_weights", self.config_inst, self.dataset_inst, operator=any):
-        if self.config_inst.campaign.x.year == 2024:
+        if self.config_inst.campaign.x.year >= 2024:
             self.uses |= {btag_wp_weights}
             self.produces |= {btag_wp_weights}
         else:
@@ -420,15 +431,18 @@ def large_weights_killer(self: Producer, events: ak.Array, stats: dict, **kwargs
     if self.dataset_inst.has_tag("is_hh") and self.dataset_inst.name.endswith("powheg"):
         # TODO: this feels very unsafe because genWeight can also be just 1 for all events. To be revisited
         weight_too_large = abs(events.genWeight) > 0.5
-        logger.warning(f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
+        logger.warning(
+            f"found {ak.sum(weight_too_large)} HH events with genWeight > 0.5")
 
-        events = fill_at(events, weight_too_large, "mc_weight", 0.0, value_type=np.float32)
+        events = fill_at(events, weight_too_large,
+                         "mc_weight", 0.0, value_type=np.float32)
 
     # check for anomalous weights and store in stats
     median_weight = ak.sort(abs(events.mc_weight))[int(len(events) / 2)]
     anomalous_weights_mask = abs(events.mc_weight) > 1000 * median_weight
     if ak.any(anomalous_weights_mask):
-        logger.warning(f"found {ak.sum(anomalous_weights_mask)} events with weights > 1000 * median weight")
+        logger.warning(
+            f"found {ak.sum(anomalous_weights_mask)} events with weights > 1000 * median weight")
         stats["num_events_anomalous_weights"] += ak.sum(anomalous_weights_mask)
 
     return events

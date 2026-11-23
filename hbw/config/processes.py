@@ -4,6 +4,7 @@
 Configuration of the Run 2 HH -> bbWW processes.
 """
 
+# from order import Process
 import order as od
 import law
 
@@ -26,8 +27,10 @@ def create_parent_process(child_proces: list[od.Process], **kwargs):
 
     if "xsecs" not in kwargs:
         # set the xsec as sum of all xsecs when the ecm key exists for all processes
-        valid_ecms = set.intersection(*[set(proc.xsecs.keys()) for proc in child_proces])
-        proc_kwargs["xsecs"] = {ecm: sum([proc.get_xsec(ecm) for proc in child_proces]) for ecm in valid_ecms}
+        valid_ecms = set.intersection(
+            *[set(proc.xsecs.keys()) for proc in child_proces])
+        proc_kwargs["xsecs"] = {
+            ecm: sum([proc.get_xsec(ecm) for proc in child_proces]) for ecm in valid_ecms}
 
     parent_process = od.Process(**proc_kwargs)
 
@@ -42,7 +45,8 @@ def add_parent_process(config: od.Config, child_procs: list[od.Process], **kwarg
     """
     Helper function to create a parent process and add it to the config instance
     """
-    parent_process = config.add_process(create_parent_process(child_procs, **kwargs))
+    parent_process = config.add_process(
+        create_parent_process(child_procs, **kwargs))
     return parent_process
 
 
@@ -81,6 +85,7 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.v_lep)
     config.add_process(config.x.procs.n.background)
     config.add_process(config.x.procs.n.other)
+    config.add_process(config.x.procs.n.h_other)
     config.add_process(config.x.procs.n.hh_other)
     config.add_process(config.x.procs.n.tt_custom)
     config.add_process(config.x.procs.n.ttbb_custom)
@@ -88,42 +93,43 @@ def configure_hbw_processes(config: od.Config):
     config.add_process(config.x.procs.n.tt2b_custom)
     config.add_process(config.x.procs.n.tt_bb_custom)
     minor = config.add_process(config.x.procs.n.minor)
+    minor = config.add_process(config.x.procs.n.ml_bkg_hhh)
 
     # NOTE: I think this is unnecessary, but atm i like to keep it,
     # as I am not sure how the whole od.Process jungle behaves otehrwise
-    dataset_inst = config.get_dataset("tt_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("tt_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("tt_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_custom)
-    dataset_inst = config.get_dataset("ttbb_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-    dataset_inst = config.get_dataset("ttbb_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
-    dataset_inst = config.get_dataset("ttbb_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+    # dataset_inst = config.get_dataset("tt_dl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_custom)
+    # dataset_inst = config.get_dataset("tt_sl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_custom)
+    # dataset_inst = config.get_dataset("tt_fh_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_custom)
+    # dataset_inst = config.get_dataset("ttbb_dl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+    # dataset_inst = config.get_dataset("ttbb_sl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttbb_custom)
+    # dataset_inst = config.get_dataset("ttbb_fh_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttbb_custom)
 
-    dataset_inst = config.get_dataset("ttbb_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
-    dataset_inst = config.get_dataset("ttbb_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
-    dataset_inst = config.get_dataset("ttbb_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
+    # dataset_inst = config.get_dataset("ttbb_dl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
+    # dataset_inst = config.get_dataset("ttbb_sl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
+    # dataset_inst = config.get_dataset("ttbb_fh_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt_bb_custom)
 
-    dataset_inst = config.get_dataset("ttbb_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttb_custom)
-    dataset_inst = config.get_dataset("ttbb_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttb_custom)
-    dataset_inst = config.get_dataset("ttbb_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.ttb_custom)
+    # dataset_inst = config.get_dataset("ttbb_dl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttb_custom)
+    # dataset_inst = config.get_dataset("ttbb_sl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttb_custom)
+    # dataset_inst = config.get_dataset("ttbb_fh_powheg")
+    # dataset_inst.add_process(config.x.procs.n.ttb_custom)
 
-    dataset_inst = config.get_dataset("ttbb_dl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt2b_custom)
-    dataset_inst = config.get_dataset("ttbb_sl_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt2b_custom)
-    dataset_inst = config.get_dataset("ttbb_fh_powheg")
-    dataset_inst.add_process(config.x.procs.n.tt2b_custom)
+    # dataset_inst = config.get_dataset("ttbb_dl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt2b_custom)
+    # dataset_inst = config.get_dataset("ttbb_sl_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt2b_custom)
+    # dataset_inst = config.get_dataset("ttbb_fh_powheg")
+    # dataset_inst.add_process(config.x.procs.n.tt2b_custom)
 
     minor.label = "minor"
 
@@ -187,7 +193,8 @@ def unique_process_sanity_check(config: od.Config):
 
 def set_proc_attr(proc_inst, attr, value):
     if attr in ("id", "name"):
-        raise ValueError(f"Setting {attr} via `set_proc_attr` helper is not allowed")
+        raise ValueError(
+            f"Setting {attr} via `set_proc_attr` helper is not allowed")
     elif attr == "label":
         setattr(proc_inst, attr, f"${value}$")
     elif attr == "color":
@@ -209,23 +216,28 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
     }
 
     for proc_name, process_settings in train_nodes.items():
-        process_settings = law.util.merge_dicts(default_process_settings, process_settings)
+        process_settings = law.util.merge_dicts(
+            default_process_settings, process_settings)
 
         if process_settings["ml_id"] == -1:
-            logger.warning("ml_id for process {proc_name} set to '-1'; will not be used in training")
+            logger.warning(
+                "ml_id for process {proc_name} set to '-1'; will not be used in training")
 
         sub_processes = process_settings.pop("sub_processes", None)
 
         if config_inst.has_process(proc_name):
             logger.debug(f"update process {proc_name}")
             if sub_processes:
-                raise NotImplementedError("Cannot re-assign sub-processes to already existing Process {proc_name}")
+                raise NotImplementedError(
+                    "Cannot re-assign sub-processes to already existing Process {proc_name}")
             proc_inst = config_inst.get_process(proc_name)
             apply_proc_settings(proc_inst, process_settings)
-            set_proc_attr(proc_inst, "sub_process_class_factor", sub_process_class_factors.get(proc_name, 1))
+            set_proc_attr(proc_inst, "sub_process_class_factor",
+                          sub_process_class_factors.get(proc_name, 1))
         else:
             logger.debug(f"create new process {proc_name}")
-            proc_id = process_settings.pop("id", int(1e7) + law.util.create_hash(proc_name, length=6, to_int=True))
+            proc_id = process_settings.pop(
+                "id", int(1e7) + law.util.create_hash(proc_name, length=6, to_int=True))
             sub_process_insts = []
             for proc in sub_processes:
                 if not config_inst.has_process(proc):
@@ -236,8 +248,10 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
                 sub_process_inst = config_inst.get_process(proc, default=None)
 
                 # assign attributes to sub process insts
-                set_proc_attr(sub_process_inst, "ml_id", process_settings["ml_id"])
-                set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
+                set_proc_attr(sub_process_inst, "ml_id",
+                              process_settings["ml_id"])
+                set_proc_attr(sub_process_inst, "sub_process_class_factor",
+                              sub_process_class_factors.get(proc, 1))
                 sub_process_insts.append(sub_process_inst)
 
             # create parent process and assign attributes of relevance
@@ -248,7 +262,8 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
                 id=proc_id,
             )
             apply_proc_settings(proc_inst, process_settings)
-            set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
+            set_proc_attr(sub_process_inst, "sub_process_class_factor",
+                          sub_process_class_factors.get(proc, 1))
 
 # def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_factors):
 #     # fallbacks
@@ -297,8 +312,9 @@ def prepare_ml_processes(config_inst: od.Config, train_nodes, sub_process_class_
 #             set_proc_attr(sub_process_inst, "sub_process_class_factor", sub_process_class_factors.get(proc, 1))
 
 
-from order import Process
-
-matched_top = Process(name="matched_top", id=9911, label="Top matched", color=(255, 0, 0))
-matched_higgs = Process(name="matched_higgs", id=9912, label="Higgs matched", color=(255, 140, 0))
-unmatched = Process(name="unmatched", id=9913, label="Unmatched", color=(0, 150, 0))
+# matched_top = Process(name="matched_top", id=9911,
+#                       label="Top matched", color=(255, 0, 0))
+# matched_higgs = Process(name="matched_higgs", id=9912,
+#                         label="Higgs matched", color=(255, 140, 0))
+# unmatched = Process(name="unmatched", id=9913,
+#                     label="Unmatched", color=(0, 150, 0))

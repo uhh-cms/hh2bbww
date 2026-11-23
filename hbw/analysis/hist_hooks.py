@@ -72,18 +72,9 @@ def rebin(task, hists: hist.Histogram, **kwargs):
     return h_rebinned
 
 
-def blind_bins_above_score(task, hists: hist.Histogram, default_cut=0.8, **kwargs):
+def blind_bins_above_score(task, hists: hist.Histogram, default_cut=1.25, **kwargs):
     var_name = task.branch_data.variable
-    if "logit" in var_name:
-        # identify logit transformed scores and convert cut accordingly
-        score_cut = np.log(default_cut / (1 - default_cut))
-    elif "mlscore.sig_" in var_name:
-        # only apply blinding for signal scores
-        score_cut = default_cut
-    else:
-        # do nothing
-        return hists
-
+    score_cut = default_cut
     for config_inst, proc_hists in hists.items():
         for proc_inst, proc_hist in proc_hists.items():
             if proc_inst.is_data:
@@ -114,6 +105,38 @@ def blind_bins(task, hists: hist.Histogram, blinding_threshold=0.08, **kwargs):
     return out_hists
 
 
+def campaign_split(task, hists, **kwargs):
+    """
+    Rename each process to '<process>__<config>' so histograms from different
+    configs are not merged before the plot function.
+    """
+    import order as od
+
+    if not all(isinstance(k, od.Config) for k in hists):
+        raise Exception(
+            f"campaign_split expects hists keyed by config, got {[getattr(k, 'name', k) for k in hists]}",
+        )
+
+    out = {}
+    for cfg, proc_hists in hists.items():
+        out[cfg] = {}
+        for p, h in proc_hists.items():
+            new_p = od.Process(
+                name=f"{p.name}__{cfg.name}",
+                id="+",
+                label=f"{p.label} ({cfg.name})",
+                is_data=p.is_data,
+                tags=set(p.tags),
+                color1=p.color1,
+            )
+            out[cfg][new_p] = h
+    return out
+
+
+# register it in the existing dict, e.g.
+# analysis_inst.x.hist_hooks["campaign_split"] = campaign_split
+
+
 def add_hist_hooks(analysis_inst: od.Analysis) -> None:
     """
     Add histogram hooks to an analysis.
@@ -125,6 +148,7 @@ def add_hist_hooks(analysis_inst: od.Analysis) -> None:
         "rebin": rebin,
         # "blind": blind_bins,
         "blind_bins_above_score": blind_bins_above_score,
+        "campaign_split": campaign_split,
     }
 
 

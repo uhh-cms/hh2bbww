@@ -9,6 +9,7 @@ law run hbw.MLOptimizer --version prod1 --ml-models dense_3x64,dense_3x128,dense
 ```
 """
 from __future__ import annotations
+from columnflow.tasks.production import ProduceColumns
 
 import itertools
 
@@ -37,12 +38,11 @@ from columnflow.tasks.framework.decorators import view_output_plots
 from columnflow.util import dev_sandbox, DotDict
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.tasks.ml import PrepareMLEvents, MergeMLEvents, MergeMLStats, MLTraining
+from columnflow.types import Any
 from hbw.tasks.base import HBWTask
 
 logger = law.logger.get_logger(__name__)
 
-
-from columnflow.tasks.production import ProduceColumns
 
 class ProduceColumnsTF(
     ProduceColumns,
@@ -55,7 +55,8 @@ class ProduceColumnsTF(
 _ProduceColumnsTFWrapperBase = wrapper_factory(
     base_cls=AnalysisTask,
     require_cls=ProduceColumnsTF,
-    enable=["configs", "skip_configs", "datasets", "skip_datasets", "shifts", "skip_shifts"],
+    enable=["configs", "skip_configs", "datasets",
+            "skip_datasets", "shifts", "skip_shifts"],
 )
 _ProduceColumnsTFWrapperBase.exclude_index = True
 delattr(_ProduceColumnsTFWrapperBase, "producer")
@@ -76,7 +77,8 @@ class ProduceColumnsTFWrapper(_ProduceColumnsTFWrapperBase):
         params = super().modify_param_values(params)
 
         if params.get("analysis_inst"):
-            config_insts = [params["analysis_inst"].get_config(name) for name in params["configs"]]
+            config_insts = [params["analysis_inst"].get_config(
+                name) for name in params["configs"]]
             params["producers"] = cls.resolve_config_default_and_groups(
                 param=params.get("producers"),
                 task_params=params,
@@ -117,7 +119,8 @@ class SimpleMergeMLEvents(
     took 2m 40s for 6 files, all 5 folds
     MergeMLEvents: 1m 40s for 6 files, 1 fold
     """
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    sandbox = dev_sandbox(law.config.get(
+        "analysis", "default_columnar_sandbox"))
 
     # disable the shift parameter
     shift = None
@@ -137,12 +140,14 @@ class SimpleMergeMLEvents(
 
     def workflow_requires(self):
         reqs = super().workflow_requires()
-        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(self, branch=-1)
+        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(
+            self, branch=-1)
         return reqs
 
     def requires(self):
         reqs = {}
-        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(self, branch=-1)
+        reqs["mlevents"] = self.reqs.PrepareMLEvents.req_different_branching(
+            self, branch=-1)
         return reqs
 
     def output(self):
@@ -166,7 +171,8 @@ class SimpleMergeMLEvents(
 
         for i, paths in fold_paths.items():
             with self.publish_step(f"merge fold {i} from dataset {self.dataset} ({len(paths)} files)"):
-                law.pyarrow.merge_parquet_files(paths, outputs["mlevents"][i].path)
+                law.pyarrow.merge_parquet_files(
+                    paths, outputs["mlevents"][i].path)
 
 
 class MLOptimizer(
@@ -180,7 +186,8 @@ class MLOptimizer(
     reqs = Requirements(MLTraining=MLTraining)
 
     # sandbox = dev_sandbox("bash::$HBW_BASE/sandboxes/venv_ml_plotting.sh")
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    sandbox = dev_sandbox(law.config.get(
+        "analysis", "default_columnar_sandbox"))
 
     ml_folds = luigi.Parameter(
         default="0",  # NOTE: this seems to work but is most likely not optimally implemented
@@ -215,7 +222,8 @@ class MLOptimizer(
             stats = inp["collection"][0]["stats"].load(formatter="yaml")
 
             for stat_name, value in stats.items():
-                best_value = model_summary["0_best_value"].get(stat_name, EMPTY_FLOAT)
+                best_value = model_summary["0_best_value"].get(
+                    stat_name, EMPTY_FLOAT)
                 if value > best_value:
                     # store for each stat the best model and the best value
                     model_summary["0_best_value"][stat_name] = value
@@ -368,7 +376,8 @@ class MLPreTraining(
         # from the MLModel (e.g. the data_loader class, the train_val_test_split and the input_features)
         store_name = self.ml_model_inst.store_name or self.ml_model_inst.cls_name
         preml_store_name = getattr(self.ml_model_inst, "preml_store_name", "")
-        parts.insert_before("ml_model", "ml_data", f"ml__{store_name}__{preml_store_name}")
+        parts.insert_before("ml_model", "ml_data",
+                            f"ml__{store_name}__{preml_store_name}")
 
         parts.pop("ml_model")
         return parts
@@ -380,7 +389,8 @@ class MLPreTraining(
         outputs = {
             input_array: {
                 train_val_test: {process: {self.fold: (
-                    self.target(f"{input_array}_{train_val_test}_{process}_fold{self.fold}of{k}.npy")
+                    self.target(
+                        f"{input_array}_{train_val_test}_{process}_fold{self.fold}of{k}.npy")
                 )}}
                 for train_val_test in ("train", "val", "test")
             }
@@ -390,13 +400,15 @@ class MLPreTraining(
         # NOTE: this is stored per fold and process, since we cannot do the check that they are all
         # the same since we parallelized over processes/folds
         outputs["input_features"] = {process: {self.fold: (
-            self.target(f"input_features_{process}_fold{self.fold}of{k}.pickle")
+            self.target(
+                f"input_features_{process}_fold{self.fold}of{k}.pickle")
         )}}
 
         # the stats dict is created per process+fold, but should always be identical, therefore we store it only once
         outputs["stats"] = self.target("stats.json")
 
-        outputs["cross_check_weights"] = self.target(f"cross_check_weights_{process}_{self.fold}.yaml")
+        outputs["cross_check_weights"] = self.target(
+            f"cross_check_weights_{process}_{self.fold}.yaml")
 
         outputs["parameters"] = self.target("parameters.yaml")
 
@@ -410,7 +422,8 @@ class MLPreTraining(
         for config_inst in self.ml_model_inst.config_insts:
             used_datasets = inputs["stats"][config_inst.name].keys()
             for dataset in used_datasets:
-                stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
+                stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(
+                    formatter="json")
                 # if "ttbb_" in dataset:
                 #     # __import__("IPython").embed()
                 #     processes = config_inst.get_dataset(dataset).processes
@@ -429,9 +442,9 @@ class MLPreTraining(
                 #                         stats[key].pop(id, None)
 
                 #             MergeMLStats.merge_counts(merged_stats[process], stats)
-                #         else: 
+                #         else:
                 #             continue
-                # else: 
+                # else:
                 # gather stats per ml process
                 # stats = inputs["stats"][config_inst.name][dataset]["collection"][0]["stats"].load(formatter="json")
                 process = config_inst.get_dataset(dataset).x.ml_process
@@ -479,7 +492,12 @@ class MLPreTraining(
                             raise e
 
         for process in events.keys():
-            events[process] = ak.concatenate(events[process])
+            try:
+                events[process] = ak.concatenate(events[process])
+            except Exception as e:
+                logger.error(
+                    f"Error occurred while concatenating events for process {process}: {e}")
+                raise e
         return dict(events)
 
     @law.decorator.log
@@ -505,24 +523,29 @@ class MLPreTraining(
 
         # initialize the DatasetLoader
         if self.ml_model_inst.negative_weights == "ignore":
-            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats)
+            ml_dataset = self.ml_model_inst.data_loader(
+                self.ml_model_inst, process, events, stats)
             logger.info(
                 f"{self.ml_model_inst.negative_weights} method chosen to handle negative weights: "
                 "All negative weights will be removed from training.",
             )
         else:
-            ml_dataset = self.ml_model_inst.data_loader(self.ml_model_inst, process, events, stats, skip_mask=True)
+            ml_dataset = self.ml_model_inst.data_loader(
+                self.ml_model_inst, process, events, stats, skip_mask=True)
 
         sum_train_weights = np.sum(ml_dataset.train_weights)
         n_events_per_fold = len(ml_dataset.train_weights)
-        logger.info(f"Sum of training weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
+        logger.info(
+            f"Sum of training weights is: {sum_train_weights} for {n_events_per_fold} {process} events")
         xcheck = {}
         if self.ml_model_inst.config_inst.get_process(process).x("ml_config", None):
             xcheck[process] = {}
             if self.ml_model_inst.config_inst.get_process(process).x.ml_config.weighting == "equal":
                 for sub_proc in self.ml_model_inst.config_inst.get_process(process).x.ml_config.sub_processes:
-                    proc_mask, _ = get_proc_mask(ml_dataset._events, sub_proc, self.ml_model_inst.config_inst)
-                    xcheck_weight_sum = np.sum(ml_dataset.train_weights[proc_mask])
+                    proc_mask, _ = get_proc_mask(
+                        ml_dataset._events, sub_proc, self.ml_model_inst.config_inst)
+                    xcheck_weight_sum = np.sum(
+                        ml_dataset.train_weights[proc_mask])
                     xcheck_n_events = len(ml_dataset.train_weights[proc_mask])
                     logger.info(
                         f"For the equal weighting method the sum of weights for {sub_proc} is {xcheck_weight_sum} "
@@ -530,7 +553,8 @@ class MLPreTraining(
                     )
                     if sub_proc not in xcheck[process]:
                         xcheck[process][sub_proc] = {}
-                    xcheck[process][sub_proc]["weight_sum"] = int(xcheck_weight_sum)
+                    xcheck[process][sub_proc]["weight_sum"] = int(
+                        xcheck_weight_sum)
                     xcheck[process][sub_proc]["num_events"] = xcheck_n_events
 
         outputs["cross_check_weights"].dump(xcheck, formatter="yaml")
@@ -541,11 +565,15 @@ class MLPreTraining(
             train, val, test = ml_dataset.load_split_data(input_array)
 
             # store loaded data
-            outputs[input_array]["train"][process][fold].dump(train, formatter="numpy")
-            outputs[input_array]["val"][process][fold].dump(val, formatter="numpy")
-            outputs[input_array]["test"][process][fold].dump(test, formatter="numpy")
+            outputs[input_array]["train"][process][fold].dump(
+                train, formatter="numpy")
+            outputs[input_array]["val"][process][fold].dump(
+                val, formatter="numpy")
+            outputs[input_array]["test"][process][fold].dump(
+                test, formatter="numpy")
 
-            outputs["input_features"][process][fold].dump(ml_dataset.input_features, formatter="pickle")
+            outputs["input_features"][process][fold].dump(
+                ml_dataset.input_features, formatter="pickle")
         # dump parameters of the DatasetLoader
         outputs["parameters"].dump(ml_dataset.parameters, formatter="yaml")
 
@@ -647,7 +675,8 @@ class MLEvaluationSingleFold(
         outputs = {
             evaluation_array: {
                 self.data_split: {process: {fold: (
-                    self.target(f"{evaluation_array}_{self.data_split}_{process}_fold{fold}of{k}.npy")
+                    self.target(
+                        f"{evaluation_array}_{self.data_split}_{process}_fold{fold}of{k}.npy")
                 ) for fold in range(self.ml_model_inst.folds)
                 }}}
             for evaluation_array in self.ml_model_inst.data_loader.evaluation_arrays
@@ -667,7 +696,8 @@ class MLEvaluationSingleFold(
         output = self.output()
         process = self.branch_data["process"]
 
-        logger.info(f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
+        logger.info(
+            f"evaluating model {str(self.ml_model_inst)} for process {process} and fold {self.fold}")
 
         # open trained model and assign to ml_model_inst
         training_results = self.ml_model_inst.open_model(inputs["training"])
@@ -675,7 +705,8 @@ class MLEvaluationSingleFold(
         self.ml_model_inst.best_model = training_results["best_model"]
 
         input_files = inputs["preml"]["collection"]
-        input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
+        input_files = law.util.merge_dicts(
+            *[input_files[key] for key in input_files.keys()], deep=True)
 
         for fold in range(self.ml_model_inst.folds):
             data = MLProcessData(
@@ -773,7 +804,8 @@ class PlotMLResultsSingleFold(
         )
         reqs["mlpred"] = {
             data_split:
-            self.reqs.MLEvaluationSingleFold.req_different_branching(self, data_split=data_split, branch=-1)
+            self.reqs.MLEvaluationSingleFold.req_different_branching(
+                self, data_split=data_split, branch=-1)
             for data_split in self.data_splits
         }
 
@@ -789,7 +821,8 @@ class PlotMLResultsSingleFold(
     @law.decorator.timeit()
     @view_output_plots
     def run(self):
-        logger.info(f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
+        logger.info(
+            f"creating plots for model {str(self.ml_model_inst)} for fold {self.fold}")
         log_memory("Start")
         # prepare inputs and outputs
         inputs = self.input()
@@ -804,7 +837,8 @@ class PlotMLResultsSingleFold(
 
         # Load data lazily and process incrementally to reduce memory usage
         input_files_preml = inputs["preml"]["collection"]
-        input_files_mlpred = {data_split: value["collection"] for data_split, value in inputs["mlpred"].items()}
+        input_files_mlpred = {data_split: value["collection"]
+                              for data_split, value in inputs["mlpred"].items()}
         input_files = law.util.merge_dicts(
             *[input_files_preml[key] for key in input_files_preml.keys()],
             *[

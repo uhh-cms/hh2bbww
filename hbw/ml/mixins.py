@@ -40,7 +40,10 @@ class DenseModelMixin(object):
     _default__layers: tuple[int] = (64, 64, 64)
     _default__dropout: float = 0.50
     _default__learningrate: float = 0.00050
-
+    _default__batchnorm: bool = True
+    _default__l2regularization: float = 0.0
+    _default__weighting: str = "xsec"  # "xsec", "equal", "c2st"
+    _default__optimizer: str = "adam"  # "adam", "sgd"
     # TODO: these parameters are currently not part of the MLModel repr
     loss: str = "categorical_crossentropy"
     focal_loss_alpha: float = 0.25
@@ -55,7 +58,9 @@ class DenseModelMixin(object):
         self.layers = tuple(int(n_nodes) for n_nodes in self.layers)
         self.dropout = float(self.dropout)
         self.learningrate = float(self.learningrate)
-
+        self.batchnorm = bool(self.batchnorm)
+        self.l2regularization = float(self.l2regularization)
+        self.weighting = str(self.weighting)
         self.loss = str(self.loss)
         self.focal_loss_alpha = float(self.focal_loss_alpha)
         self.focal_loss_gamma = float(self.focal_loss_gamma)
@@ -66,7 +71,8 @@ class DenseModelMixin(object):
     ):
         import tensorflow.keras as keras
         from keras.models import Sequential
-        from keras.layers import Dense, BatchNormalization
+        from keras.layers import Dense, BatchNormalization, Input, Normalization
+        from keras.regularizers import l2
         from hbw.ml.tf_util import cumulated_crossentropy
         # from keras.losses import CategoricalFocalCrossentropy
 
@@ -78,7 +84,11 @@ class DenseModelMixin(object):
         model = Sequential()
 
         # BatchNormalization layer with input shape
-        model.add(BatchNormalization(input_shape=(n_inputs,)))
+        # model.add(BatchNormalization(input_shape=(n_inputs,)))
+        model.add(Input(shape=(n_inputs,)))
+
+        # add normalization layer
+        model.add(Normalization(axis=-1))
 
         activation_settings = DotDict({
             "elu": ("elu", "he_uniform", "Dropout"),
@@ -90,12 +100,20 @@ class DenseModelMixin(object):
         })
         keras_act_name, init_name, dropout_layer = activation_settings[self.activation]
 
+        kernel_reg = l2(
+            self.l2regularization) if self.l2regularization else None
+
         # hidden layers
         for n_nodes in self.layers:
             model.add(Dense(
                 units=n_nodes,
                 activation=keras_act_name,
+                kernel_initializer=init_name,
+                kernel_regularizer=kernel_reg,
             ))
+
+            if self.batchnorm:
+                model.add(BatchNormalization())
 
             # Potentially add dropout layer after each hidden layer
             if self.dropout:
@@ -106,13 +124,18 @@ class DenseModelMixin(object):
         model.add(Dense(n_outputs, activation="softmax"))
 
         # compile the network
-        optimizer = keras.optimizers.Adam(
-            learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
-            epsilon=1e-6, amsgrad=False,
-        )
+        if self.optimizer == "adam":
+            optimizer = keras.optimizers.Adam(
+                learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
+                epsilon=1e-6, amsgrad=False,
+            )
+        elif self.optimizer == "sgd":
+            optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
+        else:
+            raise ValueError(f"Unknown optimizer: {self.optimizer}")
 
         model_compile_kwargs = {
-            "loss": "categorical_crossentropy" if self.negative_weights == "ignore" else cumulated_crossentropy,
+            "loss": "categorical_crossentropy" if self.negative_weights in ("ignore", "nothing") else cumulated_crossentropy,  # noqa: E501
             "optimizer": optimizer,
             "metrics": ["categorical_accuracy"],
             "weighted_metrics": ["categorical_accuracy"],
@@ -159,9 +182,11 @@ class CallbacksBase(object):
     def get_callbacks(self, output):
         import tensorflow.keras as keras
         # check that only valid options have been requested
-        callback_options = {"backup", "checkpoint", "reduce_lr", "early_stopping"}
+        callback_options = {"backup", "checkpoint",
+                            "reduce_lr", "early_stopping"}
         if diff := self.callbacks.difference(callback_options):
-            logger.warning(f"Callbacks '{diff}' have been requested but are not properly implemented")
+            logger.warning(
+                f"Callbacks '{diff}' have been requested but are not properly implemented")
 
         # list of callbacks to be returned at the end
         callbacks = []
@@ -170,7 +195,8 @@ class CallbacksBase(object):
         # NOTE: does that work when running remote?
         # TODO: we should also save the parameters + input_features in the backup to ensure that they
         #       are equivalent (delete backup if not)
-        backup_output = output["mlmodel"].sibling(f"backup_{output['mlmodel'].basename}", type="d")
+        backup_output = output["mlmodel"].sibling(
+            f"backup_{output['mlmodel'].basename}", type="d")
         if self.remove_backup:
             backup_output.remove()
 
@@ -194,7 +220,8 @@ class CallbacksBase(object):
                 save_best_only=True,
             )
             checkpoint_kwargs.update(self.checkpoint_kwargs)
-            callbacks.append(keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
+            callbacks.append(
+                keras.callbacks.ModelCheckpoint(**checkpoint_kwargs))
 
         if "early_stopping" in self.callbacks:
             early_stopping_kwargs = dict(
@@ -206,7 +233,8 @@ class CallbacksBase(object):
                 start_from_epoch=max(min(50, int(self.epochs / 5)), 10),
             )
             early_stopping_kwargs.update(self.early_stopping_kwargs)
-            callbacks.append(keras.callbacks.EarlyStopping(**early_stopping_kwargs))
+            callbacks.append(keras.callbacks.EarlyStopping(
+                **early_stopping_kwargs))
 
         if "reduce_lr" in self.callbacks:
             reduce_lr_kwargs = dict(
@@ -219,7 +247,8 @@ class CallbacksBase(object):
                 min_lr=0,
             )
             reduce_lr_kwargs.update(self.reduce_lr_kwargs)
-            callbacks.append(keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
+            callbacks.append(
+                keras.callbacks.ReduceLROnPlateau(**reduce_lr_kwargs))
 
         if len(callbacks) != len(self.callbacks):
             logger.warning(
@@ -253,6 +282,111 @@ class ClassicModelFitMixin(CallbacksBase):
         self.epochs = int(self.epochs)
         self.batchsize = int(self.batchsize)
 
+    def concatenate_data(self, data, weights):
+        return DotDict({
+            "inputs": np.concatenate([
+                arrays.features for arrays in data.values()
+            ]),
+            "target": np.concatenate([
+                arrays.target for arrays in data.values()
+            ]),
+            "weights": np.concatenate([
+                weights[proc_inst] for proc_inst in data.keys()
+            ]),
+        })
+
+    def get_c2st_weights(self, data):
+        data_arrays = []
+        mc_arrays = []
+
+        for proc_inst, arrays in data.items():
+            if "data" in proc_inst.name:
+                data_arrays.append(arrays)
+            else:
+                mc_arrays.append(arrays)
+
+        if not data_arrays or not mc_arrays:
+            raise ValueError("C2ST weighting requires Data and MC processes")
+
+        # C2ST weighting
+        n_data = sum(len(arrays.weights) for arrays in data_arrays)
+        n_mc = sum(len(arrays.weights) for arrays in mc_arrays)
+
+        mc_sum_weights = sum(
+            np.sum(np.maximum(arrays.weights, 0.0))
+            for arrays in mc_arrays
+        )
+
+        if n_data == 0:
+            raise ValueError(
+                "Cannot calculate C2ST weights without data events")
+        if mc_sum_weights <= 0:
+            raise ValueError("MC weight sum must be positive")
+
+        c_mc = n_data / mc_sum_weights
+        c_global = (n_data + n_mc) / (2.0 * n_data)
+
+        weights = {}
+        for proc_inst, arrays in data.items():
+            if "data" in proc_inst.name:
+                weights[proc_inst] = np.full(
+                    len(arrays.weights),
+                    c_global,
+                    dtype=np.float32,
+                )
+            else:
+                weights[proc_inst] = (
+                    np.maximum(arrays.weights, 0.0) * c_mc * c_global
+                ).astype(np.float32)
+
+        # Signed DCTR weighting
+        loss_signs = getattr(self, "loss_signs", None)
+        if loss_signs is not None:
+            for proc_inst in weights:
+                if proc_inst.name not in loss_signs:
+                    raise ValueError(
+                        f"No loss sign configured for process '{proc_inst.name}'",
+                    )
+
+                sign = loss_signs[proc_inst.name]
+                if sign not in (-1, 1):
+                    raise ValueError(
+                        f"Loss sign for '{proc_inst.name}' must be +1 or -1, "
+                        f"got {sign}",
+                    )
+
+                weights[proc_inst] *= sign
+
+            # 3. One common normalization: mean(abs(weight)) = 1
+            all_weights = np.concatenate(list(weights.values()))
+            sum_abs = np.sum(np.abs(all_weights), dtype=np.float64)
+
+            if not np.isfinite(sum_abs) or sum_abs <= 0:
+                raise ValueError(
+                    "Signed C2ST weights have zero/non-finite absolute weight sum",
+                )
+
+            normalization = len(all_weights) / sum_abs
+
+            for proc_inst in weights:
+                weights[proc_inst] *= normalization
+
+        for proc_inst in weights:
+            if np.any(~np.isfinite(weights[proc_inst])):
+                raise ValueError(
+                    f"Non-finite C2ST weights for process '{proc_inst.name}'",
+                )
+
+            weights[proc_inst] = weights[proc_inst].astype(np.float32)
+
+        logger.info(
+            f"C2ST weighting: c_mc={c_mc:.6g}, "
+            f"c_global={c_global:.6g}, "
+            f"signed={loss_signs is not None}",
+        )
+
+        return weights
+
     def fit_ml_model(
         self,
         task: law.Task,
@@ -264,16 +398,39 @@ class ClassicModelFitMixin(CallbacksBase):
         """
         Training loop with normal tf dataset
         """
+        from hbw.ml.plotting import plot_history
         import tensorflow as tf
 
         log_memory("start")
+        if getattr(self, "weighting", "xsec") == "c2st":
+            train_weights = self.get_c2st_weights(train)
+            validation_weights = self.get_c2st_weights(validation)
+        else:
+            train_weights = {
+                proc_inst: arrays.train_weights
+                for proc_inst, arrays in train.items()
+            }
+            validation_weights = {
+                proc_inst: arrays.weights
+                for proc_inst, arrays in validation.items()
+            }
+
+        train = self.concatenate_data(train, train_weights)
+        validation = self.concatenate_data(validation, validation_weights)
 
         tf_train = tf.data.Dataset.from_tensor_slices(
             (train["inputs"], train["target"], train["weights"]),
-        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        )
         tf_validation = tf.data.Dataset.from_tensor_slices(
-            (validation["inputs"], validation["target"], validation["weights"]),
-        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+            (validation["inputs"], validation["target"],
+             validation["weights"]),
+        )
+
+        tf_train = tf_train.shuffle(buffer_size=len(train["inputs"]))
+
+        tf_train = tf_train.batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        tf_validation = tf_validation.batch(
+            self.batchsize).prefetch(tf.data.AUTOTUNE)
 
         log_memory("init")
 
@@ -284,6 +441,9 @@ class ClassicModelFitMixin(CallbacksBase):
             "verbose": 2,
             "callbacks": self.get_callbacks(output),
         }
+
+        logger.info("Adapt normalization layer to training data...")
+        model.layers[0].adapt(train["inputs"])
 
         logger.info("Starting training...")
         tf.debugging.set_log_device_placement(True)
@@ -297,6 +457,21 @@ class ClassicModelFitMixin(CallbacksBase):
         del tf_train
         del tf_validation
         log_memory("del")
+
+        # create history plots
+        for metric, ylabel, yscale in (
+            ("loss", "Loss", "log"),
+            ("categorical_accuracy", "Accuracy", "linear"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy", "linear"),
+        ):
+            call_func_safe(
+                plot_history,
+                model.history.history,
+                output["plots"],
+                metric=metric,
+                ylabel=ylabel,
+                yscale=yscale,
+            )
 
 
 class ModelFitMixin(CallbacksBase):
@@ -334,19 +509,22 @@ class ModelFitMixin(CallbacksBase):
         factor = 1
         smallest_sumw = None
         for proc_inst, arrays in data.items():
-            sumw = np.sum(arrays.weights) * proc_inst.x.sub_process_class_factor
+            sumw = np.sum(arrays.weights) * \
+                proc_inst.x.sub_process_class_factor
             if not smallest_sumw or smallest_sumw >= sumw:
                 smallest_sumw = sumw
 
         for proc_inst, arrays in data.items():
-            sumw = np.sum(arrays.weights) * proc_inst.x.sub_process_class_factor
+            sumw = np.sum(arrays.weights) * \
+                proc_inst.x.sub_process_class_factor
             rel_sumw = sumw / smallest_sumw
             rel_sumw_dict[proc_inst] = rel_sumw
 
             if (rel_sumw - round(rel_sumw)) / rel_sumw > max_diff_int:
                 factor = 2
 
-        rel_sumw_dict = {proc_inst: int(rel_sumw * factor) for proc_inst, rel_sumw in rel_sumw_dict.items()}
+        rel_sumw_dict = {proc_inst: int(rel_sumw * factor)
+                         for proc_inst, rel_sumw in rel_sumw_dict.items()}
 
         return rel_sumw_dict
 
@@ -354,14 +532,17 @@ class ModelFitMixin(CallbacksBase):
         batch_sizes = {}
         rel_sumw_dicts = {}
         for train_node_proc_name, node_config in self.train_nodes.items():
-            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            train_node_proc = self.config_inst.get_process(
+                train_node_proc_name)
             sub_procs = (
                 (set(node_config.get("sub_processes", set())) | {train_node_proc_name}) &
                 {proc.name for proc in data.keys()}
             )
             if not sub_procs:
-                raise ValueError(f"Cannot find any sub-processes for {train_node_proc_name} in the data")
-            sub_procs = {self.config_inst.get_process(proc_name) for proc_name in sub_procs}
+                raise ValueError(
+                    f"Cannot find any sub-processes for {train_node_proc_name} in the data")
+            sub_procs = {self.config_inst.get_process(
+                proc_name) for proc_name in sub_procs}
             class_factor_mode = train_node_proc.x("class_factor_mode", "equal")
             if class_factor_mode == "xsec":
                 rel_sumw_dicts[train_node_proc.name] = self.resolve_weights_xsec(
@@ -372,16 +553,22 @@ class ModelFitMixin(CallbacksBase):
                     proc_inst: proc_inst.x("sub_process_class_factor", 1) for proc_inst in sub_procs
                 }
         for train_node_proc_name, node_config in self.train_nodes.items():
-            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            train_node_proc = self.config_inst.get_process(
+                train_node_proc_name)
             rel_sumw = rel_sumw_dicts[train_node_proc.name]
-            rel_sumw_dicts[train_node_proc.name]["sum"] = sum([rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
-            rel_sumw_dicts[train_node_proc.name]["min"] = min([rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
+            rel_sumw_dicts[train_node_proc.name]["sum"] = sum(
+                [rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
+            rel_sumw_dicts[train_node_proc.name]["min"] = min(
+                [rel_sumw[proc_inst] for proc_inst in rel_sumw.keys()])
 
-        lcm_list = lambda numbers: functools.reduce(math.lcm, numbers)
-        lcm = lcm_list([rel_sumw["sum"] for rel_sumw in rel_sumw_dicts.values()])
+        def lcm_list(numbers):
+            return functools.reduce(math.lcm, numbers)
+        lcm = lcm_list([rel_sumw["sum"]
+                       for rel_sumw in rel_sumw_dicts.values()])
 
         for train_node_proc_name, node_config in self.train_nodes.items():
-            train_node_proc = self.config_inst.get_process(train_node_proc_name)
+            train_node_proc = self.config_inst.get_process(
+                train_node_proc_name)
             class_factor = self.class_factors.get(train_node_proc.name, 1)
             rel_sumw_dict = rel_sumw_dicts[train_node_proc.name]
             batch_factor = class_factor * lcm // rel_sumw_dict["sum"]
@@ -402,11 +589,13 @@ class ModelFitMixin(CallbacksBase):
         elif round == "down":
             batch_scaler = self.batchsize // sum(batch_sizes.values()) or 1
         elif round == "up":
-            batch_scaler = math.ceil(self.batchsize / sum(batch_sizes.values()))
+            batch_scaler = math.ceil(
+                self.batchsize / sum(batch_sizes.values()))
         else:
             raise ValueError(f"Unknown round option {round}")
 
-        batch_sizes = {proc_inst: int(batch_size * batch_scaler) for proc_inst, batch_size in batch_sizes.items()}
+        batch_sizes = {proc_inst: int(batch_size * batch_scaler)
+                       for proc_inst, batch_size in batch_sizes.items()}
 
         return batch_sizes
 
@@ -416,16 +605,20 @@ class ModelFitMixin(CallbacksBase):
         """
         for proc_inst, arrays in validation.items():
             bs = batch_sizes[proc_inst]
-            arrays.validation_weights = arrays.weights / np.sum(arrays.weights) * bs * train_steps_per_epoch
+            arrays.validation_weights = arrays.weights / \
+                np.sum(arrays.weights) * bs * train_steps_per_epoch
 
     def _check_weights(self, train):
         sum_nodes = np.zeros(len(self.train_nodes), dtype=np.float32)
         for proc, data in train.items():
-            sum_nodes += np.bincount(data.labels, weights=data.train_weights, minlength=len(self.train_nodes))
-            logger.info(f"Sum of weights for process {proc}: {np.sum(data.train_weights)}")
+            sum_nodes += np.bincount(data.labels, weights=data.train_weights,
+                                     minlength=len(self.train_nodes))
+            logger.info(
+                f"Sum of weights for process {proc}: {np.sum(data.train_weights)}")
 
         for proc, node_config in self.train_nodes.items():
-            logger.info(f"Sum of weights for train node process {proc}: {sum_nodes[node_config['ml_id']]}")
+            logger.info(
+                f"Sum of weights for train node process {proc}: {sum_nodes[node_config['ml_id']]}")
 
     @timeit
     def fit_ml_model(
@@ -442,6 +635,7 @@ class ModelFitMixin(CallbacksBase):
         # import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
         from hbw.ml.plotting import plot_history
+        import tensorflow as tf
 
         log_memory("start")
 
@@ -449,7 +643,8 @@ class ModelFitMixin(CallbacksBase):
         print("batch_sizes:", batch_sizes)
 
         # Create MultiDataset
-        tf_train = MultiDataset(data=train, batch_size=batch_sizes, kind="train", buffersize=0)
+        tf_train = MultiDataset(
+            data=train, batch_size=batch_sizes, kind="train", buffersize=0)
         log_memory("tf_train")
 
         # cleanup memory (TODO: seems to not do much if anything)
@@ -461,19 +656,23 @@ class ModelFitMixin(CallbacksBase):
         if isinstance(self.steps_per_epoch, str):
             magic_smooth_factor = 1
             # steps_per_epoch is usually "iter_smallest_process" (TODO: check performance with other factors)
-            steps_per_epoch = getattr(tf_train, self.steps_per_epoch) * magic_smooth_factor
+            steps_per_epoch = getattr(
+                tf_train, self.steps_per_epoch) * magic_smooth_factor
         else:
-            raise Exception("self.steps_per_epoch is not a string, cannot determine steps_per_epoch")
+            raise Exception(
+                "self.steps_per_epoch is not a string, cannot determine steps_per_epoch")
         if not isinstance(steps_per_epoch, int):
             raise Exception(
                 f"steps_per_epoch is {self.steps_per_epoch} but has to be either an integer or"
                 "a string corresponding to an integer attribute of the MultiDataset",
             )
-        logger.info(f"Training will be done with {steps_per_epoch} steps per epoch")
+        logger.info(
+            f"Training will be done with {steps_per_epoch} steps per epoch")
 
         # Create validation dataset
         self.set_validation_weights(validation, batch_sizes, steps_per_epoch)
-        tf_validation = MultiDataset(data=validation, kind="valid", buffersize=0)
+        tf_validation = MultiDataset(
+            data=validation, kind="valid", buffersize=0)
         log_memory("tf_validation")
 
         for key, ml_dataset in validation.items():
@@ -494,6 +693,24 @@ class ModelFitMixin(CallbacksBase):
         }
         # start training by iterating over the MultiDataset
         iterator = (x for x in tf_train)
+        # normalize inputs TODO: make optional
+        logger.info("Adapting normalization layer...")
+
+        def limited_input_iterator(stream, max_count=100):
+            for i, x in enumerate(stream):
+                if i >= max_count:
+                    break
+                yield x[0]
+
+        input_iterator = limited_input_iterator(tf_train)
+        n_inputs = len(set(self.input_features))
+        tf_adapt_dataset = tf.data.Dataset.from_generator(
+            lambda: input_iterator,
+            output_signature=tf.TensorSpec(
+                shape=(None, n_inputs), dtype=tf.float32),
+        )
+        model.layers[0].adapt(tf_adapt_dataset)
+
         logger.info("Starting training...")
         # Removed debugger call for performance
         model.fit(

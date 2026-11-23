@@ -5,6 +5,16 @@ Tasks for postfit plots
 """
 
 from __future__ import annotations
+from columnflow.plotting.plot_util import (
+    prepare_stack_plot_config,
+    prepare_style_config,
+    apply_process_settings,
+    apply_process_scaling,
+    remove_residual_axis,
+    apply_density,
+)
+from columnflow.plotting.plot_all import plot_all
+from columnflow.types import TYPE_CHECKING
 
 from collections import OrderedDict, defaultdict
 
@@ -71,7 +81,8 @@ def get_hists_from_fit_diagnostics(tfile):
             h_in = h_in.to_hist()
 
         # set the histogram in a deep dictionary
-        hists = law.util.merge_dicts(hists, DotDict.wrap({fit: {channel: {process: h_in}}}), deep=True)
+        hists = law.util.merge_dicts(hists, DotDict.wrap(
+            {fit: {channel: {process: h_in}}}), deep=True)
     return hists
 
 
@@ -136,25 +147,15 @@ def get_hists_from_multidimfit(tfile):
             h_in = h_in.to_hist()
 
         # set the histogram in a deep dictionary
-        hists = law.util.merge_dicts(hists, DotDict.wrap({fit: {channel: {process: h_in}}}), deep=True)
+        hists = law.util.merge_dicts(hists, DotDict.wrap(
+            {fit: {channel: {process: h_in}}}), deep=True)
 
     return hists
 
 
-from columnflow.types import TYPE_CHECKING
 if TYPE_CHECKING:
     plt = maybe_import("matplotlib.pyplot")
     hist = maybe_import("hist")
-
-from columnflow.plotting.plot_all import plot_all
-from columnflow.plotting.plot_util import (
-    prepare_stack_plot_config,
-    prepare_style_config,
-    apply_process_settings,
-    apply_process_scaling,
-    remove_residual_axis,
-    apply_density,
-)
 
 
 def plot_postfit_shapes(
@@ -176,7 +177,8 @@ def plot_postfit_shapes(
     **kwargs,
 ) -> tuple[plt.Figure, tuple[plt.Axes]]:
     variable_inst = law.util.make_tuple(variable_insts)[0]
-    hists, process_style_config = apply_process_settings(hists, process_settings)
+    hists, process_style_config = apply_process_settings(
+        hists, process_settings)
     # process scaling
     hists = apply_process_scaling(hists)
 
@@ -195,7 +197,8 @@ def plot_postfit_shapes(
             for proc_inst, h in hists.items()
             if proc_inst.is_mc and getattr(proc_inst, "unstack", False)
         }
-        hists |= remove_residual_axis(unstacked_hists, "shift", select_value="nominal")
+        hists |= remove_residual_axis(
+            unstacked_hists, "shift", select_value="nominal")
 
     plot_config = prepare_stack_plot_config(
         hists,
@@ -217,10 +220,19 @@ def plot_postfit_shapes(
         plot_config["mc_stat_unc"]["kwargs"]["label"] = "Syst. unc."
         plot_config["mc_stat_unc"]["kwargs"]["hatch"] = "\\\\\\"
     except KeyError:
-        logger.warning("Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
+        logger.warning(
+            "Tried to update label of mc_stat_unc, but it does not exist in the plot_config")
 
+    # default_style_config = prepare_style_config(
+    #     config_inst, category_inst, variable_inst, density, shape_norm, yscale,
+    # )
     default_style_config = prepare_style_config(
-        config_inst, category_inst, variable_inst, density, shape_norm, yscale,
+        config_inst=config_inst,
+        variable_inst=variable_inst,
+        category_inst=category_inst,
+        density=density,
+        shape_norm=shape_norm,
+        yscale=yscale,
     )
     if hide_signal_errors:
         for key in plot_config.keys():
@@ -274,7 +286,8 @@ class PlotPostfitShapes(
     single_config = True
     resolution_task_cls = MergeHistograms
 
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    sandbox = dev_sandbox(law.config.get(
+        "analysis", "default_columnar_sandbox"))
     # datasets = None
 
     plot_function = PlotBase.plot_function.copy(
@@ -327,7 +340,8 @@ class PlotPostfitShapes(
             # try getting the config process via InferenceModel
             # NOTE: Only the first category is taken to get the config process instance,
             # assuming they are the same for all categories
-            channel = self.inference_model_inst.get_categories_with_process(proc_key)
+            channel = self.inference_model_inst.get_categories_with_process(
+                proc_key)
 
             if not channel:  # sometimes channel can be an empty list
                 has_category = False
@@ -337,14 +351,17 @@ class PlotPostfitShapes(
 
             if has_category and proc_key != "data_obs":
                 # config_data = channel.config_data.get(self.config_inst.name)
-                inference_process = self.inference_model_inst.get_process(proc_key, channel)
-                proc_inst = self.config_inst.get_process(inference_process.config_data[self.config_inst.name].process)
+                inference_process = self.inference_model_inst.get_process(
+                    proc_key, channel)
+                proc_inst = self.config_inst.get_process(
+                    inference_process.config_data[self.config_inst.name].process)
             # Mao data_obs to data process
             elif proc_key == "data_obs":
                 proc_inst = self.config_inst.get_process("data", default=None)
             else:
                 # try getting proc inst directly via config
-                proc_inst = self.config_inst.get_process(proc_key, default=None)
+                proc_inst = self.config_inst.get_process(
+                    proc_key, default=None)
 
             # replace string keys with process instances
             # map HHinference processes to process instances for plotting
@@ -355,14 +372,16 @@ class PlotPostfitShapes(
                 if len(plot_proc) > 1:
                     plot_proc_names = [p.name for p in plot_proc]
                     if len(plot_proc) == 2 and "background" in plot_proc_names:
-                        plot_proc = [p for p in plot_proc if p.name != "background"]
+                        plot_proc = [
+                            p for p in plot_proc if p.name != "background"]
                     else:
                         logger.warning(
                             f"{proc_key} was assigned to ({','.join([p.name for p in plot_proc])})",
                             f" but {plot_proc[0].name} was chosen",
                         )
                 elif len(plot_proc) == 0:
-                    logger.info(f"{proc_key} in root file, but won't be plotted.")
+                    logger.info(
+                        f"{proc_key} in root file, but won't be plotted.")
                     continue
                 plot_proc = plot_proc[0]
                 processes_map[plot_proc].append(proc_key)
@@ -380,7 +399,7 @@ class PlotPostfitShapes(
         1. Primary: existence of substrings ggf, vbf, tt, st, dy, h
         2. Secondary: existence of substrings 1b, 2b, boosted
         """
-        primary_order = ["_sig_ggf", "_sig_vbf", "_tt", "_st", "_dy", "_h", "_bkg"]
+        primary_order = ["_tt_custom", "_ttbb_custom", "_tth", "_tthh", "hhh"]
         secondary_order = ["1b", "2b", "boosted"]
 
         def sort_key(item):
@@ -399,7 +418,8 @@ class PlotPostfitShapes(
                     break
 
             # Return tuple for multi-level sorting
-            return (primary_idx, secondary_idx, item)  # item as tiebreaker for alphabetical
+            # item as tiebreaker for alphabetical
+            return (primary_idx, secondary_idx, item)
 
         return sorted(list(categories_set), key=sort_key)
 
@@ -423,7 +443,8 @@ class PlotPostfitShapes(
             dtype=[("value", "<f8"), ("variance", "<f8")],
         )
 
-        all_processes = set.union(*[set(hists.keys()) for hists in all_hists.values()])
+        all_processes = set.union(*[set(hists.keys())
+                                  for hists in all_hists.values()])
 
         bins_dict = {}
         categories_sorted = self.sort_categories(all_hists.keys())
@@ -604,9 +625,10 @@ class PlotPostfitShapes(
         # Get list of all process instances required for plotting
         process_insts = list(map(self.config_inst.get_process, self.processes))
         # map processes in root shape to corresponding process instance used for plotting
-        hist_processes = {key for _, h_in in all_hists.items() for key in h_in.keys()}
-        processes_map = self.prepare_processes_map(hist_processes, process_insts)
-
+        hist_processes = {key for _, h_in in all_hists.items()
+                          for key in h_in.keys()}
+        processes_map = self.prepare_processes_map(
+            hist_processes, process_insts)
         # make a combined histogram of all categories
         bins_dict = self.create_merged_hist(all_hists)
 
@@ -619,16 +641,19 @@ class PlotPostfitShapes(
             has_category = self.inference_model_inst.has_category(channel)
 
             if not has_category:
-                logger.warning(f"Category {channel} is not part of the inference model {self.inference_model}")
+                logger.warning(
+                    f"Category {channel} is not part of the inference model {self.inference_model}")
 
             # Create Histograms
             total_bkg = h_in.pop("TotalBkg", None)
             hists = defaultdict(OrderedDict)
             for proc, sub_procs in processes_map.items():
-                plot_proc = proc.copy()  # NOTE: copy produced, so actual process is not modified by process settings
+                # NOTE: copy produced, so actual process is not modified by process settings
+                plot_proc = proc.copy()
 
                 if not any(sub_proc in h_in.keys() for sub_proc in sub_procs):
-                    logger.warning(f"No histograms for {proc.name} found in {channel}.")
+                    logger.warning(
+                        f"No histograms for {proc.name} found in {channel}.")
                     continue
                 hists[plot_proc] = sum([
                     h_in[sub_proc] for sub_proc in sub_procs
@@ -636,11 +661,15 @@ class PlotPostfitShapes(
                 ])
 
             if has_category:
-                inference_category = self.inference_model_inst.get_category(channel)
-                config_data = inference_category.config_data.get(self.config_inst.name)
-                config_category = self.config_inst.get_category(config_data.category)
+                inference_category = self.inference_model_inst.get_category(
+                    channel)
+                config_data = inference_category.config_data.get(
+                    self.config_inst.name)
+                config_category = self.config_inst.get_category(
+                    config_data.category)
 
-                variable_inst = self.config_inst.get_variable(config_data.variable)
+                variable_inst = self.config_inst.get_variable(
+                    config_data.variable)
             else:
                 # default to dummy Category and Variable
                 config_category = self.config_inst.get_category(
@@ -649,7 +678,8 @@ class PlotPostfitShapes(
                 )
                 variable_inst = self.config_inst.get_variable(
                     variable,
-                    default=od.Variable("dummy", aux={"x_min": None, "x_max": None}),
+                    default=od.Variable(
+                        "dummy", aux={"x_min": None, "x_max": None}),
                 )
             if self.fit_type not in config_category.label.lower():
                 config_category.label = self.fit_type + "\n" + config_category.label
@@ -678,7 +708,8 @@ class PlotPostfitShapes(
                 line_pos = 0.71
                 bins_count = 0
                 axs[0].axhline(
-                    get_position(*axs[0].get_ylim(), factor=line_pos, logscale=True),
+                    get_position(*axs[0].get_ylim(),
+                                 factor=line_pos, logscale=True),
                     color="grey", linewidth=2.5,
                 )
                 for cat_name, bins_info in bins_dict.items():
@@ -700,7 +731,8 @@ class PlotPostfitShapes(
                         text=bjet_cat,
                         xy=(
                             bins_count + 0.5 * bins_info["count"],
-                            get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
+                            get_position(
+                                *axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         ),
                         xycoords="data",
                         fontsize=22,
@@ -712,7 +744,8 @@ class PlotPostfitShapes(
                         annotate_kwargs["rotation"] = 90
                         annotate_kwargs["xy"] = (
                             bins_count + 0.5 * bins_info["count"],
-                            get_position(*axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
+                            get_position(
+                                *axs[0].get_ylim(), factor=line_pos - 0.02, logscale=True),
                         )
                         annotate_kwargs["text"] = annotate_kwargs["text"] + "ed CR"
                         # annotate_kwargs["text"] = annotate_kwargs["text"] + " CR"
@@ -742,8 +775,11 @@ class PlotPostfitShapes(
                         axs[0].annotate(
                             text=bins_info["ml_proc"],
                             xy=(
-                                bins_count + 0.5 * (bins_info["ml_proc_count"]),  # TODO: position better
-                                get_position(*axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
+                                # TODO: position better
+                                bins_count + 0.5 *
+                                (bins_info["ml_proc_count"]),
+                                get_position(
+                                    *axs[0].get_ylim(), factor=line_pos + 0.05, logscale=True),
                             ),
                             xycoords="data",
                             fontsize=24,

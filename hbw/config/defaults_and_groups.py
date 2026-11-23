@@ -7,7 +7,8 @@ from columnflow.tasks.framework.base import RESOLVE_DEFAULT
 
 
 def default_calibrator(container):
-    default_calibrators = law.config.get_expanded("analysis", "default_calibrators", ())
+    default_calibrators = law.config.get_expanded(
+        "analysis", "default_calibrators", ())
     if isinstance(default_calibrators, str):
         return default_calibrators.split(",")
     else:
@@ -30,9 +31,7 @@ def ml_inputs_producer(container):
         if container.has_tag("is_hh"):
             ml_inputs = "dl_ml_inputs"
         elif container.has_tag("is_hhh"):
-            # ml_inputs = "hhh_dl_ml_inputs"
-            # ml_inputs = "gatja_scores"
-            ml_inputs = "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"
+            ml_inputs = "hhh_ml_inputs"
     if container.has_tag("is_sl") and container.has_tag("is_resonant"):
         ml_inputs = "sl_res_ml_inputs"
     return ml_inputs
@@ -50,7 +49,8 @@ def default_hist_producer(container):
 def default_ml_model(task_cls, container, task_params):
     """ Function that chooses the default_ml_model based on the inference_model if given """
     # for most tasks, do not use any default ml model
-    default_ml_model = law.config.get_expanded("analysis", "default_ml_models", ())
+    default_ml_model = law.config.get_expanded(
+        "analysis", "default_ml_models", ())
     if isinstance(default_ml_model, str):
         default_ml_model = default_ml_model.split(",")
 
@@ -71,7 +71,8 @@ def default_ml_model(task_cls, container, task_params):
 
         # get the default_ml_model from the inference_model_cls
         inference_model_cls = InferenceModel.get_cls(inference_model)
-        default_ml_model = getattr(inference_model_cls, "ml_model_name", default_ml_model)
+        default_ml_model = getattr(
+            inference_model_cls, "ml_model_name", default_ml_model)
 
     return default_ml_model
 
@@ -80,10 +81,11 @@ def default_producers(task_cls, container, task_params):
     """ Default producers chosen based on the Inference model and the ML Model """
 
     if task_params.get("ml_model") in ("GatjaTraining_MLClassifierBase_small_class_weights_05", "gatja_training"):
-        return ["gatja_event_weight", "gatja_inputs_jet_based_plus_b_jet_inputs_corrected_Higgs_Index_discrete_b"]
+        return ["gatja_event_weight", "gatja_scores_extern_evaluation"]
 
     # per default, use the ml_inputs and event_weights
-    default_producers = ["gatja_event_weight", "event_weights", "pre_ml_cats", ml_inputs_producer(container)]
+    default_producers = ["event_weights",
+                         "pre_ml_cats", ml_inputs_producer(container)]
 
     if hasattr(task_cls, "ml_model"):
         # do no further resolve the ML categorizer when this task is part of the MLTraining pipeline
@@ -128,7 +130,8 @@ def set_dl_config_defaults_and_groups(config_inst):
     config_inst.x.default_ml_model = default_ml_model
     config_inst.x.default_inference_model = "default_unblind"
     config_inst.x.default_categories = ["incl", "sr", "dycr", "ttcr"]
-    config_inst.x.default_variables = ["jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
+    config_inst.x.default_variables = [
+        "jet0_pt", "mll", "n_jet", "ptll", "lepton0_pt", "lepton1_pt"]
     config_inst.x.default_general_settings = ("data_mc_plots_not_blinded",)
     config_inst.x.default_custom_style_config = "default"
 
@@ -149,7 +152,8 @@ def set_dl_config_defaults_and_groups(config_inst):
         "h": ["h_ggf_*", "h_vbf_*", "zh_*", "wph_*", "wmh_*", "tth_*", "ttzh_*", "ttwh_*"],
     }
     if config_inst.name == "l22post":
-        config_inst.x.dataset_groups["test123"] = ["tt_dl_powheg", "tt_sl_powheg"]
+        config_inst.x.dataset_groups["test123"] = [
+            "tt_dl_powheg", "tt_sl_powheg"]
     elif config_inst.name == "l22pre":
         config_inst.x.dataset_groups["test123"] = ["tt_dl_powheg"]
 
@@ -325,7 +329,8 @@ def set_dl_config_defaults_and_groups(config_inst):
         "resolved": ["Trigger", "Lepton", "VetoLepton", "Jet", "Bjet", "VetoTau"],
         "boosted": ["Trigger", "Lepton", "VetoLepton", "FatJet", "Boosted"],
         "default": ["Lepton", "VetoLepton", "Jet", "Bjet", "Trigger"],
-        "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],  # reproduce master thesis cuts for checks
+        # reproduce master thesis cuts for checks
+        "thesis": ["Lepton", "Muon", "Jet", "Trigger", "Bjet"],
         "test": ["Lepton", "Jet", "Bjet"],
         "dilep": ["Jet", "Bjet", "Lepton", "Trigger"],
     }
@@ -375,7 +380,8 @@ def set_dl_config_defaults_and_groups(config_inst):
             data_handle = handles.pop(data_idx)
             data_label = labels.pop(data_idx)
 
-            handles.pop(empty_label_idx)  # remove empty entry added via cf_entries_per_column
+            # remove empty entry added via cf_entries_per_column
+            handles.pop(empty_label_idx)
             labels.pop(empty_label_idx)
 
             # insert data at the top of column 1 (index 0)
@@ -395,7 +401,8 @@ def set_dl_config_defaults_and_groups(config_inst):
             # Move data to first position
             data_handle = handles.pop(data_idx)
             data_label = labels.pop(data_idx)
-            handles.pop(0)  # remove empty entry added via cf_entries_per_column
+            # remove empty entry added via cf_entries_per_column
+            handles.pop(0)
             labels.pop(0)
             # # insert data at the bottom of column 1 (index 2)
             handles.insert(label_pos, data_handle)
@@ -418,9 +425,9 @@ def set_dl_config_defaults_and_groups(config_inst):
                 "figsize": (15, 10),
             },
             "legend_cfg": {
-                "ncols": 5,
-                "cf_entries_per_column": [0, 3, 3, 3, 4],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
-                "cf_update_handles_labels": reorder_data_pos,
+                "ncols": 4,
+                # tt group | other bkg | Higgs bkg + other | signals + unc
+                "cf_entries_per_column": [4, 4, 3, 4],   # = 15 entries, 4 rows
                 "fontsize": 20,
                 "bbox_to_anchor": (0., 0., 1., 1.),
             },
@@ -451,9 +458,26 @@ def set_dl_config_defaults_and_groups(config_inst):
                 # "ylabel_fontsize": 30,
                 # "xlabel_fontsize": 30,
                 # "ylim": (2e-1, 6e7),
-                "ylim": (0, 2),
+                "ylim": (0.3, 1.7),
             },
 
+        },
+        "d01": {
+            "ax_cfg": {
+                # push the ceiling up (default may be too close to 1e5) — gives the legend clean whitespace above the curves  # noqa: E501
+                "ylim": (2e-2, 1e7),
+            },
+            "legend_cfg": {
+                "ncols": 2,       # match doc6's 2-column layout — this is what keeps it compact/short
+                "fontsize": 16,   # slightly smaller if it's still a touch too tall
+                # no bbox_to_anchor override — let it default to the standard upper-right-inside placement like doc6
+            },
+            "rax_cfg": {
+                # "ylabel_fontsize": 30,
+                # "xlabel_fontsize": 30,
+                # "ylim": (2e-1, 6e7),
+                "ylim": (0.3, 1.7),
+            },
         },
         "gatja": {
             "legend_cfg": {
@@ -461,12 +485,12 @@ def set_dl_config_defaults_and_groups(config_inst):
                 "cf_entries_per_column": [0, 3, 4, 4, 3],  # start with empty col, then move data to front using cf_update_handles_labels  # noqa: E501
                 "fontsize": 12,
             },
-            "ax_cfg": {
-                # "ylabel_fontsize": 30,
-                # "xlabel_fontsize": 30,
-                # "ylim": (2e-1, 6e7),
-                "ylim": (0, 0.7),
-            },
+            # "ax_cfg": {
+            #     # "ylabel_fontsize": 30,
+            #     # "xlabel_fontsize": 30,
+            #     # "ylim": (2e-1, 6e7),
+            #     "ylim": (0, 0.7),
+            # },
         },
         "postfit_merged": {
             "gridspec_cfg": {

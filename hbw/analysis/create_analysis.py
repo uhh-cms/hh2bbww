@@ -216,7 +216,6 @@ def create_hbw_analysis(
     )
     limited_config_shared_tasks = ("cf.CalibrateEvents", "cf.GetDatasetLFNs", "cf.SelectEvents", "cf.ReduceEvents")
     histogram_tasks = ("cf.CreateHistograms", "cf.MergeHistograms", "cf.MergeShiftedHistograms")
-    skip_new_version_schema = ()
     known_parts = (
         # from cf
         "analysis", "task_family", "config", "configs", "dataset", "shift", "version",
@@ -369,16 +368,6 @@ def create_hbw_analysis(
         store_parts["shift"] = update_shift_name(task, store_parts["shift"])
         return store_parts
 
-    def gatja_production(task, store_parts):
-        """
-        Add the shift version to the store_parts.
-        This is used to distinguish between different versions of the same shift.
-
-        NOTE: we might want to do the same for shift_source in the future.
-        """
-        store_parts["task_family"] = "cf.ProduceColumns"
-        return store_parts
-
     def dataset_version(task, store_parts):
         """
         Add the dataset version to the store_parts.
@@ -397,24 +386,18 @@ def create_hbw_analysis(
 
     def hbw_parts(task, store_parts):
         name = task.task_family
-        if "hbw.ProduceColumnsTF" in name:
-            store_parts = gatja_production(task, store_parts)
         if name in software_tasks:
             return software_tasks_parts(task, store_parts)
         if name in shareable_analysis_tasks:
             store_parts = merged_analysis_parts(task, store_parts)
         if name in limited_config_shared_tasks:
             store_parts = limited_config_shared_parts(task, store_parts)
-        if name not in skip_new_version_schema:
-            store_parts = reorganize_parts(task, store_parts)
         if name in histogram_tasks and task.hist_producer:
             reuse_hist_producer(task, store_parts)
         if "dataset" in store_parts:
             store_parts = dataset_version(task, store_parts)
         if "shift" in store_parts:
             store_parts = shift_version(task, store_parts)
-        if "ProduceColumnsTF" in name:
-            store_parts
         return store_parts
 
     def pre_reducer_parts(task, store_parts):

@@ -130,11 +130,11 @@ def add_config(
         # Very hard coded and not maintaianble atm --> Change at some point.
         import glob
 
-        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_0_d4_99/Run3Summer24"
+        BASE = "/data/dust/user/markusla/public/hh2bbww/mcproduction/samples/GF_HHH_c3_m1p5_d4_m0p5/Run3Summer24"
 
         def get_local_dataset_lfns(dataset_inst, shift_inst, dataset_key):
             files = sorted(
-                glob.glob(os.path.join(BASE, "GF_HHH_c3_0_d4_99_merged*.root")),
+                glob.glob(os.path.join(BASE, "GF_HHH_c3_m1p5_d4_m0p5_merged*.root")),
                 # glob.glob(os.path.join(BASE, "GF_HHH_Run3Summer24_merged*.root")),
             )
 
@@ -250,14 +250,17 @@ def add_config(
         # taken lumi from above, subtracted era B, since not in cmsdb yet
         cfg.x.luminosity = Number(109820, {
             "lumi_13p6TeV_2024": 0.016j,  # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
+            "lumi_13p6TeV_correlated": 0.012j,
         })
     elif year == 2025:
         cfg.x.luminosity = Number(110580, {
             "lumi_13p6TeV_2025": 0.05j,  # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
+            "lumi_13p6TeV_correlated": 0.012j,
         })
     elif year == 2026:
         cfg.x.luminosity = Number(25310, {
             "lumi_13p6TeV_2026": 0.05j,  # NOTE: taken from 2025 no official recommendation yet
+            "lumi_13p6TeV_correlated": 0.012j,
         })
     else:
         raise NotImplementedError(f"Luminosity for year {year} is not defined.")
@@ -751,17 +754,29 @@ def add_config(
             # campaign="2024",
             working_point="Tight",
         )
-        cfg.x.electron_reco_sf_names = ElectronSFConfig(
-            correction="Electron-ID-SF",
-            campaign=electron_sf_campaign,
-            # campaign="2024",
-            # working_point=ele_reco_wp_func,
-            working_point={
-                "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
-                "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
-                "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
-            },
-        )
+        if year <= 2024:
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    "RecoBelow20": lambda variable_map: variable_map["pt"] < 20.0,
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
+        if year == 2025:
+            cfg.x.electron_reco_sf_names = ElectronSFConfig(
+                correction="Electron-ID-SF",
+                campaign=electron_sf_campaign,
+                # campaign="2024",
+                # working_point=ele_reco_wp_func,
+                working_point={
+                    "Reco20to75": lambda variable_map: (variable_map["pt"] >= 20.0) & (variable_map["pt"] < 75.0),
+                    "RecoAbove75": lambda variable_map: variable_map["pt"] >= 75.0,
+                },
+            )
         # else:
         #     cfg.x.electron_sf_names = ElectronSFConfig(
         #         correction="Electron-ID-SF",
@@ -1151,12 +1166,13 @@ def add_config(
     # jet veto map
     add_external("jet_veto_map", (cat_info.get_file("jme", "jetvetomaps.json.gz"), "v1"))
     # btag scale factor
+# btag scale factor
     if year < 2024:
         add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging.json.gz"), "v1"))
     else:
         # add_external("btag_sf_corr", (cat_info.get_file("btv", "btagging_preliminary.json.gz"), "v1"))
         # add_external("btag_wp_sf_corr", ("/data/dust/user/matthiej/mttbar/mtt/config/run3/btagging_preliminary_merged.json.gz", "v1"))  # noqa: E501
-        add_external("btag_wp_sf_corr", (f"/data/dust/user/letzerba/public/hh2bbww/jsons/merged_btagging{year2}.json.gz", "v2"))  # noqa: E501
+        add_external("btag_wp_sf_corr", (f"/data/dust/user/letzerba/public/hh2bbww/jsons/merged_btagging{year2}.json.gz", "v3"))  # noqa: E501
 
     # updated jet id
     add_external("jet_id", (cat_info.get_file("jme", "jetid.json.gz"), "v1"))
@@ -1174,7 +1190,7 @@ def add_config(
 
     # muon scale factors
     add_external("muon_sf", (cat_info.get_file("muo", "muon_Z.json.gz"), "v2"))
-    add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
+    # add_external("muon_low_pt_sf", (cat_info.get_file("muo", "muon_JPsi.json.gz"), "v1"))
     add_external("muon_sr", (cat_info.get_file("muo", "muon_scalesmearing.json.gz"), "v1"))
     add_external("muon_sr_tools", Ext(
         "/data/dust/user/letzerba/public/hh2bbww/jsons/muonscarekit-1c7426b5.tar.gz",
@@ -1201,12 +1217,12 @@ def add_config(
         add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
         add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
         add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV6.json.gz", "v6"))  # noqa: E501
-    elif year >= 2024:
+    elif year == 2024 or year == 2025:
         trigger_sf_path = "/data/dust/user/letzerba/public/hh2bbww/triggersf"
 
-        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
-        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
-        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_idsV1.json.gz", "v1"))  # noqa: E501
+        add_external("trigger_sf_ee", (f"{trigger_sf_path}/sf_ee_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mm", (f"{trigger_sf_path}/sf_mm_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
+        add_external("trigger_sf_mixed", (f"{trigger_sf_path}/sf_mixed_trg_lepton0_pt-trg_lepton1_pt-trig_ids{year2}.json.gz", "v0"))  # noqa: E501
     else:
         raise NotImplementedError(f"Trigger SFs not yet implemented for year {year}")
 

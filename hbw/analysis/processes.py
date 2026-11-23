@@ -8,20 +8,18 @@ the changes will not be reflected in the campaign and there will be inconsistenc
 
 # import order as od
 
+from cmsdb.util import add_decay_process
+from hbw.config.styling import color_palette
+from hbw.config.processes import create_parent_process
 import law
 logger = law.logger.get_logger(__name__)
-
-
-from hbw.config.processes import create_parent_process
-from hbw.config.styling import color_palette
-from cmsdb.util import add_decay_process
 
 
 def modify_cmsdb_processes():
     from cmsdb.processes import (
         data, data_met,
         qcd_mu, qcd_em, qcd_bctoe,
-        tt, ttv, st, w_lnu, vv, h,
+        tt, ttv, st, w_lnu, vv, h, bbh, ttvh,
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
         dy_ee, dy_ee_m10to50, dy_ee_m50toinf, dy_ee_m50toinf_0j, dy_ee_m50toinf_1j, dy_ee_m50toinf_2j,
         dy_mumu, dy_mumu_m10to50, dy_mumu_m50toinf, dy_mumu_m50toinf_0j, dy_mumu_m50toinf_1j, dy_mumu_m50toinf_2j,
@@ -82,9 +80,12 @@ def modify_cmsdb_processes():
     dy_mumu_m50toinf_2j.aux = {"production_mode_parent": ["dy_mumu_m50toinf"]}
     dy_tautau_m10to50.aux = {"production_mode_parent": ["dy_tautau"]}
     dy_tautau_m50toinf.aux = {"production_mode_parent": ["dy_tautau"]}
-    dy_tautau_m50toinf_0j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
-    dy_tautau_m50toinf_1j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
-    dy_tautau_m50toinf_2j.aux = {"production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_tautau_m50toinf_0j.aux = {
+        "production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_tautau_m50toinf_1j.aux = {
+        "production_mode_parent": ["dy_tautau_m50toinf"]}
+    dy_tautau_m50toinf_2j.aux = {
+        "production_mode_parent": ["dy_tautau_m50toinf"]}
 
     for dy_proc_inst in (
         dy, dy_m4to10, dy_m10to50, dy_m50toinf, dy_m50toinf_0j, dy_m50toinf_1j, dy_m50toinf_2j,
@@ -95,7 +96,8 @@ def modify_cmsdb_processes():
         for flavour in ("hf", "lf"):
             aux = {"flavour": flavour}
             if hasattr(dy_proc_inst, "aux") and dy_proc_inst.aux:
-                aux.update(dy_proc_inst.aux)  # merge pre-set production_mode_parent
+                # merge pre-set production_mode_parent
+                aux.update(dy_proc_inst.aux)
             add_production_mode_parent = "production_mode_parent" in aux
             add_decay_process(
                 dy_proc_inst,
@@ -116,7 +118,8 @@ def modify_cmsdb_processes():
     tt_custom.add_parent_process(tt)
 
     ttbb_custom = create_parent_process(
-        [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b, ttbb_dl_2b, ttbb_sl_2b, ttbb_fh_2b, ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
+        [ttbb_dl_b, ttbb_sl_b, ttbb_fh_b, ttbb_dl_2b, ttbb_sl_2b,
+            ttbb_fh_2b, ttbb_dl_bb, ttbb_sl_bb, ttbb_fh_bb],
         name="ttbb_custom",
         id=68899,
         label="TT + b",
@@ -176,11 +179,26 @@ def modify_cmsdb_processes():
         label="background",
         color=color_palette["blue"],
     )
+    ml_bkg_hhh = create_parent_process(  # noqa: F841
+        [tt_custom, ttbb_custom, dy, st, h, ttv],
+        name="ml_bkg_hhh",
+        id=2384976873,
+        label="background",
+        color=color_palette["blue"],
+    )
 
     other = create_parent_process(  # noqa: F841
         [ttvv, tttt, vvv],
         name="other",
         id=99998,
+        label="other",
+        color=color_palette["grey"],
+    )
+
+    h_other = create_parent_process(  # noqa: F841
+        [thq, thw, h_ggf, h_vbf, vh, bbh, ttvh],
+        name="h_other",
+        id=23647952,
         label="other",
         color=color_palette["grey"],
     )

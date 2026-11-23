@@ -19,7 +19,7 @@ from hbw.production.nlo_reweighting import nlo_reweighting
 from columnflow.production.cms.dy import gen_dilepton, recoil_corrected_met
 from hbw.production.gen_hbv_decay import gen_hbv_decay
 from columnflow.production.util import attach_coffea_behavior
-from hbw.production.ml_trih_inputs import jet_gen_matching_8
+from hbw.production.ml_gatja_inputs import jet_gen_matching_8
 
 
 ak = maybe_import("awkward")
@@ -36,7 +36,8 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil, nlo_reweighting),
+        IF_DY(gen_dilepton, recoil_corrected_met,
+              njet_for_recoil, nlo_reweighting),
         gen_hbv_decay,
     },
     produces={
@@ -44,7 +45,8 @@ recoil_corrected_met.njet_column = "njet_for_recoil"
         cf_default,
         IF_TOP(gen_parton_top),
         IF_VJETS(gen_v_boson),
-        IF_DY(gen_dilepton, recoil_corrected_met, njet_for_recoil, nlo_reweighting),
+        IF_DY(gen_dilepton, recoil_corrected_met,
+              njet_for_recoil, nlo_reweighting),
         gen_hbv_decay,
     },
 )
@@ -101,6 +103,7 @@ def default_init(self: Reducer) -> None:
 
 
 test_default = default.derive("test_default")
+hhh_gatja = default.derive("hhh_gatja")
 triggersf = default.derive("triggersf")
 noselection = default.derive("noselection")
 
@@ -200,7 +203,8 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 76)] + [80., 90., 100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 15.] + [i for i in range(16, 76)] + [80.,
+                                                          90., 100., 110., 120., 150., 175., 200., 240., 400.],
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Leading lepton $p_{{T}}$",
@@ -211,7 +215,8 @@ def triggersf_init(self: Reducer) -> None:
         aux=dict(
             inputs={"{Electron,Muon}.{pt,eta,phi,mass}"},
         ),
-        binning=[0., 15.] + [i for i in range(16, 66)] + [100., 110., 120., 150., 175., 200., 240., 400.],
+        binning=[0., 15.] + [i for i in range(16, 66)] +
+        [100., 110., 120., 150., 175., 200., 240., 400.],
         unit="GeV",
         null_value=EMPTY_FLOAT,
         x_title=r"Subleading lepton $p_{{T}}$",
@@ -233,7 +238,8 @@ def triggersf_init(self: Reducer) -> None:
     )
     # trigger ids für scale factors
     cfg.add_variable(
-        name="trig_ids",  # these are produced in the trigger_prod producer when building different combinations
+        # these are produced in the trigger_prod producer when building different combinations
+        name="trig_ids",
         aux={"axis_type": "strcat"},
         x_title="Trigger IDs for scale factors",
     )
@@ -242,7 +248,8 @@ def triggersf_init(self: Reducer) -> None:
 @triggersf.post_init
 def triggersf_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
     if task.selector_steps:
-        raise Exception("Selector steps are not supported in triggersf reducer")
+        raise Exception(
+            "Selector steps are not supported in triggersf reducer")
 
     # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
     if not task.invokes_reducer:
@@ -272,7 +279,8 @@ test_triggersf = triggersf.derive("test_triggersf")
 @noselection.post_init
 def noselection_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
     if task.selector_steps:
-        raise Exception("Selector steps are not supported in noselection reducer")
+        raise Exception(
+            "Selector steps are not supported in noselection reducer")
 
     # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
     if not task.invokes_reducer:
@@ -283,7 +291,54 @@ def noselection_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
 
 test_noselection = noselection.derive("test_noselection")
 
-default_hhh_v8 = default.derive("default_hhh_v8")
+checkJME = default.derive("checkJME")
+
+
+@checkJME.post_init
+def checkJME_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception(
+            "Selector steps are not supported in noselection reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("all_checkJME",)
+
+
+invoke_3b = default.derive("invoke_3b")
+
+
+@invoke_3b.post_init
+def invoke_3b_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception(
+            "Selector steps are not supported in noselection reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("all", "nBjet3")
+
+
+test_data = default.derive("test_data")
+
+
+@test_data.post_init
+def test_data_post_init(self: Reducer, task: law.Task, **kwargs) -> None:
+    if task.selector_steps:
+        raise Exception(
+            "Selector steps are not supported in noselection reducer")
+
+    # the updates to selector_steps and used columns are only necessary if the task invokes the reducer
+    if not task.invokes_reducer:
+        return
+
+    task.selector_steps = ("all_but_bjet",)
+
+
 # Reducer that calculates label matching
 
 

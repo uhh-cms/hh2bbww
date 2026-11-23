@@ -5,6 +5,14 @@ Tasks related to the creation and modification of datacards for inference purpos
 """
 
 from __future__ import annotations
+import json
+from columnflow.tasks.framework.base import AnalysisTask
+import yaml
+import textwrap
+import os
+from columnflow.tasks.framework.plotting import (
+    PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
+)
 
 from columnflow.types import Any
 
@@ -129,12 +137,14 @@ def get_rebin_values(
     background_view = background_hist.view()
     signal_view = signal_hist.view()
 
-    max_error = lambda value: value ** 2 / min_bkg_events
+    def max_error(value):
+        return value ** 2 / min_bkg_events
 
-    blind_bool_func = lambda value, bkg_value: (
-        value / np.sqrt(value + bkg_value) >= blinding_threshold
-        if blinding_threshold else False
-    )
+    def blind_bool_func(value, bkg_value):
+        return (
+            value / np.sqrt(value + bkg_value) >= blinding_threshold
+            if blinding_threshold else False
+        )
 
     # starting at N_bins_input - 1 excludes overflow
     # ending loop at 0 to exclude underflow
@@ -149,7 +159,8 @@ def get_rebin_values(
         N_bkg_value += background_view["value"][i]
         N_bkg_variance += background_view["variance"][i]
         if i % 100 == 0:
-            logger.info(f"//////////// Bin {i} of {N_bins_input}, {N_events} events")
+            logger.info(
+                f"//////////// Bin {i} of {N_bins_input}, {N_events} events")
         if N_events >= events_per_bin:
             # when *N_events* surpasses threshold, check if background variance is small enough
             if N_bkg_variance < max_error(N_bkg_value):
@@ -164,12 +175,14 @@ def get_rebin_values(
                 last_bin_index = rebin_hist.axes[0].index(this_edge)
                 _sum = rebin_hist.values()[:last_bin_index].sum()
                 events_per_bin = _sum / (N_bins_final - bin_count)
-                logger.info(f"============ Continuing with {round(events_per_bin, 3)} events per bin")
+                logger.info(
+                    f"============ Continuing with {round(events_per_bin, 3)} events per bin")
                 # check if this bin should be blinded
                 if blinded_by_significance:
                     should_be_blinded = blind_bool_func(N_signal, N_bkg_value)
                     if should_be_blinded:
-                        logger.warning(f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
+                        logger.warning(
+                            f"Blinding condition fulfilled, first bin edge is set to {this_edge}")
                         rebin_values = []
                 else:
                     if this_edge >= blinding_threshold:
@@ -226,7 +239,8 @@ class HBWInferenceModelBase(
     resolution_task_cls = MergeHistograms
     single_config = False
 
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    sandbox = dev_sandbox(law.config.get(
+        "analysis", "default_columnar_sandbox"))
 
     # attribute to disable fully unblinding the datacard when using real data (False until pre-approval)
     unblind_step1 = True
@@ -295,7 +309,8 @@ class ModifyDatacardsFlatRebin(
         # resolve default and groups for `bins_per_category`
         if not params.get("bins_per_category"):
             params["bins_per_category"] = config_inst.x.default_bins_per_category
-        params["bins_per_category"] = resolve_category_groups(params["bins_per_category"], config_inst)
+        params["bins_per_category"] = resolve_category_groups(
+            params["bins_per_category"], config_inst)
 
         config_inst.x.inference_category_rebin_processes = resolve_category_groups(
             config_inst.x.inference_category_rebin_processes,
@@ -303,13 +318,14 @@ class ModifyDatacardsFlatRebin(
         )
         return params
 
-    def get_n_bins(self, DEFAULT_N_BINS=8):
+    def get_n_bins(self, DEFAULT_N_BINS=20):
         """ Method to get the requested number of bins for the current category. Defaults to *DEFAULT_N_BINS*"""
         # NOTE: we assume single config here...
         config_category = self.branch_data.inf_cat.config_data[self.config_insts[0].name].category
         n_bins = self.bins_per_category.get(config_category, None)
         if not n_bins:
-            logger.warning(f"No number of bins setup for category {config_category}; will default to {DEFAULT_N_BINS}.")
+            logger.warning(
+                f"No number of bins setup for category {config_category}; will default to {DEFAULT_N_BINS}.")
             n_bins = DEFAULT_N_BINS
         return int(n_bins)
 
@@ -322,8 +338,10 @@ class ModifyDatacardsFlatRebin(
         config_category = self.branch_data.inf_cat.config_data[self.config_insts[0].name].category
         processes = self.branch_data.inf_cat.processes.copy()
 
-        get_config_process = lambda proc: proc.config_data[self.config_insts[0].name].process
-        rebin_process_condition = config_inst.x.inference_category_rebin_processes.get(config_category, None)
+        def get_config_process(proc):
+            return proc.config_data[self.config_insts[0].name].process
+        rebin_process_condition = config_inst.x.inference_category_rebin_processes.get(
+            config_category, None)
         if not rebin_process_condition:
             logger.warning(
                 f"No rebin condition found for category {config_category}; rebinning will be flat "
@@ -334,7 +352,9 @@ class ModifyDatacardsFlatRebin(
         # transform `rebin_process_condition` into Callable if required
         if not isinstance(rebin_process_condition, Callable):
             _rebin_processes = list(rebin_process_condition)
-            rebin_process_condition = lambda _proc_name: _proc_name in _rebin_processes
+
+            def rebin_process_condition(_proc_name):
+                return _proc_name in _rebin_processes
 
         for proc in processes.copy():
             proc_name = get_config_process(proc)
@@ -361,7 +381,8 @@ class ModifyDatacardsFlatRebin(
             if proc.is_signal and (
                 (
                     cfg.has_tag("is_hh") and (
-                        proc.name.startswith("ggHH_kl_1_kt_1") or proc.name.startswith("qqHH_CV_1_C2V_1_kl_1")
+                        proc.name.startswith("ggHH_kl_1_kt_1") or proc.name.startswith(
+                            "qqHH_CV_1_C2V_1_kl_1")
                     )
                 ) or (
                     cfg.has_tag("is_hhh") and proc.name.startswith("hhh_")
@@ -384,7 +405,8 @@ class ModifyDatacardsFlatRebin(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
-        reqs["datacards"] = self.reqs.CreateDatacards.req(self, configs=self.configs)
+        reqs["datacards"] = self.reqs.CreateDatacards.req(
+            self, configs=self.configs)
 
         return reqs
 
@@ -401,7 +423,9 @@ class ModifyDatacardsFlatRebin(
     def output(self):
         configs_repr = self.configs_str(self.branch_data.configs)
         cat_obj = self.branch_data.inf_cat.config_data[self.config_insts[0].name]
-        basename = lambda name, ext: f"{name}__cfg_{configs_repr}__cat_{cat_obj.category}.{ext}"
+
+        def basename(name, ext):
+            return f"{name}__cfg_{configs_repr}__cat_{cat_obj.category}.{ext}"
         n_bins = self.get_n_bins()
         return {
             "card": self.target(basename(f"card_{n_bins}", "txt")),
@@ -418,12 +442,15 @@ class ModifyDatacardsFlatRebin(
         for number in rates.split(" "):
             if number != "":
                 # replace with -1 and keep the same length
-                rates_post = rates_post.replace(number, f"-1{' ' * (len(number) - 2)}", 1)
+                rates_post = rates_post.replace(
+                    number, f"-1{' ' * (len(number) - 2)}", 1)
         datacard = datacard.replace(rates, rates_post)
 
-        n_obs = "\nobservation" + datacard.split("\nobservation")[1].split("\n")[0]
+        n_obs = "\nobservation" + \
+            datacard.split("\nobservation")[1].split("\n")[0]
         # replace with -1 and keep the same length
-        datacard = datacard.replace(n_obs, f"\nobservation{' ' * (len(n_obs) - 2)}-1")
+        datacard = datacard.replace(
+            n_obs, f"\nobservation{' ' * (len(n_obs) - 2)}-1")
         return datacard
 
     def run(self):
@@ -437,7 +464,8 @@ class ModifyDatacardsFlatRebin(
 
         # create a copy of the datacard with modified name of the shape file
         datacard = inp_datacard.load(formatter="text")
-        datacard = datacard.replace(inp_shapes.basename, outputs["shapes"].basename)
+        datacard = datacard.replace(
+            inp_shapes.basename, outputs["shapes"].basename)
 
         if self.partially_unblinded:
             datacard = self.update_rates_and_obs_str(datacard)
@@ -468,7 +496,8 @@ class ModifyDatacardsFlatRebin(
             background_processes = self.get_background_processes()
 
             rebin_inf_proc_names = [proc.name for proc in rebin_processes]
-            background_proc_names = [proc.name for proc in background_processes]
+            background_proc_names = [
+                proc.name for proc in background_processes]
             # background_processes = self.get_background_processes()
             # __import__("IPython").embed()
             if diff := set(rebin_inf_proc_names).difference(nominal_hists.keys()):
@@ -486,8 +515,10 @@ class ModifyDatacardsFlatRebin(
                         raise Exception(f"Histograms {diff} requested for rebinning but no corresponding "
                                         "nominal histograms found")
 
-            rebin_hists = [nominal_hists[proc_name] for proc_name in rebin_inf_proc_names]
-            rebin_hist = sum(rebin_hists[1:], rebin_hists[0])  # sum all histograms to get the total histogram
+            rebin_hists = [nominal_hists[proc_name]
+                           for proc_name in rebin_inf_proc_names]
+            # sum all histograms to get the total histogram
+            rebin_hist = sum(rebin_hists[1:], rebin_hists[0])
 
             # background_processes = self.get_background_processes()
             # bkg_names = [proc.name for proc in background_processes]
@@ -498,18 +529,22 @@ class ModifyDatacardsFlatRebin(
             #         # logger.warning(f"Background process {b.name} not found in nominal histograms, removing from list")  # noqa E501
             #         background_processes.remove(b)
             try:
-                background_hists = [nominal_hists[proc_name] for proc_name in background_proc_names]
+                background_hists = [nominal_hists[proc_name]
+                                    for proc_name in background_proc_names]
             except KeyError as e:
                 __import__("IPython").embed()
-                logger.error(f"Error occurred while creating background histogram: {e}")
+                logger.error(
+                    f"Error occurred while creating background histogram: {e}")
                 raise
             background_hist = sum(background_hists[1:], background_hists[0])
 
             signal_processes = self.get_signal_processes(self.config_insts[0])
-            signal_hists = [nominal_hists[proc.name] for proc in signal_processes]
+            signal_hists = [nominal_hists[proc.name]
+                            for proc in signal_processes]
             signal_hist = sum(signal_hists[1:], signal_hists[0])
 
-            logger.info(f"Finding rebin values for category {cat_name} using processes {rebin_inf_proc_names}")
+            logger.info(
+                f"Finding rebin values for category {cat_name} using processes {rebin_inf_proc_names}")
             if "data_obs" in proc_names and self.partially_unblinded:
                 if "sig_vbf" in cat_name:
                     # for the VBF categories, we use a blinding threshold
@@ -524,11 +559,11 @@ class ModifyDatacardsFlatRebin(
                 elif "3b__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.0005
-                    blinding_threshold = 1.9
+                    blinding_threshold = 3.03
                 elif "4b__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.001
-                    blinding_threshold = 3.0
+                    blinding_threshold = 3.95
                 elif "boosted__ml_hhh_signal" in cat_name:
                     # for the GGF categories, we use a blinding threshold
                     # blinding_threshold = 0.001
@@ -563,8 +598,10 @@ class ModifyDatacardsFlatRebin(
                     except AttributeError:
                         continue
 
-                    cat_name, proc_name, syst_name = get_cat_proc_syst_name_from_key(key)
-                    h_rebin = apply_rebinning_edges(h, h.axes[0].name, rebin_values)
+                    cat_name, proc_name, syst_name = get_cat_proc_syst_name_from_key(
+                        key)
+                    h_rebin = apply_rebinning_edges(
+                        h, h.axes[0].name, rebin_values)
                     h_rebin_sum = h_rebin.sum()
 
                     # log whether norms are negative or variances too large
@@ -598,11 +635,6 @@ class ModifyDatacardsFlatRebin(
         }, indent=4, formatter="json")
 
         self.publish_message(f"datacard written to {outputs['card'].abspath}")
-
-
-from columnflow.tasks.framework.plotting import (
-    PlotBase, PlotBase1D, ProcessPlotSettingMixin, VariablePlotSettingMixin,
-)
 
 
 class PlotShiftedInferencePlots(
@@ -641,7 +673,8 @@ class PlotShiftedInferencePlots(
     def workflow_requires(self):
         reqs = super().workflow_requires()
 
-        reqs["rebinned_datacards"] = self.reqs.ModifyDatacardsFlatRebin.req(self)
+        reqs["rebinned_datacards"] = self.reqs.ModifyDatacardsFlatRebin.req(
+            self)
 
         return reqs
 
@@ -669,7 +702,8 @@ class PlotShiftedInferencePlots(
         var_ax = h.axes[0]
         out_axes = [
             hist.axis.StrCategory([shift_bin], name="shift", growth=True),
-            hist.axis.Variable(var_ax.edges, name=variable_inst.name, label=variable_inst.x_title),
+            hist.axis.Variable(
+                var_ax.edges, name=variable_inst.name, label=variable_inst.x_title),
         ]
         return hist.Hist(*out_axes, storage=h.storage_type(), data=[h.view(flow=True)])
 
@@ -698,7 +732,8 @@ class PlotShiftedInferencePlots(
         elif "fsr" in shift_source:
             shift_source = "fsr"
 
-        config_shift_source = const.rename_systematics_inverted.get(shift_source, shift_source)
+        config_shift_source = const.rename_systematics_inverted.get(
+            shift_source, shift_source)
         config_shift_source = config_shift_source.replace(analysis_tag, "")
         return f"{config_shift_source}_down"
 
@@ -722,7 +757,8 @@ class PlotShiftedInferencePlots(
         config_data = self.branch_data.config_data[config_inst.name]
         category_inst = config_inst.get_category(config_data.category)
         variable_inst = config_inst.get_variable(config_data.variable)
-        variable_inst.x.rebin = 1  # do not try rebinning here, we already did that in the datacard modification
+        # do not try rebinning here, we already did that in the datacard modification
+        variable_inst.x.rebin = 1
 
         with uproot.open(inp_shapes.fn) as f_in:
             # determine which histograms are present
@@ -744,10 +780,12 @@ class PlotShiftedInferencePlots(
                     proc_name = inf_inst.inf_proc(config_proc_name)
                     proc_inst = config_inst.get_process(config_proc_name)
                     if self.skip_process(proc_inst, category_inst):
-                        logger.info(f"Skipping process {proc_inst.name} for category {cat_name}")
+                        logger.info(
+                            f"Skipping process {proc_inst.name} for category {cat_name}")
                         continue
                     h_nom = f_in[get_hist_name(cat_name, proc_name)].to_hist()
-                    h_nom = self.prepare_cf_hist(h_nom, variable_inst, shift_bin="nominal")
+                    h_nom = self.prepare_cf_hist(
+                        h_nom, variable_inst, shift_bin="nominal")
                     # TODO: when no syst_names, make nominal plot only
                     if not syst_names:
                         syst_names = [None]
@@ -755,12 +793,14 @@ class PlotShiftedInferencePlots(
                         if syst_name and not syst_name.endswith("Down"):
                             continue
 
-                        hist_name = get_hist_name(cat_name, proc_name, syst_name)
+                        hist_name = get_hist_name(
+                            cat_name, proc_name, syst_name)
                         h_down = f_in.get(hist_name)
                         if not h_down:
                             continue
 
-                        config_shift_name = self.get_config_shift_name(syst_name)
+                        config_shift_name = self.get_config_shift_name(
+                            syst_name)
 
                         shift_source = config_shift_name.replace("_down", "")
                         plot_name = f"{cat_name}__{proc_inst.name}__{shift_source}.pdf"
@@ -775,11 +815,14 @@ class PlotShiftedInferencePlots(
                             # TODO: add cpn_tag to shift label if part of shift_source
                             if cfg_inst.x.cpn_tag in shift_source:
                                 shift_label_postfix = f" ({cfg_inst.x.cpn_tag})"
-                            shift_source = shift_source.replace(f"_{cfg_inst.x.cpn_tag}", "")
+                            shift_source = shift_source.replace(
+                                f"_{cfg_inst.x.cpn_tag}", "")
                             if cfg_inst.has_shift(f"{shift_source}_up"):
                                 # use shifts and config inst where corresponding shift is defined
-                                shift_insts["up"] = cfg_inst.get_shift(f"{shift_source}_up").copy_shallow()
-                                shift_insts["down"] = cfg_inst.get_shift(f"{shift_source}_down").copy_shallow()
+                                shift_insts["up"] = cfg_inst.get_shift(
+                                    f"{shift_source}_up").copy_shallow()
+                                shift_insts["down"] = cfg_inst.get_shift(
+                                    f"{shift_source}_down").copy_shallow()
 
                                 # add postfix to labels
                                 shift_insts["up"].label += shift_label_postfix
@@ -795,18 +838,21 @@ class PlotShiftedInferencePlots(
                         h_down = h_down.to_hist()
 
                         # if down is present, up must be present as well
-                        h_up = f_in.get(hist_name.replace("Down", "Up")).to_hist()
+                        h_up = f_in.get(hist_name.replace(
+                            "Down", "Up")).to_hist()
 
                         h_combined = (
                             h_nom.copy() +
                             self.prepare_cf_hist(h_down, variable_inst, shift_bin=shift_insts["down"].name) +
-                            self.prepare_cf_hist(h_up, variable_inst, shift_bin=shift_insts["up"].name)
+                            self.prepare_cf_hist(
+                                h_up, variable_inst, shift_bin=shift_insts["up"].name)
                         )
 
                         hists = {proc_inst: h_combined}
 
                         # temporarily use a merged luminostiy value, assigned to the first config
-                        lumi = sum([_config_inst.x.luminosity for _config_inst in self.config_insts])
+                        lumi = sum(
+                            [_config_inst.x.luminosity for _config_inst in self.config_insts])
                         with law.util.patch_object(config_inst.x, "luminosity", lumi):
                             # call the plot function
                             fig, _ = self.call_plot_func(
@@ -818,7 +864,8 @@ class PlotShiftedInferencePlots(
                                 shift_insts=list(shift_insts.values()),
                                 **self.get_plot_parameters(),
                             )
-                            output["plots"].child(plot_name, type="f").dump(fig, formatter="mpl")
+                            output["plots"].child(plot_name, type="f").dump(
+                                fig, formatter="mpl")
                             # save the figure to the pdf
                             pdf.savefig(fig)
                             # close the figure to avoid memory issues
@@ -923,14 +970,16 @@ class PrepareInferenceTaskCalls(
                 "configs": _params["configs"],
                 "config_insts": _params["config_insts"],
             }
-            cls.reqs.ModifyDatacardsFlatRebin.resolve_instances(_params, shifts)
+            cls.reqs.ModifyDatacardsFlatRebin.resolve_instances(
+                _params, shifts)
 
         return params
 
     @classmethod
     def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
         if params["config_groups"]:
-            configs = tuple(config for config_group in params["config_groups"] for config in config_group)
+            configs = tuple(
+                config for config_group in params["config_groups"] for config in config_group)
             if configs != params["configs"]:
                 logger.warning_once(
                     f"update_configs_{params['configs']}_from_groups_{params['config_groups']}",
@@ -997,13 +1046,15 @@ class PrepareInferenceTaskCalls(
             for target in value.collection.targets.values():
                 card_fns.append(target["card"].basename)
                 if recreate_cards:
-                    logger.info(f"Copying datacard for target {target['card'].basename} to {self.cards_target.abspath}")
+                    logger.info(
+                        f"Copying datacard for target {target['card'].basename} to {self.cards_target.abspath}")
                     target["card"].copy_to(self.cards_target)
                     target["shapes"].copy_to(self.cards_target)
                     target["inspection"].copy_to(self.cards_target)
 
         # string that represents the version of datacards
-        identifier_list = [*self.config_groups_str, self.inference_model_cls.__str__()]
+        identifier_list = [*self.config_groups_str,
+                           self.inference_model_cls.__str__()]
         if self.cards_version:
             identifier_list.append(self.cards_version)
         identifier = "__".join(identifier_list)
@@ -1020,16 +1071,18 @@ class PrepareInferenceTaskCalls(
         # cards_path = cards_path.pop()
 
         cards_path = self.cards_target.abspath
-        decorrelated_cards_path = f"{cards_path}/decorrelated"
+        pruned_cards_path = f"{cards_path}/pruned"
 
         # card_fns = [collection[key]["card"].basename for key in collection.keys()]
 
         # get the category names from the inference models
         cat_names = self.inference_model_cls.config_categories
-        cat_names = [f"{cat_name}__{year}" for year in self.config_groups_str for cat_name in cat_names]
+        cat_names = [
+            f"{cat_name}__{year}" for year in self.config_groups_str for cat_name in cat_names]
 
         # combine category names with card fn to a single string
-        datacards = ",".join([f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
+        datacards = ",".join(
+            [f"{cat_name}=$CARDS_PATH/{card_fn}" for cat_name, card_fn in zip(cat_names, card_fns)])
         datacards_per_year = ":".join([",".join(
             [card for card in datacards.split(",") if year in card],
         ) for year in self.config_groups_str])
@@ -1038,7 +1091,8 @@ class PrepareInferenceTaskCalls(
         # output_file = ""
 
         # prepare the base command to set the environment variables
-        base_cmd = f"export BASE_CARDS_PATH={cards_path}" + "\n" + f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
+        base_cmd = f"export BASE_CARDS_PATH={cards_path}" + \
+            "\n" + f"export CARDS_PATH={pruned_cards_path}" + "\n"
         export_and_prepare_cards_cmd = base_cmd
         cmd_dict = {}
 
@@ -1048,12 +1102,13 @@ class PrepareInferenceTaskCalls(
         elif len(self.configs) == 1:
             campaign = self.configs[0]
         else:
-            lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
-            campaign = f"'{lumi:.1f} fb^{{-1}}'"
+            # lumi = sum([config_inst.x.luminosity.get("nominal") for config_inst in self.config_insts]) * 0.001
+            campaign = "run3"
 
-        is_signal_region = lambda cat_name: (
-            "sig_" in cat_name or cat_name == "sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
-        )
+        def is_signal_region(cat_name):
+            return (
+                "sig_" in cat_name or cat_name == "sr__boosted" or "hh_ggf_" in cat_name or "hh_vbf_" in cat_name
+            )
 
         # creating limits per signal region vs all 1b regions vs all 2b regions vs all regions combined
         multi_sig_cards = ":".join([
@@ -1087,7 +1142,8 @@ class PrepareInferenceTaskCalls(
             "CARDSBB": cards_2b,
             "CARDSBoost": cards_boosted,
         }
-        export_cards_combinations = "\n".join(f"export {key}={value}" for key, value in cards_dict.items())
+        export_cards_combinations = "\n".join(
+            f"export {key}={value}" for key, value in cards_dict.items())
         cmd_dict["export"] = "\n".join([base_cmd, export_cards_combinations])
 
         multi_datacards = []
@@ -1109,17 +1165,18 @@ class PrepareInferenceTaskCalls(
         # run pruning helper on cards
         prepare_cards = []
         for card_fn in card_fns:
-            cmd = f"prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
+            cmd = f"python3 prepare_cards.py $BASE_CARDS_PATH/{card_fn}"
             export_and_prepare_cards_cmd += cmd + "\n"
             prepare_cards.append(cmd)
         # cmd_dict["prepare_cards"] = "\n".joiyn(prepare_cards)
         # prepare first card to avoid runtime issues of folder creation
-        cmd_dict["prepare_cards"] = prepare_cards[0] + "\n" + " & ".join(prepare_cards)
+        cmd_dict["prepare_cards"] = prepare_cards[0] + \
+            "\n" + " & ".join(prepare_cards)
         cmd_dict["prepare_cards"] += " & wait"
         print("\n\n")
         print(export_and_prepare_cards_cmd)
 
-        base_cmd = f"export CARDS_PATH={decorrelated_cards_path}" + "\n"
+        base_cmd = f"export CARDS_PATH={pruned_cards_path}" + "\n"
 
         # print(base_cmd)
         # for card, _ident in zip(card_fns, identifier):
@@ -1208,7 +1265,8 @@ class PrepareInferenceTaskCalls(
             cmd_dict["limits_kl"] = cmd
             cmd_dict["qqhh_limits_kl"] = cmd + "--pois r_qqhh "
             cmd_dict["limits_c2v"] = cmd.replace(scan_kl, scan_c2v)
-            cmd_dict["qqhh_limits_c2v"] = cmd.replace(scan_kl, scan_c2v) + "--pois r_qqhh "
+            cmd_dict["qqhh_limits_c2v"] = cmd.replace(
+                scan_kl, scan_c2v) + "--pois r_qqhh "
 
         cmd = (
             f"law run PlotMultipleUpperLimits --version {identifier} --campaign {campaign} "
@@ -1225,7 +1283,8 @@ class PrepareInferenceTaskCalls(
             cmd_dict["multilimits_c2v"] = cmd
             cmd_dict["qqhh_multilimits_c2v"] = cmd + "--pois r_qqhh "
             cmd_dict["multilimits_kl"] = cmd.replace(scan_c2v, scan_kl)
-            cmd_dict["qqhh_multilimits_kl"] = cmd.replace(scan_c2v, scan_kl) + "--pois r_qqhh "
+            cmd_dict["qqhh_multilimits_kl"] = cmd.replace(
+                scan_c2v, scan_kl) + "--pois r_qqhh "
 
         # Likelihood scans
         cmd = (
@@ -1238,7 +1297,8 @@ class PrepareInferenceTaskCalls(
             ("kl_C2V", f"{scan_kl}:{scan_c2v}"),
             ("kl_kt", f"{scan_kl}:{scan_kt}"),
         ):
-            cmd_poi = cmd + f" --scan-parameters {scan_params} --poi {poi.replace('_', ',')} "
+            cmd_poi = cmd + \
+                f" --scan-parameters {scan_params} --poi {poi.replace('_', ',')} "
             print(base_cmd + cmd_poi, "\n\n")
             cmd_dict[f"likelihood_{poi.lower()}"] = cmd_poi
 
@@ -1275,7 +1335,8 @@ class PrepareInferenceTaskCalls(
 
         print(base_cmd + cmd, "\n\n")
         cmd_dict["impacts"] = cmd
-        cmd_dict["impacts_retry"] = cmd.replace(pulls_and_impacts_params, retry_pulls_and_impacts_params)
+        cmd_dict["impacts_retry"] = cmd.replace(
+            pulls_and_impacts_params, retry_pulls_and_impacts_params)
 
         # MultiplePullsAndImpacts
         cmd = (
@@ -1289,7 +1350,8 @@ class PrepareInferenceTaskCalls(
         )
         cmd += f"--PullsAndImpacts-{{{pulls_and_impacts_params}}} "
         cmd_dict["multiimpacts"] = cmd
-        cmd_dict["multiimpacts_retry"] = cmd.replace(pulls_and_impacts_params, retry_pulls_and_impacts_params)
+        cmd_dict["multiimpacts_retry"] = cmd.replace(
+            pulls_and_impacts_params, retry_pulls_and_impacts_params)
 
         # running GoodnessOfFit
         # freeze_signal = "--freezeParameters r,r_gghh,r_qqhh,kl,kt,CV,C2V --setParameters r=0.0,r_gghh=0.0,r_qqhh=0.0,kl=1.0,kt=1.0,CV=1.0,C2V=1.0"  # noqa: E501
@@ -1343,8 +1405,10 @@ class PrepareInferenceTaskCalls(
             f"{key}() {{\n    {cmd_dict[key]}\n}}" for key in cmd_dict.keys() if key != "export"
         ])
         if missing_keys := (set(self.requested_keys) - set(cmd_dict.keys())):
-            logger.warning(f"Requested keys {missing_keys} are not available in the command dictionary.")
-            self.requested_keys = [key for key in self.requested_keys if key not in missing_keys]
+            logger.warning(
+                f"Requested keys {missing_keys} are not available in the command dictionary.")
+            self.requested_keys = [
+                key for key in self.requested_keys if key not in missing_keys]
         run_script = self.create_run_script(
             identifier=identifier,
             export_cmd=cmd_dict["export"],
@@ -1358,7 +1422,8 @@ class PrepareInferenceTaskCalls(
     def create_run_script(self, identifier, export_cmd, functions_cmd):
         # TODO: I would like to rewrite the script such that each command of the cmd_dict is in one function
         def fetch_func(cmd, multi_thread: bool = False):
-            cmd = cmd.replace("law run", f"run_and_fetch_cmd {identifier} law run")
+            cmd = cmd.replace(
+                "law run", f"run_and_fetch_cmd {identifier} law run")
             if multi_thread:
                 cmd = cmd.replace("\n", " & \n") + " & wait"
             return cmd
@@ -1414,7 +1479,8 @@ class MultiDatacards(
     resolution_task_cls = MergeHistograms
     single_config = False
 
-    sandbox = dev_sandbox(law.config.get("analysis", "default_columnar_sandbox"))
+    sandbox = dev_sandbox(law.config.get(
+        "analysis", "default_columnar_sandbox"))
 
     inference_models = law.CSVParameter(
         default=[],
@@ -1468,7 +1534,8 @@ class MultiDatacards(
             variable = ""
             for category, target in _input.targets.items():
                 if not variable:
-                    variable = inference_model_cls.config_variable(inference_model_cls, category)
+                    variable = inference_model_cls.config_variable(
+                        inference_model_cls, category)
                 elif variable != inference_model_cls.config_variable(inference_model_cls, category):
                     raise ValueError(
                         f"Variable {variable} from category {category} does not agree with previous "
@@ -1492,3 +1559,1051 @@ class MultiDatacards(
         output["calls"].dump(cmd, formatter="text")
 
         return
+# ---------------------------------------------------------------------------------------------------------------------
+# CWS inference helpers + tasks (paste into hbw/tasks/inference.py, below PrepareInferenceTaskCalls).
+# Reuses law, luigi, HBWInferenceModelBase, InferenceModelClassMixin, ModifyDatacardsFlatRebin, Requirements,
+# TaskShifts, HBWTask and logger from that module.
+#
+#   1. hbw.PrepareCWSDatacards  (one law call per inference model)  -> datacards/, manifest.json
+#   2. hbw.PrepareCWSTaskCalls  (combine, strings only)             -> inference.yaml, inference_dummy.yaml,
+#                                                                       cards/ (rename/remove rules), result_plots/,
+#                                                                       run.sh
+# prepare_cws.sh runs 1. per model and then 2.
+#
+# run.sh has two card modes (card_mode=standard|dummy, default from --card-mode):
+#   standard  cws combines the pruned per-category cards itself (inference.yaml)
+#   dummy     the combined cards per group (3b, 4b, combined) are turned into dummy cards for the multiH model,
+#             checked and scaled (inference_dummy.yaml points to the scaled dummy cards)
+# In both modes prepare_cards.py already removes the non-SM HHH signals and renames the rest to the multiH names
+# (remove_processes_list and rename_processes_dict in prepare_cards.py).
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+STAGE_ASIMOV = "asimov"
+STAGE_PART_UNBLINDED = "part_unblinded"
+STAGES = (STAGE_ASIMOV, STAGE_PART_UNBLINDED)
+CARD_MODES = ("standard", "dummy")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# pure helpers (no law/columnflow dependency, so they can be tested standalone)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def channel_name(category: str, config_group: str, label: str, taken: list[str]) -> str:
+    """
+    Name of a channel (= bin name in the combined datacard). combine requires bin names to start with a letter, so
+    the category comes first (e.g. sr__3b__ml_tth__c24v15_c25v15); the model label is only appended when two models
+    share a category name.
+    """
+    name = f"{category}__{config_group}"
+    if not name[0].isalpha():
+        name = f"ch_{name}"
+    if name in taken:
+        name = f"{name}__{label}"
+    return name
+
+
+def _yaml(obj: Any) -> str:
+    return yaml.safe_dump(obj, sort_keys=False, default_flow_style=False, width=10_000)
+
+
+def build_task_configs(datacards: str) -> list[tuple[str, str, str, dict]]:
+    """
+    Returns the cws task configs as a list of (name, stage, comment, config).
+    *datacards* is the colon-separated list of datacard groups, e.g. "3b:4b:combined".
+    Edit this function to add, remove or change tasks; run.sh picks up the stages automatically.
+    """
+    # background-only setup: signal strength frozen to 0, couplings at their SM values
+    freeze_signal = (
+        "--freezeParameters r,k4,kl,kt,CV,C2V "
+        "--setParameters r=0.0,k4=1.0,kl=1.0,CV=1.0,kt=1.0,C2V=1.0"
+    )
+    pulls_custom_args = f"--robustFit 1 --rMin -10000 --rMax 100000 {freeze_signal}"
+
+    def limit_at_point(output_name: str, poi: str, xsec: str | None = None) -> dict:
+        cfg = {
+            "task": "PlotUpperLimitsAtPoint",
+            "output_name": output_name,
+            "datacards": datacards,
+            "pois": poi,
+        }
+        if xsec:
+            cfg["xsec"] = xsec
+        cfg.update({"style": "cms", "unblinded": False})
+        return cfg
+
+    def limit_scan(output_name: str, poi: str, param: str, min_: float, max_: float, points: int) -> dict:
+        return {
+            "task": "PlotUpperLimits",
+            "output_name": output_name,
+            "datacards": datacards,
+            "pois": poi,
+            "scan_parameters": [{"name": param, "min": min_, "max": max_, "points": points}],
+            "xsec": "fb",
+            "y_log": True,
+            "style": "cms",
+            "unblinded": False,
+        }
+
+    def likelihood_scan(output_name: str, poi: str, param: str, min_: float, max_: float, points: int) -> dict:
+        return {
+            "task": "PlotMultipleLikelihoodScans",
+            "output_name": output_name,
+            "datacards": datacards,
+            "pois": poi,
+            "scan_parameters": [{"name": param, "min": min_, "max": max_, "points": points}],
+            "style": "cms",
+            "unblinded": False,
+        }
+
+    def pulls_impacts(output_name: str, mc_stats: bool, unblinded: bool) -> dict:
+        return {
+            "task": "PlotPullsAndImpacts",
+            "output_name": output_name,
+            "datacards": datacards,
+            "pois": "r_gghhh",
+            "show_parameters": "kl,k4",
+            "mc_stats": mc_stats,
+            "show_best_fit": False,
+            "order_by_impact": True,
+            "parameters_per_page": 40,
+            "method": "robust",
+            "retry_no_analytic": True,
+            "custom_args": pulls_custom_args,
+            "collapse_impacts_and_pulls": True,
+            "frozen_parameters": "kl,kt,CV,C2V",
+            "skip_parameters": "kt,CV,C2V",
+            "style": "cms",
+            "unblinded": unblinded,
+            "workflow": "htcondor",
+        }
+
+    A, U = STAGE_ASIMOV, STAGE_PART_UNBLINDED
+    return [
+        # ---- stage 1: Asimov -------------------------------------------------------------------------------------
+        (
+            "create_workspace", A,
+            "build the workspaces first (fails fast if the cards and the physics model do not fit together)",
+            {"task": "CreateWorkspace", "datacards": "combined"},
+        ),
+        (
+            "limits_at_point", A,
+            "expected (Asimov) upper limit at the SM point on the HHH signal strength (ttHH stays at r_tthh = 1)",
+            limit_at_point("asimov_limit", "r_gghhh"),
+        ),
+        (
+            "limits_at_point_fb", A,
+            "the same limit as a cross section, in fb",
+            limit_at_point("asimov_limit_xsec", "r_gghhh", xsec="fb"),
+        ),
+        (
+            "limits_at_point_r_gghh", A,
+            "expected (Asimov) upper limit at the SM point on the HH signal strength r_gghh",
+            limit_at_point("asimov_limit_r_gghh", "r_gghh"),
+        ),
+        (
+            "limits_at_point_r_gghh_fb", A,
+            "the same r_gghh limit as a cross section, in fb",
+            limit_at_point("asimov_limit_r_gghh_xsec", "r_gghh", xsec="fb"),
+        ),
+        (
+            "limits_k4", A,
+            "expected upper limit on the HHH cross section as a function of k4 (steps of 10)",
+            limit_scan("asimov_limits_k4", "r_gghhh", "k4", -300.0, 300.0, 61),
+        ),
+        (
+            "limits_kl", A,
+            "expected upper limit on the HHH cross section as a function of kl (steps of 1)",
+            limit_scan("asimov_limits_kl", "r_gghh", "kl", -30.0, 30.0, 61),
+        ),
+        (
+            "likelihood_k4", A,
+            "expected upper limit on the HHH cross section as a function of k4 (steps of 10)",
+            likelihood_scan("asimov_likelihood_k4", "k4",
+                            "k4", -300.0, 300.0, 61),
+        ),
+        (
+            "likelihood_kl", A,
+            "expected upper limit on the HHH cross section as a function of kl (steps of 1)",
+            likelihood_scan("asimov_likelihood_kl", "kl",
+                            "kl", -30.0, 30.0, 61),
+        ),
+        (
+            "asimov_pulls_impact_no_mc_stats", A,
+            "Asimov pulls and impacts, without MC-stat nuisances",
+            pulls_impacts("asimov_pulls", mc_stats=False, unblinded=False),
+        ),
+        (
+            "asimov_pulls_impact", A,
+            "Asimov pulls and impacts, with MC-stat nuisances",
+            pulls_impacts("asimov_pulls_mc_stats",
+                          mc_stats=True, unblinded=False),
+        ),
+        (
+            "nll2d_k4_kl", A,
+            "2D likelihood scan in k4 vs kl (49 x 49 points -> needs htcondor)",
+            {
+                "task": "PlotLikelihoodScan",
+                "output_name": "nll2d_k4_kl",
+                "datacards": datacards,
+                "pois": "k4,kl",
+                "scan_parameters": [
+                    {"name": "k4", "min": -300.0, "max": 300.0, "points": 49},
+                    {"name": "kl", "min": -30.0, "max": 30.0, "points": 49},
+                ],
+                # sigma contours instead of the default 0.68,0.95
+                "show_significances": [1, 2],
+                "interpolate_nans": True,  # fill the points where a fit did not converge
+                "smooth_contour": "k5a,2",  # two 5x5 passes before the contours are found
+                "show_sm": True,
+                "style": "cms",
+                "unblinded": False,
+                "workflow": "htcondor",
+            },
+        ),
+        # ---- stage 2: partially unblinded (background-only fits on data) ------------------------------------------
+        (
+            "part_unblind_pulls_impact_no_mc_stats", U,
+            "partially unblinded pulls and impacts (signal frozen to 0), without MC-stat nuisances",
+            pulls_impacts("part_unblind_pulls",
+                          mc_stats=False, unblinded=True),
+        ),
+        (
+            "part_unblind_pulls_impact", U,
+            "partially unblinded pulls and impacts (signal frozen to 0), with MC-stat nuisances",
+            pulls_impacts("part_unblind_pulls_mc_stats",
+                          mc_stats=True, unblinded=True),
+        ),
+    ]
+
+
+def build_yaml_text(
+    parameters: dict,
+    channels: list[tuple[str, str, dict]],
+    groups: dict[str, dict],
+    tasks: list[tuple[str, str, str, dict]],
+    tasks_key: str = "tasks",
+    header: str = "",
+) -> str:
+    """
+    *channels*: list of (section label, channel key, {"path": ..., "name": ...}).
+    *groups*: {group key: {"cards": "ch1,ch2", "name": ...}}.
+    """
+    def indent(text):
+        return textwrap.indent(text, "  ")
+
+    lines = [header.rstrip(), "", "parameters:", indent(
+        _yaml(parameters)).rstrip(), "", "datacards:"]
+
+    current_section = None
+    for section, key, channel in channels:
+        if section != current_section:
+            lines.append(f"  # --- {section} ---")
+            current_section = section
+        lines.append(indent(_yaml({key: channel})).rstrip())
+    lines.append("")
+    lines.append(
+        "  # --- datacard groups (use these in the 'datacards' field of the tasks) ---")
+    lines.append(indent(_yaml(groups)).rstrip())
+    lines.append("")
+
+    lines.append(f"{tasks_key}:")
+    current_stage = None
+    for name, stage, comment, cfg in tasks:
+        if stage != current_stage:
+            lines.append(f"  # ===== stage: {stage} =====")
+            current_stage = stage
+        lines.append(f"  # {comment}")
+        lines.append(indent(_yaml({name: cfg})).rstrip())
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+RUN_SCRIPT_TEMPLATE = r"""#!/usr/bin/env bash
+# AUTO-GENERATED by __TASK__ -- DO NOT EDIT, rerun the law task instead.
+#
+# Runs the inference in stages:
+#   asimov          expected (Asimov) limits (r_gghhh, r_gghh, vs k4, vs kl), pulls/impacts, 2D k4-kl scan
+#   part_unblinded  pulls/impacts from a partially unblinded (background-only) fit
+#   all             both stages, in that order (default)
+# Before every stage the cards are prepared (each step is skipped when its outputs exist):
+#   prepare_cards   prepare_cards.py: pruned per-category cards, non-SM HHH signals removed and
+#                   the remaining signals renamed to the multiH model names
+#   combine_cards   combineCards.py per group (__GROUPS__)        -> $COMBINED_DIR
+#   dummy_cards     only for card_mode=dummy: dummy card -> check -> scale  -> $DUMMY_DIR/<group>/
+#
+# usage:
+#   bash run.sh [asimov|part_unblinded|all]           # default: all
+#   bash run.sh limits_kl nll2d_k4_kl                 # single task configs
+#   bash run.sh prepare_cards|combine_cards|dummy_cards
+#   card_mode=dummy bash run.sh asimov                # run on the dummy cards (inference_dummy.yaml)
+#   source run.sh                                     # only define the variables and functions
+#
+# switches (environment variables):
+#   card_mode=standard|dummy  which cards / yaml to use                      (default: __CARD_MODE__)
+#   dry_run=true              only print the commands
+#   rerun=true                remove existing outputs before running (law --remove-output 0,a,y)
+#   fetch_output=false        do not copy the plots into $RESULT_PLOTS after each task
+#   force_prepare=true        redo prepare/combine/dummy cards even if they exist (prepare_cards.py --force)
+#   strip_rate_params=false   keep the rateParam lines when making the dummy cards  (default: true)
+#   ASIMOV_WORKERS=N          local law workers in the asimov stage          (default: __ASIMOV_WORKERS__)
+#   UNBLINDED_WORKERS=N       local law workers in the part_unblinded stage  (default: __UNBLINDED_WORKERS__)
+#   MULTIH_DIR, SCALE_SCRIPT, PREPARE_CARDS_SCRIPT   tool locations (defaults below)
+
+card_mode=${card_mode:-__CARD_MODE__}
+dry_run=${dry_run:-false}
+rerun=${rerun:-false}
+fetch_output=${fetch_output:-true}
+force_prepare=${force_prepare:-false}
+strip_rate_params=${strip_rate_params:-true}
+ASIMOV_WORKERS=${ASIMOV_WORKERS:-__ASIMOV_WORKERS__}
+UNBLINDED_WORKERS=${UNBLINDED_WORKERS:-__UNBLINDED_WORKERS__}
+
+__EXPORTS__
+
+case "$card_mode" in
+    standard) export CFG="$CFG_STANDARD" ;;
+    dummy) export CFG="$CFG_DUMMY" ;;
+    *) echo "[ERROR] card_mode must be 'standard' or 'dummy', got '$card_mode'"; exit 2 ;;
+esac
+
+GROUPS_=(__GROUPS__)
+ASIMOV_TASKS=(__ASIMOV_TASKS__)
+PART_UNBLINDED_TASKS=(__PART_UNBLINDED_TASKS__)
+declare -A TASK_STAGE=(__TASK_STAGE__)
+
+FAILED=()
+_cards_ready=false
+_combined_ready=false
+_dummy_ready=false
+
+_run() {
+    if [[ "$dry_run" != "false" ]]; then
+        echo "[DRY-RUN] $*"
+    else
+        echo "[RUNNING] $*"
+        "$@"
+    fi
+}
+
+# _run_in <dir> <cmd...>: run a command inside a directory
+_run_in() {
+    local dir="$1"
+    shift
+    if [[ "$dry_run" != "false" ]]; then
+        echo "[DRY-RUN] (cd $dir) $*"
+    else
+        echo "[RUNNING] (cd $dir) $*"
+        ( cd "$dir" && "$@" )
+    fi
+}
+
+# _all_exist <file...>: true when all files exist and force_prepare is not set
+_all_exist() {
+    [[ "$force_prepare" == "true" ]] && return 1
+    local f
+    for f in "$@"; do
+        [[ -f "$f" ]] || return 1
+    done
+    return 0
+}
+
+# ---- step 1: pruned per-category cards ------------------------------------------------------------------------------
+
+prepare_cards() {
+    [[ "$_cards_ready" == "true" ]] && return 0
+    if _all_exist __PRUNED_CARDS__; then
+        echo "[SKIP] pruned datacards exist"
+        _cards_ready=true
+        return 0
+    fi
+
+    local rc=0 pid pids=()
+    local prep_args=()
+    [[ "$force_prepare" == "true" ]] && prep_args+=(--force)
+    # the first card of each model runs alone so that its output folder exists before the parallel jobs start
+__PREPARE_CARDS__
+    for pid in "${pids[@]}"; do
+        wait "$pid" || rc=1
+    done
+    [[ "$rc" -eq 0 ]] && _cards_ready=true
+    return "$rc"
+}
+
+# ---- step 2: one combined card per group ----------------------------------------------------------------------------
+
+# combine_group <group> <name=card ...>
+combine_group() {
+    local group="$1"
+    shift
+    local out="$COMBINED_DIR/datacard_${group}.txt"
+    if [[ "$dry_run" != "false" ]]; then
+        echo "[DRY-RUN] (cd $COMBINED_DIR) combineCards.py $* > $out"
+        return 0
+    fi
+    mkdir -p "$COMBINED_DIR"
+    echo "[RUNNING] combineCards.py ($# cards) > $out"
+    ( cd "$COMBINED_DIR" && combineCards.py "$@" > "$out.tmp" ) && mv "$out.tmp" "$out"
+}
+
+combine_cards() {
+    [[ "$_combined_ready" == "true" ]] && return 0
+    prepare_cards || return 1
+    if _all_exist __COMBINED_CARDS__; then
+        echo "[SKIP] combined datacards exist in $COMBINED_DIR"
+        _combined_ready=true
+        return 0
+    fi
+__COMBINE_CARDS__
+    _combined_ready=true
+}
+
+# ---- step 3: dummy cards for the multiH model -----------------------------------------------------------------------   # noqa: E501
+
+# dummy_group <group>
+dummy_group() {
+    local group="$1"
+    local card="datacard_${group}.txt"
+    local work="$DUMMY_DIR/$group"
+    local dummy="datacard_dummy_${group}.txt"
+    local scaled="datacard_dummy_${group}_scaled.txt"
+
+    echo ""
+    echo "----- [dummy] $group -----"
+    [[ "$dry_run" == "false" ]] && mkdir -p "$work/input" "$work/dummy"
+
+    # 0. input: the combined card, optionally without rateParam lines
+    if [[ "$strip_rate_params" == "true" ]]; then
+        if [[ "$dry_run" != "false" ]]; then
+            echo "[DRY-RUN] grep -vE '^[^#[:space:]]+[[:space:]]+rateParam[[:space:]]' $COMBINED_DIR/$card > $work/input/$card"  # noqa: E501
+        else
+            grep -vE '^[^#[:space:]]+[[:space:]]+rateParam[[:space:]]' "$COMBINED_DIR/$card" > "$work/input/$card"
+            echo "[INFO] removed $(grep -cE '^[^#[:space:]]+[[:space:]]+rateParam[[:space:]]' "$COMBINED_DIR/$card") rateParam lines"  # noqa: E501
+        fi
+    else
+        _run cp "$COMBINED_DIR/$card" "$work/input/$card" || return 1
+    fi
+
+    # (non-SM removal and renaming already happened in prepare_cards.py)
+    # 1. dummy card for the physics model
+    _run_in "$MULTIH_DIR" python3 scripts/make_dummy_card.py \
+        --model "$DUMMY_MODEL" \
+        --input-card "$work/input/$card" \
+        --output-dir "$work/dummy" \
+        --energy "$DUMMY_ENERGY" \
+        --output-name "$dummy" || return 1
+    # 2. check it against the physics model
+    _run_in "$(dirname "$MULTIH_DIR")" python3 multih_models/scripts/check_card.py \
+        "$work/dummy/$dummy" "$PHYSICS_MODEL" || return 1
+    # 3. scale the dummy templates
+    _run_in "$work/dummy" python3 "$SCALE_SCRIPT" "$dummy" -o "$scaled" || return 1
+}
+
+dummy_cards() {
+    [[ "$_dummy_ready" == "true" ]] && return 0
+    combine_cards || return 1
+    if _all_exist __DUMMY_CARDS__; then
+        echo "[SKIP] dummy datacards exist in $DUMMY_DIR"
+        _dummy_ready=true
+        return 0
+    fi
+    local group
+    for group in "${GROUPS_[@]}"; do
+        dummy_group "$group" || { echo "[FAILED] dummy cards for $group"; return 1; }
+    done
+    _dummy_ready=true
+}
+
+# all inputs needed for the current card_mode
+prepare_inputs() {
+    if [[ "$card_mode" == "dummy" ]]; then
+        dummy_cards
+    else
+        combine_cards
+    fi
+}
+
+# ---- inference ------------------------------------------------------------------------------------------------------  # noqa: E501
+
+# run_task <task config> <stage> <workers>
+run_task() {
+    local task="$1" stage="$2" workers="$3"
+    local outdir="$RESULT_PLOTS/$card_mode/$stage/$task"
+    local cmd=(cws run --analysis "$CFG" --task-config "$task" --workers "$workers")
+    [[ "$rerun" == "true" ]] && cmd+=(--remove-output 0,a,y)
+    local fetch_cmd=(cws run --analysis "$CFG" --task-config "$task" --fetch-output 0,a)
+
+    echo ""
+    echo "----- [$card_mode/$stage] $task -----"
+    if [[ "$dry_run" != "false" ]]; then
+        echo "[DRY-RUN] (cd $outdir) ${cmd[*]}"
+        [[ "$fetch_output" == "true" ]] && echo "[DRY-RUN] (cd $outdir) ${fetch_cmd[*]}"
+        return 0
+    fi
+
+    mkdir -p "$outdir"
+    echo "[RUNNING] ${cmd[*]}  (log: $outdir/run.log)"
+    ( cd "$outdir" && "${cmd[@]}" ) 2>&1 | tee "$outdir/run.log"
+    local rc=${PIPESTATUS[0]}
+    if [[ "$rc" -ne 0 ]]; then
+        echo "[FAILED] $stage/$task (exit code $rc)"
+        FAILED+=("$card_mode/$stage/$task")
+        return "$rc"
+    fi
+
+    if [[ "$fetch_output" == "true" ]]; then
+        ( cd "$outdir" && "${fetch_cmd[@]}" ) >> "$outdir/run.log" 2>&1 \
+            || echo "[WARNING] could not fetch the outputs of $task into $outdir"
+    fi
+    return 0
+}
+
+# run_stage <stage>
+run_stage() {
+    local stage="$1" workers task tasks=()
+    case "$stage" in
+        __STAGE_ASIMOV__) workers="$ASIMOV_WORKERS"; tasks=("${ASIMOV_TASKS[@]}") ;;
+        __STAGE_PART_UNBLINDED__) workers="$UNBLINDED_WORKERS"; tasks=("${PART_UNBLINDED_TASKS[@]}") ;;
+        *) echo "[ERROR] unknown stage '$stage'"; return 2 ;;
+    esac
+
+    echo ""
+    echo "========== stage: $stage, cards: $card_mode (${#tasks[@]} tasks, $workers workers) =========="
+    prepare_inputs || { FAILED+=("inputs ($card_mode)"); return 1; }
+    for task in "${tasks[@]}"; do
+        run_task "$task" "$stage" "$workers" || true
+    done
+}
+
+summary() {
+    echo ""
+    if [[ ${#FAILED[@]} -gt 0 ]]; then
+        echo "[SUMMARY] ${#FAILED[@]} failed: ${FAILED[*]}"
+        return 1
+    fi
+    echo "[SUMMARY] all done, plots in $RESULT_PLOTS/$card_mode"
+}
+
+main() {
+    [[ $# -eq 0 ]] && set -- all
+    mkdir -p "$RESULT_PLOTS"
+    echo "[INFO] card_mode=$card_mode, CFG=$CFG"
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            all)
+                run_stage __STAGE_ASIMOV__
+                run_stage __STAGE_PART_UNBLINDED__
+                ;;
+            __STAGE_ASIMOV__|__STAGE_PART_UNBLINDED__)
+                run_stage "$arg"
+                ;;
+            prepare_cards|combine_cards|dummy_cards)
+                "$arg" || FAILED+=("$arg")
+                ;;
+            *)
+                if [[ -z "${TASK_STAGE[$arg]:-}" ]]; then
+                    echo "[ERROR] unknown stage or task config '$arg', choose from: all __STAGE_ASIMOV__ __STAGE_PART_UNBLINDED__ prepare_cards combine_cards dummy_cards ${!TASK_STAGE[*]}"  # noqa: E501
+                    exit 2
+                fi
+                local stage="${TASK_STAGE[$arg]}" workers="$ASIMOV_WORKERS"
+                [[ "$stage" == "__STAGE_PART_UNBLINDED__" ]] && workers="$UNBLINDED_WORKERS"
+                if prepare_inputs; then
+                    run_task "$arg" "$stage" "$workers" || true
+                else
+                    FAILED+=("inputs ($card_mode)")
+                fi
+                ;;
+        esac
+    done
+    summary
+}
+
+# only run if executed, not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
+"""
+
+
+def build_run_script(
+    task_family: str,
+    exports: dict[str, str],
+    cards: list[tuple[str, list[str]]],
+    groups: dict[str, list[tuple[str, str]]],
+    tasks: list[tuple[str, str, str, dict]],
+    card_mode: str = "standard",
+    asimov_workers: int = 50,
+    unblinded_workers: int = 20,
+) -> str:
+    """
+    *exports*: ordered env variables written at the top of the script; tool paths are written as overridable
+    defaults (VAR=${VAR:-value}), everything else is fixed.
+    *cards*: per model (label, card file names); BASE_CARDS_<label> and CARDS_<label> must be in *exports*.
+    *groups*: per group (e.g. 3b, 4b, combined) the list of (channel name, card path) to combine.
+    """
+    overridable = {"MULTIH_DIR", "SCALE_SCRIPT", "PREPARE_CARDS_SCRIPT"}
+    export_lines = "\n".join(
+        f'export {key}="${{{key}:-{value}}}"' if key in overridable else f'export {key}="{value}"'
+        for key, value in exports.items()
+    )
+
+    pruned = " ".join(
+        f'"$CARDS_{label}/{fn}"' for label, fns in cards for fn in fns)
+
+    prepare_lines = []
+    for label, fns in cards:
+        if fns:
+            prepare_lines.append(
+                f'    _run python3 "$PREPARE_CARDS_SCRIPT" "$BASE_CARDS_{label}/{fns[0]}" "${{prep_args[@]}}" || return 1')  # noqa: E501
+    for label, fns in cards:
+        for fn in fns[1:]:
+            prepare_lines.append(
+                f'    _run python3 "$PREPARE_CARDS_SCRIPT" "$BASE_CARDS_{label}/{fn}" "${{prep_args[@]}}" & pids+=($!)')
+
+    combine_lines = []
+    for group, entries in groups.items():
+        args = " \\\n        ".join(
+            f'"{name}={path}"' for name, path in entries)
+        combine_lines.append(
+            f"    combine_group {group} \\\n        {args} || return 1")
+
+    combined = " ".join(f'"$COMBINED_DIR/datacard_{g}.txt"' for g in groups)
+    dummies = " ".join(
+        f'"$DUMMY_DIR/{g}/dummy/datacard_dummy_{g}_scaled.txt"' for g in groups)
+
+    stage_tasks = {stage: [name for name, s, _,
+                           _ in tasks if s == stage] for stage in STAGES}
+    task_stage = " ".join(f"[{name}]={stage}" for name, stage, _, _ in tasks)
+
+    replacements = {
+        "__TASK__": task_family,
+        "__CARD_MODE__": card_mode,
+        "__ASIMOV_WORKERS__": str(asimov_workers),
+        "__UNBLINDED_WORKERS__": str(unblinded_workers),
+        "__EXPORTS__": export_lines,
+        "__GROUPS__": " ".join(groups),
+        "__ASIMOV_TASKS__": " ".join(stage_tasks[STAGE_ASIMOV]),
+        "__PART_UNBLINDED_TASKS__": " ".join(stage_tasks[STAGE_PART_UNBLINDED]),
+        "__TASK_STAGE__": task_stage,
+        "__PRUNED_CARDS__": pruned,
+        "__PREPARE_CARDS__": "\n".join(prepare_lines),
+        "__COMBINED_CARDS__": combined,
+        "__COMBINE_CARDS__": "\n".join(combine_lines),
+        "__DUMMY_CARDS__": dummies,
+        "__STAGE_ASIMOV__": STAGE_ASIMOV,
+        "__STAGE_PART_UNBLINDED__": STAGE_PART_UNBLINDED,
+    }
+    script = RUN_SCRIPT_TEMPLATE
+    for key, value in replacements.items():
+        script = script.replace(key, value)
+    return script
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# the law tasks
+#
+# Why two tasks: the ML categories are added to the (process-global) config objects by add_categories_ml, which is
+# decorated with @call_once_on_config, so the first ML model wins. On top of that Cat_3b and Cat_4b give the same
+# node names different ml_ids (tth: 2 vs 1, tthh: 1 vs 2, ttbb_custom: 4 vs 3), so their categories cannot live in
+# one config anyway. Hence every inference model has to be resolved in its own law process.
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+class PrepareCWSDatacards(
+    HBWInferenceModelBase,
+    InferenceModelClassMixin,
+):
+    """
+    Collects the rebinned datacards of ONE inference model over all config groups and writes a manifest.json that
+    PrepareCWSTaskCalls reads. Run it once per inference model, each in its own law call.
+    """
+
+    reqs = Requirements(
+        ModifyDatacardsFlatRebin=ModifyDatacardsFlatRebin,
+    )
+
+    config_groups = law.MultiCSVParameter(
+        default=(("c22prev14", "c22postv14", "c23prev14", "c23postv14"),),
+        description="List of config groups to use for this task.",
+        significant=False,
+    )
+    cards_version = luigi.Parameter(
+        default="",
+        description="Optional version string appended to the output path.",
+        significant=True,
+    )
+
+    @classmethod
+    def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
+        if params.get("config_groups"):
+            configs = tuple(
+                config for config_group in params["config_groups"] for config in config_group)
+            if configs != params.get("configs"):
+                logger.warning_once(
+                    f"update_configs_{params.get('configs')}_from_groups_{params['config_groups']}",
+                    f"Overwriting 'configs' parameter with values {configs} because "
+                    f"'config_groups' parameter with values {params['config_groups']} will be used.",
+                )
+                params["configs"] = configs
+        return super().modify_param_values(params)
+
+    @classmethod
+    def resolve_instances(cls, params: dict[str, Any], shifts: TaskShifts) -> dict[str, Any]:
+        for config_group in params["config_groups"]:
+            _params = params.copy()
+            _params["configs"] = config_group
+            _params["config_insts"] = [
+                config_inst for config_inst in params["config_insts"]
+                if config_inst.name in config_group
+            ]
+            _params["inst_dict"] = {
+                "configs": _params["configs"],
+                "config_insts": _params["config_insts"],
+            }
+            cls.reqs.ModifyDatacardsFlatRebin.resolve_instances(
+                _params, shifts)
+        return params
+
+    def _req_key(self, config_group) -> str:
+        return f"rebinned_datacards__{self.configs_str(config_group)}"
+
+    def _datacard_reqs(self) -> dict:
+        return {
+            self._req_key(config_group): self.reqs.ModifyDatacardsFlatRebin.req(self, configs=config_group)
+            for config_group in self.config_groups
+        }
+
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs.update(self._datacard_reqs())
+        return reqs
+
+    def requires(self):
+        return self._datacard_reqs()
+
+    @property
+    def config_groups_str(self) -> list[str]:
+        return [self.configs_str(configs) for configs in self.config_groups]
+
+    def store_parts(self):
+        parts = super().store_parts()
+        cards_repr = "__".join(self.config_groups_str)
+        if self.cards_version:
+            cards_repr += f"__{self.cards_version}"
+        parts.insert_before("version", "config_group", cards_repr)
+        return parts
+
+    def output(self):
+        return {
+            "datacards": self.target("datacards", dir=True),
+            "manifest": self.target("manifest.json"),
+        }
+
+    def run(self):
+        inputs = self.input()
+        output = self.output()
+        cards_target = output["datacards"]
+        cards_target.touch()
+
+        categories = list(self.inference_model_cls.config_categories)
+        channels = []
+        for config_group, group_str in zip(self.config_groups, self.config_groups_str):
+            targets = list(inputs[self._req_key(
+                config_group)].collection.targets.values())
+            if len(targets) != len(categories):
+                raise Exception(
+                    f"inference model {self.inference_model} has {len(categories)} config_categories but "
+                    f"{len(targets)} datacards for config group {group_str}; cannot match them",
+                )
+            for cat_name, target in zip(categories, targets):
+                logger.info(
+                    f"copying datacard {target['card'].basename} to {cards_target.abspath}")
+                target["card"].copy_to(cards_target)
+                target["shapes"].copy_to(cards_target)
+                target["inspection"].copy_to(cards_target)
+                channels.append(
+                    {"category": cat_name, "config_group": group_str, "card": target["card"].basename})
+
+        lumi = sum(config_inst.x.luminosity.get("nominal")
+                   for config_inst in self.config_insts) * 0.001
+        manifest = {
+            "inference_model": self.inference_model,
+            "ml_models": list(getattr(self, "ml_models", ()) or ()),
+            "configs": list(self.configs),
+            "config_groups": self.config_groups_str,
+            "lumi_fb": float(lumi),
+            "cards_dir": cards_target.abspath,
+            "channels": channels,
+        }
+        output["manifest"].dump(manifest, formatter="json", indent=4)
+        print(f"\n# manifest\n{output['manifest'].abspath}")
+
+
+class PrepareCWSTaskCalls(HBWTask, AnalysisTask):
+    """
+    Combines the manifests of several PrepareCWSDatacards calls (default labels: 3b, 4b) into the YAML task configs
+    for ``cws run`` (standard and dummy cards), the result_plots folder and run.sh. No inference or ML model is set up here. Use prepare_cws.sh to run both steps.  # noqa: E501
+    """
+
+    manifests = law.CSVParameter(
+        default=(),
+        description="manifest.json files written by PrepareCWSDatacards, one per inference model.",
+    )
+    model_labels = law.CSVParameter(
+        default=("3b", "4b"),
+        description="Short label per manifest (same order). Used as datacard group names in the YAML and as env "
+        "variable suffix (CARDS_<label>). Default: 3b,4b",
+    )
+    card_mode = luigi.ChoiceParameter(
+        default="standard",
+        choices=CARD_MODES,
+        description="Default card mode of run.sh: 'standard' (pruned cards as they are) or 'dummy' (combined, "
+        "renamed, non-SM removed, dummy card for the multiH model). Both YAMLs are always written; run.sh can "
+        "switch with card_mode=... Default: standard",
+        significant=False,
+    )
+    cws_version = luigi.Parameter(
+        default="",
+        description="'version' written into the YAML parameters ('__dummy' is appended for the dummy YAML). "
+        "Default: built from the config groups and inference models.",
+        significant=False,
+    )
+    multih_dir = luigi.Parameter(
+        default="/data/dust/user/markusla/analysis/hhh_inference/multih_models",
+        description="multih_models checkout (contains scripts/make_dummy_card.py and scripts/check_card.py).",
+        significant=False,
+    )
+    scale_script = luigi.Parameter(
+        default="/data/dust/user/markusla/analysis/hhh_inference/cws/data/renamed_cards/tech_test/"
+        "scale_dummy_templates.py",
+        description="Script that scales the dummy templates.",
+        significant=False,
+    )
+    prepare_cards_script = luigi.Parameter(
+        default="prepare_cards.py",
+        description="prepare_cards.py to run on every card; relative paths are taken from where run.sh is started.",
+        significant=False,
+    )
+    run_script_name = luigi.Parameter(
+        default="run.sh", description="Name of the run script.")
+    yaml_name = luigi.Parameter(
+        default="inference.yaml", description="Name of the YAML task config.")
+    asimov_workers = luigi.IntParameter(
+        default=50,
+        description="Default number of law workers in the asimov stage of run.sh (overridable via ASIMOV_WORKERS).",
+        significant=False,
+    )
+    unblinded_workers = luigi.IntParameter(
+        default=20,
+        description="Default number of law workers in the part_unblinded stage of run.sh (UNBLINDED_WORKERS).",
+        significant=False,
+    )
+
+    # physics model settings written into the YAML parameters
+    physics_model = "multih_models.kappa_framework.multiH.hh_model:model_hhh_tthh"
+    model_options = ["poiRanges=k4=-300,300:kl=-30,30"]
+    parameter_ranges = [
+        {"name": "k4", "min": -300, "max": 300},
+        {"name": "kl", "min": -30, "max": 30},
+        {"name": "kt", "min": 0, "max": 2},
+    ]
+    # model spec and energy for make_dummy_card.py (relative to multih_dir)
+    dummy_model = "kappa_framework/multiH/model.yaml:model_hhh_tthh"
+    dummy_energy = "13p6TeV"
+
+    # top-level YAML key the task configs are written under; change it if cws expects another one
+    yaml_tasks_key = "tasks"
+
+    @classmethod
+    def modify_param_values(cls, params: dict[str, Any]) -> dict[str, Any]:
+        params = super().modify_param_values(params)
+        manifests, labels = tuple(params.get("manifests") or ()), tuple(
+            params.get("model_labels") or ())
+        if manifests and len(manifests) != len(labels):
+            raise ValueError(
+                f"--model-labels {labels} needs one label per file in --manifests {manifests}")
+        return params
+
+    def store_parts(self):
+        parts = super().store_parts()
+        parts.insert_before("version", "models", "__".join(self.model_labels))
+        return parts
+
+    def output(self):
+        dummy_yaml = self.yaml_name.replace(".yaml", "_dummy.yaml") if self.yaml_name.endswith(".yaml") \
+            else f"{self.yaml_name}_dummy"
+        return {
+            "run": self.target(self.run_script_name),
+            "yaml": self.target(self.yaml_name),
+            "yaml_dummy": self.target(dummy_yaml),
+            "result_plots": self.target("result_plots", dir=True),
+        }
+
+    def load_manifests(self) -> list[dict]:
+        if not self.manifests:
+            raise ValueError(
+                "no --manifests given; run PrepareCWSDatacards per inference model first (prepare_cws.sh)")
+        loaded = []
+        for path in self.manifests:
+            path = os.path.expandvars(os.path.expanduser(path))
+            if not os.path.isfile(path):
+                raise FileNotFoundError(
+                    f"manifest {path} does not exist; run PrepareCWSDatacards first")
+            with open(path) as f:
+                loaded.append(json.load(f))
+        return loaded
+
+    def run(self):
+        output = self.output()
+        manifests = self.load_manifests()
+
+        base_dir = os.path.dirname(output["run"].abspath)
+        cards_dir_out = os.path.join(base_dir, "cards")
+        combined_dir = os.path.join(cards_dir_out, "combined")
+        dummy_dir = os.path.join(cards_dir_out, "dummy")
+        result_plots_dir = output["result_plots"].abspath
+
+        exports = {
+            "BASE": base_dir,
+            "CFG_STANDARD": output["yaml"].abspath,
+            "CFG_DUMMY": output["yaml_dummy"].abspath,
+            "RESULT_PLOTS": result_plots_dir,
+            "COMBINED_DIR": combined_dir,
+            "DUMMY_DIR": dummy_dir,
+            "PHYSICS_MODEL": self.physics_model,
+            "DUMMY_MODEL": self.dummy_model,
+            "DUMMY_ENERGY": self.dummy_energy,
+            "MULTIH_DIR": self.multih_dir,
+            "SCALE_SCRIPT": self.scale_script,
+            "PREPARE_CARDS_SCRIPT": self.prepare_cards_script,
+        }
+
+        # standard channels: one per pruned per-category card
+        channels, groups, cards_per_model, all_keys = [], {}, [], []
+        # group -> [(channel name, card path)] for combineCards.py
+        combine_groups = {}
+        for manifest, label in zip(manifests, self.model_labels):
+            cards_dir = manifest["cards_dir"]
+            pruned_dir = os.path.join(cards_dir, "pruned")
+            exports[f"BASE_CARDS_{label}"] = cards_dir
+            exports[f"CARDS_{label}"] = pruned_dir
+
+            keys = []
+            for ch in manifest["channels"]:
+                key = channel_name(
+                    ch["category"], ch["config_group"], label, all_keys + keys)
+                channels.append((
+                    f"{label} ({manifest['inference_model']})",
+                    key,
+                    {
+                        "path": os.path.join(pruned_dir, ch["card"]),
+                        "name": f"{label} {ch['category']} ({ch['config_group']})",
+                    },
+                ))
+                keys.append(key)
+            groups[label] = {"cards": ",".join(keys), "name": label}
+            all_keys.extend(keys)
+            cards_per_model.append(
+                (label, [ch["card"] for ch in manifest["channels"]]))
+            combine_groups[label] = [
+                (key, f"$CARDS_{label}/{ch['card']}") for key, ch in zip(keys, manifest["channels"])
+            ]
+
+        groups["combined"] = {"cards": ",".join(
+            all_keys), "name": "+".join(self.model_labels)}
+        combine_groups["combined"] = [
+            entry for label in self.model_labels for entry in combine_groups[label]]
+        datacard_groups = ":".join(groups)
+
+        # dummy channels: one scaled dummy card per group
+        dummy_channels, dummy_groups = [], {}
+        for group, group_cfg in groups.items():
+            key = f"dummy_{group}"
+            dummy_channels.append((
+                "dummy cards (made by run.sh: card_mode=dummy)",
+                key,
+                {
+                    "path": os.path.join(dummy_dir, group, "dummy", f"datacard_dummy_{group}_scaled.txt"),
+                    "name": f"{group_cfg['name']} (dummy)",
+                },
+            ))
+            dummy_groups[group] = {"cards": key, "name": group_cfg["name"]}
+
+        # lumi / campaign: the models should be built from the same configs
+        lumis = {round(m["lumi_fb"], 3) for m in manifests}
+        configs = manifests[0]["configs"]
+        if len(lumis) > 1 or any(m["configs"] != configs for m in manifests):
+            logger.warning(
+                f"the inference models use different configs/luminosities: "
+                f"{[(m['inference_model'], m['configs'], m['lumi_fb']) for m in manifests]}; using the first one",
+            )
+        lumi = manifests[0]["lumi_fb"]
+        campaign = configs[0] if len(configs) == 1 else "run3"
+
+        identifier = "__".join(
+            [*manifests[0]["config_groups"], *(m["inference_model"] for m in manifests)])
+        version = self.cws_version or identifier
+        tasks = build_task_configs(datacard_groups)
+
+        def parameters(mode: str) -> dict:
+            return {
+                "version": version if mode == "standard" else f"{version}__dummy",
+                "lumi": f"{lumi:.1f} fb^{{-1}}",
+                "target_luminosity": round(lumi),
+                "campaign": campaign,
+                "parameter_ranges": self.parameter_ranges,
+                "model": self.physics_model,
+                "model_options": self.model_options,
+                "BASE": base_dir,
+                "CFG": exports["CFG_STANDARD"] if mode == "standard" else exports["CFG_DUMMY"],
+                **{k: v for k, v in exports.items() if k.startswith(("BASE_CARDS_", "CARDS_"))},
+                "output_dir": os.path.join(result_plots_dir, mode),
+            }
+
+        def header(mode: str) -> str:
+            return "\n".join([
+                f"# AUTO-GENERATED by {self.task_family} -- DO NOT EDIT, rerun the law task instead.",
+                f"# card mode: {mode}",
+                "# inference models: " + ", ".join(
+                    f"{label}={m['inference_model']} (ML: {'+'.join(m['ml_models']) or '?'})"
+                    for m, label in zip(manifests, self.model_labels)
+                ),
+                "#",
+                f"# run everything in stages:   card_mode={mode} bash $BASE/run.sh [asimov|part_unblinded|all]",
+                "# or a single task config:    cws run --analysis $CFG --task-config <name> --workers 10",
+            ])
+
+        output["yaml"].dump(
+            build_yaml_text(parameters("standard"), channels, groups,
+                            tasks, self.yaml_tasks_key, header("standard")),
+            formatter="text",
+        )
+        output["yaml_dummy"].dump(
+            build_yaml_text(parameters("dummy"), dummy_channels, dummy_groups, tasks, self.yaml_tasks_key,
+                            header("dummy")),
+            formatter="text",
+        )
+        output["result_plots"].touch()
+
+        output["run"].dump(
+            build_run_script(
+                task_family=self.task_family,
+                exports=exports,
+                cards=cards_per_model,
+                groups=combine_groups,
+                tasks=tasks,
+                card_mode=self.card_mode,
+                asimov_workers=self.asimov_workers,
+                unblinded_workers=self.unblinded_workers,
+            ),
+            formatter="text",
+        )
+        os.chmod(output["run"].abspath, 0o755)
+
+        print(
+            f"\n# task configs\n{output['yaml'].abspath}\n{output['yaml_dummy'].abspath}")
+        print("\n# run the inference; dry_run=true only prints the commands")
+        print(
+            f"card_mode={self.card_mode} bash {output['run'].abspath} [asimov|part_unblinded|all]")

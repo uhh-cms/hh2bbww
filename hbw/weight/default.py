@@ -90,6 +90,9 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
     for column in self.local_weight_columns.keys():
         weight = weight * Route(column).apply(events)
     # __import__("IPython").embed()
+    # weight = ak.where((events.process_id >= 1711) & (events.process_id <=1713), weight * 0.95, weight)
+    # weight = ak.where((events.process_id >= 1918) & (events.process_id <=1923), weight * 1.43, weight)
+    # weight = ak.where((events.process_id >= 1924) & (events.process_id <=1926), weight * 0.8, weight)
     if self.tt_weight and self.tt_weight > 0 and self.dataset_inst.has_tag("is_ttbar"):
         weight = weight * self.tt_weight
     if self.dy_weight and self.dy_weight > 0 and self.dataset_inst.has_tag("is_dy"):
@@ -97,7 +100,8 @@ def base(self: HistProducer, events: ak.Array, task: law.Task, **kwargs) -> ak.A
 
     # implement dummy shift by varying weight by factor of 2
     if "dummy" in task.local_shift_inst.name:
-        logger.warning("Applying dummy weight shift (should never be use for real analysis)")
+        logger.warning(
+            "Applying dummy weight shift (should never be use for real analysis)")
         variation = task.local_shift_inst.name.split("_")[-1]
         weight = weight * {"up": 2.0, "down": 0.5}[variation]
 
@@ -125,9 +129,9 @@ def base_setup(
         f"HistProducer '{self.cls_name}' (dataset {self.dataset_inst}) uses weight columns: \n"
         f"{', '.join(self.weight_columns.keys())}",
     )
-    if "dy_correction_weight" in self.local_weight_columns.keys():
-        # add dy_correction_weight to the reader targets
-        reader_targets["dy_correction_weight"] = inputs["dy_correction_weight_producer"]["columns"]
+    if "ttbb_correction_weight" in self.local_weight_columns.keys():
+        # add ttbb_correction_weight to the reader targets
+        reader_targets["ttbb_correction_weight"] = inputs["dy_correction_weight_producer"]["columns"]
 
 
 @base.requires
@@ -137,7 +141,7 @@ def base_requires(self: HistProducer, task: law.Task, reqs: law.util.InsertableD
     This is called before the setup method.
     """
     from columnflow.tasks.production import ProduceColumns
-    if "dy_correction_weight" in self.local_weight_columns.keys():
+    if "ttbb_correction_weight" in self.local_weight_columns.keys():
         if not self.dy_correction_weight_producer:
             raise Exception(
                 "dy_correction_weight_producer must be set if dy_correction_weight is used "
@@ -200,6 +204,10 @@ def base_init(self: HistProducer) -> None:
         self.local_weight_columns.pop("top_pt_weight", None)
         self.local_weight_columns.pop("top_pt_theory_weight", None)
 
+    if dataset_inst and not dataset_inst.has_tag("is_ttbar_bb"):
+        # remove dependency towards top pt weights
+        self.local_weight_columns.pop("ttbb_correction_weight", None)
+
     if dataset_inst and not dataset_inst.has_tag("is_v_jets"):
         # remove dependency towards vjets weights
         self.local_weight_columns.pop("vjets_weight", None)
@@ -229,7 +237,8 @@ def base_init(self: HistProducer) -> None:
 
     for weight_column, shift_sources in self.local_weight_columns.items():
         shift_sources = law.util.make_list(shift_sources)
-        shift_sources = [s.format(year=year, cpn_tag=cpn_tag) for s in shift_sources]
+        shift_sources = [s.format(year=year, cpn_tag=cpn_tag)
+                         for s in shift_sources]
         shifts = get_shifts_from_sources(self.config_inst, *shift_sources)
         for shift in shifts:
             if weight_column not in shift.x("column_aliases").keys():

@@ -13,27 +13,18 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
     # signal_generator = "custom"
 
     config_inst.x.process_groups = {
-        "dl11": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
-        "dl12": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt_cc", "tt_lf", "ttbb_b", "ttbb_2b", "ttbb_bb"],  # noqa: E501
-        "dl15": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
-        "dl20": ["hhh_4b2w_2l2nu_c30_d40", "tthh", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
-        "dl0": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
-        "dl1": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "hh", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb", "tt"],  # noqa: E501
-        "dl3": ["hhh_4b2w_2l2nu_c30_d40", "hh_vbf_kv1_k2v1_kl1", "hh_ggf_kl1_kt1", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "vvv", "ttvv", "w_lnu", "st", "dy", "ttbb", "tt"],  # noqa: E501
-        "dl21": ["tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
-        "dl17": ["hhh", "tthh_4b", "vhh_4b", "hh_ggf", "hh_vbf", "other", "h", "tth", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
-        "dl18": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "hh_ggf_hbb_hvv_kl1_kt1", "hh_vbf_hbb_hvv_kv1_k2v1_kl1", "other", "h", "tth", "ttv", "vv", "w_lnu", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
-        "dl15C": ["tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_custom", "tt_custom"],  # noqa: E501
-        "dl15B": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "tt"],  # noqa: E501
-        "dl16": ["hhh_4b2w_2l2nu_c30_d40", "tthh_4b", "vhh_4b", "other", "h", "ttv", "vv", "w_lnu", "st", "dy", "ttbb_dl_1b", "ttbb_sl_1b", "ttbb_fh_1b", "tt_dl_nonb", "tt_sl_nonb", "tt_fh_nonb"],  # noqa: E501
-        "dl7": ["hh_vbf_hbb_hvv2l2nu_kvm0p962_k2v0p959_klm1p43", "other", "h", "ttv", "vv", "w_lnu", "dy", "st", "tt"],  # noqa: E501
+        # "d": ["hhh_4b2w_2l2nu_c30_d40", "tthh", "vhh_4b", "other", "h_other", "tth", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
+        "dl0": ["hhh_4b2w_2l2nu_c30_d40", "tthh", "vhh_4b", "other", "h_other", "tth", "ttv", "vv", "w_lnu", "st", "dy", "ttb_custom", "tt2b_custom", "tt_bb_custom", "tt_custom"],  # noqa: E501
     }
     for proc, datasets in config_inst.x.dataset_names.items():
-        remove_generator = lambda x: x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
-        config_inst.x.process_groups[f"datasets_{proc}"] = [remove_generator(dataset) for dataset in datasets]
+        def remove_generator(x):
+            return x.replace("_powheg", "").replace("_madgraph", "").replace("_amcatnlo", "").replace("_pythia8", "").replace("4f_", "")  # noqa: E501
+        config_inst.x.process_groups[f"datasets_{proc}"] = [
+            remove_generator(dataset) for dataset in datasets]
 
-    for group in ("dl20", "dl0", "dl1", "dl3"):  # noqa: E501
-        config_inst.x.process_groups[f"d{group}"] = ["data"] + config_inst.x.process_groups[group]
+    for group in ("dl0",):  # noqa: E501
+        config_inst.x.process_groups[f"d{group}"] = [
+            "data"] + config_inst.x.process_groups[group]
 
     # category groups for conveniently looping over certain categories
     # (used during plotting and for rebinning)
@@ -57,12 +48,56 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
         "tt_bkg": bracket_expansion(["sr__3b__ml_tt_custom"]),
     }
 
+    from hbw.inference.inf_dl_trih import systematics as systs
+    config_inst.x.shift_sources = {
+        "jer": ["nominal", "jer_up", "jer_down"],
+        "hhh_up": systs.hhh_shape_ffn_full,
+        # "shape_hhh_up": [f"syst_up" for syst in systs.hhh_shape_ffn_full],
+    }
+
     # variable groups for conveniently looping over certain variables
     # (used during plotting)
     from hbw.ml.derived.ml_dl_dih import input_features as ml_inputs
     from hbw.ml.derived.ml_dl_trih import input_features as ml_input_trih
     config_inst.x.variable_groups = {
         "hhh_ml_inputs": ml_input_trih.expanded_hhh_inputs,
+        "kinematics": bracket_expansion([
+            "{lepton0,lepton1,jet0,fatjet0}_{pt,eta,phi}",
+            "mli_discrete_b_score_sum",
+            "mli_hb_candidate{1,2,3,4}_discrete_b_score",
+        ]),
+        "checkJME": bracket_expansion([
+            "{lepton0,lepton1,jet0,jet1,jet2,jet3}_{pt,eta,phi}", "n_jet", "n_btag", "n_jet_pt25", "mli_min_dr_lb", "mli_met_pt",  # noqa: E501
+        ]),
+        "dctr_test": [
+            # new input features:
+            "mli_n_jet",
+            "mli_n_btag",
+            "mli_n_btag",
+            "mli_n_jet",
+            "mli_ht",
+            "mli_ht_lf",
+            "mli_ht_hf",
+            "mli_dr_hbb",
+            "mli_min_dr_jj",
+            "mli_ll_pt",
+            "mli_discrete_b_score_sum",
+            "mli_hb_candidate1_discrete_b_score",
+            "mli_hb_candidate1_pt",
+            "mli_hb_candidate1_eta",
+
+            "mli_hb_candidate2_discrete_b_score",
+            "mli_hb_candidate2_pt",
+            "mli_hb_candidate2_eta",
+
+            "mli_hb_candidate3_discrete_b_score",
+            "mli_hb_candidate3_pt",
+            "mli_hb_candidate3_eta",
+
+            "mli_hb_candidate4_discrete_b_score",
+            "mli_hb_candidate4_pt",
+            "mli_hb_candidate4_eta",
+        ],
     }
 
     # add all groups from ml inputs to variable groups
@@ -81,11 +116,15 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
             "cms_label": f"{cms_label}",
             "yscale": "log",
             "hide_signal_errors": True,
-            "lumi": "62",  # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            # NOTE: hard-coded for now (to be removed/changed when running on other years)
+            "lumi": "62",
             "magnitudes": 5.5,
         },
         "more_legend": {
             "whitespace_fraction": 0.45,
+        },
+        "remove_neg": {
+            "remove_negative": True,
         },
         "data_mc_plots": {
             "remove_negative": True,
@@ -112,8 +151,11 @@ def set_dl_hhh_config_defaults_and_groups(config_inst):
         "hhh_sr": 10,
     }
 
-    is_signal_hhh = lambda proc_name: "hhh_4b2w_2l2nu_c30_d40" in proc_name
-    is_background_hhh = lambda proc_name: ("hhh" not in proc_name)
+    def is_signal_hhh(proc_name):
+        return "hhh_4b2w_2l2nu_c30_d40" in proc_name
+
+    def is_background_hhh(proc_name):
+        return ("hhh" not in proc_name)
 
     config_inst.x.inference_category_rebin_processes = {
         "hhh_sr": is_signal_hhh,
