@@ -125,7 +125,7 @@ def add_dih_mll_categories(config: od.Config) -> None:
         name="cr",
         id=2,
         selection="catid_cr",
-        label=r"$20 \leq m_{\ell\ell} \geq 70$",
+        label=r"$m_{\ell\ell} \geq 70$",
     )
     cr.add_category(
         name="dycr",
@@ -425,10 +425,18 @@ def add_categories_production(config: od.Config) -> None:
     dycr__nonmixed = config.add_category(
         name="dycr__nonmixed",
         id=2349237509,
-        label="dycr (Nonmixed)",
+        label="DYVR (Nonmixed)",
     )
     dycr__nonmixed.add_category(config.get_category("dycr__2e"))
     dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+
+    cr__mixed = config.add_category(
+        name="cr__mixed",
+        id=2349237510,
+        label="CR (mixed)",
+    )
+    cr__mixed.add_category(config.get_category("dycr__emu"))
+    cr__mixed.add_category(config.get_category("ttcr__emu"))
 
 
 @call_once_on_config()

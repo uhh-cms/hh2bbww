@@ -82,6 +82,8 @@ class MLClassifierBase(MLModel):
     # TODO: test whether setting "test" to 0 is working
     train_val_test_split: tuple = (0.75, 0.15, 0.10)
     folds: int = 5
+    ensemble_size: int = 1  # number of models to train per fold (for ensembling)
+    ensemble_seed: int = 125125
 
     # training-specific parameters. Only need to re-run training when changing these
     _default__class_factors: dict = {"st": 1, "tt": 1}
@@ -94,13 +96,13 @@ class MLClassifierBase(MLModel):
     bookkeep_params: set[str] = {
         "data_loader", "input_features", "train_val_test_split",
         "processes", "train_nodes", "class_factors", "sub_process_class_factors",
-        "negative_weights", "epochs", "batchsize", "folds",
+        "negative_weights", "epochs", "batchsize", "folds", "ensemble_size", "ensemble_seed",
     }
 
     # parameters that can be overwritten via command line
     settings_parameters: set[str] = {
         "processes", "class_factors", "sub_process_class_factors",
-        "negative_weights", "epochs", "batchsize",
+        "negative_weights", "epochs", "batchsize", "ensemble_size",
     }
 
     @classmethod
@@ -218,11 +220,13 @@ class MLClassifierBase(MLModel):
         self.epochs = int(self.epochs)
         self.batchsize = int(self.batchsize)
         self.folds = int(self.folds)
+        self.ensemble_size = int(self.ensemble_size)
+        self.ensemble_seed = int(self.ensemble_seed)
 
         # checks
-        if self.negative_weights not in ("ignore", "abs", "handle"):
+        if self.negative_weights not in ("ignore", "abs", "handle", "nothing"):
             raise Exception(
-                f"negative_weights {self.negative_weights} not in ('ignore', 'abs', 'handle')",
+                f"negative_weights {self.negative_weights} not in ('ignore', 'abs', 'handle', 'nothing')",
             )
 
     @property
@@ -484,13 +488,20 @@ class MLClassifierBase(MLModel):
         produced = set()
         for proc in self.train_nodes.keys():
             produced.add(f"mlscore.{proc}")
+            produced.add(f"mlscore_members.{proc}")
 
         return produced
 
     def output(self, task: law.Task) -> dict[str, law.FileSystemTarget]:
 
         # declare the main target
-        target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
+        if self.ensemble_size == 1:
+            target = task.target(f"mlmodel_f{task.branch}of{self.folds}", dir=True)
+        else:
+            target = task.target(
+                f"mlmodel_f{task.fold}of{self.folds}_e{task.branch_data['ensemble_member']}of{self.ensemble_size}",
+                dir=True,
+            )
 
         outp = {
             "mlmodel": target,
@@ -550,9 +561,10 @@ class MLClassifierBase(MLModel):
 
         input_files = input["model"]["preml"]["collection"]
         input_files = law.util.merge_dicts(*[input_files[key] for key in input_files.keys()], deep=True)
+        fold_modus = "all" if self.folds == 1 else "all_except_evaluation_fold"
         train = DotDict(
             {proc_inst: MLProcessData(
-                self, input_files, "train", [proc_inst.name], task.fold,
+                self, input_files, "train", [proc_inst.name], task.fold, fold_modus=fold_modus,
             ) for proc_inst in self.process_insts},
         )
         for proc_data in train.values():
@@ -563,7 +575,7 @@ class MLClassifierBase(MLModel):
 
         validation = DotDict(
             {proc_inst: MLProcessData(
-                self, input_files, "val", [proc_inst.name], task.fold,
+                self, input_files, "val", [proc_inst.name], task.fold, fold_modus=fold_modus,
             ) for proc_inst in self.process_insts},
         )
         for proc_data in validation.values():
@@ -587,6 +599,9 @@ class MLClassifierBase(MLModel):
         import tensorflow as tf
         log_memory("start")
         # np.random.seed(1337)  # for reproducibility
+        if self.ensemble_size > 1:
+            seed = (self.ensemble_seed + task.fold * self.ensemble_size + task.branch_data["ensemble_member"])
+            tf.keras.utils.set_random_seed(seed)
 
         physical_devices = tf.config.list_physical_devices("GPU")
         logger.warning(f"Found {len(physical_devices)} physical GPU devices: {physical_devices}")
@@ -704,27 +719,61 @@ class MLClassifierBase(MLModel):
         else:
             models = [model["model"] for model in models]
 
-        # do prediction for all models and all inputs
-        predictions = []
-        for i, model in enumerate(models):
-            # NOTE: the next line triggers some warning concering tf.function retracing
-            pred = ak.from_numpy(model.predict_on_batch(ml_dataset.features))
-            if len(pred[0]) != len(node_processes):
-                raise Exception("Number of output nodes should be equal to number of processes")
-            predictions.append(pred)
-            # store predictions for each model
-            for j, proc in enumerate(node_processes):
-                events = set_ak_column(
-                    events, f"fold{i}_mlscore.{proc}", pred[:, j],
-                )
+        expected_models = self.folds * self.ensemble_size
+        if len(models) != expected_models:
+            raise Exception(
+                f"Number of models {len(models)} does not match expected number of models {expected_models} "
+                f"(folds: {self.folds}, ensemble_size: {self.ensemble_size})",
+            )
 
-        # combine all models into 1 output score, using the model that has not yet seen the test set
-        outputs = ak.where(ak.ones_like(predictions[0]), -1, -1)
-        for i in range(self.folds):
-            logger.info(f"Evaluation fold {i}")
-            # reshape mask from N*bool to N*k*bool (TODO: simpler way?)
-            idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == i)] * len(node_processes), axis=1))
-            outputs = ak.where(idx, predictions[i], outputs)
+        # do prediction for all models and all inputs
+        predictions_by_member = [[] for _ in range(self.ensemble_size)]
+        for fold in range(self.folds):
+            for member in range(self.ensemble_size):
+                model = models[fold * self.ensemble_size + member]
+                # NOTE: the next line triggers some warning concering tf.function retracing
+                pred = ak.from_numpy(model.predict_on_batch(ml_dataset.features))
+                if len(pred[0]) != len(node_processes):
+                    raise Exception("Number of output nodes should be equal to number of processes")
+                predictions_by_member[member].append(pred)
+                # store predictions for each model
+                for j, proc in enumerate(node_processes):
+                    if member == 0:
+                        events = set_ak_column(
+                            events, f"fold{fold}_mlscore.{proc}", pred[:, j],
+                        )
+                    if self.ensemble_size > 1:
+                        events = set_ak_column(
+                            events, f"fold{fold}_member{member}_mlscore.{proc}", pred[:, j],
+                        )
+
+        selected_predictions = []
+        for member in range(self.ensemble_size):
+            fold_predictions_by_member = predictions_by_member[member]
+
+            member_outputs = ak.where(ak.ones_like(fold_predictions_by_member[0]), -1, -1)
+
+            for fold in range(self.folds):
+                logger.info(f"Evaluation fold {fold}, ensemble member {member}")
+                # reshape mask from N*bool to N*k*bool (TODO: simpler way?)
+                idx = ak.to_regular(ak.concatenate([ak.singletons(fold_indices == fold)] * len(node_processes), axis=1))
+                member_outputs = ak.where(idx, fold_predictions_by_member[fold], member_outputs)
+
+            selected_predictions.append(member_outputs)
+
+        for j, proc in enumerate(node_processes):
+            member_predictions = ak.concatenate(
+                [
+                    ak.singletons(prediction[:, j])
+                    for prediction in selected_predictions
+                ],
+                axis=1,
+            )
+
+            events = set_ak_column(events, f"mlscore_members.{proc}", member_predictions)
+
+        # use the predictions from the first ensemble member for the final output
+        outputs = np.mean(selected_predictions, axis=0)
 
         # sanity check of the number of output nodes
         if len(outputs[0]) != len(node_processes):

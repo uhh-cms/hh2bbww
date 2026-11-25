@@ -40,7 +40,11 @@ class DenseModelMixin(object):
     _default__layers: tuple[int] = (64, 64, 64)
     _default__dropout: float = 0.50
     _default__learningrate: float = 0.00050
-
+    _default__batchnorm: bool = False
+    _default__input_batchnorm: bool = False
+    _default__l2regularization: float = 0.0
+    _default__weighting: str = "xsec"  # "xsec", "equal", "c2st"
+    _default__optimizer: str = "adam"  # "adam", "sgd"
     # TODO: these parameters are currently not part of the MLModel repr
     loss: str = "categorical_crossentropy"
     focal_loss_alpha: float = 0.25
@@ -55,10 +59,15 @@ class DenseModelMixin(object):
         self.layers = tuple(int(n_nodes) for n_nodes in self.layers)
         self.dropout = float(self.dropout)
         self.learningrate = float(self.learningrate)
-
+        self.batchnorm = bool(self.batchnorm)
+        self.input_batchnorm = bool(self.input_batchnorm)
+        self.ensemble_size = int(self.ensemble_size)
+        self.l2regularization = float(self.l2regularization)
+        self.weighting = str(self.weighting)
         self.loss = str(self.loss)
         self.focal_loss_alpha = float(self.focal_loss_alpha)
         self.focal_loss_gamma = float(self.focal_loss_gamma)
+        self.optimizer = str(self.optimizer)
 
     def prepare_ml_model(
         self,
@@ -66,7 +75,8 @@ class DenseModelMixin(object):
     ):
         import tensorflow.keras as keras
         from keras.models import Sequential
-        from keras.layers import Dense, BatchNormalization
+        from keras.layers import Dense, BatchNormalization, Input, Normalization
+        from keras.regularizers import l2
         from hbw.ml.tf_util import cumulated_crossentropy
         # from keras.losses import CategoricalFocalCrossentropy
 
@@ -78,7 +88,14 @@ class DenseModelMixin(object):
         model = Sequential()
 
         # BatchNormalization layer with input shape
-        model.add(BatchNormalization(input_shape=(n_inputs,)))
+        # model.add(BatchNormalization(input_shape=(n_inputs,)))
+        model.add(Input(shape=(n_inputs,)))
+
+        # add normalization layer
+        if self.input_batchnorm:
+            model.add(BatchNormalization())
+        else:
+            model.add(Normalization(axis=-1))
 
         activation_settings = DotDict({
             "elu": ("elu", "he_uniform", "Dropout"),
@@ -90,12 +107,19 @@ class DenseModelMixin(object):
         })
         keras_act_name, init_name, dropout_layer = activation_settings[self.activation]
 
+        kernel_reg = l2(self.l2regularization) if self.l2regularization else None
+
         # hidden layers
         for n_nodes in self.layers:
             model.add(Dense(
                 units=n_nodes,
                 activation=keras_act_name,
+                kernel_initializer=init_name,
+                kernel_regularizer=kernel_reg,
             ))
+
+            if self.batchnorm:
+                model.add(BatchNormalization())
 
             # Potentially add dropout layer after each hidden layer
             if self.dropout:
@@ -106,13 +130,18 @@ class DenseModelMixin(object):
         model.add(Dense(n_outputs, activation="softmax"))
 
         # compile the network
-        optimizer = keras.optimizers.Adam(
-            learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
-            epsilon=1e-6, amsgrad=False,
-        )
+        if self.optimizer == "adam":
+            optimizer = keras.optimizers.Adam(
+                learning_rate=self.learningrate, beta_1=0.9, beta_2=0.999,
+                epsilon=1e-6, amsgrad=False,
+            )
+        elif self.optimizer == "sgd":
+            optimizer = keras.optimizers.SGD(learning_rate=self.learningrate)
+        else:
+            raise ValueError(f"Unknown optimizer: {self.optimizer}")
 
         model_compile_kwargs = {
-            "loss": "categorical_crossentropy" if self.negative_weights == "ignore" else cumulated_crossentropy,
+            "loss": "categorical_crossentropy" if self.negative_weights in ("ignore", "nothing") else cumulated_crossentropy,  # noqa: E501
             "optimizer": optimizer,
             "metrics": ["categorical_accuracy"],
             "weighted_metrics": ["categorical_accuracy"],
@@ -126,6 +155,46 @@ class DenseModelMixin(object):
         model.compile(**model_compile_kwargs)
 
         return model
+
+    def adapt_model(self, model, *, inputs=None, dataset=None):
+        import tensorflow as tf
+        from keras.layers import Normalization
+
+        if (inputs is None) == (dataset is None):
+            raise ValueError("Exactly one of 'inputs' or 'dataset' must be provided")
+
+        normalization_layer = next(
+            (
+                layer for layer in model.layers
+                if isinstance(layer, Normalization)
+            ),
+            None,
+        )
+
+        if normalization_layer is None:
+            return
+
+        if inputs is not None:
+            normalization_layer.adapt(inputs)
+            return
+
+        n_inputs = len(set(self.input_features))
+
+        def input_iterator():
+            for i, batch in enumerate(dataset):
+                if i >= 100:
+                    break
+                yield batch[0]
+
+        tf_adapt_dataset = tf.data.Dataset.from_generator(
+            input_iterator,
+            output_signature=tf.TensorSpec(
+                shape=(None, n_inputs),
+                dtype=tf.float32,
+            ),
+        )
+
+        normalization_layer.adapt(tf_adapt_dataset)
 
 
 class CallbacksBase(object):
@@ -253,6 +322,118 @@ class ClassicModelFitMixin(CallbacksBase):
         self.epochs = int(self.epochs)
         self.batchsize = int(self.batchsize)
 
+    def concatenate_data(self, data, weights, shuffle: bool = True):
+        concatenated = DotDict({
+            "inputs": np.concatenate([
+                arrays.features for arrays in data.values()
+            ]),
+            "target": np.concatenate([
+                arrays.target for arrays in data.values()
+            ]),
+            "weights": np.concatenate([
+                weights[proc_inst] for proc_inst in data.keys()
+            ]),
+        })
+
+        if shuffle:
+            n_events = len(concatenated["inputs"])
+            shuffle_indices = np.random.permutation(n_events)
+            for key in concatenated.keys():
+                concatenated[key] = concatenated[key][shuffle_indices]
+
+        return concatenated
+
+    def get_c2st_weights(self, data):
+        data_arrays = []
+        mc_arrays = []
+
+        for proc_inst, arrays in data.items():
+            if "data" in proc_inst.name:
+                data_arrays.append(arrays)
+            else:
+                mc_arrays.append(arrays)
+
+        if not data_arrays or not mc_arrays:
+            raise ValueError("C2ST weighting requires Data and MC processes")
+
+        # C2ST weighting
+        n_data = sum(len(arrays.weights) for arrays in data_arrays)
+        n_mc = sum(len(arrays.weights) for arrays in mc_arrays)
+
+        mc_sum_weights = sum(
+            np.sum(np.maximum(arrays.weights, 0.0))
+            for arrays in mc_arrays
+        )
+
+        if n_data == 0:
+            raise ValueError("Cannot calculate C2ST weights without data events")
+        if mc_sum_weights <= 0:
+            raise ValueError("MC weight sum must be positive")
+
+        c_mc = n_data / mc_sum_weights
+        c_global = (n_data + n_mc) / (2.0 * n_data)
+
+        weights = {}
+        for proc_inst, arrays in data.items():
+            if "data" in proc_inst.name:
+                weights[proc_inst] = np.full(
+                    len(arrays.weights),
+                    c_global,
+                    dtype=np.float32,
+                )
+            else:
+                weights[proc_inst] = (
+                    np.maximum(arrays.weights, 0.0) * c_mc * c_global
+                ).astype(np.float32)
+
+        # Signed DCTR weighting
+        loss_signs = getattr(self, "loss_signs", None)
+        if loss_signs is not None:
+            for proc_inst in weights:
+                if proc_inst.name not in loss_signs:
+                    raise ValueError(
+                        f"No loss sign configured for process '{proc_inst.name}'",
+                    )
+
+                sign = loss_signs[proc_inst.name]
+                if sign not in (-1, 1):
+                    raise ValueError(
+                        f"Loss sign for '{proc_inst.name}' must be +1 or -1, "
+                        f"got {sign}",
+                    )
+
+                weights[proc_inst] *= sign
+
+            # 3. One common normalization: mean(abs(weight)) = 1
+            all_weights = np.concatenate(list(weights.values()))
+            sum_abs = np.sum(np.abs(all_weights), dtype=np.float64)
+
+            if not np.isfinite(sum_abs) or sum_abs <= 0:
+                raise ValueError(
+                    "Signed C2ST weights have zero/non-finite absolute weight sum",
+                )
+
+            normalization = len(all_weights) / sum_abs
+
+            for proc_inst in weights:
+                weights[proc_inst] *= normalization
+
+        for proc_inst in weights:
+            if np.any(~np.isfinite(weights[proc_inst])):
+                raise ValueError(
+                    f"Non-finite C2ST weights for process '{proc_inst.name}'",
+                )
+
+            weights[proc_inst] = weights[proc_inst].astype(np.float32)
+
+        logger.info(
+            f"C2ST weighting: c_mc={c_mc:.6g}, "
+            f"c_global={c_global:.6g}, "
+            f"signed={loss_signs is not None}",
+        )
+
+        return weights
+
     def fit_ml_model(
         self,
         task: law.Task,
@@ -264,16 +445,38 @@ class ClassicModelFitMixin(CallbacksBase):
         """
         Training loop with normal tf dataset
         """
+        from hbw.ml.plotting import plot_history
         import tensorflow as tf
 
         log_memory("start")
+        if getattr(self, "weighting", "xsec") == "c2st":
+            train_weights = self.get_c2st_weights(train)
+            validation_weights = self.get_c2st_weights(validation)
+        else:
+            train_weights = {
+                proc_inst: arrays.train_weights
+                for proc_inst, arrays in train.items()
+            }
+            validation_weights = {
+                proc_inst: arrays.weights
+                for proc_inst, arrays in validation.items()
+            }
+
+        # NOTE: currently hardcoded to shuffle the entire dataset, could be a TODO to make configurable per model
+        train = self.concatenate_data(train, train_weights)
+        validation = self.concatenate_data(validation, validation_weights)
 
         tf_train = tf.data.Dataset.from_tensor_slices(
             (train["inputs"], train["target"], train["weights"]),
-        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        )
         tf_validation = tf.data.Dataset.from_tensor_slices(
             (validation["inputs"], validation["target"], validation["weights"]),
-        ).batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        )
+
+        tf_train = tf_train.shuffle(buffer_size=100_000)
+
+        tf_train = tf_train.batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
+        tf_validation = tf_validation.batch(self.batchsize).prefetch(tf.data.AUTOTUNE)
 
         log_memory("init")
 
@@ -284,6 +487,11 @@ class ClassicModelFitMixin(CallbacksBase):
             "verbose": 2,
             "callbacks": self.get_callbacks(output),
         }
+
+        logger.info("Adapting normalization layer to training data...")
+        adapt_model = getattr(self, "adapt_model", None)
+        if callable(adapt_model):
+            adapt_model(model, inputs=train["inputs"])
 
         logger.info("Starting training...")
         tf.debugging.set_log_device_placement(True)
@@ -297,6 +505,22 @@ class ClassicModelFitMixin(CallbacksBase):
         del tf_train
         del tf_validation
         log_memory("del")
+
+        # create history plots
+        for metric, ylabel, yscale in (
+            ("loss", "Loss", "log"),
+            ("categorical_accuracy", "Accuracy", "linear"),
+            ("weighted_categorical_accuracy", "Weighted Accuracy", "linear"),
+        ):
+            call_func_safe(
+                plot_history,
+                model.history.history,
+                output["plots"],
+                metric=metric,
+                ylabel=ylabel,
+                yscale=yscale,
+                config_insts=self.config_insts,
+            )
 
 
 class ModelFitMixin(CallbacksBase):
@@ -494,6 +718,12 @@ class ModelFitMixin(CallbacksBase):
         }
         # start training by iterating over the MultiDataset
         iterator = (x for x in tf_train)
+        # normalize inputs TODO: make optional
+        logger.info("Adapting normalization layer...")
+        adapt_model = getattr(self, "adapt_model", None)
+        if callable(adapt_model):
+            adapt_model(model, dataset=tf_train)
+
         logger.info("Starting training...")
         # Removed debugger call for performance
         model.fit(
@@ -527,6 +757,7 @@ class ModelFitMixin(CallbacksBase):
                 metric=metric,
                 ylabel=ylabel,
                 yscale=yscale,
+                config_insts=self.config_insts,
             )
 
         # Force garbage collection

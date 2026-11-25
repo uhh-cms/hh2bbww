@@ -155,6 +155,12 @@ def add_variables(config: od.Config) -> None:
         binning=(100, -0.1, 0.1),
         x_title="Event weight per MC event",
     )
+    config.add_variable(
+        name="weight_unweighted_dctr",
+        expression="c2st_dyvr_correction",
+        binning=(100, -10, 10),
+        x_title="DCTR weight per MC event",
+    )
 
     #
     # Weights
