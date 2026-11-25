@@ -727,7 +727,7 @@ class MLClassifierBase(MLModel):
             )
 
         # do prediction for all models and all inputs
-        predictions_by_member = [[]] * self.ensemble_size
+        predictions_by_member = [[] for _ in range(self.ensemble_size)]
         for fold in range(self.folds):
             for member in range(self.ensemble_size):
                 model = models[fold * self.ensemble_size + member]
@@ -773,7 +773,7 @@ class MLClassifierBase(MLModel):
             events = set_ak_column(events, f"mlscore_members.{proc}", member_predictions)
 
         # use the predictions from the first ensemble member for the final output
-        outputs = selected_predictions[0]
+        outputs = np.mean(selected_predictions, axis=0)
 
         # sanity check of the number of output nodes
         if len(outputs[0]) != len(node_processes):

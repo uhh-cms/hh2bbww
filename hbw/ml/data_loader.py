@@ -339,7 +339,13 @@ class MLDatasetLoader:
         if "data" in self.process:
             return np.ones(len(weights), dtype=np.float32)
 
-        return np.maximum(weights, 0.0)
+        if np.any(weights < 0):
+            raise Exception(
+                f"Negative weights found in process {self.process}."
+                "This should not happen for C2ST training, please set negative_weights='ignore' in the MLModel config.",
+            )
+
+        return weights
 
     @property
     def train_weights(self) -> np.ndarray:
