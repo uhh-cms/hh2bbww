@@ -214,17 +214,8 @@ def plot_confusion(
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
     # Create confusion matrix and normalizes it over predicted (columns)
-    if weighting == "equal_weights":
-        weigths = inputs.equal_weights
-    elif weighting == "weights":
-        weigths = inputs.weights
-    elif weighting == "cross_check_weights":
-        weigths = inputs.cross_check_weights
-    elif weighting == "train_weights":
-        weigths = inputs.train_weights
-    elif weighting == "c2st_weights":
-        weigths = inputs.c2st_weights
-    else:
+    weights = getattr(inputs, weighting)
+    if weights is None:
         raise ValueError(f"Unknown weighting option: {weighting}")
 
     predictions = inputs.prediction
@@ -240,7 +231,7 @@ def plot_confusion(
         confusion = confusion_matrix(
             y_true=inputs.labels,
             y_pred=np.argmax(predictions_by_member[:, :, member], axis=1),
-            sample_weight=weigths,
+            sample_weight=weights,
         )
         if member == 0:
             if isinstance(stats, dict):

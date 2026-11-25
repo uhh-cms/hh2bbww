@@ -183,7 +183,7 @@ def add_mll_categories(config, add_mll_categories_func=None):
 def add_lepton_categories(config: od.Config) -> None:
     config.x.lepton_channels = {
         "sl": ("1e", "1mu"),
-        "dl": ("2e", "2mu", "emu", "ge3lep", "2l"),
+        "dl": ("2e", "2mu", "emu", "ge3lep"),
     }[config.x.lepton_tag]
 
     cat_1e = config.add_category(  # noqa: F841
@@ -226,13 +226,6 @@ def add_lepton_categories(config: od.Config) -> None:
         id=60,
         selection="catid_ge3lep",
         label=r"$N_{lep} \geq 3$",
-    )
-
-    cat_2l = config.add_category(  # noqa: F841
-        name="2l",
-        id=70,
-        selection="catid_2l",
-        label="2 SF leptons",
     )
 
 
@@ -360,7 +353,7 @@ def add_categories_selection(config: od.Config) -> None:
     elif config.x.lepton_tag == "dl":
         # adds categories based on mll
         add_mll_categories(config)
-        config.x.main_categories = ["sr", "cr", "dycr", "ttcr"]
+        config.x.main_categories = ["sr", "dycr", "ttcr"]
         # adds categories based on bjets
         if config.x.signal_tag == "hh":
             # add_mll_categories(config, add_dih_mll_categories)
@@ -432,10 +425,18 @@ def add_categories_production(config: od.Config) -> None:
     dycr__nonmixed = config.add_category(
         name="dycr__nonmixed",
         id=2349237509,
-        label="dycr (Nonmixed)",
+        label="DYVR (Nonmixed)",
     )
     dycr__nonmixed.add_category(config.get_category("dycr__2e"))
     dycr__nonmixed.add_category(config.get_category("dycr__2mu"))
+
+    cr__mixed = config.add_category(
+        name="cr__mixed",
+        id=2349237510,
+        label="CR (mixed)",
+    )
+    cr__mixed.add_category(config.get_category("dycr__emu"))
+    cr__mixed.add_category(config.get_category("ttcr__emu"))
 
 
 @call_once_on_config()

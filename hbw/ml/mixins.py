@@ -41,6 +41,7 @@ class DenseModelMixin(object):
     _default__dropout: float = 0.50
     _default__learningrate: float = 0.00050
     _default__batchnorm: bool = False
+    _default__input_batchnorm: bool = False
     _default__l2regularization: float = 0.0
     _default__weighting: str = "xsec"  # "xsec", "equal", "c2st"
     _default__optimizer: str = "adam"  # "adam", "sgd"
@@ -59,6 +60,7 @@ class DenseModelMixin(object):
         self.dropout = float(self.dropout)
         self.learningrate = float(self.learningrate)
         self.batchnorm = bool(self.batchnorm)
+        self.input_batchnorm = bool(self.input_batchnorm)
         self.ensemble_size = int(self.ensemble_size)
         self.l2regularization = float(self.l2regularization)
         self.weighting = str(self.weighting)
@@ -90,7 +92,10 @@ class DenseModelMixin(object):
         model.add(Input(shape=(n_inputs,)))
 
         # add normalization layer
-        model.add(Normalization(axis=-1))
+        if self.input_batchnorm:
+            model.add(BatchNormalization())
+        else:
+            model.add(Normalization(axis=-1))
 
         activation_settings = DotDict({
             "elu": ("elu", "he_uniform", "Dropout"),
@@ -150,6 +155,46 @@ class DenseModelMixin(object):
         model.compile(**model_compile_kwargs)
 
         return model
+
+    def adapt_model(self, model, *, inputs=None, dataset=None):
+        import tensorflow as tf
+        from keras.layers import Normalization
+
+        if (inputs is None) == (dataset is None):
+            raise ValueError("Exactly one of 'inputs' or 'dataset' must be provided")
+
+        normalization_layer = next(
+            (
+                layer for layer in model.layers
+                if isinstance(layer, Normalization)
+            ),
+            None,
+        )
+
+        if normalization_layer is None:
+            return
+
+        if inputs is not None:
+            normalization_layer.adapt(inputs)
+            return
+
+        n_inputs = len(set(self.input_features))
+
+        def input_iterator():
+            for i, batch in enumerate(dataset):
+                if i >= 100:
+                    break
+                yield batch[0]
+
+        tf_adapt_dataset = tf.data.Dataset.from_generator(
+            input_iterator,
+            output_signature=tf.TensorSpec(
+                shape=(None, n_inputs),
+                dtype=tf.float32,
+            ),
+        )
+
+        normalization_layer.adapt(tf_adapt_dataset)
 
 
 class CallbacksBase(object):
@@ -443,8 +488,10 @@ class ClassicModelFitMixin(CallbacksBase):
             "callbacks": self.get_callbacks(output),
         }
 
-        logger.info("Adapt normalization layer to training data...")
-        model.layers[0].adapt(train["inputs"])
+        logger.info("Adapting normalization layer to training data...")
+        adapt_model = getattr(self, "adapt_model", None)
+        if callable(adapt_model):
+            adapt_model(model, inputs=train["inputs"])
 
         logger.info("Starting training...")
         tf.debugging.set_log_device_placement(True)
@@ -619,7 +666,6 @@ class ModelFitMixin(CallbacksBase):
         # import tensorflow as tf
         from hbw.ml.tf_util import MultiDataset
         from hbw.ml.plotting import plot_history
-        import tensorflow as tf
 
         log_memory("start")
 
@@ -674,20 +720,9 @@ class ModelFitMixin(CallbacksBase):
         iterator = (x for x in tf_train)
         # normalize inputs TODO: make optional
         logger.info("Adapting normalization layer...")
-
-        def limited_input_iterator(stream, max_count=100):
-            for i, x in enumerate(stream):
-                if i >= max_count:
-                    break
-                yield x[0]
-
-        input_iterator = limited_input_iterator(tf_train)
-        n_inputs = len(set(self.input_features))
-        tf_adapt_dataset = tf.data.Dataset.from_generator(
-            lambda: input_iterator,
-            output_signature=tf.TensorSpec(shape=(None, n_inputs), dtype=tf.float32),
-        )
-        model.layers[0].adapt(tf_adapt_dataset)
+        adapt_model = getattr(self, "adapt_model", None)
+        if callable(adapt_model):
+            adapt_model(model, dataset=tf_train)
 
         logger.info("Starting training...")
         # Removed debugger call for performance

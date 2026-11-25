@@ -73,6 +73,7 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
     _default__activation: str = "relu"
     _default__layers: tuple = (64,)
     _default__batchnorm: bool = False
+    _default__input_batchnorm: bool = False
     _default__l2regularization: float = 0.0
     _default__dropout: float = 0.0
     _default__learningrate: float = 0.0050
@@ -98,7 +99,8 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
         "processes", "sub_process_class_factors", "class_factors", "train_nodes", "loss_signs",
         "negative_weights", "folds", "weighting",
         # DenseModelMixin
-        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization", "optimizer",
+        "activation", "layers", "dropout", "learningrate", "batchnorm",
+        "l2regularization", "optimizer", "input_batchnorm",
         # ModelFitMixin
         "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",
@@ -109,7 +111,8 @@ class DenseClassifierDCTR(DenseModelMixin, ClassicModelFitMixin, MLClassifierBas
         # base params
         "processes", "class_factors", "sub_process_class_factors", "loss_signs", "weighting",
         # DenseModelMixin
-        "activation", "layers", "dropout", "learningrate", "batchnorm", "l2regularization", "optimizer",
+        "activation", "layers", "dropout", "learningrate", "batchnorm",
+        "input_batchnorm", "l2regularization", "optimizer",
         # ModelFitMixin
         "callbacks", "reduce_lr_factor", "reduce_lr_patience",
         "epochs", "batchsize",

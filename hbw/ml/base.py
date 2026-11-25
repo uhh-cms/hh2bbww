@@ -727,10 +727,7 @@ class MLClassifierBase(MLModel):
             )
 
         # do prediction for all models and all inputs
-        predictions_by_member = [
-            []
-            for _ in range(self.ensemble_size)
-        ]
+        predictions_by_member = [[]] * self.ensemble_size
         for fold in range(self.folds):
             for member in range(self.ensemble_size):
                 model = models[fold * self.ensemble_size + member]

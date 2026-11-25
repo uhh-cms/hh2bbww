@@ -16,9 +16,8 @@ from columnflow.columnar_util import set_ak_column
 from columnflow.selection.stats import increment_stats
 from hbw.categorization.categories import catid_sr, catid_mll_low_narrow, catid_hhh_sr, catid_geq3b, catid_geq4b, catid_eq2b, catid_eq3b  # noqa
 from hbw.util import IF_SL, IF_DL  # , IF_MC
-from hbw.weight.hp_dih import default_hist_producer, with_trigger_weight, with_dy_corr
-from hbw.weight.hp_trih import hhh_default
 from hbw.production.prepare_objects import prepare_objects
+from columnflow.histogramming import HistProducer
 
 
 ak = maybe_import("awkward")
@@ -50,7 +49,7 @@ def del_sub_proc_stats(
     uses={IF_SL(catid_sr), IF_DL(catid_mll_low_narrow), IF_DL(catid_hhh_sr), increment_stats, prepare_objects, "process_id", "fold_indices"},  # noqa E501
     produces={"event_weight"},
     extra_categorizer=None,
-    h_prod=None,
+    hist_producer=None,
     skip_sr_categorizer=False,
 )
 def prepml(
@@ -73,15 +72,8 @@ def prepml(
     elif self.config_inst.has_tag("is_dl"):
         if self.config_inst.has_tag("is_hh"):
             sr_categorizer = catid_mll_low_narrow
-            if self.h_prod == "with_trigger_weight":
-                default_hp = with_trigger_weight
-            elif self.h_prod == "with_dy_corr":
-                default_hp = with_dy_corr
-            else:
-                default_hp = default_hist_producer
         elif self.config_inst.has_tag("is_hhh"):
             sr_categorizer = catid_hhh_sr
-            default_hp = hhh_default
         else:
             raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
     else:
@@ -114,7 +106,7 @@ def prepml(
 
     if task.dataset_inst.is_mc:
         # full event weight
-        events, weight = self[default_hp](events, task, **kwargs)
+        events, weight = self[self.hist_producer_cls](events, task, **kwargs)
         norm_weight = events["stitched_normalization_weight"]
     elif task.dataset_inst.is_data:
         weight = np.ones(len(events), dtype=np.float32)
@@ -170,20 +162,16 @@ def prepml_init(self):
     if not getattr(self, "dataset_inst", None):  # or self.dataset_inst.is_data:
         return
 
-    if self.config_inst.has_tag("is_dl"):
-        if self.config_inst.has_tag("is_hh"):
-            if self.h_prod == "with_trigger_weight":
-                default_hp = with_trigger_weight
-            elif self.h_prod == "with_dy_corr":
-                default_hp = with_dy_corr
+    if self.hist_producer is None:
+        if self.config_inst.has_tag("is_dl"):
+            if self.config_inst.has_tag("is_hh"):
+                self.hist_producer = "default"
+            elif self.config_inst.has_tag("is_hhh"):
+                self.hist_producer = "hhh_default"
             else:
-                default_hp = default_hist_producer
-        elif self.config_inst.has_tag("is_hhh"):
-            default_hp = hhh_default
+                raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
         else:
-            raise Exception(f"config {self.config_inst.name} needs either the 'is_hh' or 'is_hhh' tag")
-    else:
-        raise Exception(f"config {self.config_inst.name} needs 'is_dl' tag")
+            raise Exception(f"config {self.config_inst.name} needs 'is_dl' tag")
 
     if self.extra_categorizer:
         self.categorizers_cls = []
@@ -199,7 +187,10 @@ def prepml_init(self):
 
     if self.dataset_inst.is_mc:
         self.uses.add("stitched_normalization_weight")
-        self.uses.add(default_hp)
+        if not HistProducer.has_cls(self.hist_producer):
+            raise ValueError(f"Histogram producer {self.hist_producer} not found for {self.cls_name}.")
+        self.hist_producer_cls = HistProducer.get_cls(self.hist_producer)
+        self.uses.add(self.hist_producer_cls)
 
 
 prepml_eq2b = prepml.derive("prepml_eq2b", cls_dict={"extra_categorizer": "catid_eq2b"})
@@ -216,25 +207,25 @@ prepml_lep2pt10 = prepml.derive("prepml_lep2pt10", cls_dict={"extra_categorizer"
 prepml_dyvr_mumuV02 = prepml.derive("prepml_dyvr_mumuV02", cls_dict={
     "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide"],
     "skip_sr_categorizer": True,
-    "h_prod": "with_trigger_weight",
+    "hist_producer": "with_trigger_weight",
 })
-prepml_dyvr_mumuV1_njlq3 = prepml.derive("prepml_dyvr_mumuV1_njlq3", cls_dict={
+prepml_dyvr_mumuV2_njlq3 = prepml.derive("prepml_dyvr_mumuV2_njlq3", cls_dict={
     "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide", "mask_fn_njet_lq3"],
     "skip_sr_categorizer": True,
-    "h_prod": "with_trigger_weight",
+    "hist_producer": "with_trigger_weight",
 })
 prepml_dyvr_mumu_corrV01 = prepml.derive("prepml_dyvr_mumu_corrV01", cls_dict={
     "extra_categorizer": ["mask_fn_lep2_pt15", "catid_2mu", "catid_mll_z_wide"],
     "skip_sr_categorizer": True,
-    "h_prod": "with_dy_corr",
+    "hist_producer": "with_dy_corr",
 })
 prepml_incl_with_trigger_weight = prepml.derive("prepml_incl_with_trigger_weight", cls_dict={
     "extra_categorizer": "mask_fn_lep2_pt15",
     "skip_sr_categorizer": True,
-    "h_prod": "with_trigger_weight",
+    "hist_producer": "with_trigger_weight",
 })
 prepml_incl_with_dy_corr = prepml.derive("prepml_incl_with_dy_corr", cls_dict={
     "extra_categorizer": "mask_fn_lep2_pt15",
     "skip_sr_categorizer": True,
-    "h_prod": "with_dy_corr",
+    "hist_producer": "with_dy_corr",
 })
